@@ -126,6 +126,21 @@ func TestStreamDiagnosticCollectorTailCopiesAndSaturation(t *testing.T) {
 	}
 }
 
+func TestStreamDiagnosticsCollectorDefaultKeepsAll(t *testing.T) {
+	d := streamDiagnostics{}
+	for i := range 3 {
+		if err := d.add(&SyntaxError{Pos: i}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var recovered SyntaxErrors
+	if err := d.result(); !errors.As(err, &recovered) || len(recovered) != 3 ||
+		recovered[0].Pos != 0 || recovered[1].Pos != 1 || recovered[2].Pos != 2 ||
+		d.total != 3 || d.dropped != 0 {
+		t.Fatalf("default collector lost or reordered errors: %v", err)
+	}
+}
+
 // Reader cancellation is owned by the caller. Iterator.Close is deliberately
 // not invoked while Next is blocked, because concurrent ownership is invalid.
 func TestStreamIteratorCallerCancelsBlockedReader(t *testing.T) {

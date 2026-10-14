@@ -1,6 +1,9 @@
 package engine
 
-import "unsafe"
+import (
+	"unsafe"
+	"weak"
+)
 
 // CacheStats describes retained incremental history. EstimatedBytes includes
 // backing buffers and run records, but excludes map buckets, allocator metadata,
@@ -22,6 +25,7 @@ func (d *Document) ResetHistory() {
 	d.edits, d.runs, d.kids, d.vals = nil, nil, nil, nil
 	d.runGen, d.resumed = 0, 0
 	d.in.offs, d.in.lines = nil, nil
+	d.previousSnapshot = weak.Pointer[snapshotGraph]{}
 }
 
 // CacheStats returns a point-in-time estimate of cache-owned retained buffers.

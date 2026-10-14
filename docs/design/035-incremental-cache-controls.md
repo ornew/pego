@@ -86,7 +86,9 @@ Cover all three backends and both units. Check that cache stats distinguish link
 
 ## Performance and Results
 
-Use identical documents with no edit, one small edit, many edits before a parse, and long repetitions. Measure reset time, cache accounting time, cache bytes before/after, next-parse evaluations, allocations and retained heap. Separate short and multi-megabyte text, all backends and both units. Compare an unreset document with an explicit reset and a fresh document. No performance result is asserted here.
+An initial branch-local run used Go 1.27.1 on an Apple M3 Max (darwin/arm64), with `GOMAXPROCS=4`, `GOGC=100`, `GOMEMLIMIT=off`, five 500 ms samples per case, and a 300-function Minilang document. `CacheStats` took roughly 0.32–0.37 ms per operation at an estimated 20.6 MB of cached storage, with zero allocations. Across the sampled backend/unit cases, `ResetAndParse` was approximately 0.987–1.003× the time of `FreshDocument` parsing. This was a within-branch comparison, not a comparison with main; the samples were not alternated. Retained heap and peak process memory were not measured. The implementation avoids adding per-parse counter increments by deriving the component counts from existing `Reused` and resume data when parsing completes.
+
+These results cover one editor workload only. Other sizes and edit patterns remain to be measured; the cache-byte estimate is not a retained-heap measurement.
 
 ## Limitations and Open Questions
 
@@ -94,11 +96,11 @@ The byte estimate excludes document text and caller-owned trees; it must not be 
 
 ## Prototype Scope
 
-The engine prototype provides `Document.ResetHistory` and `Document.CacheStats`
+The engine and public API prototype provides `Document.ResetHistory` and `Document.CacheStats`
 without changing text, construction settings, document version, or last-parse
 statistics. Engine parse statistics now expose memo hits and resumed elements
 separately while preserving their combined legacy `Reused` count. Reset replaces the memo table rather than recycling its slabs and
-releases the edit log, repetition records, reusable value/child buffers and
+releases the edit log, repetition records, snapshot-sharing candidate, reusable value/child buffers and
 rebuildable flat-input indexes. Caller-held old trees are detached from future
 reuse; previously applied movement is preserved.
 
@@ -112,6 +114,8 @@ separately owned allocations. Counts and capacity inspection allocate no copies.
 
 Focused test cases cover reset before parsing, read-only accounting, live versus
 retired entries, all engine backends and position units, construction option and
-last-stat preservation, fresh-parse equivalence, and prior-tree ownership.
-Validation and measurements remain pending; this section reports implementation
-scope rather than adoption or a measured memory reduction.
+last-stat preservation, fresh-parse equivalence, prior-tree ownership, and the
+public reuse-counter invariant `Reused == MemoHits + ResumedElements`.
+The benchmark above is an initial focused measurement and does not establish a
+general speed or memory effect. Broader validation and workload coverage remain
+separate from this implementation-scope description.

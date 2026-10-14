@@ -93,7 +93,20 @@ For both units and every stream-capable backend, compare `ParseStream` and itera
 
 ## Performance and Results
 
-Measure time and allocations per delivered element, peak retained diagnostics and time to first element on finite and long streams. Compare the existing callback path, iterator and callback-plus-tail paths with identical grammars, units and backends. Include normal streams with no errors to measure collector overhead. Record reader bytes requested separately from bytes consumed; do not infer demand from output count. No performance result is asserted here.
+Five 500 ms samples per case compared `ParseStream` callbacks with `Iterate` over 50,001 CSV elements on Go 1.27.1, Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`, with `GOMEMLIMIT=off`. These samples were run in blocks, not alternated. Median whole-run time and allocation differences were:
+
+| Backend and unit | Iterator time vs callback | Additional allocations per 50,001 elements |
+| --- | ---: | ---: |
+| Closure, code points | +6.7% | +8 |
+| Closure, bytes | +6.6% | +8 |
+| Bytecode, code points | +3.5% | +9 |
+| Bytecode, bytes | +5.6% | +10 |
+| Iterative VM, code points | +4.2% | +10 |
+| Iterative VM, bytes | +5.2% | +10 |
+
+The first-element latency samples varied and do not support a conclusion. Retained heap and peak process memory were not measured. These are branch-local interface comparisons, not ordinary-path comparisons with main; they do not measure diagnostic-tail overhead or establish results for other stream shapes.
+
+Further evaluation should measure per-element cost, peak retained diagnostics and time to first element on finite and long streams, including callback-plus-tail paths and no-error streams. Record reader bytes requested separately from bytes consumed; do not infer demand from output count.
 
 ## Limitations and Open Questions
 
@@ -108,7 +121,7 @@ runtime implementation uses an internal coroutine goroutine; it is synchronously
 transferred between `Next` and parser execution, never independently scheduled
 to read ahead between calls. This implementation detail must be considered when
 finalizing the proposed no-background-producer contract. This adapter is
-currently a private prototype; the public API remains proposed.
+exposed through the public `Parser.Iterate` wrapper in the prototype.
 
 Construction validates the entry point without reading the reader. `Next`
 distinguishes a nil element from EOF and retains terminal errors; `Close`
@@ -126,6 +139,13 @@ with the caller. The iterator does not close a reader or support overlapping
 `Close` and `Next`; cancellation of a blocked read requires a caller-owned reader
 with its own cancellation mechanism.
 
-Focused test cases are prepared. Validation, bounded-retention integration and
-performance measurements remain pending; no performance or adoption claim is
-made by this prototype.
+The public prototype exposes pull iteration but withholds diagnostic options.
+The standalone collector is not connected to `ParseStreamWith`, so publishing
+the option constructors would silently accept controls that do nothing.
+Callback delivery ordering relative to element emission still needs an explicit
+decision. The stream-only admission checks and public truncation wrapper should
+be added together with committed-recovery integration.
+
+Focused iterator and collector test cases cover the current implementation.
+Diagnostic integration and broader performance coverage remain pending; the
+focused measurements above do not establish general performance or adoption.

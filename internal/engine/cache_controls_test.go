@@ -26,6 +26,13 @@ rule item = [a-z]+ "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
+				oldSnapshot, err := d.SnapshotWith(options)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if snapshotSharingEnabled && d.previousSnapshot.Value() == nil {
+					t.Fatal("snapshot sharing candidate was not recorded")
+				}
 				if s := d.CacheStats(); s.LiveMemoEntries == 0 || s.EstimatedBytes == 0 {
 					t.Fatalf("empty cache: %+v", s)
 				}
@@ -38,6 +45,9 @@ rule item = [a-z]+ "\n"`)
 				d.ResetHistory()
 				if got := d.CacheStats(); got != (CacheStats{}) {
 					t.Fatalf("reset: %+v", got)
+				}
+				if d.previousSnapshot.Value() != nil || oldSnapshot.Text() != text || !oldSnapshot.Root().Valid() {
+					t.Fatal("reset retained snapshot sharing candidate or changed old snapshot")
 				}
 				if d.Text() != text || !reflect.DeepEqual(d.ParseDefaults(), options) || d.Stats() != parseStats {
 					t.Fatal("reset changed text, defaults or last stats")
@@ -106,6 +116,37 @@ func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 			}
 			if d.CacheStats().LiveMemoEntries == 0 {
 				t.Fatal("history did not repopulate")
+			}
+		}
+	}
+}
+
+func TestCacheControlsReuseCounters(t *testing.T) {
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, unit := range []Unit{CodePoints, Bytes} {
+			prog := compile(t, `rule main = line* $$
+rule line = [a-z]+ #atomic "\n"`)
+			d, err := prog.NewDocumentWith("main", strings.Repeat("ab\n", 20), ParseOptions{Backend: backend, Unit: unit})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := d.Parse(); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := d.Parse(); err != nil {
+				t.Fatal(err)
+			}
+			if st := d.Stats(); st.MemoHits != 1 || st.ResumedElements != 0 || st.Reused != 1 {
+				t.Fatalf("%s/%s root memo reuse: %+v", backend, unit, st)
+			}
+			if err := d.Edit(30, 31, "x"); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := d.Parse(); err != nil {
+				t.Fatal(err)
+			}
+			if st := d.Stats(); st.ResumedElements == 0 || st.Reused != st.MemoHits+st.ResumedElements {
+				t.Fatalf("%s/%s resumed reuse: %+v", backend, unit, st)
 			}
 		}
 	}
