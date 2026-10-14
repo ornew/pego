@@ -76,9 +76,9 @@ construction. Suppression validation uses the request context before and after
 candidate analysis and lint. Syntax tokenization/parsing, compilation, lint and
 some existing request traversal/formatting routines still lack intra-phase
 polling. Cancellation responds promptly through the actor and suppresses stale
-results, but worker shutdown latency remains bounded by those phases. Real-editor
-validation, an explanation-command client handler and resource measurements
-remain open.
+results, but worker shutdown latency remains bounded by those phases. The VS
+Code extension handles the explanation command; real-editor validation and
+resource measurements remain open.
 
 Hover and completion negotiate Markdown only when explicitly advertised;
 otherwise their documentation is plaintext. Labels, details and insertion text
@@ -152,7 +152,7 @@ Bound outstanding work to one running analysis and one replaceable pending snaps
 
 ### Client Documentation Formats
 
-Record `textDocument.hover.contentFormat` and `textDocument.completion.completionItem.documentationFormat` during initialize. Prefer Markdown when listed; otherwise return plain text. Render the same semantic description in both forms, stripping markup rather than returning Markdown markers as plain text. This applies to hover and every completion item's `documentation`; `detail`, labels, snippets and insertion behavior stay as they are.
+Record `textDocument.hover.contentFormat` and `textDocument.completion.completionItem.documentationFormat` during initialize. Return the first supported format in the client's advertised order; if none is supported, return plain text. Thus a client that advertises `plaintext` before `markdown` continues to receive plaintext. Render the same semantic description in both forms, stripping markup rather than returning Markdown markers as plain text. This applies to hover and every completion item's `documentation`; `detail`, labels, snippets and insertion behavior stay as they are.
 
 ### Compatibility and Implementation Sequence
 
