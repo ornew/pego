@@ -282,12 +282,57 @@ function showErrors(items) {
 }
 
 
+// Text pages bound DOM/highlighting work; copy and downloads retain the full text.
+const OUTPUT_PAGE_SIZE = 24000;
+const textPages = new Map();
+function pagedText(id, text, language = "", reset = true) {
+  const previous = textPages.get(id);
+  const state = { text, language, page: reset ? 0 : previous?.page || 0 };
+  textPages.set(id, state);
+  renderPage(id);
+}
+function renderPage(id) {
+  const state = textPages.get(id);
+  if (!state) return;
+  const pages = Math.max(1, Math.ceil(state.text.length / OUTPUT_PAGE_SIZE));
+  state.page = Math.max(0, Math.min(state.page, pages - 1));
+  // Move both boundaries consistently to avoid splitting a UTF-16 surrogate pair.
+  const boundary = (p) => {
+    const i = Math.min(state.text.length, p * OUTPUT_PAGE_SIZE);
+    const c = state.text.charCodeAt(i);
+    return c >= 0xdc00 && c <= 0xdfff ? i + 1 : i;
+  };
+  const text = state.text.slice(boundary(state.page), boundary(state.page + 1));
+  $(id + "-page").setAttribute("aria-live", "polite");
+  const target = id === "pg-go" ? $(id).firstElementChild : $(id);
+  if (state.language === "go") target.innerHTML = highlight(text, "go");
+  else if (state.language === "json") target.innerHTML = highlightJSON(text);
+  else target.textContent = text;
+  $(id + "-page").textContent = `Page ${state.page + 1} of ${pages}`;
+  $(id + "-prev").disabled = state.page === 0;
+  $(id + "-next").disabled = state.page === pages - 1;
+}
+for (const id of ["pg-json", "pg-sexpr", "pg-go", "pg-compare"]) {
+  for (const [suffix, step] of [["prev", -1], ["next", 1]]) $(id + "-" + suffix).addEventListener("click", () => {
+    const state = textPages.get(id);
+    if (state) { state.page += step; renderPage(id); }
+  });
+}
+
 // ---------------------------------------------------------------- Parsing
 
 let seq = 0;
 let parseTimer = 0;
 
 function scheduleParse(delay = 150) {
+  if (generatedKey !== generationKey()) {
+    generatedCode = "";
+    $("gen-download").disabled = true;
+  }
+  if (comparisonKey !== JSON.stringify(comparisonRequest())) {
+    $("pg-compare-summary").textContent = "Run Compare to compare the current input.";
+    pagedText("pg-compare", "");
+  }
   clearTimeout(parseTimer);
   parseTimer = setTimeout(parse, delay);
 }
@@ -363,8 +408,8 @@ function apply(res, req) {
   const tree0 = res.json ? JSON.parse(res.json) : null;
   const { status, empty } = describeResult(res, req);
   tree.set(tree0, empty);
-  $("pg-json").innerHTML = res.json ? (res.json.length < 300000 ? highlightJSON(res.json) : escapeHTML(res.json)) : "";
-  $("pg-sexpr").textContent = res.sexpr || "";
+  pagedText("pg-json", res.json || "", "json");
+  pagedText("pg-sexpr", res.sexpr || "");
   updateInputMarks();
   setStatus(status.kind, escapeHTML(status.text));
   const errs = res.errors ?? [];
@@ -449,50 +494,162 @@ $("pg-outline").addEventListener("click", (e) => {
   }
 });
 
-// ---------------------------------------------------------------- Generated Go
+// ---------------------------------------------------------------- Generated parsers
 
 let genTimer = 0;
 let genSeq = 0;
+let generatedCode = "";
+let generatedLanguage = "go";
+let generatedKey = "";
+let pendingGenerationKey = "";
+function generationKey() {
+  return JSON.stringify([grammarEditor.value, requestedStart, $("gen-language").value || "go", $("gen-package").value, $("gen-types").checked, $("gen-recognize").checked]);
+}
 function scheduleGenerate() {
+  genSeq++;
+  pendingGenerationKey = generationKey();
+  generatedCode = "";
+  $("gen-download").disabled = true;
   clearTimeout(genTimer);
   genTimer = setTimeout(generate, 250);
 }
 
 async function generate() {
   const n = ++genSeq;
+  const key = generationKey();
+  pendingGenerationKey = key;
+  const language = $("gen-language").value === "typescript" ? "typescript" : "go";
   const pkg = $("gen-package").value.trim() || "parser";
+  generatedCode = "";
+  $("gen-download").disabled = true;
+  $("gen-download").textContent = language === "go" ? "Download parser.go" : "Download parser.ts";
   const req = {
     grammar: grammarEditor.value,
     package: pkg,
+    language,
     start: startSelect.value,
     types: $("gen-types").checked,
     recognize: $("gen-recognize").checked,
   };
-  const flags = [`-pkg ${pkg}`];
+  const flags = language === "go" ? [`-pkg ${pkg}`] : ["-lang ts"];
   if (req.start && req.start !== "main") flags.push(`-s ${req.start}`);
   if (req.types) flags.push("-types");
   if (req.recognize) flags.push("-recognize");
   $("gen-cmd").innerHTML = `<code>pego gen -g grammar.pego ${escapeHTML(flags.join(" "))}</code>`;
-  const code = $("pg-go").firstElementChild;
   try {
     const res = await client.call("generate", req, { key: "generate" });
-    if (n !== genSeq) return;
+    if (n !== genSeq || key !== generationKey()) return;
+    pendingGenerationKey = "";
     if (res.diagnostics?.length) {
-      code.textContent = res.diagnostics.map((d) => (d.line ? `${d.line}:${d.col}: ` : "") + d.message).join("\n");
+      pagedText("pg-go", res.diagnostics.map((d) => (d.line ? `${d.line}:${d.col}: ` : "") + d.message).join("\n"));
     } else {
-      code.innerHTML = res.code.length < 400000 ? highlight(res.code, "go") : escapeHTML(res.code);
+      generatedCode = res.code || "";
+      generatedLanguage = language;
+      generatedKey = key;
+      pagedText("pg-go", generatedCode, language === "go" ? "go" : "");
+      $("gen-download").disabled = !generatedCode;
     }
   } catch (err) {
-    if (n === genSeq) code.textContent = String(err.message || err);
+    if (n === genSeq && key === generationKey()) {
+      pendingGenerationKey = "";
+      pagedText("pg-go", String(err.message || err));
+    }
   }
 }
 
-for (const id of ["gen-package", "gen-types", "gen-recognize"]) $(id).addEventListener("input", scheduleGenerate);
+for (const id of ["gen-language", "gen-package", "gen-types", "gen-recognize"]) $(id).addEventListener("input", () => {
+  changeState();
+  $("gen-package").disabled = $("gen-language").value === "typescript";
+  scheduleGenerate();
+  saveState();
+});
+$("gen-download").addEventListener("click", () => {
+  if (!generatedCode || generatedKey !== generationKey()) return;
+  const url = URL.createObjectURL(new Blob([generatedCode], { type: "text/plain;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = generatedLanguage === "go" ? "parser.go" : "parser.ts";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// ---------------------------------------------------------------- Backend comparison
+
+// Compare JSON structure rather than rendered S-expressions, preserving scalar fields and positions.
+// Every traversal is iterative; result rows and individual descriptions are bounded.
+function backendDifferences(reference, candidate, limit = 100) {
+  const rows = [];
+  let total = 0;
+  const stack = [{ a: reference, b: candidate, path: "$", kind: "value" }];
+  const describe = (v) => {
+    if (Array.isArray(v)) return `<array of ${v.length} items>`;
+    if (v && typeof v === "object") return "<object>";
+    const text = v === undefined ? "<missing>" : JSON.stringify(typeof v === "string" ? v.slice(0, 500) : v);
+    return text.length > 500 ? text.slice(0, 500) + "…" : text;
+  };
+  while (stack.length) {
+    const { a, b, path, kind } = stack.pop();
+    if (a === b) continue;
+    const array = Array.isArray(a) && Array.isArray(b);
+    if (a && b && typeof a === "object" && typeof b === "object" && Array.isArray(a) === Array.isArray(b)) {
+      const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort((a, b) => array ? Number(a) - Number(b) : a.localeCompare(b));
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const key = keys[i];
+        const isPosition = (kind === "error" && ["pos", "line", "col"].includes(key)) ||
+          (typeof a.type === "string" && ["start", "end"].includes(key));
+        const category = isPosition ? "position" : path === "$" && ["errors", "error", "recovered", "matched"].includes(key) ? "error" : kind;
+        stack.push({ a: a[key], b: b[key], path: `${path}[${JSON.stringify(key)}]`, kind: category });
+      }
+    } else {
+      total++;
+      if (rows.length < limit) rows.push({ kind, path, reference: describe(a), candidate: describe(b) });
+    }
+  }
+  return { rows, total };
+}
+function comparisonValue(res) {
+  return { matched: res.matched, recovered: !!res.recovered, error: res.error || "", errors: res.errors || [], tree: res.json ? JSON.parse(res.json) : null };
+}
+let compareSeq = 0;
+let comparisonKey = "";
+function comparisonRequest() {
+  return { grammar: grammarEditor.value, input: inputEditor.value, start: requestedStart, unit: unitSelect.value, recognize: recognizeBox.checked };
+}
+$("pg-compare-run").addEventListener("click", async () => {
+  const n = ++compareSeq;
+  const req = comparisonRequest();
+  comparisonKey = JSON.stringify(req);
+  $("pg-compare-summary").textContent = "Comparing…";
+  pagedText("pg-compare", "");
+  try {
+    const names = ["closure", "bytecode", "bytecode-iterative"];
+    let reference;
+    let total = 0;
+    const lines = [];
+    for (const backend of names) {
+      const res = await client.call("parse", { ...req, backend }, { key: "compare" });
+      if (n !== compareSeq || JSON.stringify(req) !== JSON.stringify(comparisonRequest())) return;
+      if (!res.compile?.ok) throw new Error(res.error || res.compile?.diagnostics?.map((d) => d.message).join("\n") || "Invalid grammar");
+      const value = comparisonValue(res);
+      if (!reference) reference = value;
+      else {
+        const diff = backendDifferences(reference, value, Math.max(0, 100 - lines.length));
+        total += diff.total;
+        for (const row of diff.rows) lines.push(`${backend} · ${row.kind} · ${row.path}\n  closure: ${row.reference}\n  ${backend}: ${row.candidate}`);
+      }
+    }
+    const units = req.unit === "bytes" ? "bytes" : "code points";
+    $("pg-compare-summary").textContent = `${total ? `${total} differences; showing ${lines.length} (limit 100)` : "Values, errors and positions agree"}. Offsets: ${units}; line/column: 1-based, columns in ${units}.`;
+    pagedText("pg-compare", lines.join("\n\n"));
+  } catch (err) {
+    if (n === compareSeq && JSON.stringify(req) === JSON.stringify(comparisonRequest())) $("pg-compare-summary").textContent = String(err.message || err);
+  }
+});
 
 // ---------------------------------------------------------------- Tabs
 
 let activeTab = "tree";
-const tabs = ["tree", "json", "sexpr", "grammar", "go"];
+const tabs = ["tree", "json", "sexpr", "grammar", "go", "compare"];
 function selectTab(name, persist = true) {
   if (persist) changeState();
   activeTab = name;
@@ -522,7 +679,8 @@ $("pg-copy").addEventListener("click", async () => {
     json: last?.json ?? "",
     sexpr: last?.sexpr ?? "",
     grammar: $("pg-outline").innerText,
-    go: $("pg-go").innerText,
+    go: textPages.get("pg-go")?.text || "",
+    compare: textPages.get("pg-compare")?.text || "",
   }[activeTab];
   await copyText(text, $("pg-copy"));
 });
@@ -551,6 +709,19 @@ let examplesReady;
 function changeState() {
   clearTimeout(saveTimer);
   loadingVersion = null;
+  const key = generationKey();
+  if (generatedKey !== key && pendingGenerationKey !== key) {
+    genSeq++;
+    pendingGenerationKey = "";
+    generatedCode = "";
+    $("gen-download").disabled = true;
+    pagedText("pg-go", "");
+  }
+  if (comparisonKey !== JSON.stringify(comparisonRequest())) {
+    compareSeq++;
+    $("pg-compare-summary").textContent = "Run Compare to compare the current input.";
+    pagedText("pg-compare", "");
+  }
   return ++stateVersion;
 }
 
@@ -571,6 +742,7 @@ async function writeHash() {
   if (backendSelect.value) s.b = backendSelect.value;
   if (recognizeBox.checked) s.r = 1;
   if (activeTab !== "tree") s.t = activeTab;
+  s.gen = { language: $("gen-language").value || "go", package: $("gen-package").value, types: $("gen-types").checked, recognize: $("gen-recognize").checked };
   let hash;
   try {
     hash = "#" + (await encodeState(s));
@@ -624,6 +796,13 @@ function applyState(s) {
   backendSelect.value = backend;
   recognizeBox.checked = recognize;
   if (s.u || s.b || s.r) document.querySelector(".pg-options").open = true;
+  const gen = s.gen || {};
+  $("gen-language").value = gen.language === "typescript" ? "typescript" : "go";
+  $("gen-package").value = typeof gen.package === "string" ? gen.package : "parser";
+  $("gen-package").disabled = $("gen-language").value === "typescript";
+  $("gen-types").checked = gen.types !== false;
+  $("gen-recognize").checked = !!gen.recognize;
+  if (activeTab === "go") scheduleGenerate();
   const tab = tabs.includes(s.t) ? s.t : "tree";
   if (tab !== activeTab) selectTab(tab, false);
   return changed;

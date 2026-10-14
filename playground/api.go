@@ -6,7 +6,7 @@
 //	pego.compile(req)  -> grammar info and diagnostics          (req: {grammar})
 //	pego.parse(req)    -> tree as JSON and S-expression, errors (req: parseRequest)
 //	pego.format(req)   -> formatted grammar                     (req: {grammar})
-//	pego.generate(req) -> generated Go code                     (req: generateRequest)
+//	pego.generate(req) -> generated Go or TypeScript code       (req: generateRequest)
 //	pego.version(req)  -> versions of Go and of this module
 //
 // Requests and responses are plain JSON so that the API is easy to call from a Web Worker and from
@@ -117,6 +117,7 @@ type formatResult struct {
 }
 
 type generateRequest struct {
+	Language  string `json:"language,omitempty"` // go (default) or typescript
 	Grammar   string `json:"grammar"`
 	Package   string `json:"package"`
 	Start     string `json:"start"`
@@ -488,7 +489,17 @@ func generate(req generateRequest) generateResult {
 	if req.Recognize {
 		opts = append(opts, pego.WithRecognize())
 	}
-	code, err := pego.GenerateGo(c.g, pkg, start, opts...)
+	var code []byte
+	var err error
+	switch req.Language {
+	case "", "go":
+		code, err = pego.GenerateGo(c.g, pkg, start, opts...)
+	case "typescript":
+		code, err = pego.GenerateTypeScript(c.g, start, opts...)
+	default:
+		res.Diagnostics = []diagnostic{{Message: fmt.Sprintf("unknown generation language %q", req.Language)}}
+		return res
+	}
 	if err != nil {
 		res.Diagnostics = diagnostics(err)
 		return res

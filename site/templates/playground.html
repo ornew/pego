@@ -64,7 +64,8 @@
       <button role="tab" type="button" id="tab-json" aria-controls="panel-json" aria-selected="false">JSON</button>
       <button role="tab" type="button" id="tab-sexpr" aria-controls="panel-sexpr" aria-selected="false">S-expression</button>
       <button role="tab" type="button" id="tab-grammar" aria-controls="panel-grammar" aria-selected="false">Rules &amp; types</button>
-      <button role="tab" type="button" id="tab-go" aria-controls="panel-go" aria-selected="false">Generated Go</button>
+      <button role="tab" type="button" id="tab-go" aria-controls="panel-go" aria-selected="false">Generated parser</button>
+      <button role="tab" type="button" id="tab-compare" aria-controls="panel-compare" aria-selected="false">Compare backends</button>
       <span class="spacer"></span>
       <button type="button" class="button small" id="pg-copy" title="Copy the content of this tab">Copy</button>
     </div>
@@ -72,17 +73,26 @@
       <div class="tree-tools"><button type="button" class="link-button" id="tree-expand" title="Expand the displayed child pages, up to 5,000 rows">Expand shown</button> <button type="button" class="link-button" id="tree-collapse">Collapse all</button></div>
       <div class="tree" id="pg-tree"></div>
     </div>
-    <div class="panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><pre class="code" id="pg-json"></pre></div>
-    <div class="panel" role="tabpanel" id="panel-sexpr" aria-labelledby="tab-sexpr" hidden><pre class="code wrap" id="pg-sexpr"></pre></div>
+    <div class="panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><div class="tree-tools"><button type="button" id="pg-json-prev">Previous</button> <span id="pg-json-page"></span> <button type="button" id="pg-json-next">Next</button></div><pre class="code" id="pg-json"></pre></div>
+    <div class="panel" role="tabpanel" id="panel-sexpr" aria-labelledby="tab-sexpr" hidden><div class="tree-tools"><button type="button" id="pg-sexpr-prev">Previous</button> <span id="pg-sexpr-page"></span> <button type="button" id="pg-sexpr-next">Next</button></div><pre class="code wrap" id="pg-sexpr"></pre></div>
     <div class="panel" role="tabpanel" id="panel-grammar" aria-labelledby="tab-grammar" hidden><div id="pg-outline"></div></div>
     <div class="panel" role="tabpanel" id="panel-go" aria-labelledby="tab-go" hidden>
       <div class="gen-options">
-        <label class="field"><span>Package</span><input id="gen-package" value="parser" size="10" spellcheck="false"></label>
+        <label class="field"><span>Language</span><select id="gen-language"><option value="go">Go</option><option value="typescript">TypeScript</option></select></label>
+        <label class="field"><span>Package (Go)</span><input id="gen-package" value="parser" size="10" spellcheck="false"></label>
         <label class="check"><input type="checkbox" id="gen-types" checked> <code>-types</code></label>
         <label class="check"><input type="checkbox" id="gen-recognize"> <code>-recognize</code></label>
         <span class="gen-cmd" id="gen-cmd"></span>
       </div>
+      <div class="tree-tools"><button type="button" id="pg-go-prev">Previous</button> <span id="pg-go-page"></span> <button type="button" id="pg-go-next">Next</button> <button type="button" id="gen-download" disabled>Download parser.go</button></div>
       <pre class="code" id="pg-go"><code class="language-go"></code></pre>
+    </div>
+    <div class="panel" role="tabpanel" id="panel-compare" aria-labelledby="tab-compare" hidden>
+      <p>Compares closure, bytecode and bytecode-iterative with the same input, start rule, recognition mode and position unit. Generated Go and TypeScript are exported separately.</p>
+      <button type="button" id="pg-compare-run">Compare</button>
+      <p id="pg-compare-summary" role="status"></p>
+      <div class="tree-tools"><button type="button" id="pg-compare-prev">Previous</button> <span id="pg-compare-page"></span> <button type="button" id="pg-compare-next">Next</button></div>
+      <pre class="code wrap" id="pg-compare"></pre>
     </div>
   </section>
   <p class="pg-footer" id="pg-version"></p>

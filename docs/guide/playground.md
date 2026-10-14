@@ -5,6 +5,7 @@ The [PEGO playground](https://pego.ornew.net/playground/) lets you write a gramm
 This guide covers the playground's controls, shared links, limits and WebAssembly API. For repository site builds, tests and deployment, see [Website maintenance](../site.md).
 
 - [Using the playground](#using-the-playground)
+- [Export and compare](#export-and-compare)
 - [Nesting limits](#nesting-limits)
 - [Shared links](#shared-links)
 - [The WebAssembly API](#the-webassembly-api)
@@ -24,7 +25,7 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 | Status line | Whether the input matched (with or without a value, or after recovering from errors), the number of nodes, the start rule and the parse time |
 | Errors | Grammar errors with their positions, the syntax error that stopped the parse, or the errors `#recover` recovered from. Click one to jump to it. The editors also mark the position and the line number |
 
-The result panel has five tabs:
+The result panel has six tabs:
 
 | Tab | Contents |
 |:--|:--|
@@ -32,7 +33,8 @@ The result panel has five tabs:
 | **JSON** | The tree exactly as `pego parse` prints it |
 | **S-expression** | The tree as `pego parse -f sexpr` prints it |
 | **Rules & types** | The rules with their declared types, and the types of the grammar. Click a name to jump to its definition, or "parse from here" to make the rule the start rule |
-| **Generated Go** | The code `pego gen` generates for the grammar, with the package name, `-types` and `-recognize` options |
+| **Generated parser** | Go or TypeScript source for the grammar, with the available generation options |
+| **Compare backends** | The results from the closure, bytecode and bytecode-iterative Go engine backends for the same grammar and input |
 
 The Tree tab shows at most 100 direct children per page. **Previous children** and **Next children** replace that
 page and show its range and total. Initial automatic expansion creates at most 400 rows, including page controls.
@@ -46,6 +48,20 @@ In the editors, Tab inserts indentation; press Escape first to move the focus wi
 
 Parsing runs in a Web Worker, so a slow parse never freezes the page. A parse that takes more than 10 seconds is
 stopped and the worker is restarted; edits made in the meantime are parsed on the new worker.
+
+## Export and Compare
+
+The **Generated parser** tab exports Go or TypeScript source. Go accepts a package name; both languages support
+`-types` and `-recognize`. Long source files are paged for display. **Copy** copies the complete generated file, and
+**Download** saves it as `parser.go` or `parser.ts`. Shared links retain the selected language and generator options.
+
+The **Compare backends** tab runs the same grammar, input, start rule, recognition mode and position unit with the
+closure, bytecode and bytecode-iterative Go engine backends. It compares match and recovery status, values, errors
+and positions. Generated Go and TypeScript parsers are exported from the **Generated parser** tab; the comparison
+does not execute them. Long reports are paged for display, while **Copy** copies the complete report. Error line and
+column values are one-based;
+columns and offsets use the selected position unit. The report shows at most 100 differences and summarizes the total.
+An equal result means that these three engine backends agreed for this input and option set.
 
 ### Nesting Limits
 
@@ -90,7 +106,7 @@ page or Node:
 | `compile` | `{grammar}` | `{ok, package, rules: [{name, type, line, col}], types: [{name, kind, spec, line, col}], start, diagnostics: [{line, col, message}]}` |
 | `parse` | `{grammar, input, start, unit, backend, recognize, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
 | `format` | `{grammar}` | `{formatted, diagnostics}` |
-| `generate` | `{grammar, package, start, types, recognize}` | `{code, diagnostics}` |
+| `generate` | `{grammar, language, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |
 
 `matched` is true when the parse succeeded, including a start rule that matches without producing a value (then
