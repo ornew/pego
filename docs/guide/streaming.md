@@ -2,13 +2,13 @@
 
 `Parser.Parse` takes a whole string and returns a whole tree. When the input is too big to hold, or arrives as a
 stream you want to process as it comes, `Parser.ParseStream` reads an `io.Reader` and hands your function each element
-of a repetition as soon as it matches, then forgets it. Memory use depends on the size of one element, not on the size
-of the input.
+of a repetition as soon as it matches. `Parser.Iterate` lets you request one element at a time. Both forget committed
+elements; memory use depends on the size of one element, not on the size of the input.
 
 |  |  |
 |:--|:--|
 | Input | An `io.Reader`, possibly unbounded |
-| API | `Parser.ParseStream`, and `pego parse -stream` on the command line |
+| API | `Parser.ParseStream`, `Parser.Iterate`, and `pego parse -stream` on the command line |
 | Grammar | The start rule has a `#stream` repetition |
 | You get | Each element of that repetition, as soon as it matches |
 | Saves | Memory: neither the input nor the tree ever exists whole |
@@ -26,6 +26,7 @@ predicates still work, but element values are not collected or decorated with ca
 backends as well as Closure; recognition from a saved grammar requires its AST.
 
 - [A first example](#a-first-example)
+- [Pulling one element at a time](#pulling-one-element-at-a-time)
 - [What is emitted, and when](#what-is-emitted-and-when)
 - [Rules and limits](#rules-and-limits)
 - [Positions and text](#positions-and-text)
@@ -117,6 +118,31 @@ error: 3:5: syntax error: expected [0-9]
 
 Notice that the third line is reported as an error at `3:5`, even though the parser had thrown away the first two lines
 by then: line and column numbers, like node positions, refer to the whole input.
+
+## Pulling One Element at a Time
+
+`Parser.Iterate` provides a pull interface for the same `#stream` grammar. Creating an iterator validates the entry point but does not read. Each `Next` advances parsing to one committed element or the terminal result. The `ok` value distinguishes a successful nil element from end of stream:
+
+```go
+it, err := p.Iterate(reader)
+if err != nil {
+    return err
+}
+defer it.Close()
+for {
+    node, ok, err := it.Next()
+    if err != nil {
+        return err
+    }
+    if !ok {
+        break
+    }
+    // node may be nil when the element's value was discarded.
+    consume(node)
+}
+```
+
+The example assumes `p`, `reader` and `consume` are in scope. Repeated calls to `Next` after completion return the same terminal error or clean EOF. `Close` is idempotent; if called early, later `Next` returns `ErrStreamClosed`. The iterator does not close its reader. It is owned by one goroutine: calls to `Next` and `Close` must not overlap, including from a callback. `Close` cannot interrupt a blocked `Read`; arrange cancellation through the reader you own. PEG lookahead and buffering may read beyond the element returned by a `Next` call.
 
 ## What Is Emitted, and When
 

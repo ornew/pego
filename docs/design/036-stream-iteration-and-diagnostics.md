@@ -34,7 +34,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 ## Goals
 
-- Let callers request one stream element at a time without a producer goroutine or unbounded element queue.
+- Let callers request one stream element at a time without an independently scheduled producer or unbounded element queue.
 - Distinguish EOF from a successful nil-valued element.
 - Deliver committed recovered diagnostics promptly and optionally bound the retained tail.
 - Preserve existing parse options, stream commitment and terminal errors for callers that do not opt into diagnostic controls.
@@ -59,7 +59,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 A positive diagnostic limit retains a FIFO tail of at most that many committed errors while the callback still receives all committed errors in order. If the total exceeds the limit, return a proposed `TruncatedSyntaxErrors` wrapper with the retained `SyntaxErrors`, total count and dropped count. Its error text must identify truncation, and Unwrap exposes the retained SyntaxErrors to errors.As. Total and dropped counters saturate at the uint64 maximum and set CountsSaturated; they never wrap or stop an otherwise endless stream. Saturated counts are lower bounds, while the truncation status and retained tail remain reliable. Thus bounded results cannot be mistaken for a complete list, including when no callback was supplied. If the total does not exceed the limit, return ordinary `SyntaxErrors`. A limit of one retains the latest error. No limit option preserves the legacy complete result.
 
-The iterator and reader remain caller-owned. The iterator is single-goroutine and is not safe for concurrent `Next` or `Close`; closing concurrently with a blocked `Next` is not supported. `Close` does not close the reader and cannot interrupt a `Read` already blocked in caller-owned code. The caller must use and cancel/close a reader it owns if it needs that behavior. No background goroutine is created.
+The iterator and reader remain caller-owned. The iterator is single-owner and is not safe for concurrent `Next` or `Close`; closing concurrently with a blocked `Next` is not supported. `Close` does not close the reader and cannot interrupt a `Read` already blocked in caller-owned code. The caller must use and cancel/close a reader it owns if it needs that behavior. The pull adapter uses `iter.Pull`, whose runtime coroutine has an internal goroutine but no independently scheduled producer or element queue.
 
 `Next` controls parser advancement, not how many bytes are read. PEG lookahead and the reader's buffer may read ahead. Stream positions remain absolute from the beginning after earlier input is discarded. Empty successful iterations are emitted once and then terminate the repetition before its minimum check. Per-element recovery remains supported; recovery around the streaming repetition remains invalid. Delivered values are irrevocable, as documented in [007](007-streaming-and-incremental-parsing.md).
 
@@ -93,8 +93,39 @@ For both units and every stream-capable backend, compare `ParseStream` and itera
 
 ## Performance and Results
 
-Measure time and allocations per delivered element, peak retained diagnostics and time to first element on finite and long streams. Compare the existing callback path, iterator and callback-plus-tail paths with identical grammars, units and backends. Include normal streams with no errors to measure collector overhead. Record reader bytes requested separately from bytes consumed; do not infer demand from output count. No performance result is asserted here.
+On Go 1.27.1, Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`,
+and `GOMEMLIMIT` off, a 50,001-element CSV stream was measured for five
+500 ms samples across Closure, bytecode VM and iterative VM, each with
+CodePoints and Bytes. The pull iterator's full-drain median time was
+1.033–1.090× the existing callback path, with 8–10 additional allocations
+and 328–552 additional bytes per complete run. The existing callback path was
+unchanged. A first-element metric ranged from 1.08–1.47×, but its short
+per-sample timing was noisy and does not support a firm latency conclusion.
+These measurements compare the two delivery methods on the tested stream
+workload; they do not measure retained memory or establish behavior for other
+workloads.
 
 ## Limitations and Open Questions
 
 A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The state-machine extraction and committed-error drain points need prototype validation against nested recovery and backtracking before signatures are finalized.
+
+## Implemented Pull Iteration
+
+The implemented slice exposes `Parser.Iterate`, `StreamIterator` and
+`ErrStreamClosed`. An internal `iter.Pull` adapter suspends the existing
+`ParseStreamWith` execution at each committed element, preserving closure and
+VM stream behavior. Construction validates the stream entry point without
+reading the caller-owned reader. `Next` distinguishes successful nil elements
+from EOF, and terminal errors remain stable. Early `Close` unwinds parser
+state through the existing callback-error cleanup path without closing the
+reader. Calls to `Next` and `Close` must not overlap.
+
+The diagnostic callback, bounded tail, stream-only options and truncation
+wrapper remain proposals. They are not exposed or accepted by this prototype;
+the current stream parse still retains its full recovered-error list. Commit
+ordering and rollback behavior need to be settled before those controls are
+connected. The public and engine iterator tests cover all stream-capable
+backends and both position units, lazy reader access, EOF and error stability,
+nil elements, early close and caller-owned cancellation. A public comparison
+benchmark compares stream callback delivery, pull delivery and first-element
+latency under the conditions reported above.

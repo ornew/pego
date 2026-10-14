@@ -79,9 +79,20 @@ This is an additive Go API on `Document`, available with Closure, recursive Byte
 
 ## Performance and Results
 
-Measurements below are limited to reparse throughput and allocations in two profiles. Cache-accounting/reset latency, retained heap, other backends, units, and workloads remain unmeasured.
+The reparse comparison below covers two profiles. A separate benchmark measured cache inspection and reset latency across the listed profiles; retained heap remains unmeasured.
 
 On Go 1.27.1, Apple M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, with `GOMEMLIMIT` off, `BenchmarkDocumentReparse` edited one character and parsed a 100k-line document. Five alternating candidate/base pairs used 300 ms per sample. In Closure/CodePoints, the paired candidate/base median time ratio was 0.9965 (range 0.9626–1.0156), with B/op unchanged at 844,279 and 21 allocations/op. In Iterative VM/Bytes, the median ratio was 0.9929 (range 0.9736–0.9973), B/op changed from 853,524 to 853,525, and allocations stayed at 32/op. These two profiles show no material timing regression; other paths are unmeasured.
+
+The following separate measurements used Go 1.27.1 on an Apple M3 Max,
+`GOMAXPROCS=4`, `GOGC=100`, and `GOMEMLIMIT` off. Each benchmark ran for
+500 ms with five samples; the CSV stream contained 50,001 elements. Across
+Closure, bytecode VM and iterative VM with both CodePoints and Bytes,
+`CacheStats` took 0.355–0.402 ms/op, allocated 0 B/op, and reported an
+estimated cache size of about 20.6 MB. The per-profile median
+`ResetAndParse`/`FreshDocument` time ratios ranged from 0.975 to 1.008, with no
+material difference indicated by this measurement. This compares two methods,
+not implementation revisions; retained heap
+and peak memory were not measured.
 
 ## Limitations and Open Questions
 
