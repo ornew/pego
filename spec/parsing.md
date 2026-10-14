@@ -126,6 +126,44 @@ A `Document` owns mutable text and parser reuse state and is not safe for concur
 
 The implementation validates and prepares a complete batch before publishing it. A rejected batch leaves text, version, statistics, reusable state, and previously returned Nodes unchanged. In `Bytes` mode, endpoints are checked against character boundaries in the original base text; applying replacements may create or remove UTF-8 sequences at edit seams, which are decoded by the next parse. In `CodePoints` mode, invalid UTF-8 in replacement text is normalized one replacement character per invalid byte. After a successful batch, the next parse must match a fresh parse of the resulting text. Batch commit itself does not parse and conservatively clears reusable parse caches; it does not promise incremental reuse. The existing mutable `Node` and `Document.Parse` ownership behavior is unchanged.
 
+### Document Snapshots
+
+`Document.Snapshot(opts...)` captures the current text revision, parse outcome,
+and value graph in one immutable `Snapshot`. It resolves invocation overrides
+once over construction defaults; context, work limits, maximum depth, and tracing
+may vary per call, while the Document's unit, backend, start rule, and
+non-recognition mode do not. Parsing and freezing use the same cancellation
+context and cumulative input-work and execution-step counters. Copying the text,
+freezing nodes and fields, and copying diagnostics are part of that invocation.
+
+A normally returned parse outcome produces a Snapshot even when the outcome is
+an ordinary syntax error or recovered error. For an ordinary syntax failure the
+Snapshot retains the current text and version, has a zero root as `Document.Parse`
+does, and exposes a defensive `SyntaxError`. A recovered outcome retains its
+root and `SyntaxErrors`. Cancellation or exhausted work limits during parsing or
+freezing return a nil Snapshot and a fatal interruption error; grammar choice,
+predicates, and recovery cannot absorb the interruption. No partial graph,
+text, or diagnostics are published. If execution began, reusable execution
+state is cleared before retry; fully completed input tables may remain, but
+partial tables are discarded. Pre-entry errors preserve existing caches and
+statistics. Cleanup is uncharged. A trace callback panic propagates unchanged
+after cleanup. Snapshot accessors and `Materialize` run after capture and do not
+inherit its context or work limits.
+
+Snapshot freezing preserves shared node identities, cycles, nil child slots, and
+nil versus allocated-empty collections. It accepts field values with dynamic
+types `nil`, `int`, `string`, `bool`, and `*Node`, including a typed nil
+`*Node`. Any other dynamic field type returns no Snapshot and a
+`SnapshotCaptureError` containing the deterministic path and `reflect.Type`,
+without retaining the unsupported value. The error also carries a defensive
+copy of the ordinary parse error, if one existed. Error copies preserve
+`errors.Is` and `errors.As` behavior. A present nil node field is represented by
+a zero `SnapshotNode`; `Field`'s boolean distinguishes it from an absent field,
+and an untyped nil remains untyped nil. Snapshot handles are immutable and safe
+for concurrent reads while the Document has one editing/parsing owner.
+`Materialize` returns an independent mutable `Node` graph and preserves shared
+identities and cycles.
+
 ## Syntax Errors
 
 When the input does not match the grammar, the parser reports the **farthest

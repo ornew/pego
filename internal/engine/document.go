@@ -111,7 +111,13 @@ func (d *Document) Parse() (*Node, error) { return d.ParseWith(d.defaults) }
 
 // ParseWith parses using fully resolved options. Unit, effective backend and
 // recognition mode must match construction; this method does not merge defaults.
-func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
+func (d *Document) ParseWith(o ParseOptions) (*Node, error) {
+	return d.parseWithCapture(o, nil)
+}
+
+// parseWithCapture keeps parsing and result capture inside one interruption and
+// cleanup boundary. capture uses the same controller as the parser.
+func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node, error) error) (n *Node, err error) {
 	if o.Unit != d.in.unit || d.prog.backend(o.Backend) != d.back || o.Recognize {
 		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")
 	}
@@ -178,6 +184,9 @@ func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
 	n, err = active.run(p, d.back, d.start)
 	if !p.aborted {
 		c.check()
+	}
+	if capture != nil {
+		err = capture(p, n, err)
 	}
 	return n, err
 }

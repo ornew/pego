@@ -55,6 +55,9 @@ reuse.
 | `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; `WithContext` and `WithWorkLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
 | `doc.Parse(opts...)` | Parse the current text using construction defaults plus invocation overrides. Counters reset per call. Results and errors are those of `Parser.Parse`, including recovered `SyntaxErrors`. |
+| `doc.Snapshot(opts...)` | Parse and capture the current revision as an immutable read-only result. Ordinary syntax and recovered errors are stored in the Snapshot; interruption or an option that changes the fixed unit/backend/mode returns no Snapshot. |
+| `snapshot.Root()`, `snapshot.Text()`, `snapshot.Error()` | Read the captured root, exact text and diagnostic for that revision. The Snapshot does not move when the Document changes. |
+| `snapshot.Materialize()` | Make an independent mutable `*Node` graph for existing Node consumers. |
 | `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
 | `doc.Version()` / `doc.Unit()` | The opaque current text revision and the fixed position unit. A new document starts at sequence 1; parsing does not advance it. |
@@ -109,6 +112,48 @@ buffered-byte limits. A blocked reader or callback cannot be preempted by the
 parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#recipe-cancelling-a-stream)
 for the reader ownership boundary and [Runtime](runtime.md) for option names and
 error handling.
+
+## Keeping a Result While Editing
+
+A `Document` reuses and moves legacy `*Node` values on later parses. If a UI
+must keep the exact tree, text, diagnostics, and revision visible while the
+Document advances, capture them together:
+
+```go
+snapshot, err := doc.Snapshot(pego.WithContext(ctx), pego.WithWorkLimits(limits))
+if snapshot == nil {
+    return err // cancellation or a work limit publishes no partial snapshot
+}
+
+text := snapshot.Text()
+version := snapshot.Version()
+root := snapshot.Root()
+parseErr := snapshot.Error() // ordinary syntax/recovery errors accompany a snapshot
+if root.Valid() {
+    fmt.Println(root.Type(), root.Start(), root.End())
+}
+```
+
+A normal syntax failure still returns a Snapshot with its text and version, a
+zero root, and the copied syntax error. A recovered parse keeps its root and
+recovered errors. Cancellation or work-limit exhaustion during parsing or
+capture returns a nil Snapshot. The same invocation budget covers parsing,
+copying text, freezing the graph, and copying diagnostics. Snapshot getters and
+`Materialize` run after capture and have no inherited controller or work limit.
+
+`SnapshotNode` is a read-only handle. Its zero value represents a nil Node;
+`ChildCount` includes nil child slots. `Field(name)` returns both a value and a
+presence flag, distinguishing an absent field from a present nil value. A typed
+nil `*Node` field becomes a zero handle, while an untyped nil remains nil.
+`Fields()` returns an owned slice in original order. Snapshots and handles can
+be read concurrently while the single-owner Document is edited or parsed.
+
+The snapshot graph preserves shared nodes and cycles. It freezes only field
+values of dynamic type nil, `int`, `string`, `bool`, or `*pego.Node`; an
+unsupported custom value returns `*pego.SnapshotCaptureError` and no Snapshot.
+`Materialize` makes an independently mutable graph, preserving identities,
+cycles, nil slots, and nil versus allocated-empty collections. Use it when an
+existing API requires `*Node`; each call creates a separate graph.
 
 ## A Walkthrough With `Stats`
 

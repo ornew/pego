@@ -7,15 +7,15 @@
 ## Summary
 
 Add explicit text versions, atomic edit batches, and immutable parse snapshots to
-`Document`. A snapshot captures the current text and its parse outcome through a
-read-only tree surface. Existing `Document.Edit`, `Document.Parse`, mutable
-`Node` fields, and `Node.Clone` retain their ownership contracts.
+`Document`. Versioned edit batches and the owned Snapshot API are implemented.
+Existing `Document.Edit`, `Document.Parse`, mutable `Node` fields, and
+`Node.Clone` retain their ownership contracts.
 
-Start with an independently owned snapshot graph as the reference implementation.
-Investigate immutable structural sharing, relative internal spans, and chunked
-child sequences against that reference. Sharing is an implementation candidate,
-not a promised reduction in snapshot time or retained memory. Chunked input
-storage remains a separate experiment under [design 019](019-incremental-document-and-tree-tooling.md).
+Snapshots currently own an independent immutable graph. Immutable structural
+sharing, relative internal spans, and chunked child sequences remain proposed
+and unmeasured; they are not part of the current implementation contract.
+Chunked input storage is a separate mechanism under
+[design 019](019-incremental-document-and-tree-tooling.md).
 
 ## Motivation
 
@@ -46,9 +46,9 @@ facts, rather than current performance estimates:
   options survive. [Existing interruption tests](../../internal/engine/document_abort_test.go)
   establish retry behavior.
 
-Measurements for versioned edit batches are recorded below. Snapshot capture,
-materialization, structural sharing and retained-version costs remain unmeasured.
-Older incremental-guide measurements are not a baseline for this revision.
+Edit-batch, Snapshot capture, materialization, and retained-version measurements
+are recorded below. Structural sharing has not been measured. Older
+incremental-guide measurements are not a baseline for this revision.
 
 ## Goals
 
@@ -77,11 +77,11 @@ part of this feature.
 
 ## Design
 
-### Proposed Public API
+### Public API and Implementation State
 
-Version tokens, `Unit` and atomic `EditBatch` are implemented as the first stage.
-The Snapshot APIs below remain proposed. Document construction keeps its existing
-functional `ParseOption` arguments; no additional options entry point is needed.
+Version tokens, `Unit`, and atomic `EditBatch` are the integrated first stage.
+The Snapshot API and independently owned graph capture are implemented. Document
+construction keeps its existing functional `ParseOption` arguments.
 
 ```go
 // DocumentVersion is opaque and comparable. Its zero value is invalid.
@@ -139,9 +139,11 @@ type SnapshotField struct {
 }
 ```
 
-A valid field whose node value is nil uses a zero SnapshotNode; an untyped nil
-field stays nil. `Field` distinguishes absent fields from present nil values.
-`Fields` returns an owned slice in the original field order. Modifying that slice
+A valid field whose value is a typed nil `*Node` uses a zero `SnapshotNode`;
+an untyped nil field stays nil. `Field` distinguishes an absent field from a
+present nil value using its boolean result. `Child` includes nil child slots;
+`ChildCount` counts those slots. `Fields` preserves nil versus allocated-empty
+state and returns an owned slice in original field order. Modifying the slice
 or its entries changes no snapshot state. Child indices and nil child slots
 match Node.Children; invalid indices panic as ordinary slice indexing does.
 The zero handle returns empty metadata, zero positions/counts, and absent fields.
@@ -151,12 +153,12 @@ or stable external node ID is promised. A retained handle stays valid even if th
 Snapshot variable is released; it may retain that entire version's immutable
 storage, but must not retain the live Document or its caches.
 
-Start/End preserve the current Node's int32 spans, with an exclusive End. Batch
-positions remain int, as with Edit. No UTF-16 positions or implicit unit conversion
-are introduced. Materialize copies the entire root graph into independently
-mutable Nodes, preserving shared descendants, cycles, nil slots, field values/order,
-and nil versus allocated-empty collections. Each call makes a separate graph.
-It is the explicit adapter for existing Node/JSON consumers and must be measured.
+`Start` and `End` preserve the current Node's `int32` spans, with an exclusive
+end. Batch positions remain `int`, as with `Edit`; no UTF-16 conversion is
+introduced. `Materialize` copies the whole graph into independently mutable
+Nodes, preserving shared identities, cycles, nil slots, field order and values,
+and nil versus allocated-empty collections. Each call returns a separate graph.
+It is the adapter for consumers that need mutable Nodes or existing Node JSON.
 
 ### Versions and Pending Edits
 
@@ -375,11 +377,10 @@ module formats remain unchanged; snapshot handles introduce no serialized format
    without parsing. Any rejected batch preserves observable Document state and
    previously returned Nodes. Verify fresh-parse equivalence on supported core
    backends and both position units.
-2. Add independently owned read-only snapshots, diagnostic copying, concurrent
-   reads, unsupported-value rejection, cycle preservation, and explicit
-   materialization. Compare against Parse plus Clone while
-   holding text/error/version separately. Update incremental/runtime guides and
-   development/API status when implemented.
+2. Implement independently owned read-only snapshots, diagnostic copying,
+   concurrent reads, unsupported-value rejection, cycle preservation, and
+   explicit materialization. This stage is implemented and measured against
+   Parse plus Clone while holding text/error/version separately.
 3. Prototype immutable sharing, relative spans, and persistent child sequences
    with generation/build-time reference controls or separate binaries. Preserve
    the reference outcomes and ownership. Keep input representation constant.
@@ -387,9 +388,9 @@ module formats remain unchanged; snapshot handles introduce no serialized format
    heap measurements establish its benefits and costs. If efficient storage needs
    a separate read-only Document API, review that contract before implementation.
 
-The versioned edit API is the first independently useful stage; it does not
-provide snapshots or structural sharing. Those later stages remain proposed and
-require separate ownership and performance validation. Chunked input-storage work
+The versioned edit API is the first independently useful stage. Owned snapshots
+are now implemented as the second stage; structural sharing remains proposed and
+requires separate ownership and performance validation. Chunked input-storage work
 may proceed independently and later be combined under a separately measured
 control.
 
@@ -459,13 +460,14 @@ These are proposed gates, not completed checks:
 
 ## Performance and Results
 
-Snapshot and sharing costs remain unmeasured. A stage-1 implementation of version
-tokens and atomic edit batches has preliminary measurements against the
+Snapshot capture and retained-version costs have now been measured for the
+independent immutable graph in stage 2. Structural sharing, traversal, and
+multi-megabyte workloads remain unmeasured; no performance benefit is claimed.
+The stage-1 implementation of version tokens and atomic edit batches has
+preliminary measurements against the
 source-equivalent baseline
 [`69af68e`](https://github.com/ornew/pego/commit/69af68ecdec1dea942db89158c36a21ad18ae505).
-These measurements cover edit and batch
-behavior only; they do not measure snapshots, sharing, or the full feature's
-cost.
+Those measurements cover edit and batch behavior only.
 
 Existing Edit and Document-creation measurements used three alternating
 500 ms pairs. Three 500 ms complete-transaction samples compared batch edits
@@ -490,6 +492,30 @@ benchmark into the baseline when comparing revisions; compilation and parsing
 are excluded from that cold-owner measurement. The transaction cases include
 validation, commit and reparse after a warmed initial parse. Routine raw results
 remain outside the repository.
+
+For stage 2, `BenchmarkDocumentSnapshotCapture` compares capture with a
+`Document.Parse` plus `Node.Clone` bundle containing text, version, diagnostics,
+unit, and statistics. It uses a warmed document, 4 KiB and 64 KiB inputs,
+Closure/Bytecode/iterative Bytecode backends, and both input units. Three
+sequential 300 ms runs per case on the same Go 1.27.1/M3 Max configuration gave
+Snapshot-to-bundle median time ratios of 1.33–1.45 and allocation-byte ratios
+of 2.47 (4 KiB) and 3.44 (64 KiB). Snapshot used only 1–2% as many allocation
+events. `Materialize` alone took roughly 0.13 ms (4 KiB) and 1.7 ms (64 KiB)
+in these cases. `B/op` includes transient copies and is not retained heap.
+
+A separate forced-GC retention harness, `go run ./bench/snapshot-retained`,
+kept 64 versions of a 4 KiB input or 16 versions of a 64 KiB input. Across
+three processes per mode, Snapshot retained 1.057× and 1.133× as many bytes
+per version, respectively, as the Parse-plus-Clone bundle. Five alternating
+baseline/candidate pairs of the existing cached `Document.Parse` benchmark
+showed unchanged allocation counts and no consistent timing regression; the
+per-pair timings were noisy. These measurements establish current costs, not
+the benefit of future sharing.
+
+Reproduce capture and materialization with
+`go test ./internal/engine -run '^$' -bench '^BenchmarkDocumentSnapshotCapture$' -benchmem -benchtime=300ms -count=3`.
+Use the retention harness with matching `-mode`, `-size`, `-versions`,
+`-backend`, and `-unit` flags in separate processes. Keep timed runs serialized.
 
 Pin baseline/candidate revisions, toolchains, backend/unit, grammar/input hashes,
 retained-version count, and control flags. Alternate paired processes; keep
@@ -521,10 +547,11 @@ code; update this record with actual outcomes and remaining gates.
 
 ## Limitations and Open Questions
 
-The recommended initial contract is pre-version batches plus owned read-only
-snapshots, including failed parse outcomes. It preserves legacy APIs but incurs
-capture/materialization copies and may discard batch reuse initially. None of
-those costs has been quantified at the inspected revision.
+The implemented contract combines versioned batches with owned read-only
+snapshots, including ordinary failed parse outcomes. It preserves legacy APIs,
+but capture and materialization copy data, and batch commit currently discards
+reuse state. Snapshot capture and retained-version costs are quantified above;
+sharing costs remain unmeasured.
 
 Later, measured sharing results must establish whether a separate read-only
 Document mode is worth its additional API. That later tradeoff does not block

@@ -264,6 +264,29 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 	return d.doc.EditBatch(base, edits...)
 }
 
+// Snapshot is an immutable document parse outcome.
+type Snapshot = engine.Snapshot
+
+// SnapshotNode is a comparable read-only node handle; its zero value is nil.
+type SnapshotNode = engine.SnapshotNode
+
+// SnapshotField stores a read-only node handle or immutable scalar.
+type SnapshotField = engine.SnapshotField
+
+// SnapshotCaptureError reports unsupported mutable or custom field values.
+type SnapshotCaptureError = engine.SnapshotCaptureError
+
+// Snapshot parses and freezes this revision using construction defaults plus
+// opts. Cancellation and work limits cover parsing, text, tree and diagnostics;
+// interruption returns nil. Ordinary syntax errors retain the failed version.
+func (d *Document) Snapshot(opts ...ParseOption) (*Snapshot, error) {
+	o := d.doc.ParseDefaults()
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return d.doc.SnapshotWith(o)
+}
+
 // ParseStats counts rule evaluations and reused results in a Document.Parse.
 type ParseStats = engine.Stats
 
