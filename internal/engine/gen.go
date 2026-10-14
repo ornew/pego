@@ -30,6 +30,9 @@ type GenOptions struct {
 	// referenceWorkControlLayout removes added invocation state and the new
 	// control options from a private ordinary-call cost reference.
 	referenceWorkControlLayout bool
+	// disableOrdinaryWorkSpecialization retains charged-method nil checks for
+	// same-generator tests and measurements without a new parser-time selector.
+	disableOrdinaryWorkSpecialization bool
 	// Package is the package name of the generated code.
 	Package string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
@@ -224,6 +227,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	}
 	if opts.referenceWorkControlLayout {
 		return removeGeneratedWorkState(src)
+	}
+	if gen.goWorkControls && !opts.disableOrdinaryWorkSpecialization {
+		return specializeOrdinaryMethods(src, gen.methods.String())
 	}
 	return src, nil
 }

@@ -30,9 +30,10 @@ rule predicate Word = !("a"* "é") "a"* "b"`)
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
-		for _, reference := range []bool{false, true} {
-			pkg := fmt.Sprintf("work_%v_%v", convert, reference)
-			code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, referenceWorkControls: reference})
+		for _, mode := range []int{0, 1, 2} {
+			reference := mode == 1
+			pkg := fmt.Sprintf("work_%v_%d", convert, mode)
+			code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, referenceWorkControls: reference, disableOrdinaryWorkSpecialization: mode == 2})
 			if err != nil {
 				t.Fatal(err)
 			}

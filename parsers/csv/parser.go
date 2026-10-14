@@ -6014,6 +6014,71 @@ func init() {
 
 // main (Node body inlined)
 func (p *parser) e2() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			x1  int
+			x2  []*Node
+			x3  mark
+			ok  bool
+			x6  int
+			x7  int
+			x8  int
+			x9  mark
+			v11 *Node
+			v12 *Node
+			v13 *Node
+		)
+		_ = x8
+
+		x1 = p.pos
+		x2 = p.nodes(1)[:0]
+
+		x3 = p.mark()
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
+			goto L4_ordinary
+		}
+		goto L5_ordinary
+	L4_ordinary:
+		p.reset(x3)
+	L5_ordinary:
+		p.stepWork()
+
+		x6, x7 = p.pos, len(p.kidStack)
+		x8 = 0
+		for {
+			x9 = p.mark()
+
+			if v11, ok = p.call(rules[1], 0); !ok {
+				goto L10_ordinary
+			}
+			x8++
+			p.kidStack = append(p.kidStack, v11)
+			if p.pos == x9.pos {
+				break
+			}
+			continue
+		L10_ordinary:
+			p.reset(x9)
+			break
+		}
+		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+		p.setCaptureOrdinary(0, v12)
+		x2 = append(x2, v12)
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto fail_ordinary
+		}
+		v13 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		return v13, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		x1  int
@@ -6082,6 +6147,84 @@ fail:
 
 // record (Node body inlined)
 func (p *parser) e5() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			x1  mark
+			ok  bool
+			v3  *Node
+			x4  int
+			x5  int
+			x6  *frame
+			x7  *frame
+			x8  int
+			x9  mark
+			v11 *Node
+			v12 *Node
+		)
+		_ = x8
+
+		x1 = p.mark()
+		p.silent++
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L2_ordinary
+		}
+		p.silent--
+		p.reset(x1)
+		goto fail_ordinary
+	L2_ordinary:
+		p.silent--
+		p.reset(x1)
+
+		if v3, ok = p.r2(); !ok {
+			goto fail_ordinary
+		}
+		p.setCaptureOrdinary(0, v3)
+
+		x4, x5 = p.pos, len(p.kidStack)
+		x6 = p.newFrame(len(scope3))
+		x8 = 0
+		for {
+			clear(x6.vals)
+			x9 = p.mark()
+			x7 = p.frame
+			p.frame = x6
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
+				goto L10_ordinary
+			}
+
+			if v11, ok = p.r2(); !ok {
+				goto L10_ordinary
+			}
+			p.setCaptureOrdinary(0, v11)
+			p.frame = x7
+			x8++
+			p.kidStack = append(p.kidStack, x6.vals[0])
+			if p.pos == x9.pos {
+				break
+			}
+			continue
+		L10_ordinary:
+			p.frame = x7
+			p.reset(x9)
+			break
+		}
+		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		p.setCaptureOrdinary(1, v12)
+
+		if _, ok = p.r4(); !ok {
+			goto fail_ordinary
+		}
+		return nil, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		x1  mark
@@ -6166,6 +6309,173 @@ fail:
 
 // field (Node body inlined)
 func (p *parser) e9() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			x1   mark
+			x3   rune
+			x4   bool
+			ok   bool
+			ch   rune
+			size int
+			x7   int
+			x8   mark
+			x11  int
+			x12  mark
+			x14  int
+		)
+		_, _ = x7, x11
+
+		x1 = p.mark()
+		if p.pos < len(p.in) {
+
+			x3, _, x4 = p.in[p.pos], 1, true
+		} else {
+			x3, _, x4 = p.peek()
+		}
+		if !(x4 && (x3 == 34)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 7)
+			goto L5_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L6_ordinary
+		}
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 34) {
+				p.expectOrdinary(p.pos, 8)
+				break
+			}
+			p.pos += size
+		}
+
+		x7 = 0
+		for {
+			x8 = p.mark()
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
+				p.pos += 2
+			} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
+				goto L9_ordinary
+			}
+
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 34) {
+					p.expectOrdinary(p.pos, 8)
+					break
+				}
+				p.pos += size
+			}
+			x7++
+			if p.pos == x8.pos {
+				break
+			}
+			continue
+		L9_ordinary:
+			p.reset(x8)
+			break
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L6_ordinary
+		}
+		goto L2_ordinary
+	L6_ordinary:
+		p.reset(x1)
+	L5_ordinary:
+		p.stepWork()
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+				p.expectOrdinary(p.pos, 10)
+				break
+			}
+			p.pos += size
+		}
+
+		x11 = 0
+		for {
+			x12 = p.mark()
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+				goto L13_ordinary
+			}
+
+			x14 = p.pos
+			p.silent++
+
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 10) {
+				p.expectOrdinary(p.pos, 12)
+				goto L15_ordinary
+			}
+			p.pos += size
+			p.silent--
+			p.pos = x14
+			goto L16_ordinary
+		L15_ordinary:
+			p.silent--
+			p.pos = x14
+			goto L13_ordinary
+		L16_ordinary:
+			p.stepWork()
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+					p.expectOrdinary(p.pos, 10)
+					break
+				}
+				p.pos += size
+			}
+			x11++
+			if p.pos == x12.pos {
+				break
+			}
+			continue
+		L13_ordinary:
+			p.reset(x12)
+			break
+		}
+		goto L2_ordinary
+	L2_ordinary:
+		return nil, true
+	}
+
 	p.stepWork()
 	var (
 		x1   mark
@@ -6337,6 +6647,105 @@ L2:
 
 // eol (Node body inlined)
 func (p *parser) e12() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			x1  mark
+			v2  *Node
+			x4  rune
+			x5  bool
+			x8  int
+			ok  bool
+			v9  *Node
+			x12 int
+			v13 *Node
+			x15 int
+			x16 []*Node
+			x17 mark
+			v18 *Node
+			x21 int
+			v22 *Node
+			v23 *Node
+		)
+
+		x1 = p.mark()
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L6_ordinary
+		}
+
+		x8 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L7_ordinary
+		}
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v2 = v9
+		goto L3_ordinary
+	L7_ordinary:
+		p.reset(x1)
+	L6_ordinary:
+		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L10_ordinary
+		}
+
+		x12 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L11_ordinary
+		}
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: "\n", terminal: true, fresh: true})
+		v2 = v13
+		goto L3_ordinary
+	L11_ordinary:
+		p.reset(x1)
+	L10_ordinary:
+		p.stepWork()
+		x15 = p.pos
+		x16 = p.nodes(1)[:0]
+
+		x17 = p.mark()
+
+		x21 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L19_ordinary
+		}
+		v22 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: "\r", terminal: true, fresh: true})
+		v18 = v22
+		goto L20_ordinary
+	L19_ordinary:
+		p.reset(x17)
+		v18 = nil
+	L20_ordinary:
+		x16 = append(x16, v18)
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L14_ordinary
+		}
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+		v2 = v23
+		goto L3_ordinary
+	L14_ordinary:
+		p.reset(x1)
+		goto fail_ordinary
+	L3_ordinary:
+		return v2, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		x1  mark
@@ -6437,6 +6846,87 @@ fail:
 
 // eol (value-free body inlined)
 func (p *parser) e13() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v   *Node
+			x1  int
+			x2  int
+			x4  rune
+			x5  bool
+			ok  bool
+			x11 int
+			x12 int
+		)
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L8_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L9_ordinary
+		}
+		goto L3_ordinary
+	L9_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L8_ordinary:
+		p.stepWork()
+
+		x11, x12 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L13_ordinary
+		}
+		goto L14_ordinary
+	L13_ordinary:
+		p.pos = x11
+		p.recovered = p.recovered[:x12]
+	L14_ordinary:
+		p.stepWork()
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		v   *Node
@@ -6519,6 +7009,29 @@ fail:
 
 // field, called as by invokePlain
 func (p *parser) r2() (*Node, bool) {
+	if p.control == nil {
+
+		start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+		prevEnv, prevCut := p.env, p.cut
+		p.cut = false
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		v, ok := p.e9()
+		p.depth--
+		p.cut = prevCut
+		p.trail = p.trail[:trail]
+		if ok {
+			v = p.finish(rules[2], emptyFrame, v, start)
+		} else {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		p.env = prevEnv
+		return v, ok
+	}
+
 	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
@@ -6543,6 +7056,29 @@ func (p *parser) r2() (*Node, bool) {
 
 // eol, called as by invokePlain
 func (p *parser) r3() (*Node, bool) {
+	if p.control == nil {
+
+		start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+		prevEnv, prevCut := p.env, p.cut
+		p.cut = false
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		v, ok := p.e12()
+		p.depth--
+		p.cut = prevCut
+		p.trail = p.trail[:trail]
+		if ok {
+			v = p.finish(rules[3], emptyFrame, v, start)
+		} else {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		p.env = prevEnv
+		return v, ok
+	}
+
 	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
@@ -6567,6 +7103,98 @@ func (p *parser) r3() (*Node, bool) {
 
 // eol, called as by invokePlain (body inlined)
 func (p *parser) r4() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			x11   int
+			x12   int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L8_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L9_ordinary
+		}
+		goto L3_ordinary
+	L9_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L8_ordinary:
+		p.stepWork()
+
+		x11, x12 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L13_ordinary
+		}
+		goto L14_ordinary
+	L13_ordinary:
+		p.pos = x11
+		p.recovered = p.recovered[:x12]
+	L14_ordinary:
+		p.stepWork()
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -6660,6 +7288,61 @@ fail:
 
 // main (value-free body inlined)
 func (p *parser) e14() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v  *Node
+			x1 int
+			x2 int
+			ok bool
+			x5 int
+			x6 int
+			x7 int
+		)
+		_ = x5
+
+		x1, x2 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
+			goto L3_ordinary
+		}
+		goto L4_ordinary
+	L3_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L4_ordinary:
+		p.stepWork()
+
+		x5 = 0
+		for {
+			x6, x7 = p.pos, len(p.recovered)
+
+			if _, ok = p.q1(); !ok {
+				goto L8_ordinary
+			}
+			x5++
+			if p.pos == x6 {
+				break
+			}
+			continue
+		L8_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			break
+		}
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto fail_ordinary
+		}
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		v  *Node
@@ -6719,6 +7402,72 @@ fail:
 
 // record (value-free body inlined)
 func (p *parser) e15() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v  *Node
+			x1 int
+			x2 int
+			ok bool
+			x4 int
+			x5 int
+			x6 int
+		)
+		_ = x4
+
+		x1, x2 = p.pos, len(p.recovered)
+		p.silent++
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L3_ordinary
+		}
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+
+		if _, ok = p.q2(); !ok {
+			goto fail_ordinary
+		}
+
+		x4 = 0
+		for {
+			x5, x6 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
+				goto L7_ordinary
+			}
+
+			if _, ok = p.q2(); !ok {
+				goto L7_ordinary
+			}
+			x4++
+			if p.pos == x5 {
+				break
+			}
+			continue
+		L7_ordinary:
+			p.pos = x5
+			p.recovered = p.recovered[:x6]
+			break
+		}
+
+		if _, ok = p.q3(); !ok {
+			goto fail_ordinary
+		}
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		v  *Node
@@ -6792,6 +7541,181 @@ fail:
 
 // field (value-free body inlined)
 func (p *parser) e16() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v    *Node
+			x1   int
+			x2   int
+			x4   rune
+			x5   bool
+			ok   bool
+			ch   rune
+			size int
+			x8   int
+			x9   int
+			x10  int
+			x13  int
+			x14  int
+			x15  int
+			x17  int
+		)
+		_, _ = x8, x13
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 34)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 7)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 34) {
+				p.expectOrdinary(p.pos, 8)
+				break
+			}
+			p.pos += size
+		}
+
+		x8 = 0
+		for {
+			x9, x10 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
+				p.pos += 2
+			} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
+				goto L11_ordinary
+			}
+
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 34) {
+					p.expectOrdinary(p.pos, 8)
+					break
+				}
+				p.pos += size
+			}
+			x8++
+			if p.pos == x9 {
+				break
+			}
+			continue
+		L11_ordinary:
+			p.pos = x9
+			p.recovered = p.recovered[:x10]
+			break
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		p.stepWork()
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+				p.expectOrdinary(p.pos, 10)
+				break
+			}
+			p.pos += size
+		}
+
+		x13 = 0
+		for {
+			x14, x15 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+				goto L16_ordinary
+			}
+
+			x17 = p.pos
+			p.silent++
+
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 10) {
+				p.expectOrdinary(p.pos, 12)
+				goto L18_ordinary
+			}
+			p.pos += size
+			p.silent--
+			p.pos = x17
+			goto L19_ordinary
+		L18_ordinary:
+			p.silent--
+			p.pos = x17
+			goto L16_ordinary
+		L19_ordinary:
+			p.stepWork()
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+					p.expectOrdinary(p.pos, 10)
+					break
+				}
+				p.pos += size
+			}
+			x13++
+			if p.pos == x14 {
+				break
+			}
+			continue
+		L16_ordinary:
+			p.pos = x14
+			p.recovered = p.recovered[:x15]
+			break
+		}
+		goto L3_ordinary
+	L3_ordinary:
+		v = nil
+		return v, true
+	}
+
 	p.stepWork()
 	var (
 		v    *Node
@@ -6971,6 +7895,72 @@ L3:
 
 // main, called as by invokePlain (body inlined)
 func (p *parser) q0() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			x1    int
+			x2    int
+			ok    bool
+			x5    int
+			x6    int
+			x7    int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_ = x5
+
+		x1, x2 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
+			goto L3_ordinary
+		}
+		goto L4_ordinary
+	L3_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L4_ordinary:
+		p.stepWork()
+
+		x5 = 0
+		for {
+			x6, x7 = p.pos, len(p.recovered)
+
+			if _, ok = p.q1(); !ok {
+				goto L8_ordinary
+			}
+			x5++
+			if p.pos == x6 {
+				break
+			}
+			continue
+		L8_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			break
+		}
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto fail_ordinary
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7041,6 +8031,83 @@ fail:
 
 // record, called as by invokePlain (body inlined)
 func (p *parser) q1() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			x1    int
+			x2    int
+			ok    bool
+			x4    int
+			x5    int
+			x6    int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_ = x4
+
+		x1, x2 = p.pos, len(p.recovered)
+		p.silent++
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L3_ordinary
+		}
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+
+		if _, ok = p.q2(); !ok {
+			goto fail_ordinary
+		}
+
+		x4 = 0
+		for {
+			x5, x6 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
+				goto L7_ordinary
+			}
+
+			if _, ok = p.q2(); !ok {
+				goto L7_ordinary
+			}
+			x4++
+			if p.pos == x5 {
+				break
+			}
+			continue
+		L7_ordinary:
+			p.pos = x5
+			p.recovered = p.recovered[:x6]
+			break
+		}
+
+		if _, ok = p.q3(); !ok {
+			goto fail_ordinary
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7125,6 +8192,186 @@ fail:
 
 // field, called as by invokePlain (body inlined)
 func (p *parser) q2() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v    *Node
+			x1   int
+			x2   int
+			x4   rune
+			x5   bool
+			ok   bool
+			ch   rune
+			size int
+			x8   int
+			x9   int
+			x10  int
+			x13  int
+			x14  int
+			x15  int
+			x17  int
+		)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_, _ = x8, x13
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 34)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 7)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 34) {
+				p.expectOrdinary(p.pos, 8)
+				break
+			}
+			p.pos += size
+		}
+
+		x8 = 0
+		for {
+			x9, x10 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
+				p.pos += 2
+			} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
+				goto L11_ordinary
+			}
+
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 34) {
+					p.expectOrdinary(p.pos, 8)
+					break
+				}
+				p.pos += size
+			}
+			x8++
+			if p.pos == x9 {
+				break
+			}
+			continue
+		L11_ordinary:
+			p.pos = x9
+			p.recovered = p.recovered[:x10]
+			break
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		p.stepWork()
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+				p.expectOrdinary(p.pos, 10)
+				break
+			}
+			p.pos += size
+		}
+
+		x13 = 0
+		for {
+			x14, x15 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+				p.pos++
+			} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+				goto L16_ordinary
+			}
+
+			x17 = p.pos
+			p.silent++
+
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 10) {
+				p.expectOrdinary(p.pos, 12)
+				goto L18_ordinary
+			}
+			p.pos += size
+			p.silent--
+			p.pos = x17
+			goto L19_ordinary
+		L18_ordinary:
+			p.silent--
+			p.pos = x17
+			goto L16_ordinary
+		L19_ordinary:
+			p.stepWork()
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+					p.expectOrdinary(p.pos, 10)
+					break
+				}
+				p.pos += size
+			}
+			x13++
+			if p.pos == x14 {
+				break
+			}
+			continue
+		L16_ordinary:
+			p.pos = x14
+			p.recovered = p.recovered[:x15]
+			break
+		}
+		goto L3_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	}
+
 	p.stepWork()
 	var (
 		v    *Node
@@ -7309,6 +8556,98 @@ L3:
 
 // eol, called as by invokePlain (body inlined)
 func (p *parser) q3() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			x11   int
+			x12   int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L8_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L9_ordinary
+		}
+		goto L3_ordinary
+	L9_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L8_ordinary:
+		p.stepWork()
+
+		x11, x12 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L13_ordinary
+		}
+		goto L14_ordinary
+	L13_ordinary:
+		p.pos = x11
+		p.recovered = p.recovered[:x12]
+	L14_ordinary:
+		p.stepWork()
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7402,6 +8741,16 @@ fail:
 
 // main, called as by call
 func (p *tparser) u0() (any, bool) {
+	if p.control == nil {
+		start, rec := p.pos, len(p.recovered)
+		v, ok := p.i0()
+		if !ok {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		return v, ok
+	}
+
 	start, rec := p.pos, len(p.recovered)
 	v, ok := p.i0()
 	if !ok {
@@ -7413,6 +8762,92 @@ func (p *tparser) u0() (any, bool) {
 
 // main, invoked as by invoke (body inlined)
 func (p *tparser) i0() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			c     *tctx
+			x1    int
+			x2    []any
+			x3    int
+			x4    int
+			ok    bool
+			k7    any
+			x8    int
+			x9    int
+			x10   int
+			x11   int
+			x12   int
+			v14   any
+			v15   any
+			v16   any
+		)
+		start = p.pos
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_, _ = x10, v16
+
+		x1 = p.pos
+		x2 = p.newVals(1)[:0]
+
+		x3, x4 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit1, "\ufeff", 5, false); !ok {
+			goto L5_ordinary
+		}
+		goto L6_ordinary
+	L5_ordinary:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
+	L6_ordinary:
+		p.stepWork()
+
+		x8, x9 = p.pos, len(p.kidStack)
+		x10 = 0
+		for {
+			x11, x12 = p.pos, len(p.recovered)
+
+			if v14, ok = p.u1(); !ok {
+				goto L13_ordinary
+			}
+			x10++
+			p.pushKid(v14)
+			if p.pos == x11 {
+				break
+			}
+			continue
+		L13_ordinary:
+			p.pos = x11
+			p.recovered = p.recovered[:x12]
+			break
+		}
+		v15 = p.newNodeOrdinary("List", x8, p.pos, p.kids(x9))
+		k7 = v15
+		x2 = append(x2, v15)
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto fail_ordinary
+		}
+		v16 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		p.where = "main"
+		v = func() any {
+
+			return func() any { f_17 := func() any { return k7 }(); return tmk_File(c, true, f_17) }()
+		}()
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7502,6 +8937,16 @@ fail:
 
 // record, called as by call
 func (p *tparser) u1() (any, bool) {
+	if p.control == nil {
+		start, rec := p.pos, len(p.recovered)
+		v, ok := p.i1()
+		if !ok {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		return v, ok
+	}
+
 	start, rec := p.pos, len(p.recovered)
 	v, ok := p.i1()
 	if !ok {
@@ -7513,6 +8958,112 @@ func (p *tparser) u1() (any, bool) {
 
 // record, invoked as by invoke (body inlined)
 func (p *tparser) i1() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			c     *tctx
+			x1    int
+			x2    int
+			k4    any
+			ok    bool
+			v5    any
+			k6    any
+			x7    int
+			x8    int
+			x9    int
+			x10   int
+			x11   int
+			k12   any
+			v14   any
+			v15   any
+		)
+		start = p.pos
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_ = x9
+
+		x1, x2 = p.pos, len(p.recovered)
+		p.silent++
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L3_ordinary
+		}
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+
+		if v5, ok = p.s2(); !ok {
+			goto fail_ordinary
+		}
+		k4 = v5
+
+		x7, x8, x9 = p.pos, len(p.kidStack), 0
+		for {
+			x10, x11 = p.pos, len(p.recovered)
+
+			k12 = nil
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
+				p.pos++
+			} else if _, ok = p.parser.matchLiteral(lit4, ",", 6, false); !ok {
+				goto L13_ordinary
+			}
+
+			if v14, ok = p.s2(); !ok {
+				goto L13_ordinary
+			}
+			k12 = v14
+			x9++
+			p.pushKid(k12)
+			if p.pos == x10 {
+				break
+			}
+			continue
+		L13_ordinary:
+			p.pos = x10
+			p.recovered = p.recovered[:x11]
+			break
+		}
+		v15 = p.newNodeOrdinary("List", x7, p.pos, p.kids(x8))
+		k6 = v15
+
+		if _, ok = p.s4(); !ok {
+			goto fail_ordinary
+		}
+		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		p.where = "record"
+		v = func() any {
+
+			return func() any {
+				f_18 := func() any {
+
+					return func() any {
+						b := len(c.p.kidStack)
+						c.pushList(func() any { return k4 }())
+						c.pushItems(func() any { return k6 }())
+						return c.endList(b)
+					}()
+				}()
+				return tmk_Record(c, true, f_18)
+			}()
+		}()
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7625,6 +9176,188 @@ fail:
 
 // field, called as by invokePlain (body inlined)
 func (p *tparser) s2() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			ch    rune
+			size  int
+			x8    int
+			x9    int
+			x10   int
+			x13   int
+			x14   int
+			x15   int
+			x17   int
+		)
+		start = p.pos
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+		_, _ = x8, x13
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 34)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 7)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 34) {
+				p.expectOrdinary(p.pos, 8)
+				break
+			}
+			p.pos += size
+		}
+
+		x8 = 0
+		for {
+			x9, x10 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
+				p.pos += 2
+			} else if _, ok = p.parser.matchLiteral(lit7, "\"\"", 9, false); !ok {
+				goto L11_ordinary
+			}
+
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 34) {
+					p.expectOrdinary(p.pos, 8)
+					break
+				}
+				p.pos += size
+			}
+			x8++
+			if p.pos == x9 {
+				break
+			}
+			continue
+		L11_ordinary:
+			p.pos = x9
+			p.recovered = p.recovered[:x10]
+			break
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit6, "\"", 7, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		p.stepWork()
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+				p.expectOrdinary(p.pos, 10)
+				break
+			}
+			p.pos += size
+		}
+
+		x13 = 0
+		for {
+			x14, x15 = p.pos, len(p.recovered)
+
+			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+				p.pos++
+			} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
+				goto L16_ordinary
+			}
+
+			x17 = p.pos
+			p.silent++
+
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 10) {
+				p.expectOrdinary(p.pos, 12)
+				goto L18_ordinary
+			}
+			p.pos += size
+			p.silent--
+			p.pos = x17
+			goto L19_ordinary
+		L18_ordinary:
+			p.silent--
+			p.pos = x17
+			goto L16_ordinary
+		L19_ordinary:
+			p.stepWork()
+			for {
+				if p.pos < len(p.in) {
+
+					ch, size, ok = p.in[p.pos], 1, true
+				} else {
+					ch, size, ok = p.peek()
+				}
+				if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+					p.expectOrdinary(p.pos, 10)
+					break
+				}
+				p.pos += size
+			}
+			x13++
+			if p.pos == x14 {
+				break
+			}
+			continue
+		L16_ordinary:
+			p.pos = x14
+			p.recovered = p.recovered[:x15]
+			break
+		}
+		goto L3_ordinary
+	L3_ordinary:
+		v = trules[2].term(p, start, p.pos, p.text(start, p.pos))
+		p.depth--
+		return v, true
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7811,6 +9544,127 @@ L3:
 
 // eol, called as by invokePlain (body inlined)
 func (p *tparser) s3() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			rec   int
+			x1    int
+			x2    int
+			v3    any
+			x5    rune
+			x6    bool
+			x9    int
+			ok    bool
+			v10   any
+			x13   int
+			v14   any
+			x16   int
+			x17   []any
+			x18   int
+			x19   int
+			v20   any
+			x23   int
+			v24   any
+			v25   any
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x5, _, x6 = p.in[p.pos], 1, true
+		} else {
+			x5, _, x6 = p.peek()
+		}
+		if !(x6 && (x5 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L7_ordinary
+		}
+
+		x9 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L8_ordinary
+		}
+		v10 = p.newMatchOrdinary(x9, p.pos, "\r\n", true)
+		v3 = v10
+		goto L4_ordinary
+	L8_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L7_ordinary:
+		if !(x6 && (x5 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L11_ordinary
+		}
+
+		x13 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L12_ordinary
+		}
+		v14 = p.newMatchOrdinary(x13, p.pos, "\n", true)
+		v3 = v14
+		goto L4_ordinary
+	L12_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L11_ordinary:
+		p.stepWork()
+		x16 = p.pos
+		x17 = p.newVals(1)[:0]
+
+		x18, x19 = p.pos, len(p.recovered)
+
+		x23 = p.pos
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L21_ordinary
+		}
+		v24 = p.newMatchOrdinary(x23, p.pos, "\r", true)
+		v20 = v24
+		goto L22_ordinary
+	L21_ordinary:
+		p.pos = x18
+		p.recovered = p.recovered[:x19]
+		v20 = nil
+	L22_ordinary:
+		x17 = append(x17, v20)
+
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L15_ordinary
+		}
+		v25 = p.newNodeOrdinary("Seq", x16, p.pos, x17)
+		v3 = v25
+		goto L4_ordinary
+	L15_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L4_ordinary:
+		v = v3
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -7933,6 +9787,98 @@ fail:
 
 // eol, called as by invokePlain (body inlined)
 func (p *tparser) s4() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			rec   int
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			x11   int
+			x12   int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 13)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit10, "\r\n", 13, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+			p.expectOrdinary(p.pos, 14)
+			goto L8_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit11, "\n", 14, false); !ok {
+			goto L9_ordinary
+		}
+		goto L3_ordinary
+	L9_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L8_ordinary:
+		p.stepWork()
+
+		x11, x12 = p.pos, len(p.recovered)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
+			goto L13_ordinary
+		}
+		goto L14_ordinary
+	L13_ordinary:
+		p.pos = x11
+		p.recovered = p.recovered[:x12]
+	L14_ordinary:
+		p.stepWork()
+		if !p.atEnd() {
+			p.expectOrdinary(p.pos, idEndInput)
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
 	p.stepWork()
 	var (
 		start int
@@ -8022,4 +9968,67 @@ fail:
 	p.pos = start
 	p.recovered = p.recovered[:rec]
 	return nil, false
+}
+
+func (p *parser) newNodeOrdinary(v Node) *Node {
+
+	if len(p.nodeSlab) == 0 {
+		p.nodeSlab = make([]Node, nodeChunk)
+	}
+	n := &p.nodeSlab[0]
+	p.nodeSlab = p.nodeSlab[1:]
+	*n = v
+	return n
+}
+
+func (p *parser) setCaptureOrdinary(slot int, v *Node) {
+
+	p.trail = append(p.trail, undo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
+	p.frame.vals[slot] = v
+}
+
+func (p *parser) expectOrdinary(pos int, id expID) {
+	if p.silent > 0 || pos < p.farthest {
+		return
+	}
+	if pos > p.farthest {
+		p.farthest = pos
+		p.exp = p.exp[:p.expBase]
+		p.expBits = 0
+	}
+	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
+	if p.expBits&bit != 0 {
+		for _, e := range p.exp[p.expBase:] {
+
+			if e == id {
+				return
+			}
+		}
+	}
+	p.expBits |= bit
+	p.exp = append(p.exp, id)
+}
+
+func (p *tparser) setCaptureOrdinary(slot int, v any) {
+
+	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
+	p.frame.vals[slot] = v
+}
+
+func (p *tparser) newNodeOrdinary(typ string, start, end int, kids []any) *tnode {
+
+	n := p.nodes.one()
+	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
+	return n
+}
+
+func (p *tparser) newMatchOrdinary(start, end int, text string, fresh bool) *tmatch {
+
+	if len(p.matches) == 0 {
+		p.matches = make([]tmatch, nodeChunk)
+	}
+	m := &p.matches[0]
+	p.matches = p.matches[1:]
+	*m = tmatch{Match{Span{start, end}, text}, fresh}
+	return m
 }

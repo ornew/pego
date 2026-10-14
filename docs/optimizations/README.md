@@ -87,6 +87,7 @@ inventory of current mechanisms or reference controls.
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 | [094](094-generated-typed-output-liveness.md#094-generation-only-typed-output-liveness-cleanup) | Generation-only typed-output liveness cleanup | – | – | – | – | Partial | Private and default-off for generated Go typed results; measured small-input costs and no conversion-path retained-memory benefit leave adoption open; see [design 034](../design/034-typed-output-liveness.md) |
 | [095](095-attribute-copy-on-change.md#095-copy-on-change-attribute-normalization) | Copy-on-change attribute normalization | – | – | – | – | – | Applied in shared compilation/generation preprocessing only; no matching-path change; workload-specific allocation savings are measured |
+| [096](096-specialize-generated-go-method-helpers.md#096-specialize-generated-go-work-control-methods) | Generated Go ordinary-method and helper specialization | – | – | – | ✓ | ✓ | Nil-control calls only; generation-only ablation; work-control adoption pending |
 
 Not applied, and why:
 
@@ -154,7 +155,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–94
+## Records 51–96
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -199,6 +200,8 @@ Not applied, and why:
 - [092. Reuse generated Node capture scratch](092-reuse-generated-node-capture-scratch.md)
 - [093. Chunked input storage for Document edits](093-chunked-document-input.md)
 - [094. Generation-only typed-output liveness cleanup](094-generated-typed-output-liveness.md)
+- [095. Copy-on-change attribute normalization](095-attribute-copy-on-change.md)
+- [096. Specialize generated Go work-control methods](096-specialize-generated-go-method-helpers.md)
 
 ## Experiments That Did Not Pay Off
 

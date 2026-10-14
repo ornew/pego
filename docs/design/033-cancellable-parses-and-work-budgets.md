@@ -510,9 +510,26 @@ microseconds. In the gated-reader probe, the caller remained blocked for about
 and at most 64.1 microseconds. These are observations for the stated probes,
 not universal latency bounds. Synchronous parsing cannot preempt a caller-held read.
 
-The generated-Go inactive-path fix and repeat comparison, prescribed final
-local checks, and independent review remain before adoption. No general speedup
-or zero-cost claim follows from these measurements.
+### Generated Go Ordinary-Path Specialization
+
+[Optimization 096](../optimizations/096-specialize-generated-go-method-helpers.md)
+records the selected nil-control method branches and ordinary allocation,
+capture and expectation helpers. Three alternating 500 ms samples across all
+131 profiles against `77f12f2` reduced the generated Node/recognition range to
+1.039–1.332× and typed parsing to 1.082–1.234×. A same-source generation-only
+ablation measured 0.760–0.969× ordinary Node/recognition time and 0.815–0.936×
+typed time; eight active profiles had medians of 0.985–1.005×. Active harnesses
+do not pre-parse, and noisy individual sample ranges do not establish warmed
+or universal parity. A fixed-100-iteration Minilang typed-parse allocation
+control found no persistent allocation increase.
+
+The three measured JSON/XML/Minilang consumer executables grew 7.32–20.04%
+against pre-feature main and 5.08–14.49% against the same-source ablation.
+Generated source grew 37.61–58.71% against the ablation. This trades code size
+for ordinary throughput; total feature cost remains above pre-feature main.
+Broader runtime-helper and separate ordinary-method alternatives were measured
+and rejected. Prescribed local checks and independent source/evidence review
+passed; acceptance of the residual costs remains before adoption. No zero-cost or general speedup claim follows.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;
