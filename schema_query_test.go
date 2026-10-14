@@ -149,3 +149,53 @@ func TestPublicSchemaQueryMatchesUncapturedCSTChild(t *testing.T) {
 		t.Fatalf("uncaptured children: %+v, %v", matches, err)
 	}
 }
+
+func TestPublicQueryOptionalScalarFieldValidation(t *testing.T) {
+	p, err := pego.CompileSource(`type Item struct { Value *string }
+rule main = "a" => Item{Value: nil}`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := p.OutputSchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pattern := func(category string) pego.QueryPattern {
+		return pego.QueryPattern{Type: "Item", Fields: []pego.QueryFieldPattern{{
+			Name: "Value", Pattern: pego.QueryPattern{Category: category, Capture: "value"},
+		}}}
+	}
+	if _, err := pego.CompileStructuralQuery(pattern("bool"), schema); err == nil {
+		t.Fatal("accepted bool for optional string field")
+	}
+	stringQuery, err := pego.CompileStructuralQuery(pattern("string"), schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nilQuery, err := pego.CompileStructuralQuery(pattern("nil"), schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := p.Parse("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(root.Fields) != 1 || root.Fields[0].Name != "Value" {
+		t.Fatalf("unexpected result fields: %+v", root.Fields)
+	}
+	check := func(q *pego.StructuralQuery, want int) {
+		t.Helper()
+		matches, err := q.Matches(root)
+		if err != nil || len(matches) != want {
+			t.Fatalf("matches: %+v, %v; want %d", matches, err, want)
+		}
+	}
+	check(nilQuery, 1)
+	check(stringQuery, 0)
+	root.Fields[0].Value = "ok"
+	check(stringQuery, 1)
+	check(nilQuery, 0)
+	root.Fields[0].Value = false
+	check(stringQuery, 0)
+	check(nilQuery, 0)
+}

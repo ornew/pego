@@ -46,7 +46,7 @@ An illustrative pattern is:
 
 Patterns constrain a node by type or rule, require child/field structure, and bind captures. Initial syntax should avoid arbitrary host callbacks, unbounded regex, or other operations without a charging rule. The exact grammar and text-predicate operators remain proposed. Text predicates inspect only Node text or a caller-supplied source snapshot; they cannot see discarded punctuation/comments. A TypeScript counterpart could expose `compileQuery(source, schema)` and `query.matches(root, options)`, with position unit, safe-integer work limits, and an optional structural cancellation signal following design 033.
 
-Compilation may receive an `OutputSchema`. Known impossible type/field patterns and incompatible capture categories are compile errors. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
+Compilation may receive an `OutputSchema`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and that field is an optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. This check does not yet follow aliases or unions or validate nested schema compatibility. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
 
 A capture stores its value category, value, immediate parent node, and incoming edge path. Scalar fields are scalar captures, not synthetic Nodes. Optional/nil-capable schema fields do not imply a separate runtime-presence bit. Lists are traversed in index order; empty lists have no elements. A root has no parent. A shared Node is evaluated once per incoming edge so captures retain parent/path context. Cycles on the active path return an error; valid shared DAG paths are allowed.
 
@@ -85,13 +85,15 @@ pattern rather than adopting the illustrative text syntax. Patterns
 may constrain type, producing rule, runtime category, named fields, and an
 ordered child prefix. Required fields must exist; extra fields and children are
 allowed. A capture binds the value at that pattern. Node patterns always check
-the mutable runtime graph even when a schema was supplied. Known type/rule names,
-impossible fields on declared structs, and directly known incompatible scalar
-field categories are rejected during compilation. Dynamic CST/`any` fields remain
-runtime checked. Alias/union and nested compatibility checking is conservative;
-this is not a complete schema type checker. Pattern copies are independent of
-caller mutation. Compilation rejects nesting at 256 levels, including cyclic
-programmatic pattern containers.
+the mutable runtime graph even when a schema was supplied. Known type/rule names
+and impossible fields on declared structs are rejected during compilation. For
+a directly declared optional scalar field (for example, `Value *string`), the
+scalar category and `nil` are accepted, while other known categories are rejected.
+The runtime value is still checked because a `Node` may have changed since it was
+parsed. Dynamic CST/`any` fields remain runtime checked. Alias/union and nested
+compatibility checking is conservative; this is not a complete schema type
+checker. Pattern copies are independent of caller mutation. Compilation rejects
+nesting at 256 levels, including cyclic programmatic pattern containers.
 
 `StructuralQuery.Matches(root, QueryOptions)` returns all results or an error.
 Evaluation is iterative and visits each node occurrence before its outgoing

@@ -90,13 +90,26 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 							return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
 						}
 						for _, known := range t.Shape.Fields {
-							if known.Name == f.Name && known.Shape.Kind == "scalar" {
+							if known.Name == f.Name {
+								shape := known.Shape
+								nilAllowed := false
+								if shape.Kind == "optional" && shape.Element != nil && shape.Element.Kind == "scalar" {
+									shape = *shape.Element
+									nilAllowed = true
+								}
+								if shape.Kind != "scalar" {
+									continue
+								}
 								category := f.Pattern.Category
 								if f.Pattern.Type != "" || f.Pattern.Rule != "" || len(f.Pattern.Fields) > 0 || len(f.Pattern.Children) > 0 {
 									category = "node"
 								}
-								if category != "" && category != known.Shape.Scalar {
-									return p, fmt.Errorf("field %s.%s is %s, incompatible with %s pattern", p.Type, f.Name, known.Shape.Scalar, category)
+								if category != "" && category != shape.Scalar && !(nilAllowed && category == "nil") {
+									allowed := shape.Scalar
+									if nilAllowed {
+										allowed += " or nil"
+									}
+									return p, fmt.Errorf("field %s.%s is %s, incompatible with %s pattern", p.Type, f.Name, allowed, category)
 								}
 							}
 						}

@@ -62,10 +62,14 @@ is a `Node` with type `List`, so match it with `Type: "List"` and, if useful,
 `Category: "node"`. `Fields` require named values; `Children` are an ordered
 prefix, so extra children and fields are allowed.
 `Capture` binds the value at that pattern. Patterns are copied at compilation.
-Supplying a schema rejects known impossible type, rule, field, or scalar-category
-constraints. A nil schema defers these checks to evaluation. Runtime values are
-always checked because callers can mutate a `Node` after parsing. This API uses
-programmatic patterns; it has no text query language or text predicates yet.
+Supplying a schema rejects known impossible type, rule, field, and some scalar
+category constraints. For a directly declared optional scalar field such as
+`Value *string`, compilation permits `string` and `nil` categories and rejects
+other known categories. This check does not yet follow aliases or unions, or
+check nested schema compatibility. A nil schema defers these checks to
+evaluation. Runtime values are always checked because callers can mutate a
+`Node` after parsing. This API uses programmatic patterns; it has no text query
+language or text predicates yet.
 
 Matches visit each node occurrence before outgoing edges, then children by
 index, fields by name, and nested `[]any` elements by index. A shared node can

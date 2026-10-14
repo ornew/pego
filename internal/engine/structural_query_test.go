@@ -119,3 +119,40 @@ func TestStructuralQueryValidationAndRuntimeMismatch(t *testing.T) {
 		t.Fatalf("pattern ownership: %v %v", got, err)
 	}
 }
+
+func TestStructuralQueryOptionalScalarFieldCategory(t *testing.T) {
+	scalar := SchemaShape{Kind: "scalar", Scalar: "string"}
+	schema := &OutputSchema{
+		Format: "pego-output-schema", Version: 1,
+		Types: []SchemaType{{
+			ID: "declared/Item", Name: "Item", Origin: "declared",
+			Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{{
+				Name: "Value", Shape: SchemaShape{Kind: "optional", Element: &scalar},
+			}}},
+		}},
+	}
+	pattern := func(category string) QueryPattern {
+		return QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{
+			Name: "Value", Pattern: QueryPattern{Category: category, Capture: "value"},
+		}}}
+	}
+	for _, category := range []string{"bool", "node", "list"} {
+		if _, err := CompileStructuralQuery(pattern(category), schema); err == nil {
+			t.Errorf("accepted impossible optional-scalar category %q", category)
+		}
+	}
+	for _, category := range []string{"string", "nil"} {
+		q, err := CompileStructuralQuery(pattern(category), schema)
+		if err != nil {
+			t.Fatalf("rejected possible category %q: %v", category, err)
+		}
+		value := any("ok")
+		if category == "nil" {
+			value = nil
+		}
+		matches, err := q.Matches(&Node{kind: kindOf("Item", ""), Fields: Fields{{"Value", value}}}, QueryOptions{})
+		if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Category != category {
+			t.Fatalf("category %q at runtime: %+v, %v", category, matches, err)
+		}
+	}
+}
