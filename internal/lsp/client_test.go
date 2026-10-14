@@ -68,7 +68,8 @@ func newInitialized(t *testing.T) *testClient {
 // fullCapabilities are the client capabilities that change the server's responses, all set.
 var fullCapabilities = map[string]any{
 	"textDocument": map[string]any{
-		"completion":     map[string]any{"completionItem": map[string]any{"snippetSupport": true}},
+		"hover":          map[string]any{"contentFormat": []string{"markdown"}},
+		"completion":     map[string]any{"completionItem": map[string]any{"snippetSupport": true, "documentationFormat": []string{"markdown"}}},
 		"documentSymbol": map[string]any{"hierarchicalDocumentSymbolSupport": true},
 		"rename":         map[string]any{"prepareSupport": true},
 	},

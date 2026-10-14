@@ -268,7 +268,7 @@ func (s *Server) hover(params json.RawMessage) (any, *rpcError) {
 		return nil, nil
 	}
 	r := a.idx.rangeOf(start, end)
-	return hover{Contents: markupContent{Kind: "markdown", Value: text}, Range: &r}, nil
+	return hover{Contents: documentation(text, s.client.TextDocument.Hover.ContentFormat), Range: &r}, nil
 }
 
 // hoverAt returns the hover text for the byte offset off and the span it is about.

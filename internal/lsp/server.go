@@ -32,10 +32,14 @@ type Server struct {
 // clientCapabilities are the capabilities of the client that change the server's responses.
 type clientCapabilities struct {
 	TextDocument struct {
+		Hover struct {
+			ContentFormat []string `json:"contentFormat"`
+		} `json:"hover"`
 		Completion struct {
 			CompletionItem struct {
 				// SnippetSupport allows completion items with placeholders.
-				SnippetSupport bool `json:"snippetSupport"`
+				SnippetSupport      bool     `json:"snippetSupport"`
+				DocumentationFormat []string `json:"documentationFormat"`
 			} `json:"completionItem"`
 		} `json:"completion"`
 		Rename struct {

@@ -147,7 +147,8 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 	case "true", "false", "nil":
 		return semClass{semKeyword, 0}, true
 	case "left", "right", "none":
-		if i > 0 && a.toks[i-1].Text == "infix" {
+		previous := a.previousSignificantToken(i - 1)
+		if a.isIdent(previous, "infix") && a.inOperatorsBody(i) {
 			return semClass{semKeyword, 0}, true
 		}
 		return semClass{}, false
@@ -156,4 +157,21 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 		return semClass{semKeyword, 0}, true
 	}
 	return semClass{}, false
+}
+
+// inOperatorsBody limits incomplete-source associativity coloring to operators rules.
+func (a *analysis) inOperatorsBody(i int) bool {
+	st := i
+	for st >= 0 && !a.isDefKeyword(st) {
+		st--
+	}
+	if !a.isIdent(st, "rule") {
+		return false
+	}
+	eq := a.ruleBodyStart(st, i)
+	if eq < 0 {
+		return false
+	}
+	value, operators := a.scanBody(eq, i)
+	return operators && !value
 }

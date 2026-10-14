@@ -20,6 +20,12 @@ func (s *Server) completion(params json.RawMessage) (any, *rpcError) {
 		return nil, err
 	}
 	items := d.analysis().complete(off)
+	for i := range items {
+		if items[i].Documentation != nil {
+			doc := documentation(items[i].Documentation.Value, s.client.TextDocument.Completion.CompletionItem.DocumentationFormat)
+			items[i].Documentation = &doc
+		}
+	}
 	if !s.client.TextDocument.Completion.CompletionItem.SnippetSupport {
 		// Without snippets, insert the label.
 		for i := range items {
@@ -133,6 +139,9 @@ func (a *analysis) complete(off int) []CompletionItem {
 			prev = i - 1
 		}
 	}
+	if items, found := a.contextualItems(prev); found {
+		return items
+	}
 	// The punctuation directly before the word (or the cursor).
 	adjacent := ""
 	if prev >= 0 && a.toks[prev].Kind == syntax.TokenPunct &&
@@ -166,6 +175,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 		return a.valueItems()
 	}
 	// st is the keyword of the definition the cursor is in.
+	prev = a.previousSignificantToken(prev)
 	st := prev
 	for st >= 0 && !a.isDefKeyword(st) {
 		st--
@@ -243,7 +253,8 @@ func (a *analysis) attributeArguments(prev int) (value, found bool) {
 			name := a.previousSignificantToken(j - 1)
 			if name >= 0 {
 				at := a.previousSignificantToken(name - 1)
-				if at >= 0 && (a.isPunct(at, "@") || a.isPunct(at, "#")) && a.toks[name].Kind == syntax.TokenIdent {
+				if at >= 0 && (a.isPunct(at, "@") || a.isPunct(at, "#")) && a.toks[name].Kind == syntax.TokenIdent &&
+					a.toks[at].end == a.toks[name].start && a.toks[name].end == a.toks[j].start {
 					c.attribute = a.toks[name].Text
 					c.pragma = a.isPunct(at, "#")
 				}

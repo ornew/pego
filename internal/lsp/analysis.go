@@ -465,7 +465,11 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 		a.walkExpr(e.Expr)
 		for _, at := range e.Attrs {
 			if i, ok := a.tokenIndex(at.Diagnostic()); ok {
-				a.markToken(i+1, semDecorator, 0)
+				// Attribute names and markers must be adjacent; comments are
+				// not permitted between them by the lexical contract.
+				if i+1 < len(a.toks) && a.toks[i].end == a.toks[i+1].start {
+					a.markToken(i+1, semDecorator, 0)
+				}
 			}
 			for _, arg := range at.ExpressionArgs() {
 				a.walkExpr(arg)
