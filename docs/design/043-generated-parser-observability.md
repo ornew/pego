@@ -121,6 +121,32 @@ Generate fixtures for Go node, typed direct, typed conversion, recognition, Type
 
 Verify every emitted enter has one exit on success; verify abort cases may end with open calls and never emit fabricated exits. Test profile counts against event-derived counts where available, deterministic serialization, unknown filter names, depth boundaries and unavailable metrics. Test callback panic/throw identity, panic after nested calls, parse-pool reuse after panic, callback reentrancy, concurrent Go parses sharing one parser, TypeScript reentrant calls, and that no observer leaks to a later no-trace parse. Test generation with and without the option, stable output, Go compilation/standalone module use and strict TypeScript checking. These are proposed checks; none has been run for this design.
 
+## Observer-Core Prototype
+
+`internal/engine/genrt/observe.go` contains an isolated Go observer-core prototype.
+It records copied scalar enter/exit/skipped events, explicit body evaluations and
+memo facts, examined-range availability, descendant filtering and depth limits.
+Each invocation owns its stack and repeat tracking. Profiles distinguish entered
+calls, completed calls, body evaluations and skips by reason; independent snapshots
+sort rows by rule name. Callback panics propagate unchanged from this helper, and
+invocation cleanup explicitly releases callback and scratch references.
+
+This helper is not embedded in generated source and has no public parse option.
+It does not yet instrument generated Go node, typed or recognition paths, and has
+no TypeScript counterpart. Its focused tests describe the intended observer
+accounting; they do not establish generated-parser event completeness, panic
+recovery at the parse boundary or ordinary-path overhead. Generation-time opt-in
+and complete call-site integration remain open before this API can be offered.
+
+The engine's existing first-character and Document omissions require separate
+integration. The bytecode guard records a terminal class, depth and jump target,
+without a rule identity; it cannot truthfully emit a named skipped-call event
+without additional metadata. Document repetition records contain reusable element
+ranges and values, rather than histories of nested rule calls. A future resume
+observation should report those reused ranges or sites separately from entered
+calls and evaluations, rather than synthesizing old rule-call events. Neither
+mechanism establishes backend event equivalence.
+
 ## Performance and Results
 
 No measurements are claimed. Use identical grammar, input, generated options and toolchain on the baseline and candidate. Measure generation time and source size separately from parse time. For Go use paired `testing.B` cases on both units for small/large grammars and direct, typed-direct, typed-conversion and recognition paths; report time, allocations and bytes. For TypeScript warm the same runtime and report Node/browser engine, version, iterations, time and memory where available. Compare: ordinary parser generated without observability; parser generated with observability but no callback; callback with no-op filter; filtered tracing; full tracing; profile. Include a no-op action and a reentrant/concurrent control where applicable. Keep raw results outside Git. Do not claim zero or negligible default overhead before measuring it.
