@@ -23,9 +23,10 @@ type Snapshot struct {
 }
 
 type snapshotGraph struct {
-	nodes []snapshotRecord
-	refs  []*snapshotRecord // candidate mode; immutable records may come from older graphs
-	root  int
+	nodes       []snapshotRecord
+	refs        []*snapshotRecord                        // candidate mode; immutable records may come from older graphs
+	childChunks map[*snapshotRecord]*snapshotChildChunks // only records with shared child runs
+	root        int
 }
 
 func (g *snapshotGraph) count() int {
@@ -43,20 +44,62 @@ func (g *snapshotGraph) at(i int) *snapshotRecord {
 }
 
 type snapshotRecord struct {
-	kind            *nodeKind
-	start, end      int32
-	text            string
-	children        []int
-	fields          Fields
-	fresh, terminal bool
-	gen             uint32
+	kind                          *nodeKind
+	start, end                    int32
+	text                          string
+	children                      []int
+	fields                        Fields
+	fresh, terminal, childChunked bool
+	gen                           uint32
 }
+
+const snapshotChildChunkSize = 256
+
+type snapshotChildChunks struct {
+	parts  [][]int
+	length int
+}
+
+func (g *snapshotGraph) childCount(r *snapshotRecord) int {
+	if r.childChunked {
+		return g.childChunks[r].length
+	}
+	return len(r.children)
+}
+
+func (g *snapshotGraph) hasChildren(r *snapshotRecord) bool {
+	return r.children != nil || r.childChunked
+}
+
+func (g *snapshotGraph) childID(r *snapshotRecord, i int) int {
+	if r.childChunked {
+		return g.childChunks[r].parts[i/snapshotChildChunkSize][i%snapshotChildChunkSize]
+	}
+	return r.children[i]
+}
+
+func (g *snapshotGraph) childChunk(r *snapshotRecord, i, length int) []int {
+	if r.childChunked {
+		chunks := g.childChunks[r]
+		if i >= len(chunks.parts) || len(chunks.parts[i]) != length {
+			return nil
+		}
+		return chunks.parts[i]
+	}
+	start := i * snapshotChildChunkSize
+	if start+length > len(r.children) {
+		return nil
+	}
+	return r.children[start : start+length]
+}
+
 type snapshotRef int
 
 // SnapshotNode is a comparable read-only handle. Its zero value denotes nil.
 type SnapshotNode struct {
-	graph *snapshotGraph
-	id    int
+	graph  *snapshotGraph
+	ref    *snapshotRecord
+	chunks *snapshotChildChunks
 }
 
 // SnapshotField holds an immutable scalar or SnapshotNode, never a mutable Node.
@@ -100,17 +143,25 @@ func snapshotHandle(g *snapshotGraph, id int) SnapshotNode {
 	if id == 0 {
 		return SnapshotNode{}
 	}
-	return SnapshotNode{g, id}
-}
-func (n SnapshotNode) record() snapshotRecord {
-	if !n.Valid() {
-		return snapshotRecord{}
+	ref := g.at(id - 1)
+	n := SnapshotNode{graph: g, ref: ref}
+	if ref.childChunked {
+		n.chunks = g.childChunks[ref]
 	}
-	return *n.graph.at(n.id - 1)
+	return n
+}
+
+var zeroSnapshotRecord snapshotRecord
+
+func (n SnapshotNode) record() *snapshotRecord {
+	if !n.Valid() {
+		return &zeroSnapshotRecord
+	}
+	return n.ref
 }
 
 // Valid reports whether the handle denotes a non-nil node.
-func (n SnapshotNode) Valid() bool { return n.graph != nil && n.id != 0 }
+func (n SnapshotNode) Valid() bool { return n.graph != nil && n.ref != nil }
 
 // Type returns the node type, or an empty string for nil.
 func (n SnapshotNode) Type() string { return n.record().kind.typeName() }
@@ -131,10 +182,21 @@ func (n SnapshotNode) Text() string { return n.record().text }
 func (n SnapshotNode) IsTerminal() bool { return n.record().terminal }
 
 // ChildCount includes nil child slots.
-func (n SnapshotNode) ChildCount() int { return len(n.record().children) }
+func (n SnapshotNode) ChildCount() int {
+	if !n.Valid() {
+		return 0
+	}
+	if n.chunks != nil {
+		return n.chunks.length
+	}
+	return len(n.ref.children)
+}
 
 // Child returns an indexed child; an invalid index panics like slice indexing.
 func (n SnapshotNode) Child(i int) SnapshotNode {
+	if n.chunks != nil {
+		return snapshotHandle(n.graph, n.chunks.parts[i/snapshotChildChunkSize][i%snapshotChildChunkSize])
+	}
 	return snapshotHandle(n.graph, n.record().children[i])
 }
 func (n SnapshotNode) fieldValue(v any) any {
@@ -183,7 +245,15 @@ func (s *Snapshot) Materialize() *Node {
 	for i := range nodes {
 		r := s.graph.at(i)
 		n := nodes[i]
-		if r.children != nil {
+		if r.childChunked {
+			chunks := s.graph.childChunks[r]
+			n.Children = make([]*Node, chunks.length)
+			for part, ids := range chunks.parts {
+				for j, id := range ids {
+					n.Children[part*snapshotChildChunkSize+j] = node(id)
+				}
+			}
+		} else if r.children != nil {
 			n.Children = make([]*Node, len(r.children))
 			for j, id := range r.children {
 				n.Children[j] = node(id)
@@ -451,12 +521,24 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	}
 	matches := make([]uint64, (len(next.nodes)+63)/64)
 	ownedCount := 0
-	for i := range next.nodes {
-		p.stepWork()
-		if i < previous.count() && sameSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
-			matches[i/64] |= 1 << uint(i%64)
-		} else {
-			ownedCount++
+	// Keep the flat-record path free of sidecar lookups and comparator wrappers.
+	if previous.childChunks == nil {
+		for i := range next.nodes {
+			p.stepWork()
+			if i < previous.count() && sameFlatSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
+				matches[i/64] |= 1 << uint(i%64)
+			} else {
+				ownedCount++
+			}
+		}
+	} else {
+		for i := range next.nodes {
+			p.stepWork()
+			if i < previous.count() && sameSnapshotRecord(p, previous, previous.at(i), &next, &next.nodes[i]) {
+				matches[i/64] |= 1 << uint(i%64)
+			} else {
+				ownedCount++
+			}
 		}
 	}
 	// The per-version pointer directory costs one word per node. Keep the
@@ -470,17 +552,105 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	for i := range next.nodes {
 		p.stepWork()
 		if matches[i/64]&(1<<uint(i%64)) != 0 {
-			shared.refs[i] = previous.at(i)
+			ref := previous.at(i)
+			shared.refs[i] = ref
+			if ref.childChunked {
+				chunks := previous.childChunks[ref]
+				if shared.childChunks == nil {
+					shared.childChunks = make(map[*snapshotRecord]*snapshotChildChunks)
+				}
+				shared.childChunks[ref] = chunks
+			}
 		} else {
 			shared.nodes[ownedAt] = next.nodes[i]
-			shared.refs[i] = &shared.nodes[ownedAt]
+			ref := &shared.nodes[ownedAt]
+			shared.refs[i] = ref
+			if snapshotChildChunksEnabled && i < previous.count() {
+				if chunks := shareSnapshotChildren(p, previous, previous.at(i), ref); chunks != nil {
+					if shared.childChunks == nil {
+						shared.childChunks = make(map[*snapshotRecord]*snapshotChildChunks)
+					}
+					shared.childChunks[ref] = chunks
+				}
+			}
 			ownedAt++
 		}
 	}
 	return shared
 }
 
-func sameSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
+// shareSnapshotChildren keeps only immutable child-ID runs. A reused view may
+// point into an older flat child slice, but never into an old graph or parser.
+// Changed runs own exact-size backing arrays, so later snapshots do not retain
+// a whole discarded child slice through one changed run.
+func shareSnapshotChildren(p *parser, previousGraph *snapshotGraph, previous, next *snapshotRecord) *snapshotChildChunks {
+	if len(next.children) < 4*snapshotChildChunkSize || !previousGraph.hasChildren(previous) {
+		return nil
+	}
+	count := (len(next.children) + snapshotChildChunkSize - 1) / snapshotChildChunkSize
+	equal := make([]bool, count)
+	matches := 0
+	for i := range equal {
+		start := i * snapshotChildChunkSize
+		end := min(start+snapshotChildChunkSize, len(next.children))
+		p.control.charge(0, uint64(end-start))
+		old := previousGraph.childChunk(previous, i, end-start)
+		if len(old) != 0 && slices.Equal(old, next.children[start:end]) {
+			equal[i] = true
+			matches++
+		}
+	}
+	if matches*4 < count*3 {
+		return nil
+	}
+	chunks := make([][]int, count)
+	for i := range chunks {
+		p.stepWork()
+		start := i * snapshotChildChunkSize
+		end := min(start+snapshotChildChunkSize, len(next.children))
+		if equal[i] {
+			chunks[i] = previousGraph.childChunk(previous, i, end-start)
+		} else {
+			chunks[i] = make([]int, end-start)
+			copyWork(p, chunks[i], next.children[start:end])
+		}
+	}
+	length := len(next.children)
+	next.children = nil
+	next.childChunked = true
+	return &snapshotChildChunks{parts: chunks, length: length}
+}
+
+func sameSnapshotRecord(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+	if !a.childChunked && !b.childChunked {
+		return sameFlatSnapshotRecord(p, a, b)
+	}
+	if a.kind != b.kind || a.start != b.start || a.end != b.end ||
+		a.fresh != b.fresh || a.terminal != b.terminal ||
+		a.gen != b.gen || ag.hasChildren(a) != bg.hasChildren(b) ||
+		(a.fields == nil) != (b.fields == nil) || ag.childCount(a) != bg.childCount(b) ||
+		len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
+		return false
+	}
+	if p.compareText(a.text, b.text) != 0 {
+		return false
+	}
+	// A large repetition root can have many edges even when no node changed.
+	// Charge and compare bounded spans so a controller can interrupt the scan.
+	if !sameSnapshotChildren(p, ag, a, bg, b) {
+		return false
+	}
+	for i, f := range a.fields {
+		p.stepWork()
+		other := b.fields[i]
+		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func sameFlatSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
 	if a.kind != b.kind || a.start != b.start || a.end != b.end ||
 		a.fresh != b.fresh || a.terminal != b.terminal ||
 		a.gen != b.gen || (a.children == nil) != (b.children == nil) ||
@@ -491,8 +661,6 @@ func sameSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
 	if p.compareText(a.text, b.text) != 0 {
 		return false
 	}
-	// A large repetition root can have many edges even when no node changed.
-	// Charge and compare bounded spans so a controller can interrupt the scan.
 	for offset := 0; offset < len(a.children); offset += 4096 {
 		end := min(offset+4096, len(a.children))
 		p.control.charge(0, uint64(end-offset))
@@ -504,6 +672,28 @@ func sameSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
 		p.stepWork()
 		other := b.fields[i]
 		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func sameSnapshotChildren(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+	count := ag.childCount(a)
+	if !a.childChunked && !b.childChunked {
+		for offset := 0; offset < count; offset += 4096 {
+			end := min(offset+4096, count)
+			p.control.charge(0, uint64(end-offset))
+			if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
+				return false
+			}
+		}
+		return true
+	}
+	for offset := 0; offset < count; offset += snapshotChildChunkSize {
+		end := min(offset+snapshotChildChunkSize, count)
+		p.control.charge(0, uint64(end-offset))
+		if !slices.Equal(ag.childChunk(a, offset/snapshotChildChunkSize, end-offset), bg.childChunk(b, offset/snapshotChildChunkSize, end-offset)) {
 			return false
 		}
 	}

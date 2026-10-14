@@ -12,9 +12,9 @@ Existing `Document.Edit`, `Document.Parse`, mutable `Node` fields, and
 `Node.Clone` retain their ownership contracts.
 
 Snapshots expose an immutable graph. Exact sharing of immutable snapshot records
-across versions is selected for default adoption; relative internal spans and
-chunked child sequences remain unimplemented and unmeasured. Mutable parser
-Nodes and input buffers are never shared with snapshots.
+and eligible child-ID runs across versions is selected for default adoption;
+relative internal spans remain unimplemented. Mutable parser Nodes and input
+buffers are never shared with snapshots.
 Chunked input storage is a separate mechanism under
 [design 019](019-incremental-document-and-tree-tooling.md).
 
@@ -333,7 +333,7 @@ The Document keeps only a weak reference to the previous snapshot graph, and
 snapshot text remains separately owned. This preserves absolute positions and
 within-version graph identity without retaining mutable Nodes or input buffers.
 
-Relative spans and persistent child sequences remain possible future designs.
+Relative spans remain a possible future design.
 Relative spans must cover all actual graph edges: action fields can point
 outside a parent's span, and zero-width/lookahead captures can need different
 placement contexts. Absolute scalar values produced by position-dependent
@@ -356,13 +356,20 @@ capture work. Cheap capture from immutable parser storage may instead need a
 separate exclusively read-only Document surface; that is a later public contract
 decision, not an implicit change to Document.Parse sharing.
 
-Chunked child sequences may share unchanged prefixes/suffixes after repetition
-resumption. Preserve list order, nil slots, capture sharing, and index behavior;
-a copied Fields slice is not a persistent child sequence. Measure balancing,
-index/traversal costs, and materialization of a full public Children slice. Avoid
-retaining discarded memo/provisional nodes merely because a sequence once
-referenced them. Snapshots retain only their immutable graph/text/diagnostics,
-not a live Document, memo table, full edit log, or parser scratch.
+The adopted child-run representation shares unchanged 256-ID runs of a changed
+record with at least 1,024 children when at least three quarters of the runs
+match. The sidecar descriptor is allocated only for such records. Other records
+stay flat, so there is no balancing tree or unbounded traversal history.
+List order, nil slots, capture sharing, and constant-time indexing are
+preserved; materialization still builds a full independent public Children
+slice. A copied Fields slice is not part of this child-run mechanism. Shared
+runs may retain an older flat child array, but not a live Document, memo table,
+full edit log, parser scratch, or discarded provisional graph.
+Opaque handles cache their record and optional run descriptor to avoid repeated
+sidecar lookups; this grows a handle from 16 to 24 bytes on arm64. The snapshot
+graph stores records rather than one handle per node. Materialization expands
+runs directly, and the measured access/materialization tradeoffs are recorded
+in [optimization 099](../optimizations/099-share-document-snapshot-child-runs.md).
 
 ### Compatibility and Implementation Sequence
 
@@ -390,14 +397,16 @@ module formats remain unchanged; snapshot handles introduce no serialized format
    Parse plus Clone while holding text/error/version separately.
 3. Use exact immutable snapshot-record sharing, preserving the copy path for
    small or low-reuse graphs. Keep input representation constant in comparisons.
-4. Treat relative spans, persistent child sequences, and a separate read-only
-   Document API as distinct designs; do not infer their value from exact-record
-   sharing results.
+4. Share eligible immutable child-ID runs within changed high-fanout records.
+   Keep a same-source flat reference and measure retained history, capture,
+   access, and materialization separately.
+5. Treat relative spans and a separate read-only Document API as distinct
+   designs; do not infer their value from exact-record or child-run results.
 
-The versioned edit API is the first independently useful stage. Owned snapshots
-and exact immutable record sharing are selected for adoption; relative spans and
-persistent child sequences remain proposed. Chunked input-storage work may
-proceed independently and later be combined under a separately measured control.
+The versioned edit API is the first independently useful stage. Owned snapshots,
+exact immutable record sharing, and eligible child-run sharing are selected for
+adoption; relative spans remain proposed. Chunked input storage is a separate
+mechanism and must be measured independently when combined with snapshots.
 
 ## Alternatives Considered
 
@@ -547,6 +556,8 @@ workloads and backends remain unmeasured.
 
 The selected mechanism, copy fallback, and focused measurements are summarized
 in [optimization 097](../optimizations/097-exact-document-snapshot-record-sharing.md).
+Additional sharing of child-ID runs inside changed records is measured in
+[optimization 099](../optimizations/099-share-document-snapshot-child-runs.md).
 
 Reproduce capture and materialization with
 `go test ./internal/engine -run '^$' -bench '^BenchmarkDocumentSnapshotCapture$' -benchmem -benchtime=300ms -count=3`.
@@ -586,9 +597,11 @@ code; update this record with actual outcomes and remaining gates.
 The implemented contract combines versioned batches with owned read-only
 snapshots, including ordinary failed parse outcomes. It preserves legacy APIs,
 and batch commit currently discards reuse state. Exact snapshot-record sharing
-reduces retained memory in the measured same-length-edit workloads, with higher
-capture time in the tested Closure/CodePoints cases. Other backends, units,
-graph shapes and edit patterns remain unmeasured.
+and eligible child-run sharing reduce retained memory in measured same-length
+edit workloads. Exact sharing raised capture time in the tested
+Closure/CodePoints cases; child-run sharing had no clear ordinary-path timing
+change in the measured Closure/Bytes cases. Other backends, units, graph shapes
+and edit patterns remain unmeasured.
 
 Further measurements can establish whether a separate read-only Document mode
 is worth its additional API. That tradeoff does not justify silently changing

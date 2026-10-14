@@ -37,7 +37,7 @@ backend, workload, comparison baseline and control, if any.
 | Resume long Document repetitions | Eligible repetitions resume from saved state in the engine and VMs. | [054](054-resuming-long-repetitions-in-a-document.md), [059](059-resuming-long-repetitions-in-the-vms.md) |
 | Keep same-generation repetition records | Unchanged Documents retain eligible repetition work across parses. | [070](070-keep-repetition-records-across-unchanged-document-parses.md) |
 | Reuse the Document VM value stack | VM-backed Document parses retain bounded cleared stack capacity. | [086](086-reuse-document-vm-values.md) |
-| Share exact Document snapshot records | Snapshot results can reuse equal immutable records while keeping public Node ownership separate. | [097](097-exact-document-snapshot-record-sharing.md) |
+| Share Document snapshot storage | Snapshot results reuse equal immutable records and eligible unchanged child-ID runs while keeping public Node ownership separate. | [097](097-exact-document-snapshot-record-sharing.md), [099](099-share-document-snapshot-child-runs.md) |
 | Locate source lines for diagnostics | Whole-input parsers build a line table; stream parsing scans from committed input positions. | [039](039-a-line-table-for-error-positions.md) |
 | Bound stream storage and reuse committed state | Streaming paths bound retained text, reuse committed capture frames, and batch scratch cleanup. | [022](022-bounded-memory-and-less-copying-in-stream-parsing.md), [085](085-reuse-stream-capture-frames.md), [088](088-share-bounded-stream-text-snapshots.md), [089](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md) |
 | Reuse parser frames | Engine and VM paths reuse selected Operators Rule and call frames. | [002](002-frame-pooling-in-the-iterative-vm-8fab402.md), [013](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md), [033](033-smaller-vm-entries.md) |
@@ -64,7 +64,8 @@ backend scope.
 Reference routes are record-specific. Documented same-source controls include
 dense/sparse memo storage ([087](087-sparse-deferred-memo-seen-pages.md)),
 flat/piece-backed input ([093](093-chunked-document-input.md)),
-copied/shared snapshots ([097](097-exact-document-snapshot-record-sharing.md)),
+copied/shared snapshots ([097](097-exact-document-snapshot-record-sharing.md))
+and flat/shared child runs ([099](099-share-document-snapshot-child-runs.md)),
 and legacy/bootstrap typed allocation ([098](098-bootstrap-generated-typed-output-allocations.md));
 record [096](096-specialize-generated-go-method-helpers.md) also describes a
 scoped generation control. Other records may contain only historical
@@ -161,6 +162,7 @@ record or mechanism.
 | [096](096-specialize-generated-go-method-helpers.md#096-specialize-generated-go-work-control-methods) | Generated Go ordinary-method and helper specialization | – | – | – | ✓ | ✓ | Nil-control ordinary paths; adopted with measured residual overhead; further cost reduction is separate follow-up work |
 | [097](097-exact-document-snapshot-record-sharing.md#097-exact-document-snapshot-record-sharing) | Exact immutable record sharing in Document snapshots | ✓ | ✓ | ✓ | – | – | Adopted with a low-reuse copy fallback; retained-memory results and capture-time cost are scoped in record 097 |
 | [098](098-bootstrap-generated-typed-output-allocations.md#098-bootstrap-generated-typed-output-allocations) | Bootstrap generated typed output allocations | – | – | – | – | ✓ | Generated Go typed results only; first objects and nonempty lists allocate independently before slabs; XML Bytes incurs a measured default-path cost |
+| [099](099-share-document-snapshot-child-runs.md#099-share-document-snapshot-child-runs) | Share immutable Document snapshot child runs | Partial | Partial | Partial | – | – | Changed high-fanout records with mostly equal child-ID runs; same-source flat reference; retained-history measurements include sidecar and backing-array costs |
 
 Not applied, and why:
 
@@ -277,6 +279,7 @@ Not applied, and why:
 - [096. Specialize generated Go work-control methods](096-specialize-generated-go-method-helpers.md)
 - [097. Exact Document Snapshot record sharing](097-exact-document-snapshot-record-sharing.md)
 - [098. Bootstrap generated typed output allocations](098-bootstrap-generated-typed-output-allocations.md)
+- [099. Share Document snapshot child runs](099-share-document-snapshot-child-runs.md)
 
 ## Experiments That Did Not Pay Off
 

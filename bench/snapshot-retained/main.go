@@ -37,7 +37,7 @@ type result struct {
 
 func run() error {
 	mode := flag.String("mode", "snapshot", "snapshot or clone")
-	edit := flag.String("edit", "replace-first", "replace-first, prepend, or append between versions")
+	edit := flag.String("edit", "replace-first", "replace-first, replace-middle, prepend, or append between versions")
 	size := flag.Int("size", 4096, "input size in bytes")
 	versions := flag.Int("versions", 64, "number of captured versions")
 	retain := flag.Bool("retain", true, "keep all captured versions until measurement")
@@ -47,7 +47,7 @@ func run() error {
 	if *mode != "snapshot" && *mode != "clone" {
 		return fmt.Errorf("invalid mode %q", *mode)
 	}
-	if *edit != "replace-first" && *edit != "prepend" && *edit != "append" {
+	if *edit != "replace-first" && *edit != "replace-middle" && *edit != "prepend" && *edit != "append" {
 		return fmt.Errorf("invalid edit %q", *edit)
 	}
 	if *size < 1 || *versions < 1 {
@@ -100,6 +100,9 @@ rule item = [a-z]`, "main")
 			}
 			start, end := 0, 1
 			switch *edit {
+			case "replace-middle":
+				start = len(doc.Text()) / 2
+				end = start + 1
 			case "prepend":
 				end = 0
 			case "append":
