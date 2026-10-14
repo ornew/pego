@@ -1,182 +1,132 @@
 # Optimization Catalog
 
-This catalog describes implemented optimization mechanisms, their backend
-scope and measured evidence. The mechanism index below groups documented
-techniques by what they do; the applicability table then maps numbered records
-to backends. Numbered records preserve implementation details, tradeoffs and
+This catalog describes optimization mechanisms, their backend scope and
+measured evidence. The mechanism index below assigns stable IDs to current
+mechanisms and maps each one to its applicable backends and control state.
+Numbered records preserve implementation details, tradeoffs and
 reproduction commands for individual changes; commits provide chronology. The
 [performance document](../performance.md) keeps the measurement method and
 latest full-suite analysis.
 
-## Implemented Mechanism Index
+## Mechanism Index
 
-These entries group mechanisms already described by the linked records. They
-are an implementation index, not independent effect estimates or a promise
-that each row has its own reference switch. Check each record for the exact
-backend, workload, comparison baseline and control, if any.
+Each stable ID uses a category letter and a three-digit number: `E` (value elision), `M` (matching and calls), `R` (memo and Document reuse), `A` (allocation and retention), and `G` (generation and compilation). Initial allocations use steps of ten, leaving gaps for related mechanisms. New mechanisms may use those unused numbers; existing IDs are never renumbered or reused. IDs are independent of numbered evidence records and backlog IDs.
 
-| Mechanism | Implemented path | Records |
-|:--|:--|:--|
-| Omit unused parse values | Rule bodies and eligible Operators Rule lines avoid building values when callers do not need them; captures and predicate-visible values are still built where required. | [001](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md), [009](009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md), [007](007-recognition-mode-3f7e9bf.md), [047](047-recognition-in-generated-parsers.md) |
-| Select alternatives early | First-character choice dispatch is implemented in the closure engine, VMs and generated parsers. | [049](049-first-character-dispatch-in-generated-choices.md), [050](050-first-character-dispatch-in-the-closure-backend.md), [051](051-first-character-dispatch-in-the-vms-instruction-set-3.md) |
-| Test character classes by backend | Closure uses specialized class tests, VMs use ASCII bitmaps, and generated parsers emit inline tests for eligible classes. | [031](031-specialized-character-class-tests-in-the-closure-backend.md), [017](017-ascii-bitmaps-for-character-classes-in-the-vms.md), [011](011-generated-parsers-catch-up-with-changes-410.md) |
-| Match literal text directly | Backends compare literals without intermediate decoding or boxed text where their input path allows it. | [032](032-matching-literals-against-loaded-input-in-one-loop.md), [036](036-comparing-texts-without-boxing-them.md), [062](062-comparing-short-literals-in-place-in-direct-rules.md) |
-| Prepare code-point positions | Generated Go prepares input and offsets in one pass; engine full parses build offsets while decoding. | [040](040-one-pass-to-prepare-code-point-input-in-generated-parsers.md), [041](041-building-the-offset-table-while-decoding-for-full-parses.md) |
-| Filter absent expectations | Go parser paths use a fixed-size membership filter before the exact ordered expectation scan. | [075](075-exclude-absent-expectations-before-scanning.md) |
-| Reuse compact parser metadata | Expected-set IDs and interned node kinds avoid repeated string storage in their respective paths. | [004](004-expected-sets-as-interned-ids-on-a-shared-stack-11a6ce3.md), [063](063-a-smaller-node.md), [064](064-a-smaller-node-in-generated-parsers.md) |
-| Reduce Node storage | Engine and generated Node parsers use slice-backed fields and compact interned type/rule metadata; typed Go builds typed values instead of Nodes. | [003](003-node-fields-as-a-slice-54a5774.md), [063](063-a-smaller-node.md), [064](064-a-smaller-node-in-generated-parsers.md) |
-| Specialize plain rule calls | Unmemoized calls and eligible generated plain rules have simpler call paths; typed Go also emits selected bodies directly. | [019](019-a-plain-call-path-for-unmemoized-rules-without-captures.md), [038](038-calling-plain-rules-directly-from-closure-call-sites.md), [042](042-generated-calls-of-plain-rules.md), [043](043-direct-calls-of-plain-rules-in-the-vms.md), [046](046-direct-calls-of-plain-rules-in-generated-parsers.md), [060](060-direct-rules-in-the-typed-runtime.md) |
-| Lower eligible typed Go bodies | Typed Go emits specialized local cuts, left-recursion, Operators Rule, recovery and capture layouts for eligible rules; unsupported layouts retain general bodies. | [078](078-local-cuts-in-typed-direct-rules.md), [079](079-inline-eligible-typed-left-recursion-bodies.md), [080](080-inline-eligible-typed-operators-rule-lines.md), [081](081-scoped-cuts-in-unfinished-typed-go-bodies.md), [082](082-match-typed-direct-frame-layouts.md), [083](083-inline-typed-recovery-bodies.md), [084](084-complete-typed-local-capture-layouts.md) |
-| Project repetition results | Eligible captured repetitions project needed fields directly rather than retaining and traversing all element values. | [052](052-projected-repetitions-in-generated-parse.md), [053](053-projected-repetitions-in-the-engine-and-the-vms.md) |
-| Grow left-recursive rules | Backends reuse growth state while extending a left-recursive match. | [035](035-left-recursion-growth-without-allocation.md) |
-| Shape memo storage and lookup | Per-position chains, deferred memoization, variable-aware keys, and entry retirement govern memo allocation and lifetime. | [005](005-memo-table-with-per-position-chains-cf77e4f.md), [012](012-memoizing-rules-that-read-variables.md), [018](018-memoizing-from-the-second-call-at-a-position.md), [066](066-no-memo-key-allocated-for-variables-where-none-is-defined.md), [067](067-retire-memo-entries-when-their-lookup-slots-are-removed.md) |
-| Store editable Document input | Documents use chunked text storage for edits; ordinary batch and stream input remain on their contiguous paths. | [023](023-splicing-the-text-of-a-document-in-place.md), [093](093-chunked-document-input.md) |
-| Reuse Document memo state across edits | Edits splice memo entries, with deferred position updates applied when entries are looked up. | [020](020-splicing-the-memo-table-on-document-edits.md), [056](056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md) |
-| Resolve Document positions lazily | Document input can build code-point offset mappings on demand. | [030](030-building-the-code-point-offset-table-on-demand.md) |
-| Move reusable Document trees | Successful reparse moves reused result trees to their new absolute positions. | [045](045-moving-reused-trees-in-place-after-document-edits.md) |
-| Resume long Document repetitions | Eligible repetitions resume from saved state in the engine and VMs. | [054](054-resuming-long-repetitions-in-a-document.md), [059](059-resuming-long-repetitions-in-the-vms.md) |
-| Keep same-generation repetition records | Unchanged Documents retain eligible repetition work across parses. | [070](070-keep-repetition-records-across-unchanged-document-parses.md) |
-| Reuse the Document VM value stack | VM-backed Document parses retain bounded cleared stack capacity. | [086](086-reuse-document-vm-values.md) |
-| Share Document snapshot storage | Snapshot results reuse equal immutable records and eligible unchanged child-ID runs while keeping public Node ownership separate. | [097](097-exact-document-snapshot-record-sharing.md), [099](099-share-document-snapshot-child-runs.md) |
-| Locate source lines for diagnostics | Whole-input parsers build a line table; stream parsing scans from committed input positions. | [039](039-a-line-table-for-error-positions.md) |
-| Bound stream storage and reuse committed state | Streaming paths bound retained text, reuse committed capture frames, and batch scratch cleanup. | [022](022-bounded-memory-and-less-copying-in-stream-parsing.md), [085](085-reuse-stream-capture-frames.md), [088](088-share-bounded-stream-text-snapshots.md), [089](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md) |
-| Reuse parser frames | Engine and VM paths reuse selected Operators Rule and call frames. | [002](002-frame-pooling-in-the-iterative-vm-8fab402.md), [013](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md), [033](033-smaller-vm-entries.md) |
-| Reuse action and operand storage | Backends evaluate selected action data in reusable operand or field-list storage. | [014](014-one-operand-stack-for-vm-expression-code.md), [015](015-allocation-free-action-plumbing-in-all-backends.md), [027](027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md), [028](028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md) |
-| Pool whole-input scratch | Whole-input parses and generated recognition reuse their scoped scratch buffers. | [057](057-pooling-the-scratch-memory-of-whole-input-parses.md), [058](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md) |
-| Reduce typed Go output allocation | Typed generation uses pooled arenas and bounded slabs, with a small-result bootstrap before the slabs grow. | [048](048-a-typed-runtime-for-parseast.md), [074](074-smaller-first-chunks-for-generated-typed-values.md), [098](098-bootstrap-generated-typed-output-allocations.md) |
-| Share generated helpers | Generated Go and TypeScript outputs reuse identical helper bodies; Go also shares selected literal tables. | [090](090-share-identical-generated-helpers.md) |
-| Specialize pure literal predicates | Eligible generated text disjunctions use a specialized comparison path. | [091](091-specialize-pure-literal-text-disjunctions.md) |
-| Analyze constructor dependencies | Shared compilation analysis propagates dependencies for sample constructor selection. | [071](071-dependency-propagation-for-sample-constructor-analysis.md) |
-| Reuse equivalent capture types | Shared type checking reuses structurally equal captured type expressions. | [072](072-reuse-structurally-equal-duplicate-capture-types.md) |
-| Propagate variable reads by dependency component | Shared compiler metadata computes variable reads per dependency component. | [073](073-dependency-component-propagation-of-variable-reads.md) |
-| Normalize attributes by copy-on-change | Shared compilation/generation preprocessing reuses unchanged expression nodes and clones only changed paths. | [095](095-attribute-copy-on-change.md) |
-| Reduce generated Go work-control overhead | Generated Go specializes ordinary methods and selected helpers while preserving work checks and parse semantics. | [096](096-specialize-generated-go-method-helpers.md) |
+Backend cells describe default applicability: `✓` applies; `Partial` applies only to the stated eligible subset; `Private off` marks a private/default-off implementation; `No` means the backend could use the mechanism but does not implement it; and `—` means the mechanism has no corresponding path. The separate state and control columns distinguish default selection from same-source comparison support. Shared compilation, setup and editor mechanisms identify their scope in the Path scope column; they are not runtime matching claims.
 
-Main implementation files under `internal/engine/` include `compile.go`,
-`bcompile.go`, `vm.go`, `ivm.go`, `gen.go`, `gen_direct.go` and `gen_ts.go`
-for matching and generated lowering; `memo.go`, `input.go`, `document.go`,
-`document_edits.go`, `runtime.go` and `stream_*.go` for memo, input and
-persistent parse state; `type_inference.go` for shared constructor and type
-analysis; and `genrt/runtime.go` and `genrt/typed.go` for generated result
-storage. The linked records specify each mechanism's exact eligibility and
-backend scope.
+Backend headers use C for Closure, RVM for recursive VM, IVM for iterative VM, Go Node / Recognize for generated Go Node parsing and recognition, Typed Go for generated `ParseAST`, and TS for generated TypeScript. Path scope abbreviations GN and TG refer to those generated Go paths.
 
-Reference routes are record-specific. Documented same-source controls include
-dense/sparse memo storage ([087](087-sparse-deferred-memo-seen-pages.md)),
-flat/piece-backed input ([093](093-chunked-document-input.md)),
-copied/shared snapshots ([097](097-exact-document-snapshot-record-sharing.md))
-and flat/shared child runs ([099](099-share-document-snapshot-child-runs.md)),
-and legacy/bootstrap typed allocation ([098](098-bootstrap-generated-typed-output-allocations.md));
-record [096](096-specialize-generated-go-method-helpers.md) also describes a
-scoped generation control. Other records may contain only historical
-comparisons.
-These controls are not one public selector, and the index or a checkmark below
-does not imply that each mechanism can be switched independently. Work controls
-are a resource contract with runtime costs, not a speed mechanism; [096](096-specialize-generated-go-method-helpers.md)
-records one generated-Go cost mitigation.
+Each linked mechanism page describes its source, eligibility, interactions, control/reference scope, and evidence. Numbered records remain historical measurement reports and may cover multiple mechanisms. Their results apply only to the workloads, backends, and baselines stated in each record.
 
-## Private, Default-Off Comparators
+### E — Value Elision
 
-- [094. Generation-only typed-output liveness cleanup](094-generated-typed-output-liveness.md) is a private, default-off generated Go comparator; it was not adopted.
+| ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
+|:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
+| [E010](mechanisms/E010-value-free-rule-bodies.md) | Value-free body lowering | C/RVM/IVM/GN/TG/TS; eligibility-based; no universal same-source control | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [E020](mechanisms/E020-value-free-rule-twins.md) | Value-free CST twins | All six; distinct memo identities, excludes LR cycles | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [E030](mechanisms/E030-operators-line-value-elision.md) | Operators Rule line value elision | All six; line-specific eligibility | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [E040](mechanisms/E040-recognition-lowering.md) | Recognition value/capture/action lowering | Core and generated recognition | Partial | Partial | Partial | Partial | — | Partial | Default | None maintained |
+| [E050](mechanisms/E050-projected-repetition-values.md) | Projected repetition results | All six; eligible subset, including TS projection | Partial | Partial | Partial | Partial | Partial | Partial | Default | Compile Options.noProjections |
+| [E060](mechanisms/E060-concat-input-fusion.md) | Fuse eligible concat inputs | Eligible action inputs | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 
-## Where Each Optimization Applies
+### M — Matching and Calls
 
-The runtimes are separate code: the closure backend (`compile.go`, `runtime.go`), the recursive and iterative bytecode
-VMs (`vm.go`, `ivm.go`), the generated parsers' runtime (`genrt/runtime.go`, behind `Parse` and `Recognize`) and the
-typed runtime of generated parsers (`genrt/typed.go`, behind `ParseAST`). An optimization made in one of them is not
-automatically in the others. This table records where the numbered records
-below apply; it does not imply that a separate reference route exists for each
-record or mechanism.
+| ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
+|:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
+| [M010](mechanisms/M010-first-character-dispatch.md) | First-character guards for ordered choices | C/RVM/IVM/GN/TG/TS; eligibility-based | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [M020](mechanisms/M020-character-class-tests.md) | Backend-specific character-class tests/representations | C/RVM/IVM/GN/TG/TS; distinct implementations by backend | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [M030](mechanisms/M030-literal-matching.md) | Loaded-input literal matching | All six; input paths differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [M040](mechanisms/M040-character-scan-loops.md) | Value-free character repetition scan loops | Value-free character repetitions | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [M050](mechanisms/M050-plain-rule-calls.md) | Calls to eligible uncaptured/unmemoized rules | C/RVM/IVM/GN/TG/TS; each backend has separate call route | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [M060](mechanisms/M060-left-recursion-growth.md) | Reuse state during left-recursion growth | Go seed-growth storage | ✓ | ✓ | ✓ | ✓ | ✓ | — | Default | None maintained |
+| [M070](mechanisms/M070-vm-predecoded-match-data.md) | Predecoded VM literals and ASCII class masks | VM-program setup; predecoded literal/class data is used on RVM/IVM matching paths | — | ✓ | ✓ | — | — | — | Default | None maintained |
+| [M080](mechanisms/M080-direct-code-point-access.md) | Read decoded code points in direct Go bodies | GN/TG direct eligible bodies; CodePoints fast path | — | — | — | Partial | Partial | — | Default | None maintained |
+| [M090](mechanisms/M090-diagnostic-line-index.md) | Lazy line-start table for diagnostics | All six; streams retain committed-position scan | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [M100](mechanisms/M100-absent-expectation-filter.md) | Fixed-size absent expectation filter | C/RVM/IVM/GN/TG Go only; TS unchanged | Partial | Partial | Partial | Partial | Partial | — | Default | None maintained |
+| [M110](mechanisms/M110-compact-vm-backtracking-state.md) | Compact VM entries and separate label state | RVM/IVM only | — | ✓ | ✓ | — | — | — | Default | None maintained |
+| [M120](mechanisms/M120-unboxed-text-comparisons.md) | Native text equality without boxing | All six eligible comparison paths | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [M130](mechanisms/M130-short-literal-comparisons.md) | In-place short literal comparison | GN/TG direct Go CodePoints only | — | — | — | Partial | Partial | — | Default | None maintained |
 
-✓ applied · Partial applied to the subset in the note · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
+### R — Memo and Document Reuse
 
-| # | Optimization | Closure | VM | Iter. VM | Generated | Typed | Notes |
-|--:|:--|:-:|:-:|:-:|:-:|:-:|:--|
-| [1](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md#1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903)| Value-free bodies, twins, transient rules | ✓ | ✓ | ✓ | ✓ | ✓ | generated since 11 |
-| [2](002-frame-pooling-in-the-iterative-vm-8fab402.md#2-frame-pooling-in-the-iterative-vm-8fab402)| Pooled frames of the iterative VM | – | – | ✓ | – | – | |
-| [3](003-node-fields-as-a-slice-54a5774.md#3-node-fields-as-a-slice-54a5774)| Node fields as a slice | ✓ | ✓ | ✓ | ✓ | – | the typed runtime builds no nodes for its results |
-| [4](004-expected-sets-as-interned-ids-on-a-shared-stack-11a6ce3.md#4-expected-sets-as-interned-ids-on-a-shared-stack-11a6ce3)| Expectations as interned IDs | ✓ | ✓ | ✓ | ✓ | ✓ | generated since 11 |
-| [5](005-memo-table-with-per-position-chains-cf77e4f.md#5-memo-table-with-per-position-chains-cf77e4f)| Memo table with per-position chains | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [6](006-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2.md#6-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2)| Slab allocation (nodes, lists, frames) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: pooled arenas (48) |
-| [7](007-recognition-mode-3f7e9bf.md#7-recognition-mode-3f7e9bf)| Recognition mode | ✓ | ✓ | ✓ | ✓ | – | generated: `-recognize` (47) |
-| [8](008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md#8-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d)| Unmemoized fast path, scan loops, nesting limit | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `SCAN` |
-| [9](009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md#9-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c)| Value-free Operators Rule lines | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [10](010-zero-copy-token-text-reusable-evaluation-context.md#10-zero-copy-token-text-reusable-evaluation-context)| Zero-copy token text, reused evaluation context | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: text only (their evaluator has its own stack, 14) |
-| [12](012-memoizing-rules-that-read-variables.md#12-memoizing-rules-that-read-variables)| Memoizing rules that read variables | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [13](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md#13-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms)| Operators Rule attempts by value | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM: pooled Operators Rule frames |
-| [14](014-one-operand-stack-for-vm-expression-code.md#14-one-operand-stack-for-vm-expression-code), [27](027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md#27-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend)| Operands on one expression stack | ✓ | ✓ | ✓ | – | – | generated code evaluates actions as Go expressions |
-| [15](015-allocation-free-action-plumbing-in-all-backends.md#15-allocation-free-action-plumbing-in-all-backends), [28](028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md#28-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers)| Allocation-free action plumbing (field chunks, list built-ins on a stack) | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [16](016-start-positions-and-lambdas-from-chunks-in-the-vms.md#16-start-positions-and-lambdas-from-chunks-in-the-vms)| Start positions and lambdas from chunks | – | ✓ | ✓ | – | – | |
-| [17](017-ascii-bitmaps-for-character-classes-in-the-vms.md#17-ascii-bitmaps-for-character-classes-in-the-vms), [31](031-specialized-character-class-tests-in-the-closure-backend.md#31-specialized-character-class-tests-in-the-closure-backend)| Fast character-class tests | ✓ | ✓ | ✓ | ✓ | ✓ | closure: specialized tests (31); VMs: ASCII bitmaps (17); generated: inline comparisons (11) |
-| [18](018-memoizing-from-the-second-call-at-a-position.md#18-memoizing-from-the-second-call-at-a-position)| Memoizing from the second call at a position | ✓ | ✓ | ✓ | ✓ | ✓ | not for `Document` and streams, which keep every entry; generated since 21 |
-| [19](019-a-plain-call-path-for-unmemoized-rules-without-captures.md#19-a-plain-call-path-for-unmemoized-rules-without-captures)| Plain call path (`invokePlain`) | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM since 24 (`plainCallFrame`, 34) |
-| [20](020-splicing-the-memo-table-on-document-edits.md#20-splicing-the-memo-table-on-document-edits), [23](023-splicing-the-text-of-a-document-in-place.md#23-splicing-the-text-of-a-document-in-place), [30](030-building-the-code-point-offset-table-on-demand.md#30-building-the-code-point-offset-table-on-demand), [45](045-moving-reused-trees-in-place-after-document-edits.md#45-moving-reused-trees-in-place-after-document-edits), [56](056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md#56-applying-a-document-edit-to-memo-entries-when-they-are-looked-up), [93](093-chunked-document-input.md#093-chunked-input-storage-for-document-edits)| `Document` edits: chunked text, memo splice, on-demand offsets, moved trees and lazy memo updates | ✓ | ✓ | ✓ | – | – | record 93 reduces edit copying; ordinary batch and stream input stay contiguous |
-| [22](022-bounded-memory-and-less-copying-in-stream-parsing.md#22-bounded-memory-and-less-copying-in-stream-parsing)| Bounded memory in streams | ✓ | ✓ | ✓ | – | – | generated parsers have no streams |
-| [26](026-lambda-calls-without-allocation-in-the-closure-backend.md#26-lambda-calls-without-allocation-in-the-closure-backend)| Lambda calls without allocation | ✓ | ✓ | ✓ | – | – | VMs: lambdas from chunks (16); generated lambdas are Go function literals |
-| [32](032-matching-literals-against-loaded-input-in-one-loop.md#32-matching-literals-against-loaded-input-in-one-loop)| Literals compared in one loop | ✓ | ✓ | ✓ | ✓ | ✓ | generated: its own loop |
-| [33](033-smaller-vm-entries.md#33-smaller-vm-entries)| Smaller VM entries | – | ✓ | ✓ | – | – | |
-| [35](035-left-recursion-growth-without-allocation.md#35-left-recursion-growth-without-allocation)| Left-recursion growth without allocation | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [36](036-comparing-texts-without-boxing-them.md#36-comparing-texts-without-boxing-them), [37](037-no-intermediate-lists-in-concat.md#37-no-intermediate-lists-in-concat)| Unboxed text comparison, no intermediate lists in `concat` | ✓ | ✓ | ✓ | ✓ | ✓ | VMs since 44 (instruction set 2) |
-| [38](038-calling-plain-rules-directly-from-closure-call-sites.md#38-calling-plain-rules-directly-from-closure-call-sites), [42](042-generated-calls-of-plain-rules.md#42-generated-calls-of-plain-rules), [43](043-direct-calls-of-plain-rules-in-the-vms.md#43-direct-calls-of-plain-rules-in-the-vms), [46](046-direct-calls-of-plain-rules-in-generated-parsers.md#46-direct-calls-of-plain-rules-in-generated-parsers)| Direct calls of plain rules | ✓ | ✓ | ✓ | ✓ | ✓ | generated: a method per rule (46); typed: a method per rule for every rule (48) |
-| [39](039-a-line-table-for-error-positions.md#39-a-line-table-for-error-positions)| Line table for error positions | ✓ | ✓ | ✓ | ✓ | ✓ | streams still scan from the committed position |
-| [40](040-one-pass-to-prepare-code-point-input-in-generated-parsers.md#40-one-pass-to-prepare-code-point-input-in-generated-parsers), [41](041-building-the-offset-table-while-decoding-for-full-parses.md#41-building-the-offset-table-while-decoding-for-full-parses)| Offset table built while decoding | ✓ | ✓ | ✓ | ✓ | ✓ | engine: full parses only; recognition builds it on demand (30) |
-| [48](048-a-typed-runtime-for-parseast.md#48-a-typed-runtime-for-parseast)| Struct constructors per type, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | see below |
-| [52](052-projected-repetitions-in-generated-parse.md#52-projected-repetitions-in-generated-parse), [53](053-projected-repetitions-in-the-engine-and-the-vms.md#53-projected-repetitions-in-the-engine-and-the-vms)| Projected repetitions (`map($rest, (r) => $r.f)`) | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `NEXT` mode 3 (instruction set 3) |
-| [49](049-first-character-dispatch-in-generated-choices.md#49-first-character-dispatch-in-generated-choices), [50](050-first-character-dispatch-in-the-closure-backend.md#50-first-character-dispatch-in-the-closure-backend), [51](051-first-character-dispatch-in-the-vms-instruction-set-3.md#51-first-character-dispatch-in-the-vms-instruction-set-3) | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
-| [54](054-resuming-long-repetitions-in-a-document.md#54-resuming-long-repetitions-in-a-document), [59](059-resuming-long-repetitions-in-the-vms.md#59-resuming-long-repetitions-in-the-vms)| `Document`: resuming long repetitions | ✓ | ✓ | ✓ | – | – | VMs since 59 (sites found in the bytecode); generated parsers have no `Document` |
-| [55](055-tracing-hook-on-the-call-path.md#55-tracing-hook-on-the-call-path)| Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
-| [57](057-pooling-the-scratch-memory-of-whole-input-parses.md#57-pooling-the-scratch-memory-of-whole-input-parses), [58](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md#58-pooling-the-scratch-memory-of-generated-parse-and-recognize)| Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
-| [63](063-a-smaller-node.md#63-a-smaller-node), [64](064-a-smaller-node-in-generated-parsers.md#64-a-smaller-node-in-generated-parsers)| Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
-| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts/recovery still general; typed supports ordinary cuts, eligible LR/Operators Rule bodies, framed cut-bearing LR/Operators Rule bodies and eligible recovery bodies; see 78–84; record 84 adds complete typed Go-local capture layouts, including dead captures |
-| [61](061-reading-code-points-directly-in-direct-rules.md#61-reading-code-points-directly-in-direct-rules)| Character tests read code points without calling `peek` | – | – | – | Partial | ✓ | direct rules only; generated supported Node and value-free rules since 76/77; Bytes retains decoding fallback |
-| [66](066-no-memo-key-allocated-for-variables-where-none-is-defined.md#66-no-memo-key-allocated-for-variables-where-none-is-defined)| No memo key allocated for variables where none is defined | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [67](067-retire-memo-entries-when-their-lookup-slots-are-removed.md#67-retire-memo-entries-when-their-lookup-slots-are-removed)| Retire/reuse memo entries on replacement, pruning and edit invalidation | ✓ | ✓ | ✓ | ✗ | ✗ | streams and Documents are engine-only; generated batch memo recycling has not been measured |
-| [68](068-release-construction-tracking-when-an-action-returns-nil.md#68-release-construction-tracking-when-an-action-returns-nil)| Release action/predicate construction tracking, including nil results | ✓ | ✓ | ✓ | ✓ | ✓ | direct typed nested constructors included; TS also truncates on nil/errors; no generated streaming API |
-| [69](069-bound-persistent-variable-binding-histories.md#69-bound-persistent-variable-binding-histories)| One current variable binding per name, persistent replacement and equal-value reuse | ✓ | ✓ | ✓ | ✓ | ✓ | TS also uses unique bindings; lookup scales with names, not assignment history; changed non-head values copy a prefix |
-| [70](070-keep-repetition-records-across-unchanged-document-parses.md#70-keep-repetition-records-across-unchanged-document-parses)| Keep repetition records across unchanged Document parses | ✓ | ✓ | ✓ | – | – | retain the same-generation map, including root memo hits; one-edit eligibility and abort/reset invalidation remain |
-| [71](071-dependency-propagation-for-sample-constructor-analysis.md#71-dependency-propagation-for-sample-constructor-analysis)| Dependency propagation for sample constructor analysis | ✓ | ✓ | ✓ | – | – | `sample.New` requires a grammar AST; shared constructor analysis, no matching-runtime change; contiguous reverse edges and bounded worklist |
-| [72](072-reuse-structurally-equal-duplicate-capture-types.md#72-reuse-structurally-equal-duplicate-capture-types)| Reuse equal capture types without formatting | ✓ | ✓ | ✓ | ✓ | ✓ | shared type checking before compilation/generation; no matching-runtime change; top-level optional/union normalization retained |
-| [73](073-dependency-component-propagation-of-variable-reads.md#73-dependency-component-propagation-of-variable-reads)| Propagate variable reads once per dependency component | ✓ | ✓ | ✓ | ✓ | ✓ | shared compiler metadata; no-read fast path; callee-first SCCs and immutable sorted peer keys; no matching-runtime change |
-| [74](074-smaller-first-chunks-for-generated-typed-values.md#74-smaller-first-chunks-for-generated-typed-values)| Smaller first chunks with bounded growth for typed values | – | – | – | – | ✓ | generated `ParseAST`, direct construction and Node conversion; independent generation-only object/list references; fresh owners, no returned-chunk reuse |
-| [75](075-exclude-absent-expectations-before-scanning.md#75-exclude-absent-expectations-before-scanning)| Fixed-size absence filter for ordered expectations | ✓ | ✓ | ✓ | ✓ | ✓ | Go only; Node, recognition, typed direct/conversion; collisions retain exact scans, TypeScript unchanged |
-| [76](076-inline-value-free-plain-generated-go-rules.md#76-inline-value-free-plain-generated-go-rules)| Inline value-free plain rule bodies | – | – | – | ✓ | – | Go recognition and Node skip twins; typed direct rules already use this emitter; see 77 for supported Node/value-building paths; TypeScript unchanged |
-| [77](077-inline-node-expressions-in-generated-go-parsers.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)| Inline value-building and memoized Node expressions | – | – | – | Partial | – | Generated Go Node only; unsupported cut/recovery/Operators Rule/LR leaders and unresolved captures fall back; typed and TypeScript unchanged |
-| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; eligible cut-bearing LR/Operators Rule bodies are in 81; frame-layout collection in 82 enables additional LR/Operators Rule/repetition bodies; eligible recovery bodies are in 83; record 84 preserves dead Go-local capture slots; unsupported layouts remain general; eligible cut-free LR/Operators Rule bodies are in 79/80 |
-| [79](079-inline-eligible-typed-left-recursion-bodies.md#79-inline-eligible-typed-left-recursion-bodies)| Inline eligible typed left-recursion leader bodies | – | – | – | – | ✓ | typed Go only; runtime retains growth and invocation ownership; eligible cut-bearing LR bodies use the framed route in 81; eligible recovery bodies are in 83; unsupported/unmatched layouts fall back; frame-layout collection in 82 enables additional bodies; Operators Rule lines use 80 |
-| [80](080-inline-eligible-typed-operators-rule-lines.md#80-inline-eligible-typed-operators-rule-line-matchers)| Inline eligible typed Operators Rule line matchers | – | – | – | – | ✓ | typed Go only; eligible cut-free operand, operator and skip matchers; each line owns its scope while runtime retains precedence, longest-match, frames and actions; eligible cut-bearing bodies use 81; recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for additional eligible layouts |
-| [81](081-scoped-cuts-in-unfinished-typed-go-bodies.md#81-scoped-cuts-in-unfinished-typed-go-bodies)| Scoped cuts in unfinished typed Go bodies | – | – | – | – | ✓ | typed Go only; eligible cut-bearing LR and Operators Rule bodies use the structural emitter while runtime retains frames, growth, Operators Rule selection and actions; eligible recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for layouts recovered from the general emitter |
-| [82](082-match-typed-direct-frame-layouts.md#82-match-typed-direct-bodies-to-general-frame-layouts)| Match typed direct bodies to general frame layouts | – | – | – | – | ✓ | typed Go only; derives LR, Operators Rule and owned repetition slot layouts from general-emitter metadata; runtime ownership is unchanged; eligible recovery bodies use 83; unsupported layouts remain general; generation-only reference control |
-| [83](083-inline-typed-recovery-bodies.md#83-inline-eligible-typed-recovery-bodies)| Inline eligible typed recovery bodies | – | – | – | – | Partial | typed Go ordinary/LR/Operators Rule bodies with `#recover`; runtime recovery and frame ownership are unchanged; Node/TS and unsupported layouts remain general |
-| [84](084-complete-typed-local-capture-layouts.md#84-complete-typed-go-local-capture-layouts)| Complete typed Go-local capture layouts | – | – | – | – | Partial | typed Go ordinary direct rules and owned/projected repetition scopes preserve complete capture-name layouts, including dead syntax; Go locals are emitted as needed, with no runtime frame or selector |
-| [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
-| [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
-| [87](087-sparse-deferred-memo-seen-pages.md#87-store-deferred-memo-seen-positions-sparsely) | Sparse deferred-memo seen pages | ✓ | ✓ | ✓ | ✓ | ✓ | Adopted to reduce indexed seen backing above 64 rules and 1,024 decoded units; full, paired and storage-only evidence is scoped in record 087; Documents and streams remain eager |
-| [88](088-share-bounded-stream-text-snapshots.md#88-share-bounded-stream-text-snapshots) | Share bounded stream text snapshots | ✓ | ✓ | ✓ | – | – | Engine streaming only; bounded immutable snapshots share already-loaded text, with copy fallback for other ranges; focused measurements include small recursive-VM CodePoints cost |
-| [89](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md#89-isolate-stream-prefixes-and-batch-scratch-cleanup) | Isolate stream prefixes and batch scratch cleanup | ✓ | ✓ | ✓ | – | – | Engine streaming only; bounded private prefix allocation and prune-batched cleanup of inactive undo/VM references; paired GC samples release 81–92% of retained storage |
-| [90](090-share-identical-generated-helpers.md#90-share-identical-generated-helpers-and-literal-tables)| Share identical generated helpers and literal tables | – | – | – | ✓ | ✓ | Go Node/typed output shares exact helper bodies and literals; TypeScript shares exact helper bodies, while literal sharing remains private opt-in |
-| [91](091-specialize-pure-literal-text-disjunctions.md#91-specialize-pure-literal-text-disjunctions)| Specialize pure literal-text disjunctions | – | – | – | ✓ | ✓ | generated Go Node/typed outputs and TypeScript; complete OR of at least two text comparisons against one direct capture and string literals; other predicate shapes retain general evaluation |
-| [92](092-reuse-generated-node-capture-scratch.md#92-reuse-generated-node-capture-scratch) | Reuse generated Node capture scratch | – | – | – | ✓ | – | Generated plain-Go Node parsing and capture-dependent recognition; frames/slots use separate bounded scratch; XML GC-sensitive cost remains unresolved, and the field-layout control was inconclusive |
-| [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
-| [094](094-generated-typed-output-liveness.md#094-generation-only-typed-output-liveness-cleanup) | Generation-only typed-output liveness cleanup | – | – | – | – | Partial | Private and default-off for generated Go typed results; measured small-input costs and no conversion-path retained-memory benefit leave adoption open; see [design 034](../design/034-typed-output-liveness.md) |
-| [095](095-attribute-copy-on-change.md#095-copy-on-change-attribute-normalization) | Copy-on-change attribute normalization | – | – | – | – | – | Applied in shared compilation/generation preprocessing only; no matching-path change; workload-specific allocation savings are measured |
-| [096](096-specialize-generated-go-method-helpers.md#096-specialize-generated-go-work-control-methods) | Generated Go ordinary-method and helper specialization | – | – | – | ✓ | ✓ | Nil-control ordinary paths; adopted with measured residual overhead; further cost reduction is separate follow-up work |
-| [097](097-exact-document-snapshot-record-sharing.md#097-exact-document-snapshot-record-sharing) | Exact immutable record sharing in Document snapshots | ✓ | ✓ | ✓ | – | – | Adopted with a low-reuse copy fallback; retained-memory results and capture-time cost are scoped in record 097 |
-| [098](098-bootstrap-generated-typed-output-allocations.md#098-bootstrap-generated-typed-output-allocations) | Bootstrap generated typed output allocations | – | – | – | – | ✓ | Generated Go typed results only; first objects and nonempty lists allocate independently before slabs; XML Bytes incurs a measured default-path cost |
-| [099](099-share-document-snapshot-child-runs.md#099-share-document-snapshot-child-runs) | Share immutable Document snapshot child runs | Partial | Partial | Partial | – | – | Changed high-fanout records with mostly equal child-ID runs; same-source flat reference; retained-history measurements include sidecar and backing-array costs |
+| ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
+|:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
+| [R010](mechanisms/R010-per-position-memo-chains.md) | Per-position memo chains and key storage | C/RVM/IVM/GN/TG/TS; exact per-backend route | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [R020](mechanisms/R020-deferred-memoization.md) | Defer memo allocation until a second same-position call | C/RVM/IVM/GN/TG/TS; no universal control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.disableSparseMemo |
+| [R040](mechanisms/R040-memo-entry-retirement.md) | Retire obsolete memo entries | C/RVM/IVM only; active seed ownership preserved | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; persistent prefix replacement | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_document_pieces |
+| [R070](mechanisms/R070-document-memo-edits.md) | Gap-buffer memo splice and lazy advancement | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R080](mechanisms/R080-lazy-code-point-offsets.md) | On-demand code-point offsets | Core recognition and Document offset tables | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R090](mechanisms/R090-moving-document-trees.md) | Move reused Document results | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R100](mechanisms/R100-document-repetition-resumption.md) | Resume saved long repetition runs | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R110](mechanisms/R110-document-run-record-retention.md) | Retain unchanged-generation repetition records | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [R120](mechanisms/R120-transient-rule-memo-policy.md) | Avoid ordinary memoization for transient rules | All six; Document remains eager | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
+| [R130](mechanisms/R130-document-snapshot-record-sharing.md) | Share exact immutable records in Document snapshots | C/RVM/IVM Document snapshots; candidate/reference build tag | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_sharing_reference |
+| [R140](mechanisms/R140-share-document-snapshot-child-runs.md) | Share immutable child-run backing between exact Document snapshot records | Document snapshot child-run backing; immutable records only | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_child_chunks_reference |
+| [R150](mechanisms/R150-cache-snapshot-child-run-descriptors.md) | Cache immutable child-run descriptors in SnapshotNode records | Document snapshot record access; caches immutable child-run descriptors | ✓ | ✓ | ✓ | — | — | — | Default | No cache-off control; reference retains this cache |
 
-Not applied, and why:
+### A — Allocation and Retention
 
-- **Returning capture frames at ordinary rule return points (48):** freeing frames in the engine
-  was measured slower (see the experiments table). Pooling must preserve child-value storage reachable
-  from results. Stream parsing separately reuses completed elements' frame structs at commit while
-  preserving the live root and independent result storage (85). Other scratch memory that results do
-  not share is pooled (57, 58).
-- **General per-rule call methods for value-building generated `Parse`** (the typed runtime's `typedCall`) measured within noise (48).
-- Experiments that did not pay off in some backends are in the experiments table at the end.
+| ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
+|:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
+| [A010](mechanisms/A010-compact-node-representation.md) | Compact Node fields and interned kinds | C/RVM/IVM/GN; TG/TS do not use these Node layouts | ✓ | ✓ | ✓ | ✓ | — | — | Default | None maintained |
+| [A020](mechanisms/A020-node-and-list-slabs.md) | Slab storage for Nodes and child lists | Go Node storage; typed Go uses typed arenas | ✓ | ✓ | ✓ | ✓ | — | — | Default | None maintained |
+| [A030](mechanisms/A030-parser-frame-reuse.md) | Pooled iterative VM frames and plain-call frame | IVM; distinguish Operators Rule attempts below | — | — | ✓ | — | — | — | Default | None maintained |
+| [A040](mechanisms/A040-action-operand-scratch.md) | Reusable action operands and plumbing | All six by route; no TS cross-call pool | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [A050](mechanisms/A050-streaming-state-reuse.md) | Bounded stream input and memo storage | C/RVM/IVM streaming only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
+| [A060](mechanisms/A060-direct-typed-output-construction.md) | Construct typed output directly | TG eligible direct path; conversion remains fallback | — | — | — | — | Partial | — | Default | None maintained |
+| [A070](mechanisms/A070-typed-output-bootstrap.md) | Independent initial typed allocations before slab growth | TG only; default applied, control `disableTypedOutputBootstrap` | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedOutputBootstrap |
+| [A080](mechanisms/A080-generated-node-capture-scratch.md) | Reusable generated Node capture scratch | Generated Go Node capture frames | — | — | — | ✓ | — | — | Default | GenOptions.disableNodeFrameScratch |
+| [A090](mechanisms/A090-typed-output-liveness-cleanup.md) | Clear unreachable generated typed output slots | TG experimental/private/default-off; not adopted | — | — | — | — | Private off | — | Private off | GenOptions.enableTypedOutputSweep / enableBoundedTypedOutputSweep; both off |
+| [A100](mechanisms/A100-document-vm-value-stack.md) | Reuse bounded VM value stack for Document parses | RVM/IVM Document paths only | — | ✓ | ✓ | — | — | — | Default | pego_reference_document_vm_values |
+| [A110](mechanisms/A110-expected-set-ids.md) | Interned expectation IDs and shared windows | All six; backend storage differs | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [A120](mechanisms/A120-source-token-text.md) | Source substring token text | All six subject to input representation; stream separately | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [A130](mechanisms/A130-closure-lambda-arenas.md) | LIFO lambda call/context arenas | C only; VM allocation separate | ✓ | — | — | — | — | — | Default | None maintained |
+| [A140](mechanisms/A140-construction-tracking-release.md) | Release completed construction tracking | All six default; TS timing unmeasured | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [A150](mechanisms/A150-vm-position-and-lambda-chunks.md) | VM boxed positions and lambda chunks | RVM/IVM only | — | ✓ | ✓ | — | — | — | Default | None maintained |
+| [A160](mechanisms/A160-whole-input-scratch-pooling.md) | Pool whole-input scratch across calls | C/RVM/IVM/GN/TG; TS N/A | ✓ | ✓ | ✓ | ✓ | ✓ | — | Default | None maintained |
+| [A170](mechanisms/A170-operators-attempt-scratch.md) | Reusable Operators Rule candidate storage | C/RVM/IVM/GN/TG by route; TS does not use Go by-value attempt | Partial | Partial | Partial | Partial | Partial | — | Default | None maintained |
+| [A180](mechanisms/A180-typed-frame-reuse.md) | Release/reuse typed runtime capture frames | TG only | — | — | — | — | ✓ | — | Default | None maintained |
+| [A190](mechanisms/A190-evaluation-context-reuse.md) | Reusable action evaluation context | All six per parser; no TS cross-call pool | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [A200](mechanisms/A200-stream-capture-frame-reuse.md) | Reuse completed stream capture frames | C/RVM/IVM; pego_reference_stream_frames | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_frames |
+| [A210](mechanisms/A210-bounded-stream-text-snapshots.md) | Share bounded immutable stream text | C/RVM/IVM; pego_reference_stream_text | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_text |
+| [A220](mechanisms/A220-stream-prefix-isolation.md) | Isolate live stream prefix ownership | C/RVM/IVM; pego_reference_stream_prefix | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_prefix |
+| [A230](mechanisms/A230-stream-undo-cleanup.md) | Clear inactive stream undo backing | C/RVM/IVM; pego_reference_stream_undo | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_undo |
+| [A240](mechanisms/A240-stream-vm-stack-cleanup.md) | Clear inactive stream VM value stack | RVM/IVM; pego_reference_stream_stack | — | ✓ | ✓ | — | — | — | Default | pego_reference_stream_stack |
+| [A250](mechanisms/A250-typed-object-slabs.md) | Typed object/terminal slab growth | TG; disableTypedObjectSlabs | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedObjectSlabs |
+| [A260](mechanisms/A260-typed-list-slabs.md) | Typed list slab growth | TG; disableTypedListSlabs | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedListSlabs |
+| [A270](mechanisms/A270-shared-empty-capture-frame.md) | Share immutable capture-free frame | All six; capture-free scopes only | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 
-<a id="optimization-history"></a>
+### G — Generation and Compilation
 
-## Optimization Records
+| ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
+|:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
+| [G010](mechanisms/G010-generated-helper-sharing.md) | Share exact generated helper bodies | GN/TG/TS default; literals independent | — | — | — | ✓ | ✓ | ✓ | Default | GenOptions.disableMethodSharing |
+| [G020](mechanisms/G020-lazy-backend-preparation.md) | Lazy one-time setup of optional engine recognizer/VM backends | First-use engine setup; closure recognition only, ordinary closure graph is eager | Partial | Partial | Partial | — | — | — | Default on demand | None maintained |
+| [G030](mechanisms/G030-constructor-dependency-analysis.md) | Sample constructor dependency propagation | Shared sampling analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
+| [G040](mechanisms/G040-copy-on-change-attribute-normalization.md) | Reuse unchanged AST paths during attribute normalization | Shared compile/generation preprocessing only, not runtime matching | — | — | — | — | — | — | Default setup path | Compile Options.eagerAttributeCopies |
+| [G050](mechanisms/G050-generated-work-control-specialization.md) | Specialize generated Go ordinary methods and helpers while retaining checks | GN/TG only; adopted; effect scope from record 096 | — | — | — | ✓ | ✓ | — | Default | GenOptions.disableOrdinaryWorkSpecialization |
+| [G060](mechanisms/G060-ordinary-typed-direct-rules.md) | Ordinary typed direct bodies | TG eligible default; later extensions separately keyed | — | — | — | — | Partial | — | Default | None maintained |
+| [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.disableLiteralTextDispatch |
+| [G080](mechanisms/G080-equal-capture-type-reuse.md) | Reuse structurally equal capture types | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
+| [G090](mechanisms/G090-variable-read-components.md) | Variable reads by dependency component | Shared compiler metadata, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
+| [G100](mechanisms/G100-generated-node-body-inlining.md) | Inline eligible Go Node expressions | GN partial default; separate value-free/node eligibility | — | — | — | Partial | — | — | Default | None maintained |
+| [G110](mechanisms/G110-one-pass-code-point-preparation.md) | Decode/validate/build offsets in one pass | CodePoints input preparation; GN/TG eager, core recognition lazy, TypeScript uses its own decoder | Partial | Partial | Partial | Partial | Partial | Partial | Default by input path | None maintained |
+| [G120](mechanisms/G120-lsp-position-checkpoints.md) | LSP UTF-16/code-point checkpoints | Editor preprocessing only; backend cells N/A | — | — | — | — | — | — | Default editor path | None maintained |
+| [G130](mechanisms/G130-generated-literal-sharing.md) | Share generated literal tables | GN/TG default; TS experimental/private off | — | — | — | ✓ | ✓ | Private off | Go default; TS off | GenOptions.disableLiteralSharing; enableTSLiteralSharing (off) |
+| [G140](mechanisms/G140-typed-local-cuts.md) | Local cuts in ordinary direct typed rules | TG default eligible; disableTypedCuts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedCuts |
+| [G150](mechanisms/G150-typed-left-recursion-bodies.md) | Inline typed LR leader bodies | TG default eligible; disableTypedLRBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedLRBodies |
+| [G160](mechanisms/G160-typed-operators-line-bodies.md) | Inline typed Operators Rule line bodies | TG default eligible; disableTypedOperatorsRuleBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedOperatorsRuleBodies |
+| [G170](mechanisms/G170-typed-framed-cuts.md) | Scoped cuts in unfinished typed bodies | TG default eligible; disableTypedFramedCuts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedFramedCuts |
+| [G180](mechanisms/G180-typed-frame-layouts.md) | Match direct framed capture layouts | TG default eligible; disableTypedFrameLayouts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedFrameLayouts |
+| [G190](mechanisms/G190-typed-recovery-bodies.md) | Inline eligible typed recovery bodies | TG default eligible; disableTypedRecoveryBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedRecoveryBodies |
+| [G200](mechanisms/G200-typed-local-capture-layouts.md) | Complete typed Go-local capture layouts | TG default eligible; disableTypedLocalLayouts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedLocalLayouts |
+
+Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](055-tracing-hook-on-the-call-path.md) remain in the evidence archive but are not optimization mechanisms: the first covers grammar-author output choices and the second measures tracing-instrumentation cost.
+
+## Optimization History
 
 ## Records 1–25
 - [001. Value-free rule bodies, value-free twins, transient rules (0b2c903)](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md)

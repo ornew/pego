@@ -3,9 +3,10 @@
 This document defines benchmark workloads and methods and analyzes the latest
 full-suite results. The [optimization catalog](optimizations/README.md)
 describes mechanisms and their evidence; commits provide chronology. Its
-numbered records and applicability table remain a partial view until the
-mechanism-inventory proposal in
-[design 024](design/024-optimization-mechanism-controls.md) is implemented.
+mechanism pages and backend table describe current applicability; numbered
+records preserve scoped historical evidence. Same-source reference controls
+are added incrementally under
+[design 024](design/024-optimization-mechanism-controls.md).
 Update the catalog in the same commit as an optimization. Correctness-only fixes do not belong in the catalog; record measured performance impact in their commit messages.
 
 Keep a summary with the baseline commit, candidate change, workload, environment, sample method,
@@ -194,9 +195,10 @@ were measured on a 4-vCPU Intel Xeon virtual machine and are several times slowe
 The first benchmark run on that virtual machine took about 510 ms for JSON and allocated 206 MB in 2.6 million
 allocations.
 
-## Where Each Optimization Applies
+## Mechanism Catalog
 
-See the [applicability table and implementation notes](optimizations/README.md#where-each-optimization-applies).
+See the [mechanism catalog](optimizations/README.md#mechanism-index) for
+stable IDs, backend applicability, default status, controls and evidence links.
 
 ## Change Log
 

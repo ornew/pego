@@ -111,7 +111,8 @@
       "match": [
         "examples/README.md",
         "docs/*.md",
-        "docs/optimizations/*.md"
+        "docs/optimizations/*.md",
+        "docs/optimizations/mechanisms/*.md"
       ],
       "first": [
         "examples/README.md",
@@ -147,7 +148,8 @@
     },
     {
       "match": [
-        "docs/optimizations/*.md"
+        "docs/optimizations/*.md",
+        "docs/optimizations/mechanisms/*.md"
       ],
       "values": {
         "nav": false

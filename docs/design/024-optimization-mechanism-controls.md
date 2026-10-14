@@ -1,6 +1,6 @@
 # 024. Reproducible Controls for Optimization Mechanisms
 
-- **Status**: Proposed
+- **Status**: Partially Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-10
 
@@ -10,13 +10,13 @@ PEGO's numbered optimization records preserve implementation details and
 evidence for individual changes, while commits provide chronology. A
 comparison with an older commit can mix the target optimization with later
 correctness fixes, compiler changes and unrelated optimizations. This design
-proposes stable mechanism identities and same-revision reference controls so
+defines stable mechanism identities and same-revision reference controls so
 that a mechanism can be checked and measured against its alternative at the
 same source revision. Selection happens while compiling or generating a
 parser, or when building a dedicated reference binary, so the normal matching
 path does not pay for a per-call optimization flag. Existing behavior remains
-the default. A complete mechanism inventory is deferred until the current
-queued optimization work is finished.
+the default. A current mechanism catalog is maintained separately from the
+numbered measurement history; control coverage remains incremental.
 
 ## Motivation
 
@@ -55,8 +55,9 @@ meaningful reference path.
   optimized behavior as the default.
 - Distinguish same-revision attribution, historical before/after evidence and
   full-suite snapshots in documentation and benchmark reports.
-- Add controls incrementally with optimization work; defer a full catalog
-  reclassification until the queued work is complete.
+- Maintain the current mechanism catalog separately from historical records.
+- Add reference controls incrementally when a concrete attribution question
+  justifies them; cataloging a mechanism does not imply that a control exists.
 
 ## Non-Goals
 
@@ -73,19 +74,24 @@ meaningful reference path.
 
 ### Mechanism Identity and Inventory
 
-After the queued optimization work, add a mechanism inventory as the primary
-current-state index alongside the existing applicability table. Each
-mechanism gets a stable identifier independent of optimization entry numbers
-and Issue IDs. Numbered records describe mechanisms and preserve their
-evidence; commits provide chronology. The inventory links to relevant records
-instead of duplicating their implementation details or measurements.
+The optimization catalog assigns each current mechanism a stable category ID
+independent of numbered measurement records and Issue IDs. IDs use a letter
+and a three-digit number: `E` for value elision, `M` for
+matching and calls, `R` for reuse and memo/Document state, `A` for allocation
+and retention, and `G` for generation and compilation. IDs are not reused. A mechanism page
+describes the current implementation and links to code, design records and
+numbered evidence pages; the numbered records remain the measurement history.
+The catalog matrix maps each mechanism to its applicable backends, default
+state and reference-control availability.
+Initial allocations leave gaps in steps of ten. Related mechanisms can use
+unused numbers in those gaps; existing IDs are never renumbered or reused.
 
-An inventory item should state, in compact form:
+Each mechanism page should state, in compact form:
 
 - the mechanism and its current source owner;
 - support for the closure runtime, recursive VM, iterative VM, generated Go
-  Node parsing and recognition, typed Go, and TypeScript, with partial support
-  and missing controls made explicit;
+  Node parsing and recognition, typed Go, and TypeScript; mark default
+  applicability separately from reference-control availability;
 - required mechanisms and known interactions that could change results;
 - whether a reference control exists, how it is selected, and what it omits;
 - semantic-equivalence tests and reproducible benchmark workloads;
@@ -191,9 +197,9 @@ that the reference path does not silently drift from the current surrounding
 compiler or runtime.
 
 Introduce controls incrementally when changing a mechanism. Do not add a
-control to an old mechanism without a concrete need and a useful current-head
-comparison. Once queued optimizations are complete, inventory the active
-mechanisms, identify missing controls and decide which are practical to add.
+control to an existing mechanism without a concrete need and a useful
+current-head comparison. Keep the applicability and control inventory current
+as implementations change.
 
 ## Alternatives Considered
 
@@ -221,33 +227,33 @@ contract.
 
 ### Add All Controls Before Further Optimization Work
 
-A full control framework would delay queued correctness and performance work,
-and some mechanisms have no useful alternative to select. Add each control
-alongside the change it can validate, then inventory gaps after the current
-queue is complete.
+A full control framework would delay correctness and performance work, and
+some mechanisms have no useful alternative to select. Add each control
+alongside the change it can validate, then keep the control-coverage inventory
+current as mechanisms change.
 
 ## Implementation Sequence
 
-1. Keep current mechanism descriptions, numbered evidence records and
-   measurement pages intact while queued core optimization work completes.
+1. Keep numbered evidence records and measurement pages as the historical
+   evidence layer. Maintain a separate current-mechanism catalog with stable
+   IDs and pages that link to implementation, design and evidence.
 2. For each new optimization, add a private latest-revision reference route
    when a meaningful alternative can be built without matching-path overhead;
    add parity tests and paired benchmark instructions with the change.
-3. After the queue, define the stable mechanism-ID format and migrate the
-   applicability view into a current-mechanism inventory. Preserve links to
-   numbered records and keep performance analysis separate.
-4. Review uncontrolled mechanisms and add controls only where a concrete
-   attribution question justifies their cost.
+3. Keep the applicability and control inventory current as implementations
+   change. Add controls only where a concrete attribution question justifies
+   their maintenance cost.
 
 ## Limitations and Open Questions
 
-The exact stable-ID syntax and the long-term location of the current mechanism
-inventory should be decided during the post-queue catalog migration. Some
-engine mechanisms may not admit a clean reference route without maintaining a
-second implementation; those may need a build-only variant or remain
-uncontrolled. Generation-time controls can also increase generator and test
-complexity, so each must justify its maintenance cost with a real comparison.
+Some engine mechanisms may not admit a clean reference route without
+maintaining a second implementation; those may need a build-only variant or
+remain uncontrolled. Generation-time controls can also increase generator
+and test complexity, so each must justify its maintenance cost with a real
+comparison.
 
-This proposal does not claim that all current optimizations are independently
-switchable. The first complete inventory and control-coverage review remain
-deferred until the queued optimization work is finished.
+The catalog does not claim that all current optimizations are independently
+switchable. Mechanism identity and the current-mechanism index are implemented;
+backend applicability is documented in the catalog, while control coverage
+remains incremental. Existing mechanism pages do not imply that every route has a
+same-source reference implementation.
