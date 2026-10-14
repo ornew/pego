@@ -91,6 +91,11 @@ go tool pprof -top -nodecount 30 bench.test cpu.out
 go tool pprof -sample_index=alloc_space -top -nodecount 30 bench.test mem.out
 ```
 
+Saved benchmark rows used by the report must contain a positive iteration count and exactly one finite, positive
+`ns/op` value plus finite, nonnegative `B/op` and `allocs/op` values. Zero allocation values are valid; a missing metric
+is not treated as zero. Repeated rows for one benchmark must use the same metric set, and all benchmarks used by one
+report must have the same number of samples. The sample count may be one for a complete single-run report.
+
 Notes:
 
 - Wall-clock numbers vary by a few percent between runs on an idle machine, and by 10–20% on a busy one. Prefer `B/op`

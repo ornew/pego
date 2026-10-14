@@ -54,8 +54,12 @@ func parseResults(data []byte) (*results, error) {
 			r.meta[k] = v
 		case strings.HasPrefix(line, "Benchmark"):
 			f := strings.Fields(line)
-			if len(f) < 4 {
-				continue
+			if len(f) < 4 || len(f)%2 != 0 {
+				return nil, fmt.Errorf("benchmark line %q: want iteration count and complete metric pairs", line)
+			}
+			iterations, err := strconv.ParseUint(f[1], 10, 64)
+			if err != nil || iterations == 0 {
+				return nil, fmt.Errorf("benchmark line %q: invalid iteration count %q", line, f[1])
 			}
 			name := procsSuffix.ReplaceAllString(strings.TrimPrefix(f[0], "Benchmark"), "")
 			// Saved measurements retain their recorded names; render their
@@ -64,10 +68,25 @@ func parseResults(data []byte) (*results, error) {
 			vals := map[string]float64{}
 			for i := 2; i+1 < len(f); i += 2 {
 				v, err := strconv.ParseFloat(f[i], 64)
-				if err != nil {
-					return nil, fmt.Errorf("benchmark line %q: %v", line, err)
+				if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+					return nil, fmt.Errorf("benchmark line %q: invalid %s value %q", line, f[i+1], f[i])
+				}
+				if _, exists := vals[f[i+1]]; exists {
+					return nil, fmt.Errorf("benchmark line %q: duplicate %s metric", line, f[i+1])
 				}
 				vals[f[i+1]] = v
+			}
+			for _, unit := range []string{"ns/op", "B/op", "allocs/op"} {
+				v, ok := vals[unit]
+				if !ok {
+					return nil, fmt.Errorf("benchmark line %q: missing required %s metric", line, unit)
+				}
+				if v < 0 || unit == "ns/op" && v == 0 {
+					return nil, fmt.Errorf("benchmark line %q: invalid %s value %v", line, unit, v)
+				}
+			}
+			if previous := runs[name]; len(previous) > 0 && !sameMetricSet(previous[0], vals) {
+				return nil, fmt.Errorf("benchmark line %q: metric units differ between runs of %s", line, name)
 			}
 			if _, ok := runs[name]; !ok {
 				order = append(order, name)
@@ -117,6 +136,18 @@ func parseResults(data []byte) (*results, error) {
 	return r, nil
 }
 
+func sameMetricSet(a, b map[string]float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for unit := range a {
+		if _, ok := b[unit]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func median(xs []float64) float64 {
 	s := slices.Clone(xs)
 	slices.Sort(s)
@@ -134,7 +165,9 @@ func render(root string, data []byte) ([]byte, error) {
 		return nil, err
 	}
 	var missing []string
+	used := map[string]bool{}
 	get := func(name string) *result {
+		used[name] = true
 		if b := r.bench[name]; b != nil {
 			return b
 		}
@@ -264,6 +297,17 @@ func render(root string, data []byte) ([]byte, error) {
 	if len(missing) > 0 {
 		slices.Sort(missing)
 		return nil, fmt.Errorf("the results lack %s", strings.Join(slices.Compact(missing), ", "))
+	}
+	wantRuns := 0
+	for name := range used {
+		if b := r.bench[name]; b != nil && b.runs > wantRuns {
+			wantRuns = b.runs
+		}
+	}
+	for name := range used {
+		if b := r.bench[name]; b != nil && b.runs != wantRuns {
+			return nil, fmt.Errorf("benchmark %s has %d runs, want %d to match the complete saved run", name, b.runs, wantRuns)
+		}
 	}
 	return out.Bytes(), nil
 }
