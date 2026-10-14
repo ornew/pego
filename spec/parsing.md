@@ -186,6 +186,39 @@ VM), and the Go API changes it with `pego.WithMaxDepth`. The operand of a prefix
 operator and the right operand of an infix operator of an Operators Rule nest
 like rule calls; chains of left-associative operators do not nest.
 
+## Cancellation and Work Limits
+
+The reference Go API accepts invocation-local cancellation and input-work and
+execution-step limits through `WithContext` and `WithWorkLimits`; generated Go
+exposes corresponding package-local options.
+These controls are cooperative and backend-local. A zero limit disables that
+counter. Each counter is monotonic for one invocation and resets on the next
+call. A reservation is checked before the corresponding work begins; if it
+exceeds the remaining allowance, that work is not performed. Counts are
+implementation-specific and are not elapsed-time, memory, or buffered-input
+limits.
+
+Cancellation and exhausted limits are fatal interruptions, not ordinary
+syntactic mismatches. Ordered choice, predicates, recovery, and other grammar
+constructs cannot absorb them. An interrupted batch parse returns no partial
+Node or typed value. In streaming mode, elements already delivered to the
+caller remain delivered; the parser does not retract them. A blocked reader or
+caller callback cannot be preempted by a synchronous parser; cancellation is
+observed after the call returns.
+
+For a `Document`, a cancellation or option error detected before execution has
+touched reusable state preserves its valid caches and last statistics. Once
+execution starts, an interruption clears execution memo/repetition state before
+the next attempt, because entries can depend on unfinished left-recursion work.
+Fully completed input tables may be retained, but incomplete tables are never
+published and are discarded. A retry with fresh invocation controls must produce
+the same result as parsing the current text from scratch.
+
+The API and callback details are described in the
+[Go runtime guide](../docs/guide/runtime.md), [incremental parsing guide](../docs/guide/incremental.md),
+and [streaming guide](../docs/guide/streaming.md). The design record specifies
+counter units, fatal cleanup and portability limits.
+
 ## Modes
 
 The same grammar can be run in several modes. Except where stated, each mode
@@ -194,7 +227,7 @@ gives the results that an ordinary parse gives.
 | Mode | Difference from an ordinary parse |
 |:--|:--|
 | Backends | The reference implementation has three backends (closure, recursive bytecode and iterative bytecode). They give identical values, errors and positions, and differ in speed and in the limit of nesting depth. Generated Go and TypeScript parsers implement the same semantics; their differences, such as the nesting limit, are described in the guides |
-| Recognition | The parse only tells whether the input matches. It gives the same success or failure and the same syntax errors, builds no tree, and does not evaluate actions, so run-time errors of actions are not reported. The captures that [predicates](predicates.md) read are still built |
+| Recognition | The parse only tells whether the input matches. It gives the same success or failure and the same syntax errors, builds no tree, and skips actions whose values are not needed by predicates. Actions needed by predicates still run and can report run-time errors. The captures that [predicates](predicates.md) read are still built |
 | Stream | A parse that reads its input incrementally and hands each element of the [`#stream`](pragmas.md#stream) repetition of the start rule to the caller as it matches. The elements are not part of the value |
 | Incremental | A document that is edited and reparsed reuses results of the previous parse. The result of a parse is the same as that of a parse of the whole new text |
 

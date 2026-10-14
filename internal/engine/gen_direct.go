@@ -334,6 +334,9 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 			seen[name] = true
 			k := d.capVar(s, name)
 			sv := d.decl("x", "any")
+			if d.g.goWorkControls {
+				d.line("p.stepWork()")
+			}
 			d.line("%s = %s", sv, d.rd(k))
 			m.saves = append(m.saves, [2]string{k, sv})
 		})
@@ -353,6 +356,9 @@ func (d *dgen) reset(m dmark) {
 		d.line("p.env = %s", d.rd(m.env))
 	}
 	for _, kv := range m.saves {
+		if d.g.goWorkControls {
+			d.line("p.stepWork()")
+		}
 		d.line("%s = %s", kv[0], d.rd(kv[1]))
 	}
 }
@@ -367,6 +373,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		return "nil"
 	}
 	g := d.g
+	d.line("p.stepWork()")
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
@@ -393,6 +400,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 					cond += fmt.Sprintf(" && p.in[p.pos+%d] == %d", i, r)
 				}
 			}
+			cond = "(!workControlsEnabled || p.control == nil) && (" + cond + ")"
 			if !d.dead {
 				d.used[fail] = true
 			}
@@ -413,7 +421,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
 		d.line("%s", peek(ch, size, ok))
-		d.failIf(fmt.Sprintf("!%s || %s", ok, classReject(e)), fail, fmt.Sprintf("p.expect(p.pos, %d)", g.desc(charClassString(e))))
+		d.failIf(fmt.Sprintf("!%s || %s", ok, g.controlledClassReject(e)), fail, fmt.Sprintf("p.expect(p.pos, %d)", g.desc(charClassString(e))))
 		return d.single(build)
 	case *grammar.Any:
 		size, ok := d.rd(d.shared("size", "int")), d.ok()
@@ -618,7 +626,7 @@ const maxInlineLiteral = 4
 // peek returns the statement that assigns what p.peek returns to ch, size and ok, with the
 // common case written out: the compiler does not inline peek. In Bytes, p.in is empty.
 func peek(ch, size, ok string) string {
-	return fmt.Sprintf("if p.pos < len(p.in) {\n%s, %s, %s = p.in[p.pos], 1, true\n} else {\n%[1]s, %[2]s, %[3]s = p.peek()\n}", ch, size, ok)
+	return fmt.Sprintf("if p.pos < len(p.in) {\np.inputWork(1)\n%s, %s, %s = p.in[p.pos], 1, true\n} else {\n%[1]s, %[2]s, %[3]s = p.peek()\n}", ch, size, ok)
 }
 
 // single consumes the character whose size is in size (after a successful peek), as single.
@@ -762,7 +770,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	}
 	d.line("%s++", count)
 	if build {
-		d.line("p.kidStack = append(p.kidStack, %s)", d.rd(v))
+		d.line("p.pushKid(%s)", d.rd(v))
 	}
 	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
@@ -798,6 +806,9 @@ func (d *dgen) clearScope(es *dscope, e grammar.Expr) {
 	capSets(e, func(name string) {
 		if !seen[name] {
 			seen[name] = true
+			if d.g.goWorkControls {
+				d.line("p.stepWork()")
+			}
 			d.line("%s = nil", d.capVar(es, name))
 		}
 	})
@@ -825,7 +836,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
 		cond = fmt.Sprintf("%s\nif !%s || %s {\np.expect(p.pos, %d)", peek(d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()), d.ok(),
-			classReject(x), d.g.desc(charClassString(x)))
+			d.g.controlledClassReject(x), d.g.desc(charClassString(x)))
 	case *grammar.Any:
 		cond = fmt.Sprintf("%s\nif !%s {\np.expect(p.pos, idAny)", peek("_", d.rd(d.shared("size", "int")), d.ok()), d.ok())
 	default:
@@ -870,7 +881,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 		return "nil"
 	}
 	d.line("%s++", count)
-	d.line("p.kidStack = append(p.kidStack, %s)", d.rd(fv))
+	d.line("p.pushKid(%s)", d.rd(fv))
 	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
@@ -1061,16 +1072,22 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 
 // genSnapshot is the state of the generator a failed direct compilation rolls back.
 type genSnapshot struct {
+	workClasses                    int
 	vars, methods                  string
 	n, descs, literals, methodKeys int
 }
 
 func (g *generator) snapshot() genSnapshot {
-	return genSnapshot{vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+	return genSnapshot{workClasses: len(g.workClassKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
 		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
+	for _, key := range g.workClassKeys[s.workClasses:] {
+		delete(g.workClassNames, key)
+	}
+	clear(g.workClassKeys[s.workClasses:])
+	g.workClassKeys = g.workClassKeys[:s.workClasses]
 	g.vars.Reset()
 	g.vars.WriteString(s.vars)
 	if g.methods.Len() != len(s.methods) {
@@ -1211,7 +1228,7 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
 func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain bool) {
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n", r.name, comment, g.recv(), name, g.valType())
+	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n", r.name, comment, g.recv(), name, g.valType())
 	start, rec := d.start || plain && d.fail, plain && d.fail
 	m.WriteString("\tvar (\n")
 	if start {
@@ -1318,7 +1335,7 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 		d.line("%s = p.makeError(%s, %s)", err, d.rd(far), d.rd(expected))
 		d.line("p.recovered = append(p.recovered, %s)", d.rd(err))
 		if build && visible(e.Expr) {
-			d.line("%s = &terror{Error{%s: %s{%s, p.pos}, Text: p.text(%s, p.pos), Message: %s.Error()}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
+			d.line("%s = &terror{Error{%s: %s{%s, p.pos}, Text: p.text(%s, p.pos), Message: p.recoveryErrorText(%s)}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
 		} else if build {
 			d.line("%s = nil", v)
 		}

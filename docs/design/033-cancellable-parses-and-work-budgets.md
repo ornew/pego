@@ -129,7 +129,29 @@ input initialization uses a fresh control instance; each later Parse resets both
 counters and uses fresh invocation state. Prefer per-call WithContext for an
 editor task so a cancelled construction-default context does not govern every
 future parse. The same caller-selected default context is otherwise retained
-until the Document is released. Edit remains outside parse controls.
+until the Document is released. `Document.Edit` remains outside parse controls.
+
+
+### Document Input Preparation and Piece Storage
+
+Piece-backed storage is internal to `Document`; batch parsing and `ParseStream`
+keep their contiguous input paths. `Document.Text()` and `Node.Text` keep their
+existing meanings. Input work counts actual inspection and copying, not a
+logical source length merely because it is retained. CodePoints initialization
+decodes and normalizes input and charges that work. A large immutable Bytes
+source may be retained as an original string-backed piece without copying or
+scanning it, so zero construction input-work is valid when no input elements
+were inspected. Parsing still charges probes, literal comparisons, text
+extraction and materialization across pieces. `Document.Edit` is not metered.
+
+Completed input tables may remain available after an interruption, but a
+partially built table is never published and must be discarded. A pre-execution
+option error or cancellation, before reusable state is touched, leaves existing
+memo/repetition caches and the last `Stats` intact. Once execution starts, an
+interruption clears the whole memo and repetition maps and VM/value/kid/undo
+scratch; completed input tables remain valid. Retry with a fresh context and
+budget must match fresh parsing. A completed parse may retain its fully built
+input tables for later calls.
 
 Per-call Document options may override context, limits, depth, and trace using
 construction defaults as their starting point. Unit/backend/recognition mode
@@ -238,15 +260,15 @@ leave unsafe state in a pool. This cleanup is outside the exhausted budget and
 is a separately measured nonpreemptible interval before the error returns.
 Normal backtracking/rollback work during execution remains charged and polled.
 
-For an active Document interruption, follow the existing abort rule: drop the
-whole memo and repetition maps, clear VM/value/kid/undo scratch, and retain only
-valid text/options/input tables. Completed entries can depend on unfinished LR
-seeds; dropping only growing entries is insufficient. If initialization of an
-input table was interrupted, discard that partial table. Stats describes the
-attempt, with its existing meaning; work counters are reported on limit errors,
-not silently added to rule-evaluation statistics. Pre-execution option rejection
-or cancellation, before reusable state is touched, leaves the existing caches
-and last stats intact. Retry with a fresh context/budget must match fresh parsing.
+For an interruption after Document execution starts, drop the whole memo and
+repetition maps and clear VM/value/kid/undo scratch. Completed entries can depend
+on unfinished LR seeds; dropping only growing entries is insufficient. Preserve
+fully completed input tables, but discard any partial table rather than publish
+it. A pre-execution option rejection or cancellation, before reusable state is
+touched, leaves the existing caches and last stats intact. Stats describes an
+entered attempt with its existing meaning; work counters appear on limit errors,
+not in rule-evaluation statistics. Retry with a fresh context/budget must match
+fresh parsing.
 
 Document remains single-owner, and old mutable trees can still move during a
 subsequent parse. Interruption is not a transactional rollback of legacy Nodes
@@ -290,8 +312,12 @@ Validate finite nonnegative safe-integer limits; zero means unlimited. Go uint64
 limits outside the TS safe-integer range are not portable literal settings.
 
 Return a distinct exported interruption error with cancellation/limit kind and
-limit accounting; preserve an observed signal reason as cause without retaining
-the signal after return. Use invocation-local counters and conversion state.
+limit accounting; preserve an observed signal reason as cause and clear
+parser-owned signal references after return. Preserved causes and host-managed
+or native `Error.stack` internals may retain caller objects, so no reachability
+guarantee extends through those values. Do not eagerly format or delete caller
+errors or invoke caller-provided `Error.prepareStackTrace`. Use invocation-local
+counters and conversion state.
 Cancellation and limits return null Node/typed value with the interruption error;
 ordinary nil success still has no error. Generated recognition reports it too.
 
@@ -373,12 +399,15 @@ These are proposed gates, not completed validation:
 
 ## Performance and Results
 
-No performance promise or measured result. Pin exact parent and candidate,
-backend/unit, generated controls, compiler/runtime versions, grammar/input hashes,
-and normal GC settings. Compare three controls: exact parent; same-revision
-static build/generation with controls and added state/layout removed; candidate
-with absent controls. Then measure context-only, budgets-only, combined controls,
-and cancellation latency in engine work versus caller-blocked intervals.
+The work-control integration with piece-backed `Document` remains unadopted; no
+new timing result is recorded here. Piece-backed `Document` input is already
+adopted independently. Make no performance promise for work controls. Pin exact
+parent and candidate, backend/unit, generated controls, compiler/runtime
+versions, grammar/input hashes, and normal GC settings. Compare three controls:
+exact parent; same-revision static build/generation with controls and added
+state/layout removed; candidate with controls absent. Then measure context-only,
+budgets-only, combined controls, and cancellation latency in engine work versus
+caller-blocked intervals.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;

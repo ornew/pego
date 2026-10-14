@@ -75,7 +75,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				check()
 				if backing != nil {
 					dirty := doc.vals[:cap(doc.vals)]
-					doc.trace = func(e TraceEvent) {
+					doc.defaults.Trace = func(e TraceEvent) {
 						if e.Kind == TraceExit && e.Rule == "line" && !e.Memo && e.Matched {
 							panic("stop after writing values")
 						}
@@ -99,7 +99,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 							t.Fatal("dirty-stack interruption retained a value")
 						}
 					}
-					doc.trace = nil
+					doc.defaults.Trace = nil
 					check()
 				}
 				if err := doc.Edit(0, doc.in.loaded(), "é😀\n"); err != nil {
@@ -115,7 +115,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					}
 				}
 				if backing != nil {
-					doc.trace = func(e TraceEvent) {
+					doc.defaults.Trace = func(e TraceEvent) {
 						if e.Kind == TraceEnter {
 							panic("stop before cached root")
 						}
@@ -131,7 +131,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					if doc.vals != nil {
 						t.Fatal("aborted parse retained its VM stack")
 					}
-					doc.trace = nil
+					doc.defaults.Trace = nil
 					check()
 				}
 			})

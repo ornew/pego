@@ -51,9 +51,9 @@ reuse.
 
 | | |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | A document holding `text`. Options: `WithUnit` (also the unit of `Edit`) and `WithBackend`. Fails for `RecognizeOnly`, for an unavailable backend (`Closure` on a parser saved without its AST), and for an unknown start rule. Nothing is parsed yet. |
+| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; `WithContext` and `WithWorkLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
-| `doc.Parse()` | Parse the current text. Results and errors are those of `Parser.Parse`, including `SyntaxErrors` returned with a tree for recovered errors. |
+| `doc.Parse(opts...)` | Parse the current text using construction defaults plus invocation overrides. Counters reset per call. Results and errors are those of `Parser.Parse`, including recovered `SyntaxErrors`. |
 | `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
 
@@ -64,14 +64,32 @@ on the earlier decoding, including a prefix completed by an insertion at EOF. In
 have already been replaced with U+FFFD; editing that normalized text does not reassemble the original bytes.
 
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
-Several `Edit` calls can precede one `Parse`.
+Several `Edit` calls can precede one `Parse`. `Document.Edit` is outside parse-work limits.
 
-An action error, a nesting-limit error, or a panic in a trace callback interrupts
-the parse. A `Document` discards its memo and repetition caches after such an
-interruption, because partial results can depend on unfinished left-recursion
-seeds. The text and options stay available for retry or editing; trace panics
-still propagate to the caller. Ordinary syntax errors and recovered errors are
-completed parse outcomes and keep their reusable caches.
+Piece-backed storage is internal to `Document`; batch parsing and streaming keep
+their contiguous input paths. `Document.Text()` and `Node.Text` keep their
+existing meanings. CodePoints initialization decodes and normalizes input, so
+that inspected work is charged. For Bytes, a large immutable input may be kept
+as an original string-backed piece without scanning or copying it; zero
+construction input-work is valid when no elements were inspected. Parsing still
+charges scans, literal comparisons and text materialization across pieces.
+
+A pre-execution option error or cancellation leaves existing reusable caches and
+the last `Stats` intact. Once parse execution starts, an interruption clears
+the whole memo and repetition caches because completed entries can depend on
+unfinished left-recursion seeds. Fully completed input tables may remain; partial
+line or offset tables are never published and are discarded. The text and
+options stay available for retry or editing. A fresh context and budget can
+retry the parse; ordinary syntax errors and recovered errors are completed
+outcomes and keep their reusable caches. Trace panics still propagate after
+cleanup.
+
+`WithContext` cooperatively cancels engine work, and `WithWorkLimits` bounds
+per-invocation input work and execution steps. These are not elapsed-time or
+buffered-byte limits. A blocked reader or callback cannot be preempted by the
+parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#recipe-cancelling-a-stream)
+for the reader ownership boundary and [Runtime](runtime.md) for option names and
+error handling.
 
 ## A Walkthrough With `Stats`
 

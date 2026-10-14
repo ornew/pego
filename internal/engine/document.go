@@ -40,19 +40,18 @@ func useDocumentPieces(text string, unit Unit) bool {
 // The nodes of a shifted result are moved in place when the result is reused (moveResult), so
 // trees returned by earlier parses change with them.
 type Document struct {
-	prog   *Program
-	start  string
-	back   Backend
-	depth  int // limit on call nesting depth
-	trace  func(TraceEvent)
-	in     input // current text (fully loaded)
-	memo   *memoTable
-	stats  Stats
-	edits  []docEdit // all edits so far; nodes record how many their positions account for
-	runs   map[runKey]*runRecord
-	runGen uint32  // edit generation of runs; unchanged parses keep this map
-	kids   []*Node // the parser's stack of repetition values, kept for the next parse
-	vals   []any   // cleared VM value-stack storage, kept for the next parse
+	prog     *Program
+	start    string
+	back     Backend // resolved construction backend
+	defaults ParseOptions
+	in       input // current text (fully loaded)
+	memo     *memoTable
+	stats    Stats
+	edits    []docEdit // all edits so far; nodes record how many their positions account for
+	runs     map[runKey]*runRecord
+	runGen   uint32  // edit generation of runs; unchanged parses keep this map
+	kids     []*Node // the parser's stack of repetition values, kept for the next parse
+	vals     []any   // cleared VM value-stack storage, kept for the next parse
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
 }
@@ -69,21 +68,35 @@ func (prog *Program) NewDocument(start, text string) (*Document, error) {
 
 // NewDocumentWith creates a Document with options such as the position unit. Positions passed
 // to Edit use the same unit.
-func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Document, error) {
+func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Document, err error) {
+	defer func() {
+		if x := recover(); x != nil {
+			if f, ok := x.(fatal); ok {
+				d, err = nil, f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
+			} else {
+				panic(x)
+			}
+		}
+	}()
 	if o.Recognize {
 		return nil, fmt.Errorf("recognition is not supported for documents")
 	}
-	if _, err := prog.rule(o.Backend, start); err != nil {
+	_, _, c, err := prog.admitParse(start, o, false)
+	if err != nil {
 		return nil, err
 	}
-	var in input
-	if useDocumentPieces(text, o.Unit) {
-		in = input{unit: o.Unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, o.Unit)}
-	} else {
-		in = newTextInput(text, o.Unit, true)
-	}
-	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), trace: o.Trace, in: in, memo: newMemoTable()}, nil
+	c.check()
+	in := newControlledDocumentInput(text, o.Unit, c)
+	c.check()
+	in.control = nil // construction counters never become parse defaults
+	return &Document{prog: prog, start: start, back: prog.backend(o.Backend), defaults: o, in: in, memo: newMemoTable()}, nil
 }
+
+// ParseDefaults returns a copy of the construction options. Invocation counters
+// are separate from these defaults.
+func (d *Document) ParseDefaults() ParseOptions { return d.defaults }
 
 // Text returns the current text.
 func (d *Document) Text() string { return d.in.text(0, d.in.loaded()) }
@@ -92,7 +105,46 @@ func (d *Document) Text() string { return d.in.text(0, d.in.loaded()) }
 func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text.
-func (d *Document) Parse() (*Node, error) {
+func (d *Document) Parse() (*Node, error) { return d.ParseWith(d.defaults) }
+
+// ParseWith parses using fully resolved options. Unit, effective backend and
+// recognition mode must match construction; this method does not merge defaults.
+func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
+	if o.Unit != d.in.unit || d.prog.backend(o.Backend) != d.back || o.Recognize {
+		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")
+	}
+	var p *parser
+	executionStarted := false
+	defer func() {
+		x := recover()
+		if p != nil {
+			if executionStarted {
+				if x != nil {
+					p.aborted = true
+				}
+				d.finishParse(p)
+			}
+			// Setup has not changed Document-owned state. Detach only the
+			// temporary parser if admission or the pre-run check failed.
+			p.control = nil
+			p.releaseTraceReferences()
+		}
+		if x != nil {
+			if f, ok := x.(fatal); ok {
+				n, err = nil, f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
+			} else {
+				// run already classified VM faults; never classify again.
+				panic(x)
+			}
+		}
+	}()
+	c := newWorkControl(o.Context, o.WorkLimits)
+	if !workControlsEnabled && c != nil {
+		return nil, fmt.Errorf("work controls are unavailable in the reference build")
+	}
+	c.check()
 	runs, lastRuns := d.runs, d.runs
 	gen := uint32(len(d.edits))
 	if runs != nil && d.runGen == gen {
@@ -102,47 +154,62 @@ func (d *Document) Parse() (*Node, error) {
 	} else {
 		runs = map[runKey]*runRecord{}
 	}
-	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: gen, edits: d.edits,
+	p = &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	if reuseDocumentVMValues {
 		// A large document may have been replaced with a small input.
 		// Bound cached capacity by the current size, with room for small
 		// grammars' fixed stack overhead. Division avoids int overflow.
+		p.vals = d.vals
+		if cap(p.vals)/2 > max(512, d.in.loaded()) {
+			p.vals = nil
+		}
+	}
+	p.control = c
+	p.setTrace(o.Trace)
+	c.check()
+	executionStarted = true
+	n, err = d.prog.run(p, d.back, d.start)
+	if !p.aborted {
+		c.check()
+	}
+	return n, err
+}
+
+// finishParse transfers reusable state before any traced parser is detached.
+// Mandatory cleanup is unbudgeted, so interruption cannot abort it.
+func (d *Document) finishParse(p *parser) {
+	d.stats = p.stats
+	d.kids = p.kidStack[:0]
+	clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
+	if reuseDocumentVMValues {
+		d.vals = p.vals[:0]
 		if cap(d.vals)/2 > max(512, d.in.loaded()) {
 			d.vals = nil
 		}
-		p.vals = d.vals
+		// A whole-rule memo hit evaluates no bodies and never writes the
+		// VM stack. Its already cleared storage needs no second scan.
+		if p.stats.Evaluated != 0 {
+			clear(d.vals[:cap(d.vals)])
+		}
 	}
-	p.setTrace(d.trace)
-	defer func() {
-		d.stats = p.stats
-		d.kids = p.kidStack[:0]
-		clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
-		if reuseDocumentVMValues {
-			d.vals = p.vals[:0]
-			if cap(d.vals)/2 > max(512, d.in.loaded()) {
-				d.vals = nil
-			}
-			// A whole-rule memo hit evaluates no bodies and never writes the
-			// VM stack. Its already cleared storage needs no second scan.
-			if p.stats.Evaluated != 0 {
-				clear(d.vals[:cap(d.vals)])
-			}
-		}
-		// Keep the tables the parse built on demand, so later parses and edits reuse them.
-		d.in.offs, d.in.lines = p.offs, p.lines
-		if p.aborted {
-			// Completed calls may depend on provisional LR seeds too, so
-			// removing only entries marked growing is insufficient.
-			d.memo = newMemoTable()
-			d.runs, d.kids, d.resumed = nil, nil, 0
-			d.vals = nil
-		} else {
-			d.runs, d.resumed = p.runs, p.resumed
-			d.runGen = p.gen
-		}
-	}()
-	return d.prog.run(p, d.back, d.start)
+	// Keep the tables the parse built on demand, so later parses and edits reuse them.
+	d.in.offs, d.in.lines = p.offs, p.lines
+	if p.aborted {
+		// Completed calls may depend on provisional LR seeds too, so
+		// removing only entries marked growing is insufficient.
+		d.invalidateParseState()
+	} else {
+		d.runs, d.resumed = p.runs, p.resumed
+		d.runGen = p.gen
+	}
+}
+
+func (d *Document) invalidateParseState() {
+	clear(d.kids[:cap(d.kids)])
+	clear(d.vals[:cap(d.vals)])
+	d.memo = newMemoTable()
+	d.runs, d.kids, d.vals, d.resumed = nil, nil, nil, 0
 }
 
 // Edit replaces [start, end) of the text (in the Document's position unit) with text.

@@ -449,7 +449,7 @@ func Recognize(input string, opts ...ParseOption) error
 
 It is the engine's [`RecognizeOnly`](runtime.md#recognition-mode) in generated form: the grammar is compiled once more
 with no rule building a value (except those whose values predicates read), into a second rule table in the same file.
-Actions are not evaluated, so `Recognize` does not report runtime errors in actions. On the benchmark workloads it
+Actions whose values are not needed by predicates are skipped. Actions needed by predicates still run and can report runtime errors. On the benchmark workloads it
 takes about half the time of `Parse` (JSON 8.8 → 4.9 ms on a 262 KB input, CSV 4.0 → 1.8 ms), and it is the fastest
 way PEGO has to validate input. The price is a larger file: the second table adds about as much code as the first.
 
@@ -468,6 +468,45 @@ before matching, actions or named-rule lookup. A nil option panics when applied,
 Parser pooling and concurrent calls keep their limits independent. Limits count nested rule calls rather than
 brackets or AST nodes, and raising the limit does not guarantee host-stack capacity.
 
+### Cancellation and work limits
+
+Generated Go entry points also accept invocation-local cancellation and work
+limits. Use the generated package's options and error types:
+
+```go
+node, err := pairsparser.Parse(input,
+    pairsparser.WithContext(ctx),
+    pairsparser.WithWorkLimits(pairsparser.WorkLimits{
+        MaxInputWork: 4_000_000,
+        MaxSteps:     1_000_000,
+    }))
+```
+
+A nil context has no deadline or cancellation signal; zero limits are unlimited. Options apply once in
+order; the last context and the last complete `WorkLimits` value win. Counters
+reset for every call and remain independent during concurrent parsing. The
+same options work with named rules, recognition, direct typed parsing, and
+Node-to-typed conversion.
+
+`MaxInputWork` counts cumulative inspected input elements, including input
+preparation, repeated scans and text extraction. `MaxSteps` counts execution
+and per-element work in actions, memo lookup, graph/list construction, capture
+rollback, diagnostics and typed conversion. Counts depend on the generated
+artifact and position unit; a limit is not a character count, memory cap, or
+elapsed-time limit. Backtracking never refunds work. Depth remains a separate
+limit.
+
+Use `errors.Is(err, context.Canceled)` or `context.DeadlineExceeded` for
+cancellation, and `errors.Is(err, pairsparser.ErrWorkLimit)` for an exhausted
+budget. `errors.As` can retrieve a `*pairsparser.WorkLimitError` with `Kind`,
+`Limit`, `Used` and `Requested`. Interrupted entry points return their zero
+result; recovery cannot turn an interruption into a successful partial tree.
+Previously returned results stay valid, and a later invocation can retry.
+Cancellation is cooperative during engine work and is checked before input
+preparation and before publishing a result.
+
+### Regenerating older callers
+
 Regenerating an older Go parser requires an explicit source migration:
 
 - Change `Parse(input, Bytes)` to `Parse(input, WithUnit(Bytes))`, and likewise for the other entry points.
@@ -476,7 +515,9 @@ Regenerating an older Go parser requires an explicit source migration:
 - Update function values from `func(string, ...Unit)` to `func(string, ...ParseOption)`, with the corresponding
   `ParseRule`, `Recognize` and typed `ParseAST` return signatures. Calls with no options keep their syntax.
 
-New exports `ParseOption`, `WithUnit` and `WithMaxDepth` reserve their names in typed generation. Grammar types
+New exports `ParseOption`, `WithUnit`, `WithMaxDepth`, `WithContext`, `WithWorkLimits`,
+`WorkLimits`, `WorkLimitKind`, `WorkLimitError`, `ErrWorkLimit`, `InputWorkLimit` and
+`StepWorkLimit` reserve their names in typed generation. Grammar types
 colliding with runtime names gain underscores in stable sorted order: `ParseOption` becomes `ParseOption_` and an
 existing `ParseOption_` becomes `ParseOption__`. Aliases and typed result signatures follow those names. Update
 consumers of renamed types and typed function values. Handwritten declarations in the generated package that use
@@ -500,6 +541,7 @@ not.
 | `Document` (incremental parsing) | Yes | **No** |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
+| Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | Go: same package-local options |
 | Choice of backend | Yes | (it is a backend of its own) |
 | `Parser.Grammar()`, saving, loading | Yes | No: the grammar is gone at run time |
 

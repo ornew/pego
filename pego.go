@@ -5,6 +5,7 @@
 package pego
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"slices"
@@ -68,6 +69,34 @@ const (
 
 // ParseOption configures a single parse.
 type ParseOption func(*engine.ParseOptions)
+
+// WorkLimits configures cumulative engine work for a parse invocation.
+// Zero limits are unlimited. Counts depend on backend, input unit and version.
+type WorkLimits = engine.WorkLimits
+
+// WorkLimitError describes a reservation that would exceed a work limit.
+type WorkLimitError = engine.WorkLimitError
+
+// WorkLimitKind identifies the exhausted counter.
+type WorkLimitKind = engine.WorkLimitKind
+
+const (
+	InputWorkLimit = engine.InputWorkLimit
+	StepWorkLimit  = engine.StepWorkLimit
+)
+
+// ErrWorkLimit identifies engine work-limit failures through errors.Is.
+var ErrWorkLimit = engine.ErrWorkLimit
+
+// WithContext selects invocation-local cooperative cancellation. Nil disables it.
+func WithContext(ctx context.Context) ParseOption {
+	return func(o *engine.ParseOptions) { o.Context = ctx }
+}
+
+// WithWorkLimits sets both invocation-local work limits. Zero means unlimited.
+func WithWorkLimits(limits WorkLimits) ParseOption {
+	return func(o *engine.ParseOptions) { o.WorkLimits = limits }
+}
 
 // WithUnit selects the position unit. Matching always proceeds by code point, whatever the unit.
 func WithUnit(u Unit) ParseOption {
@@ -144,10 +173,7 @@ func WithTrace(f func(TraceEvent)) ParseOption {
 			return
 		}
 		if prev := o.Trace; prev != nil {
-			o.Trace = func(e TraceEvent) {
-				prev(e)
-				f(e)
-			}
+			o.Trace = engine.ComposeTrace(prev, f)
 			return
 		}
 		o.Trace = f
@@ -196,6 +222,10 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // retained, so the input never has to fit in memory. If emit returns an error, parsing stops and
 // ParseStream returns that error. An element without a value (for example, one that is discarded with -)
 // is passed as nil. As in any repetition, an element that matches without consuming input ends it.
+// WithContext and WithWorkLimits apply to this invocation. Cancellation cannot interrupt a blocked
+// reader or callback; the caller must arrange for it to return. A returned reader or emit error wins
+// over cancellation first observed after that call. Delivered elements remain caller-owned, and
+// retrying an interrupted stream requires caller-managed input replay.
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {
 	return p.prog.ParseStreamWith(p.start, r, emit, parseOptions(opts))
 }
@@ -215,8 +245,10 @@ type Document struct {
 // ParseStats counts rule evaluations and reused results in a Document.Parse.
 type ParseStats = engine.Stats
 
-// NewDocument creates a Document for text. opts select the position unit, which Edit also uses, and the
-// backend. It returns an error if the backend is unavailable (Closure on a parser saved without the AST).
+// NewDocument creates a Document for text. opts select its fixed unit and backend
+// and the defaults for later Parse calls. Construction and each Parse use fresh
+// work counters. Edit uses the same unit and is outside parse work controls.
+// It returns an error if the backend is unavailable (Closure without the AST).
 func (p *Parser) NewDocument(text string, opts ...ParseOption) (*Document, error) {
 	d, err := p.prog.NewDocumentWith(p.start, text, parseOptions(opts))
 	if err != nil {
@@ -234,8 +266,18 @@ func (d *Document) Text() string { return d.doc.Text() }
 // a valid UTF-8 character.
 func (d *Document) Edit(start, end int, text string) error { return d.doc.Edit(start, end, text) }
 
-// Parse parses the current text. Its results and errors are those of Parser.Parse.
-func (d *Document) Parse() (*Node, error) { return d.doc.Parse() }
+// Parse parses the current text. opts apply once over construction defaults and
+// may change context, work limits, depth and trace, but not unit, effective backend
+// or recognition mode. Overrides do not change future defaults. Pre-execution
+// interruption preserves caches and statistics; execution or publication
+// interruption discards reusable state while preserving text for retry.
+func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
+	o := d.doc.ParseDefaults()
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return d.doc.ParseWith(o)
+}
 
 // Stats returns the evaluation and reuse counts of the last Parse.
 func (d *Document) Stats() ParseStats { return d.doc.Stats() }

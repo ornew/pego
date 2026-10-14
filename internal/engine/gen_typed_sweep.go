@@ -14,9 +14,10 @@ func typedOutputSweepRuntime(source string) (string, error) {
 		old, new string
 		count    int
 	}{
-		{"conv func(any) T) (T, error)", "conv func(any) T, publish func(T, error, *tparser)) (T, error)", 2},
+		{"conv func(any) T) (T, error)", "conv func(any) T, publish func(T, error, *tparser)) (T, error)", 1},
+		{"conv func(any) T) (res T, err error)", "conv func(any) T, publish func(T, error, *tparser)) (res T, err error)", 1},
 		{"return tparseResolved(r, input, o, ext, conv)", "return tparseResolved(r, input, o, ext, conv, publish)", 1},
-		{"\tres := conv(v)\n\tp.recycle()", "\tres := conv(v)\n\tpublish(res, err, p)\n\tp.recycle()", 1},
+		{"\tres = conv(v)\n\to.control.check()", "\tres = conv(v)\n\tpublish(res, err, p)\n\to.control.check()", 1},
 		{"\tmatches  []tmatch // returned in values, so not kept for the next parse", "\tmatches  []tmatch // returned in values, so not kept for the next parse\n\tmatchBlocks [][]tmatch // output owners, dropped at publication/recycle", 1},
 		{"\t\tp.matches = make([]tmatch, nodeChunk)\n", "\t\tp.matches = make([]tmatch, nodeChunk)\n\t\tp.matchBlocks = append(p.matchBlocks, p.matches)\n", 1},
 	}

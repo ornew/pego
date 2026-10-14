@@ -7,9 +7,9 @@ package genrt
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -380,6 +380,10 @@ type ParseOption func(*parseOptions)
 type parseOptions struct {
 	unit     Unit
 	maxDepth int
+	context  context.Context
+	limits   WorkLimits
+	control  *workControl
+	prepared bool
 }
 
 // WithUnit selects the unit of input positions (CodePoints by default).
@@ -389,6 +393,16 @@ func WithUnit(unit Unit) ParseOption { return func(o *parseOptions) { o.unit = u
 // a negative effective limit returns an error before parsing.
 // A larger limit does not guarantee that the host stack can accommodate it.
 func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
+
+// WithContext selects cooperative cancellation for one invocation.
+// A nil context is equivalent to context.Background.
+func WithContext(ctx context.Context) ParseOption { return func(o *parseOptions) { o.context = ctx } }
+
+// WithWorkLimits bounds cumulative examined input and execution work.
+// Zero leaves a counter unlimited; counters are never rolled back.
+func WithWorkLimits(limits WorkLimits) ParseOption {
+	return func(o *parseOptions) { o.limits = limits }
+}
 
 func resolveOptions(opts []ParseOption) (parseOptions, error) {
 	if len(opts) == 0 {
@@ -404,7 +418,38 @@ func resolveOptions(opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = defaultMaxDepth
 	}
+	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
+	}
 	return o, nil
+}
+
+// prepareOptions is called after fixed option and rule-name validation.
+// The resolved state can be shared with a result converter without new counters.
+func prepareOptions(o parseOptions) parseOptions {
+	if !o.prepared {
+		o.prepared = true
+		if workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+			o.control = newWorkControl(o.context, o.limits)
+		}
+	}
+	o.control.check()
+	return o
+}
+
+// recoverParse returns engine interruptions and preserves caller panic identity.
+func recoverParse[T any](v *T, err *error) {
+	if x := recover(); x != nil {
+		switch x := x.(type) {
+		case fatal:
+			var zero T
+			*v, *err = zero, x.err
+		case contextPanic:
+			panic(x.value)
+		default:
+			panic(x)
+		}
+	}
 }
 
 // parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
@@ -418,11 +463,20 @@ func parse(r *rule, seen int, input string, opts []ParseOption) (n *Node, err er
 }
 
 func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
+	defer recoverParse(&n, &err)
+	return parseResolvedWork(r, seen, input, o)
+}
+
+// parseResolvedWork lets a conversion boundary distinguish engine interruption
+// from an ordinary nil result without inspecting caller-owned error values.
+func parseResolvedWork(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
+	o = prepareOptions(o)
 	p, _ := ppool.Get().(*parser)
 	if p == nil {
 		p = &parser{}
 	}
 	defer p.release()
+	p.control = o.control
 	p.maxDepth = o.maxDepth
 	p.memo.stride = seen
 	if len(p.memo.calls) != seen {
@@ -434,16 +488,9 @@ func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, er
 		p.setSource(input)
 	}
 	p.memo.sparse = sparseSeen && p.memo.stride > 64 && p.n > 1024
-	defer func() {
-		if x := recover(); x != nil {
-			f, ok := x.(fatal)
-			if !ok {
-				panic(x)
-			}
-			n, err = nil, f.err
-		}
-	}()
+	p.control.check()
 	v, ok := p.call(r, 0)
+	p.control.check()
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
 			return v, SyntaxErrors(p.recovered)
@@ -508,10 +555,11 @@ const (
 )
 
 type parser struct {
-	unit Unit
-	in   []rune // code points (CodePoints)
-	bs   string // the input (Bytes)
-	n    int    // input length in units
+	control *workControl
+	unit    Unit
+	in      []rune // code points (CodePoints)
+	bs      string // the input (Bytes)
+	n       int    // input length in units
 	// src and offs give token text without copying in CodePoints mode: offs[i] is the byte offset
 	// of code point i (len(in)+1 entries). offs is nil for invalid UTF-8, whose text is built
 	// from in so that U+FFFD replacement stays the same.
@@ -598,6 +646,13 @@ type seenCalls struct {
 // so memoizing every first call cost an entry each for nothing; deferring memoization to the
 // second call evaluates a rule at most twice per position, which keeps parse time linear.
 func (p *parser) firstCall(r *rule) bool {
+	if workControlsEnabled && p.control != nil {
+		return p.controlledFirstCall(r)
+	}
+	return p.firstCallOrdinary(r)
+}
+
+func (p *parser) firstCallOrdinary(r *rule) bool {
 	if r.seen < 0 {
 		return false
 	}
@@ -846,6 +901,10 @@ var noVals [16]any
 
 // envValues returns the current values of the variables names (nil for an undefined variable).
 func (p *parser) envValues(names []string) []any {
+	if workControlsEnabled && p.control != nil {
+		return p.controlledEnvValues(names)
+	}
+
 	if len(names) == 0 {
 		return nil
 	}
@@ -891,6 +950,7 @@ const (
 // newNode returns a copy of v allocated from the node slab. A slab stays alive while any of its
 // nodes is referenced.
 func (p *parser) newNode(v Node) *Node {
+	p.stepWork()
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
 	}
@@ -933,7 +993,7 @@ func (p *parser) fields(n int) Fields {
 // kids returns p.kidStack[base:] as a child list and pops it.
 func (p *parser) kids(base int) []*Node {
 	ks := p.nodes(len(p.kidStack) - base)
-	copy(ks, p.kidStack[base:])
+	copyWork(p, ks, p.kidStack[base:])
 	p.dropKids(base)
 	return ks
 }
@@ -1041,6 +1101,11 @@ type env struct {
 // bound tracks names ever assigned, so first assignments need no linear search.
 // Names from abandoned branches may be absent now; that only causes a search.
 func (p *parser) bind(name string, val any) {
+	if workControlsEnabled && p.control != nil {
+		p.bindControlled(name, val)
+		return
+	}
+
 	e := p.env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
@@ -1096,14 +1161,12 @@ func (p *parser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.trail = p.trail[:m.trail]
 }
 
 func (p *parser) setCapture(slot int, v *Node) {
+	p.stepWork()
 	p.trail = append(p.trail, undo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
 	p.frame.vals[slot] = v
 }
@@ -1111,6 +1174,10 @@ func (p *parser) setCapture(slot int, v *Node) {
 // setSource decodes the input s into code points and, if s is valid UTF-8, records the offset
 // table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *parser) setSource(s string) {
+	if workControlsEnabled && p.control != nil {
+		p.setControlledSource(s)
+		return
+	}
 	n := utf8.RuneCountInString(s)
 	// The buffers of a parser used before are reused (the typed runtime keeps parsers).
 	if cap(p.in) >= n {
@@ -1147,6 +1214,7 @@ func (p *parser) setSource(s string) {
 
 // peek returns the character at the current position and its size in units.
 func (p *parser) peek() (rune, int, bool) {
+	p.inputWork(1)
 	if p.pos >= p.n {
 		return 0, 0, false
 	}
@@ -1154,6 +1222,7 @@ func (p *parser) peek() (rune, int, bool) {
 		if c := p.bs[p.pos]; c < utf8.RuneSelf {
 			return rune(c), 1, true
 		}
+		p.inputWork(uint64(min(utf8.UTFMax, p.n-p.pos)))
 		r, size := utf8.DecodeRuneInString(p.bs[p.pos:])
 		return r, size, true
 	}
@@ -1161,6 +1230,17 @@ func (p *parser) peek() (rune, int, bool) {
 }
 
 func (p *parser) unitLen(s string) int {
+	if workControlsEnabled && p.control != nil && p.unit != Bytes {
+		count := 0
+		for off := 0; off < len(s); {
+			p.valueWork(min(utf8.UTFMax, len(s)-off))
+			_, size := utf8.DecodeRuneInString(s[off:])
+			off += size
+			count++
+		}
+		return count
+	}
+
 	if p.unit == Bytes {
 		return len(s)
 	}
@@ -1180,6 +1260,7 @@ func (p *parser) expect(pos int, id expID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
+			p.stepWork()
 			if e == id {
 				return
 			}
@@ -1217,7 +1298,7 @@ func (p *parser) keep(ids []expID) []expID {
 	if len(ids) == 0 {
 		return nil
 	}
-	if slicesEqual(ids, p.lastKept) { // the same set often repeats
+	if p.equalExpected(ids, p.lastKept) { // the same set often repeats
 		return p.lastKept
 	}
 	if cap(p.arena)-len(p.arena) < len(ids) {
@@ -1225,7 +1306,7 @@ func (p *parser) keep(ids []expID) []expID {
 		p.arena = make([]expID, 0, max(1024, len(ids)))
 	}
 	off := len(p.arena)
-	p.arena = append(p.arena, ids...)
+	p.arena = appendWork(p, p.arena, ids)
 	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
 	return p.lastKept
 }
@@ -1246,6 +1327,7 @@ func slicesEqual(a, b []expID) bool {
 // current record (writes only happen below the read position).
 func (p *parser) mergeExpected(far int, ids []expID) {
 	for _, x := range ids {
+		p.stepWork()
 		p.expect(far, x)
 	}
 }
@@ -1257,12 +1339,18 @@ func (p *parser) text(start, end int) string {
 	if p.offs != nil {
 		return p.src[p.offs[start]:p.offs[end]]
 	}
+	if workControlsEnabled && p.control != nil {
+		return p.detachedText(start, end)
+	}
 	return string(p.in[start:end])
 }
 
 type fatal struct{ err error }
 
 func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
+	if workControlsEnabled && p.control != nil {
+		return p.makeControlledError(pos, expected)
+	}
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
 		if x&msgBit != 0 {
@@ -1292,6 +1380,7 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 
 // call calls rule r at level min.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
+	p.stepWork()
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -1309,7 +1398,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	env := p.envValues(r.vars)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memo.get(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
@@ -1317,7 +1406,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.node, true
 	}
 	rec := len(p.recovered)
@@ -1328,7 +1417,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	var e *memoEntry
 	if r.leader {
 		v, ok = p.grow(r, min, env)
-		e = p.memo.get(r.id, start, min, env)
+		e = p.memoGet(r.id, start, min, env)
 	} else {
 		v, ok = p.invoke(r, min)
 		if !ok {
@@ -1336,8 +1425,8 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, silent: p.silent > 0,
-			errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
-		p.memo.put(r.id, start, min, env, e)
+			errs: p.copyErrors(nil, p.recovered[rec:])}
+		p.memoPut(r.id, start, min, env, e)
 	}
 	far, inner := p.unisolate(m)
 	e.far, e.expected = far, p.keep(inner)
@@ -1355,22 +1444,22 @@ func (p *parser) grow(r *rule, min int, env []any) (*Node, bool) {
 	rec := len(p.recovered)
 	best := p.memo.alloc()
 	*best = memoEntry{end: start, growing: true}
-	p.memo.put(r.id, start, min, env, best)
+	p.memoPut(r.id, start, min, env, best)
 	for {
 		v, ok := p.invoke(r, min)
 		if !ok || (best.ok && p.pos <= best.end) {
 			break
 		}
 		best = p.memo.alloc()
-		*best = memoEntry{node: v, ok: true, end: p.pos, growing: true, errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
-		p.memo.put(r.id, start, min, env, best)
+		*best = memoEntry{node: v, ok: true, end: p.pos, growing: true, errs: p.copyErrors(nil, p.recovered[rec:])}
+		p.memoPut(r.id, start, min, env, best)
 		p.pos = start
 		p.recovered = p.recovered[:rec]
 	}
 	best.growing = false
 	best.silent = p.silent > 0
 	p.pos = best.end
-	p.recovered = append(p.recovered[:rec], best.errs...)
+	p.recovered = p.copyErrors(p.recovered[:rec], best.errs)
 	return best.node, best.ok
 }
 
@@ -1464,6 +1553,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	found := false
 	wrap := v == nil || !v.fresh
 	for _, c := range f.vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -1481,8 +1571,9 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		v.Fields = p.fields(len(names))
 	}
 	for i, name := range names {
+		p.stepWork()
 		if f.vals[i] != nil {
-			v.Fields.set(name, f.vals[i])
+			p.setValueField(&v.Fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -1509,12 +1600,13 @@ func (p *parser) literalText(start int, text string) string {
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
 	if p.unit == Bytes {
-		if !strings.HasPrefix(p.bs[p.pos:], text) {
+		if !p.hasLiteralPrefix(text) {
 			return p.matchReplacementLiteral(rs, text, desc, build)
 		}
 		p.pos += len(text)
 	} else {
 		for _, r := range rs {
+			p.inputWork(1)
 			if p.pos >= p.n || p.in[p.pos] != r {
 				p.expect(start, desc)
 				return nil, false
@@ -1532,7 +1624,7 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 // invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
 func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
-	if !slices.Contains(rs, utf8.RuneError) {
+	if !p.literalHasReplacement(rs) {
 		p.expect(start, desc)
 		return nil, false
 	}
@@ -1640,7 +1732,7 @@ func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", e.Error()}}, fresh: true, terminal: true}), true
+	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
 }
 
 // --- Actions and predicates ---
@@ -1678,7 +1770,7 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			if !ok {
 				panic(x)
 			}
-			panic(fatal{fmt.Errorf("action in %s: %s", where, e.msg)})
+			panic(fatal{c.p.wrapEvalError(where, e.msg)})
 		}
 	}()
 	v := action(c)
@@ -1687,9 +1779,10 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	}
 	n, ok := v.(*Node)
 	if !ok {
-		evalErrorf("result must be a node, got %s", typeName(v))
+		c.p.evalErrorf("result must be a node, got %s", typeName(v))
 	}
 	for _, x := range c.p.created[c.cbase:] {
+		c.p.stepWork()
 		if x == n {
 			n.Start, n.End = int32(c.start), int32(c.end)
 			break
@@ -1755,18 +1848,26 @@ func (c *actx) item(n int) any {
 		return c.newList(c.items)
 	}
 	if n > len(c.items) {
-		evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
+		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
 	}
 	return nodeOrNil(c.items[n-1])
 }
 
 func (c *actx) lookup(name string) any {
+	if workControlsEnabled && c.p.control != nil {
+		if v, ok := c.p.lookupEnvControlled(name); ok {
+			return v
+		}
+		c.p.evalErrorf("variable %s is not defined", name)
+		return nil
+	}
+
 	for e := c.p.env; e != nil; e = e.next {
 		if e.name == name {
 			return e.val
 		}
 	}
-	evalErrorf("variable %s is not defined", name)
+	c.p.evalErrorf("variable %s is not defined", name)
 	return nil
 }
 
@@ -1797,8 +1898,9 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	n := c.p.newNode(Node{kind: k, Fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
+		c.p.stepWork()
 		v := kv[i+1]
-		n.Fields.set(kv[i].(string), v)
+		c.p.setValueField(&n.Fields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
 			if first || child.Start < n.Start {
 				n.Start = child.Start
@@ -1831,7 +1933,9 @@ func (c *actx) newTerminal(typ string, value any) any {
 }
 
 func (c *actx) newList(items []*Node) *Node {
-	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
+	kids := c.p.nodes(len(items))
+	copyWork(c.p, kids, items)
+	return c.listNode(kids)
 }
 
 // listNode returns a List node with the child list kids (which it takes over).
@@ -1839,6 +1943,7 @@ func (c *actx) listNode(kids []*Node) *Node {
 	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
+		c.p.stepWork()
 		if it == nil {
 			continue
 		}
@@ -1856,7 +1961,7 @@ func (c *actx) listNode(kids []*Node) *Node {
 func (c *actx) member(x any, name string) any {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
-		evalErrorf("cannot access .%s of %s", name, typeName(x))
+		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
 	switch name {
 	case "startPos":
@@ -1867,9 +1972,9 @@ func (c *actx) member(x any, name string) any {
 		return c.newList(n.Children)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
-		evalErrorf("%s has no field %s", n.Type(), name)
+		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	v, _ := n.Fields.Get(name)
+	v, _ := c.p.valueField(n.Fields, name)
 	return v
 }
 
@@ -1999,7 +2104,7 @@ func (c *actx) length(x any) any {
 	case nil:
 		return 0
 	}
-	evalErrorf("len: invalid argument %s", typeName(x))
+	c.p.evalErrorf("len: invalid argument %s", typeName(x))
 	return nil
 }
 
@@ -2022,7 +2127,7 @@ func (c *actx) textStr(x any) string {
 		}
 		return c.p.text(int(x.Start), int(x.End))
 	}
-	evalErrorf("text: invalid argument %s", typeName(x))
+	c.p.evalErrorf("text: invalid argument %s", typeName(x))
 	return ""
 }
 
@@ -2082,6 +2187,7 @@ func (c *actx) list(args ...any) any {
 func (c *actx) concat(args ...any) any {
 	base := len(c.p.kidStack)
 	for _, a := range args {
+		c.p.stepWork()
 		c.pushItems(a)
 	}
 	return c.endList(base)
@@ -2092,19 +2198,21 @@ func (c *actx) concat(args ...any) any {
 // as pushes for its arguments followed by endList, so that they build no intermediate list.
 
 func (c *actx) pushMap(list any, f func(item any) any) {
-	for _, it := range listItems("map", list) {
-		c.p.kidStack = append(c.p.kidStack, asNode("map", f(nodeOrNil(it))))
+	for _, it := range c.listItems("map", list) {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(nodeOrNil(it))))
 	}
 }
 
 func (c *actx) pushList(args ...any) {
 	for _, a := range args {
-		c.p.kidStack = append(c.p.kidStack, asNode("list", a))
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("list", a))
 	}
 }
 
 func (c *actx) pushItems(v any) {
-	c.p.kidStack = append(c.p.kidStack, listItems("concat", v)...)
+	c.p.kidStack = appendWork(c.p, c.p.kidStack, c.listItems("concat", v))
 }
 
 // endList returns a list of the elements pushed since base.
@@ -2165,6 +2273,7 @@ func (p *parser) skipTrivia(pr *operatorsRule) {
 func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(op.line.scope))
 		p.frame, p.cut = f, false
@@ -2176,7 +2285,7 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: p.copyErrors(nil, p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -2187,16 +2296,16 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		// reset undoes this candidate's captures; restore them. Nothing parses between saving
 		// and restoring, so one buffer per parser suffices.
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
 
 func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = p.copyErrors(p.recovered, a.errs)
 }
 
 // operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
@@ -2287,6 +2396,7 @@ func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
 		return nil, false
 	}
 	for _, o := range pr.operands {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(o.scope))
 		p.frame, p.cut = f, false
@@ -2368,4 +2478,107 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 	}
 	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
+}
+
+func rtUnaryWork(p *parser, op string, x any) any {
+	switch op {
+	case "-":
+		if i, ok := x.(int); ok {
+			return -i
+		}
+	case "!":
+		if b, ok := x.(bool); ok {
+			return !b
+		}
+	}
+	p.evalErrorf("invalid operand %s for unary %s", typeName(x), op)
+	return nil
+}
+
+func rtBoolWork(p *parser, op string, v any) bool {
+	b, ok := v.(bool)
+	if !ok {
+		p.evalErrorf("invalid operand %s for %s", typeName(v), op)
+	}
+	return b
+}
+
+func rtBinaryWork(p *parser, op string, l, r any) any {
+	switch op {
+	case "==":
+		return rtEqual(l, r)
+	case "!=":
+		return !rtEqual(l, r)
+	}
+	switch l := l.(type) {
+	case int:
+		if r, ok := r.(int); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "-":
+				return l - r
+			case "*":
+				return l * r
+			case "/", "%":
+				if r == 0 {
+					p.evalErrorf("division by zero")
+				}
+				if op == "/" {
+					return l / r
+				}
+				return l % r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	case string:
+		if r, ok := r.(string); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	}
+	p.evalErrorf("invalid operands %s and %s for %s", typeName(l), typeName(r), op)
+	return nil
+}
+
+func listItemsWork(p *parser, fn string, v any) []*Node {
+	switch x := v.(type) {
+	case nil:
+		return nil
+	case *Node:
+		if x == nil {
+			return nil
+		}
+		return x.Children
+	}
+	p.evalErrorf("%s: expected a list, got %s", fn, typeName(v))
+	return nil
+}
+
+func asNodeWork(p *parser, fn string, v any) *Node {
+	switch x := v.(type) {
+	case nil:
+		return nil
+	case *Node:
+		return x
+	}
+	p.evalErrorf("%s: list elements must be nodes, got %s", fn, typeName(v))
+	return nil
 }

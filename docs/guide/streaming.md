@@ -663,10 +663,40 @@ accept that its value is not delivered).
 
 ## Recipe: Cancelling a Stream
 
-The parser blocks inside `Read` while it waits for input, and returning an error from the callback only helps when an
-element completes. To give up on a quiet connection, make `Read` fail from outside: close the connection, set a read
-deadline, or close the write end of the pipe with an error. `ParseStream` returns whatever `Read` returned, so the cause
-survives:
+Pass `pego.WithContext(ctx)` to interrupt engine work cooperatively, or
+`pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: ..., MaxSteps: ...})` to bound
+one invocation. A zero limit is unlimited. Work counts depend on the backend,
+position unit and implementation; reused or copied storage also consumes work.
+Exhaustion matches `pego.ErrWorkLimit` through `errors.Is`.
+Text materialization also consumes work, including building a cached stream
+snapshot and its CodePoints position table. Reading an already cached substring
+requires no additional materialization work; snapshot creation never reads ahead.
+
+Each underlying reader call consumes one step before entering the reader,
+including empty reads, EOF and retries for incomplete characters. When no steps
+remain, that next call is prevented. Bytes consumed by read-ahead do not count
+as examined input until the engine examines them.
+
+The engine checks immediately before and after each underlying reader and emit
+call, including reader retries for empty reads or incomplete characters. An emit
+error or a reader's non-EOF error wins over cancellation first observed after
+that same call, including a reader returning data together with an error.
+Elements already passed to emit remain caller-owned, including when cancellation
+is observed after emit succeeds. Restarting requires replaying the input yourself;
+the current reader offset is not a continuation token. Buffered read-ahead means
+an input-work limit does not cap bytes consumed from the reader.
+
+First-use backend preparation is synchronous and outside work limits. A context
+cancelled before a valid call prevents that preparation; cancellation during it
+is observed after preparation finishes. Compilation through `CompileSource`
+remains separate from the parse invocation.
+
+The parser still blocks inside `Read` while it waits for input. A context cannot
+make an arbitrary reader or callback return. To give up on a quiet connection,
+make `Read` fail from outside: close the connection, set a read deadline, or close
+the write end of the pipe with an error. The parser never closes your reader or
+starts a goroutine for you. This example combines engine cancellation with
+caller-owned I/O cancellation:
 
 ```go
 package main
@@ -691,12 +721,7 @@ rule line =  [a-z0-9]+ #atomic "\n" `
 func parseContext(ctx context.Context, p *pego.Parser, r io.Reader, cancelRead func(error), emit func(*pego.Node) error) error {
 	stop := context.AfterFunc(ctx, func() { cancelRead(ctx.Err()) })
 	defer stop()
-	return p.ParseStream(r, func(n *pego.Node) error {
-		if err := ctx.Err(); err != nil { // also stop between elements
-			return err
-		}
-		return emit(n)
-	})
+	return p.ParseStream(r, emit, pego.WithContext(ctx))
 }
 
 func main() {

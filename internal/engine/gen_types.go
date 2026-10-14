@@ -69,18 +69,21 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		result := t.conv(st, "n")
 		newConv := ""
 		if strings.Contains(result, "a.") {
-			newConv = "\ta := &astConv{}\n"
+			newConv = "\t\ta := &astConv{control: c}\n"
 		}
-		returnResult := "\treturn " + result + ", err\n"
+		returnResult := "\t\treturn " + result + "\n"
 		if (g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep) && newConv != "" {
-			returnResult = "\tres := " + result + "\n\ta.publish(res, err)\n\treturn res, err\n"
+			returnResult = "\t\tres := " + result + "\n\t\ta.publish(res, err)\n\t\treturn res\n"
 		}
 		fmt.Fprintf(&entries, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
-	n, err := Parse(input, opts...)
-%s%s
+ convert := func(n *Node, c *workControl, err error) %s {
+%s%s }
+ o, err := resolveOptions(opts)
+ if err != nil { return convert(nil, nil, err), err }
+ return parseConverted(rules[%d], nseen, input, o, convert)
 }
 
-`, doc, t.goType(st), newConv, strings.TrimSuffix(returnResult, "\n"))
+`, doc, t.goType(st), t.goType(st), newConv, returnResult, start.id)
 	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
@@ -104,16 +107,16 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		} else {
 			needNodes = true
 			result := t.conv(x, "n")
-			fmt.Fprintf(&named, "\t\tn, err := parseResolved(rules[%d], nseen, input, o)\n", r.id)
-			fmt.Fprintf(&named, "\t\tif n == nil {\n\t\t\tvar zero %s\n\t\t\treturn zero, err\n\t\t}\n", t.goType(x))
+			fmt.Fprintf(&named, "\t\treturn parseConverted(rules[%d], nseen, input, o, func(n *Node, c *workControl, err error) %s {\n", r.id, t.goType(x))
+			fmt.Fprintf(&named, "\t\t\tif n == nil { var zero %s; return zero }\n", t.goType(x))
 			if strings.Contains(result, "a.") {
-				named.WriteString("\t\ta := &astConv{}\n")
+				named.WriteString("\t\t\ta := &astConv{control: c}\n")
 				if g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep {
-					fmt.Fprintf(&named, "\t\tres := %s\n\t\ta.publish(res, err)\n\t\treturn res, err\n", result)
+					fmt.Fprintf(&named, "\t\t\tres := %s\n\t\t\ta.publish(res, err)\n\t\t\treturn res\n\t\t})\n", result)
 					continue
 				}
 			}
-			fmt.Fprintf(&named, "\t\treturn %s, err\n", result)
+			fmt.Fprintf(&named, "\t\t\treturn %s\n\t\t})\n", result)
 		}
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
@@ -185,7 +188,7 @@ type listConv struct {
 // runtimeNames are the exported names of the generated runtime, which typed values must avoid.
 var runtimeNames = map[string]bool{
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
-	"ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true,
+	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
@@ -411,6 +414,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
+	a.stepWork()
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
@@ -420,31 +424,32 @@ func (t *typedGen) converters(b *strings.Builder) {
 }
 
 func (a *astConv) toError(n *Node) *Error {
+	a.stepWork()
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
-	msg, _ := n.Field("message").(string)
+	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
 	return v
 }
 
 `, span)
-	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (CST\n// nodes stay *Node).\nfunc (a *astConv) anyValue(v any) any {\n\tn, ok := v.(*Node)\n\tif !ok || n == nil {\n\t\treturn v\n\t}\n\tswitch n.Type() {\n")
+	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (CST\n// nodes stay *Node).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok || n == nil {\n\t\treturn v\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.terms {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\treturn v\n}\n\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\treturn v\n}\n\n", t.names[name], name, span)
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
-				fmt.Fprintf(b, "\tv.%s = %s\n", f.name, t.conv(f.t, fmt.Sprintf("n.Field(%q)", f.name)))
+				fmt.Fprintf(b, "\tv.%s = %s\n", f.name, t.conv(f.t, fmt.Sprintf("a.field(n, %q)", f.name)))
 			}
 		}
 		b.WriteString("\treturn v\n}\n\n")
@@ -452,7 +457,7 @@ func (a *astConv) toError(n *Node) *Error {
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(unionTy)
 		goName := t.names[name]
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"Error\":\n\t\treturn a.toError(n)\n", goName)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"Error\":\n\t\treturn a.toError(n)\n", goName)
 		for _, m := range u.alts {
 			if m, ok := m.(namedTy); ok {
 				switch {
@@ -474,11 +479,11 @@ func (a *astConv) toError(n *Node) *Error {
 		l := t.listOrder[i]
 		elem := t.goType(l.elem)
 		conv := t.conv(l.elem, "c")
-		fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.Children))\n\tfor i, c := range n.Children {\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
+		fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.Children))\n\tfor i, c := range n.Children {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
 	}
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
-	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
+	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
@@ -486,6 +491,20 @@ func (a *astConv) toError(n *Node) *Error {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
 	b.WriteString("}\n\n")
+	b.WriteString(`func (a *astConv) stepWork() {
+ if workControlsEnabled && a.control != nil { a.control.charge(0, 1) }
+}
+func (a *astConv) field(n *Node, name string) any {
+ if !workControlsEnabled || a.control == nil { return n.Field(name) }
+ if n == nil { return nil }
+ for _, f := range n.Fields {
+  a.stepWork()
+  if f.Name == name { return f.Value }
+ }
+ return nil
+}
+
+`)
 }
 
 // runtimeOK reports whether the typed runtime can build every value an entry point may return: the
@@ -604,6 +623,17 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 			}
 		}
 		b.WriteString("\t}\n\treturn nil, false\n}\n\n")
+		if t.g.goWorkControls {
+			fmt.Fprintf(b, "func (v *%s) tfieldWork(p *tparser, name string) (any, bool) {\n\tswitch name {\n", g)
+			for _, f := range t.info.fields[name] {
+				if t.representable(f.t) {
+					fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+f.name))
+				} else {
+					fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
+				}
+			}
+			b.WriteString("\t}\n\treturn nil, false\n}\n\n")
+		}
 	}
 }
 
@@ -626,6 +656,20 @@ func (t *typedGen) back(x ty, v string) string {
 		return fmt.Sprintf("func() any { if %[1]s == nil { return nil }; kids := make([]any, len(%[1]s)); for i, x := range %[1]s { kids[i] = %[2]s }; return tlistOf(kids) }()", v, t.back(x.elem, "x"))
 	}
 	return "nil"
+}
+
+// backWork preserves back's values while accounting for list materialization.
+func (t *typedGen) backWork(x ty, v string) string {
+	switch x := x.(type) {
+	case listTy:
+		return fmt.Sprintf("func() any { if %[1]s == nil { return nil }; kids := make([]any, len(%[1]s)); for i, x := range %[1]s { p.stepWork(); kids[i] = %[2]s }; return p.listField(kids) }()", v, t.backWork(x.elem, "x"))
+	case optTy:
+		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
+			return t.back(x, v)
+		}
+		return t.backWork(x.elem, v)
+	}
+	return t.back(x, v)
 }
 
 // dconv returns a Go expression of type goType(x) converting v, a value of the typed runtime,
@@ -679,7 +723,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 			continue
 		}
 		g := t.names[r.terminalType]
-		fmt.Fprintf(&reg, "\ttrules[%d].term = func(p *tparser, start, end int, text string) tval {\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
+		fmt.Fprintf(&reg, "\ttrules[%d].term = func(p *tparser, start, end int, text string) tval {\n\t\tp.stepWork()\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
 	}
 	var cons strings.Builder
 	for _, name := range t.terms {
@@ -696,13 +740,13 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		for i := range fields {
 			params = append(params, fmt.Sprintf("f%d any", i))
 		}
-		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\ta := c.p.ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), g)
+		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\tc.p.stepWork()\n\ta := c.p.ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), g)
 		for i, f := range fields {
-			fmt.Fprintf(&cons, "\tv.%s = %s\n", f.name, t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
+			fmt.Fprintf(&cons, "\tc.p.stepWork()\n\tv.%s = %s\n", f.name, t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
 		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{c.start, c.end}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
 		for i := range fields {
-			fmt.Fprintf(&cons, "\tspanOf(f%d, &first, &start, &end)\n", i)
+			fmt.Fprintf(&cons, "\tc.p.stepWork()\n\tspanOf(f%d, &first, &start, &end)\n", i)
 		}
 		cons.WriteString("\treturn c.made(v, first, start, end)\n}\n\n")
 	}
@@ -711,19 +755,19 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	for i := 0; i < len(t.tlistOrder); i++ {
 		l := t.tlistOrder[i]
 		elem := t.goType(l.elem)
-		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\ta.stepWork()\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\ta.stepWork()\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
 	}
 	b.WriteString("// tinit sets up the typed rules (called at the end of init, after the rule tables).\nfunc tinit() {\n" + reg.String() + "}\n\n")
 	b.WriteString(cons.String())
 	b.WriteString(convs.String())
-	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n")
+	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n\tcontrol *workControl\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
-	b.WriteString("}\n\n")
+	b.WriteString("}\n\nfunc (a *tslabs) setWorkControl(c *workControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if workControlsEnabled && a.control != nil { a.control.charge(0, 1) } }\n\n")
 }
 
 // astHelpers are the conversion helpers of typed values.

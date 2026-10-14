@@ -108,7 +108,7 @@ func boundedSweepOwnerWhitebox(t *testing.T, code string, direct bool) string {
 	if direct {
 		promote = "a.promoteScalarOwners(m,p)"
 		holder, fits, publish, name = "tslabs", "a.outputFits(p)", "a.publish(root,err,p)", "Direct"
-		matchSetup = `p:=&tparser{};deadMatch:=p.newMatch(0,1,"discarded match",true)`
+		matchSetup = `p:=&tparser{parser:&parser{}};deadMatch:=p.newMatch(0,1,"discarded match",true)`
 		matchDirs = `oldMatches:=p.matchBlocks`
 		matchAssert = `if p.matchBlocks!=nil {t.Fatal("Match directory retained")};for _,b:=range oldMatches {if b!=nil {t.Fatal("Match directory backing retained")}}`
 	}

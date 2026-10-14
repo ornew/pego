@@ -172,7 +172,7 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: appendWork(p, []*SyntaxError(nil), p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -183,16 +183,16 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		// reset undoes this candidate's captures; restore them. Nothing is parsed between saving
 		// and restoring, so one buffer per parser suffices.
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
 
 func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = appendWork(p, p.recovered, a.errs)
 }
 
 // operatorsRuleParse parses an expression, absorbing only operators that bind tighter than binding level
@@ -212,6 +212,9 @@ func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 // operatorsRuleExpr is the body of operatorsRuleParse.
 func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
 	pr := r.operatorsRule
+	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
+		pr = r.controlledOperators
+	}
 	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
@@ -271,6 +274,9 @@ func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
 // operatorsRuleNud parses the beginning of an expression (a prefix operator or an operand).
 func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
 	pr := r.operatorsRule
+	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
+		pr = r.controlledOperators
+	}
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if at, cutFailed := p.longest(pr.prefix); at.op != nil {

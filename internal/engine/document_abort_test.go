@@ -85,7 +85,7 @@ rule x = x "a" / "a"`)
 				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
 					t.Fatal("trace panic retained reusable state")
 				}
-				doc.trace, opts.Trace = nil, nil
+				doc.defaults.Trace, opts.Trace = nil, nil
 				for i := 0; i < 2; i++ {
 					if got, want := resultJSON(doc.Parse()), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
 						t.Fatalf("retry %d: got %s; fresh %s", i, got, want)

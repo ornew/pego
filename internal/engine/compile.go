@@ -64,18 +64,20 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds         ruleKinds
-	id            int
-	name          string
-	def           *grammar.RuleDef
-	scope         *scope
-	body          func(p *parser, min int) (*Node, bool)
-	action        grammar.Term
-	bodyIsSeq     bool
-	terminalType  string
-	memo          bool
-	leader        bool
-	operatorsRule *operatorsRule
+	kinds               ruleKinds
+	id                  int
+	name                string
+	def                 *grammar.RuleDef
+	scope               *scope
+	body                func(p *parser, min int) (*Node, bool)
+	controlledBody      func(p *parser, min int) (*Node, bool)
+	action              grammar.Term
+	bodyIsSeq           bool
+	terminalType        string
+	memo                bool
+	leader              bool
+	operatorsRule       *operatorsRule
+	controlledOperators *operatorsRule
 	// stream reports that the top level of the rule body has a #stream repetition.
 	stream bool
 	// positional reports that the result may depend on position values (analysis.positional).
@@ -186,7 +188,8 @@ type compiler struct {
 	noIndex string
 	descIDs map[string]expID
 	// runSites numbers the repetitions that a Document can resume (resume.go).
-	runSites int
+	runSites      int
+	plainDispatch bool
 }
 
 // desc returns the index of an expectation string (adding it to Program.descs).
@@ -392,6 +395,26 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	if !opts.NoTypeCheck && flags == nil {
 		checkTypes(prog, &c.errs)
 		if len(c.errs) > 0 {
+			return nil, c.errs
+		}
+	}
+	if workControlsEnabled {
+		// Keep the metered graph for controlled invocations, then build a plain
+		// graph without expression-dispatch wrappers. Rule-level selection
+		// avoids paying one extra closure call for every ordinary expression.
+		for _, rs := range [][]*rule{prog.rules, prog.twins} {
+			for _, r := range rs {
+				r.controlledBody, r.controlledOperators = r.body, r.operatorsRule
+			}
+		}
+		c.plainDispatch, c.runSites = true, 0
+		for _, r := range prog.rules {
+			c.compileRule(r)
+		}
+		for _, r := range prog.twins {
+			c.compileRule(r)
+		}
+		if len(c.errs) != 0 {
 			return nil, c.errs
 		}
 	}
@@ -617,7 +640,16 @@ func hasCaptures(e grammar.Expr) bool {
 func quote(s string) string { return strconv.Quote(s) }
 
 // expr compiles the expression. If build is false, it only matches without building values.
+// expr adds the closure expression-dispatch charge around the compiled matcher.
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
+	m := c.exprMatcher(e, s, build)
+	if !workControlsEnabled || c.plainDispatch {
+		return m
+	}
+	return func(p *parser) (*Node, bool) { p.stepWork(); return m(p) }
+}
+
+func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
@@ -640,7 +672,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		return c.single(build, desc, classAccept(e))
 
 	case *grammar.Any:
-		return c.single(build, idAny, func(rune) bool { return true })
+		return c.single(build, idAny, func(*parser, rune) bool { return true })
 
 	case *grammar.Ref:
 		r := c.prog.byName[e.Name]
@@ -714,7 +746,8 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 							ch, _, more = p.peek()
 							peeked = true
 						}
-						if !(more && g.accept(ch)) && p.depth+g.depth <= p.maxDepth {
+						if !(more && g.accept(p, ch)) && p.depth+g.depth <= p.maxDepth {
+							p.stepWork()            // a skipped matcher still consumes dispatch work
 							p.expect(p.pos, g.desc) // what the alternative would record
 							continue
 						}
@@ -949,7 +982,7 @@ func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]boo
 
 // firstGuard tells when an alternative of a choice can be skipped (see firstTerminal).
 type firstGuard struct {
-	accept func(rune) bool // nil if it cannot be
+	accept func(*parser, rune) bool // nil if it cannot be
 	desc   expID
 	depth  int
 }
@@ -958,17 +991,17 @@ func (c *compiler) first(e grammar.Expr) firstGuard {
 	switch t, depth := firstTerminal(c.prog, e, 0, map[string]bool{}); t := t.(type) {
 	case *grammar.Literal:
 		r0, _ := utf8.DecodeRuneInString(t.Value)
-		return firstGuard{func(r rune) bool { return r == r0 }, c.desc(quote(t.Value)), depth}
+		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, c.desc(quote(t.Value)), depth}
 	case *grammar.CharClass:
 		return firstGuard{classAccept(t), c.desc(charClassString(t)), depth}
 	}
 	return firstGuard{}
 }
 
-func (c *compiler) single(build bool, desc expID, accept func(rune) bool) matcher {
+func (c *compiler) single(build bool, desc expID, accept func(*parser, rune) bool) matcher {
 	return func(p *parser) (*Node, bool) {
 		ch, size, ok := p.peek()
-		if !ok || !accept(ch) {
+		if !ok || !accept(p, ch) {
 			p.expect(p.pos, desc)
 			return nil, false
 		}
@@ -1005,18 +1038,17 @@ func charClassString(e *grammar.CharClass) string {
 	return b.String()
 }
 
-// classAccept returns the membership test function of a character class.
 // classAccept returns the membership test of a character class. Classes of one or two ranges,
 // which are most of them, compare against constants; others test ASCII characters with a bitmap.
-func classAccept(e *grammar.CharClass) func(rune) bool {
+func classAccept(e *grammar.CharClass) func(*parser, rune) bool {
 	neg := e.Negated
 	switch len(e.Ranges) {
 	case 1:
 		lo, hi := e.Ranges[0].Lo, e.Ranges[0].Hi
-		return func(r rune) bool { return (lo <= r && r <= hi) != neg }
+		return func(_ *parser, r rune) bool { return (lo <= r && r <= hi) != neg }
 	case 2:
 		lo1, hi1, lo2, hi2 := e.Ranges[0].Lo, e.Ranges[0].Hi, e.Ranges[1].Lo, e.Ranges[1].Hi
-		return func(r rune) bool { return (lo1 <= r && r <= hi1 || lo2 <= r && r <= hi2) != neg }
+		return func(_ *parser, r rune) bool { return (lo1 <= r && r <= hi1 || lo2 <= r && r <= hi2) != neg }
 	}
 	ranges := append([]grammar.CharRange(nil), e.Ranges...)
 	slow := func(r rune) bool {
@@ -1033,11 +1065,20 @@ func classAccept(e *grammar.CharClass) func(rune) bool {
 			ascii[r>>6] |= 1 << (r & 63)
 		}
 	}
-	return func(r rune) bool {
+	return func(p *parser, r rune) bool {
 		if uint32(r) < 128 {
 			return ascii[r>>6]&(1<<(r&63)) != 0
 		}
-		return slow(r)
+		if !workControlsEnabled || p.control == nil {
+			return slow(r)
+		}
+		for _, rg := range ranges {
+			p.stepWork()
+			if rg.Lo <= r && r <= rg.Hi {
+				return !neg
+			}
+		}
+		return neg
 	}
 }
 
@@ -1049,13 +1090,13 @@ func (c *compiler) scanRepeat(e *grammar.Repeat, build bool) matcher {
 	if build {
 		return nil
 	}
-	var accept func(rune) bool
+	var accept func(*parser, rune) bool
 	var desc expID
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
 		accept, desc = classAccept(x), c.desc(charClassString(x))
 	case *grammar.Any:
-		accept, desc = func(rune) bool { return true }, idAny
+		accept, desc = func(*parser, rune) bool { return true }, idAny
 	default:
 		return nil
 	}
@@ -1064,7 +1105,7 @@ func (c *compiler) scanRepeat(e *grammar.Repeat, build bool) matcher {
 		count := 0
 		for max < 0 || count < max {
 			ch, size, ok := p.peek()
-			if !ok || !accept(ch) {
+			if !ok || !accept(p, ch) {
 				p.expect(p.pos, desc)
 				break
 			}
@@ -1177,7 +1218,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 		f := p.newFrame(n)
 		count := 0
 		for i := 0; max < 0 || i < max; i++ {
-			clear(f.vals)
+			clearWork(p, f.vals)
 			m0 := p.mark()
 			prevCut, prevFrame := p.cut, p.frame
 			p.cut, p.frame = false, f

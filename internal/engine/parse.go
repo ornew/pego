@@ -15,26 +15,39 @@ func (prog *Program) Parse(start, input string) (*Node, error) {
 }
 
 // ParseWith parses with options such as the position unit.
-func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, error) {
-	if o.Recognize {
-		rp, err := prog.recognizer()
-		if err != nil {
-			return nil, err
+func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
+	// Initialization can interrupt before run installs its execution recovery.
+	// Preserve caller panics: run already distinguishes bytecode faults from
+	// caller panics, so an outer boundary must not classify them again.
+	defer func() {
+		if x := recover(); x != nil {
+			if f, ok := x.(fatal); ok {
+				n, err = nil, f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
+			} else {
+				panic(x)
+			}
 		}
-		p := newPooledParser(rp, input, o.Unit, false) // recognition rarely needs token text
-		p.maxDepth = o.maxDepth(o.Backend)
-		p.deferMemo = true
-		p.setTrace(o.Trace)
-		_, err = rp.run(p, o.Backend, start)
-		p.releaseScratch()
+	}()
+	active, _, control, err := prog.admitParse(start, o, false)
+	if err != nil {
 		return nil, err
 	}
-	p := newPooledParser(prog, input, o.Unit, true)
+	control.check()
+	p := acquirePooledParser(active)
+	defer p.releaseBatchScratch()
+	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
 	p.setTrace(o.Trace)
-	n, err := prog.run(p, o.Backend, start)
-	p.releaseScratch()
+	n, err = active.run(p, o.Backend, start)
+	if !p.aborted {
+		control.check()
+	}
+	if o.Recognize {
+		n = nil
+	}
 	return n, err
 }
 
@@ -132,6 +145,9 @@ func recoverParse(x any, b Backend, err *error) {
 	if tp, ok := x.(tracePanic); ok {
 		panic(tp.value) // a panic of the trace function, not of the parse
 	}
+	if cp, ok := x.(contextPanic); ok {
+		panic(cp.value)
+	}
 	if re, ok := x.(runtime.Error); ok && (b == Bytecode || b == BytecodeIterative) {
 		*err = fmt.Errorf("invalid bytecode: %v", re)
 		return
@@ -204,17 +220,30 @@ func (prog *Program) ParseStream(start string, r io.Reader, emit func(*Node) err
 
 // ParseStreamWith parses a stream with options such as the position unit.
 func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node) error, o ParseOptions) (err error) {
+	// Admission invokes caller-owned Context methods before execution recovery.
+	// Preserve their panic values rather than classifying them as VM faults.
+	defer func() {
+		if x := recover(); x != nil {
+			if f, ok := x.(fatal); ok {
+				err = f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
+			} else {
+				panic(x)
+			}
+		}
+	}()
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
-	rule, err := prog.rule(o.Backend, start)
+	_, rule, control, err := prog.admitParse(start, o, true)
 	if err != nil {
 		return err
 	}
-	if !rule.stream {
-		return fmt.Errorf("rule %s has no #stream repetition", start)
-	}
-	p := newStreamParser(prog, r, o.Unit)
+	control.check()
+	p := newControlledStreamParser(prog, r, o.Unit, control)
+	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
+	control.check()
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
 	if streamPrefixIsolation && emit == nil {
@@ -234,8 +263,10 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		}
 		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
+	control.check()
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
+		control.check()
 		if len(p.recovered) > 0 {
 			return SyntaxErrors(p.recovered)
 		}
@@ -244,14 +275,22 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	if ok {
 		p.expect(p.pos, idEndInput)
 	}
-	return p.syntaxError()
+	err = p.syntaxError()
+	control.check()
+	return err
 }
 
 // emitStream marks only caller execution. Reset before handling a returned
 // error or committing the prefix, so later VM faults retain their attribution.
 func (p *parser) emitStream(n *Node) error {
+	if workControlsEnabled {
+		p.control.check()
+	}
 	p.emitCall = true
 	err := p.emit(n)
 	p.emitCall = false
+	if err == nil && workControlsEnabled {
+		p.control.check()
+	}
 	return err
 }

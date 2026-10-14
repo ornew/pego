@@ -27,6 +27,7 @@ func (p *parser) iterate(vm *vmProgram, root iframe) iresult {
 	stack := []iframe{root}
 	var res iresult
 	for {
+		p.stepWork()
 		child, out, done := stack[len(stack)-1].next(p, vm, res)
 		if !done {
 			stack = append(stack, child)
@@ -342,7 +343,7 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 		}
 		if res.ok && (f.best.op == nil || p.pos > f.best.end) {
 			f.best = operatorsRuleAttempt{op: op, frame: f.f, v: res.v, start: f.m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[f.m0.recovered:]...)}
+				errs: appendWork(p, []*SyntaxError(nil), p.recovered[f.m0.recovered:])}
 		}
 		if !res.ok && cut {
 			f.cutFailed = true
@@ -350,9 +351,9 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 		if len(f.f.vals) == 0 {
 			p.reset(f.m0)
 		} else {
-			p.saved = append(p.saved[:0], f.f.vals...) // see parser.longest
+			p.saved = appendWork(p, p.saved[:0], f.f.vals) // see parser.longest
 			p.reset(f.m0)
-			copy(f.f.vals, p.saved)
+			copyWork(p, f.f.vals, p.saved)
 		}
 		f.i++
 	}

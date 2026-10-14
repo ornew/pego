@@ -2,8 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"slices"
-	"sort"
 	"strings"
 )
 
@@ -242,6 +240,10 @@ func (e *env) lookup(name string) (any, bool) {
 // environment. A name assigned only on an abandoned branch may be absent now;
 // that false positive only causes a search, not a different binding.
 func (p *parser) bind(name string, val any) {
+	if workControlsEnabled && p.control != nil {
+		p.bindControlled(name, val)
+		return
+	}
 	e := p.env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
@@ -300,10 +302,7 @@ func (p *parser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.trail = p.trail[:m.trail]
 }
 
@@ -332,6 +331,7 @@ func (p *parser) expect(pos int, id expID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
+			p.stepWork()
 			if e == id {
 				return
 			}
@@ -369,7 +369,7 @@ func (p *parser) keep(ids []expID) []expID {
 	if len(ids) == 0 {
 		return nil
 	}
-	if slices.Equal(ids, p.lastKept) { // the same sequence of expectations often repeats
+	if p.equalExpected(ids, p.lastKept) { // the same sequence of expectations often repeats
 		return p.lastKept
 	}
 	if cap(p.arena)-len(p.arena) < len(ids) {
@@ -377,7 +377,7 @@ func (p *parser) keep(ids []expID) []expID {
 		p.arena = make([]expID, 0, max(1024, len(ids)))
 	}
 	off := len(p.arena)
-	p.arena = append(p.arena, ids...)
+	p.arena = appendWork(p, p.arena, ids)
 	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
 	return p.lastKept
 }
@@ -386,6 +386,7 @@ func (p *parser) keep(ids []expID) []expID {
 // stack beyond the current record (writes only happen before the position already read).
 func (p *parser) mergeExpected(far int, ids []expID) {
 	for _, x := range ids {
+		p.stepWork()
 		p.expect(far, x)
 	}
 }
@@ -394,6 +395,7 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
+	p.stepWork()
 	if p.tr != nil {
 		// A traced parse: report the call (tracedCall calls back here with direct set).
 		if !p.tr.direct {
@@ -445,8 +447,15 @@ func (p *parser) envValues(names []string) []any {
 		return noVals[:len(names):len(names)]
 	}
 	vals := make([]any, len(names))
+	if !workControlsEnabled || p.control == nil {
+		for i, name := range names {
+			vals[i], _ = p.env.lookup(name)
+		}
+		return vals
+	}
 	for i, name := range names {
-		vals[i], _ = p.env.lookup(name)
+		p.stepWork()
+		vals[i], _ = p.lookupValue(name)
 	}
 	return vals
 }
@@ -466,7 +475,7 @@ func (p *parser) firstCall(r *rule) bool {
 	if !p.deferMemo || r.seen < 0 {
 		return false
 	}
-	return p.memo.firstCall(p.pos, r.seen)
+	return p.memoFirstCall(p.pos, r.seen)
 }
 
 // numberSeen numbers the rules whose memoization firstCall may defer (rule.seen) and returns
@@ -507,8 +516,8 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
 	// recovered errors is reused only in the same kind of context it was computed in.
-	e, found := p.memo.get(key)
-	if found && e.vgen != p.gen && !advanceEntry(e, p.edits[:p.gen]) {
+	e, found := p.memoGet(key)
+	if found && e.vgen != p.gen && !p.advanceEntry(e, p.edits[:p.gen]) {
 		found = false // an edit since invalidated it
 	}
 	if found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
@@ -533,7 +542,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 			return st, nil, false, true
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = appendWork(p, p.recovered, e.errs)
 		return st, e.node, true, true
 	}
 	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, memoProvisionalUses: p.memoProvisionalUses}
@@ -548,15 +557,15 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool) {
 	var e *memoEntry
 	if r.leader {
-		e, _ = p.memo.get(st.key)
+		e, _ = p.memoGet(st.key)
 	} else {
 		if !ok {
 			p.recovered = p.recovered[:st.rec]
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
-			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
-		p.memo.put(st.key, e)
+			positional: r.positional, errs: appendWork(p, []*SyntaxError(nil), p.recovered[st.rec:])}
+		p.memoPut(st.key, e)
 	}
 	far, inner := p.unisolate(st.exp)
 	if e != nil {
@@ -595,20 +604,21 @@ func (p *parser) growBegin(key memoKey) growState {
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen, vgen: p.gen}
 	p.activeSeed = g.best
-	p.memo.put(key, g.best)
+	p.memoPut(key, g.best)
 	return g
 }
 
 // growStep receives the body's result; if the match grew, it stores the result in the memo,
 // prepares the next evaluation, and returns true.
 func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
+	p.stepWork()
 	if !ok || (g.best.ok && p.pos <= g.best.end) {
 		return false
 	}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: appendWork(p, []*SyntaxError(nil), p.recovered[g.rec:])}
 	p.activeSeed = g.best
-	p.memo.put(g.key, g.best)
+	p.memoPut(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]
 	return true
@@ -628,14 +638,18 @@ func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
 	best.from = p.lw
 	best.positional = r.positional
 	p.pos = best.end
-	p.recovered = append(p.recovered[:g.rec], best.errs...)
+	p.recovered = appendWork(p, p.recovered[:g.rec], best.errs)
 	return best.node, best.ok
 }
 
 // invoke evaluates the rule body and builds the value with the action or the CST rules.
 func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	st := p.invokeBegin(r)
-	v, ok := r.body(p, min)
+	body := r.body
+	if workControlsEnabled && p.control != nil && r.controlledBody != nil {
+		body = r.controlledBody
+	}
+	v, ok := body(p, min)
 	return p.invokeEnd(r, &st, v, ok)
 }
 
@@ -643,6 +657,7 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 // invokeBegin and invokeEnd inlined, minus the capture frame (the body never writes one, so the
 // caller's stays current), and with the failure handling of call.
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -651,7 +666,11 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
 	}
 	p.stats.Evaluated++
-	v, ok := r.body(p, min)
+	body := r.body
+	if workControlsEnabled && p.control != nil && r.controlledBody != nil {
+		body = r.controlledBody
+	}
+	v, ok := body(p, min)
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:min2(trail, len(p.trail))]
@@ -676,6 +695,7 @@ type invokeState struct {
 }
 
 func (p *parser) invokeBegin(r *rule) invokeState {
+	p.stepWork()
 	st := invokeState{f: p.newFrame(len(r.scope.names)), prevFrame: p.frame, prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
 	p.frame, p.cut = st.f, false
 	p.depth++
@@ -735,6 +755,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 	found := false
 	wrap := v == nil || !v.fresh
 	for _, c := range f.vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -753,8 +774,9 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		v.Fields = p.fields(len(s.names))
 	}
 	for i, name := range s.names {
+		p.stepWork()
 		if f.vals[i] != nil {
-			v.Fields.set(name, f.vals[i])
+			p.setValueField(&v.Fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -824,13 +846,14 @@ func (p *parser) syntaxError() *SyntaxError {
 func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
+		p.stepWork()
 		if x&msgBit != 0 {
 			e.Messages = append(e.Messages, p.descs[x&^msgBit])
 		} else {
 			e.Expected = append(e.Expected, p.descs[x])
 		}
 	}
-	sort.Strings(e.Expected)
+	p.sortExpected(e.Expected)
 	e.Line, e.Col = p.lineCol(pos)
 	return e
 }
@@ -865,12 +888,7 @@ func (p *parser) moveResult(e *memoEntry) {
 	} else if n.gen < p.gen {
 		p.moveTree(n, p.shiftOf(n))
 	}
-	if len(p.moved) > 1024 {
-		p.moved = nil
-	} else {
-		clear(p.moved)
-	}
-	clear(p.shifts)
+	p.clearMovementWork()
 }
 
 // shiftOf returns how far the non-empty node n of the result being moved moves with the edits
@@ -886,6 +904,7 @@ func (p *parser) shiftOf(n *Node) int {
 	}
 	s := int(n.Start)
 	for _, ed := range p.edits[n.gen:p.gen] {
+		p.stepWork()
 		if s >= ed.end {
 			s += ed.delta
 		}
@@ -899,16 +918,19 @@ func (p *parser) shiftOf(n *Node) int {
 
 // moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
 func (p *parser) moveTree(n *Node, shift int) {
+	p.stepWork()
 	gen := n.gen
 	n.Start += int32(shift)
 	n.End += int32(shift)
 	n.gen = p.gen
 	for i, c := range n.Children {
+		p.stepWork()
 		if c != nil && c.gen < p.gen {
 			n.Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
 	for i := range n.Fields {
+		p.stepWork()
 		if c, ok := n.Fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
 			n.Fields[i].Value = p.moveChild(c, gen, shift)
 		}
@@ -937,6 +959,7 @@ func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
 // ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
 // Copies made in the same moveResult are shared.
 func (p *parser) moveEmpty(n *Node, shift int) *Node {
+	p.stepWork()
 	if c, ok := p.moved[n]; ok {
 		return c
 	}
@@ -947,12 +970,14 @@ func (p *parser) moveEmpty(n *Node, shift int) *Node {
 	if n.Children != nil {
 		c.Children = p.nodes(len(n.Children))
 		for i, ch := range n.Children {
+			p.stepWork()
 			c.Children[i] = p.moveDescendant(ch, n.gen, shift)
 		}
 	}
 	if n.Fields != nil {
 		c.Fields = p.fields(len(n.Fields))[:len(n.Fields)]
 		for i, f := range n.Fields {
+			p.stepWork()
 			if vn, ok := f.Value.(*Node); ok {
 				f.Value = p.moveDescendant(vn, n.gen, shift)
 			}

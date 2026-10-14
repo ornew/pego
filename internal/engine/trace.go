@@ -125,12 +125,17 @@ type tracer struct {
 // tracePanic, so that it is not taken for a fault of the parse (a runtime error on a bytecode
 // backend is reported as invalid bytecode), and is raised again unchanged.
 func (t *tracer) emit(ev TraceEvent) {
+	ev.p.control.check()
 	defer func() {
 		if x := recover(); x != nil {
+			if _, ok := x.(fatal); ok {
+				panic(x) // a charged TraceEvent accessor interrupted engine work
+			}
 			panic(tracePanic{x})
 		}
 	}()
 	t.fn(ev)
+	ev.p.control.check()
 }
 
 // tracePanic is a panic of the trace function, with the value it panicked with.
@@ -220,4 +225,17 @@ func (f *traceFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 	}
 	p.traceExit(res.ok)
 	return nil, res, true
+}
+
+// ComposeTrace joins public option callbacks while checking interruption before
+// starting the next individual callback. Caller-created composite functions are
+// still arbitrary caller code and cannot be preempted internally.
+func ComposeTrace(prev, next func(TraceEvent)) func(TraceEvent) {
+	return func(ev TraceEvent) {
+		prev(ev)
+		if workControlsEnabled {
+			ev.p.control.check()
+		}
+		next(ev)
+	}
 }

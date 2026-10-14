@@ -225,7 +225,7 @@ func TestSweepConversionOwners(t *testing.T) {
 const typedSweepDirectWhitebox = `
 func TestSweepDirectInteriorPointers(t *testing.T) {
  for _,field:=range []string{"text","start","end","bool","count","ownerText","matchText","matchStart","matchEnd"} {
-  a:=&tslabs{};p:=&tparser{}
+  a:=&tslabs{};p:=&tparser{parser:&parser{}}
   tokens:=make([]Token,3);a.tToken.blocks=[][]Token{tokens}
   tokens[0]=Token{Span:Span{4,9},Text:"live"};tokens[1].Text="next";tokens[2].Text="dead"
   owners:=make([]ScalarOwner,1);a.tScalarOwner.blocks=[][]ScalarOwner{owners}
@@ -245,7 +245,7 @@ func TestSweepOwnedGraph(t *testing.T) {
  dead:=astNew(&a.tToken); *dead=Token{Text:"discarded large text"}
  live:=astNew(&a.tToken); *live=Token{Text:"live"}
  pair:=astNew(&a.tPair); *pair=Pair{Left:live,Right:live,Label:"pair"}
- p:=&tparser{}
+ p:=&tparser{parser:&parser{}}
  deadMatch:=p.newMatch(0,100,"discarded match",true)
  keep:=p.newMatch(100,101,"m",true); pair.M=&keep.Match
  root:=&Box{Items:[]*Pair{pair},Nested:[][]*Token{{live}}}
@@ -362,7 +362,7 @@ func TestTypedOutputSweepAnchors(t *testing.T) {
 		anchors      []string
 	}{
 		{"slabs", astHelpers, typedOutputSweepHelpers, []string{"\tnext int\n", "\ts.free = make([]T, size)\n"}},
-		{"runtime", typedSource, typedOutputSweepRuntime, []string{"\tres := conv(v)\n\tp.recycle()", "\tmatches  []tmatch // returned in values, so not kept for the next parse", "\t\tp.matches = make([]tmatch, nodeChunk)\n"}},
+		{"runtime", typedSource, typedOutputSweepRuntime, []string{"\tres = conv(v)\n\to.control.check()", "\tmatches  []tmatch // returned in values, so not kept for the next parse", "\t\tp.matches = make([]tmatch, nodeChunk)\n"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if _, err := tc.rewrite(tc.source); err != nil {

@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -132,6 +131,7 @@ func (in *input) decodePieces(i int) (r rune, size, examined int, ok bool) {
 	}
 	var buf [utf8.UTFMax]byte
 	available := min(utf8.UTFMax, in.pieces.n-i)
+	in.inputWork(uint64(available))
 	for j := 0; j < available; j++ {
 		b, _ := in.pieces.at(i + j)
 		buf[j] = byte(b)
@@ -153,6 +153,7 @@ func (p *parser) matchLiteralPieces(rs []rune, bs []byte) bool {
 	if p.unit == Bytes {
 		n = len(bs)
 		for k < n {
+			p.inputWork(1)
 			b, ok := p.pieces.at(p.pos + k)
 			if !ok || byte(b) != bs[k] {
 				break
@@ -162,6 +163,7 @@ func (p *parser) matchLiteralPieces(rs []rune, bs []byte) bool {
 	} else {
 		n = len(rs)
 		for k < n {
+			p.inputWork(1)
 			r, ok := p.pieces.at(p.pos + k)
 			if !ok || r != rs[k] {
 				break
@@ -174,7 +176,7 @@ func (p *parser) matchLiteralPieces(rs []rune, bs []byte) bool {
 		p.pos += n
 		return true
 	}
-	if p.unit == Bytes && slices.Contains(rs, utf8.RuneError) {
+	if p.unit == Bytes && p.literalHasReplacement(rs) {
 		return p.matchLiteralRunes(rs)
 	}
 	p.touch(p.pos + k + 1)

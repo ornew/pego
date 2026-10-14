@@ -139,14 +139,15 @@ function sortedFields(fs: readonly NodeField[]): NodeField[] {
   return fs.slice().sort((a, b) => compareStrings(a.name, b.name));
 }
 
-function setField(n: Node, name: string, v: Value): void {
+function setField(n: Node, name: string, v: Value, control: WorkControl | null = null): void {
   if (n.fields === noFields) {
     n.fields = [{ name, value: v }];
     return;
   }
   const fs = n.fields as NodeField[];
   for (const f of fs) {
-    if (f.name === name) {
+    control?.charge(0, 1);
+    if (control === null ? f.name === name : equalStringsWork(f.name, name, control)) {
       f.value = v;
       return;
     }
@@ -564,29 +565,42 @@ const defaultMaxDepth = 100_000;
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
+  signal?: CancellationSignal | null;
+  maxInputWork?: number;
+  maxSteps?: number;
 }
 
-function resolveOptions(options?: ParseOptions): { unit: Unit; maxDepth: number } | Error {
+function resolveOptions(options?: ParseOptions): ResolvedParseOptions | Error {
   const unit = options?.unit === Bytes ? Bytes : CodePoints;
   const depth = options?.maxDepth ?? 0;
+  const signal = options?.signal ?? null;
+  const maxInputWork = options?.maxInputWork ?? 0;
+  const maxSteps = options?.maxSteps ?? 0;
   if (!Number.isSafeInteger(depth) || depth < 0) {
     return new Error(`max depth must be a non-negative safe integer: ${depth}`);
   }
-  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth };
+  if (!Number.isSafeInteger(maxInputWork) || maxInputWork < 0) {
+    return new Error(`max input work must be a non-negative safe integer: ${maxInputWork}`);
+  }
+  if (!Number.isSafeInteger(maxSteps) || maxSteps < 0) {
+    return new Error(`max steps must be a non-negative safe integer: ${maxSteps}`);
+  }
+  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };
 }
 
 // Selected at generation time; large rule tables allocate visited regions only.
 const sparseSeen = true;
 
 // run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
-function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth): ParseResult {
+function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth, control: WorkControl | null = null): ParseResult {
   let p: Parser | null = null;
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
-    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth);
+    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
     return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
+      if (control !== null) throw x;
       return { node: null, error: x.err };
     }
     if (isStackOverflow(x)) {
@@ -613,14 +627,17 @@ function isStackOverflow(x: unknown): boolean {
 function result(p: Parser, v: R): ParseResult {
   if (v !== undefined && p.pos === p.n) {
     if (p.recovered.length > 0) {
-      return { node: v, error: new SyntaxErrors(p.recovered) };
+      if (p.control !== null) reserveRecoveredMessageWork(p.recovered, p.control);
+      const error = new SyntaxErrors(p.recovered);
+      p.control?.check();
+      return { node: v, error };
     }
     return { node: v, error: null };
   }
   if (v !== undefined) {
     p.expect(p.pos, idEndInput);
   }
-  return { node: null, error: p.makeError(p.farthest, p.exp.slice(p.expBase, p.expTop)) };
+  return { node: null, error: p.makeError(p.farthest, p.control === null ? p.exp.slice(p.expBase, p.expTop) : copyIDsWork(p.exp, p.expBase, p.expTop, p.control)) };
 }
 
 // --- Input ---
@@ -875,7 +892,7 @@ const noExp: number[] = [];
 const noErrs: SyntaxError[] = [];
 
 // sameValues reports whether two lists of variable values are equal.
-function sameValues(a: Value[] | null, b: Value[] | null): boolean {
+function sameValues(a: Value[] | null, b: Value[] | null, control: WorkControl | null = null): boolean {
   if (a === null || b === null) {
     return (a === null ? 0 : a.length) === (b === null ? 0 : b.length);
   }
@@ -883,6 +900,19 @@ function sameValues(a: Value[] | null, b: Value[] | null): boolean {
     return false;
   }
   for (let i = 0; i < a.length; i++) {
+    if (control !== null) {
+      control.charge(0, 1);
+      const x = a[i], y = b[i];
+      if (typeof x === "string" && typeof y === "string") {
+        if (x.length !== y.length) return false;
+        for (let from = 0; from < x.length; from += 128) {
+          const end = Math.min(from + 128, x.length);
+          control.charge(0, end - from);
+          if (x.slice(from, end) !== y.slice(from, end)) return false;
+        }
+        continue;
+      }
+    }
     if (a[i] !== b[i]) {
       return false;
     }
@@ -951,7 +981,26 @@ class Parser {
   ac: Actx;
   saved: (Node | null)[] = []; // captures saved across a reset in longest
 
-  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number) {
+  readonly control: WorkControl | null;
+
+  stepWork(n = 1): void { this.control?.charge(0, n); }
+
+  // Generated comparisons call here before reading the cached character value.
+  // Keeping the charge outside the boolean expression also avoids adding
+  // another nested control-flow node to each class range in TypeScript.
+  testCharacter(ch: number, want: number, op: "===" | "<" | "<=" | ">" | ">="): boolean {
+    this.stepWork();
+    switch (op) {
+      case "===": return ch === want;
+      case "<": return ch < want;
+      case "<=": return ch <= want;
+      case ">": return ch > want;
+      case ">=": return ch >= want;
+    }
+  }
+
+  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
+    this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
     this.stride = stride;
@@ -962,7 +1011,19 @@ class Parser {
     this.cps = new Int32Array(0);
     this.bs = new Uint8Array(0);
     this.offs = null;
-    if (unit === Bytes) {
+    if (control !== null) {
+      if (unit === Bytes) {
+        this.bs = typeof input === "string" ? encodeUTF8Work(input, control) : input;
+        this.n = this.bs.length;
+        this.src = this.decodeBytesWork();
+      } else if (typeof input === "string") {
+        this.src = this.decodeStringWork(input);
+        this.n = this.cps.length;
+      } else {
+        this.src = this.decodeCodePointsWork(input);
+        this.n = this.cps.length;
+      }
+    } else if (unit === Bytes) {
       this.bs = typeof input === "string" ? encodeUTF8(input) : input;
       this.n = this.bs.length;
       this.src = this.decodeBytes();
@@ -1078,6 +1139,110 @@ class Parser {
     return codePointsString(cps.subarray(0, j));
   }
 
+  decodeStringWork(s: string): string {
+    const control = this.control!;
+    const n = runeCountWork(s, control);
+    const cps = new Int32Array(n);
+    let offs: Int32Array | null = null;
+    let lone = false;
+    let j = 0;
+    for (let i = 0; i < s.length; i++) {
+      let c = stringUnitWork(s, i, control);
+      if (c >= 0xd800 && c <= 0xdfff) {
+        if (c < 0xdc00 && i + 1 < s.length && (stringUnitWork(s, i + 1, control) & 0xfc00) === 0xdc00) {
+          if (offs === null) {
+            offs = new Int32Array(n + 1);
+            for (let k = 0; k < j; k++) {
+              control.charge(0, 1);
+              offs[k] = k;
+            }
+          }
+          offs[j] = i;
+          cps[j++] = 0x10000 + ((c - 0xd800) << 10) + (stringUnitWork(s, i + 1, control) - 0xdc00);
+          i++;
+          continue;
+        }
+        c = 0xfffd;
+        lone = true;
+      }
+      if (offs !== null) {
+        offs[j] = i;
+      }
+      control.charge(0, 1);
+      cps[j++] = c;
+    }
+    if (offs !== null) {
+      offs[n] = s.length;
+    }
+    this.cps = cps;
+    this.offs = offs;
+    return lone ? wellFormedWork(s, control) : s;
+  }
+
+  decodeCodePointsWork(b: Uint8Array): string {
+    const control = this.control!;
+    const cps = new Int32Array(b.length);
+    let j = 0;
+    let astral = false;
+    for (let i = 0; i < b.length;) {
+      const decoded = decodeRuneWork(b, i, b.length, control);
+      const c = decoded.rune;
+      i += decoded.size;
+      astral = astral || c > 0xffff;
+      cps[j++] = c;
+    }
+    this.cps = cps.subarray(0, j);
+    if (astral) {
+      const offs = new Int32Array(j + 1);
+      let o = 0;
+      for (let k = 0; k < j; k++) {
+        control.charge(1, 1);
+        offs[k] = o;
+        o += cps[k]! > 0xffff ? 2 : 1;
+      }
+      offs[j] = o;
+      this.offs = offs;
+    }
+    return codePointsStringWork(this.cps, control);
+  }
+
+  decodeBytesWork(): string {
+    const control = this.control!;
+    const b = this.bs;
+    const n = b.length;
+    let ascii = true;
+    for (let i = 0; i < n; i++) {
+      if (byteUnitWork(b, i, n, control) >= 0x80) {
+        ascii = false;
+        break;
+      }
+    }
+    const cps = new Int32Array(n);
+    const offs = ascii ? null : new Int32Array(n + 1);
+    let j = 0;
+    let o = 0;
+    for (let i = 0; i < n;) {
+      const decoded = decodeRuneWork(b, i, n, control);
+      let c = decoded.rune;
+      if (decoded.size === 1 && c === 0xfffd) {
+        c = 0xdc00 + byteUnitWork(b, i, n, control); // an invalid byte
+      }
+      if (offs !== null) {
+        offs[i] = o;
+      }
+      o += c > 0xffff ? 2 : 1;
+      control.charge(0, 1);
+      cps[j++] = c;
+      i += decoded.size;
+    }
+    if (offs !== null) {
+      offs[n] = o;
+    }
+    this.offs = offs;
+    return codePointsStringWork(cps.subarray(0, j), control);
+  }
+
+
   // firstCall records a call of rule r at the current position and reports whether its
   // memoization is deferred: it is the first call there, and repeated calls of the rule have been
   // rare so far. Results are reused only when a rule is called again at a position, which is rare,
@@ -1116,7 +1281,8 @@ class Parser {
 
   memoGet(rule: number, pos: number, min: number, env: Value[] | null): MemoEntry | null {
     for (let e = this.slots[pos]; e; e = e.next) {
-      if (e.rule === rule && e.min === min && sameValues(e.env, env)) {
+      this.stepWork();
+      if (e.rule === rule && e.min === min && sameValues(e.env, env, this.control)) {
         return e;
       }
     }
@@ -1130,7 +1296,8 @@ class Parser {
     e.env = env;
     let prev: MemoEntry | null = null;
     for (let x = this.slots[pos]; x; prev = x, x = x.next) {
-      if (x.rule === rule && x.min === min && sameValues(x.env, env)) {
+      this.stepWork();
+      if (x.rule === rule && x.min === min && sameValues(x.env, env, this.control)) {
         e.next = x.next;
         if (prev === null) {
           this.slots[pos] = e;
@@ -1143,7 +1310,17 @@ class Parser {
     if (this.slots.length === 0) {
       // One slot per position, allocated at once: writes far beyond the end of an array would
       // make it a slow dictionary.
-      this.slots = new Array(this.n + 1).fill(null);
+      if (this.control === null) {
+        this.slots = new Array(this.n + 1).fill(null);
+      } else {
+        const slots: (MemoEntry | null)[] = new Array(this.n + 1);
+        for (let from = 0; from < slots.length; from += 128) {
+          const end = Math.min(from + 128, slots.length);
+          this.stepWork(end - from);
+          slots.fill(null, from, end);
+        }
+        this.slots = slots;
+      }
     }
     e.next = this.slots[pos] || null;
     this.slots[pos] = e;
@@ -1156,9 +1333,11 @@ class Parser {
     }
     const vals: Value[] = new Array(names.length);
     for (let i = 0; i < names.length; i++) {
+      this.stepWork();
       vals[i] = null;
       for (let e = this.env; e !== null; e = e.next) {
-        if (e.name === names[i]) {
+        this.stepWork();
+        if (this.control === null ? e.name === names[i] : equalStringsWork(e.name, names[i]!, this.control)) {
           vals[i] = e.val;
           break;
         }
@@ -1173,6 +1352,7 @@ class Parser {
     }
     const f: Frame = new Array(n);
     for (let i = 0; i < n; i++) {
+      this.stepWork();
       f[i] = null;
     }
     return f;
@@ -1180,7 +1360,7 @@ class Parser {
 
   // kids returns kidStack[base:] as a child list and pops it.
   kids(base: number): (Node | null)[] {
-    const ks = this.kidStack.slice(base);
+    const ks = this.control === null ? this.kidStack.slice(base) : copyNodesWork(this.kidStack, base, this.kidStack.length, this.control);
     this.kidStack.length = base;
     return ks;
   }
@@ -1197,6 +1377,7 @@ class Parser {
     this.env = env;
     this.recovered.length = recovered;
     for (let i = this.trail.length - 1; i >= trail; i--) {
+      this.stepWork();
       const u = this.trail[i]!;
       u.f[u.slot] = u.old;
     }
@@ -1211,6 +1392,26 @@ class Parser {
   // peek returns the character at the current position (-1 at the end) and sets psize to its size
   // in units.
   peek(): number {
+    const control = this.control;
+    if (control !== null) {
+      if (this.pos >= this.n) {
+        control.charge(1, 1); // EOF probes count, including repeated probes.
+        return -1;
+      }
+      if (this.unit === Bytes) {
+        const c = byteUnitWork(this.bs, this.pos, this.n, control);
+        if (c < 0x80) {
+          this.psize = 1;
+          return c;
+        }
+        const decoded = decodeRuneWork(this.bs, this.pos, this.n, control);
+        this.psize = decoded.size;
+        return decoded.rune;
+      }
+      control.charge(1, 1);
+      this.psize = 1;
+      return this.cps[this.pos]!;
+    }
     if (this.pos >= this.n) {
       return -1;
     }
@@ -1229,6 +1430,8 @@ class Parser {
   }
 
   unitLen(s: string): number {
+    const control = this.control;
+    if (control !== null) return this.unit === Bytes ? utf8LenWork(s, control) : runeCountValueWork(s, control);
     return this.unit === Bytes ? utf8Len(s) : runeCount(s);
   }
 
@@ -1242,6 +1445,7 @@ class Parser {
       this.expTop = this.expBase;
     }
     for (let i = this.expBase; i < this.expTop; i++) {
+      this.stepWork();
       if (this.exp[i] === id) {
         return;
       }
@@ -1258,6 +1462,7 @@ class Parser {
     if (last.length === to - from) {
       let same = true;
       for (let i = 0; i < last.length; i++) {
+        this.stepWork();
         if (last[i] !== this.exp[from + i]) {
           same = false;
           break;
@@ -1267,7 +1472,7 @@ class Parser {
         return last; // the same set often repeats
       }
     }
-    this.lastKept = this.exp.slice(from, to);
+    this.lastKept = this.control === null ? this.exp.slice(from, to) : copyIDsWork(this.exp, from, to, this.control);
     return this.lastKept;
   }
 
@@ -1275,17 +1480,28 @@ class Parser {
   // record (writes only happen below the read position).
   mergeExpected(far: number, from: number, to: number): void {
     for (let i = from; i < to; i++) {
+      this.stepWork();
       this.expect(far, this.exp[i]!);
     }
   }
 
   mergeKept(far: number, ids: number[]): void {
     for (const x of ids) {
+      this.stepWork();
       this.expect(far, x);
     }
   }
 
   text(start: number, end: number): string {
+    const control = this.control;
+    if (control !== null) {
+      if (this.offs !== null) {
+        control.charge(0, 2);
+        start = this.offs[start]!;
+        end = this.offs[end]!;
+      }
+      return sliceStringWork(this.src, start, end, control);
+    }
     if (this.offs === null) {
       return this.src.slice(start, end);
     }
@@ -1296,19 +1512,22 @@ class Parser {
     const exp: string[] = [];
     const msgs: string[] = [];
     for (const x of expected) {
+      this.stepWork();
       if ((x & msgBit) !== 0) {
         msgs.push(descs[x & ~msgBit]!);
       } else {
         exp.push(descs[x]!);
       }
     }
-    exp.sort(compareStrings);
+    if (this.control === null) exp.sort(compareStrings);
+    else sortExpectedWork(exp, this.control);
     // Look the line up in a table of line starts, built on the first error, instead of scanning
     // from the start of the input for each error.
     if (this.lines === null) {
       const lines = [0];
       const units = this.unit === Bytes ? this.bs : this.cps;
       for (let i = 0; i < this.n; i++) {
+        this.control?.charge(1, 1);
         if (units[i] === 0x0a) {
           lines.push(i + 1);
         }
@@ -1320,6 +1539,7 @@ class Parser {
     let lo = 0;
     let hi = this.lines.length;
     while (lo < hi) {
+      this.stepWork();
       const mid = (lo + hi) >>> 1;
       if (this.lines[mid]! < pos + 1) {
         lo = mid + 1;
@@ -1327,7 +1547,11 @@ class Parser {
         hi = mid;
       }
     }
-    return new SyntaxError(pos, lo, pos - this.lines[lo - 1]! + 1, exp, msgs);
+    const col = pos - this.lines[lo - 1]! + 1;
+    if (this.control !== null) reserveSyntaxMessageWork(lo, col, exp, msgs, this.control);
+    const error = new SyntaxError(pos, lo, col, exp, msgs);
+    this.control?.check();
+    return error;
   }
 
   markSeen(pos: number, s: number): boolean {
@@ -1336,7 +1560,15 @@ class Parser {
     const bit = 1 << i % 32;
     if (w >= this.seen.length) {
       const grown = new Int32Array(Math.max(w + 1, 2 * this.seen.length, 64));
-      grown.set(this.seen);
+      if (this.control === null) {
+        grown.set(this.seen);
+      } else {
+        for (let from = 0; from < this.seen.length; from += 128) {
+          const end = Math.min(from + 128, this.seen.length);
+          this.stepWork(end - from);
+          grown.set(this.seen.subarray(from, end), from);
+        }
+      }
       this.seen = grown;
     }
     if ((this.seen[w]! & bit) === 0) {
@@ -1349,18 +1581,21 @@ class Parser {
   // Page directories hold integer arena offsets, avoiding one typed-array
   // object per page. Chunks contain 64 pages of 1,024 position bits each.
   markSparseSeen(pos: number, s: number): boolean {
+    this.stepWork();
     if (this.seenPages === null) {
       this.seenPages = [];
       this.seenPageChunks = [];
     }
     let pages = this.seenPages[s];
     if (pages === undefined) {
+      this.stepWork();
       pages = [];
       this.seenPages[s] = pages;
     }
     const at = Math.floor(pos / 1024);
     let page = pages[at];
     if (page === undefined) {
+      this.stepWork();
       page = this.seenPageCount++;
       if (page % 64 === 0) {
         this.seenPageChunks!.push(new Int32Array(64 * 32));
@@ -1381,6 +1616,7 @@ class Parser {
 
   // call calls rule r at level min.
   call(r: Rule, min: number): R {
+    this.stepWork();
     const start = this.pos;
     if ((!r.memo && !r.leader) || this.firstCall(r)) {
       // Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -1411,6 +1647,7 @@ class Parser {
       }
       this.pos = e.end;
       for (const x of e.errs) {
+        this.stepWork();
         this.recovered.push(x);
       }
       return e.node;
@@ -1437,7 +1674,7 @@ class Parser {
         this.pos,
         this.silent > 0,
         false,
-        this.recovered.length > rec ? this.recovered.slice(rec) : noErrs,
+        this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsWork(this.recovered, rec, this.recovered.length, this.control)) : noErrs,
       );
       this.memoPut(r.id, start, min, env, entry);
     }
@@ -1465,11 +1702,12 @@ class Parser {
     let best = newEntry(undefined, false, start, false, true, noErrs);
     this.memoPut(r.id, start, min, env, best);
     for (;;) {
+      this.stepWork();
       const v = this.invoke(r, min);
       if (v === undefined || (best.ok && this.pos <= best.end)) {
         break;
       }
-      best = newEntry(v, true, this.pos, false, true, this.recovered.length > rec ? this.recovered.slice(rec) : noErrs);
+      best = newEntry(v, true, this.pos, false, true, this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsWork(this.recovered, rec, this.recovered.length, this.control)) : noErrs);
       this.memoPut(r.id, start, min, env, best);
       this.pos = start;
       this.recovered.length = rec;
@@ -1479,6 +1717,7 @@ class Parser {
     this.pos = best.end;
     this.recovered.length = rec;
     for (const x of best.errs) {
+      this.stepWork();
       this.recovered.push(x);
     }
     return best.ok ? best.node : undefined;
@@ -1513,6 +1752,7 @@ class Parser {
   // frame (the body never writes one, so the caller's stays current), with the failure handling of
   // call.
   invokePlain(r: Rule, min: number): R {
+    this.stepWork();
     const start = this.pos;
     const rec = this.recovered.length;
     const trail = this.trail.length;
@@ -1580,6 +1820,7 @@ class Parser {
     let found = false;
     let wrap = v === null || !v.fresh;
     for (const c of f) {
+      this.stepWork();
       if (c !== null) {
         found = true;
         if (c === v) {
@@ -1595,9 +1836,10 @@ class Parser {
       n = new Node("Seq", "", start, end, "", [v], noFields, true, false);
     }
     for (let i = 0; i < names.length; i++) {
+      this.stepWork();
       const c = f[i]!;
       if (c !== null) {
-        setField(n, names[i]!, c);
+        setField(n, names[i]!, c, this.control);
       }
     }
     return n;
@@ -1606,6 +1848,7 @@ class Parser {
   // --- Terminals ---
 
   matchLiteral(lit: Lit, desc: number, build: boolean): R {
+    this.stepWork();
     const start = this.pos;
     if (this.unit === Bytes) {
       const b = lit.bytes;
@@ -1613,6 +1856,7 @@ class Parser {
         return this.matchReplacementLiteral(lit, desc, build);
       }
       for (let i = 0; i < b.length; i++) {
+        this.control?.charge(1, 1);
         if (this.bs[this.pos + i] !== b[i]) {
           return this.matchReplacementLiteral(lit, desc, build);
         }
@@ -1620,6 +1864,7 @@ class Parser {
       this.pos += b.length;
     } else {
       for (const r of lit.cps) {
+        this.control?.charge(1, 1);
         if (this.pos >= this.n || this.cps[this.pos] !== r) {
           this.expect(start, desc);
           return undefined;
@@ -1636,7 +1881,16 @@ class Parser {
   // Keep replacement decoding off the successful byte-comparison path.
   matchReplacementLiteral(lit: Lit, desc: number, build: boolean): R {
     const start = this.pos;
-    if (!lit.cps.includes(0xfffd)) {
+    let replacement = false;
+    if (this.control === null) {
+      replacement = lit.cps.includes(0xfffd);
+    } else {
+      for (const cp of lit.cps) {
+        this.stepWork();
+        if (cp === 0xfffd) { replacement = true; break; }
+      }
+    }
+    if (!replacement) {
       this.expect(start, desc);
       return undefined;
     }
@@ -1672,6 +1926,7 @@ class Parser {
   }
 
   anchor(ok: boolean, desc: number): R {
+    this.stepWork();
     if (ok) {
       return null;
     }
@@ -1683,6 +1938,7 @@ class Parser {
     if (this.pos === 0) {
       return true;
     }
+    this.control?.charge(1, 1);
     return (this.unit === Bytes ? this.bs[this.pos - 1] : this.cps[this.pos - 1]) === 0x0a;
   }
 
@@ -1692,6 +1948,7 @@ class Parser {
   }
 
   atEnd(): boolean {
+    this.control?.charge(1, 1);
     return this.pos === this.n;
   }
 
@@ -1814,32 +2071,38 @@ class Parser {
   // Preserve environments saved for rollback; first assignments skip searching.
   bind(name: string, val: Value): void {
     const e = this.env;
+    const control = this.control;
     if (this.bound === null) this.bound = new Set();
     if (e === null) {
       this.env = { name, val, next: null };
-      this.bound.add(name);
+      this.bound.add(control === null ? name : stringKeyWork(name, control));
       return;
     }
-    if (e.name === name) {
-      if (e.val !== val) this.env = { name, val, next: e.next };
+    if (control === null ? e.name === name : equalStringsWork(e.name, name, control)) {
+      if (!(control === null ? e.val === val : equalValuesWork(e.val, val, control))) this.env = { name, val, next: e.next };
       return;
     }
-    if (!this.bound.has(name)) {
-      this.bound.add(name);
+    if (!this.bound.has(control === null ? name : stringKeyWork(name, control))) {
+      this.bound.add(control === null ? name : stringKeyWork(name, control));
       this.env = { name, val, next: e };
       return;
     }
     let old: Env | null = e;
-    while (old !== null && old.name !== name) old = old.next;
+    while (old !== null) {
+      this.stepWork();
+      if (control === null ? old.name === name : equalStringsWork(old.name, name, control)) break;
+      old = old.next;
+    }
     if (old === null) {
       this.env = { name, val, next: e };
       return;
     }
     // Variables are checked scalar values; an equal assignment has no effect.
-    if (old.val === val) return;
+    if (control === null ? old.val === val : equalValuesWork(old.val, val, control)) return;
     const head: Env = { name, val, next: null };
     let tail = head;
     for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
+      this.stepWork();
       tail.next = { name: cur!.name, val: cur!.val, next: null };
       tail = tail.next;
     }
@@ -1875,6 +2138,7 @@ class Parser {
     let best: OperatorsRuleAttempt | null = null;
     let cutFailed = false;
     for (const op of ops) {
+      this.stepWork();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(op.line.scope.length);
@@ -1897,7 +2161,7 @@ class Parser {
           end: this.pos,
           env: this.env,
           cut,
-          errs: this.recovered.length > m0rec ? this.recovered.slice(m0rec) : noErrs,
+          errs: this.recovered.length > m0rec ? (this.control === null ? this.recovered.slice(m0rec) : copyErrorsWork(this.recovered, m0rec, this.recovered.length, this.control)) : noErrs,
         };
       }
       if (!ok && cut) {
@@ -1911,10 +2175,12 @@ class Parser {
       // and restoring, so one buffer per parser suffices.
       this.saved.length = 0;
       for (const x of f) {
+        this.stepWork();
         this.saved.push(x);
       }
       this.reset(m0pos, m0env, m0trail, m0rec);
       for (let i = 0; i < f.length; i++) {
+        this.stepWork();
         f[i] = this.saved[i]!;
       }
     }
@@ -1929,6 +2195,7 @@ class Parser {
     this.pos = a.end;
     this.env = a.env;
     for (const x of a.errs) {
+      this.stepWork();
       this.recovered.push(x);
     }
   }
@@ -1937,6 +2204,7 @@ class Parser {
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
   // against the nesting limit, like a rule call.
   operatorsRuleParse(r: Rule, min: number): R {
+    this.stepWork();
     if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
@@ -1953,6 +2221,7 @@ class Parser {
     }
     let lastNone = -1;
     for (;;) {
+      this.stepWork();
       const m0pos = this.pos;
       const m0env = this.env;
       const m0trail = this.trail.length;
@@ -2029,6 +2298,7 @@ class Parser {
       return undefined;
     }
     for (const o of pr.operands) {
+      this.stepWork();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(o.scope.length);
@@ -2163,6 +2433,26 @@ class Actx {
     this.p = p;
   }
 
+  work(): void { this.p.stepWork(); }
+
+  binary(op: string, l: Value, r: Value): Value {
+    const control = this.p.control;
+    if (control !== null && typeof l === "string" && typeof r === "string") {
+      switch (op) {
+        case "==": case "!=": {
+          const equal = equalStringsWork(l, r, control);
+          return op === "==" ? equal : !equal;
+        }
+        case "+": return joinValueStringsWork([l, r], control);
+        case "<": return compareStringsWork(l, r, control) < 0;
+        case "<=": return compareStringsWork(l, r, control) <= 0;
+        case ">": return compareStringsWork(l, r, control) > 0;
+        case ">=": return compareStringsWork(l, r, control) >= 0;
+      }
+    }
+    return rtBinary(op, l, r);
+  }
+
   result(action: Action, where: string): Node | null {
     try {
       const v = action(this);
@@ -2175,6 +2465,7 @@ class Actx {
       const n = v;
       const created = this.p.created;
       for (let i = this.cbase; i < created.length; i++) {
+        this.work();
         if (created[i] === n) {
           n.start = this.start;
           n.end = this.end;
@@ -2209,7 +2500,8 @@ class Actx {
 
   lookup(name: string): Value {
     for (let e = this.p.env; e !== null; e = e.next) {
-      if (e.name === name) {
+      this.p.stepWork();
+      if (this.p.control === null ? e.name === name : equalStringsWork(e.name, name, this.p.control)) {
         return e.val;
       }
     }
@@ -2220,8 +2512,9 @@ class Actx {
     const n = new Node(typ, "", 0, 0, "", noNodes, noFields, false, false);
     let first = true;
     for (let i = 0; i < kv.length; i += 2) {
+      this.work();
       const v = kv[i + 1];
-      setField(n, kv[i] as string, v!);
+      setField(n, kv[i] as string, v!, this.p.control);
       if (v instanceof Node) {
         if (first || v.start < n.start) {
           n.start = v.start;
@@ -2241,7 +2534,7 @@ class Actx {
   }
 
   newList(items: readonly (Node | null)[]): Node {
-    return this.listNode(items.slice());
+    return this.listNode(this.p.control === null ? items.slice() : copyNodesWork(items, 0, items.length, this.p.control));
   }
 
   newTerminal(typ: string, value: Value): Value {
@@ -2256,6 +2549,7 @@ class Actx {
     const n = new Node("List", "", this.start, this.start, "", kids, noFields, false, false);
     let first = true;
     for (const it of kids) {
+      this.work();
       if (it === null) {
         continue;
       }
@@ -2286,7 +2580,7 @@ class Actx {
     if (fields !== undefined && !fields.has(name)) {
       evalError(`${x.type} has no field ${name}`);
     }
-    return x.field(name);
+    return getFieldWork(x, name, this.p.control);
   }
 
   length(x: Value): Value {
@@ -2345,6 +2639,7 @@ class Actx {
   concat(...args: Value[]): Value {
     const base = this.p.kidStack.length;
     for (const a of args) {
+      this.work();
       this.pushItems(a);
     }
     return this.endList(base);
@@ -2355,21 +2650,27 @@ class Actx {
   // as pushes for its arguments followed by endList, so that they build no intermediate list.
 
   pushMap(list: Value, f: (item: Value) => Value): void {
+    this.work();
     for (const it of listItems("map", list)) {
+      this.work();
       const v = asNode("map", f(it));
       this.p.kidStack.push(v);
     }
   }
 
   pushList(...args: Value[]): void {
+    this.work();
     for (const a of args) {
+      this.work();
       const v = asNode("list", a);
       this.p.kidStack.push(v);
     }
   }
 
   pushItems(v: Value): void {
+    this.work();
     for (const it of listItems("concat", v)) {
+      this.work();
       this.p.kidStack.push(it);
     }
   }
@@ -2418,9 +2719,10 @@ function asNode(fn: string, v: Value): Node | null {
   return evalError(`${fn}: list elements must be nodes, got ${typeName(v)}`);
 }
 
-function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value): Value {
+function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value, control: WorkControl | null = null): Value {
   const items = listItems(fn, list);
   for (let i = 0; i < items.length; i++) {
+    control?.charge(0, 1);
     acc = f(acc, items[right ? items.length - 1 - i : i]!);
   }
   return acc;

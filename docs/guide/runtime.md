@@ -250,6 +250,44 @@ if errors.As(err, &se) {
 have been accepted, and `Messages` holds the messages set with `@error`. `se.Message()` is the text without the
 position.
 
+### Cancellation and Work Limits
+
+`Parse` accepts per-invocation `WithContext` and `WithWorkLimits` options. A zero
+limit is unlimited; each counter resets for the next call:
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+defer cancel()
+node, err := p.Parse(input,
+    pego.WithContext(ctx),
+    pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: 4_000_000, MaxSteps: 1_000_000}),
+)
+switch {
+case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+    // The invocation was cancelled.
+case errors.Is(err, pego.ErrWorkLimit):
+    // A work limit was reached; use errors.As for *pego.WorkLimitError details.
+case err != nil:
+    // Syntax or another parse error.
+case node != nil:
+    // The parse completed.
+}
+```
+
+Input-work counts inspected input representation elements; steps count backend
+execution work. Charges are checked before the corresponding operation and are
+not rolled back by backtracking. Their values depend on backend, position unit,
+and generated artifact; they are not elapsed-time, memory, or buffered-byte
+limits. An interruption is fatal to the current parse and cannot be consumed by
+`#recover`. Batch and typed entry points return no partial result. A `Document`
+keeps caches when cancellation or option validation fails before execution
+touches them, but clears execution caches after an interruption during parsing.
+Completed input tables may persist; partial tables are discarded. In streams,
+elements already delivered remain delivered. Cancellation is cooperative: a
+synchronous parser cannot preempt a blocked reader or caller callback. See the
+[streaming cancellation recipe](streaming.md#recipe-cancelling-a-stream) for
+caller-owned I/O cancellation.
+
 A `*pego.Parser` is **safe for concurrent use**: share one among goroutines and call `Parse` on all of them (each call
 has its own state). A `Document`, in contrast, is not. Concurrent first use of different backends and of recognition
 mode is also safe.
@@ -468,7 +506,7 @@ fmt.Println(n, err) // nil 1:5: syntax error: expected [0-9]
 
 What it does not do:
 
-- **Actions are not evaluated**, so run-time errors in actions are not reported. With the grammar
+- **Actions are conditionally evaluated.** Actions whose values are not needed to evaluate predicates are skipped. Actions needed by predicates still run and can report run-time errors. With the grammar
   `rule main Ratio =  a:[0-9]+ #atomic "/" b:[0-9]+ #atomic $$ => Ratio{Num: len($a) / (len($b) - len($b))} `, the input `12/34`
   fails a full parse with `action in main: division by zero` but is accepted by recognition (`pego parse -check` prints
   `ok`). Use recognition for syntax checks, and a full parse where action errors matter.

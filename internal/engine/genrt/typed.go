@@ -226,15 +226,28 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 }
 
 // tparseResolved consumes options already applied by the public entry point.
-func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
+	defer recoverParse(&res, &err)
+	o = prepareOptions(o)
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
 	}
+	defer func() { p.recycle(); tpool.Put(p) }()
+	p.control = o.control
+	if o.control != nil {
+		if target, ok := ext.(interface{ setWorkControl(*workControl) }); ok {
+			target.setWorkControl(o.control)
+			defer target.setWorkControl(nil)
+		}
+	}
 	v, err := p.run(r, input, o, ext)
-	res := conv(v)
-	p.recycle()
-	tpool.Put(p)
+	if v == nil {
+		return res, err
+	}
+	o.control.check()
+	res = conv(v)
+	o.control.check()
 	return res, err
 }
 
@@ -256,7 +269,7 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 			case fatal:
 				v, err = nil, x.err
 			case evalError: // in an action (predicates recover their own)
-				v, err = nil, fmt.Errorf("action in %s: %s", p.where, x.msg)
+				v, err = nil, p.wrapEvalError(p.where, x.msg)
 			default:
 				panic(x)
 			}
@@ -268,16 +281,23 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 	} else {
 		v, ok = p.call(r, 0)
 	}
+	// Normal completion polls even for a nil typed value. Fatal unwinding
+	// returns through the recovery above without replacing its established error.
+	p.control.check()
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
-			return v, SyntaxErrors(append([]*SyntaxError(nil), p.recovered...))
+			errors := p.copyErrors(nil, p.recovered)
+			p.control.check()
+			return v, SyntaxErrors(errors)
 		}
 		return v, nil
 	}
 	if ok {
 		p.expect(p.pos, idEndInput)
 	}
-	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+	e := p.makeError(p.farthest, p.exp[p.expBase:])
+	p.control.check()
+	return nil, e
 }
 
 // tpool keeps parsers of the typed runtime, with their scratch memory, for later parses. What a
@@ -403,10 +423,7 @@ func (p *tparser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.dropTrail(m.trail)
 }
 
@@ -418,6 +435,7 @@ func (p *tparser) dropTrail(base int) {
 }
 
 func (p *tparser) setCapture(slot int, v any) {
+	p.stepWork()
 	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
 	p.frame.vals[slot] = v
 }
@@ -425,12 +443,14 @@ func (p *tparser) setCapture(slot int, v any) {
 // --- Allocation ---
 
 func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
+	p.stepWork()
 	n := p.nodes.one()
 	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
 	return n
 }
 
 func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
+	p.stepWork()
 	if len(p.matches) == 0 {
 		p.matches = make([]tmatch, nodeChunk)
 	}
@@ -455,7 +475,7 @@ func (p *tparser) tfields(n int) []tfield {
 // kids returns p.kidStack[base:] as a value list and pops it.
 func (p *tparser) kids(base int) []any {
 	ks := p.newVals(len(p.kidStack) - base)
-	copy(ks, p.kidStack[base:])
+	copyWork(p.parser, ks, p.kidStack[base:])
 	p.dropKids(base)
 	return ks
 }
@@ -500,7 +520,24 @@ type tmemoEntry struct {
 	growing  bool
 }
 
-func (p *tparser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
+func (p *tparser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
+	if !workControlsEnabled || p.control == nil {
+		return p.memoGetOrdinary(rule, pos, min, key)
+	}
+	p.stepWork()
+	if pos >= len(p.memoSlots) {
+		return nil
+	}
+	for e := p.memoSlots[pos]; e != nil; e = e.next {
+		p.stepWork()
+		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *tparser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
 	if pos >= len(p.memoSlots) {
 		return nil
 	}
@@ -512,7 +549,44 @@ func (p *tparser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
 	return nil
 }
 
-func (p *tparser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
+func (p *tparser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
+	if !workControlsEnabled || p.control == nil {
+		p.memoPutOrdinary(rule, pos, min, key, e)
+		return
+	}
+	p.stepWork()
+	slots := p.memoSlots
+	if pos >= len(slots) {
+		if pos < cap(slots) {
+			slots = slots[:pos+1]
+		} else {
+			grown := make([]*tmemoEntry, pos+1, max(2*cap(slots), pos+1, 64))
+			copyWork(p.parser, grown, slots)
+			slots = grown
+		}
+	}
+	link := &slots[pos]
+	var replaced *tmemoEntry
+	for x := *link; x != nil; link, x = &x.next, x.next {
+		p.stepWork()
+		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
+			replaced = x
+			break
+		}
+	}
+	p.stepWork()
+	p.memoSlots = slots
+	e.rule, e.min, e.env = int32(rule), int32(min), key
+	if replaced != nil {
+		e.next = replaced.next
+		*link = e
+		return
+	}
+	e.next = slots[pos]
+	slots[pos] = e
+}
+
+func (p *tparser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
 	if pos >= len(p.memoSlots) {
 		if pos < cap(p.memoSlots) {
 			p.memoSlots = p.memoSlots[:pos+1]
@@ -538,6 +612,7 @@ func (p *tparser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
 // --- Rule calls ---
 
 func (p *tparser) call(r *trule, min int) (any, bool) {
+	p.stepWork()
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r.rule) {
 		if len(r.scope) == 0 {
@@ -560,7 +635,7 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.val, true
 	}
 	rec := len(p.recovered)
@@ -578,7 +653,7 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 		}
 		e = p.memoSlab.one()
 		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-			errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+			errs: p.copyErrors(nil, p.recovered[rec:])}
 		p.memoPut(r.id, start, min, env, e)
 	}
 	far, inner := p.unisolate(m)
@@ -603,7 +678,7 @@ func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool)
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.val, true
 	}
 	rec := len(p.recovered)
@@ -614,7 +689,7 @@ func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool)
 	}
 	e := p.memoSlab.one()
 	*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-		errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		errs: p.copyErrors(nil, p.recovered[rec:])}
 	p.memoPut(r.id, start, 0, env, e)
 	far, inner := p.unisolate(m)
 	e.far, e.expected = far, p.keep(inner)
@@ -637,7 +712,7 @@ func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
 			break
 		}
 		best = p.memoSlab.one()
-		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: p.copyErrors(nil, p.recovered[rec:])}
 		p.memoPut(r.id, start, min, env, best)
 		p.pos = start
 		p.recovered = p.recovered[:rec]
@@ -645,7 +720,7 @@ func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
 	best.growing = false
 	best.silent = p.silent > 0
 	p.pos = best.end
-	p.recovered = append(p.recovered[:rec], best.errs...)
+	p.recovered = p.copyErrors(p.recovered[:rec], best.errs)
 	return best.val, best.ok
 }
 
@@ -729,6 +804,7 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 	found := false
 	wrap := n == nil || !n.tfresh()
 	for _, c := range vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -749,8 +825,9 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
+		p.stepWork()
 		if vals[i] != nil {
-			t.set(name, vals[i])
+			p.setValueField(t, name, vals[i])
 		}
 	}
 	return t
@@ -835,7 +912,7 @@ func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 	if !build {
 		return nil, true
 	}
-	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error()}, true}, true
+	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: p.recoveryErrorText(e)}, true}, true
 }
 
 // --- Actions and predicates ---
@@ -872,6 +949,7 @@ func (c *tctx) finish(v any) any {
 	t := asTval(v)
 	if t != nil {
 		for _, x := range c.p.created[c.cbase:] {
+			c.p.stepWork()
 			if x == t {
 				t.tsetSpan(c.start, c.end)
 				break
@@ -883,7 +961,7 @@ func (c *tctx) finish(v any) any {
 		return nil
 	}
 	if t == nil {
-		evalErrorf("result must be a node, got %s", ttypeName(v))
+		c.p.evalErrorf("result must be a node, got %s", ttypeName(v))
 	}
 	t.tsetFresh(false)
 	return t
@@ -945,18 +1023,26 @@ func (c *tctx) item(n int) any {
 		return c.newList(c.items)
 	}
 	if n > len(c.items) {
-		evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
+		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
 	}
 	return tvalOrNil(c.items[n-1])
 }
 
 func (c *tctx) lookup(name string) any {
+	if workControlsEnabled && c.p.control != nil {
+		if v, ok := c.p.lookupEnvControlled(name); ok {
+			return v
+		}
+		c.p.evalErrorf("variable %s is not defined", name)
+		return nil
+	}
+
 	for e := c.p.env; e != nil; e = e.next {
 		if e.name == name {
 			return e.val
 		}
 	}
-	evalErrorf("variable %s is not defined", name)
+	c.p.evalErrorf("variable %s is not defined", name)
 	return nil
 }
 
@@ -1006,7 +1092,9 @@ func (c *tctx) made(n tval, first bool, start, end int) any {
 }
 
 func (c *tctx) newList(items []any) any {
-	return c.listNode(append(c.p.newVals(len(items))[:0], items...))
+	kids := c.p.newVals(len(items))
+	copyWork(c.p.parser, kids, items)
+	return c.listNode(kids)
 }
 
 // listNode returns a List node with the child list kids (which it takes over).
@@ -1015,6 +1103,7 @@ func (c *tctx) listNode(kids []any) *tnode {
 	n.fresh = false
 	first := true
 	for _, it := range kids {
+		c.p.stepWork()
 		t := asTval(it)
 		if t == nil {
 			continue
@@ -1034,7 +1123,7 @@ func (c *tctx) listNode(kids []any) *tnode {
 func (c *tctx) member(x any, name string) any {
 	n := asTval(x)
 	if n == nil {
-		evalErrorf("cannot access .%s of %s", name, ttypeName(x))
+		c.p.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
 	}
 	switch name {
 	case "startPos":
@@ -1046,9 +1135,9 @@ func (c *tctx) member(x any, name string) any {
 	case "children":
 		return c.newList(n.tkids())
 	}
-	v, ok := n.tfield(name)
+	v, ok := c.p.valueField(n, name)
 	if !ok {
-		evalErrorf("%s has no field %s", n.tname(), name)
+		c.p.evalErrorf("%s has no field %s", n.tname(), name)
 	}
 	return tvalOrNil(v)
 }
@@ -1173,7 +1262,7 @@ func (c *tctx) length(x any) any {
 		}
 		return len(n.tkids())
 	}
-	evalErrorf("len: invalid argument %s", ttypeName(x))
+	c.p.evalErrorf("len: invalid argument %s", ttypeName(x))
 	return nil
 }
 
@@ -1193,7 +1282,7 @@ func (c *tctx) textStr(x any) string {
 		s, e := n.tspan()
 		return c.p.text(s, e)
 	}
-	evalErrorf("text: invalid argument %s", ttypeName(x))
+	c.p.evalErrorf("text: invalid argument %s", ttypeName(x))
 	return ""
 }
 
@@ -1246,25 +1335,28 @@ func (c *tctx) list(args ...any) any {
 func (c *tctx) concat(args ...any) any {
 	base := len(c.p.kidStack)
 	for _, a := range args {
+		c.p.stepWork()
 		c.pushItems(a)
 	}
 	return c.endList(base)
 }
 
 func (c *tctx) pushMap(list any, f func(item any) any) {
-	for _, it := range tlistItems("map", list) {
-		c.p.kidStack = append(c.p.kidStack, tasNode("map", f(tvalOrNil(it))))
+	for _, it := range c.listItems("map", list) {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(tvalOrNil(it))))
 	}
 }
 
 func (c *tctx) pushList(args ...any) {
 	for _, a := range args {
-		c.p.kidStack = append(c.p.kidStack, tasNode("list", a))
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("list", a))
 	}
 }
 
 func (c *tctx) pushItems(v any) {
-	c.p.kidStack = append(c.p.kidStack, tlistItems("concat", v)...)
+	c.p.kidStack = appendWork(c.p.parser, c.p.kidStack, c.listItems("concat", v))
 }
 
 func (c *tctx) endList(base int) any {
@@ -1321,6 +1413,7 @@ func (p *tparser) skipTrivia(pr *toperatorsRule) {
 func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(op.line.scope))
 		p.frame, p.cut = f, false
@@ -1332,7 +1425,7 @@ func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, 
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: p.copyErrors(nil, p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -1341,16 +1434,16 @@ func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, 
 			p.reset(m0)
 			continue
 		}
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p.parser, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p.parser, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
 
 func (p *tparser) apply(a *toperatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = p.copyErrors(p.recovered, a.errs)
 }
 
 // operatorsRuleParse is parser.operatorsRuleParse for typed values.
@@ -1437,6 +1530,7 @@ func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
 		return nil, false
 	}
 	for _, o := range pr.operands {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(o.scope))
 		p.frame, p.cut = f, false
@@ -1520,4 +1614,235 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 	n.fresh = false
 	n.fields = []tfield{{"operator", a.op.id}}
 	return n
+}
+
+func (c *tctx) binary(op string, l, r any) any {
+	if v, ok := c.p.stringBinary(op, l, r); ok {
+		return v
+	}
+	if workControlsEnabled && c.p.control != nil {
+		return trtBinaryWork(c.p.parser, op, l, r)
+	}
+	return trtBinary(op, l, r)
+}
+
+func (p *tparser) pushKid(v any) { p.stepWork(); p.kidStack = append(p.kidStack, v) }
+func (p *tparser) setValueField(n *tnode, name string, v any) {
+	if !workControlsEnabled || p.control == nil {
+		n.set(name, v)
+		return
+	}
+	for i := range n.fields {
+		p.stepWork()
+		if p.rawValueEqual(n.fields[i].name, name) {
+			n.fields[i].val = v
+			return
+		}
+	}
+	p.stepWork()
+	n.fields = append(n.fields, tfield{name, v})
+}
+func (p *tparser) undoCaptures(from int) {
+	for i := len(p.trail) - 1; i >= from; i-- {
+		p.stepWork()
+		u := p.trail[i]
+		u.f.vals[u.slot] = u.old
+	}
+}
+
+func (p *tparser) valueField(n tval, name string) (any, bool) {
+	if !workControlsEnabled || p.control == nil {
+		return n.tfield(name)
+	}
+	t, transient := n.(*tnode)
+	if !transient {
+		if controlled, ok := n.(interface {
+			tfieldWork(*tparser, string) (any, bool)
+		}); ok {
+			return controlled.tfieldWork(p, name)
+		}
+		return n.tfield(name)
+	}
+	for _, field := range t.fields {
+		p.stepWork()
+		if p.rawValueEqual(field.name, name) {
+			return field.val, true
+		}
+	}
+	return nil, true
+}
+func (c *tctx) fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtFold(fn, right, acc, list, f)
+	}
+	items := c.listItems(fn, list)
+	for i := range items {
+		c.p.stepWork()
+		item := items[i]
+		if right {
+			item = items[len(items)-1-i]
+		}
+		acc = f(acc, tvalOrNil(item))
+	}
+	return acc
+}
+
+// listField materializes a typed struct's list field during an action read.
+// The ordinary tfield path remains independent of a parser or work controller.
+func (p *tparser) listField(kids []any) any {
+	n := &tnode{typ: "List", kids: kids}
+	first := true
+	for _, it := range kids {
+		p.stepWork()
+		t := asTval(it)
+		if t == nil {
+			continue
+		}
+		start, end := t.tspan()
+		if first || start < n.Start {
+			n.Start = start
+		}
+		if first || end > n.End {
+			n.End = end
+		}
+		first = false
+	}
+	return n
+}
+
+func trtUnaryWork(p *parser, op string, x any) any {
+	switch op {
+	case "-":
+		if i, ok := x.(int); ok {
+			return -i
+		}
+	case "!":
+		if b, ok := x.(bool); ok {
+			return !b
+		}
+	}
+	p.evalErrorf("invalid operand %s for unary %s", ttypeName(x), op)
+	return nil
+}
+
+func trtBoolWork(p *parser, op string, v any) bool {
+	b, ok := v.(bool)
+	if !ok {
+		p.evalErrorf("invalid operand %s for %s", ttypeName(v), op)
+	}
+	return b
+}
+
+func trtBinaryWork(p *parser, op string, l, r any) any {
+	switch op {
+	case "==":
+		return trtEqual(l, r)
+	case "!=":
+		return !trtEqual(l, r)
+	}
+	switch l := l.(type) {
+	case int:
+		if r, ok := r.(int); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "-":
+				return l - r
+			case "*":
+				return l * r
+			case "/", "%":
+				if r == 0 {
+					p.evalErrorf("division by zero")
+				}
+				if op == "/" {
+					return l / r
+				}
+				return l % r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	case string:
+		if r, ok := r.(string); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	}
+	p.evalErrorf("invalid operands %s and %s for %s", ttypeName(l), ttypeName(r), op)
+	return nil
+}
+
+func tlistItemsWork(p *parser, fn string, v any) []any {
+	if v == nil {
+		return nil
+	}
+	if n, ok := v.(tval); ok {
+		return n.tkids()
+	}
+	p.evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func tasNodeWork(p *parser, fn string, v any) any {
+	if v == nil {
+		return nil
+	}
+	if _, ok := v.(tval); ok {
+		return v
+	}
+	p.evalErrorf("%s: list elements must be nodes, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func (c *tctx) unary(op string, v any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtUnary(op, v)
+	}
+	return trtUnaryWork(c.p.parser, op, v)
+}
+func (c *tctx) and(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtAnd(l, r)
+	}
+	if !trtBoolWork(c.p.parser, "&&", l) {
+		return false
+	}
+	return trtBoolWork(c.p.parser, "&&", r())
+}
+func (c *tctx) or(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtOr(l, r)
+	}
+	if trtBoolWork(c.p.parser, "||", l) {
+		return true
+	}
+	return trtBoolWork(c.p.parser, "||", r())
+}
+func (c *tctx) listItems(fn string, v any) []any {
+	if !workControlsEnabled || c.p.control == nil {
+		return tlistItems(fn, v)
+	}
+	return tlistItemsWork(c.p.parser, fn, v)
+}
+func (c *tctx) asNode(fn string, v any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return tasNode(fn, v)
+	}
+	return tasNodeWork(c.p.parser, fn, v)
 }

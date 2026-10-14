@@ -17,11 +17,19 @@ import (
 //go:embed genrt/runtime.go
 var runtimeSource string
 
+//go:embed genrt/work.go
+var workSource string
+
 //go:embed genrt/typed.go
 var typedSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
+	// referenceWorkControls emits a generation-time disabled control for tests.
+	referenceWorkControls bool
+	// referenceWorkControlLayout removes added invocation state and the new
+	// control options from a private ordinary-call cost reference.
+	referenceWorkControlLayout bool
 	// Package is the package name of the generated code.
 	Package string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
@@ -115,7 +123,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -146,14 +154,26 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !opts.useSparseMemo(prog, rec) {
 		rt = strings.Replace(rt, "const sparseSeen = true", "const sparseSeen = false", 1)
 	}
+	// The standalone output merges the work helper's standard-library imports.
+	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	out.WriteString(rt)
+	work := workSource[strings.Index(workSource, "\n)\n")+len("\n)\n"):]
+	if opts.referenceWorkControls || opts.referenceWorkControlLayout {
+		work = strings.Replace(work, "const workControlsEnabled = true", "const workControlsEnabled = false", 1)
+	}
+	out.WriteString("\n// --- Invocation work controls ---\n")
+	out.WriteString(work)
 	out.WriteString("\n// --- Generated code ---\n\n")
-	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
+	if gen.goWorkControls {
+		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
+	} else {
+		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
+	}
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
 	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], nseen, input, opts) }\n\n", start.id)
 	if rec != nil {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
-		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not\n// evaluated, so it does not report runtime errors in actions.\n")
+		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
 		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := parse(recRules[%d], recNseen, input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
 		out.WriteString("// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.\nvar recRules []*rule\nvar recNseen int\n\n")
 	}
@@ -202,6 +222,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
 	}
+	if opts.referenceWorkControlLayout {
+		return removeGeneratedWorkState(src)
+	}
 	return src, nil
 }
 
@@ -229,6 +252,9 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
+	goWorkControls                  bool
+	workClassNames                  map[string]string
+	workClassKeys                   []string
 	disableTypedCuts                bool
 	disableTypedLRBodies            bool
 	disableTypedOperatorsRuleBodies bool
@@ -592,7 +618,7 @@ func (g *generator) method(comment, body string) string {
 	if comment != "" {
 		fmt.Fprintf(&g.methods, "// %s\n", comment)
 	}
-	fmt.Fprintf(&g.methods, "func (p *%s) %s() (%s, bool) {\n%s}\n\n", g.recv(), name, g.valType(), body)
+	fmt.Fprintf(&g.methods, "func (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n%s}\n\n", g.recv(), name, g.valType(), body)
 	return name
 }
 
@@ -607,7 +633,7 @@ func describe(e grammar.Expr) string {
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
 func (g *generator) plainCall(r *rule, body string) {
-	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *%s) %s%d() (%s, bool) {\n", r.name, g.recv(), g.plainPrefix(), r.id, g.valType())
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *%s) %s%d() (%s, bool) {\n\tp.stepWork()\n", r.name, g.recv(), g.plainPrefix(), r.id, g.valType())
 	g.methods.WriteString(`	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -681,7 +707,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		fmt.Fprintf(&b, "\treturn p.matchLiteral(%s, %q, %d, %v)\n", v, value, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "\tch, size, ok := p.peek()\n\tif !ok || %s {\n\t\tp.expect(p.pos, %d)\n\t\treturn nil, false\n\t}\n",
-			classReject(e), g.desc(charClassString(e)))
+			g.controlledClassReject(e), g.desc(charClassString(e)))
 		fmt.Fprintf(&b, "\treturn p.single(size, %v)\n", build)
 	case *grammar.Any:
 		fmt.Fprintf(&b, "\treturn p.matchAny(%v)\n", build)
@@ -726,7 +752,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("\tch, _, more := p.peek()\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= p.maxDepth {\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= p.maxDepth {\n\t\tp.stepWork()\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
 			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.cut\n\t\tp.cut = false\n\t\tv, ok := p.%s()\n\t\tcut := p.cut\n\t\tp.cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)
@@ -912,7 +938,7 @@ func (g *generator) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 	var cond string
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
-		cond = fmt.Sprintf("!ok || %s {\n\t\t\tp.expect(p.pos, %d)", classReject(x), g.desc(charClassString(x)))
+		cond = fmt.Sprintf("!ok || %s {\n\t\t\tp.expect(p.pos, %d)", g.controlledClassReject(x), g.desc(charClassString(x)))
 		b.WriteString("\tcount := 0\n")
 	case *grammar.Any:
 		cond = "!ok {\n\t\t\tp.expect(p.pos, idAny)"
@@ -951,7 +977,7 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		r, _ := utf8.DecodeRuneInString(e.Value)
 		return fmt.Sprintf("ch == %d", r), g.desc(strconv.Quote(e.Value)), depth, true
 	case *grammar.CharClass:
-		return "!" + classReject(e), g.desc(charClassString(e)), depth, true
+		return "!" + g.controlledClassReject(e), g.desc(charClassString(e)), depth, true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return g.first(e.Items[0], depth, seen)
@@ -1081,6 +1107,14 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
 // parameters, to Go expressions.
 func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) string {
+	raw := g.termRaw(t, s, locals)
+	if !g.goWorkControls {
+		return raw
+	}
+	return "func() any { c.p.stepWork(); return " + raw + " }()"
+}
+
+func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return fmt.Sprintf("any(%d)", t.Value)
@@ -1169,9 +1203,15 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		case "text":
 			return "c.text(" + args[0] + ")"
 		case "foldl", "foldr":
+			if g.goWorkControls {
+				return fmt.Sprintf("c.fold(%q, %v, %s, %s, %s)", t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
+			}
 			return fmt.Sprintf("%sFold(%q, %v, %s, %s, %s)", g.rt(), t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.projected(t, locals); ok {
+				if g.goWorkControls {
+					return "c.newList(c.listItems(\"map\", " + g.term(x, s, locals) + "))"
+				}
 				return "c.newList(" + g.pick("listItems", "tlistItems") + "(\"map\", " + g.term(x, s, locals) + "))"
 			}
 			return fmt.Sprintf("c.mapList(%s, %s)", args[0], g.lambda(t.Args[1], s, locals))
@@ -1184,18 +1224,33 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
 			if rx, ok := textArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
+				if g.goWorkControls {
+					return fmt.Sprintf("any(c.p.textEqual(c.textStr(%s), c.textStr(%s)) == %v)", g.term(lx, s, locals), g.term(rx, s, locals), t.Op == "==")
+				}
 				return fmt.Sprintf("any(c.textStr(%s) %s c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
 			}
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
 		switch t.Op {
 		case "&&":
+			if g.goWorkControls {
+				return fmt.Sprintf("c.and(%s, func() any { return %s })", l, r)
+			}
 			return fmt.Sprintf("%sAnd(%s, func() any { return %s })", g.rt(), l, r)
 		case "||":
+			if g.goWorkControls {
+				return fmt.Sprintf("c.or(%s, func() any { return %s })", l, r)
+			}
 			return fmt.Sprintf("%sOr(%s, func() any { return %s })", g.rt(), l, r)
+		}
+		if g.goWorkControls {
+			return fmt.Sprintf("c.binary(%q, %s, %s)", t.Op, l, r)
 		}
 		return fmt.Sprintf("%sBinary(%q, %s, %s)", g.rt(), t.Op, l, r)
 	case *grammar.Unary:
+		if g.goWorkControls {
+			return fmt.Sprintf("c.unary(%q, %s)", t.Op, g.term(t.X, s, locals))
+		}
 		return fmt.Sprintf("%sUnary(%q, %s)", g.rt(), t.Op, g.term(t.X, s, locals))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
@@ -1253,6 +1308,11 @@ func (g *generator) predicateTerm(t grammar.Term, s *scope, locals map[string]st
 					cases = append(cases, strconv.Quote(literal))
 				}
 			}
+			if g.goWorkControls {
+				ordinary := g.term(t, s, locals)
+				fast := fmt.Sprintf("func() any { switch c.textStr(%s) { case %s: return true; default: return false } }()", g.term(&grammar.CaptureRef{Name: name}, s, locals), strings.Join(cases, ", "))
+				return "func() any { if c.p.control != nil { return " + ordinary + " }; return " + fast + " }()"
+			}
 			return fmt.Sprintf("func() any { switch c.textStr(%s) { case %s: return true; default: return false } }()", g.term(&grammar.CaptureRef{Name: name}, s, locals), strings.Join(cases, ", "))
 		}
 	}
@@ -1296,4 +1356,29 @@ func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) s
 		inner[p] = params[i]
 	}
 	return fmt.Sprintf("func(%s any) any { return %s }", strings.Join(params, ", "), g.term(l.Body, s, inner))
+}
+
+// controlledClassReject preserves the compact inactive condition while bounded
+// membership uses immutable generated range tables. TS keeps its own runtime.
+func (g *generator) controlledClassReject(e *grammar.CharClass) string {
+	ordinary := classReject(e)
+	if !g.goWorkControls || len(e.Ranges) <= 4 {
+		return ordinary
+	}
+	key := fmt.Sprintf("%#v", e.Ranges)
+	if g.workClassNames == nil {
+		g.workClassNames = map[string]string{}
+	}
+	name := g.workClassNames[key]
+	if name == "" {
+		name = g.name("workClass")
+		g.workClassNames[key] = name
+		g.workClassKeys = append(g.workClassKeys, key)
+		fmt.Fprintf(&g.vars, "var %s = []workRange{", name)
+		for _, r := range e.Ranges {
+			fmt.Fprintf(&g.vars, "{%d,%d},", r.Lo, r.Hi)
+		}
+		g.vars.WriteString("}\n")
+	}
+	return fmt.Sprintf("((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, %s, %v)) || ((!workControlsEnabled || p.control == nil) && (%s)))", name, e.Negated, ordinary)
 }

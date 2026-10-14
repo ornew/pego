@@ -175,15 +175,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 
 // streams reports whether the rule body (from entry to RETURN) has a #stream repetition.
 func (vm *vmProgram) streams(entry int) bool {
-	for _, in := range vm.m.Code[entry:] {
-		switch {
-		case in.Op == OpReturn:
-			return false
-		case in.Op == OpNext && in.B == 2:
-			return true
-		}
-	}
-	return false
+	return moduleStreams(vm.m, entry)
 }
 
 func (vm *vmProgram) names(ids []int) []string {
@@ -318,10 +310,7 @@ func (p *parser) restore(s *vmSave) {
 	p.pos = s.pos
 	p.vals = p.vals[:s.vals]
 	p.reps = p.reps[:s.reps]
-	for i := len(p.trail) - 1; i >= int(s.trail); i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(int(s.trail))
 	p.trail = p.trail[:min2(int(s.trail), len(p.trail))]
 	p.recovered = p.recovered[:s.recovered]
 	p.env = s.env
@@ -408,6 +397,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		}
 	}
 	for {
+		p.stepWork()
 		in := &code[ip]
 		switch in.Op {
 		case OpStr:
@@ -421,14 +411,14 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
-			if !ok || !vm.has(in.A, ch) {
+			if !ok || !vm.has(p, in.A, ch) {
 				p.expect(p.pos, numFixedDescs+expID(in.B))
 				goto fail
 			}
 			p.single(size, in.C == 1)
 		case OpGuard:
 			ch, _, ok := p.peek()
-			if !(ok && vm.has(in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
+			if !(ok && vm.has(p, in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
 				p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
 				ip = int(in.C)
 				continue
@@ -441,7 +431,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			count := 0
 			for max < 0 || count < max {
 				ch, size, ok := p.peek()
-				if !ok || in.A >= 0 && !vm.has(in.A, ch) {
+				if !ok || in.A >= 0 && !vm.has(p, in.A, ch) {
 					if in.A >= 0 {
 						p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
 					} else {
@@ -498,6 +488,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		case OpCut:
 			marked := false
 			for k := len(p.ents) - 1; k >= ebase; k-- {
+				p.stepWork()
 				e := &p.ents[k]
 				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
@@ -521,6 +512,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			kids := p.nodes(n)
 			top := len(p.vals)
 			for k := 0; k < n; k++ {
+				p.stepWork()
 				kids[k] = asNodeValue(p.vals[top-n+k])
 			}
 			start := *p.vals[top-n-1].(*int)
@@ -653,6 +645,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			if in.A == 1 {
 				kids := p.nodes(len(p.vals) - rep.base)
 				for k := range kids {
+					p.stepWork()
 					kids[k] = asNodeValue(p.vals[rep.base+k])
 				}
 				start := *p.vals[rep.base-1].(*int)
@@ -722,7 +715,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
-				p.push(p.newNode(Node{kind: kindError, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: Fields{{"message", se.Error()}}, fresh: true, terminal: true}))
+				p.push(p.newNode(Node{kind: kindError, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(se)}}, fresh: true, terminal: true}))
 			}
 		case OpReturn, OpEnd:
 			var v *Node
@@ -754,6 +747,7 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 		if len(p.ents) == ebase {
 			return 0, false
 		}
+		p.stepWork()
 		e := p.ents[len(p.ents)-1]
 		p.ents = p.ents[:len(p.ents)-1]
 		switch e.kind {
@@ -812,11 +806,21 @@ func newASCIISet(cl *Class) asciiSet {
 }
 
 // has reports whether the character ch is in class a.
-func (vm *vmProgram) has(a int32, ch rune) bool {
+func (vm *vmProgram) has(p *parser, a int32, ch rune) bool {
 	if uint32(ch) < 128 {
 		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
 	}
-	return vm.m.Classes[a].has(ch)
+	cl := &vm.m.Classes[a]
+	if !workControlsEnabled || p.control == nil || len(cl.Ranges) <= 4 {
+		return cl.has(ch)
+	}
+	for k := 0; k < len(cl.Ranges); k += 2 {
+		p.stepWork()
+		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
+			return !cl.Negated
+		}
+	}
+	return cl.Negated
 }
 
 // has reports whether the character ch is in the class.
@@ -859,8 +863,9 @@ func (f *vmFunc) arity() int { return f.n }
 func (f *vmFunc) apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.p
+	p.stepWork()
 	base := len(p.estack)
-	p.estack = append(append(p.estack, f.locals...), x)
+	p.estack = append(appendWork(p, p.estack, f.locals), x)
 	if f.n == 2 {
 		p.estack = append(p.estack, y)
 	}
@@ -881,6 +886,7 @@ func (vm *vmProgram) evaluator(entry int, operator bool) evaluator {
 		p.estack = append(p.estack, nil, nil, nil)
 		locals := p.estack[base : base+3 : base+3]
 		for l := ctx.locals; l != nil; l = l.next {
+			p.stepWork()
 			switch l.name {
 			case "lhs":
 				locals[0] = l.val
@@ -945,6 +951,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		}
 	}()
 	for {
+		p.stepWork()
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case EInt:
@@ -962,16 +969,16 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			if n == 0 {
 				stack = append(stack, ctx.newList(ctx.items))
 			} else if n > len(ctx.items) {
-				return nil, fmt.Errorf("$%d is out of range (%d elements)", n, len(ctx.items))
+				return nil, p.actionIndexError(n, len(ctx.items))
 			} else {
 				stack = append(stack, nodeOrNil(ctx.items[n-1]))
 			}
 		case ELocal:
 			stack = append(stack, locals[in.A])
 		case EVar:
-			v, ok := ctx.p.env.lookup(m.Strings[in.A])
+			v, ok := ctx.p.lookupValue(m.Strings[in.A])
 			if !ok {
-				return nil, fmt.Errorf("variable %s is not defined", m.Strings[in.A])
+				return nil, p.actionError("variable ", m.Strings[in.A], " is not defined")
 			}
 			stack = append(stack, v)
 		case EMember:
@@ -997,13 +1004,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBin:
 			r := pop()
 			l := pop()
-			v, err := binaryOp(m.Strings[in.A], l, r)
+			v, err := p.valueBinary(m.Strings[in.A], l, r)
 			if err != nil {
 				return nil, err
 			}
 			stack = append(stack, v)
 		case EUnary:
-			v, err := unaryOp(m.Strings[in.A], pop())
+			v, err := p.valueUnary(m.Strings[in.A], pop())
 			if err != nil {
 				return nil, err
 			}
@@ -1016,7 +1023,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			top := stack[len(stack)-1]
 			b, ok := top.(bool)
 			if !ok {
-				return nil, fmt.Errorf("invalid operand %s for %s", typeName(top), op)
+				return nil, p.actionError("invalid operand ", typeName(top), " for ", op)
 			}
 			if b == (in.Op == EOr) {
 				ip = int(in.A)
@@ -1026,13 +1033,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBoolChk:
 			top := stack[len(stack)-1]
 			if _, ok := top.(bool); !ok {
-				return nil, fmt.Errorf("invalid operand %s for %s", typeName(top), m.Strings[in.A])
+				return nil, p.actionError("invalid operand ", typeName(top), " for ", m.Strings[in.A])
 			}
 		case EFunc:
 			if len(locals) > 0 {
 				// The locals may be on the expression stack, and a function can outlive the lambda that
 				// created it (when the lambda returns it).
-				locals = append([]any(nil), locals...)
+				locals = appendWork(p, []any(nil), locals)
 			}
 			stack = append(stack, p.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
 		case ECall:
@@ -1054,7 +1061,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			// Both values were checked by ETEXTCHK.
 			ls, _ := ctx.textString(stack[len(stack)-2])
 			rs, _ := ctx.textString(stack[len(stack)-1])
-			stack = append(stack[:len(stack)-2], (ls == rs) != (in.A == 1))
+			stack = append(stack[:len(stack)-2], p.valueEqual(ls, rs) != (in.A == 1))
 		case EListBegin:
 			p.lists = append(p.lists, len(p.kidStack))
 		case EListPush:

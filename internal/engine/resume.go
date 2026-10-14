@@ -2,7 +2,6 @@ package engine
 
 import (
 	"slices"
-	"sort"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -153,6 +152,7 @@ func (r *runState) more() bool { return !r.done && (r.max < 0 || r.count < r.max
 // nextPrefix reuses the next old element if it examined only input before the edit, and returns
 // it (its value is for the caller to push), or nil.
 func (p *parser) nextPrefix(r *runState) *runElem {
+	p.stepWork()
 	if r.moved || r.k >= len(r.old) || r.old[r.k].examined > r.edit.start || r.done {
 		return nil
 	}
@@ -171,8 +171,8 @@ func (p *parser) resync(r *runState) bool {
 		return false
 	}
 	at := p.pos - r.edit.delta
-	i := r.k + sort.Search(len(r.old)-r.k, func(i int) bool { return r.old[r.k+i].start >= at })
-	if i == len(r.old) || r.old[i].start != at || !after(r.old[i:], r.edit.end) {
+	i := p.runSearch(r.old, r.k, at)
+	if i == len(r.old) || r.old[i].start != at || !p.runAfter(r.old[i:], r.edit.end) {
 		return false
 	}
 	r.j = i
@@ -182,6 +182,7 @@ func (p *parser) resync(r *runState) bool {
 // nextTail reuses the next old element after the edit (after resync), moved by the edit, and
 // returns it, or nil.
 func (p *parser) nextTail(r *runState) *runElem {
+	p.stepWork()
 	i := r.j + r.t
 	if r.j < 0 || i >= len(r.old) || !r.more() {
 		return nil
@@ -240,8 +241,14 @@ func (p *parser) endElem(r *runState, ok bool, v *Node) {
 	r.count++
 	el := runElem{start: r.elemStart, end: p.pos, from: from, examined: examined, far: far, exp: exp, v: v}
 	if r.j < 0 {
+		if workControlsEnabled && p.control != nil {
+			r.mid = growWork(p, r.mid, 1)
+		}
 		r.mid = append(r.mid, el)
 	} else {
+		if workControlsEnabled && p.control != nil {
+			r.post = growWork(p, r.post, 1)
+		}
 		r.post = append(r.post, el)
 	}
 }
@@ -252,7 +259,24 @@ func (p *parser) finishRun(r *runState) {
 		return
 	}
 	var elems []runElem
-	if r.j < 0 {
+	if workControlsEnabled && p.control != nil {
+		// Keep assembling storage private until every counted copy finishes.
+		// The ordinary path retains its in-place replacement and reuse.
+		total := r.k + len(r.mid)
+		if r.j >= 0 {
+			total += r.t + len(r.post)
+		}
+		elems = make([]runElem, total)
+		off := 0
+		parts := [][]runElem{r.old[:r.k], r.mid}
+		if r.j >= 0 {
+			parts = append(parts, r.old[r.j:r.j+r.t], r.post)
+		}
+		for _, part := range parts {
+			copyWork(p, elems[off:], part)
+			off += len(part)
+		}
+	} else if r.j < 0 {
 		elems = append(r.old[:r.k], r.mid...)
 	} else {
 		elems = append(slices.Replace(r.old[:r.j+r.t], r.k, r.j, r.mid...), r.post...)
@@ -268,7 +292,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 	p.startRun(&r, rs.id, rs.min, rs.max, rs.shiftable)
 	base := len(p.kidStack)
 	if rs.build {
-		p.kidStack = slices.Grow(p.kidStack, len(r.old))
+		p.kidStack = growWork(p, p.kidStack, len(r.old))
 	}
 	for el := p.nextPrefix(&r); el != nil; el = p.nextPrefix(&r) {
 		if rs.build {
@@ -276,6 +300,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 		}
 	}
 	for r.more() {
+		p.stepWork()
 		if p.resync(&r) {
 			for el := p.nextTail(&r); el != nil; el = p.nextTail(&r) {
 				if rs.build {
@@ -351,12 +376,7 @@ func (p *parser) moveValue(v *Node, shift int, base uint32) *Node {
 	} else if v.gen < p.gen {
 		p.moveTree(v, p.shiftOf(v))
 	}
-	if len(p.moved) > 1024 {
-		p.moved = nil
-	} else {
-		clear(p.moved)
-	}
-	clear(p.shifts)
+	p.clearMovementWork()
 	return v
 }
 
@@ -373,7 +393,7 @@ func (p *parser) newRunState() *runState {
 // freeRunState makes the runState of a finished repetition available to later ones.
 func (p *parser) freeRunState(r *runState) {
 	r.old = nil
-	clear(r.mid)
-	clear(r.post)
+	clearWork(p, r.mid)
+	clearWork(p, r.post)
 	p.freeRuns = append(p.freeRuns, r)
 }

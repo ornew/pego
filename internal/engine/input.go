@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"slices"
@@ -27,6 +28,10 @@ func (u Unit) String() string {
 
 // ParseOptions holds per-parse settings.
 type ParseOptions struct {
+	// Context cooperatively interrupts this invocation. Nil means no cancellation.
+	Context context.Context
+	// WorkLimits optionally bound cumulative input inspections and execution work.
+	WorkLimits WorkLimits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
 	Unit Unit
 	// Backend is the backend that runs the parse.
@@ -66,6 +71,7 @@ func (o ParseOptions) maxDepth(b Backend) int {
 // base. When parsing a stream, more input is read from reader as needed and the committed part is
 // discarded.
 type input struct {
+	control  *workControl // invocation-local; never retained by results
 	unit     Unit
 	in       []rune // for CodePoints
 	bs       []byte // for Bytes
@@ -76,7 +82,8 @@ type input struct {
 	eof      bool
 
 	// readerCall distinguishes buffered reader execution from VM execution.
-	readerCall bool
+	readerCall   bool
+	readerResult error // most recent caller Read result, before bufio defers its error
 	// src is the whole input as a string (unused for streams). If srcOK, text returns substrings
 	// of src without building new strings. In code points, offs[i] is the byte offset of position i
 	// (its length is the number of characters + 1); it is built when text first needs it, which a
@@ -101,11 +108,14 @@ func (in *input) setSource(s string) {
 
 // buildOffs builds the offset table of src (code points).
 func (in *input) buildOffs() {
-	in.offs = make([]int32, 0, len(in.in)+1)
-	for i := range in.src {
-		in.offs = append(in.offs, int32(i))
+	offs := make([]int32, 0, len(in.in)+1)
+	for i := 0; i < len(in.src); {
+		in.inputWork(uint64(min(utf8.UTFMax, len(in.src)-i)))
+		offs = append(offs, int32(i))
+		_, size := utf8.DecodeRuneInString(in.src[i:])
+		i += size
 	}
-	in.offs = append(in.offs, int32(len(in.src)))
+	in.offs = append(offs, int32(len(in.src)))
 }
 
 // replace replaces the positions [start, end) of a fully loaded input with text and returns the
@@ -230,17 +240,26 @@ const maxScratch = 1 << 22
 // newPooledParser is newParser with buffers left by earlier parses of prog. The caller passes the
 // parser to releaseScratch when the parse has returned.
 func newPooledParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+	p := acquirePooledParser(prog)
+	p.input = newTextInputIn(s, unit, offsets, p.scratch)
+	return p
+}
+
+// acquirePooledParser separates scratch acquisition from input initialization,
+// so a caller can arm release before controlled decoding can interrupt.
+func acquirePooledParser(prog *Program) *parser {
 	sc, _ := prog.scratch.Get().(*scratch)
 	if sc == nil {
 		sc = &scratch{}
 	}
-	p := &parser{prog: prog, input: newTextInputIn(s, unit, offsets, sc), memo: &sc.memo, maxDepth: DefaultMaxDepth, kidStack: sc.kids[:0]}
+	p := &parser{prog: prog, memo: &sc.memo, maxDepth: DefaultMaxDepth, kidStack: sc.kids[:0]}
 	p.scratch = sc
 	return p
 }
 
 // releaseScratch returns the buffers of a parser made by newPooledParser for later parses.
 func (p *parser) releaseScratch() {
+	p.control = nil
 	sc := p.scratch
 	if sc == nil {
 		return
@@ -267,6 +286,22 @@ func (p *parser) releaseScratch() {
 	p.prog.scratch.Put(sc)
 }
 
+// releaseBatchScratch finishes a whole-input invocation. Saved trace events
+// may retain its parser, so detach private references after recycling scratch.
+// Node storage is separately allocated and remains owned by returned results.
+func (p *parser) releaseBatchScratch() {
+	p.releaseScratch()
+	p.releaseTraceReferences()
+}
+
+// releaseTraceReferences detaches a finished traced parser after its owner has
+// transferred reusable state. It does not mutate result or event backing arrays.
+func (p *parser) releaseTraceReferences() {
+	if p.tr != nil {
+		*p = parser{aborted: p.aborted}
+	}
+}
+
 // grow returns a slice of n elements, reusing buf if it is large enough. The elements are not
 // cleared.
 func grow[T any](buf []T, n int) []T {
@@ -277,7 +312,15 @@ func grow[T any](buf []T, n int) []T {
 }
 
 func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
-	p := &parser{prog: prog, input: input{unit: unit, reader: bufio.NewReader(r), baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	return newControlledStreamParser(prog, r, unit, nil)
+}
+
+func newControlledStreamParser(prog *Program, r io.Reader, unit Unit, control *workControl) *parser {
+	p := &parser{prog: prog, input: input{unit: unit, control: control, baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	if workControlsEnabled && control != nil {
+		r = &streamReaderObserver{reader: r, result: &p.readerResult, control: control}
+	}
+	p.reader = bufio.NewReader(r)
 	if streamPrefixIsolation {
 		p.nodeChunks = -nodeChunk / 8 // Small prefixes use private exact-size storage.
 	}
@@ -314,34 +357,41 @@ func (in *input) fill(n int) bool {
 }
 
 func (in *input) read() {
+	if workControlsEnabled && in.control != nil {
+		in.control.check()
+		in.control.charge(0, 1) // reading and staging one byte or code point
+	}
 	var err error
+	var b byte
+	var r rune
 	in.readerCall = true
 	if in.unit == Bytes {
-		var b byte
 		b, err = in.reader.ReadByte()
-		in.readerCall = false
-		if err == nil {
-			in.bs = append(in.bs, b)
-		}
 	} else {
-		var r rune
 		r, _, err = in.reader.ReadRune()
-		in.readerCall = false
-		if err == nil {
-			in.in = append(in.in, r)
-		}
 	}
-	if err != nil {
-		if err != io.EOF {
-			panic(fatal{err})
-		}
+	in.readerCall = false
+	if err != nil && err != io.EOF {
+		panic(fatal{err})
+	}
+	if workControlsEnabled && in.control != nil {
+		returned := in.readerResult
+		in.readerResult = nil
+		in.control.checkAfterReader(returned)
+	}
+	if err == io.EOF {
 		in.eof = true
+	} else if in.unit == Bytes {
+		in.bs = append(in.bs, b)
+	} else {
+		in.in = append(in.in, r)
 	}
 }
 
 // decode returns the character at position i, its size (in units), and the end of the examined
 // range.
 func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
+	in.inputWork(1)
 	if i < in.base {
 		return 0, 0, i + 1, false
 	}
@@ -367,6 +417,7 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 		in.fill(in.loaded() + 1)
 		b = in.bs[i-in.base:]
 	}
+	in.inputWork(uint64(min(utf8.UTFMax, len(b))))
 	r, size = utf8.DecodeRune(b)
 	examined = i + size
 	if r == utf8.RuneError && size == 1 {
@@ -383,6 +434,7 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 
 // byteAt returns the byte at position i when the unit is Bytes.
 func (in *input) byteAt(i int) (byte, bool) {
+	in.inputWork(1)
 	if i < in.base || !in.fill(i+1) {
 		return 0, false
 	}
@@ -398,6 +450,9 @@ func (in *input) text(start, end int) string {
 	// (possibly nothing).
 	start, end = max(start, in.base), max(end, in.base)
 	if documentPieceInput && in.pieces != nil {
+		if workControlsEnabled && in.control != nil {
+			return in.controlledPieceText(start, end)
+		}
 		return in.pieces.text(start, end)
 	}
 	if in.srcOK {
@@ -411,6 +466,9 @@ func (in *input) text(start, end int) string {
 	}
 	if streamTextSnapshots && in.reader != nil {
 		return in.snapshotText(start, end)
+	}
+	if workControlsEnabled && in.control != nil {
+		return in.detachedText(start-in.base, end-in.base)
 	}
 	if in.unit == Bytes {
 		return string(in.bs[start-in.base : end-in.base])
@@ -449,6 +507,7 @@ func (in *input) lineCol(pos int) (int, int) {
 	line, col := in.baseLine, in.baseCol
 	n := in.loaded()
 	for i := in.base; i < pos && i < n; i++ {
+		in.inputWork(1)
 		var nl bool
 		if in.unit == Bytes {
 			nl = in.bs[i-in.base] == '\n'
@@ -467,38 +526,55 @@ func (in *input) lineCol(pos int) (int, int) {
 
 // buildLines builds the table of the positions where lines start.
 func (in *input) buildLines() {
+	// A Document retains successful lookup tables across invocations. An
+	// interrupted scan must leave no partial table for a later parse to reuse.
+	complete := false
+	defer func() {
+		if !complete {
+			in.lines = nil
+		}
+	}()
 	in.lines = append(in.lines[:0], 0)
 	if documentPieceInput && in.pieces != nil {
 		for _, p := range in.pieces.parts {
 			if in.unit == Bytes {
 				for i := 0; i < len(p.text); i++ {
+					in.inputWork(1)
 					if p.text[i] == '\n' {
 						in.lines = append(in.lines, p.start+i+1)
 					}
 				}
 			} else {
 				for i, r := range p.runes {
+					in.inputWork(1)
 					if r == '\n' {
 						in.lines = append(in.lines, p.start+i+1)
 					}
 				}
 			}
 		}
+		complete = true
 		return
 	}
 	if in.unit == Bytes {
-		for i, b := range in.bs {
+		for i := range in.bs {
+			in.inputWork(1)
+			b := in.bs[i]
 			if b == '\n' {
 				in.lines = append(in.lines, i+1)
 			}
 		}
+		complete = true
 		return
 	}
-	for i, r := range in.in {
+	for i := range in.in {
+		in.inputWork(1)
+		r := in.in[i]
 		if r == '\n' {
 			in.lines = append(in.lines, i+1)
 		}
 	}
+	complete = true
 }
 
 // discard discards the input before position keep. The buffer holds read-ahead input, so it is
@@ -511,9 +587,9 @@ func (in *input) discard(keep int) {
 	}
 	in.baseLine, in.baseCol = in.lineCol(keep)
 	if in.unit == Bytes {
-		in.bs = in.bs[:copy(in.bs, in.bs[n:])]
+		in.bs = in.bs[:copyStreamPrefix(in.control, in.bs, in.bs[n:])]
 	} else {
-		in.in = in.in[:copy(in.in, in.in[n:])]
+		in.in = in.in[:copyStreamPrefix(in.control, in.in, in.in[n:])]
 	}
 	in.base = keep
 	if streamTextSnapshots && in.streamText.end <= keep {
@@ -536,12 +612,12 @@ func (p *parser) commit(pos int) {
 		// Clear their inactive capacity along with memo pruning, so a large
 		// element's references do not survive indefinitely in small streams.
 		if streamUndoCleanup {
-			clear(p.trail[:cap(p.trail)])
+			clearWork(p, p.trail[:cap(p.trail)])
 		}
 		if streamStackCleanup {
-			clear(p.vals[len(p.vals):cap(p.vals)])
+			clearWork(p, p.vals[len(p.vals):cap(p.vals)])
 		}
-		p.memo.prune(pos)
+		p.pruneStreamMemo(pos)
 		p.pruned = pos
 	}
 }
@@ -565,13 +641,21 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		if p.unit == Bytes {
 			in := p.bs[p.pos-p.base:]
 			n = len(bs)
-			for k < n && k < len(in) && in[k] == bs[k] {
+			for k < n {
+				p.inputWork(1)
+				if k >= len(in) || in[k] != bs[k] {
+					break
+				}
 				k++
 			}
 		} else {
 			in := p.in[p.pos-p.base:]
 			n = len(rs)
-			for k < n && k < len(in) && in[k] == rs[k] {
+			for k < n {
+				p.inputWork(1)
+				if k >= len(in) || in[k] != rs[k] {
+					break
+				}
 				k++
 			}
 		}
@@ -580,7 +664,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			p.pos += n
 			return true
 		}
-		if p.unit == Bytes && slices.Contains(rs, utf8.RuneError) {
+		if p.unit == Bytes && p.literalHasReplacement(rs) {
 			return p.matchLiteralRunes(rs)
 		}
 		p.touch(p.pos + k + 1)
@@ -593,7 +677,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			p.touch(p.pos + 1)
 			c, ok := p.byteAt(p.pos)
 			if !ok || c != b {
-				if slices.Contains(rs, utf8.RuneError) {
+				if p.literalHasReplacement(rs) {
 					p.pos = start
 					return p.matchLiteralRunes(rs)
 				}
@@ -604,6 +688,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		return true
 	}
 	for _, r := range rs {
+		p.inputWork(1)
 		p.touch(p.pos + 1)
 		if p.pos < p.base || !p.fill(p.pos+1) || p.in[p.pos-p.base] != r {
 			return false
@@ -611,6 +696,21 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		p.pos++
 	}
 	return true
+}
+
+// literalHasReplacement bounds the grammar-side scan after a byte mismatch.
+// Only visited literal runes consume steps; they do not inspect input.
+func (p *parser) literalHasReplacement(rs []rune) bool {
+	if !workControlsEnabled || p.control == nil {
+		return slices.Contains(rs, utf8.RuneError)
+	}
+	for _, r := range rs {
+		p.stepWork()
+		if r == utf8.RuneError {
+			return true
+		}
+	}
+	return false
 }
 
 // literalText preserves matched input bytes when replacement decoding accepts
@@ -636,6 +736,7 @@ func (p *parser) matchLiteralRunes(rs []rune) bool {
 }
 
 func (p *parser) atEOF() bool {
+	p.inputWork(1)
 	p.touch(p.pos + 1)
 	return !p.fill(p.pos + 1)
 }
