@@ -3,6 +3,9 @@
 # docs/guide/playground.md and docs/design/016-web-site-and-playground.md.
 
 [build]
+  # This build retains the generation observed at build time. Overlapping/manual
+  # promotions need the publication authority described in design record 023;
+  # a build concurrency limit or Netlify auto-publish lock alone is insufficient.
   command = "sh site/build.sh"
   publish = "site/dist"
 
