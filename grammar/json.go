@@ -145,6 +145,13 @@ func encode(v reflect.Value) (any, error) {
 			if err != nil {
 				return nil, err
 			}
+			// Raw json:"-" fields do not make an optional metadata object
+			// present when all of its serialized fields are empty.
+			if tag.omitEmpty && fv.Kind() == reflect.Struct {
+				if fields, ok := x.(map[string]any); ok && len(fields) == 0 {
+					continue
+				}
+			}
 			obj[tag.name] = x
 		}
 		return obj, nil

@@ -37,12 +37,19 @@ formatter.
 
 ```go
 type SourceInfo struct {
+    Layout                  *SourceLayout `json:"-"`
     Pos                     Pos
     End                     Pos
     LeadingComments         string
     TrailingComments        string
     LeadingDetachedComments []string
     DiagnosticPos           Pos
+}
+
+type SourceLayout struct {
+    Before       []*Comment
+    PreviousLine int
+    NextLine     int
 }
 ```
 
@@ -169,6 +176,31 @@ the grouped node from its enclosed child. The formatter must preserve those owne
 parentheses. Parse/format/parse must preserve owner paths for supported nodes;
 this guarantee does not apply to JSON-decoded ASTs without serialized layout.
 
+The first interior-boundary formatter increment adds `SourceInfo.Layout` as a
+raw-only adjunct. `Before` holds the comment tokens at that boundary, while
+`PreviousLine` and `NextLine` preserve their physical line relationship to the
+surrounding syntax. A nil layout uses canonical formatting. Layout is excluded
+from JSON, and a `SourceInfo` containing only layout does not produce an empty
+`source` object. `Grammar.Clone()` deep-copies the layout and its comment tokens.
+The formatter emits each stored token at its boundary without deduplicating by
+comment value. Normalized `LeadingComments`, `TrailingComments` and detached
+paragraphs remain unchanged. When layout is present, changing those normalized
+strings alone does not rewrite the emitted comment; update the raw layout tokens
+or reparse the source to resynchronize it.
+
+This increment preserves raw layout at selected Action Expression operand
+boundaries, including unary operands and confirmed lambda expressions, and
+before constructor field names. The 15 fixtures cover selected function
+arguments, constructor fields and values, binary and assignment right-hand
+sides, unary prefixes and operands, lambda expressions, repeated identical
+comments, multiline groups and calls, idempotence, cloning and JSON omission.
+For example, formatting
+`rule main = "x" => int(/* argument */ "1")` now keeps the comment inside the
+call; previously it moved before the rule. Type expressions, rule headers,
+member markers, closing delimiters and other source forms remain outside this
+increment's coverage. The broader ownership and formatter migration remains
+incomplete.
+
 Direct grammar JSON preserves normalized source metadata. The current `.pegoc`
 AST-bearing codec does not encode source positions or comments; loading or
 saving that AST preserves the compiled grammar tree, not its source-document
@@ -193,10 +225,17 @@ layout is stored separately in `OpenBreak`, `BodyBreak`, `CloseBreak` and
 `OneLine`; these fields preserve line placement around delimiters without
 changing normalized source ownership. The compiler and generators lower these
 wrappers transparently before semantic execution, so grouping adds no matching,
-value-frame, type, or bytecode semantics. The canonical `pego.pego` parser must construct these nodes directly.
-Then complete formatter owner-path preservation through both group types. The
-boundary fixture is a focused oracle, not a substitute for grammar-parser parity
-and formatter gates.
+value-frame, type, or bytecode semantics. The canonical `pego.pego` parser must
+construct these nodes directly. The first interior-boundary formatter increment
+stores raw comment tokens in `SourceLayout` for selected Action Expression
+operand boundaries and constructor field names. It preserves normalized
+ownership and the JSON contract while keeping comments at their parsed physical
+boundary; its scope and remaining formatter work are described under
+[JSON and Formatting](#json-and-formatting).
+Complete canonical grammar metadata construction and ownership migration for
+the other source forms before considering this design complete. The focused
+fixtures are an oracle for covered boundaries, not a substitute for grammar
+parser parity and the remaining formatter gates.
 
 ## Alternatives Considered
 
@@ -227,6 +266,11 @@ and formatter gates.
   decoders, zero-value omission and source metadata on every supported node.
 - Parse/format/parse in-memory ASTs and compare owner paths while checking raw
   comment placement. Test relocation around grouping nodes.
+- For raw interior layout, verify token ownership at call arguments,
+  constructor fields, binary and assignment right-hand sides, and unary
+  boundaries. Include repeated identical comment values, multiline groups and
+  calls, formatting idempotence, clone isolation, and JSON omission of layout
+  tokens and layout-only source objects.
 - Test generated grammar construction, manual-parser parity, adapters, cloning,
   programmatic ASTs and documentation extraction.
 
@@ -267,9 +311,10 @@ independent review pass. The boundary fixture validates grammar-level boundary
 and selected owner construction only. The transparent Type/Action grouping increment is also implemented and
 validated, including owned boundary comments, strict and permissive JSON,
 structural validation and equivalent generated code and parse results.
-Construction of common metadata in the canonical `pego.pego` grammar and
-complete interior formatter owner-path migration remain follow-up scope. Keep the
-overall record Proposed until those remaining parts of the contract are
+The in-progress raw interior-layout formatter increment is scoped to selected
+unary/lambda value boundaries and constructor field names. Canonical metadata construction in `pego.pego`
+and ownership migration for the remaining source forms are still follow-up
+scope. Keep the overall record Proposed until those parts of the contract are
 implemented and validated.
 
 ### Parenthesized Source Groups: Incremental Cost

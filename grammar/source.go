@@ -8,11 +8,14 @@ package grammar
 // LeadingDetachedComments contains separate paragraphs before the node.
 // Formatter comment tokens and layout are stored separately.
 type SourceInfo struct {
-	Pos                     Pos      `json:"pos,omitempty"`
-	End                     Pos      `json:"end,omitempty"`
-	LeadingComments         string   `json:"leadingComments,omitempty"`
-	TrailingComments        string   `json:"trailingComments,omitempty"`
-	LeadingDetachedComments []string `json:"leadingDetachedComments,omitempty"`
+	// Layout preserves raw token-boundary trivia for in-memory formatting.
+	// It is separate from normalized documentation and is not serialized.
+	Layout                  *SourceLayout `json:"-"`
+	Pos                     Pos           `json:"pos,omitempty"`
+	End                     Pos           `json:"end,omitempty"`
+	LeadingComments         string        `json:"leadingComments,omitempty"`
+	TrailingComments        string        `json:"trailingComments,omitempty"`
+	LeadingDetachedComments []string      `json:"leadingDetachedComments,omitempty"`
 	// DiagnosticPos identifies a diagnostic token when it differs from Pos,
 	// such as an operator inside a binary expression.
 	DiagnosticPos Pos `json:"diagnosticPos,omitempty"`
@@ -33,4 +36,13 @@ func (s SourceInfo) Diagnostic() Pos {
 // SourceNode is implemented by source-bearing grammar nodes.
 type SourceNode interface {
 	Source() *SourceInfo
+}
+
+// SourceLayout retains spelling and placement without assigning comment owners.
+// A nil value uses ordinary canonical formatting. Positions only distinguish
+// adjacent lines and blank lines; they are not offsets in the formatted output.
+type SourceLayout struct {
+	Before       []*Comment
+	PreviousLine int
+	NextLine     int
 }

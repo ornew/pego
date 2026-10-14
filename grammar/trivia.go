@@ -59,6 +59,9 @@ func (g *Grammar) AllComments() []*Comment {
 	var term func(Term)
 	var typ func(TypeExpr)
 	term = func(t Term) {
+		if n, ok := t.(SourceNode); ok && n.Source().Layout != nil {
+			cs = append(cs, n.Source().Layout.Before...)
+		}
 		switch t := t.(type) {
 		case *TermGroup:
 			add(t.OpenBreak)
@@ -73,6 +76,9 @@ func (g *Grammar) AllComments() []*Comment {
 			}
 		case *New:
 			for _, field := range t.Fields {
+				if field.Layout != nil {
+					cs = append(cs, field.Layout.Before...)
+				}
 				term(field.Value)
 			}
 		case *ListConstructor:

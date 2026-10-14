@@ -1226,9 +1226,13 @@ func (p *parser) term() (sourceResult grammar.Term) {
 // tryLambda parses a lambda if the input has the form (a, b) => body.
 func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	sourceStart := p.i
+	var layout *grammar.SourceLayout
 	defer func() {
 		if sourceResult != nil {
 			p.sourceNode(sourceResult, sourceStart)
+			if layout != nil {
+				sourceResult.(grammar.SourceNode).Source().Layout = layout
+			}
 		}
 	}()
 
@@ -1259,6 +1263,7 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	if t := p.peek(k + 1); t.kind != tPunct || t.text != "=>" {
 		return nil
 	}
+	layout = p.takeTermLayout()
 	for range k + 2 {
 		p.next()
 	}
@@ -1312,9 +1317,13 @@ func contains(xs []string, x string) bool {
 
 func (p *parser) unary() (sourceResult grammar.Term) {
 	sourceStart := p.i
+	layout := p.takeTermLayout()
 	defer func() {
 		if sourceResult != nil {
 			p.sourceNode(sourceResult, sourceStart)
+			if layout != nil {
+				sourceResult.(grammar.SourceNode).Source().Layout = layout
+			}
 		}
 	}()
 
@@ -1424,10 +1433,12 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	for !p.accept("}") {
 		fieldStart := p.i
+		layout := p.takeTermLayout()
 		name := p.ident()
 		p.expect(":")
 		field := &grammar.FieldInit{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text, Value: p.term()}
 		p.source(field, fieldStart)
+		field.Layout = layout
 		n.Fields = append(n.Fields, field)
 		if !p.is("}") {
 			p.expect(",")

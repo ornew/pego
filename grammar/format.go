@@ -931,7 +931,12 @@ var termPrec = map[string]int{
 // FormatTerm returns the value expression t in PEGO syntax.
 func FormatTerm(t Term) string { return formatTerm(t, 0) }
 
-func formatTerm(t Term, outer int) string {
+func formatTerm(t Term, outer int) (formatted string) {
+	defer func() {
+		if n, ok := t.(SourceNode); ok {
+			formatted = formatSourceLayout(n.Source().Layout, formatted)
+		}
+	}()
 	switch t := t.(type) {
 	case *TermGroup:
 		return formatSourceGroup(FormatTerm(t.Term), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine)
@@ -982,7 +987,7 @@ func formatTerm(t Term, outer int) string {
 	case *New:
 		fields := make([]string, len(t.Fields))
 		for i, f := range t.Fields {
-			fields[i] = f.Name + ": " + FormatTerm(f.Value)
+			fields[i] = formatSourceLayout(f.Layout, f.Name+": "+FormatTerm(f.Value))
 		}
 		return t.Type + "{" + strings.Join(fields, ", ") + "}"
 	case *ListConstructor:
@@ -1053,4 +1058,40 @@ func (p *printer) operator(op *OperatorsRuleOperator) {
 	} else if op.DefaultAction {
 		p.write(" => ...")
 	}
+}
+
+// formatSourceLayout keeps the token-boundary line relationships that determine
+// documentation ownership. Identical comment text at different boundaries is
+// emitted independently; no content-based de-duplication is performed.
+func formatSourceLayout(layout *SourceLayout, body string) string {
+	if layout == nil || len(layout.Before) == 0 {
+		return body
+	}
+	var out strings.Builder
+	previous := layout.PreviousLine
+	for _, comment := range layout.Before {
+		if comment == nil {
+			continue
+		}
+		if comment.Pos.Line > previous {
+			out.WriteByte('\n')
+			if comment.Pos.Line-previous > 1 {
+				out.WriteByte('\n')
+			}
+		} else {
+			out.WriteByte(' ')
+		}
+		out.WriteString(comment.Text)
+		previous = comment.End.Line
+	}
+	if layout.NextLine > previous {
+		out.WriteByte('\n')
+		if layout.NextLine-previous > 1 {
+			out.WriteByte('\n')
+		}
+	} else {
+		out.WriteByte(' ')
+	}
+	out.WriteString(body)
+	return out.String()
 }

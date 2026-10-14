@@ -173,6 +173,21 @@ An AST decoded from JSON therefore cannot promise lossless source formatting.
 Keep the original parsed AST when a tool needs to preserve exact comment
 placement.
 
+For in-memory formatting, `SourceInfo.Layout` is a raw-only adjunct. Its
+`Before` field retains the `grammar.Comment` tokens at that syntax boundary;
+`PreviousLine` and `NextLine` preserve their line relationship to surrounding
+syntax. A nil layout uses canonical formatting. `Grammar.Clone()` copies the
+layout and its comment tokens. JSON omits layout, and layout alone does not
+cause a `source` object to be emitted. When layout is present, `grammar.Format`
+uses the retained comment tokens rather than the normalized comment strings,
+so editing `LeadingComments` or `TrailingComments` alone does not change the
+formatted comment. Edit the raw layout tokens or reparse the source to
+resynchronize them. Current layout preservation covers selected Action
+Expression operand boundaries, including unary operands and confirmed lambda
+expressions, plus constructor field names. Other source forms remain outside
+this increment's coverage, so this is not a lossless formatter guarantee for
+every grammar form.
+
 Direct grammar JSON includes normalized source metadata. The current `.pegoc`
 AST codec does not serialize source positions or comments, so an AST-bearing
 compiled grammar preserves the executable tree but not source-documentation

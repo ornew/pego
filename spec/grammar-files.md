@@ -69,6 +69,17 @@ line endings; each detached entry is one paragraph. Older JSON may omit these
 metadata objects. Comment grouping and node ownership follow the
 [source-metadata contract](../docs/design/057-source-info-and-comment-ownership.md).
 
+`SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
+comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
+the surrounding line relationship. A nil layout uses canonical formatting.
+`grammar.Format` uses stored layout tokens when present, so changing normalized
+comment strings alone does not change their formatted spelling or placement.
+`Grammar.Clone()` copies the layout and its comment tokens. JSON omits layout;
+layout alone does not create a `source` object. Current layout preservation
+covers selected Action Expression operand boundaries, including unary operands
+and confirmed lambda expressions, plus constructor field names. Other source
+forms remain outside this increment's coverage.
+
 #### Parenthesized Groups in the Public AST
 
 The public AST preserves explicit parentheses in type expressions as

@@ -99,3 +99,14 @@ func TestValidationUsesDiagnosticToken(t *testing.T) {
 		t.Fatalf("diagnostic=%v", err)
 	}
 }
+
+func TestLayoutOnlyMetadataIsNotSerialized(t *testing.T) {
+	g := expressionGrammar(&Literal{SourceInfo: SourceInfo{Layout: &SourceLayout{Before: []*Comment{{Text: "/* raw */"}}}}, Value: "x"})
+	data, err := MarshalJSON(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), `"source"`) || strings.Contains(string(data), "Layout") || strings.Contains(string(data), "raw") {
+		t.Fatalf("raw-only metadata leaked into JSON: %s", data)
+	}
+}

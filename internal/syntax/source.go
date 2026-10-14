@@ -171,3 +171,26 @@ func (p *parser) sourceTrailing(s *grammar.SourceInfo) {
 		b.trailingOwner = s
 	}
 }
+
+// takeTermLayout keeps trivia at an expression boundary rather than promoting
+// it to the current statement's line break. Normalized ownership is independent.
+func (p *parser) takeTermLayout() *grammar.SourceLayout {
+	if p.header {
+		return nil
+	}
+	t := &p.toks[p.i]
+	if t.lineComment == nil && len(t.comments) == 0 {
+		return nil
+	}
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = append([]*grammar.Comment{t.lineComment}, cs...)
+	}
+	previous := 0
+	if p.i > 0 {
+		previous = p.toks[p.i-1].end.Line
+	}
+	layout := &grammar.SourceLayout{Before: cs, PreviousLine: previous, NextLine: t.pos.Line}
+	t.lineComment, t.comments = nil, nil
+	return layout
+}
