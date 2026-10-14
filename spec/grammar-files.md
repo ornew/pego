@@ -7,10 +7,12 @@ the errors that make a grammar invalid.
 ## Structure
 
 A grammar file, normally written as a `.pego` file, consists of an optional
-package clause followed by Type and Rule Definition Statements in any order.
+package clause followed by Type and Rule Definition Statements and, optionally,
+one initializer Definition Statement, in any order.
 Type definitions use Type Expressions; ordinary Rule Definition Statements
 combine a Rule Expression with an optional Value Action containing an Action
-Expression. An Operators Rule is a specialized Rule Definition Statement.
+Expression. An Operators Rule is a specialized Rule Definition Statement. An
+initializer contains assignments evaluated before a selected rule invocation.
 
 ```pego
 package example
@@ -20,7 +22,7 @@ rule expr Expr = operators { ... }
 ```
 
 A hard newline separates top-level Definition Statements; a semicolon may also
-separate them. Definition position and indentation do not affect parsing. The 12
+separate them. Definition position and indentation do not affect parsing. The 13
 contextual grammar words are interpreted by position, so the same spellings can
 be identifiers where a name or Rule Expression is expected.
 
@@ -101,6 +103,13 @@ source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` and the AST embedded in a compiled grammar expose the
 normalized executable form rather than those grouping nodes.
 
+### Initializer Definition Statement
+
+An initializer Definition Statement is written `init { ... }`. A grammar may
+contain zero or one. Its block may span lines and contains only assignments;
+semicolon or hard-newline boundaries separate them. Initializer execution and
+variable scope are defined in [Actions](actions.md#initializer-definitions).
+
 ### Type Definition Statements
 
 A Type Definition Statement (`type`) defines a node type: a struct type, a union
@@ -112,7 +121,7 @@ in the [Type System](types.md#type-definitions).
 An ordinary Rule Definition Statement starts with `rule` and defines a name for
 a Rule Expression. Its form is `rule <name> [<Type Expression>] =
 <Rule Expression> [=> <Action Expression>]`.
-When the rule matches, it produces a single value. The 12 grammar words may be
+When the rule matches, it produces a single value. The 13 grammar words may be
 used as names when the surrounding syntax expects a name.
 
 - The optional Type Expression after the rule name declares the type of the
@@ -125,9 +134,11 @@ used as names when the surrounding syntax expects a name.
 - An Operators Rule is a specialized Rule Definition Statement written
   `rule <name> [<Type>] = operators { ... }`. It defines operands and operator
   entries rather than an ordinary Rule Expression; entries may have Value
-  Actions as described in [Operators Rule](operators-rule.md). A Value Action
-  after the closing brace may be omitted or use the explicit `=> ...`
-  default-CST form; any other such action is rejected at compile time.
+  Actions as described in [Operators Rule](operators-rule.md). An optional
+  Value Action after the closing brace runs once when that Operators Rule
+  invocation finishes; `$1` is the final folded result, not an intermediate
+  value from each precedence-level reduction. Its result must satisfy the
+  rule's declared or inferred type.
 
 Comments may occur at top-level Definition Statement boundaries and at statement
 or field boundaries inside braces. They are also permitted inside Rule

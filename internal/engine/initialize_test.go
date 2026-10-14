@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -112,6 +113,34 @@ func TestCompiledRecognitionV3AndInitializerV4(t *testing.T) {
 		if n, err := loaded.ParseWith("main", "a", ParseOptions{Recognize: true}); err != nil || n != nil {
 			t.Fatalf("recognize: node %v, error %v", n, err)
 		}
+	}
+}
+
+func TestCompiledEmptyInitializerRoundTrip(t *testing.T) {
+	prog := compile(t, "init {}\nrule main = \"a\"")
+	data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := data[len(compiledMagic)]; got != 4 {
+		t.Fatalf("empty initializer file version = %d, want 4", got)
+	}
+	loaded, start, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !loaded.initPresent || len(loaded.Module().Init) != 0 {
+		t.Fatal("empty initializer declaration was lost on load")
+	}
+	again, err := loaded.MarshalBinaryWith(start, MarshalOptions{OmitAST: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(data, again) {
+		t.Fatalf("empty initializer bytes changed on resave (version %d)", again[len(compiledMagic)])
+	}
+	if n, err := loaded.ParseWith(start, "a", ParseOptions{Recognize: true}); n != nil || err != nil {
+		t.Fatalf("recognize: node %v, error %v", n, err)
 	}
 }
 

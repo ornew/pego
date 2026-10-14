@@ -690,6 +690,11 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		}
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
+	// Version 4 records the initializer declaration even when its table is empty.
+	// An AST-less program cannot recover that fact from len(m.Init).
+	if v >= 4 {
+		prog.initPresent = true
+	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
 	if start != "" && !prog.hasRule(start) {
 		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is not defined", start)

@@ -6,17 +6,18 @@ input or producing a value. A **Value Action** follows `=>` and computes a
 rule's value from the values produced by its grammar body. An ordinary rule may
 have a whole-rule Value Action after its complete expression:
 `rule name [Type] = expression => term`. An Operators Rule has specialized
-Value Actions on its operand and operator entries. A declaration-level action
-is accepted only when it selects the existing default CST behavior; omitting
-it or writing the explicit `=> ...` default form preserves that behavior. Any
-other declaration-level action on an Operators Rule is a compile-time error.
+Value Actions on its operand and operator entries, and may also have a whole-rule
+Value Action after its closing brace. That action runs once when the Operators
+Rule invocation finishes, with `$1` referring to the final folded result; it is
+not run for each internal precedence-level reduction. Its result must satisfy
+the rule's declared or inferred type.
 
 Single-term Predicate Actions keep their existing execution semantics.
 Multi-statement Predicate Action blocks and Value Action blocks parse, format
 and appear in source ASTs, but semantic analysis rejects them as unsupported;
 their statements do not execute. Inline Value Action forms are also recognized
 in source and rejected by compilation. Runtime execution of inline actions is
-not implemented. PEGO has no rule-initialization action block.
+not implemented.
 
 ```pego
 // Source syntax only; compilation rejects this inline Value Action.
@@ -39,6 +40,26 @@ whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-
 A single-term Value Action follows `=>` after the complete rule expression.
 When a grammar expression spans multiple lines, parenthesize that expression;
 a line break inside a braced action block is local to the block.
+
+## Initializer Definitions
+
+A grammar may contain at most one top-level initializer definition:
+
+```pego
+init {
+    base := 10
+    limit := base * 2
+}
+```
+
+Its braced block contains only assignments, separated by semicolons or hard
+newlines; an empty block is allowed. Before each selected start-rule invocation,
+PEGO evaluates the assignments in source order in a fresh variable environment.
+An initializer can read only variables assigned earlier in that same block. It
+has no captures or caller environment. Values must be `int`, `string`, or `bool`.
+An invalid assignment block or a reference to a variable not yet initialized is
+a compile-time error; an evaluation error aborts the invocation before the start
+rule runs. Initializers apply to parsing, recognition, and stream invocations.
 
 ## Capture References
 
