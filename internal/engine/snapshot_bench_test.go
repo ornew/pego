@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -83,6 +84,49 @@ rule item = [a-z]`)
 				})
 			}
 		}
+	}
+	snapshotBenchmarkResult = nil
+}
+
+// Prefix insert/delete forces shifted spans and tests the fallback when exact
+// record reuse cannot pay for a per-version directory.
+func BenchmarkDocumentSnapshotPrefixEdit(b *testing.B) {
+	g, err := syntax.Parse(`rule main = item* $$
+rule item = [a-z]`)
+	if err != nil {
+		b.Fatal(err)
+	}
+	prog, err := Compile(g, Options{})
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, size := range []int{4 << 10, 64 << 10} {
+		b.Run(fmt.Sprintf("%dKiB", size>>10), func(b *testing.B) {
+			d, err := prog.NewDocument("main", strings.Repeat("a", size))
+			if err != nil {
+				b.Fatal(err)
+			}
+			if _, err := d.Parse(); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if i%2 == 0 {
+					err = d.Edit(0, 0, "b")
+				} else {
+					err = d.Edit(0, 1, "")
+				}
+				if err != nil {
+					b.Fatal(err)
+				}
+				s, err := d.SnapshotWith(ParseOptions{})
+				if err != nil {
+					b.Fatal(err)
+				}
+				snapshotBenchmarkResult = s
+			}
+		})
 	}
 	snapshotBenchmarkResult = nil
 }

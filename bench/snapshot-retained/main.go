@@ -23,25 +23,32 @@ type legacyResult struct {
 }
 
 type result struct {
-	Mode            string  `json:"mode"`
-	InputBytes      int     `json:"input_bytes"`
-	Versions        int     `json:"versions"`
-	Backend         string  `json:"backend"`
-	Unit            string  `json:"unit"`
-	RetainedBytes   int64   `json:"retained_bytes"`
-	RetainedObjects int64   `json:"retained_objects"`
-	BytesPerVersion float64 `json:"bytes_per_version"`
+	Mode             string  `json:"mode"`
+	Edit             string  `json:"edit"`
+	InputBytes       int     `json:"input_bytes"`
+	Versions         int     `json:"versions"`
+	RetainedVersions int     `json:"retained_versions"`
+	Backend          string  `json:"backend"`
+	Unit             string  `json:"unit"`
+	RetainedBytes    int64   `json:"retained_bytes"`
+	RetainedObjects  int64   `json:"retained_objects"`
+	BytesPerVersion  float64 `json:"bytes_per_version"`
 }
 
 func run() error {
 	mode := flag.String("mode", "snapshot", "snapshot or clone")
+	edit := flag.String("edit", "replace-first", "replace-first, prepend, or append between versions")
 	size := flag.Int("size", 4096, "input size in bytes")
-	versions := flag.Int("versions", 64, "number of retained versions")
+	versions := flag.Int("versions", 64, "number of captured versions")
+	retain := flag.Bool("retain", true, "keep all captured versions until measurement")
 	backendName := flag.String("backend", "closure", "closure, bytecode, or bytecode-iterative")
 	unitName := flag.String("unit", "codepoints", "codepoints or bytes")
 	flag.Parse()
 	if *mode != "snapshot" && *mode != "clone" {
 		return fmt.Errorf("invalid mode %q", *mode)
+	}
+	if *edit != "replace-first" && *edit != "prepend" && *edit != "append" {
+		return fmt.Errorf("invalid edit %q", *edit)
 	}
 	if *size < 1 || *versions < 1 {
 		return fmt.Errorf("size and versions must be positive")
@@ -81,14 +88,24 @@ rule item = [a-z]`, "main")
 	runtime.GC()
 	var before, after runtime.MemStats
 	runtime.ReadMemStats(&before)
-	out := make([]any, 0, *versions)
+	var out []any
+	if *retain {
+		out = make([]any, 0, *versions)
+	}
 	for i := 0; i < *versions; i++ {
 		if i > 0 {
 			letter := "b"
 			if i%2 == 0 {
 				letter = "a"
 			}
-			if err = doc.Edit(0, 1, letter); err != nil {
+			start, end := 0, 1
+			switch *edit {
+			case "prepend":
+				end = 0
+			case "append":
+				start, end = len(doc.Text()), len(doc.Text())
+			}
+			if err = doc.Edit(start, end, letter); err != nil {
 				return err
 			}
 		}
@@ -97,21 +114,30 @@ rule item = [a-z]`, "main")
 			if parseErr != nil {
 				return parseErr
 			}
-			out = append(out, s)
+			if *retain {
+				out = append(out, s)
+			}
 		} else {
 			n, parseErr := doc.Parse()
 			if parseErr != nil {
 				return parseErr
 			}
-			out = append(out, legacyResult{doc.Version(), doc.Unit(), doc.Text(), n.Clone(), parseErr, doc.Stats()})
+			if *retain {
+				out = append(out, legacyResult{doc.Version(), doc.Unit(), doc.Text(), n.Clone(), parseErr, doc.Stats()})
+			}
 		}
 	}
 	runtime.GC()
 	runtime.ReadMemStats(&after)
-	r := result{Mode: *mode, InputBytes: *size, Versions: *versions, Backend: *backendName, Unit: *unitName,
+	r := result{Mode: *mode, Edit: *edit, InputBytes: *size, Versions: *versions, Backend: *backendName, Unit: *unitName,
 		RetainedBytes:   int64(after.HeapAlloc) - int64(before.HeapAlloc),
 		RetainedObjects: int64(after.HeapObjects) - int64(before.HeapObjects)}
-	r.BytesPerVersion = float64(r.RetainedBytes) / float64(*versions)
+	if *retain {
+		r.RetainedVersions = *versions
+	}
+	if *retain {
+		r.BytesPerVersion = float64(r.RetainedBytes) / float64(*versions)
+	}
 	if err = json.NewEncoder(os.Stdout).Encode(r); err != nil {
 		return err
 	}

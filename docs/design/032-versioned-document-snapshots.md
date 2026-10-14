@@ -11,9 +11,10 @@ Add explicit text versions, atomic edit batches, and immutable parse snapshots t
 Existing `Document.Edit`, `Document.Parse`, mutable `Node` fields, and
 `Node.Clone` retain their ownership contracts.
 
-Snapshots currently own an independent immutable graph. Immutable structural
-sharing, relative internal spans, and chunked child sequences remain proposed
-and unmeasured; they are not part of the current implementation contract.
+Snapshots expose an immutable graph. Exact sharing of immutable snapshot records
+across versions is selected for default adoption; relative internal spans and
+chunked child sequences remain unimplemented and unmeasured. Mutable parser
+Nodes and input buffers are never shared with snapshots.
 Chunked input storage is a separate mechanism under
 [design 019](019-incremental-document-and-tree-tooling.md).
 
@@ -47,8 +48,8 @@ facts, rather than current performance estimates:
   establish retry behavior.
 
 Edit-batch, Snapshot capture, materialization, and retained-version measurements
-are recorded below. Structural sharing has not been measured. Older
-incremental-guide measurements are not a baseline for this revision.
+are recorded below. Older incremental-guide measurements are not a baseline for
+this revision.
 
 ## Goals
 
@@ -321,15 +322,23 @@ repair arbitrary caller mutations; snapshot capture promises only to freeze a
 graph from a Parse call that returns. Existing Node JSON/string consumers retain
 their current behavior on cyclic input.
 
-A sharing experiment may keep immutable payloads, relative spans, versioned
-references, and persistent chunked child sequences. Version-specific handles
-resolve absolute spans through their location context. Relative spans must cover
-all actual graph edges: action fields can point outside a parent's span, and
-zero-width/lookahead captures can need different placement contexts. Preserve
-observed within-version identity and absolute values rather than assuming every
-child is a containment-tree edge. Do not cache absolute positions in a payload
-shared between versions. Span resolution must have measured access bounds, not
-an unbounded walk through the entire edit history.
+The selected sharing path freezes the mutable parse graph first, then compares
+records at the same traversal index with the previous snapshot graph. It shares
+a prior immutable record only when its kind, absolute start/end, text, flags,
+nil-versus-empty slices, ordered child IDs, and ordered field names/values match
+exactly. Hashes may not replace equality checks. Unmatched records are copied;
+graphs with fewer than 128 records or fewer than 25% exact matches use the
+contiguous copy path.
+The Document keeps only a weak reference to the previous snapshot graph, and
+snapshot text remains separately owned. This preserves absolute positions and
+within-version graph identity without retaining mutable Nodes or input buffers.
+
+Relative spans and persistent child sequences remain possible future designs.
+Relative spans must cover all actual graph edges: action fields can point
+outside a parent's span, and zero-width/lookahead captures can need different
+placement contexts. Absolute scalar values produced by position-dependent
+actions cannot be repaired by shifting spans. Any such design needs measured
+access bounds and exact results without walking an unbounded edit history.
 
 Absolute scalar values produced by position-dependent actions cannot be repaired
 by shifting spans. Preserve the compiler's positional flags, input/examined-range
@@ -339,12 +348,10 @@ shifted past edits using the existing reuse path. Actions and predicates reading
 fields/variables still determine reuse eligibility. UTF-8 joins at batch seams
 must invalidate decoding dependencies, including truncated prefixes at EOF.
 
-Legacy exported Nodes are writable without interception. Consequently, a
-persistent shadow keyed only by their pointers/generations cannot safely assume
-unchanged content. A compatibility-preserving sharing prototype must validate
-content when freezing, or share independently owned frozen payloads only after
-exact equality verification. Hashes alone cannot establish equality. Such a
-prototype can reduce retained duplication while still requiring whole-graph
+Legacy exported Nodes are writable without interception, so pointer/generation
+keyed shadows cannot safely assume unchanged content. Exact record sharing
+freezes and compares content before reuse; hashes alone cannot establish
+equality. It reduces retained duplication while still requiring whole-graph
 capture work. Cheap capture from immutable parser storage may instead need a
 separate exclusively read-only Document surface; that is a later public contract
 decision, not an implicit change to Document.Parse sharing.
@@ -381,18 +388,16 @@ module formats remain unchanged; snapshot handles introduce no serialized format
    concurrent reads, unsupported-value rejection, cycle preservation, and
    explicit materialization. This stage is implemented and measured against
    Parse plus Clone while holding text/error/version separately.
-3. Prototype immutable sharing, relative spans, and persistent child sequences
-   with generation/build-time reference controls or separate binaries. Preserve
-   the reference outcomes and ownership. Keep input representation constant.
-4. Adopt sharing only after paired edit/reparse/capture/materialization and live-
-   heap measurements establish its benefits and costs. If efficient storage needs
-   a separate read-only Document API, review that contract before implementation.
+3. Use exact immutable snapshot-record sharing, preserving the copy path for
+   small or low-reuse graphs. Keep input representation constant in comparisons.
+4. Treat relative spans, persistent child sequences, and a separate read-only
+   Document API as distinct designs; do not infer their value from exact-record
+   sharing results.
 
 The versioned edit API is the first independently useful stage. Owned snapshots
-are now implemented as the second stage; structural sharing remains proposed and
-requires separate ownership and performance validation. Chunked input-storage work
-may proceed independently and later be combined under a separately measured
-control.
+and exact immutable record sharing are selected for adoption; relative spans and
+persistent child sequences remain proposed. Chunked input-storage work may
+proceed independently and later be combined under a separately measured control.
 
 ## Alternatives Considered
 
@@ -460,9 +465,10 @@ These are proposed gates, not completed checks:
 
 ## Performance and Results
 
-Snapshot capture and retained-version costs have now been measured for the
-independent immutable graph in stage 2. Structural sharing, traversal, and
-multi-megabyte workloads remain unmeasured; no performance benefit is claimed.
+Snapshot capture and retained-version costs have been measured for the
+independent immutable graph and the exact-record-sharing implementation. Results
+below are scoped to the tested workloads; traversal and broader workloads remain
+unmeasured, so no general performance benefit is claimed.
 The stage-1 implementation of version tokens and atomic edit batches has
 preliminary measurements against the
 source-equivalent baseline
@@ -504,13 +510,43 @@ events. `Materialize` alone took roughly 0.13 ms (4 KiB) and 1.7 ms (64 KiB)
 in these cases. `B/op` includes transient copies and is not retained heap.
 
 A separate forced-GC retention harness, `go run ./bench/snapshot-retained`,
-kept 64 versions of a 4 KiB input or 16 versions of a 64 KiB input. Across
-three processes per mode, Snapshot retained 1.057× and 1.133× as many bytes
-per version, respectively, as the Parse-plus-Clone bundle. Five alternating
-baseline/candidate pairs of the existing cached `Document.Parse` benchmark
+warms and parses the Document, forces GC, and records baseline `HeapAlloc`.
+After capturing versions it forces GC again and reports the `HeapAlloc` delta
+over that baseline, divided by the version count. With `-retain=true`, it keeps
+64 versions of a 4 KiB input or 16 versions of a 64 KiB input alive through the
+measurement. These are additional post-GC bytes per version, not total live
+heap. Across three processes per mode, Snapshot used 1.057× and 1.133× as many
+additional bytes per version, respectively, as the Parse-plus-Clone bundle.
+Five alternating baseline/candidate pairs of the existing cached `Document.Parse` benchmark
 showed unchanged allocation counts and no consistent timing regression; the
-per-pair timings were noisy. These measurements establish current costs, not
-the benefit of future sharing.
+per-pair timings were noisy. These measurements describe the independent-copy
+path, not the benefit of exact record sharing.
+
+Exact record sharing was compared with the copying path after a same-length
+one-character edit on Go 1.27.1, Apple M3 Max, with `GOMAXPROCS=16` and
+`GOGC=100`. In three alternating retention-process pairs, 64 retained 4 KiB
+versions used 455.2–455.6 KB per version in copy mode and 84.6–84.7 KB with
+sharing; for 16 retained 64 KiB versions, the figures were 7.792–7.794 MB and
+1.540–1.541 MB per version. Three alternating 300 ms Closure/CodePoints capture
+pairs showed about 12% higher median time for 4 KiB inputs (paired results
+10.9–14.8% higher) and about 6% for 64 KiB inputs (3.7–14.4% higher), with
+about 2% higher `B/op`; `Materialize` was broadly similar. These capture
+measurements cover only that backend, unit, and edit shape.
+
+The low-reuse fallback was checked with a length-changing prefix insertion.
+For 16 retained 64 KiB versions, both copy and sharing modes measured an
+additional 8.386–8.388 MB per version over the warmed-Document baseline. Three
+alternating 300 ms Snapshot-plus-prefix-edit pairs on 4 KiB and 64 KiB inputs
+showed 0–3% timing differences, within the
+observed noise, and similar `B/op`. With `-retain=false`, each captured
+snapshot is discarded immediately; the post-GC delta over baseline was only
+tens of KB in both modes. Five alternating 300 ms pairs of ordinary Document
+creation/Parse with sharing disabled versus main had equal
+allocation counts and `B/op`, with no consistent timing difference. Other
+workloads and backends remain unmeasured.
+
+The selected mechanism, copy fallback, and focused measurements are summarized
+in [optimization 097](../optimizations/097-exact-document-snapshot-record-sharing.md).
 
 Reproduce capture and materialization with
 `go test ./internal/engine -run '^$' -bench '^BenchmarkDocumentSnapshotCapture$' -benchmem -benchtime=300ms -count=3`.
@@ -549,10 +585,11 @@ code; update this record with actual outcomes and remaining gates.
 
 The implemented contract combines versioned batches with owned read-only
 snapshots, including ordinary failed parse outcomes. It preserves legacy APIs,
-but capture and materialization copy data, and batch commit currently discards
-reuse state. Snapshot capture and retained-version costs are quantified above;
-sharing costs remain unmeasured.
+and batch commit currently discards reuse state. Exact snapshot-record sharing
+reduces retained memory in the measured same-length-edit workloads, with higher
+capture time in the tested Closure/CodePoints cases. Other backends, units,
+graph shapes and edit patterns remain unmeasured.
 
-Later, measured sharing results must establish whether a separate read-only
-Document mode is worth its additional API. That later tradeoff does not block
-the proposed owned facade or justify silently changing mutable Node behavior.
+Further measurements can establish whether a separate read-only Document mode
+is worth its additional API. That tradeoff does not justify silently changing
+mutable Node behavior.

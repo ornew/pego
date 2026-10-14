@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
+	"weak"
 )
 
 // Snapshot owns an immutable parse outcome for one document revision. Readers
@@ -22,8 +24,24 @@ type Snapshot struct {
 
 type snapshotGraph struct {
 	nodes []snapshotRecord
+	refs  []*snapshotRecord // candidate mode; immutable records may come from older graphs
 	root  int
 }
+
+func (g *snapshotGraph) count() int {
+	if g.refs != nil {
+		return len(g.refs)
+	}
+	return len(g.nodes)
+}
+
+func (g *snapshotGraph) at(i int) *snapshotRecord {
+	if g.refs != nil {
+		return g.refs[i]
+	}
+	return &g.nodes[i]
+}
+
 type snapshotRecord struct {
 	kind            *nodeKind
 	start, end      int32
@@ -88,7 +106,7 @@ func (n SnapshotNode) record() snapshotRecord {
 	if !n.Valid() {
 		return snapshotRecord{}
 	}
-	return n.graph.nodes[n.id-1]
+	return *n.graph.at(n.id - 1)
 }
 
 // Valid reports whether the handle denotes a non-nil node.
@@ -151,8 +169,9 @@ func (s *Snapshot) Materialize() *Node {
 	if s.graph.root == 0 {
 		return nil
 	}
-	nodes := make([]*Node, len(s.graph.nodes))
-	for i, r := range s.graph.nodes {
+	nodes := make([]*Node, s.graph.count())
+	for i := range nodes {
+		r := s.graph.at(i)
 		nodes[i] = &Node{kind: r.kind, Start: r.start, End: r.end, Text: r.text, fresh: r.fresh, terminal: r.terminal, gen: r.gen}
 	}
 	node := func(id int) *Node {
@@ -161,7 +180,8 @@ func (s *Snapshot) Materialize() *Node {
 		}
 		return nodes[id-1]
 	}
-	for i, r := range s.graph.nodes {
+	for i := range nodes {
+		r := s.graph.at(i)
 		n := nodes[i]
 		if r.children != nil {
 			n.Children = make([]*Node, len(r.children))
@@ -216,6 +236,9 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 			p.control.check()
 			return captureErr
 		}
+		if snapshotSharingEnabled && graph.root != 0 {
+			graph = shareSnapshotGraph(p, d.previousSnapshot.Value(), graph)
+		}
 		// input.text may lazily build tables. Keep that work private to this
 		// capture, rather than mutating Document-owned input during freezing.
 		in := p.input
@@ -239,6 +262,9 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 		returnedError := copySnapshotError(p, err)
 		p.control.check()
 		result = &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.stats}
+		if snapshotSharingEnabled {
+			d.previousSnapshot = weak.Make(&result.graph)
+		}
 		return returnedError
 	})
 	return result, err
@@ -415,4 +441,92 @@ func snapshotFieldPath(p *parser, stack []snapshotFrame, edge snapshotEdge) stri
 	}
 	write(edge)
 	return out.String()
+}
+
+// shareSnapshotGraph reuses exact immutable records. The current parse
+// is always frozen first; no mutable Node or parser-owned slice is shared.
+func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) snapshotGraph {
+	if previous == nil || previous.root != next.root {
+		return next
+	}
+	matches := make([]uint64, (len(next.nodes)+63)/64)
+	ownedCount := 0
+	for i := range next.nodes {
+		p.stepWork()
+		if i < previous.count() && sameSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
+			matches[i/64] |= 1 << uint(i%64)
+		} else {
+			ownedCount++
+		}
+	}
+	// The per-version pointer directory costs one word per node. Keep the
+	// contiguous reference graph when too few records can be reused.
+	if len(next.nodes) < 128 || (len(next.nodes)-ownedCount)*4 < len(next.nodes) {
+		return next
+	}
+	shared := snapshotGraph{refs: make([]*snapshotRecord, len(next.nodes)), root: next.root}
+	shared.nodes = make([]snapshotRecord, ownedCount)
+	ownedAt := 0
+	for i := range next.nodes {
+		p.stepWork()
+		if matches[i/64]&(1<<uint(i%64)) != 0 {
+			shared.refs[i] = previous.at(i)
+		} else {
+			shared.nodes[ownedAt] = next.nodes[i]
+			shared.refs[i] = &shared.nodes[ownedAt]
+			ownedAt++
+		}
+	}
+	return shared
+}
+
+func sameSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
+	if a.kind != b.kind || a.start != b.start || a.end != b.end ||
+		a.fresh != b.fresh || a.terminal != b.terminal ||
+		a.gen != b.gen || (a.children == nil) != (b.children == nil) ||
+		(a.fields == nil) != (b.fields == nil) || len(a.children) != len(b.children) ||
+		len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
+		return false
+	}
+	if p.compareText(a.text, b.text) != 0 {
+		return false
+	}
+	// A large repetition root can have many edges even when no node changed.
+	// Charge and compare bounded spans so a controller can interrupt the scan.
+	for offset := 0; offset < len(a.children); offset += 4096 {
+		end := min(offset+4096, len(a.children))
+		p.control.charge(0, uint64(end-offset))
+		if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
+			return false
+		}
+	}
+	for i, f := range a.fields {
+		p.stepWork()
+		other := b.fields[i]
+		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func sameSnapshotFieldValue(p *parser, a, b any) bool {
+	switch v := a.(type) {
+	case nil:
+		return b == nil
+	case snapshotRef:
+		w, ok := b.(snapshotRef)
+		return ok && v == w
+	case int:
+		w, ok := b.(int)
+		return ok && v == w
+	case string:
+		w, ok := b.(string)
+		return ok && p.compareText(v, w) == 0
+	case bool:
+		w, ok := b.(bool)
+		return ok && v == w
+	default:
+		panic("unsupported frozen snapshot field")
+	}
 }

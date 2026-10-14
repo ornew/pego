@@ -294,6 +294,7 @@ type snapshotPhaseContext struct {
 	done       chan struct{}
 	seen       bool
 	panicValue any
+	phase      string
 }
 
 func (c *snapshotPhaseContext) Done() <-chan struct{} { return c.done }
@@ -303,7 +304,11 @@ func (c *snapshotPhaseContext) Err() error {
 	frames := runtime.CallersFrames(callers[:count])
 	for {
 		f, more := frames.Next()
-		if strings.Contains(f.Function, "freezeSnapshotGraph") {
+		phase := c.phase
+		if phase == "" {
+			phase = "freezeSnapshotGraph"
+		}
+		if strings.Contains(f.Function, phase) {
 			c.seen = true
 			if c.panicValue != nil {
 				panic(c.panicValue)

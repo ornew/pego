@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"unicode/utf8"
+	"weak"
 )
 
 // Small Documents retain the flat representation: at 1 KiB, piece lookup and
@@ -56,6 +57,8 @@ type Document struct {
 	vals     []any   // cleared VM value-stack storage, kept for the next parse
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
+	// Candidate-only weak reference: dropped snapshots must remain collectible.
+	previousSnapshot weak.Pointer[snapshotGraph]
 }
 
 // maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts. It is a
