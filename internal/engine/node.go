@@ -16,6 +16,7 @@ const (
 	TypeSeq      = "Seq"      // sequence
 	TypeList     = "List"     // repetition
 	TypeOperator = "Operator" // application of a OperatorsRule operator without an action
+	TypeMissing  = "Missing"  // literal inserted at an empty source range
 	TypeError    = "Error"    // range skipped by error recovery
 )
 
@@ -43,7 +44,7 @@ type Node struct {
 	gen uint32
 }
 
-// Type returns the node's type name: a reserved type (Match, Seq, List, Operator, Error) for CST
+// Type returns the node's type name: a reserved type (Match, Seq, List, Operator, Error, Missing) for CST
 // nodes, or otherwise the name of a type defined in the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
@@ -92,7 +93,7 @@ func (k *nodeKind) ruleName() string {
 	return k.rule
 }
 
-var reservedTypes = [...]string{TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError}
+var reservedTypes = [...]string{TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing}
 
 // Kinds of the reserved types without a rule.
 var (
@@ -101,6 +102,7 @@ var (
 	kindList     = kindOf(TypeList, "")
 	kindOperator = kindOf(TypeOperator, "")
 	kindError    = kindOf(TypeError, "")
+	kindMissing  = kindOf(TypeMissing, "")
 )
 
 var kinds sync.Map // [2]string → *nodeKind

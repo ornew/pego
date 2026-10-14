@@ -30,7 +30,9 @@ farthest position reached inside it. It does not alter matching, backtracking,
 recovery, captures, values, or spans. A named form such as
 `@error(message="...")` is equivalent. When several messages apply at one
 position, they are joined with `; `. If the expression succeeds, expectations
-recorded inside it are kept as usual.
+recorded inside it are kept as usual. An opt-in `#missing` insertion has its own
+recovered diagnostic and inherits the outermost enclosing explicit `@error` label.
+This does not change labels on successful consuming `#recover`.
 
 ```pego
 rule let = "let" " " name @error("expected a name") ";"

@@ -94,7 +94,7 @@ pego parse -g optional.pego -i 'a'
 
 | JSON key | Meaning |
 |:--|:--|
-| `type` | `Match`, `Seq`, `List`, `Operator`, `Error`, or the name of a type you declared |
+| `type` | `Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`, or the name of a type you declared |
 | `rule` | The rule that produced the node, when it is a node of the default tree (omitted otherwise) |
 | `start`, `end` | The range of the node in the input; `end` is exclusive (see [Positions](#7-positions)) |
 | `text` | The text of a terminal |
@@ -287,7 +287,7 @@ pego parse -g assign-ast.pego -f sexpr -i 'ab = cd;'
 Terminal-typed rules need no `@`: `rule name Name =  [a-z]+ ` is a `Name"ab"` terminal, not a list. The `Assign` node has
 no `@rule` label because it was built by an action, not by the default tree. Type names and field names start with an
 uppercase letter; rule names are in a separate namespace, so `rule name Name = . . .` is fine. `Match`, `Seq`, `List`,
-`Operator` and `Error` are predefined node types, and `int`, `string`, `bool`, `node` and `terminal` are built in (a
+`Operator`, `Error` and `Missing` are predefined node types, and `int`, `string`, `bool`, `node` and `terminal` are built in (a
 rule's value must be a node, but struct fields and action expressions may also hold `int`, `string` and `bool`).
 
 Aliases preserve the underlying type: with `type Token = Name`, a rule declared

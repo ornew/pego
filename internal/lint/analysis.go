@@ -434,7 +434,7 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 	case *grammar.Capture:
 		return a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.Attributed:
-		return hasAttr(e, "recover") || a.mayMatchIn(e.Expr, set, lenient)
+		return hasAttr(e, "recover") || hasAttr(e, "missing") || a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			control.poll()
@@ -689,7 +689,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 	case *grammar.Discard:
 		return a.fails(e.Expr, t)
 	case *grammar.Attributed:
-		return !hasAttr(e, "recover") && a.fails(e.Expr, t)
+		return !hasAttr(e, "recover") && !hasAttr(e, "missing") && a.fails(e.Expr, t)
 	case *grammar.Ref:
 		r := a.rules[e.Name]
 		if r == nil || e.Level != "" || a.busy[e.Name] {
@@ -786,7 +786,7 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 	case *grammar.Discard:
 		return a.prefix(e.Expr)
 	case *grammar.Attributed:
-		if !hasAttr(e, "recover") { // a recovered error covers whatever was skipped
+		if !hasAttr(e, "recover") && !hasAttr(e, "missing") { // recovery invalidates a guaranteed prefix
 			return a.prefix(e.Expr)
 		}
 	case *grammar.Ref:

@@ -27,7 +27,9 @@ The reference implementation is the Go package `internal/engine` (`bytecode.go`,
 | nil | The absence of a value |
 | Function | A lambda: the start of its expression code, its number of parameters, and the locals captured when it was created |
 
-The reserved node types are `Match` (terminal), `Seq`, `List`, `Operator` and `Error`.
+The reserved bytecode node types are `Match` (terminal), `Seq`, `List`, `Operator` and `Error`.
+The Closure-only `#missing` pragma and `Missing` type have no bytecode encoding;
+VM parsing, binary serialization and module construction reject those grammars.
 A node is *fresh* only while the body of the rule that created it is executing ([Rule completion](#rule-completion)).
 
 ## Input and Positions

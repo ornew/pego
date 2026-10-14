@@ -1001,6 +1001,20 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 			p.expect(")")
 		}
 		return &grammar.Stream{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Break: br}
+	case "missing":
+		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
+			p.errorf("#missing takes no arguments")
+			panic(bail{})
+		}
+		result, ok := e.(*grammar.Attributed)
+		if !ok {
+			result = &grammar.Attributed{Expr: e}
+		}
+		if br != nil || result.Breaks != nil {
+			p.appendAttributeBreak(result, br)
+		}
+		result.Attrs = append(result.Attrs, &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name, Pragma: true})
+		return result
 	case "recover":
 		p.expect("(")
 		p.expect("skip")

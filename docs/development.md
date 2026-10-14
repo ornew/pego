@@ -179,7 +179,8 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Any character (`.`) and negated character matching (`[^...]`) |
 | Done | | Predicate Actions (`{ ... }`) |
 | Done | | Attributes (`@...`) and behavioral pragmas (`#...`) |
-| Done | | Consuming skip recovery (`#recover`) and error messages (`@error`); missing-token insertion is proposed |
+| Done | | Consuming skip recovery (`#recover`) and error messages (`@error`) |
+| Partial | | Opt-in nonempty-literal insertion ([`#missing`](../spec/pragmas.md#missing)): Closure whole-input Node parsing and recognition only; VM, generated parsers, Document, streams and binary serialization are unsupported |
 | Done | Actions | Single-statement Predicate Actions (`{term}` or `{name := term}`) and Value Actions (`=> term`) on ordinary rules; Operators Rule declaration actions use default CST behavior |
 | Not implemented | | Multiple-statement Predicate Actions and braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
 | Not implemented | | Inline actions (`(expression => term)` parse/format/AST only; compilation rejects them) |

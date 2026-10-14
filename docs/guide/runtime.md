@@ -299,7 +299,7 @@ A parse result is a tree of `*pego.Node`:
 
 ```go
 type Node struct {
-	Type     string  // "Match", "Seq", "List", "Operator", "Error", or the name of a type from the grammar
+	Type     string  // "Match", "Seq", "List", "Operator", "Error", "Missing", or the name of a type from the grammar
 	Rule     string  // the rule that produced the node, if it had no action
 	Start    int     // start offset in the input
 	End      int     // end offset, exclusive
@@ -316,6 +316,7 @@ type Node struct {
 | `List` | A repetition | `Children` |
 | `Operator` | A [Operators Rule](../../spec/operators-rule.md) operator application without an action | `Children`: the operands and the operator (left, operator, right for an infix operator) |
 | `Error` | A range skipped by `#recover` | `Text` (the skipped input) and the `message` field |
+| `Missing` | An opt-in `#missing` literal insertion | Empty text/range and the `expected` and `message` string fields |
 | a type name | `T{...}` in an action, or a terminal type | `Fields` for struct types, `Text` for terminal types |
 
 How to build the shapes you want is covered in [trees-and-actions.md](trees-and-actions.md). Here is how to read them.
@@ -751,3 +752,35 @@ prints near-miss inputs that it rejects instead. See [sampling-and-fuzzing.md](s
 | Several entry points for one grammar | `Parser.WithStart` |
 | Many goroutines | Share one `*pego.Parser` |
 | Finding why an input fails or a parse is slow | `pego explain`, `pego trace`, `pego profile` (see [debugging.md](debugging.md)) |
+
+
+## Missing Literals in Editor Input
+
+A grammar can mark a nonempty literal with `#missing`, then opt in for a single
+Closure whole-input parse:
+
+```go
+parser, err := pego.CompileSource(`rule main = [a-z]+ ";" #missing $$`, "main")
+if err != nil {
+    return err
+}
+node, err := parser.Parse("name", pego.WithMissingTokens(16))
+```
+
+The resulting tree includes a `Missing` Node at EOF with empty text and range;
+`expected` records `;` and `message` records its diagnostic. A recovered
+`pego.SyntaxErrors` accompanies the tree. Check both returned values. With the
+option omitted or zero the parse remains strict. Recognition can use the same
+option and returns diagnostics without a tree.
+
+The budget includes abandoned insertion attempts and LR seed replay, so a limit
+of 16 does not guarantee acceptance of a tree containing 16 missing nodes.
+Exhaustion returns `*pego.MissingTokenLimitError` and no tree. Backtracking rolls
+back values and diagnostics, but never refunds attempts. Lookahead cannot insert,
+and insertion never supplies input progress to repetition or left recursion.
+
+The initial feature supports Closure whole-input Node parsing and recognition
+only. Its grammars reject bytecode backends, generated parsers, Document/stream
+entry points and binary serialization. `Missing` is now reserved: rename any
+preexisting user type with that name. See [the pragma contract](../../spec/pragmas.md#missing)
+for label scope, progress and budget details.

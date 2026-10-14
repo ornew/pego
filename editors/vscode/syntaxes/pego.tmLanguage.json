@@ -149,7 +149,7 @@
           "include": "#comment"
         },
         {
-          "match": "\\b(int|string|bool|node|terminal|Match|Seq|List|Operator|Error)\\b",
+          "match": "\\b(int|string|bool|node|terminal|Match|Seq|List|Operator|Error|Missing)\\b",
           "name": "support.type.builtin.pego"
         },
         {

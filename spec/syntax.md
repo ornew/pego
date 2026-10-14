@@ -128,6 +128,7 @@ rule rule_expr = operators {
         postfix "+"
         postfix "#atomic" !ident_char (empty_args / !"(")
         postfix "#stream" !ident_char (empty_args / !"(")
+        postfix "#missing" !ident_char !"("
         postfix "#repeat" !ident_char repeat_args
         postfix "#recover" !ident_char recover_args
         postfix attr

@@ -22,10 +22,33 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 			if len(a.Args)+len(a.KwArgs) > 0 {
 				c.errorf(a.Diagnostic(), "#stream takes no arguments")
 			}
+		case "missing":
+			lit, ok := e.Expr.(*grammar.Literal)
+			if !ok || lit.Value == "" {
+				c.errorf(a.Diagnostic(), "#missing requires a nonempty literal")
+				continue
+			}
+			if len(a.Args)+len(a.KwArgs) != 0 {
+				c.errorf(a.Diagnostic(), "#missing takes no arguments")
+			}
+			if c.missingSiteIDs == nil {
+				c.missingSiteIDs = make(map[*grammar.Attribute]int)
+			}
+			site := c.missingSiteIDs[a]
+			if site == 0 {
+				c.missingSites++
+				site = c.missingSites
+				c.missingSiteIDs[a] = site
+			}
+			m = missingLiteral(m, site, lit.Value, build)
 		case "error":
 			msg, ok := c.stringArg(a, "message")
 			if ok {
-				m = errorAttr(m, msgBit|c.desc(msg))
+				id := msgBit | c.desc(msg)
+				m = errorAttr(m, id)
+				if c.prog.hasMissing {
+					m = missingErrorScope(m, id)
+				}
 			}
 		case "diagnostic":
 			name, ok := c.stringArg(a, "name")

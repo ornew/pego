@@ -37,6 +37,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if prog.hasMissing {
+		return nil, missingUnsupported("generated parsers")
+	}
 	start := prog.byName[opts.Start]
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)

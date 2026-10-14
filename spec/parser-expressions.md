@@ -96,7 +96,7 @@ The reasons for making choices transparent are recorded in
 | `label:a` | capture | yes |
 | `{ term }` | [Predicate Action](predicates.md) | no |
 | `@name(...)` | diagnostic/metadata [attribute](attributes.md) | depends on the attribute |
-| `#atomic`, `#repeat(...)`, `#recover(...)`, `#stream` | behavioral/structural pragma | depends on the pragma |
+| `#atomic`, `#repeat(...)`, `#recover(...)`, `#missing`, `#stream` | behavioral/structural pragma | depends on the pragma |
 
 "Consumes input" states whether the expression can advance the input position.
 
@@ -107,7 +107,7 @@ override the order.
 
 | Precedence | Operators | Kind |
 |:--|:--|:--|
-| 1 (tightest) | `*`, `+`, `?`, `#repeat(...)`, `#atomic`, `#recover(...)`, `#stream`, `@name(...)` | postfix |
+| 1 (tightest) | `*`, `+`, `?`, `#repeat(...)`, `#atomic`, `#recover(...)`, `#missing`, `#stream`, `@name(...)` | postfix |
 | 2 | `label:`, `&`, `!`, `-` | prefix |
 | 3 | `a b` | sequence |
 | 4 (loosest) | `a / b` | ordered choice |

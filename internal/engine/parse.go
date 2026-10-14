@@ -43,6 +43,9 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
+	if o.MissingTokens > 0 && active.hasMissing {
+		p.missing = &missingTokenState{limit: o.MissingTokens}
+	}
 	p.setTrace(o.Trace)
 	n, err = active.run(p, o.Backend, start)
 	if !p.aborted {
@@ -94,6 +97,9 @@ func (prog *Program) backend(b Backend) Backend {
 
 // rule returns the rule name for backend b.
 func (prog *Program) rule(b Backend, name string) (*rule, error) {
+	if prog.hasMissing && prog.backend(b) != Closure {
+		return nil, missingUnsupported("bytecode backends")
+	}
 	var r *rule
 	switch prog.backend(b) {
 	case Bytecode:

@@ -172,7 +172,7 @@ func (t *memoTable) get(k memoKey) (*memoEntry, bool) {
 		return nil, false
 	}
 	for e := t.slots[i]; e != nil; e = e.next {
-		if e.rule == int32(k.rule) && e.min == int32(k.min) && slices.Equal(e.env, k.env) {
+		if e.rule == int32(k.rule) && e.min == int32(k.min) && e.missingSilent == k.missingSilent && slices.Equal(e.env, k.env) {
 			return e, true
 		}
 	}
@@ -198,9 +198,10 @@ func (t *memoTable) put(k memoKey, e *memoEntry) {
 		}
 	}
 	e.rule, e.min, e.pos, e.env = int32(k.rule), int32(k.min), k.pos, k.env
+	e.missingSilent = k.missingSilent
 	link := &t.slots[i]
 	for x := *link; x != nil; link, x = &x.next, x.next {
-		if x.rule == e.rule && x.min == e.min && slices.Equal(x.env, e.env) {
+		if x.rule == e.rule && x.min == e.min && x.missingSilent == e.missingSilent && slices.Equal(x.env, e.env) {
 			e.next = x.next
 			*link = e
 			if x != e {

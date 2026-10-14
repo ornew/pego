@@ -22,6 +22,7 @@ var builtinTypes = []builtin{
 	{name: "Seq", doc: "Reserved node type: values of sequences."},
 	{name: "List", doc: "Reserved node type: values of repetitions."},
 	{name: "Operator", doc: "Reserved node type: values of Operators Rule operators without an action."},
+	{name: "Missing", doc: "Reserved node type: an opt-in #missing literal insertion with an empty source range."},
 	{name: "Error", doc: "Reserved node type: ranges skipped by error recovery (`#recover`)."},
 }
 
@@ -62,6 +63,8 @@ var pragmas = []builtin{
 		doc: "Matches the wrapped input as one Match node without building child values."},
 	{name: "repeat", signature: "#repeat(min,max)", snippet: "repeat(${1:min},${2:max})",
 		doc: "Repeats the preceding expression. One count is exact; an omitted bound is zero or unbounded."},
+	{name: "missing", signature: "#missing", snippet: "missing",
+		doc: "Permits insertion of a nonempty literal when Closure parsing explicitly enables missing tokens. No source text is fabricated."},
 	{name: "recover", signature: "#recover(skip=e)", snippet: "recover(skip=$1)",
 		doc: "When the expression fails, skips input matching e and continues. The skipped range becomes an Error node."},
 	{name: "stream", signature: "#stream", snippet: "stream",

@@ -94,6 +94,31 @@ func TestExpressionRuleAttributeOrdering(t *testing.T) {
 	}
 }
 
+func TestMissingPragmaSourceAndFormat(t *testing.T) {
+	const source = `rule main = ";" @error(message="semicolon") #missing $$`
+	g, err := Parse(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seq := g.Rules()[0].Expr.(*grammar.Seq)
+	attrs := seq.Items[0].(*grammar.Attributed).Attrs
+	if len(attrs) != 2 || attrs[0].Name != "error" || attrs[1].Name != "missing" || !attrs[1].Pragma {
+		t.Fatalf("attributes: %+v", attrs)
+	}
+	formatted := grammar.Format(g)
+	if formatted != source+"\n" {
+		t.Fatalf("format changed pragma: %q", formatted)
+	}
+	if _, err := Parse(formatted); err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range []string{`rule main = ";" #missing()`, `rule main = ";" #missing(1)`, `rule main = ";" #missing(foo="b")`} {
+		if _, err := Parse(source); err == nil || !strings.Contains(err.Error(), "takes no arguments") {
+			t.Fatalf("accepted #missing arguments in %q: %v", source, err)
+		}
+	}
+}
+
 func TestExpressionRuleAnnotationsPreserveBodyComments(t *testing.T) {
 	for _, suffix := range []string{"@error(message=\"oops\")", "#atomic"} {
 		src := "rule main = (\n \"a\"\n // keep me\n \"b\"\n) " + suffix + "\n"

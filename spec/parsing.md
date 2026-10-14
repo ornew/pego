@@ -108,7 +108,7 @@ A **node** has the following properties.
 
 | Property | Meaning |
 |:--|:--|
-| Type | The type name: a [reserved node type](types.md#reserved-node-types) (`Match`, `Seq`, `List`, `Operator`, `Error`) for the nodes of the concrete syntax tree, or the name of a type defined in the grammar |
+| Type | The type name: a [reserved node type](types.md#reserved-node-types) (`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) for the nodes of the concrete syntax tree, or the name of a type defined in the grammar |
 | Rule | The name of the rule that produced the node, if it is a node that a rule without an action created in its own body (see [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree)); otherwise empty |
 | Range | `[start, end)` in the position unit |
 | Text | For a terminal, the matched text |

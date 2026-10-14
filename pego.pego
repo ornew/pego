@@ -44,7 +44,7 @@ type RuleExpr = (
   RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice
   | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput
   | Any | Cut | String | CharClass | Optional | ZeroOrMore | OneOrMore
-  | Repeat | Capture | Predicate | Atomic | Stream | Recover | Attributed | OperatorsRule
+  | Repeat | Capture | Predicate | Atomic | Stream | MissingPragma | Recover | Attributed | OperatorsRule
 )
 type RuleRef struct { Name Ident }
 type LevelCall struct { Rule Ident; Level Ident }
@@ -74,6 +74,7 @@ type Capture struct { Name Ident; Expr RuleExpr }
 type Predicate struct { Actions []ActionStmt; Comments []Comment }
 type Atomic struct { X RuleExpr }
 type Stream struct { X RuleExpr }
+type MissingPragma struct { X RuleExpr }
 type Recover struct { X RuleExpr; Skip RuleExpr }
 type Attributed struct { X RuleExpr; Attr Attr }
 type Attr struct { Name Ident; Args []*AttrValue; KwArgs []AttrNamed }
@@ -230,6 +231,7 @@ rule rule_expr RuleExpr = operators {
     postfix "+" => OneOrMore{X: $lhs}
     postfix "#atomic" !ident_char (empty_args / !("(")) => Atomic{X: $lhs}
     postfix "#stream" !ident_char (empty_args / !("(")) => Stream{X: $lhs}
+    postfix "#missing" !ident_char !("(") => MissingPragma{X: $lhs}
     postfix "#repeat" !ident_char bounds:repeat_args => Repeat{X: $lhs, Min: $bounds.Min, Max: $bounds.Max, Range: $bounds.Range}
     postfix "#recover" !ident_char sync:recover_args => Recover{X: $lhs, Skip: $sync}
     postfix a:attr => Attributed{X: $lhs, Attr: $a}

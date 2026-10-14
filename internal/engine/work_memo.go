@@ -90,7 +90,7 @@ func (p *parser) memoGet(k memoKey) (*memoEntry, bool) {
 	}
 	for e := t.slots[i]; e != nil; e = e.next {
 		p.stepWork()
-		if e.rule == int32(k.rule) && e.min == int32(k.min) && p.memoKeyEqual(e.env, k.env) {
+		if e.rule == int32(k.rule) && e.min == int32(k.min) && e.missingSilent == k.missingSilent && p.memoKeyEqual(e.env, k.env) {
 			return e, true
 		}
 	}
@@ -125,7 +125,7 @@ func (p *parser) memoPut(k memoKey, e *memoEntry) {
 	var replaced *memoEntry
 	for x := *link; x != nil; link, x = &x.next, x.next {
 		p.stepWork()
-		if x.rule == int32(k.rule) && x.min == int32(k.min) && p.memoKeyEqual(x.env, k.env) {
+		if x.rule == int32(k.rule) && x.min == int32(k.min) && x.missingSilent == k.missingSilent && p.memoKeyEqual(x.env, k.env) {
 			replaced = x
 			break
 		}
@@ -135,6 +135,7 @@ func (p *parser) memoPut(k memoKey, e *memoEntry) {
 	// In particular, do not publish a partially copied slot array or key.
 	t.slots = slots
 	e.rule, e.min, e.pos, e.env = int32(k.rule), int32(k.min), k.pos, k.env
+	e.missingSilent = k.missingSilent
 	if replaced != nil {
 		e.next = replaced.next
 		*link = e

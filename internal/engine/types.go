@@ -38,6 +38,7 @@ var (
 	tyList     = namedTy{TypeList, 'c'}
 	tyOperator = namedTy{TypeOperator, 'c'}
 	tyError    = namedTy{TypeError, 'c'}
+	tyMissing  = namedTy{TypeMissing, 'c'}
 )
 
 type listTy struct{ elem ty }
@@ -258,8 +259,8 @@ func assignable(s, d ty) bool {
 	if _, ok := s.(optTy); ok {
 		return false
 	}
-	if s == tyError {
-		// Error-recovery nodes can be placed where any node type is expected.
+	if s == tyError || s == tyMissing {
+		// Recovery nodes can be placed where any node type is expected.
 		return isNode(d)
 	}
 	switch d := d.(type) {

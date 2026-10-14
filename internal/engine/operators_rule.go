@@ -137,6 +137,7 @@ type operatorsRuleAttempt struct {
 	env        *env
 	cut        bool
 	errs       []*SyntaxError // syntax errors recovered in this candidate
+	missing    []missingTokenEvent
 }
 
 func (p *parser) skipTrivia(pr *operatorsRule) {
@@ -172,7 +173,7 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: appendWork(p, []*SyntaxError(nil), p.recovered[m0.recovered:])}
+				errs: appendWork(p, []*SyntaxError(nil), p.recovered[m0.recovered:]), missing: p.missingEvents(m0.missing)}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -192,7 +193,11 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 
 func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = appendWork(p, p.recovered, a.errs)
+	if p.missing == nil {
+		p.recovered = appendWork(p, p.recovered, a.errs)
+	} else {
+		p.restoreMissing(a.missing, a.errs, false)
+	}
 }
 
 // operatorsRuleParse parses an expression, absorbing only operators that bind tighter than binding level

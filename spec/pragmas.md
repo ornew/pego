@@ -16,6 +16,7 @@ The name is adjacent to `#`, and an argument list is adjacent to its name:
 | Pragma | Description |
 |:--|:--|
 | `#recover(skip=e)` | On failure, skips input matching `e` and continues parsing |
+| `#missing` | With opt-in Closure parsing, inserts a nonempty literal at an empty range |
 | `#repeat(n)` | Repeats exactly `n` times |
 | `#repeat(n,)` | Repeats at least `n` times |
 | `#repeat(,m)` | Repeats from zero through `m` times |
@@ -92,3 +93,56 @@ distinguishes an exact count from an unbounded maximum: `#repeat(n)` is exactly
 `#repeat(n,m)` is bounded. The pragma applies to the immediately preceding
 expression; parenthesize a sequence to repeat it as a unit. Named bounds are
 not accepted.
+
+
+## `#missing`
+
+`#missing` takes no arguments and may annotate only a nonempty literal. In
+Closure whole-input parsing or recognition, a positive `WithMissingTokens(n)`
+allows that literal to insert its entire expected string when the ordinary
+match fails. Omission or zero disables insertion. A negative effective limit
+is a configuration error; parse options resolve once in order, last value wins.
+
+```pego
+rule main = name ";" #missing $$
+rule name = [a-z]+ #atomic
+```
+
+Parsing `name` with insertion enabled produces a `Missing` Node at EOF and a
+recovered `SyntaxErrors` entry. The node's `Start` and `End` are equal, `Text`
+is empty, and string fields `expected` and `message` carry the expected literal
+and diagnostic. Partial literal matches are restored completely before insertion;
+no source text is invented. An enclosing `@error` labels the insertion diagnostic;
+nested labels use the outermost applicable explicit label. Ordinary successful
+consuming recovery keeps its existing label behavior.
+
+Insertion succeeds at most once per literal site and position on the current
+candidate path. Backtracking removes inserted values and diagnostics, but does
+not refund attempted insertions. Installing events from a growing LR seed also
+costs attempts unless already installed on the path. Returning a selected seed
+can exhaust the budget. A selected Operators Rule candidate restores its already
+charged synthesis without charging again. Budget exhaustion is a fatal
+`MissingTokenLimitError` with `Limit` and `Position`; it returns no tree and is
+never ordinary syntax failure. The limit bounds work, not the final missing-node
+count, so abandoned alternatives can exhaust it.
+
+Lookahead always disables insertion, including rule calls. Insertion consumes no
+input and does not change repetition or LR progress: one zero-progress repetition
+iteration counts once, then stops; later LR growth must advance input. Ordered
+choice still selects its first successful alternative, including one that inserts.
+Use lookahead when insertion must be restricted to a particular boundary.
+
+A successful parse with insertions returns its tree and committed diagnostics in
+encounter order; recognition returns the same diagnostics with no tree. A failed
+whole-input parse returns only its final ordinary syntax error. Each invocation
+has fresh insertion state, including concurrent and reentrant invocations.
+
+Only Closure whole-input Node parsing and recognition currently support this
+pragma. Document/streams, bytecode VMs, generated Go/TypeScript parsers and binary
+serialization reject grammars containing `#missing` or references to `Missing`.
+Positive insertion options also fail on unsupported parse entry points. Grammar
+AST JSON and formatting preserve the annotation. `Missing` is a reserved type
+name; a preexisting user type with that name must be renamed. The annotated literal infers `Match | Missing`; `Missing` is assignable wherever
+a node is expected, as with `Error`. Declare a union or keep the Node tree when
+consumers need the missing-token identity. Concrete generated typed mappings and
+additional backends are outside the initial implementation.

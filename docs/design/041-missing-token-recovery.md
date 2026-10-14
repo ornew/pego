@@ -1,19 +1,20 @@
 # 041. Opt-In Missing Literal Recovery
 
-- **Status**: Proposed
+- **Status**: Accepted for the Closure whole-input Node/recognition slice; other backends and APIs remain proposed
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Propose explicit, bounded insertion of a missing literal for editor parses. A missing token has an empty range and
+This design introduces explicit, bounded insertion of a missing literal for editor parses. A missing token has an empty range and
 distinct value and diagnostic; it does not pretend that source text exists. Ordinary parsing remains strict unless
 the caller enables insertion. Existing consuming `#recover(skip=...)` retains its current behavior.
 
-The syntax and APIs below are proposals, not accepted language or exported API contracts:
+The nonempty-literal syntax and Closure whole-input option below define the initial slice.
+The remaining backend and generated-type APIs in this record are proposals:
 
 ```pego
-rule main = name ";" @missing $$
+rule main = name ";" #missing $$
 rule name = [a-z]+
 ```
 
@@ -129,11 +130,16 @@ sites and option semantics. The numeric versions are allocated against the then-
 
 ## Implementation Sequence and Validation
 
-1. Add syntax, typed Missing mapping and closure implementation behind the opt-in option; establish strict-mode
-   output equivalence and grammar migration diagnostics.
-2. Specify/version VM encoding, add both VMs, saved/load round trips and malformed site/operand rejection.
-3. Add generated Node/typed Go and TS parity, then Document and stream integration. Do not advertise a backend
-   until its full matrix passes; unsupported enabled insertion is an explicit error.
+The initial slice implements `#missing` syntax and opt-in Closure whole-input
+Node parsing and recognition. Focused source-parser and canonical grammar
+projection tests, the generated-parser suite, site checks and the full root
+suite pass. Its measured performance cost is recorded below.
+
+The remaining implementation sequence is to specify and version VM encoding,
+add both VMs with saved/load round trips and malformed site/operand rejection,
+then establish generated Go/TypeScript parity and evaluate Document and stream
+integration. Do not advertise a backend until its full matrix passes;
+unsupported enabled insertion remains an explicit error.
 
 Proposed tests cover absent/zero/positive/negative limits, callback options once, EOF and partial literals,
 multibyte/invalid UTF-8, partial reader prefixes, chained insertions, nested repetitions and minima, choices/cuts,
@@ -151,9 +157,65 @@ selection and requires a separate design. Fabricating a typed terminal with expe
 but falsely reports source text; choose an explicit Missing value. Always enabling annotated insertion removes the
 strict baseline; prefer the invocation option.
 
-No measurements are claimed. Compare exact parent, strict candidate and a static generation/build control with
-insertion accounting omitted, then enabled valid/editor-invalid cases. Measure time, allocations, live heap,
-attempt/committed counts, source size and Document edit/reparse separately. Include broad backtracking, LR/Operators Rule,
-ordinary JSON-like input, EOF streams and both units. Extra dormant parser state can change GC costs; a zero option
-alone is not an adequate cost control. Run paired serialized samples with pinned inputs/toolchains and retain raw
-results outside the repository. Acceptance requires bounded attempts and no unapproved strict-path regression.
+Ten serialized alternating pairs on Apple M3 Max with Go 1.27.1 and GOMAXPROCS=1 compared the candidate with
+main `12af6ec`. Across JSON, left-recursive arithmetic, Operators Rule arithmetic and recovery inputs in both
+position units, strict Closure parse medians were about 2–4% slower; bytes/op and allocations/op were essentially
+unchanged. On a small literal fixture, enabled-valid parsing added 64 B and one allocation over annotated strict
+parsing. Enabled-missing parsing used about 19 allocations and 36.5 KB/op, versus about 3 allocations and 35.8 KB/op
+in strict mode; this small-run result is noisy. These measurements cover the tested Closure whole-input paths only.
+
+The measured strict-path cost was accepted for this opt-in feature, with further optimization tracked separately.
+Broader backends, large editor-invalid workloads, live heap, attempt/committed counts and Document edit/reparse remain
+unmeasured. Keep insertion attempts bounded and do not infer behavior or cost for unsupported paths from this
+focused comparison.
+
+## Initial Closure Implementation and Validation
+
+The initial implementation accepts `#missing` on a nonempty literal and exposes
+`WithMissingTokens(n)` for Closure whole-input Node parsing and recognition, in
+both position units. Zero leaves matching strict; a negative effective value is
+invalid. The grammar's `Missing` name is reserved even when insertion is disabled.
+The Node carries empty text and range plus `expected` and `message` fields. The
+separate exported `MissingTokenLimitError` reports fatal limit exhaustion.
+
+Insertion state belongs to a single parser invocation. Ordinary marks, failed
+unmemoized calls, selected Operators Rule candidates and LR seeds restore their
+ledger with their diagnostics. Value-free twins share their annotated literal's
+site identity. Lookahead disables insertion and uses separate LR memo keys, so
+it cannot import an insertion-dependent growing seed from its enclosing parse.
+Completed memo results are not reused for insertion-dependent rules and their
+transitive callers while insertion is enabled; unrelated rules retain reuse.
+First-character choice guards are bypassed in enabled mode. Strict mode retains
+its original matching and memo policy.
+
+A candidate's synthesis is charged when attempted. Restoring the winning
+Operators Rule candidate does not charge that synthesis again. Installing a
+missing event by LR seed replay consumes another attempt unless the event is
+already on the path. Winning seeds keep owned event snapshots; rejecting a
+zero-progress growth round discards its added events. Returning the selected
+seed restores its events and can itself exhaust the remaining budget.
+
+An enclosing `@error` supplies the insertion diagnostic's explicit label. As
+with nested ordinary failures, the outermost applicable explicit label wins.
+This insertion-specific scope does not change labels on successful consuming
+`#recover`. `@diagnostic` retains its existing inside-out failure binding.
+
+The initial slice rejects Document and stream entry points, both VMs, generation
+of Go/TypeScript parsers and compiled binary serialization for grammars using
+`#missing` or the reserved `Missing` type. Positive insertion options also fail
+on unsupported parse entry points, including grammars without annotations.
+Validation happens before input decoding, Reader access or stream delivery.
+Internal bytecode module construction has a guard against silently dropping the
+annotation. No instruction or binary file version is allocated by this slice.
+Generic grammar AST JSON and formatting retain the existing attribute shape.
+Generated typed Missing values/conversion and backend parity remain deferred.
+
+Regression coverage includes strict/zero/negative limits, EOF,
+partial literals, both units and malformed UTF-8, rollback/cuts, replay budget
+exhaustion, value-free twins, lookahead, nullable repetitions, LR cycles and
+Operators Rule candidates, labels, recognition predicates and ordinary actions,
+retained values, concurrent/reentrant calls, cancellation/retry, AST round trips
+and unsupported entry points. The focused source-parser and canonical projection
+tests, generated-parser suite, site checks and tagged focused suites pass. The
+full root suite and `go generate ./parsers ./bench` pass. Benchmark evidence and
+its scope are recorded above.

@@ -307,7 +307,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		seenDiagnostic := false
 		for _, source := range e.Attrs {
 			a := n.attribute(source)
-			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream"
+			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream" || a.Name == "missing"
 			if pragma && !a.Pragma {
 				n.error(a, "is a pragma; use #"+a.Name)
 				continue

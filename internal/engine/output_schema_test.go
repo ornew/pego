@@ -132,9 +132,9 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 	p := &Program{types: map[string]grammar.TypeSpec{"Known": &grammar.TerminalSpec{}}}
 	for _, expr := range []grammar.TypeExpr{
-		&grammar.TypeRef{Name: "Missing"},
-		&grammar.ListType{Elem: &grammar.OptionalType{Elem: &grammar.TypeRef{Name: "Missing"}}},
-		&grammar.UnionType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "Missing"}}},
+		&grammar.TypeRef{Name: "UnknownShape"},
+		&grammar.ListType{Elem: &grammar.OptionalType{Elem: &grammar.TypeRef{Name: "UnknownShape"}}},
+		&grammar.UnionType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "UnknownShape"}}},
 		&grammar.TypeGroup{},
 	} {
 		if shape, err := p.schemaDeclared(expr); err == nil {

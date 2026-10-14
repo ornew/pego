@@ -21,7 +21,10 @@ type Node = engine.Node
 // SyntaxError reports that the input does not match the grammar.
 type SyntaxError = engine.SyntaxError
 
-// SyntaxErrors lists the syntax errors recovered from with #recover.
+// MissingTokenLimitError reports exhaustion of a #missing insertion budget.
+type MissingTokenLimitError = engine.MissingTokenLimitError
+
+// SyntaxErrors lists the syntax errors recovered with #recover or #missing.
 type SyntaxErrors = engine.SyntaxErrors
 
 // ParseGrammar parses PEGO source code into a grammar AST.
@@ -96,6 +99,13 @@ func WithContext(ctx context.Context) ParseOption {
 // WithWorkLimits sets both invocation-local work limits. Zero means unlimited.
 func WithWorkLimits(limits WorkLimits) ParseOption {
 	return func(o *engine.ParseOptions) { o.WorkLimits = limits }
+}
+
+// WithMissingTokens bounds attempted #missing literal insertions in one parse.
+// Zero disables insertion; negative limits are invalid. Only Closure whole-input
+// parsing and recognition support insertion. Options resolve in order.
+func WithMissingTokens(limit int) ParseOption {
+	return func(o *engine.ParseOptions) { o.MissingTokens = limit }
 }
 
 // WithUnit selects the position unit. Matching always proceeds by code point, whatever the unit.

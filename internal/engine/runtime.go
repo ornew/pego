@@ -47,6 +47,7 @@ type parser struct {
 	descs []string
 	// recovered holds the syntax errors recovered by #recover. Backtracking undoes them.
 	recovered []*SyntaxError
+	missing   *missingTokenState // invocation-local opt-in insertion accounting
 	// diagnosed is the prefix of recovered already delivered to the stream diagnostic callback.
 	diagnosed int
 
@@ -152,6 +153,7 @@ var fixedDescs = []string{"any character", "beginning of input", "end of input",
 
 type memoKey struct {
 	rule, pos, min int
+	missingSilent  bool // insertion-disabled lookahead has its own LR seeds
 	// env holds the values of the variables the rule reads (rule.vars) when it is called, or nil.
 	// Results of such rules are memoized per combination of these values.
 	env []any
@@ -191,7 +193,8 @@ type memoEntry struct {
 	ok bool
 	// silent reports that the result was evaluated inside a lookahead. No expectations were
 	// recorded, so it is re-evaluated when referenced outside a lookahead.
-	silent bool
+	silent        bool
+	missingSilent bool // insertion-disabled lookahead seed key
 	// growing reports that this is a provisional result while a left recursion is growing.
 	growing bool
 	// provisional reports that this result depends on a growing LR seed. It may be reused
@@ -306,13 +309,17 @@ type mark struct {
 	env       *env
 	trail     int
 	recovered int
+	missing   int
 }
 
 func (p *parser) mark() mark {
-	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered)}
+	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered), missing: p.missingMark()}
 }
 
 func (p *parser) reset(m mark) {
+	if p.missing != nil {
+		p.resetMissing(m.missing)
+	}
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
@@ -423,11 +430,14 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 		if len(r.scope.names) == 0 {
 			return p.invokePlain(r, min)
 		}
-		start, rec := p.pos, len(p.recovered)
+		start, rec, missing := p.pos, len(p.recovered), p.missingMark()
 		v, ok := p.invoke(r, min)
 		if !ok {
 			p.pos = start
 			p.recovered = p.recovered[:rec]
+			if p.missing != nil {
+				p.resetMissing(missing)
+			}
 		}
 		return v, ok
 	}
@@ -476,7 +486,7 @@ func (p *parser) envValues(names []string) []any {
 
 // memoizes reports whether the results of rule r are memoized.
 func (p *parser) memoizes(r *rule) bool {
-	return r.leader || r.memo && (!r.transient || p.memoAll)
+	return r.leader || r.memo && (!r.transient || p.memoAll) && !(p.missing != nil && r.missing)
 }
 
 // firstCall reports whether this is the first call of the memoized rule r at the current
@@ -514,6 +524,7 @@ type callState struct {
 	start               int
 	savedHW, savedLW    int
 	rec                 int
+	missing             int
 	exp                 expMark
 	memoSeedUses        int
 	memoProvisionalUses int
@@ -523,7 +534,7 @@ type callState struct {
 // firstCall). It looks up the memo; if a usable result exists, it sets hit and returns that
 // result. Otherwise it prepares for the call.
 func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit bool) {
-	key := memoKey{rule: r.id, pos: p.pos, min: min}
+	key := memoKey{rule: r.id, pos: p.pos, min: min, missingSilent: p.missing != nil && r.missing && p.silent > 0}
 	if len(r.vars) > 0 {
 		key.env = p.envValues(r.vars)
 	}
@@ -534,7 +545,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	if found && e.vgen != p.gen && !p.advanceEntry(e, p.edits[:p.gen]) {
 		found = false // an edit since invalidated it
 	}
-	if found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+	if found && (p.missing == nil || !r.missing || e.growing) && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		p.touch(e.examined)
 		p.lw = min2(p.lw, e.from)
 		p.stats.Reused++
@@ -556,10 +567,14 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 			return st, nil, false, true
 		}
 		p.pos = e.end
-		p.recovered = appendWork(p, p.recovered, e.errs)
+		if p.missing == nil {
+			p.recovered = appendWork(p, p.recovered, e.errs)
+		} else {
+			p.replayMissing(p.missingSeedEvents(e), e.errs)
+		}
 		return st, e.node, true, true
 	}
-	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, memoProvisionalUses: p.memoProvisionalUses}
+	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered), missing: p.missingMark(), memoSeedUses: p.memoSeedUses, memoProvisionalUses: p.memoProvisionalUses}
 	p.hw, p.lw = st.start, st.start
 	// A result stored in the memo also includes the expectations recorded in this call.
 	st.exp = p.isolate(st.start)
@@ -575,6 +590,9 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 	} else {
 		if !ok {
 			p.recovered = p.recovered[:st.rec]
+			if p.missing != nil {
+				p.resetMissing(st.missing)
+			}
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
@@ -605,6 +623,7 @@ type growState struct {
 	key          memoKey
 	start        int
 	rec          int
+	missing      int
 	best         *memoEntry
 	memoSeedUses int
 	prevSeed     *memoEntry
@@ -614,9 +633,12 @@ type growState struct {
 // evaluation. After seeding the memo with a failure, the body is evaluated repeatedly, and the
 // result at the point where the match stops growing is adopted.
 func (p *parser) growBegin(key memoKey) growState {
-	g := growState{key: key, start: p.pos, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, prevSeed: p.activeSeed}
+	g := growState{key: key, start: p.pos, rec: len(p.recovered), missing: p.missingMark(), memoSeedUses: p.memoSeedUses, prevSeed: p.activeSeed}
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen, vgen: p.gen}
+	if p.missing != nil {
+		p.recordMissingSeed(g.best, g.missing)
+	}
 	p.activeSeed = g.best
 	p.memoPut(key, g.best)
 	return g
@@ -631,10 +653,16 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 	}
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: appendWork(p, []*SyntaxError(nil), p.recovered[g.rec:])}
+	if p.missing != nil {
+		p.recordMissingSeed(g.best, g.missing)
+	}
 	p.activeSeed = g.best
 	p.memoPut(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]
+	if p.missing != nil {
+		p.resetMissing(g.missing)
+	}
 	return true
 }
 
@@ -652,7 +680,15 @@ func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
 	best.from = p.lw
 	best.positional = r.positional
 	p.pos = best.end
-	p.recovered = appendWork(p, p.recovered[:g.rec], best.errs)
+	p.recovered = p.recovered[:g.rec]
+	if p.missing != nil {
+		p.resetMissing(g.missing)
+	}
+	if p.missing == nil {
+		p.recovered = appendWork(p, p.recovered, best.errs)
+	} else {
+		p.replayMissing(p.missingSeedEvents(best), best.errs)
+	}
 	return best.node, best.ok
 }
 
@@ -668,7 +704,7 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 // caller's stays current), and with the failure handling of call.
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	p.stepWork()
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	start, rec, trail, missing := p.pos, len(p.recovered), len(p.trail), p.missingMark()
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
@@ -685,6 +721,9 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	} else {
 		p.pos = start
 		p.recovered = p.recovered[:rec]
+		if p.missing != nil {
+			p.resetMissing(missing)
+		}
 	}
 	p.env = prevEnv
 	return v, ok

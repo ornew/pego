@@ -13,12 +13,13 @@ import (
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
-	Grammar   *grammar.Grammar
-	rules     []*rule
-	descTable []string  // expectation table (starting with fixedDescs)
-	twins     []*rule   // value-free twins (rule.twin); ids start at len(rules)
-	nseen     int       // number of rules with rule.seen set
-	typed     *typeInfo // types found by the type checker (nil if it did not run)
+	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
+	Grammar    *grammar.Grammar
+	rules      []*rule
+	descTable  []string  // expectation table (starting with fixedDescs)
+	twins      []*rule   // value-free twins (rule.twin); ids start at len(rules)
+	nseen      int       // number of rules with rule.seen set
+	typed      *typeInfo // types found by the type checker (nil if it did not run)
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
@@ -88,6 +89,7 @@ type rule struct {
 	bodyIsSeq     bool
 	terminalType  string
 	memo          bool
+	missing       bool // this rule or a callee contains #missing
 	leader        bool
 	operatorsRule *operatorsRule
 	// stream reports that the top level of the rule body has a #stream repetition.
@@ -185,7 +187,7 @@ func (l ErrorList) Error() string {
 // Reserved type names.
 var builtinTypes = map[string]bool{
 	"int": true, "string": true, "bool": true, "node": true, "terminal": true,
-	TypeMatch: true, TypeSeq: true, TypeList: true, TypeOperator: true, TypeError: true,
+	TypeMatch: true, TypeSeq: true, TypeList: true, TypeOperator: true, TypeError: true, TypeMissing: true,
 }
 
 type compiler struct {
@@ -198,8 +200,10 @@ type compiler struct {
 	rule    *rule
 	// noIndex reports that a place where $n is not allowed (a predicate or an Operators Rule operator action)
 	// is being checked.
-	noIndex string
-	descIDs map[string]expID
+	noIndex        string
+	descIDs        map[string]expID
+	missingSites   int
+	missingSiteIDs map[*grammar.Attribute]int
 	// runSites numbers the repetitions that a Document can resume (resume.go).
 	runSites      int
 	plainDispatch bool
@@ -364,6 +368,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		prog.byName[rd.Name] = r
 	}
 
+	prog.markMissingRules(control)
 	if flags == nil {
 		c.an = analyzeControlled(rules, control)
 	} else if len(flags) != len(prog.rules) {
@@ -507,7 +512,7 @@ func (c *compiler) twinOf(r *rule) *rule {
 	if r.twin == nil {
 		prog := c.prog
 		r.twin = &rule{id: len(prog.rules) + len(prog.twins), name: r.name, def: r.def, scope: newScope(),
-			memo: r.memo, transient: r.transient, vars: r.vars, positional: r.positional, novalue: true}
+			memo: r.memo, missing: r.missing, transient: r.transient, vars: r.vars, positional: r.positional, novalue: true}
 		prog.twins = append(prog.twins, r.twin)
 	}
 	return r.twin
@@ -784,7 +789,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 				var ch rune
 				more, peeked := false, false
 				for i, m := range ms {
-					if g := &guards[i]; g.accept != nil {
+					if g := &guards[i]; g.accept != nil && p.missing == nil {
 						if !peeked {
 							ch, _, more = p.peek()
 							peeked = true

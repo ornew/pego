@@ -63,13 +63,14 @@ as types.
 | `List` | Values of repetitions |
 | `Operator` | Values of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action |
 | `Error` | Ranges skipped by [error recovery](pragmas.md#recover) |
+| `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only |
 
 ## Names
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
 the built-in types (`int`, `string`, `bool`, `node`, `terminal`). The names of
-the reserved node types (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT
+the reserved node types (`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) MUST NOT
 be defined.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).

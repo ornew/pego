@@ -279,7 +279,7 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyTerminal
 	case "any":
 		return tyAny
-	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError:
+	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
 		return namedTy{name, 'c'}
 	}
 	switch spec := k.prog.types[name].(type) {
@@ -594,6 +594,9 @@ func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
 		if a.Name == "recover" && t != nil {
 			t = union(t, tyError)
 		}
+		if a.Name == "missing" && t != nil {
+			t = union(t, tyMissing)
+		}
 	}
 	return t
 }
@@ -821,6 +824,9 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 	for _, a := range alts {
 		switch a := a.(type) {
 		case namedTy:
+			if a == tyMissing && (m.Name == "expected" || m.Name == "message") {
+				found = append(found, tyString)
+			}
 			if st, ok := k.prog.types[a.name].(*grammar.StructSpec); ok {
 				if f := fieldOf(st, m.Name); f != nil {
 					found = append(found, k.resolve(f.Type))
@@ -865,8 +871,8 @@ func (k *checker) elemType(fn string, t ty, pos grammar.Pos) ty {
 	switch t {
 	case tyNever:
 		return tyNever
-	case tyError:
-		// An Error node from #recover has no children, so it behaves as an empty list.
+	case tyError, tyMissing:
+		// Recovery nodes have no children, so they behave as empty lists.
 		return tyNever
 	case tyAny, tyNil, tyNode:
 		return tyAny

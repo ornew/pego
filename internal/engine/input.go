@@ -28,6 +28,9 @@ func (u Unit) String() string {
 
 // ParseOptions holds per-parse settings.
 type ParseOptions struct {
+	// MissingTokens bounds attempted #missing insertions. Zero disables insertion.
+	// Only Closure whole-input parsing and recognition support a positive limit.
+	MissingTokens int
 	// Context cooperatively interrupts this invocation. Nil means no cancellation.
 	Context context.Context
 	// WorkLimits optionally bound cumulative input inspections and execution work.
@@ -293,6 +296,7 @@ func (p *parser) releaseScratch() {
 // may retain its parser, so detach private references after recycling scratch.
 // Node storage is separately allocated and remains owned by returned results.
 func (p *parser) releaseBatchScratch() {
+	p.missing = nil
 	p.releaseScratch()
 	p.releaseTraceReferences()
 }

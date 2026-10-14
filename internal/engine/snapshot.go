@@ -300,6 +300,9 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 }
 
 func (d *Document) snapshotWith(o ParseOptions, legacy **Node) (*Snapshot, error) {
+	if d.prog.hasMissing || o.MissingTokens != 0 {
+		return nil, missingUnsupported("Document parsing")
+	}
 	var observed *snapshotContext
 	if o.Context != nil {
 		observed = &snapshotContext{Context: o.Context}

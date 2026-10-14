@@ -2,7 +2,7 @@
 
 This guide explains how PEGO reports syntax errors, how to make the messages useful, and how to keep parsing after an
 error so that one run reports every problem in a file. It is a companion to the normative text on [attributes](../../spec/attributes.md)
-(`@error`), [pragmas](../../spec/pragmas.md) (`#recover`) and
+(`@error`), [pragmas](../../spec/pragmas.md) (`#recover` and `#missing`) and
 [syntax errors](../../spec/parsing.md#syntax-errors).
 
 Contents:
@@ -10,7 +10,7 @@ Contents:
 1. [What a syntax error is](#1-what-a-syntax-error-is): the farthest failure, the expected items, positions
 2. [Getting the errors out](#2-getting-the-errors-out): the command line and the Go API
 3. [Writing readable messages](#3-writing-readable-messages): quiet whitespace, `@error`, cuts and their pitfalls
-4. [Recovering from errors](#4-recovering-from-errors): `#recover`, `Error` nodes, several errors in one run
+4. [Recovering from errors](#4-recovering-from-errors): `#recover`, `#missing`, recovered nodes, several errors in one run
 5. [Recipes](#5-recipes): a missing closing bracket, skipping to the next statement or line, recovering inside a list
 6. [Troubleshooting](#6-troubleshooting)
 
@@ -163,7 +163,7 @@ input is read.
 |:--|:--|:--|
 | The input matches | the tree | `nil` |
 | The input does not match | `nil` | a `*pego.SyntaxError` |
-| The parse recovered from errors with `#recover` | the tree, with `Error` nodes | `pego.SyntaxErrors`, a list of `*pego.SyntaxError` |
+| The parse recovered with `#recover` or an enabled `#missing` | the tree, with `Error` or `Missing` nodes | `pego.SyntaxErrors`, a list of `*pego.SyntaxError` |
 | An action failed at run time (for example, reading a field the node does not have) | `nil` | an ordinary error, not a syntax error |
 
 The last row is not subject to backtracking or recovery: it aborts the parse. A `*SyntaxError` has these fields:
@@ -184,9 +184,10 @@ Things to keep in mind:
 - With recovery, `err != nil` does **not** mean that there is no tree. A caller that does `if err != nil { return err }`
   throws the tree away; check for `SyntaxErrors` first if you want the tree.
 - `SyntaxErrors` is a slice type, so `errors.As` needs a variable of that type, not a pointer type.
-- The `message` field of an `Error` node is the formatted string `line:col: text`. The structured data (`Line`, `Col`,
+- The `message` field of an `Error` or `Missing` node is the formatted string `line:col: text`. The structured data (`Line`, `Col`,
   `Expected`) is only in the `SyntaxErrors` that `Parse` returns.
-- `Parser.ParseStream` and `Document.Parse` report errors in the same way. With the `RecognizeOnly` option there is no
+- `Parser.ParseStream` and `Document.Parse` report consuming recovery errors in the same way; `#missing` is not supported
+  by those entry points. With the `RecognizeOnly` option there is no
   tree, so a recovering parse returns a nil node together with the `SyntaxErrors`.
 
 ## 3. Writing Readable Messages
@@ -787,6 +788,23 @@ without finding its closing brace, and the outer statement recoveries then produ
 one `toy.pego` uses: `skip` must not be able to start at, or run over, the token that ends the enclosing repetition. The
 same applies to `)`, `]`, `end` and so on. In general, `skip` should describe "the rest of this element" and be unable
 to match at the delimiter that closes the list the element is in.
+
+### Inserting a Missing Literal
+
+Use `#missing` on a nonempty literal when an editor needs a tree even though that
+token is absent. In a Closure whole-input parse, `pego.WithMissingTokens(n)`
+enables up to `n` insertion attempts for that call. Without the option, the
+literal remains strict. For example, `rule main = "name" ";" #missing $$`
+parses `name` with a zero-width `Missing` node at EOF and returns a recovered
+`SyntaxErrors` value. Its `expected` field holds `;`; its `message` field holds
+the diagnostic. The node's `Text` is empty because no semicolon was read.
+
+The limit counts abandoned attempts too. Exhaustion returns
+`*pego.MissingTokenLimitError` with no tree. VM backends, generated parsers,
+Document, streams and compiled grammar serialization do not support this
+initial feature. See the [runtime guide](runtime.md#missing-literals-in-editor-input)
+and the [pragma specification](../../spec/pragmas.md#missing) for the full
+contract.
 
 ## 5. Recipes
 

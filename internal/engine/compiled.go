@@ -151,6 +151,9 @@ func (prog *Program) MarshalBinary(start string) ([]byte, error) {
 
 // MarshalBinaryWith encodes the compiled grammar as bytes with the given options.
 func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, error) {
+	if prog.hasMissing {
+		return nil, missingUnsupported("compiled grammar serialization")
+	}
 	if start != "" && !prog.hasRule(start) {
 		return nil, fmt.Errorf("start rule %s is not defined", start)
 	}

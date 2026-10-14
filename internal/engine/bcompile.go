@@ -9,6 +9,9 @@ import (
 // Module compiles the program to bytecode. The result is stored in the program and reused on
 // subsequent calls.
 func (prog *Program) Module() *Module {
+	if prog.hasMissing {
+		panic(missingUnsupported("bytecode module construction"))
+	}
 	prog.moduleOnce.Do(func() {
 		c := &bcompiler{prog: prog, m: &Module{}, strs: map[string]int{}}
 		c.compile()
