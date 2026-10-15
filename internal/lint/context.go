@@ -10,8 +10,8 @@ import (
 // findings, including those accumulated before the stopping point. Run retains
 // its ordinary behavior without an active control. Polling covers lint-owned
 // analysis, check and suppression loops, recursive analyses and result sorting.
-// Shared success proofs also poll; metadata walks and individual formatting or
-// comparison helpers still have uncancellable spans. No wall-clock bound is promised.
+// Shared success proofs and selected metadata walks also poll; character-range
+// work, grammar formatting and other individual operations retain unpolled spans. No wall-clock bound is promised.
 func RunContext(ctx context.Context, g *grammar.Grammar, start string, opts Options) (findings []Finding, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

@@ -153,7 +153,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Ref:
 		return a.engineNullable[e.Name]
 	case *grammar.Literal:
@@ -203,7 +203,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Ref:
 		return append(acc, e.Name)
 	case *grammar.Seq:
@@ -303,7 +303,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Ref:
 		return a.nullable[b2i(end)][e.Name]
 	case *grammar.Literal:
@@ -363,7 +363,7 @@ func (a *analysis) succeedsAt(e grammar.Expr, end bool) bool {
 	control := a.control
 	control.poll()
 
-	switch e := neutral(e, true).(type) {
+	switch e := neutralControlled(e, true, control).(type) {
 	case *grammar.EndInput:
 		return end
 	case *grammar.Any:
@@ -380,7 +380,7 @@ func (a *analysis) failsAt(e grammar.Expr, end bool) bool {
 	control := a.control
 	control.poll()
 
-	switch e := neutral(e, true).(type) {
+	switch e := neutralControlled(e, true, control).(type) {
 	case *grammar.EndInput:
 		return !end
 	case *grammar.Any, *grammar.CharClass:
@@ -405,7 +405,7 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Ref:
 		return set[e.Name]
 	case *grammar.Bottom:
@@ -438,7 +438,7 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 	case *grammar.Capture:
 		return a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.Attributed:
-		return hasAttr(e, "recover") || hasAttr(e, "missing") || a.mayMatchIn(e.Expr, set, lenient)
+		return hasAttrControlled(e, "recover", control) || hasAttrControlled(e, "missing", control) || a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			control.poll()
@@ -451,8 +451,9 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 	return true
 }
 
-func hasAttr(e *grammar.Attributed, name string) bool {
+func hasAttrControlled(e *grammar.Attributed, name string, control *lintControl) bool {
 	for _, at := range e.Attrs {
+		control.poll()
 		if at.Name == name {
 			return true
 		}
@@ -522,7 +523,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 
 	ok := func(rest string) matchResult { return matchResult{ok: true, exact: true, rest: rest} }
 	inexact := matchResult{ok: true}
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
 		if strings.HasPrefix(t, e.Value) {
 			return ok(t[len(e.Value):])
@@ -655,7 +656,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
 		return !strings.HasPrefix(t, e.Value) && !strings.HasPrefix(e.Value, t)
 	case *grammar.CharClass:
@@ -693,7 +694,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 	case *grammar.Discard:
 		return a.fails(e.Expr, t)
 	case *grammar.Attributed:
-		return !hasAttr(e, "recover") && !hasAttr(e, "missing") && a.fails(e.Expr, t)
+		return !hasAttrControlled(e, "recover", control) && !hasAttrControlled(e, "missing", control) && a.fails(e.Expr, t)
 	case *grammar.Ref:
 		r := a.rules[e.Name]
 		if r == nil || e.Level != "" || a.busy[e.Name] {
@@ -728,7 +729,7 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 	control := a.control
 	control.poll()
 
-	switch e := analysisExpr(e).(type) {
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
 		return prefixResult{e.Value, true}
 	case *grammar.CharClass:
@@ -790,7 +791,7 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 	case *grammar.Discard:
 		return a.prefix(e.Expr)
 	case *grammar.Attributed:
-		if !hasAttr(e, "recover") && !hasAttr(e, "missing") { // recovery invalidates a guaranteed prefix
+		if !hasAttrControlled(e, "recover", control) && !hasAttrControlled(e, "missing", control) { // recovery invalidates a guaranteed prefix
 			return a.prefix(e.Expr)
 		}
 	case *grammar.Ref:
@@ -829,11 +830,12 @@ func classAccepts(c *grammar.CharClass, r rune) bool {
 
 // --- Structure ---
 
-// neutral strips the wrappers that do not change whether an expression matches or how much
-// input it consumes: @, -, @error and #stream, and captures if caps is set.
-func neutral(e grammar.Expr, caps bool) grammar.Expr {
+// neutralControlled strips the wrappers that do not change whether an expression matches or how much
+// input it consumes: #atomic, -, @error and #stream, and captures if caps is set.
+func neutralControlled(e grammar.Expr, caps bool, control *lintControl) grammar.Expr {
 	for {
-		e = analysisExpr(e)
+		control.poll()
+		e = analysisExprControlled(e, control)
 		switch x := e.(type) {
 		case *grammar.Atomic:
 			e = x.Expr
@@ -845,7 +847,7 @@ func neutral(e grammar.Expr, caps bool) grammar.Expr {
 			}
 			e = x.Expr
 		case *grammar.Attributed:
-			if hasAttr(x, "recover") {
+			if hasAttrControlled(x, "recover", control) {
 				return e
 			}
 			e = x.Expr
@@ -855,18 +857,19 @@ func neutral(e grammar.Expr, caps bool) grammar.Expr {
 	}
 }
 
-// items returns the items of e as a sequence.
-func items(e grammar.Expr, caps bool) []grammar.Expr {
-	if s, ok := neutral(e, caps).(*grammar.Seq); ok {
+// itemsControlled returns the items of e as a sequence.
+func itemsControlled(e grammar.Expr, caps bool, control *lintControl) []grammar.Expr {
+	if s, ok := neutralControlled(e, caps, control).(*grammar.Seq); ok {
 		return s.Items
 	}
 	return []grammar.Expr{e}
 }
 
-// same reports whether x and y match the same inputs in the same way, by comparing their
+// sameControlled reports whether x and y match the same inputs in the same way, by comparing their
 // structure. If caps is set, the names of captures are ignored.
-func same(x, y grammar.Expr, caps bool) bool {
-	x, y = neutral(x, caps), neutral(y, caps)
+func sameControlled(x, y grammar.Expr, caps bool, control *lintControl) bool {
+	control.poll()
+	x, y = neutralControlled(x, caps, control), neutralControlled(y, caps, control)
 	switch x := x.(type) {
 	case *grammar.Ref:
 		y, ok := y.(*grammar.Ref)
@@ -879,31 +882,31 @@ func same(x, y grammar.Expr, caps bool) bool {
 		return ok && x.Negated == y.Negated && sameRanges(normalize(x.Ranges), normalize(y.Ranges))
 	case *grammar.Seq:
 		y, ok := y.(*grammar.Seq)
-		return ok && sameList(x.Items, y.Items, caps)
+		return ok && sameListControlled(x.Items, y.Items, caps, control)
 	case *grammar.Choice:
 		y, ok := y.(*grammar.Choice)
-		return ok && sameList(x.Alts, y.Alts, caps)
+		return ok && sameListControlled(x.Alts, y.Alts, caps, control)
 	case *grammar.Repeat:
 		y, ok := y.(*grammar.Repeat)
-		return ok && x.Min == y.Min && x.Max == y.Max && same(x.Expr, y.Expr, caps)
+		return ok && x.Min == y.Min && x.Max == y.Max && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Optional:
 		y, ok := y.(*grammar.Optional)
-		return ok && same(x.Expr, y.Expr, caps)
+		return ok && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.And:
 		y, ok := y.(*grammar.And)
-		return ok && same(x.Expr, y.Expr, caps)
+		return ok && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Not:
 		y, ok := y.(*grammar.Not)
-		return ok && same(x.Expr, y.Expr, caps)
+		return ok && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Capture:
 		y, ok := y.(*grammar.Capture)
-		return ok && x.Name == y.Name && same(x.Expr, y.Expr, caps)
+		return ok && x.Name == y.Name && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Predicate:
 		y, ok := y.(*grammar.Predicate)
 		return ok && grammar.FormatTerm(grammaranalysis.UngroupTerm(x.Term)) == grammar.FormatTerm(grammaranalysis.UngroupTerm(y.Term))
 	case *grammar.Attributed:
 		y, ok := y.(*grammar.Attributed)
-		return ok && grammar.FormatExpr(x) == grammar.FormatExpr(y) && same(x.Expr, y.Expr, caps)
+		return ok && grammar.FormatExpr(x) == grammar.FormatExpr(y) && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Any, *grammar.Cut, *grammar.Top, *grammar.Bottom, *grammar.BeginInput, *grammar.EndInput,
 		*grammar.BeginLine, *grammar.EndLine:
 		return sameType(x, y)
@@ -941,22 +944,24 @@ func sameType(x, y grammar.Expr) bool {
 	return false
 }
 
-func sameList(xs, ys []grammar.Expr, caps bool) bool {
+func sameListControlled(xs, ys []grammar.Expr, caps bool, control *lintControl) bool {
 	if len(xs) != len(ys) {
 		return false
 	}
 	for i := range xs {
-		if !same(xs[i], ys[i], caps) {
+		control.poll()
+		if !sameControlled(xs[i], ys[i], caps, control) {
 			return false
 		}
 	}
 	return true
 }
 
-// hasPredicate reports whether e contains a predicate (in the rule, not in the rules it calls).
-func hasPredicate(e grammar.Expr) bool {
+// hasPredicateControlled reports whether e contains a predicate (in the rule, not in the rules it calls).
+func hasPredicateControlled(e grammar.Expr, control *lintControl) bool {
 	found := false
 	walkExpr(e, func(x grammar.Expr) {
+		control.poll()
 		if _, ok := x.(*grammar.Predicate); ok {
 			found = true
 		}
@@ -1085,8 +1090,11 @@ func callsControlled(e grammar.Expr, control *lintControl) []string {
 }
 
 // posOf returns the position where e begins, or the zero Pos if it is unknown.
-func posOf(e grammar.Expr) grammar.Pos {
-	switch e := analysisExpr(e).(type) {
+func posOf(e grammar.Expr) grammar.Pos { return posOfControlled(e, nil) }
+
+func posOfControlled(e grammar.Expr, control *lintControl) grammar.Pos {
+	control.poll()
+	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Ref:
 		return e.Diagnostic()
 	case *grammar.Literal:
@@ -1097,11 +1105,11 @@ func posOf(e grammar.Expr) grammar.Pos {
 		return e.Diagnostic()
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
-			return posOf(e.Items[0])
+			return posOfControlled(e.Items[0], control)
 		}
 	case *grammar.Choice:
 		if len(e.Alts) > 0 {
-			return posOf(e.Alts[0])
+			return posOfControlled(e.Alts[0], control)
 		}
 	case *grammar.Repeat:
 		return e.Diagnostic()
@@ -1134,7 +1142,7 @@ func posOf(e grammar.Expr) grammar.Pos {
 	case *grammar.Predicate:
 		return e.Diagnostic()
 	case *grammar.Attributed:
-		return posOf(e.Expr)
+		return posOfControlled(e.Expr, control)
 	case *grammar.OperatorsRule:
 		return e.Diagnostic()
 	}
@@ -1150,12 +1158,13 @@ func show(e grammar.Expr) string {
 	return "`" + s + "`"
 }
 
-// analysisExpr presents behavior pragmas to the existing matching proofs without
+// analysisExprControlled presents behavior pragmas to the existing matching proofs without
 // mutating the source tree or losing the wrapped expression's positions.
-func analysisExpr(e grammar.Expr) grammar.Expr {
+func analysisExprControlled(e grammar.Expr, control *lintControl) grammar.Expr {
 	switch x := e.(type) {
 	case *grammar.Group:
-		return analysisExpr(x.Expr)
+		control.poll()
+		return analysisExprControlled(x.Expr, control)
 	case *grammar.Stream:
 		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Diagnostic(), Name: "stream", Pragma: true}}}
 	case *grammar.Recovery:
