@@ -76,10 +76,11 @@ func TestPublicationDeepGraph(t *testing.T) {
  for output!=nil {count++;output=output.Next}
  if count!=100001 {t.Fatalf("deep clone length: %d",count)}
 }
-func cloneWithControl(input *Box, c *typedDocumentClone)(output *Box,err error) {
+func cloneWithControl(input *Box, c *typedDocumentClone,beforeFinish ...func())(output *Box,err error) {
  defer recoverParse(&output,&err)
  defer c.release()
  output=c.toBox(input)
+ if len(beforeFinish)>0 {beforeFinish[0]()}
  c.finish()
  return output,nil
 }
@@ -92,8 +93,8 @@ func TestPublicationControls(t *testing.T) {
  c=&typedDocumentClone{control:newWorkControl(ctx,WorkLimits{})}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("cancel: %v %v",output,err)}
  ctx,cancel=context.WithCancel(context.Background())
- c=&typedDocumentClone{control:newWorkControl(ctx,WorkLimits{}),tasks:[]func(){cancel}}
- if output,err:=cloneWithControl(&Box{First:&Token{}},c);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
+ c=&typedDocumentClone{control:newWorkControl(ctx,WorkLimits{})}
+ if output,err:=cloneWithControl(&Box{First:&Token{}},c,cancel);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
  if output,err:=cloneWithControl(input,&typedDocumentClone{});output==nil || err!=nil {t.Fatalf("retry: %v",err)}
 }
 func TestPublicationCollidingNames(t *testing.T) {

@@ -17,9 +17,9 @@ the new text from scratch.
 An engine `Document` works with every backend ([Runtime](runtime.md)) and with both position units. It does
 not work with `RecognizeOnly` (`NewDocument` returns an error). Standalone generated Go parsers support an opt-in
 Document with the [`-document` option](code-generation.md#incremental-documents--document). With `-types`, they
-also expose `Document.ParseAST`, which converts the completed Node result on each call; direct typed incremental
-matching is not provided. Returned typed values belong to that invocation, though CST Node members may share the
-mutable Document graph. The model, history APIs, performance examples and recipes below describe the engine
+also expose `Document.ParseAST`: eligible grammars use direct typed incremental matching, while other results use
+the existing Node conversion path. Returned typed values belong to that invocation, though CST Node members may
+share the mutable Document graph. The model, history APIs, performance examples and recipes below describe the engine
 Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` and `Node.Clone`, without the engine's
 `EditBatch`, `Version`, `Unit`, `Snapshot`, `CacheStats` or `ResetHistory` controls. Its `Stats` exposes only
 `Evaluated` and `Reused`; it does not resume repetitions. If the problem is an input too big to hold, see
@@ -777,9 +777,9 @@ Limits to keep in mind:
 - `Parse` returns a complete tree each time. The engine Document can report conservative changes through
   [opt-in notifications](document-changes.md); generated Go's Node Document has no change-notification API.
 - The engine Document is unavailable with `RecognizeOnly` or [streams](streaming.md). Generated Go offers the
-  smaller [`-document` API](code-generation.md#incremental-documents--document); `-types` adds per-call
-  `Document.ParseAST` conversion, but not direct typed incremental matching. It does not include the history,
-  batch-edit or snapshot APIs described above.
+  smaller [`-document` API](code-generation.md#incremental-documents--document); `-types` adds
+  `Document.ParseAST`, with direct matching for grammars eligible for batch typed parsing and Node conversion
+  otherwise. It does not include the history, batch-edit or snapshot APIs described above.
 - A `Document` is single-threaded. Parse in the goroutine that owns it.
 
 ## Recipe: An Editor Loop

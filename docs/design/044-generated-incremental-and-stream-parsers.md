@@ -7,9 +7,10 @@
 ## Summary
 
 This design covers incremental Documents and committed stream parsing in standalone Go and TypeScript parsers.
-The opt-in generated Go `Document` supports Node parsing and, with typed generation, a `ParseAST` conversion of
-each completed Node result. Ordinary batch parsing remains available and unchanged by default. Direct typed
-incremental matching, repetition resumption, Reader streams and TypeScript Documents/streams are not implemented.
+The opt-in generated Go `Document` supports Node parsing and direct typed incremental matching for the same
+eligible grammars as batch typed parsing; other typed results use Node conversion. Ordinary batch parsing remains
+available and unchanged by default. Repetition resumption, Reader streams and TypeScript Documents/streams are not
+implemented.
 
 ## Existing Contracts and Goals
 
@@ -33,9 +34,9 @@ TS VM, immutable snapshots, a new text-storage algorithm, or recognition on Docu
 
 The current Go Document is opt-in through `pego.WithDocument()` or the `-document` CLI option. It selects the
 configured start rule and can be combined with typed Go generation (`-types`), but not TypeScript generation.
-With types enabled, `Document.ParseAST` converts the completed Node result for each invocation; it is not direct
-typed incremental matching. Existing generation without `WithDocument`/`-document` retains the batch source path.
-A generated `Document` is a mutable parse view, not an immutable snapshot.
+For grammars eligible for direct batch typed parsing, `Document.ParseAST` uses direct typed incremental matching;
+other grammars keep the Node-result conversion path. Existing generation without `WithDocument`/`-document`
+retains the batch source path. A generated `Document` is a mutable parse view, not an immutable snapshot.
 
 The remaining generation options and APIs in this section are proposals. `pego.WithStream()` and `-stream` would
 generate stream machinery only when the configured start rule has a legal `#stream` repetition; in batch mode,
@@ -70,39 +71,42 @@ preserves internal shared identities; it is not an immutable snapshot API and do
 values immutable.
 Text and diagnostic strings already handed out remain owned data, independent of discarded parser scratch.
 
-Each `Document.Parse` and `Document.ParseAST` call also publishes owned syntax diagnostics: recovered `SyntaxError`
-values and their `Expected` and `Messages` slices are copied; ordinary failures are freshly
-constructed. Mutating a returned diagnostic cannot change memoized errors or diagnostics from a later parse. This ownership guarantee does not detach the Node
-graph, which may still share nodes with the mutable Document; use `Node.Clone` when detachment is needed.
+Each `Document.Parse` and `Document.ParseAST` call publishes owned syntax diagnostics: recovered `SyntaxError`
+values and their `Expected` and `Messages` slices are copied; ordinary failures are freshly constructed. Mutating a
+returned diagnostic cannot change memoized errors or diagnostics from a later parse. This ownership guarantee does
+not detach the Node graph, which may still share nodes with the mutable Document; use `Node.Clone` when needed.
 
-`ParseAST` parses through the Node Document path and converts the final result on each call. The returned typed
-values are owned by that invocation, while CST `Node` members may share the mutable Document graph; clone such
-members when they must be detached. Parsing, diagnostic copying and conversion use the same invocation work
-controller. If parsing, diagnostic copying or conversion is interrupted, the method returns the result's zero value
-and clears reusable memo state as needed so a later call can retry.
-Direct typed incremental matching remains deferred; `WithTypes` does not make the Document immutable.
+For eligible grammars, `ParseAST` matches typed values directly and reuses a private typed memo separate from the
+Node memo. Each call uses fresh invocation arenas, and only completed entries whose examined frontier remains
+before an edit are retained; provisional and left-recursive entries are discarded. The public typed graph is
+cloned before return, so later parses cannot overwrite prior results and caller mutation cannot change private
+memo values or later results. Repeated references to the same slice view are preserved; slice capacity and
+arbitrary overlapping views are not part of the contract. CST `Node` values in fields that require concrete PEGO
+nodes, `any` values, and grammars with field-reading actions remain on the existing Node conversion path. That path
+converts the completed Node result for each call. Parsing, diagnostic copying and publication use the same
+invocation controller; interruption returns the result's zero value and clears reusable state as needed for a
+retry. The `Document` remains mutable and is not an immutable snapshot.
 
-### Proposed Direct Typed Document Matching
+### Initial Direct Typed Document Implementation
 
-The current `Document.ParseAST` fallback parses through the Node Document and converts the finalized result on
-each call. Direct typed matching is not implemented. A future opt-in direct path must preserve per-call ownership
-of returned typed values while reusing only completed parse work. Keep typed memo entries separate from Node memo
-entries, and use fresh parser and allocation arenas for each invocation so a later parse cannot overwrite values
-referenced by an earlier result.
+The direct typed implementation is limited to the batch typed runtime's existing eligibility: the start result and
+every struct field must have a generated Go value type, and actions or predicates must not read struct fields.
+Other grammars use Node conversion. The direct path preserves per-call ownership while reusing completed parse
+work. Typed memo entries are separate from Node memo entries, and each invocation uses fresh parser and allocation
+arenas so later parses cannot overwrite values returned earlier.
 
-Retain only completed typed entries before the edit whose examined frontier is also before the edit; discard
-entries that depend on left-recursion growth, provisional results, or the edited suffix. Generated wrappers may
-memoize calls that are otherwise optimized away, but the existing default-off batch path must remain unchanged.
-Before publishing a result, make an ownership-preserving typed copy wherever cached or scratch storage could be
-observable. Preserve cycles, aliases and repeated references to the same slice view; unused slice capacity and
-arbitrary overlapping slice views need not be preserved, matching `Node.Clone`'s ownership boundary. Parsing and
-that copy use the same invocation controls. If either is interrupted, return the typed result's zero value and
-clear the cache state required for a clean retry.
+Edit invalidation keeps only completed typed entries before the edit whose examined frontier also remains before
+it; entries dependent on left-recursion growth, provisional results, or the edited suffix are discarded. Generated
+wrappers memoize calls that batch generation otherwise optimizes away, while generation without a Document keeps
+the existing batch source path. Before publishing a result, the implementation makes an ownership-preserving typed copy
+where cached or scratch storage could be observable. It preserves cycles, aliases and repeated references to the
+same slice view; unused slice capacity and arbitrary overlapping slice views are not preserved, matching
+`Node.Clone`'s ownership boundary. Parsing and copying use the same invocation controls. If either is interrupted,
+the typed result's zero value is returned and the cache state required for a clean retry is cleared.
 
-Direct typed matching should initially use the same eligibility rules as the current batch `ParseAST` path. Compare
-against both the exact main revision and a generation-disabled same-source control. Measure batch parsing, fresh
-Document parsing, warm parsing and edit-plus-parse, along with retained memory and allocations; do not infer typed
-incremental gains from Node memo reuse alone.
+Compare against both the exact parent revision and a same-source control with direct typed Document matching
+disabled. Measure batch parsing, fresh Document parsing, warm parsing and edit-plus-parse, along with retained
+memory and allocations; do not infer typed incremental gains from Node memo reuse alone.
 
 ### Go Reader Streams and Typed Elements
 
@@ -202,7 +206,7 @@ values; no pooled parser or conversion arena is shared between concurrent invoca
 | --- | --- |
 | Closure and both engine VMs | Existing Document/Reader stream oracle; both position units |
 | Generated Go Node | Current opt-in prefix-memo Document; Reader streams remain proposed |
-| Generated typed Go | `Document.ParseAST` converts the completed Node result; direct typed incremental matching and stream conversion remain proposed |
+| Generated typed Go | Direct typed `Document.ParseAST` for batch-eligible grammars; Node conversion fallback otherwise; stream conversion remains proposed |
 | Generated TS Node/typed conversion | Documents and streams remain proposed; streams require continuation lowering |
 | Recognition | Continue rejecting Document/stream mode; batch recognition is unaffected |
 
@@ -213,9 +217,9 @@ unimplemented generation/backend combination fail explicitly, rather than silent
 Reserve the new exported type/value names in deterministic order and document resulting underscore migrations
 for colliding grammar declarations; generating helper methods must not alter existing handwritten types silently.
 
-The current implementation adds the generated Go Node Document with prefix-only memo reuse and per-call typed
-conversion through `ParseAST`. Remaining work includes direct typed incremental matching, Reader streams, TS Documents,
-and TS push continuations. Snapshot/versioned-tree work is a
+The current implementation adds the generated Go Node Document with prefix-only memo reuse, plus direct typed
+matching for batch-eligible grammars and per-call Node conversion for other typed results. Remaining work includes
+Reader streams, TS Documents, and TS push continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
 Cancellation/work budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
@@ -285,10 +289,37 @@ typed parse before timing.
 | 4,096 | CodePoints | 654,560 ns/op | 1,342,077 ns/op | 2,042,025 ns/op | 825,602 / 1,770,658 / 3,148,528 |
 | 4,096 | Bytes | 721,575 ns/op | 1,205,629 ns/op | 2,001,884 ns/op | 825,605 / 1,533,088 / 3,435,248 |
 
-The current implementation converts the full finalized Node graph on every call, so memo reuse does not imply
-typed-output reuse. On this simple grammar, direct typed batch parsing is faster even after a near-EOF edit.
+The fallback implementation converts the full finalized Node graph on every call, so Node memo reuse does not imply
+typed-output reuse. On this simple grammar, direct typed batch parsing is faster than the conversion fallback even
+after a near-EOF edit.
 For the 4,096-record Bytes batch case, enabling Document generation on the same source also measured 1.03–1.14×
 the generation-disabled direct path across ten paired 300 ms runs, despite identical per-operation allocations;
-the cause of this timing difference has not been isolated. These measurements do not
-establish behavior for expensive grammars or typical editor workloads. Direct typed incremental matching remains
-a separate performance stage.
+the cause of this timing difference has not been isolated. These measurements do not establish behavior for
+expensive grammars or typical editor workloads.
+
+### Local Measurements for Direct Typed Document Matching
+
+Three serial alternating 200 ms comparisons used Go 1.27.1 on an Apple M3 Max (darwin/arm64), with
+`GOMAXPROCS=16`, `GOGC=100` and `GOMEMLIMIT=off`. The baseline revision was `d827b2cd139d52661bb8624d8acffd83a6715647`;
+the candidate was also compared with a same-source generation control that disables direct typed Document
+matching. Generated batch parsers were byte-identical to the baseline only when Document generation was disabled.
+The fixture contains 4,096 records. Median times for the same-source enabled/disabled comparison were:
+
+| Operation | Unit | Disabled | Direct typed | Change |
+| --- | --- | ---: | ---: | ---: |
+| Fresh `Document.ParseAST` | CodePoints | 1,877,110 ns/op | 1,635,546 ns/op | 12.9% faster |
+| Fresh `Document.ParseAST` | Bytes | 1,789,732 ns/op | 1,517,239 ns/op | 15.2% faster |
+| Warm parse, no edit | CodePoints | 740,582 ns/op | 725,403 ns/op | 2.1% faster |
+| Warm parse, no edit | Bytes | 652,045 ns/op | 636,601 ns/op | 2.4% faster |
+| Near-EOF edit + parse | CodePoints | 1,073,922 ns/op | 1,234,443 ns/op | 14.9% slower |
+| Near-EOF edit + parse | Bytes | 969,329 ns/op | 1,106,552 ns/op | 14.2% slower |
+
+For 4,096-record near-EOF edit + parse, cumulative allocation increased from 3,148,532 to 3,735,004 B/op
+in CodePoints (18.6%) and from 3,435,252 to 3,890,651 B/op in Bytes (13.3%). At 256 records, B/op rose by
+about 30–33%. Retained-heap probes on the 4,096-record fixture found about 33–36% less retained memory with no
+edits and 26–29% less after 32 edits. The probes kept the Document alive and dropped each returned result; they
+measure post-GC retained heap above a baseline taken after building the input, not peak memory or retained result
+history.
+The three 200 ms pairs are focused pilot samples on one synthetic grammar, not a statistical performance
+guarantee; they do not establish workload-wide gains. Direct typed Document matching remains opt-in with these
+costs; improving the near-EOF edit path remains separate work.

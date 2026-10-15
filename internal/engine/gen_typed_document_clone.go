@@ -7,8 +7,8 @@ import (
 
 // documentClone emits an owned publication path for the private values retained
 // by a typed Document. Cloning uses an explicit task stack for recursive structs.
-func (t *typedGen) documentClone(b *strings.Builder) {
-	var methods strings.Builder
+func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
+	var methods, tasks strings.Builder
 	listNames := map[string]string{}
 	var lists []listConv
 	var clone func(ty, string) string
@@ -43,6 +43,7 @@ func (t *typedGen) documentClone(b *strings.Builder) {
 		}
 		panic("unrepresentable typed Document clone")
 	}
+	publication := clone(result, "value")
 	terminals := []struct{ name, chunk string }{{"Match", "match"}, {"Error", "error"}}
 	for _, name := range t.terms {
 		terminals = append(terminals, struct{ name, chunk string }{t.names[name], "t" + t.names[name]})
@@ -52,29 +53,59 @@ func (t *typedGen) documentClone(b *strings.Builder) {
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[1]s) *%[1]s {
  c.step(1)
  if v == nil { return nil }
- if old, ok := c.values[v]; ok { return old.(*%[1]s) }
+ if old, ok := c.seen%[1]s[v]; ok { return old }
  out := astNew(&c.%[2]s)
  *out = *v
- c.remember(v, out)
+ if c.seen%[1]s == nil { c.seen%[1]s = make(map[*%[1]s]*%[1]s) }; c.seen%[1]s[v] = out
  return out
 }
 `, goName, chunk)
 	}
+	var containsStruct func(ty) bool
+	containsStruct = func(x ty) bool {
+		switch x := x.(type) {
+		case namedTy:
+			_, ok := t.info.fields[x.name]
+			return ok
+		case optTy:
+			return containsStruct(x.elem)
+		case listTy:
+			return containsStruct(x.elem)
+		case unionTy:
+			for _, a := range x.alts {
+				if containsStruct(a) {
+					return true
+				}
+			}
+		}
+		return false
+	}
 	for _, name := range t.structs {
 		goName := t.names[name]
+		deferred := false
+		for _, f := range t.info.fields[name] {
+			deferred = deferred || containsStruct(f.t)
+		}
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[1]s) *%[1]s {
  c.step(1)
  if v == nil { return nil }
- if old, ok := c.values[v]; ok { return old.(*%[1]s) }
+ if old, ok := c.seen%[1]s[v]; ok { return old }
  out := astNew(&c.t%[1]s)
  out.%[2]s = v.%[2]s
- c.remember(v, out)
- c.tasks = append(c.tasks, func() {
+ if c.seen%[1]s == nil { c.seen%[1]s = make(map[*%[1]s]*%[1]s) }; c.seen%[1]s[v] = out
 `, goName, t.span)
-		for _, field := range t.info.fields[name] {
-			fmt.Fprintf(&methods, " c.step(1)\n out.%s = %s\n", field.name, clone(field.t, "v."+field.name))
+		target := &methods
+		if deferred {
+			methods.WriteString(" c.tasks = append(c.tasks, typedDocumentCloneTask{v, out})\n return out\n}\n")
+			fmt.Fprintf(&tasks, " case *%s:\n out := task.target.(*%s)\n _ = out; _ = v\n", goName, goName)
+			target = &tasks
 		}
-		methods.WriteString(" })\n return out\n}\n")
+		for _, f := range t.info.fields[name] {
+			fmt.Fprintf(target, " c.step(1)\n out.%s = %s\n", f.name, clone(f.t, "v."+f.name))
+		}
+		if !deferred {
+			methods.WriteString(" return out\n}\n")
+		}
 	}
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(unionTy)
@@ -113,17 +144,24 @@ type typedDocumentClone struct {
  control *workControl
  values map[any]any
  slices map[documentSliceKey]any
- tasks []func()
+ tasks []typedDocumentCloneTask
  match astChunk[Match]
  error astChunk[Error]
 `)
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, " t%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
+	for _, name := range append([]string{"Match", "Error"}, append(t.terms, t.structs...)...) {
+		if g, ok := t.names[name]; ok {
+			name = g
+		}
+		fmt.Fprintf(b, " seen%s map[*%s]*%s\n", name, name, name)
+	}
 	for _, list := range lists {
 		fmt.Fprintf(b, " %sChunk astChunk[%s]\n", list.name, t.goType(list.elem))
 	}
 	b.WriteString(`}
+type typedDocumentCloneTask struct {source, target any}
 func (c *typedDocumentClone) step(n uint64) {
  if workControlsEnabled && c.control != nil { c.control.charge(0, n) }
 }
@@ -135,14 +173,27 @@ func (c *typedDocumentClone) finish() {
  for len(c.tasks) > 0 {
   i := len(c.tasks)-1
   task := c.tasks[i]
-  c.tasks[i] = nil
+  c.tasks[i] = typedDocumentCloneTask{}
   c.tasks = c.tasks[:i]
-  task()
+  switch v := task.source.(type) {
+`)
+	b.WriteString(tasks.String())
+	b.WriteString(`
+ default: _ = v
+ }
  }
  c.control.check()
 }
 func (c *typedDocumentClone) release() {
  c.control, c.values, c.slices, c.tasks = nil, nil, nil, nil
+`)
+	for _, name := range append([]string{"Match", "Error"}, append(t.terms, t.structs...)...) {
+		if g, ok := t.names[name]; ok {
+			name = g
+		}
+		fmt.Fprintf(b, " c.seen%s = nil\n", name)
+	}
+	b.WriteString(`
 }
 func typedDocumentClonePointer[T any](c *typedDocumentClone, v *T) *T {
  c.step(1)
@@ -155,4 +206,5 @@ func typedDocumentClonePointer[T any](c *typedDocumentClone, v *T) *T {
 }
 `)
 	b.WriteString(methods.String())
+	return publication
 }

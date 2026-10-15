@@ -53,6 +53,7 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 `
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
+	g.directTypedDocument = g.document && directStart && !g.disableDirectTypedDocument
 	needTyped, needNodes := false, false
 	if directStart {
 		needTyped = true
@@ -85,7 +86,7 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 
 `, doc, t.goType(st), t.goType(st), newConv, returnResult, start.id)
 	}
-	if g.document {
+	if g.document && !g.directTypedDocument {
 		// A Document reuses Node results. Convert only the finalized result, with
 		// the same invocation controller and cleanup boundary as its Node parse.
 		needNodes = true
@@ -168,6 +169,9 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	} else {
 		b.WriteString(astListSlabHelper)
 	}
+	if g.directTypedDocument {
+		_ = t.dconv(st, "v", "a")
+	}
 	if needTyped {
 		// Emit the typed table if any public entry point can use it.
 		g.table = "trules"
@@ -178,8 +182,21 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	if needNodes {
 		t.converters(&b)
 	}
-	if g.document && directStart {
-		t.documentClone(&b)
+	if g.directTypedDocument {
+		publication := t.documentClone(&b, st)
+		b.WriteString(typedDocumentSource)
+		result := t.dconv(st, "v", "a")
+		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns independently owned typed values.
+func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
+ o, err := d.resolveParseOptions(opts)
+ if err != nil { var zero %s; return zero, err }
+ a := &tslabs{}
+ return typedDocumentParse(d, trules[%d], o, a, func(v any, c *typedDocumentClone) %s {
+  value := %s
+  return %s
+ })
+}
+`, t.goType(st), t.goType(st), start.id, t.goType(st), result, publication)
 	}
 	if g.enableBoundedTypedOutputSweep {
 		t.outputBoundedSweep(&b, needTyped, needNodes)

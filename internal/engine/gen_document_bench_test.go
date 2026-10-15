@@ -49,7 +49,7 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 		{"typedbatch", false},
 		{"typeddocument", true},
 	} {
-		code, err := Generate(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document})
+		code, err := Generate(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, disableDirectTypedDocument: os.Getenv("PEGO_GENERATED_DOCUMENT_CONVERSION_REFERENCE") == "1"})
 		if err != nil {
 			t.Fatal(err)
 		}

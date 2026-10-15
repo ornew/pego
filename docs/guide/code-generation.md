@@ -27,7 +27,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](#recognition--recognize) |
-| Streaming, incremental, backends | Yes | Go Node `Document` with `-document`; `-types` adds per-call `ParseAST` conversion. No streaming or backend choice (see [what is supported](#what-is-supported)) |
+| Streaming, incremental, backends | Yes | Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No streaming or backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
 dependency on PEGO at run time. Use the engine when the grammar is data or when you need streaming. For incremental
@@ -472,17 +472,22 @@ values such as maps remain shared. `ParseStats` has `Evaluated` and `Reused` fie
 
 This first generated implementation retains memo entries wholly before an edit and discards the suffix, rather
 than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
-length. The generated batch functions remain available. `-document` can be combined with `-types`: this adds
-`Document.ParseAST`, which parses through the Node Document and converts the final result on each call. Typed
-values belong to that call, while CST `Node` members may share the mutable Document graph; use `Node.Clone` when a
-detached tree is needed. Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: recovered
-`SyntaxError` values and their `Expected` and `Messages` slices are copied; ordinary failures are freshly
-constructed. Mutating a returned error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and conversion share one work budget; interruption returns the
-result's zero value and clears reusable memo state as needed for a retry. This is not direct typed incremental
-matching. `-document` cannot be combined with
-`-lang ts`; generated streams and engine-only Document controls such as `EditBatch` are separate work.
-The conversion visits the completed result on each call, so typed `Document.ParseAST` can cost more than direct
-batch `ParseAST` for simple grammars even when parsing reuses memo entries. See the [focused measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
+length. The generated batch functions remain available. `-document` can be combined with `-types`: eligible
+grammars use direct typed matching with a private memo and fresh invocation arenas. The published typed graph is
+cloned so later parses cannot overwrite prior results and caller mutation cannot change private memo values or
+later results. Results preserve cycles, aliases and repeated references to the same slice view, but not slice
+capacity or arbitrary overlapping views. Other grammars use the existing Node Document and convert its final
+result on each call; CST `Node` members may share the mutable Document graph, so call `Node.Clone` when a detached
+tree is needed. The conversion fallback applies to `any`/CST results, struct fields requiring PEGO nodes, or actions
+and predicates that read struct fields.
+
+Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: recovered `SyntaxError` values and
+their `Expected` and `Messages` slices are copied; ordinary failures are freshly constructed. Mutating a returned
+error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and typed publication share one
+work budget; interruption returns the result type's zero value and clears reusable state as needed for a retry.
+`-document` cannot be combined with `-lang ts`; generated streams and engine-only Document controls such as
+`EditBatch` are separate work. See the [direct typed measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
+and the [conversion fallback measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
 
 ## Recognition (`-recognize`)
 
@@ -587,7 +592,7 @@ generator rejects grammars that use it. See the [pragma specification](../../spe
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
 | `#stream` and `ParseStream` | Yes | **No**: `#stream` is generated as an ordinary repetition, and there is no `ParseStream` |
-| `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds per-call `Document.ParseAST` conversion. Direct typed matching and TypeScript are deferred |
+| `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds direct typed `Document.ParseAST` for eligible grammars, with Node conversion fallback otherwise. TypeScript is deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
 | Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | Go: same package-local options |

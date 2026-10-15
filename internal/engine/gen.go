@@ -28,9 +28,11 @@ var documentSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Document includes the generated Go Document runner, with typed conversion
-	// when Types is enabled.
+	// Document includes the generated Go Document runner. With Types, eligible
+	// outputs use private typed memoization; other outputs use Node conversion.
 	Document bool
+	// disableDirectTypedDocument retains Node conversion for differential tests.
+	disableDirectTypedDocument bool
 	// referenceWorkControls emits a generation-time disabled control for tests.
 	referenceWorkControls bool
 	// referenceWorkControlLayout removes added invocation state and the new
@@ -138,7 +140,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -228,6 +230,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		}
 		// The typed runtime's imports (fmt and sync) join those of the runtime.
 		rt := typedSource[strings.Index(typedSource, "\n)\n")+len("\n)\n"):]
+		if gen.directTypedDocument {
+			rt, err = typedDocumentRuntime(rt)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if opts.enableTypedOutputSweep || opts.enableBoundedTypedOutputSweep {
 			rt, err = typedOutputSweepRuntime(rt)
 			if err != nil {
@@ -285,6 +293,8 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
+	directTypedDocument             bool
+	disableDirectTypedDocument      bool
 	document                        bool
 	goWorkControls                  bool
 	workClassNames                  map[string]string
@@ -584,11 +594,19 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		m.WriteString("\t} else {\n\t\tp.pos = start\n\t\tp.recovered = p.recovered[:rec]\n\t}\n\tp.env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
 	if r.plain {
+		if g.directTypedDocument {
+			fmt.Fprintf(m, "func (p *tparser) s%d() (any, bool) {\n if p.typedDocument != nil { return p.documentCall(trules[%d], 0, (*tparser).ds%d) }; return p.ds%d()\n}\n", r.id, r.id, r.id, r.id)
+			plain(fmt.Sprintf("ds%d", r.id))
+			return
+		}
 		plain(fmt.Sprintf("s%d", r.id))
 		return
 	}
 	// u<id>: the call. An unmemoized call of a rule without captures is plain.
 	fmt.Fprintf(m, "// %s, called as by call\nfunc (p *tparser) u%d() (any, bool) {\n", r.name, r.id)
+	if g.directTypedDocument {
+		fmt.Fprintf(m, " if p.typedDocument != nil { return p.documentCall(trules[%d], 0, (*tparser).i%d) }\n", r.id, r.id)
+	}
 	memo := r.memo && !r.transient
 	if memo {
 		fmt.Fprintf(m, "\tif !p.firstCall(rules[%d]) {\n\t\treturn p.callMemo(trules[%d], (*tparser).i%d)\n\t}\n", r.id, r.id, r.id)
@@ -890,6 +908,8 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	switch {
 	case g.document && g.table == "rules":
 		// Document parses memoize every rule call, including otherwise plain rules.
+		return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
+	case g.directTypedDocument && g.table == "trules" && operatorsRule:
 		return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
 	case r.plain && !operatorsRule:
 		// Never memoized and without captures: call does nothing but invokePlain, which a

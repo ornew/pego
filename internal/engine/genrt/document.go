@@ -8,8 +8,9 @@ import (
 // Document incrementally parses the configured start rule. It belongs to one
 // goroutine; returned nodes may be shared with later parses.
 type Document struct {
-	state    *documentState
-	defaults parseOptions
+	state     *documentState
+	defaults  parseOptions
+	typedMemo interface{ invalidate(int) }
 }
 
 // ParseStats counts rule evaluations and reused memo results in the last Parse.
@@ -43,7 +44,13 @@ func (d *Document) Text() string { return d.state.text }
 
 // Edit replaces [start,end) in the Document's position unit.
 func (d *Document) Edit(start, end int, text string) error {
-	return d.state.edit(start, end, text)
+	if err := d.state.edit(start, end, text); err != nil {
+		return err
+	}
+	if d.typedMemo != nil {
+		d.typedMemo.invalidate(start)
+	}
+	return nil
 }
 
 // Parse parses the current text, applying invocation options after the
