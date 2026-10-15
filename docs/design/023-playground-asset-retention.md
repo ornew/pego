@@ -124,7 +124,7 @@ no stable regression; they are not a full benchmark comparison.
 
 ## Limitations and Open Questions
 
-### Dual-compiler prototype
+### Dual-compiler publication and rollback
 
 An opt-in `-wasm-mode=dual` build extends the version-one manifest with optional
 `tinygoCurrent` and `tinygoPrevious` pairs. The required `current` and optional
@@ -142,6 +142,21 @@ remain validation gates before enabling dual mode in production.
 A page older than one retained generation must reload. A page already holding a compiled module still needs a matching
 runtime from a retained generation when restarting its worker. Stable application scripts and parser API schemas are not
 archived, so a breaking application/protocol change still needs its own compatibility plan.
+
+Production activation uses two publications. First publish the dual-capable
+builder with Go-only mode; this creates a rollback target that can read the
+optional TinyGo manifest fields while retaining the ordinary Go pair. Only then
+enable the production Netlify context to install the pinned Linux x86_64
+toolchains and build in dual mode. Preview and branch contexts remain Go-only.
+The repository keeps this production context disabled until the owner selects
+this staged rollout or the reset alternative.
+
+Rollback to the staged Go-only builder preserves the preceding Go pair and
+does not need a retention reset. A rollback farther to a builder that predates
+TinyGo manifest support must explicitly build Go-only with
+`-previous-site ''`; this avoids strict-decoder failure but drops every
+preceding Go and TinyGo pair, so older pages must reload. Never use that older
+builder with the dual manifest and normal production `URL` retention.
 
 The imported generation is the one published when the production manifest is read. An overlapping promotion after
 that read can make it differ from the deployment immediately preceding publication. Retention does not implement a

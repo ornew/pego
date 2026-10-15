@@ -66,15 +66,31 @@ automatically. A page from the preceding deploy can therefore start its old pars
 
 Dual mode is opt-in: `site/build.sh -wasm-mode=dual` requires a compatible
 TinyGo installation and Binaryen's `wasm-opt` executable on `PATH`. The
-regular site builds use `go` mode. In a dual build, the Playground defaults to Go and offers
+regular site builds use `go` mode. `site/install-playground-toolchains.sh`
+provides the pinned, no-root Linux x86_64 setup for Netlify: TinyGo 0.43.0 and
+Binaryen 131 are downloaded from their official releases, SHA-256 verified,
+stored as archives under `NETLIFY_CACHE_DIR` when that variable is available,
+and extracted into a temporary directory for that build. Archive persistence
+depends on the selected Netlify build image caching that path; otherwise the
+script downloads them again. It rejects other operating systems and architectures
+and fails on any missing tool, unexpected version, or checksum mismatch. In a
+dual build, the Playground defaults to Go and offers
 TinyGo under Options; the choice is carried by `?compiler=tinygo` in shared links. A TinyGo link
 opened on a Go-only build reports that TinyGo is unavailable. Before enabling dual mode for
-production, install TinyGo in the build environment and verify the browser worker and API parity.
+production, first deploy the updated builder with Go-only mode, then enable the
+production build command `sh site/install-playground-toolchains.sh`. This staged
+rollout leaves a Go-only deployment whose builder understands dual manifests
+available for rollback. The current `netlify.toml` deliberately remains Go-only
+until the owner selects this rollout or a retention-reset policy.
 The manifest keeps its version-one `current` and `previous` fields for Go, with optional
 `tinygoCurrent` and `tinygoPrevious` pairs. Older workers can still select Go. An older site builder
 uses strict JSON decoding and rejects the added TinyGo fields when importing a dual build with
-`-previous-site`; rolling the builder back requires a deliberate retention reset or a builder that
-understands these fields.
+`-previous-site`. Roll back to the staged Go-only builder that understands these
+fields to preserve normal Go asset retention. Rolling back farther to a builder
+that rejects the fields requires a deliberate retention reset: build Go-only
+with `-previous-site ''`, which drops all retained previous compiler pairs and
+means pages from those generations must reload. Do not point an older builder
+at a dual manifest without that reset.
 
 The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
 immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing
@@ -83,9 +99,8 @@ previews need `-previous-site` set to the deployment being replaced; retention d
 To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](design/023-playground-asset-retention.md)
 for the format, bounds and bootstrap limitations.
 
-[`netlify.toml`](../netlify.toml) at the root of the repository configures Netlify: the build command is
-`sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Connecting
-the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
+[`netlify.toml`](../netlify.toml) at the root of the repository configures Netlify: the default build command is
+`sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Once the staged Go-only builder has been published, the production context can use `sh site/install-playground-toolchains.sh`; preview and branch builds remain on the default Go-only command. Connecting the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
 deploy instead of publishing it. The official site, [pego.ornew.net](https://pego.ornew.net/), is deployed this way.
 
 HTTPS requests to `pego-go.netlify.app` receive a permanent `301` redirect to
