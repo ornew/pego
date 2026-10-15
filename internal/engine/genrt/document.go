@@ -306,7 +306,48 @@ func documentParseConverted[T any](d *documentState, o parseOptions, convert fun
 		}
 		err = p.makeError(p.farthest, p.exp[p.expBase:])
 	}
+	err = publishDocumentError(p, err)
 	res = convert(n, o.control, err)
 	p.control.check()
 	return res, err
+}
+
+// publishDocumentError separates caller-owned diagnostics from private memo
+// entries. Strings are immutable, but the error objects and slice containers
+// must not be shared with a later invocation.
+func publishDocumentError(p *parser, err error) error {
+	switch e := err.(type) {
+	case SyntaxErrors:
+		if e == nil {
+			return e
+		}
+		p.valueWork(len(e))
+		out := make(SyntaxErrors, len(e))
+		for i, item := range e {
+			out[i] = cloneDocumentError(p, item)
+		}
+		return out
+	}
+	// Ordinary failures are freshly assembled by makeError, not memoized.
+	return err
+}
+
+func cloneDocumentError(p *parser, e *SyntaxError) *SyntaxError {
+	p.stepWork()
+	if e == nil {
+		return nil
+	}
+	out := new(SyntaxError)
+	*out = *e
+	if e.Expected != nil {
+		p.valueWork(len(e.Expected))
+		out.Expected = make([]string, len(e.Expected))
+		copyWork(p, out.Expected, e.Expected)
+	}
+	if e.Messages != nil {
+		p.valueWork(len(e.Messages))
+		out.Messages = make([]string, len(e.Messages))
+		copyWork(p, out.Messages, e.Messages)
+	}
+	return out
 }

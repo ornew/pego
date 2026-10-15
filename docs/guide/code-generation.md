@@ -474,9 +474,12 @@ This first generated implementation retains memo entries wholly before an edit a
 than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
 length. The generated batch functions remain available. `-document` can be combined with `-types`: this adds
 `Document.ParseAST`, which parses through the Node Document and converts the final result on each call. Typed
-values belong to that call, while CST `Node` members may share the mutable Document graph. Parsing and conversion
-share one work budget; interruption during conversion returns the result type's zero value and clears reusable state so a
-later call can retry. This is not direct typed incremental matching. `-document` cannot be combined with
+values belong to that call, while CST `Node` members may share the mutable Document graph; use `Node.Clone` when a
+detached tree is needed. Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: recovered
+`SyntaxError` values and their `Expected` and `Messages` slices are copied; ordinary failures are freshly
+constructed. Mutating a returned error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and conversion share one work budget; interruption returns the
+result's zero value and clears reusable memo state as needed for a retry. This is not direct typed incremental
+matching. `-document` cannot be combined with
 `-lang ts`; generated streams and engine-only Document controls such as `EditBatch` are separate work.
 The conversion visits the completed result on each call, so typed `Document.ParseAST` can cost more than direct
 batch `ParseAST` for simple grammars even when parsing reuses memo entries. See the [focused measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).

@@ -137,3 +137,118 @@ func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 		t.Fatalf("execution interruption retained %d memo slots", len(d.memo.slots))
 	}
 }
+
+func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
+	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r.body = func(p *parser, _ int) (*Node, bool) {
+		p.pos = 1
+		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
+		return &Node{kind: kindError, End: 1}, true
+	}
+	d := newDocumentState(r, "x", CodePoints)
+	o := parseOptions{maxDepth: defaultMaxDepth}
+	_, first := d.parse(o)
+	e, ok := first.(SyntaxErrors)
+	if !ok || len(e) != 1 {
+		t.Fatal(first)
+	}
+	e[0].Messages[0] = "mutated"
+	e[0].Expected[0] = "mutated"
+	_, second := d.parse(o)
+	next, ok := second.(SyntaxErrors)
+	if !ok || len(next) != 1 {
+		t.Fatal(second)
+	}
+	if next[0].Messages[0] != "original" || next[0].Expected[0] != "original" {
+		t.Fatalf("caller mutation changed cached diagnostics: %+v", next[0])
+	}
+}
+
+func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
+	calls := 0
+	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r.body = func(p *parser, _ int) (*Node, bool) {
+		calls++
+		p.pos = 1
+		expected := make([]string, 2048)
+		for i := range expected {
+			expected[i] = "original"
+		}
+		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: expected, Messages: []string{"original"}})
+		return &Node{kind: kindError, End: 1}, true
+	}
+	d := newDocumentState(r, "x", CodePoints)
+	normal := parseOptions{maxDepth: defaultMaxDepth}
+	if _, err := d.parse(normal); err == nil {
+		t.Fatal("missing recovered diagnostic")
+	}
+	if calls != 1 {
+		t.Fatalf("initial evaluations: %d", calls)
+	}
+	limited := normal
+	limited.limits = WorkLimits{MaxSteps: 64}
+	if out, err := d.parse(limited); out != nil || !errors.Is(err, ErrWorkLimit) {
+		t.Fatalf("diagnostic budget: %v %v", out, err)
+	}
+	if calls != 1 {
+		t.Fatal("warm parse should reuse memo before publication")
+	}
+	if len(d.memo.slots) != 0 {
+		t.Fatal("interrupted publication retained memo")
+	}
+	if _, err := d.parse(normal); err == nil {
+		t.Fatal("retry lost recovered diagnostic")
+	}
+	if calls != 2 {
+		t.Fatal("retry failed to rebuild cleared memo")
+	}
+}
+
+type diagnosticCancelContext struct {
+	context.Context
+	done  chan struct{}
+	polls int
+}
+
+func (c *diagnosticCancelContext) Done() <-chan struct{} { return c.done }
+func (c *diagnosticCancelContext) Err() error {
+	c.polls++
+	if c.polls == 4 {
+		close(c.done)
+	}
+	if c.polls >= 4 {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
+	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r.body = func(p *parser, _ int) (*Node, bool) {
+		p.pos = 1
+		p.recovered = append(p.recovered, &SyntaxError{Expected: make([]string, 2048)})
+		return &Node{kind: kindError, End: 1}, true
+	}
+	d := newDocumentState(r, "x", CodePoints)
+	normal := parseOptions{maxDepth: defaultMaxDepth}
+	if _, err := d.parse(normal); err == nil {
+		t.Fatal("missing recovered diagnostic")
+	}
+	ctx := &diagnosticCancelContext{Context: context.Background(), done: make(chan struct{})}
+	o := normal
+	o.context = ctx
+	converted := false
+	out, err := documentParseConverted(d, o, func(n *Node, _ *workControl, _ error) *Node {
+		converted = true
+		return n
+	})
+	if out != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("diagnostic cancellation: %v %v", out, err)
+	}
+	if converted {
+		t.Fatal("diagnostic copying did not poll cancellation before conversion")
+	}
+	if len(d.memo.slots) != 0 {
+		t.Fatal("cancelled publication retained memo")
+	}
+}

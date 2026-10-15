@@ -66,10 +66,16 @@ preserves internal shared identities; it is not an immutable snapshot API and do
 values immutable.
 Text and diagnostic strings already handed out remain owned data, independent of discarded parser scratch.
 
+Each `Document.Parse` and `Document.ParseAST` call also publishes owned syntax diagnostics: recovered `SyntaxError`
+values and their `Expected` and `Messages` slices are copied; ordinary failures are freshly
+constructed. Mutating a returned diagnostic cannot change memoized errors or diagnostics from a later parse. This ownership guarantee does not detach the Node
+graph, which may still share nodes with the mutable Document; use `Node.Clone` when detachment is needed.
+
 `ParseAST` parses through the Node Document path and converts the final result on each call. The returned typed
 values are owned by that invocation, while CST `Node` members may share the mutable Document graph; clone such
-members when they must be detached. Parsing and conversion use the same invocation work controller. If conversion
-is interrupted, the method returns the typed result's zero value and clears reusable state so a later call can retry.
+members when they must be detached. Parsing, diagnostic copying and conversion use the same invocation work
+controller. If parsing, diagnostic copying or conversion is interrupted, the method returns the result's zero value
+and clears reusable memo state as needed so a later call can retry.
 Direct typed incremental matching remains deferred; `WithTypes` does not make the Document immutable.
 
 ### Go Reader Streams and Typed Elements
