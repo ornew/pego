@@ -33,8 +33,14 @@ func outputSchemaValidationBenchmarkValue(typeCount int) OutputSchema {
 		rules[i] = SchemaRule{
 			Name:   fmt.Sprintf("parseItem%03d", i),
 			Origin: "declared",
-			Result: SchemaShape{Kind: "ref", Ref: id},
+			Result: SchemaShape{Kind: "ref", Ref: fmt.Sprintf("inferred/parseItem%03d", i)},
 		}
+	}
+	for i := range rules {
+		types = append(types, SchemaType{
+			ID: rules[i].Result.Ref, Name: rules[i].Name, Origin: "inferred",
+			Shape: SchemaShape{Kind: "ref", Ref: types[i].ID},
+		})
 	}
 	return OutputSchema{
 		Format:                  "pego-output-schema",

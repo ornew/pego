@@ -1,11 +1,9 @@
 package engine
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"sort"
 
 	"github.com/ornew/pego/grammar"
@@ -68,24 +66,13 @@ func (s *OutputSchema) Validate() error {
 	return validateOutputSchemaGraph(*s)
 }
 
-// UnmarshalJSON rejects unsupported envelopes, unknown fields and malformed v1
-// shape graphs.
+// UnmarshalJSON rejects unsupported envelopes, noncanonical fields, duplicate
+// keys and malformed v1 shape graphs.
 func (s *OutputSchema) UnmarshalJSON(data []byte) error {
-	type plain OutputSchema
-	var v plain
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&v); err != nil {
+	validated, err := decodeOutputSchemaJSON(data)
+	if err != nil {
 		return err
 	}
-	var trailing any
-	if err := decoder.Decode(&trailing); err != io.EOF {
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("trailing data after output schema")
-	}
-	validated := OutputSchema(v)
 	if err := validated.Validate(); err != nil {
 		return err
 	}
@@ -104,11 +91,7 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	}
 	all := map[string]SchemaType{}
 	for _, name := range reservedTypes {
-		shape := SchemaShape{Kind: "terminal"}
-		if name == TypeSeq || name == TypeList || name == TypeOperator {
-			element := SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "node"}}
-			shape = SchemaShape{Kind: "cst", Children: &SchemaShape{Kind: "list", Element: &element}}
-		}
+		shape, _ := reservedOutputSchemaShape(name)
 		all["cst/"+name] = SchemaType{ID: "cst/" + name, Name: name, Origin: "cst", Shape: shape}
 	}
 	for _, td := range p.Grammar.Types() {

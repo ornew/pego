@@ -15,6 +15,12 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 		if t.Name == "" || (t.Origin != "declared" && t.Origin != "inferred" && t.Origin != "cst") || t.ID != t.Origin+"/"+t.Name {
 			return fmt.Errorf("invalid output schema type identity %q", t.ID)
 		}
+		if t.Origin == "cst" {
+			expected, ok := reservedOutputSchemaShape(t.Name)
+			if !ok || !matchesReservedSchemaShape(&t.Shape, &expected) {
+				return fmt.Errorf("invalid reserved output schema CST type %q", t.ID)
+			}
+		}
 	}
 	type shapeFrame struct {
 		shape *SchemaShape
@@ -158,6 +164,40 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 		if err := check(&r.Result, "rule", r.Name); err != nil {
 			return err
 		}
+		if r.Result.Kind != "ref" || r.Result.Ref != "inferred/"+r.Name {
+			return fmt.Errorf("output schema rule %q must reference inferred/%s", r.Name, r.Name)
+		}
+	}
+	if !seenRules[s.Start] {
+		return fmt.Errorf("output schema start rule %q is not in rules", s.Start)
 	}
 	return nil
+}
+
+func reservedOutputSchemaShape(name string) (SchemaShape, bool) {
+	known := false
+	for _, reserved := range reservedTypes {
+		known = known || name == reserved
+	}
+	if !known {
+		return SchemaShape{}, false
+	}
+	if name == TypeSeq || name == TypeList || name == TypeOperator {
+		element := SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "node"}}
+		return SchemaShape{Kind: "cst", Children: &SchemaShape{Kind: "list", Element: &element}}, true
+	}
+	return SchemaShape{Kind: "terminal"}, true
+}
+
+// The expected reserved shape has bounded depth and no fields/alternatives.
+// Empty and omitted slices have the same schema meaning.
+func matchesReservedSchemaShape(shape, expected *SchemaShape) bool {
+	if shape == nil || expected == nil {
+		return shape == expected
+	}
+	return shape.Kind == expected.Kind && shape.Ref == expected.Ref &&
+		shape.Scalar == expected.Scalar && len(shape.Fields) == 0 &&
+		len(shape.Alternatives) == 0 &&
+		matchesReservedSchemaShape(shape.Element, expected.Element) &&
+		matchesReservedSchemaShape(shape.Children, expected.Children)
 }

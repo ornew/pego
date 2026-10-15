@@ -1,8 +1,7 @@
 package pego
 
 import (
-	"bytes"
-	"encoding/json"
+	"cmp"
 	"fmt"
 	"sort"
 )
@@ -43,15 +42,15 @@ type OutputSchemaDiff struct {
 
 // DiffOutputSchemas compares version-1 type and rule contents. Type and rule
 // array order, field order, and union alternative order are insignificant;
-// child order and named references are preserved. It rejects malformed entry
-// identities and cyclic in-memory shapes, but does not validate external ref
-// targets or the entire externally authored schema graph.
+// child order and named references are preserved. Both inputs must satisfy the
+// complete version-1 schema contract checked by OutputSchema.Validate.
 func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
-	left, err := indexOutputSchema(before)
+	canonical := &schemaCanonicalizer{copies: make(map[*SchemaShape]canonicalSchemaCopy), comparisons: make(map[schemaShapePair]int)}
+	left, err := indexOutputSchema(before, canonical)
 	if err != nil {
 		return nil, fmt.Errorf("before schema: %w", err)
 	}
-	right, err := indexOutputSchema(after)
+	right, err := indexOutputSchema(after, canonical)
 	if err != nil {
 		return nil, fmt.Errorf("after schema: %w", err)
 	}
@@ -64,7 +63,7 @@ func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
 			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaAdded, After: &new.value})
 		case !hasNew:
 			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaRemoved, Before: &old.value})
-		case !bytes.Equal(old.encoded, new.encoded):
+		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
 			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaChanged, Before: &old.value, After: &new.value})
 		}
 	}
@@ -76,7 +75,7 @@ func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
 			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaAdded, After: &new.value})
 		case !hasNew:
 			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaRemoved, Before: &old.value})
-		case !bytes.Equal(old.encoded, new.encoded):
+		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
 			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaChanged, Before: &old.value, After: &new.value})
 		}
 	}
@@ -89,128 +88,159 @@ type indexedOutputSchema struct {
 }
 
 type indexedSchemaEntry[T any] struct {
-	value   T
-	encoded []byte
+	value T
+	shape *SchemaShape
 }
 
-func indexOutputSchema(schema *OutputSchema) (indexedOutputSchema, error) {
+func indexOutputSchema(schema *OutputSchema, canonical *schemaCanonicalizer) (indexedOutputSchema, error) {
 	var index indexedOutputSchema
-	if schema == nil {
-		return index, fmt.Errorf("nil output schema")
-	}
-	if schema.Format != "pego-output-schema" || schema.Version != 1 {
-		return index, fmt.Errorf("unsupported output schema format %q version %d", schema.Format, schema.Version)
+	if err := schema.Validate(); err != nil {
+		return index, err
 	}
 	index.types = make(map[string]indexedSchemaEntry[SchemaType], len(schema.Types))
-	for _, entry := range schema.Types {
-		if entry.Name == "" || (entry.Origin != "declared" && entry.Origin != "inferred" && entry.Origin != "cst") || entry.ID != entry.Origin+"/"+entry.Name {
-			return index, fmt.Errorf("invalid type identity %q", entry.ID)
-		}
-		if _, exists := index.types[entry.ID]; exists {
-			return index, fmt.Errorf("duplicate type ID %q", entry.ID)
-		}
-		shape, err := canonicalSchemaShape(entry.Shape, make(map[*SchemaShape]bool))
+	for i := range schema.Types {
+		entry := schema.Types[i]
+		shape, _, err := canonical.copy(&schema.Types[i].Shape, 2)
 		if err != nil {
 			return index, fmt.Errorf("type %q: %w", entry.ID, err)
 		}
-		entry.Shape = shape
-		encoded, err := json.Marshal(entry)
-		if err != nil {
-			return index, fmt.Errorf("type %q: encode canonical entry: %w", entry.ID, err)
-		}
-		index.types[entry.ID] = indexedSchemaEntry[SchemaType]{value: entry, encoded: encoded}
+		entry.Shape = *shape
+		index.types[entry.ID] = indexedSchemaEntry[SchemaType]{value: entry, shape: shape}
 	}
 	index.rules = make(map[string]indexedSchemaEntry[SchemaRule], len(schema.Rules))
-	for _, entry := range schema.Rules {
-		if entry.Name == "" || (entry.Origin != "declared" && entry.Origin != "inferred") {
-			return index, fmt.Errorf("invalid rule identity %q", entry.Name)
-		}
-		if _, exists := index.rules[entry.Name]; exists {
-			return index, fmt.Errorf("duplicate rule ID %q", entry.Name)
-		}
-		shape, err := canonicalSchemaShape(entry.Result, make(map[*SchemaShape]bool))
+	for i := range schema.Rules {
+		entry := schema.Rules[i]
+		shape, _, err := canonical.copy(&schema.Rules[i].Result, 2)
 		if err != nil {
 			return index, fmt.Errorf("rule %q: %w", entry.Name, err)
 		}
-		entry.Result = shape
-		encoded, err := json.Marshal(entry)
-		if err != nil {
-			return index, fmt.Errorf("rule %q: encode canonical entry: %w", entry.Name, err)
-		}
-		index.rules[entry.Name] = indexedSchemaEntry[SchemaRule]{value: entry, encoded: encoded}
+		entry.Result = *shape
+		index.rules[entry.Name] = indexedSchemaEntry[SchemaRule]{value: entry, shape: shape}
 	}
 	return index, nil
 }
 
-func canonicalSchemaShape(shape SchemaShape, active map[*SchemaShape]bool) (SchemaShape, error) {
-	if shape.Kind == "" {
-		return SchemaShape{}, fmt.Errorf("shape has no kind")
-	}
-	if shape.Kind == "ref" && shape.Ref == "" {
-		return SchemaShape{}, fmt.Errorf("reference has no ID")
-	}
-	var out SchemaShape
-	out.Kind, out.Ref, out.Scalar = shape.Kind, shape.Ref, shape.Scalar
-	var err error
-	if out.Element, err = canonicalSchemaPointer(shape.Element, active); err != nil {
-		return SchemaShape{}, err
-	}
-	if out.Children, err = canonicalSchemaPointer(shape.Children, active); err != nil {
-		return SchemaShape{}, err
-	}
-	type alternative struct {
-		shape   SchemaShape
-		encoded []byte
-	}
-	var alternatives []alternative
-	for i := range shape.Alternatives {
-		v, err := canonicalSchemaPointer(&shape.Alternatives[i], active)
-		if err != nil {
-			return SchemaShape{}, err
-		}
-		encoded, err := json.Marshal(v)
-		if err != nil {
-			return SchemaShape{}, fmt.Errorf("encode union alternative: %w", err)
-		}
-		alternatives = append(alternatives, alternative{shape: *v, encoded: encoded})
-	}
-	sort.Slice(alternatives, func(i, j int) bool {
-		return bytes.Compare(alternatives[i].encoded, alternatives[j].encoded) < 0
-	})
-	for _, alt := range alternatives {
-		out.Alternatives = append(out.Alternatives, alt.shape)
-	}
-	seen := make(map[string]bool, len(shape.Fields))
-	for i := range shape.Fields {
-		field := &shape.Fields[i]
-		if field.Name == "" || seen[field.Name] {
-			return SchemaShape{}, fmt.Errorf("empty or duplicate field name %q", field.Name)
-		}
-		seen[field.Name] = true
-		v, err := canonicalSchemaPointer(&field.Shape, active)
-		if err != nil {
-			return SchemaShape{}, fmt.Errorf("field %q: %w", field.Name, err)
-		}
-		out.Fields = append(out.Fields, SchemaField{Name: field.Name, Origin: field.Origin, Shape: *v})
-	}
-	sort.Slice(out.Fields, func(i, j int) bool { return out.Fields[i].Name < out.Fields[j].Name })
-	return out, nil
+type canonicalSchemaCopy struct {
+	shape  *SchemaShape
+	height int
 }
 
-func canonicalSchemaPointer(shape *SchemaShape, active map[*SchemaShape]bool) (*SchemaShape, error) {
+type schemaShapePair struct{ left, right *SchemaShape }
+
+type schemaCanonicalizer struct {
+	copies      map[*SchemaShape]canonicalSchemaCopy
+	comparisons map[schemaShapePair]int
+}
+
+// Validation has already rejected cycles. Copy each inline node once and keep
+// shared pointers; serializing a DAG to JSON here would expand it exponentially.
+func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape, int, error) {
 	if shape == nil {
-		return nil, nil
+		return nil, 0, nil
 	}
-	if active[shape] {
-		return nil, fmt.Errorf("cyclic inline shape")
+	if depth > 10000 {
+		return nil, 0, fmt.Errorf("encode canonical entry: maximum JSON nesting depth exceeded")
 	}
-	active[shape] = true
-	v, err := canonicalSchemaShape(*shape, active)
-	delete(active, shape)
-	if err != nil {
-		return nil, err
+	if cached, ok := c.copies[shape]; ok {
+		if depth+cached.height-1 > 10000 {
+			return nil, 0, fmt.Errorf("encode canonical entry: maximum JSON nesting depth exceeded")
+		}
+		return cached.shape, cached.height, nil
 	}
-	return &v, nil
+	out := &SchemaShape{Kind: shape.Kind, Ref: shape.Ref, Scalar: shape.Scalar}
+	height := 1
+	copyChild := func(child *SchemaShape, offset int) (*SchemaShape, error) {
+		value, childHeight, err := c.copy(child, depth+offset)
+		if child != nil {
+			height = max(height, offset+childHeight)
+		}
+		return value, err
+	}
+	var err error
+	if out.Element, err = copyChild(shape.Element, 1); err != nil {
+		return nil, 0, err
+	}
+	if out.Children, err = copyChild(shape.Children, 1); err != nil {
+		return nil, 0, err
+	}
+	alternatives := make([]*SchemaShape, len(shape.Alternatives))
+	for i := range shape.Alternatives {
+		if alternatives[i], err = copyChild(&shape.Alternatives[i], 2); err != nil {
+			return nil, 0, err
+		}
+	}
+	sort.Slice(alternatives, func(i, j int) bool { return c.compare(alternatives[i], alternatives[j]) < 0 })
+	for _, alternative := range alternatives {
+		out.Alternatives = append(out.Alternatives, *alternative)
+	}
+	for i := range shape.Fields {
+		field := &shape.Fields[i]
+		value, err := copyChild(&field.Shape, 3)
+		if err != nil {
+			return nil, 0, err
+		}
+		out.Fields = append(out.Fields, SchemaField{Name: field.Name, Origin: field.Origin, Shape: *value})
+	}
+	sort.Slice(out.Fields, func(i, j int) bool { return out.Fields[i].Name < out.Fields[j].Name })
+	c.copies[shape] = canonicalSchemaCopy{shape: out, height: height}
+	return out, height, nil
+}
+
+// Canonical children are immutable before comparison. Remember shape pairs so
+// comparing separately allocated but equal shared DAGs also avoids path expansion.
+func (c *schemaCanonicalizer) compare(left, right *SchemaShape) int {
+	if left == right {
+		return 0
+	}
+	if left == nil {
+		return -1
+	}
+	if right == nil {
+		return 1
+	}
+	pair := schemaShapePair{left, right}
+	if result, ok := c.comparisons[pair]; ok {
+		return result
+	}
+	result := c.compareContents(left, right)
+	c.comparisons[pair] = result
+	c.comparisons[schemaShapePair{right, left}] = -result
+	return result
+}
+
+func (c *schemaCanonicalizer) compareContents(left, right *SchemaShape) int {
+	for _, pair := range [][2]string{{left.Kind, right.Kind}, {left.Ref, right.Ref}, {left.Scalar, right.Scalar}} {
+		if order := cmp.Compare(pair[0], pair[1]); order != 0 {
+			return order
+		}
+	}
+	if order := c.compare(left.Element, right.Element); order != 0 {
+		return order
+	}
+	if order := c.compare(left.Children, right.Children); order != 0 {
+		return order
+	}
+	for i := range min(len(left.Fields), len(right.Fields)) {
+		a, b := &left.Fields[i], &right.Fields[i]
+		if order := cmp.Compare(a.Name, b.Name); order != 0 {
+			return order
+		}
+		if order := cmp.Compare(a.Origin, b.Origin); order != 0 {
+			return order
+		}
+		if order := c.compare(&a.Shape, &b.Shape); order != 0 {
+			return order
+		}
+	}
+	if order := cmp.Compare(len(left.Fields), len(right.Fields)); order != 0 {
+		return order
+	}
+	for i := range min(len(left.Alternatives), len(right.Alternatives)) {
+		if order := c.compare(&left.Alternatives[i], &right.Alternatives[i]); order != 0 {
+			return order
+		}
+	}
+	return cmp.Compare(len(left.Alternatives), len(right.Alternatives))
 }
 
 func sortedSchemaKeys[T any](left, right map[string]T) []string {

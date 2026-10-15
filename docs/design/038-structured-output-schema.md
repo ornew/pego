@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. Broader validation remains incomplete.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding; broader query type checking remains incomplete.
 
 ## Motivation
 
@@ -42,10 +42,15 @@ func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error)
 ```
 
 `encoding/json` marshals the exported fields. `Validate` checks the v1 envelope
-and shape graph for both decoded and directly constructed schemas; `UnmarshalJSON`
-also rejects unknown JSON fields. Validation rejects cyclic inline shapes but
-allows named-reference recursion. This is not complete semantic validation.
-Evolution beyond version 1 remains a proposal. `DiffOutputSchemas` returns sorted added, removed, or changed entries for types keyed by namespace-qualified type ID and rules keyed by rule name. It does not classify compatibility. The version-1 JSON envelope is:
+and shape graph for both decoded and directly constructed schemas. The
+`UnmarshalJSON` contract rejects unknown fields, field names with incorrect
+case, and duplicate object keys at every nesting level. Validation rejects
+cyclic inline shapes but allows named-reference recursion. Evolution beyond
+version 1 remains a proposal. `DiffOutputSchemas` returns sorted added, removed,
+or changed entries for types keyed by namespace-qualified type ID and rules
+keyed by rule name. It does not classify compatibility. The version-1 JSON
+envelope has this shape. This envelope-only illustration omits required rule
+and type entries and is not a valid complete schema:
 
 ```json
 {"format":"pego-output-schema","version":1,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
@@ -59,11 +64,29 @@ Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `any
 
 A rule entry identifies its declared or inferred result shape and producing rule. It must not imply that a rule's ordinary CST output is a declared struct. CST entries describe ordered child edges and possible nil children; capture entries describe names and known or dynamic value categories. The schema describes possible values, not source spans, runtime values, retained punctuation/comments, or execution order.
 
+Canonical validation requires `Start` to name an entry in `Rules`. Each rule's
+`Result` must be a reference exactly to `inferred/<rule-name>`, and that type
+entry must exist. The `cst/` namespace is reserved for the built-in CST
+identities and their canonical shapes. For these reserved-shape checks, omitted,
+nil, and empty optional shape slices are equivalent.
+
 ## Semantic Schema Diff
 
-`DiffOutputSchemas(before, after)` accepts version-1 schemas and compares type and rule contents by identity. It ignores type/rule entry order, struct-field order, and union-alternative order. It preserves child order and named references. Envelope fields such as `Start` are ignored. Added, removed, and changed results are sorted by type ID or rule name; unchanged inputs return non-nil empty change slices.
+`DiffOutputSchemas(before, after)` validates both complete operands with
+`Validate` before comparing version-1 type and rule contents by identity. It
+ignores type/rule entry order, struct-field order, and union-alternative order.
+It preserves child order and named references. Envelope fields such as `Start`
+are validated but are not included in the diff result. Added, removed, and
+changed results are sorted by type ID or rule name; unchanged inputs return
+non-nil empty change slices.
 
-The diff rejects unsupported format/version, invalid or duplicate type/rule identities, empty or duplicate field names, shapes without a kind, references without an ID, and cyclic inline shapes. Named `ref` values are compared as written; the diff does not verify that reference targets exist or perform the full external-graph validation described above. JSON unmarshaling performs its own limited v1 graph checks. No source-compatibility or binary-compatibility classification is implied.
+Both operands must pass the full v1 validation contract, including reference
+resolution and canonical rule/type and reserved-CST relationships. The diff
+does not classify source or binary compatibility. After validation, comparison
+canonicalizes each graph while memoizing visited shape identities, then compares
+the canonical forms. This preserves shared DAG structure instead of serializing
+or recursively expanding each reference path, which could multiply work for a
+valid graph with extensive sharing.
 
 ## Implementation and Determinism
 
@@ -75,7 +98,15 @@ Schema export is metadata on a compiled grammar and is independent of runtime ba
 
 ## Remaining Implementation Sequence
 
-The Go v1 envelope, start-reachable/all-rules selection, declared and checked inferred types, CST/capture categories, deterministic encoding, strict JSON-key and basic graph checks for decoded and directly constructed v1 schemas, and semantic schema diff are implemented. Structural-query compilation validates a supplied schema before using it. Remaining work includes specifying further semantic constraints on externally authored graphs and extended query type checking as described in [design 040](040-structural-queries-and-highlighting.md).
+The Go v1 export, start-reachable/all-rules selection, declared and checked
+inferred types, CST/capture categories, deterministic encoding, basic graph
+checks, and semantic schema diff are implemented. The accepted v1 validation
+contract requires canonical `Start`/rule-result relationships and reserved CST
+shapes, exact-case JSON fields with recursive duplicate-key rejection, and
+complete validation of both diff operands. Structural-query compilation
+validates a supplied schema before using it. Remaining work includes broader
+query type checking and additional schema consumers as described in
+[design 040](040-structural-queries-and-highlighting.md).
 
 ## Alternatives Considered
 
@@ -90,10 +121,41 @@ Cover every grammar type constructor, recursive references, unions, optional/nil
 
 ## Performance and Results
 
-A synthetic benchmark compares validated JSON decoding with plain DTO decoding
-and measures structural-query compilation. On Go 1.27.1, Apple M3 Max
-(darwin/arm64), with `GOMAXPROCS=4`, `GOGC=100`, no memory limit and three
-alternating baseline/candidate pairs at 200 ms per sample, the medians were:
+The final focused comparison used Go 1.27.1 on an Apple M3 Max
+(darwin/arm64), with `GOMAXPROCS=4`, `GOGC=100`, no memory limit, and three
+alternating pairs at 200 ms per sample. The baseline was `51fef0d`; the
+candidate included the strict v1 contract and memoized canonical diff. Both
+used identical benchmark sources and fixture files with 16 or 128 declared
+types plus the same number of inferred types and rules. Ratios below are
+medians of paired candidate/baseline ratios, with the per-pair range shown
+where useful.
+
+| Operation | Fixture | Baseline → candidate ns/op | Paired time ratio (range) | B/op, baseline → candidate | Allocs/op, baseline → candidate |
+|---|---|---:|---:|---:|---:|
+| Validated JSON decode | 16 | 75,525 → 75,373 | 1.001 (0.957–1.007) | 67,395 → 34,111 | 246 → 231 |
+| Validated JSON decode | 128 | 578,654 → 565,361 | 0.972 (0.952–1.020) | 543,778 → 280,796 | 1,637 → 1,617 |
+| Compile query, known field | 16 | 8,774 → 9,249 | 1.054 (1.004–1.076) | 7,600 → 7,600 | 19 → 19 |
+| Compile query, known field | 128 | 67,726 → 70,068 | 1.035 (1.019–1.053) | 57,872 → 57,872 | 25 → 25 |
+| Diff, ordinary fixture, changed or unchanged | 16 | 74,962–78,186 → 48,959–53,375 | 0.668–0.683 (0.652–0.711) | 100,234–100,269 → 108,385–108,432 | 601–602 → 589–590 |
+| Diff, ordinary fixture, changed or unchanged | 128 | 589,184–615,484 → 413,584–413,633 | 0.707–0.708 (0.651–0.731) | 795,463–795,490 → 865,603–865,651 | 4,634–4,635 → 4,203–4,204 |
+| Diff, shared DAG, depth 4 | 4 | 97,875 → 9,795 | 0.106 (0.098–0.106) | 65,869 → 19,264 | 431 → 145 |
+| Diff, shared DAG, depth 8 | 8 | 2,628,192 → 16,668 | 0.0064 (0.0049–0.0064) | 1,846,562 → 30,304 | 6,790 → 231 |
+
+The JSON decode timing ratios include parity; cumulative allocation roughly
+halved. Known-field query compilation was 3–5% slower with the same allocation
+counts. Ordinary diff cases used less time and fewer allocations, with about
+8–9% more cumulative bytes; shared-DAG cases used substantially less time and
+allocated less. These are synthetic preparation/validation workloads, not
+parser input-path measurements.
+
+### Earlier Validation Slice
+
+The following earlier comparison measured validated JSON decoding against
+plain DTO decoding and structural-query compilation, before full-validation
+diff and memoized canonical DAG comparison were implemented. Its conclusions
+apply only to that earlier slice. On Go 1.27.1, Apple M3 Max (darwin/arm64),
+with `GOMAXPROCS=4`, `GOGC=100`, no memory limit and three alternating
+baseline/candidate pairs at 200 ms per sample, the medians were:
 
 The baseline was main revision `87a4088`; both binaries used identical
 benchmark sources. Plain DTO decoding is a control for measurement noise; it
@@ -112,25 +174,27 @@ displayed medians.
 | Compile query, absent field in shared DAG | 16 | 1,156,038 | 17,910 | 0.02x | 202.55x |
 | Compile query, absent field in shared DAG | 128 | 1,183,114 | 75,181 | 0.06x | 683.62x |
 
-The normal query-compilation cost increases because each call now validates
-the complete mutable schema. The shared-DAG case becomes substantially faster
-because a failed field lookup visits each inline shape once, at the cost of
-allocations for complete validation. The strict JSON decoder also checks nested
-keys and trailing input and copies input into its buffer. Query compilation
-is an explicit preparation step, not part of input parsing. For applications
-that compile many queries against one schema, a separate immutable, validated
-schema handle could amortize validation without allowing mutation to bypass
-checks; this has not been implemented. The benchmarks are in
+In that earlier slice, normal query compilation cost increased because each
+call validated the complete mutable schema, while shared-DAG absent-field
+lookup improved because each inline shape was visited once. That comparison's
+JSON decoder copied input into its buffer; this is not a claim about the final
+decoder. Query compilation is an explicit preparation step, not part of input
+parsing. For applications that compile many queries against one schema, a
+separate immutable, validated schema handle could amortize validation without
+allowing mutation to bypass checks; this has not been implemented. The earlier
+benchmarks are in
 `internal/engine/output_schema_validate_bench_test.go` and
 `internal/engine/structural_query_bench_test.go`. Input parse performance was
-not measured by these benchmarks.
+not measured by these benchmarks. The final comparison also uses
+`schema_diff_bench_test.go`; raw reports remain outside the
+repository.
 
 ## Limitations and Open Questions
 
 The Go v1 API uses a start-reachable default with an explicit all-rules option.
 Cross-grammar schema identity remains absent until canonicalization is defined;
-complete semantic constraints for externally authored shape graphs and
-compatibility classification for diffs are also open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
+compatibility classification for diffs and broader query type checking remain
+open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
 
@@ -156,18 +220,18 @@ ordered optional node lists; their exact positional alternatives are not inferre
 A generic node child retains all reserved CST identities in the reachable export,
 so a schema-checked query can name an uncaptured `Match` below a `Seq`.
 
-The envelope decoder rejects unsupported formats and versions. Its v1 graph check
-requires unique nonempty type IDs and rule names, nonempty unique field names,
-consistent type identities and origins, supported shape kinds and scalar names,
-valid shape members for each kind, list/optional elements,
+The envelope decoder rejects unsupported formats and versions, unknown fields,
+incorrect field-name case, and duplicate keys at every JSON object level. Its
+v1 graph check requires unique nonempty type IDs and rule names, nonempty unique
+field names, consistent type identities and origins, supported shape kinds and
+scalar names, valid shape members for each kind, list/optional elements,
 references that resolve to an ID in the schema's type table, and acyclic inline
-shapes. Shared acyclic inline shapes are visited once; named-reference cycles
-are allowed. The same check is available through
-`Validate` for in-memory schemas and runs before structural-query compilation.
-The current contract does not define whether `Start` must occur in `Rules`,
-whether every rule result must reference its corresponding `inferred/` type,
-or whether externally supplied `cst/` entries must exactly match the built-in
-reserved kinds and shapes. Persisting schemas in compiled files remains unimplemented. The semantic diff
-is implemented separately and does not perform this whole-graph validation. Focused tests cover the limited graph checks
-along with determinism, reachability, round trips and categories; export
-performance and broader backend/typed-output validation remain open.
+shapes. It also requires `Start` to occur in `Rules`, every rule result to refer
+to its matching `inferred/<rule-name>` type, and reserved `cst/` entries to
+match built-in identities and shapes. Omitted, nil, and empty optional shape
+slices are equivalent for reserved-shape validation. Shared acyclic inline
+shapes are visited once; named-reference cycles are allowed. The same full
+validation applies to in-memory schemas and both operands of semantic diff;
+envelope metadata is not itself reported as a diff. Persisting schemas in
+compiled files remains unimplemented. Compatibility classification, broader
+query type checking, and broader backend/typed-output validation remain open.

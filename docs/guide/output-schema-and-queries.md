@@ -43,22 +43,29 @@ includes unreachable rules and declared types. `WithStart` changes the default
 export root. Schema entries separate declared types, inferred rule shapes, and
 reserved CST types; scalar, optional, list, union, and dynamic `any` shapes are
 explicit. Fields and rules have stable ordering, so repeated exports of the
-same checked grammar produce identical JSON bytes. A decoder rejects other
-schema formats and versions, unknown JSON keys, and incomplete envelopes.
-Type names alone do not establish compatibility
-between grammars.
+same checked grammar produce identical JSON bytes. Version-1 JSON decoding
+requires exact field-name case and rejects unknown fields and duplicate keys
+at every object level. It also rejects unsupported formats and versions and
+incomplete envelopes. Type names alone do not establish compatibility between
+grammars.
 
-Decoding also performs limited structural checks for version 1: type IDs, rule
-names, and field names must be unique and nonempty; type identities and origins
-must agree; shape kinds, scalar names, and kind-specific members must be valid;
-list and optional shapes need elements; and references must resolve to IDs in
-the schema's type table. Recursive named references are allowed. This is not
-full semantic validation. Passing a schema constructed directly in Go to
-`CompileStructuralQuery` does not run this whole-graph check first.
+`schema.Validate()` performs full version-1 schema validation whether the schema
+was decoded from JSON or constructed in Go. It checks unique nonempty type IDs,
+rule names, and field names; consistent identities and origins; supported shape
+kinds, scalar names, and members; required list/optional elements; resolved
+references; and acyclic inline shapes while allowing named-reference cycles.
+The `Start` value must name a rule in `Rules`. Each rule's `Result` must be a
+reference exactly to `inferred/<rule-name>`, and that type entry must exist.
+The `cst/` namespace is reserved for built-in CST identities and shapes. When
+validating those reserved shapes, omitted, nil, and empty optional shape slices
+are treated equivalently. `CompileStructuralQuery` validates a supplied schema
+before using it. This checks schema structure and canonical relationships; it
+does not prove source or binary compatibility between grammars.
 
-`pego.DiffOutputSchemas(before, after)` compares version-1 schema contents by
-type ID and rule name. It returns sorted added, removed, and changed entries;
-unchanged schemas have empty `Types` and `Rules` slices:
+`pego.DiffOutputSchemas(before, after)` validates both complete operands, then
+compares version-1 schema contents by type ID and rule name. It returns sorted
+added, removed, and changed entries; unchanged schemas have empty `Types` and
+`Rules` slices:
 
 ```go
 diff, err := pego.DiffOutputSchemas(before, after)
@@ -71,13 +78,9 @@ for _, change := range diff.Types {
 ```
 
 The comparison ignores type/rule entry order, struct-field order, union
-alternative order, and envelope fields such as `Start`. Child order and named
-references remain significant. A diff is descriptive only; it does not classify
-compatibility. It rejects unsupported schema format/version, invalid or duplicate
-type/rule identities, empty or duplicate field names, shapes without a kind,
-references without an ID, and cyclic inline shapes. It compares reference IDs
-without checking that their targets exist, and does not perform full graph
-validation; JSON unmarshaling has the separate limited checks described above.
+alternative order, and envelope fields such as `Start`; both operands must still
+have valid envelope values. Child order and named references remain significant.
+A diff is descriptive only and does not classify compatibility.
 
 Export requires checked grammar metadata. A parser restored by `LoadParser`
 cannot export it, even if its compiled file includes the grammar AST; the error
@@ -97,11 +100,11 @@ prefix, so extra children and fields are allowed.
 Supplying a schema rejects known impossible type, rule, field, and some scalar
 category constraints. For a directly declared optional scalar field such as
 `Value *string`, compilation permits `string` and `nil` categories and rejects
-other known categories. This check does not yet follow aliases or unions, or
-check nested schema compatibility. A nil schema defers these checks to
-evaluation. Runtime values are always checked because callers can mutate a
-`Node` after parsing. This API uses programmatic patterns; it has no text query
-language or text predicates yet.
+other known categories; it follows aliases that resolve to scalar or optional
+scalar shapes. Union and nested schema compatibility are not checked yet. A nil
+schema defers these checks to evaluation. Runtime values are always checked
+because callers can mutate a `Node` after parsing. This API uses programmatic
+patterns; it has no text query language or text predicates yet.
 
 Matches visit each node occurrence before outgoing edges, then children by
 index, fields by name, and nested `[]any` elements by index. A shared node can

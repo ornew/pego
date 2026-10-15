@@ -85,7 +85,15 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 }
 
 func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) {
-	const valid = `{"format":"pego-output-schema","version":1,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","origin":"declared","shape":{"kind":"scalar","scalar":"string"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"declared/Item"}}]}`
+	schema := validInMemoryOutputSchema()
+	schema.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Origin: "declared", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}}}
+	encoded, err := json.Marshal(schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := string(encoded)
+	typesJSON, _ := json.Marshal(schema.Types)
+	rulesJSON, _ := json.Marshal(schema.Rules)
 	var accepted OutputSchema
 	if err := json.Unmarshal([]byte(valid), &accepted); err != nil {
 		t.Fatalf("valid fixture: %v", err)
@@ -99,13 +107,13 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 		{"unknown field entry", `"name":"Value","origin"`, `"name":"Value","unexpected":true,"origin"`, "unknown field"},
 		{"unknown scalar shape field", `"scalar":"string"`, `"scalar":"string","unexpected":true`, "unknown field"},
 		{"unknown nested element field", `"kind":"scalar","scalar":"string"`, `"kind":"list","element":{"kind":"scalar","scalar":"string","unexpected":true}`, "unknown field"},
-		{"unknown rule field", `"name":"main","origin"`, `"name":"main","unexpected":true,"origin"`, "unknown field"},
+		{"unknown rule field", `"rules":[{"name":"main","origin"`, `"rules":[{"name":"main","unexpected":true,"origin"`, "unknown field"},
 		{"missing start", `"start":"main",`, ``, "envelope"},
 		{"empty start", `"start":"main",`, `"start":"",`, "envelope"},
 		{"missing position unit flag", `"positionUnitIndependent":true,`, ``, "envelope"},
 		{"false position unit flag", `"positionUnitIndependent":true,`, `"positionUnitIndependent":false,`, "envelope"},
-		{"missing types", `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","origin":"declared","shape":{"kind":"scalar","scalar":"string"}}]}}],`, ``, "envelope"},
-		{"missing rules", `,"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"declared/Item"}}]`, ``, "envelope"},
+		{"missing types", `"types":` + string(typesJSON) + `,`, ``, "envelope"},
+		{"missing rules", `,"rules":` + string(rulesJSON), ``, "envelope"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
