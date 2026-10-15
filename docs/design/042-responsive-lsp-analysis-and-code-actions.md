@@ -116,8 +116,17 @@ merging and equality scans. The context is used only during the invocation and
 is not retained; ordinary helpers and parser runtimes keep their existing
 paths. Context-aware grammar formatting and LSP formatting poll during AST
 traversal, layout and keyword ordering, output construction, newline conversion,
-and minimal-edit scans. Individual string comparisons, allocations and other
-large single operations may remain unpolled or indivisible. These checks
+and minimal-edit scans. Document-symbol, hover and completion rendering also
+uses an explicit control local to each request; it is not stored on the shared
+analysis. Polls cover token, capture, declaration, field and documentation
+walks, as well as sorting and chunked documentation splitting, joining and
+copying. Grammar text uses `FormatContext`; inferred rule-type text uses the
+internal `RuleTypeWithPoll`, while ordinary `RuleType` and string rendering
+remain unchanged. Cancellation discards the response and returns JSON-RPC
+`RequestCancelled` (-32800) at the request boundary; unrelated panics propagate
+unchanged. Individual string comparisons, allocations and concatenations,
+standard-library regexp replacement/matching, JSON wire encoding and other
+large operations remain indivisible or outside this control. These checks
 bound work at selected points, not total LSP cancellation latency. Suppression
 validation uses its request context before and after candidate analysis and
 lint. The VS Code
@@ -516,10 +525,49 @@ drivers are `grammar/format_context_bench_test.go`,
 `internal/lsp/format_context_bench_test.go`; the same drivers were applied to
 the baseline. Raw results remain outside the repository.
 
+### LSP Symbol, Hover, and Completion Rendering
+
+Five serial alternating 200 ms pairs compared main `bca31b7` with the render
+cancellation change on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=1`, `GOGC=100`, with no `GOMEMLIMIT`. Inputs were analyzed before
+the timed request-rendering calls. The table shows paired-median candidate/main
+time ratios and the range across pairs for rich-client responses: hierarchical
+document symbols, Markdown hover, and snippet-capable completion. The same
+matrix also measured flat symbols, plaintext hover, and completion without
+snippet support. The baseline handlers use the existing unpolled response
+builders even when a request context is present; `ordinary` uses no request
+context, while `context-aware` uses a live cancellable context. No cancellation
+was triggered in either measured path.
+
+| Fixture | Response | Ordinary | Context-aware |
+|---|---|---:|---:|
+| JSON grammar | Document symbols | 1.009 (0.991–1.052) | 1.065 (0.966–1.130) |
+| JSON grammar | Hover | 1.014 (0.965–1.019) | 1.117 (1.050–1.172) |
+| JSON grammar | Completion | 1.126 (1.108–1.318) | 1.352 (1.332–1.419) |
+| Source grammar | Document symbols | 1.019 (1.006–1.025) | 1.070 (1.063–1.077) |
+| Source grammar | Hover | 0.997 (0.925–1.023) | 1.066 (0.907–1.094) |
+| Source grammar | Completion | 1.161 (1.150–1.243) | 1.435 (1.350–1.541) |
+| 512-field fixture | Document symbols | 1.005 (0.747–1.099) | 1.089 (0.942–1.131) |
+| 512-field fixture | Hover | 1.012 (0.945–1.034) | 1.228 (1.178–1.261) |
+| 512-field fixture | Completion | 1.061 (1.044–1.094) | 1.384 (1.355–1.413) |
+
+The 18 historical response fingerprints matched exactly. The plain/flat
+variants showed the same broad pattern, with context-aware completion ratios
+of 1.323–1.408, document-symbol ratios of 1.066–1.088, and hover ratios of
+1.137–1.225 across these fixtures. In the rich 512-field responses, context
+handling increased completion from 525 to 1,038 allocations and 102,334 to
+114,647 B/op, and document symbols from 531 to 1,044 allocations and 203,956
+to 216,269 B/op. Source-grammar completion instead used 674 to 661
+allocations. These are focused synthetic rendering measurements, not a claim
+of zero overhead or a general speed result. They exclude analysis, parsing,
+wire encoding, cancellation latency, real-editor behavior, and peak memory.
+The benchmark is `internal/lsp/render_context_bench_test.go`; raw results are
+outside the repository.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Formatting inside symbol, hover and completion requests is not polled within individual calls. Individual string comparisons, allocations and other large operations remain uninterruptible, so cancellation has no wall-clock bound.
+- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover and completion requests also poll through selected render walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Individual string comparisons, allocations and other large operations remain uninterruptible, so cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.

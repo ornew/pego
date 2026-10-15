@@ -290,16 +290,20 @@ func (a *analysis) tokenIndex(pos grammar.Pos) (int, bool) {
 
 // significantToken skips comments from i, returning len(toks) at end of input.
 // Other tokens, including punctuation, retain their place in the syntax.
-func (a *analysis) significantToken(i int) int {
+func (a *analysis) significantTokenControlled(i int, control *renderControl) int {
+	control.poll()
 	for i < len(a.toks) && a.toks[i].Kind == syntax.TokenComment {
+		control.poll()
 		i++
 	}
 	return i
 }
 
 // previousSignificantToken skips comments backwards; -1 means the start of input.
-func (a *analysis) previousSignificantToken(i int) int {
+func (a *analysis) previousSignificantTokenControlled(i int, control *renderControl) int {
+	control.poll()
 	for i >= 0 && a.toks[i].Kind == syntax.TokenComment {
+		control.poll()
 		i--
 	}
 	return i
@@ -664,14 +668,15 @@ func (a *analysis) tokenAt(off int) int {
 
 // ruleType returns the type of the rule d as written, whether it was inferred, and whether it is
 // known.
-func (a *analysis) ruleType(d *definition) (typ string, inferred, known bool) {
+func (a *analysis) ruleTypeControlled(d *definition, control *renderControl) (typ string, inferred, known bool) {
+	control.poll()
 	if a.prog != nil {
-		if t, ok := a.prog.RuleType(d.name); ok {
+		if t, ok := control.ruleType(a.prog, d.name); ok {
 			return t, d.rule.Type == nil, true
 		}
 	}
 	if d.rule.Type != nil {
-		return grammar.FormatType(d.rule.Type), false, true
+		return control.formatType(d.rule.Type), false, true
 	}
 	return "", true, false
 }

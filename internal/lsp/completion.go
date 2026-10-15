@@ -14,21 +14,24 @@ import (
 // (a type, a parsing expression, an action, an attribute, ...) is found from the tokens before it,
 // and the names offered are those that rule and type declare anywhere in the file.
 
-func (s *Server) completion(params json.RawMessage) (any, *rpcError) {
+func (s *Server) completionControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	d, off, err := s.position(params)
 	if err != nil {
 		return nil, err
 	}
-	items := d.analysis().complete(off)
+	items := d.analysis().completeControlled(off, control)
 	for i := range items {
+		control.poll()
 		if items[i].Documentation != nil {
-			doc := documentation(items[i].Documentation.Value, s.client.TextDocument.Completion.CompletionItem.DocumentationFormat)
+			doc := documentationControlled(items[i].Documentation.Value, s.client.TextDocument.Completion.CompletionItem.DocumentationFormat, control)
 			items[i].Documentation = &doc
 		}
 	}
 	if !s.client.TextDocument.Completion.CompletionItem.SnippetSupport {
 		// Without snippets, insert the label.
 		for i := range items {
+			control.poll()
 			if items[i].InsertTextFormat == insertSnippet {
 				items[i].InsertText, items[i].InsertTextFormat = "", 0
 			}
@@ -85,7 +88,8 @@ func (a *analysis) indexDeclarationStarts() {
 
 // inside reports whether the byte offset off is inside token t (a comment, a string or a character
 // class), where nothing is completed.
-func (a *analysis) inside(t token, off int) bool {
+func (a *analysis) insideControlled(t token, off int, control *renderControl) bool {
+	control.poll()
 	switch t.Kind {
 	case syntax.TokenComment:
 		if strings.HasPrefix(t.Text, "/*") {
@@ -93,23 +97,26 @@ func (a *analysis) inside(t token, off int) bool {
 		}
 		// A comment extends to the end of the line, past trailing white space.
 		for k := t.start; k < off; k++ {
+			control.poll()
 			if a.text[k] == '\n' || a.text[k] == '\r' {
 				return false
 			}
 		}
 		return off > t.start
 	case syntax.TokenString:
-		return off > t.start && (off < t.end || !terminated(a.text[t.start:t.end], '"', 1))
+		return off > t.start && (off < t.end || !terminatedControlled(a.text[t.start:t.end], '"', 1, control))
 	case syntax.TokenCharClass:
-		return off > t.start && (off < t.end || !terminated(a.text[t.start:t.end], ']', 1))
+		return off > t.start && (off < t.end || !terminatedControlled(a.text[t.start:t.end], ']', 1, control))
 	}
 	return false
 }
 
 // terminated reports whether the string or character class raw, whose content starts at index
 // from, ends with its closing character close.
-func terminated(raw string, close byte, from int) bool {
+func terminatedControlled(raw string, close byte, from int, control *renderControl) bool {
+	control.poll()
 	for i := from; i < len(raw); i++ {
+		control.poll()
 		switch raw[i] {
 		case '\\':
 			i++
@@ -121,11 +128,12 @@ func terminated(raw string, close byte, from int) bool {
 }
 
 // complete returns the completion items at the byte offset off.
-func (a *analysis) complete(off int) []CompletionItem {
+func (a *analysis) completeControlled(off int, control *renderControl) []CompletionItem {
+	control.poll()
 	items := []CompletionItem{}
 	// i is the last token that starts before off.
 	i := sort.Search(len(a.toks), func(i int) bool { return a.toks[i].start >= off }) - 1
-	if i >= 0 && a.inside(a.toks[i], off) {
+	if i >= 0 && a.insideControlled(a.toks[i], off, control) {
 		return items
 	}
 	// prev is the token before the word being typed, if any. capture reports that the word is a
@@ -139,7 +147,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 			prev = i - 1
 		}
 	}
-	if items, found := a.contextualItems(prev, off); found {
+	if items, found := a.contextualItemsControlled(prev, off, control); found {
 		return items
 	}
 	// The punctuation directly before the word (or the cursor).
@@ -159,25 +167,26 @@ func (a *analysis) complete(off int) []CompletionItem {
 	// "$" and "." are trigger characters. In a value expression they start a capture reference
 	// and a field access; elsewhere they are the end-of-line anchor and any character, after which
 	// a completion accepted with Enter would only break the expression.
-	if (capture || adjacent == ".") && !a.inValue(prev) {
+	if (capture || adjacent == ".") && !a.inValueControlled(prev, control) {
 		return items
 	}
 	if capture {
-		return a.captureItems(prev)
+		return a.captureItemsControlled(prev, control)
 	}
-	if value, args := a.attributeArguments(prev); args {
+	if value, args := a.attributeArgumentsControlled(prev, control); args {
 		if !value {
-			return a.ruleItems()
+			return a.ruleItemsControlled(control)
 		}
 		if adjacent == "." {
-			return a.memberItems()
+			return a.memberItemsControlled(control)
 		}
-		return a.valueItems()
+		return a.valueItemsControlled(control)
 	}
 	// st is the keyword of the definition the cursor is in.
-	prev = a.previousSignificantToken(prev)
+	prev = a.previousSignificantTokenControlled(prev, control)
 	st := prev
 	for st >= 0 && !a.isDefKeyword(st) {
+		control.poll()
 		st--
 	}
 	if st < 0 {
@@ -194,30 +203,31 @@ func (a *analysis) complete(off int) []CompletionItem {
 		case pt.Text == "{" || pt.Text == ";":
 			return items // a field name
 		}
-		return append(a.typeItems(false), keywordItems(statementKeywords)...)
+		return append(a.typeItemsControlled(false, control), keywordItems(statementKeywords)...)
 	}
 	// A rule definition's optional type comes before its equals sign.
-	eq := a.ruleBodyStart(st, prev)
+	eq := a.ruleBodyStartControlled(st, prev, control)
 	if eq < 0 {
 		if prev == st+1 {
-			return a.typeItems(false)
+			return a.typeItemsControlled(false, control)
 		}
 		switch pt.Text {
 		case ":", "|", "[]", "*", "(":
-			return a.typeItems(false)
+			return a.typeItemsControlled(false, control)
 		}
 		return items
 	}
-	value, operatorsRule := a.scanBody(eq, prev)
+	value, operatorsRule := a.scanBodyControlled(eq, prev, control)
 	if value {
 		switch pt.Text {
 		case ".":
-			return a.memberItems()
+			return a.memberItemsControlled(control)
 		}
 		items = append(items, builtinFuncItems()...)
-		items = append(items, a.typeItems(true)...)
+		items = append(items, a.typeItemsControlled(true, control)...)
 		items = append(items, keywordItems(termKeywords)...)
-		for _, v := range sortedKeys(a.vars) {
+		for _, v := range sortedKeysControlled(a.vars, control) {
+			control.poll()
 			items = append(items, CompletionItem{Label: v, Kind: completionKindVariable, Detail: "variable"})
 		}
 		return items
@@ -225,7 +235,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 	if pt.Text == "infix" {
 		return keywordItems([]string{"left", "right", "none"})
 	}
-	items = append(items, a.ruleItems()...)
+	items = append(items, a.ruleItemsControlled(control)...)
 	if prev == eq {
 		items = append(items, keywordItems(bodyKeywords)...)
 	}
@@ -238,21 +248,23 @@ func (a *analysis) complete(off int) []CompletionItem {
 // attributeArguments finds the innermost open attribute argument list, including
 // nested groups. Recovery skip arguments contain PEG expressions; other arguments
 // contain value expressions. Comments do not change either context.
-func (a *analysis) attributeArguments(prev int) (value, found bool) {
+func (a *analysis) attributeArgumentsControlled(prev int, control *renderControl) (value, found bool) {
+	control.poll()
 	type context struct {
 		attribute, argument string
 		pragma              bool
 	}
 	var stack []context
 	for j := 0; j <= prev; j++ {
+		control.poll()
 		if a.isDefKeyword(j) {
 			stack = nil
 		}
 		if a.isPunct(j, "(") {
 			c := context{}
-			name := a.previousSignificantToken(j - 1)
+			name := a.previousSignificantTokenControlled(j-1, control)
 			if name >= 0 {
-				at := a.previousSignificantToken(name - 1)
+				at := a.previousSignificantTokenControlled(name-1, control)
 				if at >= 0 && (a.isPunct(at, "@") || a.isPunct(at, "#")) && a.toks[name].Kind == syntax.TokenIdent &&
 					a.toks[at].end == a.toks[name].start && a.toks[name].end == a.toks[j].start {
 					c.attribute = a.toks[name].Text
@@ -263,13 +275,14 @@ func (a *analysis) attributeArguments(prev int) (value, found bool) {
 		} else if a.isPunct(j, ")") && len(stack) > 0 {
 			stack = stack[:len(stack)-1]
 		} else if a.isPunct(j, "=") && len(stack) > 0 && stack[len(stack)-1].attribute != "" {
-			name := a.previousSignificantToken(j - 1)
+			name := a.previousSignificantTokenControlled(j-1, control)
 			if name >= 0 {
 				stack[len(stack)-1].argument = a.toks[name].Text
 			}
 		}
 	}
 	for j := len(stack) - 1; j >= 0; j-- {
+		control.poll()
 		if stack[j].attribute != "" {
 			return !stack[j].pragma || stack[j].attribute != "recover" || stack[j].argument != "skip", true
 		}
@@ -277,10 +290,12 @@ func (a *analysis) attributeArguments(prev int) (value, found bool) {
 	return false, false
 }
 
-func (a *analysis) valueItems() []CompletionItem {
-	items := append(builtinFuncItems(), a.typeItems(true)...)
+func (a *analysis) valueItemsControlled(control *renderControl) []CompletionItem {
+	control.poll()
+	items := append(builtinFuncItems(), a.typeItemsControlled(true, control)...)
 	items = append(items, keywordItems(termKeywords)...)
-	for _, v := range sortedKeys(a.vars) {
+	for _, v := range sortedKeysControlled(a.vars, control) {
+		control.poll()
 		items = append(items, CompletionItem{Label: v, Kind: completionKindVariable, Detail: "variable"})
 	}
 	return items
@@ -288,8 +303,10 @@ func (a *analysis) valueItems() []CompletionItem {
 
 // ruleBodyStart returns the equals sign of the rule whose keyword is token st, if it
 // comes before token prev, or -1.
-func (a *analysis) ruleBodyStart(st, prev int) int {
+func (a *analysis) ruleBodyStartControlled(st, prev int, control *renderControl) int {
+	control.poll()
 	for j := st + 1; j <= prev; j++ {
+		control.poll()
 		if a.isPunct(j, "=") {
 			return j
 		}
@@ -300,9 +317,10 @@ func (a *analysis) ruleBodyStart(st, prev int) int {
 // scanBody scans the tokens of a rule body from its "=" (token eq) to token prev, and reports
 // whether the cursor after prev is in a value expression (an action after "=>", or a predicate
 // in {term}) and whether the declaration is an Operators Rule.
-func (a *analysis) scanBody(eq, prev int) (value, operatorsRule bool) {
-	first := a.significantToken(eq + 1)
-	operatorsRule = a.isIdent(first, "operators") && a.isPunct(a.significantToken(first+1), "{")
+func (a *analysis) scanBodyControlled(eq, prev int, control *renderControl) (value, operatorsRule bool) {
+	control.poll()
+	first := a.significantTokenControlled(eq+1, control)
+	operatorsRule = a.isIdent(first, "operators") && a.isPunct(a.significantTokenControlled(first+1, control), "{")
 	// Each PEG group has its own action context. Closing an inline group or
 	// a predicate restores the enclosing parsing-expression context.
 	type frame struct {
@@ -312,9 +330,10 @@ func (a *analysis) scanBody(eq, prev int) (value, operatorsRule bool) {
 	}
 	stack := []frame{{}}
 	for j := eq + 1; j <= prev; j++ {
+		control.poll()
 		t := a.toks[j]
 		top := &stack[len(stack)-1]
-		previous := a.previousSignificantToken(j - 1)
+		previous := a.previousSignificantTokenControlled(j-1, control)
 		boundary := previous < 0 || a.isPunct(previous, "{") || a.isPunct(previous, ";") || a.toks[previous].End.Line < t.Pos.Line
 		if top.list && boundary {
 			top.value = false
@@ -326,7 +345,7 @@ func (a *analysis) scanBody(eq, prev int) (value, operatorsRule bool) {
 			case "(":
 				stack = append(stack, frame{close: ")", value: top.value})
 			case "{":
-				list := operatorsRule && (previous == first || top.list && (a.isIdent(previous, "level") || a.isIdent(a.previousSignificantToken(previous-1), "level")))
+				list := operatorsRule && (previous == first || top.list && (a.isIdent(previous, "level") || a.isIdent(a.previousSignificantTokenControlled(previous-1, control), "level")))
 				stack = append(stack, frame{close: "}", value: !list, list: list})
 			case "[":
 				stack = append(stack, frame{close: "]", value: top.value})
@@ -350,31 +369,35 @@ func (a *analysis) scanBody(eq, prev int) (value, operatorsRule bool) {
 }
 
 // inValue reports whether the cursor after token prev is in a value expression of a rule body.
-func (a *analysis) inValue(prev int) bool {
-	if value, args := a.attributeArguments(prev); args {
+func (a *analysis) inValueControlled(prev int, control *renderControl) bool {
+	control.poll()
+	if value, args := a.attributeArgumentsControlled(prev, control); args {
 		return value
 	}
 	st := prev
 	for st >= 0 && !a.isDefKeyword(st) {
+		control.poll()
 		st--
 	}
 	if st < 0 || !a.isIdent(st, "rule") {
 		return false
 	}
-	eq := a.ruleBodyStart(st, prev)
+	eq := a.ruleBodyStartControlled(st, prev, control)
 	if eq < 0 {
 		return false
 	}
-	value, _ := a.scanBody(eq, prev)
+	value, _ := a.scanBodyControlled(eq, prev, control)
 	return value
 }
 
 // captureItems returns the capture labels and lambda parameters of the definition that token i
 // is in, for completion after "$".
-func (a *analysis) captureItems(i int) []CompletionItem {
+func (a *analysis) captureItemsControlled(i int, control *renderControl) []CompletionItem {
+	control.poll()
 	items := []CompletionItem{}
 	first := i
 	for first >= 0 && !a.isDefKeyword(first) {
+		control.poll()
 		first--
 	}
 	if first < 0 || !a.isIdent(first, "rule") {
@@ -382,20 +405,22 @@ func (a *analysis) captureItems(i int) []CompletionItem {
 	}
 	seen := map[string]bool{}
 	add := func(name, detail string) {
-		if syntax.IsIdentifier(name) && !seen[name] {
+		if control.isIdentifier(name) && !seen[name] {
 			seen[name] = true
 			items = append(items, CompletionItem{Label: name, Kind: completionKindVariable, Detail: detail})
 		}
 	}
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
+		control.poll()
 		t := a.toks[j]
 		switch {
 		case t.Kind == syntax.TokenIdent && a.isPunct(j+1, ":") && a.toks[j+1].start == t.end &&
-			!(a.isPunct(j-1, "{") && a.inValue(j-1)) && !a.isPunct(j-1, ","):
+			!(a.isPunct(j-1, "{") && a.inValueControlled(j-1, control)) && !a.isPunct(j-1, ","):
 			add(t.Text, "capture") // label:expr (not a constructor field T{...})
 		case a.isPunct(j, "=>") && a.isPunct(j-1, ")"):
 			// The parameters of a lambda: (a, b) =>.
 			for k := j - 2; k > first && !a.isPunct(k, "("); k -= 2 {
+				control.poll()
 				if a.toks[k].Kind == syntax.TokenIdent {
 					add(a.toks[k].Text, "parameter")
 				}
@@ -414,7 +439,8 @@ type declared struct {
 
 // declarations returns the names declared by rule (kind rule) or type (kind type) statements, in
 // source order and without duplicates, including those of definitions with syntax errors.
-func (a *analysis) declarations(kind symKind) []declared {
+func (a *analysis) declarationsControlled(kind symKind, control *renderControl) []declared {
+	control.poll()
 	kw := "rule"
 	if kind == kindType {
 		kw = "type"
@@ -422,16 +448,17 @@ func (a *analysis) declarations(kind symKind) []declared {
 	var out []declared
 	seen := map[string]bool{}
 	for i := 0; i+1 < len(a.toks); i++ {
-		next := a.significantToken(i + 1)
+		control.poll()
+		next := a.significantTokenControlled(i+1, control)
 		if next >= len(a.toks) {
 			continue
 		}
 		n := a.toks[next]
-		if !a.isIdent(i, kw) || !a.declarationStart(i) || n.Kind != syntax.TokenIdent || !syntax.IsIdentifier(n.Text) || n.Pos.Line != a.toks[i].End.Line || seen[n.Text] {
+		if !a.isIdent(i, kw) || !a.declarationStart(i) || n.Kind != syntax.TokenIdent || !control.isIdentifier(n.Text) || n.Pos.Line != a.toks[i].End.Line || seen[n.Text] {
 			continue
 		}
 		d := declared{name: n.Text}
-		spec := a.significantToken(next + 1)
+		spec := a.significantTokenControlled(next+1, control)
 		if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") || a.isPunct(spec, "=") {
 			d.spec = a.toks[spec].Text
 		}
@@ -470,14 +497,17 @@ func builtinFuncItems() []CompletionItem {
 }
 
 // memberItems returns the fields every node has and the fields of the struct types that parse.
-func (a *analysis) memberItems() []CompletionItem {
+func (a *analysis) memberItemsControlled(control *renderControl) []CompletionItem {
+	control.poll()
 	var items []CompletionItem
 	for _, b := range builtinMembers {
+		control.poll()
 		items = append(items, CompletionItem{Label: b.name, Kind: completionKindField, Detail: b.signature,
 			Documentation: &markupContent{Kind: "markdown", Value: b.doc}, SortText: "9" + b.name})
 	}
 	seen := map[string]bool{}
 	for _, d := range a.defs {
+		control.poll()
 		if d.typ == nil {
 			continue
 		}
@@ -486,22 +516,25 @@ func (a *analysis) memberItems() []CompletionItem {
 			continue
 		}
 		for _, f := range st.Fields {
+			control.poll()
 			if !seen[f.Name] {
 				seen[f.Name] = true
 				items = append(items, CompletionItem{Label: f.Name, Kind: completionKindField,
-					Detail: d.name + "." + f.Name + " " + grammar.FormatType(f.Type)})
+					Detail: d.name + "." + f.Name + " " + control.formatType(f.Type)})
 			}
 		}
 	}
 	return items
 }
 
-func (a *analysis) ruleItems() []CompletionItem {
+func (a *analysis) ruleItemsControlled(control *renderControl) []CompletionItem {
+	control.poll()
 	var items []CompletionItem
-	for _, n := range a.declarations(kindRule) {
+	for _, n := range a.declarationsControlled(kindRule, control) {
+		control.poll()
 		it := CompletionItem{Label: n.name, Kind: completionKindFunction}
 		if d := a.rules[n.name]; d != nil {
-			if t, _, ok := a.ruleType(d); ok {
+			if t, _, ok := a.ruleTypeControlled(d, control); ok {
 				it.Detail = t
 			}
 			if d.doc != "" {
@@ -515,9 +548,11 @@ func (a *analysis) ruleItems() []CompletionItem {
 
 // typeItems returns the types declared in the file and the built-in types; with structsOnly, only
 // the struct types (for constructors).
-func (a *analysis) typeItems(structsOnly bool) []CompletionItem {
+func (a *analysis) typeItemsControlled(structsOnly bool, control *renderControl) []CompletionItem {
+	control.poll()
 	var items []CompletionItem
-	for _, n := range a.declarations(kindType) {
+	for _, n := range a.declarationsControlled(kindType, control) {
+		control.poll()
 		if structsOnly && n.spec != "struct" {
 			continue
 		}
@@ -526,7 +561,7 @@ func (a *analysis) typeItems(structsOnly bool) []CompletionItem {
 			it.Kind = completionKindStruct
 		}
 		if d := a.types[n.name]; d != nil {
-			_, it.Detail = typeSymbolKind(d.typ)
+			_, it.Detail = typeSymbolKindControlled(d.typ, control)
 			if d.doc != "" {
 				it.Documentation = &markupContent{Kind: "markdown", Value: d.doc}
 			}
@@ -537,17 +572,20 @@ func (a *analysis) typeItems(structsOnly bool) []CompletionItem {
 		return items
 	}
 	for _, b := range builtinTypes {
+		control.poll()
 		items = append(items, CompletionItem{Label: b.name, Kind: completionKindClass, Detail: "built-in type",
 			Documentation: &markupContent{Kind: "markdown", Value: b.doc}, SortText: "9" + b.name})
 	}
 	return items
 }
 
-func sortedKeys(m map[string]bool) []string {
+func sortedKeysControlled(m map[string]bool, control *renderControl) []string {
+	control.poll()
 	keys := make([]string, 0, len(m))
 	for k := range m {
+		control.poll()
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	control.sortKeys(keys)
 	return keys
 }

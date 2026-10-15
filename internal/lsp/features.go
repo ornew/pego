@@ -169,7 +169,8 @@ func (s *Server) documentHighlight(params json.RawMessage) (any, *rpcError) {
 
 // --- Document symbols ---
 
-func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {
+func (s *Server) documentSymbolControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	var p documentFormattingParams
 	if err := decode(params, &p); err != nil {
 		return nil, err
@@ -178,7 +179,7 @@ func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {
 	if err != nil {
 		return nil, err
 	}
-	syms := d.analysis().symbols()
+	syms := d.analysis().symbolsControlled(control)
 	if s.client.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport {
 		return syms, nil
 	}
@@ -187,6 +188,7 @@ func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {
 	var add func(syms []DocumentSymbol, container string)
 	add = func(syms []DocumentSymbol, container string) {
 		for _, sym := range syms {
+			control.poll()
 			flat = append(flat, symbolInformation{Name: sym.Name, Kind: sym.Kind,
 				Location: Location{URI: d.uri, Range: sym.Range}, ContainerName: container})
 			add(sym.Children, sym.Name)
@@ -196,9 +198,11 @@ func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {
 	return flat, nil
 }
 
-func (a *analysis) symbols() []DocumentSymbol {
+func (a *analysis) symbolsControlled(control *renderControl) []DocumentSymbol {
+	control.poll()
 	syms := []DocumentSymbol{}
 	for _, d := range a.defs {
+		control.poll()
 		sym := DocumentSymbol{
 			Name:           d.name,
 			Range:          a.idx.rangeOf(d.start, d.end),
@@ -206,13 +210,13 @@ func (a *analysis) symbols() []DocumentSymbol {
 		}
 		if d.rule != nil {
 			sym.Kind = symbolKindFunction
-			if t, _, ok := a.ruleType(d); ok {
+			if t, _, ok := a.ruleTypeControlled(d, control); ok {
 				sym.Detail = t
 			}
 		} else {
-			sym.Kind, sym.Detail = typeSymbolKind(d.typ)
+			sym.Kind, sym.Detail = typeSymbolKindControlled(d.typ, control)
 			if st, ok := d.typ.Spec.(*grammar.StructSpec); ok {
-				sym.Children = a.fieldSymbols(d, st)
+				sym.Children = a.fieldSymbolsControlled(d, st, control)
 			}
 		}
 		syms = append(syms, sym)
@@ -220,23 +224,26 @@ func (a *analysis) symbols() []DocumentSymbol {
 	return syms
 }
 
-func typeSymbolKind(td *grammar.TypeDef) (int, string) {
+func typeSymbolKindControlled(td *grammar.TypeDef, control *renderControl) (int, string) {
+	control.poll()
 	switch spec := td.Spec.(type) {
 	case *grammar.StructSpec:
 		return symbolKindStruct, "struct"
 	case *grammar.TerminalSpec:
 		return symbolKindString, "terminal"
 	case *grammar.AliasSpec:
-		return symbolKindInterface, "= " + grammar.FormatType(spec.Type)
+		return symbolKindInterface, "= " + control.formatType(spec.Type)
 	}
 	return symbolKindClass, ""
 }
 
 // fieldSymbols returns the symbols of the fields of the struct type d: each spans from its name to
 // the last token before the next field (or the closing brace).
-func (a *analysis) fieldSymbols(d *definition, st *grammar.StructSpec) []DocumentSymbol {
+func (a *analysis) fieldSymbolsControlled(d *definition, st *grammar.StructSpec, control *renderControl) []DocumentSymbol {
+	control.poll()
 	var out []DocumentSymbol
 	for k, f := range st.Fields {
+		control.poll()
 		i, ok := a.tokenIndex(f.Diagnostic())
 		if !ok {
 			continue
@@ -247,13 +254,14 @@ func (a *analysis) fieldSymbols(d *definition, st *grammar.StructSpec) []Documen
 		}
 		last := i
 		for j := i + 1; j < len(a.toks) && a.toks[j].end < limit; j++ {
+			control.poll()
 			if a.toks[j].Kind != syntax.TokenComment {
 				last = j
 			}
 		}
 		out = append(out, DocumentSymbol{
 			Name:           f.Name,
-			Detail:         grammar.FormatType(f.Type),
+			Detail:         control.formatType(f.Type),
 			Kind:           symbolKindField,
 			Range:          a.idx.rangeOf(a.toks[i].start, a.toks[last].end),
 			SelectionRange: a.idx.rangeOf(a.toks[i].start, a.toks[i].end),
@@ -264,22 +272,24 @@ func (a *analysis) fieldSymbols(d *definition, st *grammar.StructSpec) []Documen
 
 // --- Hover ---
 
-func (s *Server) hover(params json.RawMessage) (any, *rpcError) {
+func (s *Server) hoverControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	d, off, err := s.position(params)
 	if err != nil {
 		return nil, err
 	}
 	a := d.analysis()
-	text, start, end, ok := a.hoverAt(off)
+	text, start, end, ok := a.hoverAtControlled(off, control)
 	if !ok {
 		return nil, nil
 	}
 	r := a.idx.rangeOf(start, end)
-	return hover{Contents: documentation(text, s.client.TextDocument.Hover.ContentFormat), Range: &r}, nil
+	return hover{Contents: documentationControlled(text, s.client.TextDocument.Hover.ContentFormat, control), Range: &r}, nil
 }
 
 // hoverAt returns the hover text for the byte offset off and the span it is about.
-func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
+func (a *analysis) hoverAtControlled(off int, control *renderControl) (text string, start, end int, ok bool) {
+	control.poll()
 	if o, found := a.occurrenceAt(off); found {
 		def := o.def
 		if def == nil {
@@ -287,9 +297,9 @@ func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
 		}
 		switch {
 		case def != nil && def.rule != nil:
-			return a.ruleHover(def), o.start, o.end, true
+			return a.ruleHoverControlled(def, control), o.start, o.end, true
 		case def != nil:
-			return typeHover(def), o.start, o.end, true
+			return typeHoverControlled(def, control), o.start, o.end, true
 		case o.kind == kindType:
 			if b := findBuiltin(builtinTypes, o.name); b != nil {
 				return code("type "+b.name) + "\n" + b.doc, o.start, o.end, true
@@ -324,10 +334,11 @@ func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
 
 func code(s string) string { return "```pego\n" + s + "\n```" }
 
-func (a *analysis) ruleHover(d *definition) string {
+func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) string {
+	control.poll()
 	head := "rule " + d.name
 	var note string
-	switch t, inferred, known := a.ruleType(d); {
+	switch t, inferred, known := a.ruleTypeControlled(d, control); {
 	case !known:
 		note = "The type is inferred when the grammar has no errors."
 	case inferred:
@@ -346,18 +357,19 @@ func (a *analysis) ruleHover(d *definition) string {
 	if d.doc != "" {
 		parts = append(parts, d.doc)
 	}
-	return strings.Join(parts, "\n\n")
+	return control.join(parts, "\n\n")
 }
 
-func typeHover(d *definition) string {
+func typeHoverControlled(d *definition, control *renderControl) string {
+	control.poll()
 	td := *d.typ
 	td.Break = nil // without the comments before it
-	src := strings.TrimSpace(grammar.Format(&grammar.Grammar{Statements: []grammar.Statement{&td}}))
+	src := control.trimSpace(control.formatGrammar(&grammar.Grammar{Statements: []grammar.Statement{&td}}))
 	parts := []string{code(src)}
 	if d.doc != "" {
 		parts = append(parts, d.doc)
 	}
-	return strings.Join(parts, "\n\n")
+	return control.join(parts, "\n\n")
 }
 
 // --- Rename ---
