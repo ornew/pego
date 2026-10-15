@@ -31,7 +31,7 @@ var generatedTraceSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Observability emits opt-in rule tracing for generated Go Node batch parsing.
+	// Observability emits opt-in rule tracing for generated Go batch parsing.
 	Observability bool
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.
@@ -125,8 +125,8 @@ type GenOptions struct {
 // runtime (genrt) behaves exactly like the engine
 // in this package. Stream parsing is not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
-	if opts.Observability && (opts.Types || opts.Document) {
-		return nil, fmt.Errorf("generated observability currently supports Go Node batch parsing only; Types and Document are not supported")
+	if opts.Observability && opts.Document {
+		return nil, fmt.Errorf("generated observability currently supports Go batch parsing only; Document is not supported")
 	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
@@ -257,6 +257,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		}
 		if opts.enableTypedOutputSweep || opts.enableBoundedTypedOutputSweep {
 			rt, err = typedOutputSweepRuntime(rt)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if opts.Observability {
+			rt, err = generatedTypedTraceRuntime(rt)
 			if err != nil {
 				return nil, err
 			}
@@ -607,8 +613,14 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			g.directMethod(r, d, name, "called as by invokePlain", true)
 			return
 		}
+		if g.observability && r.plain {
+			name = g.tracePlainWrapper(r, name)
+		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
 		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n")
+		if g.observability && !r.plain {
+			m.WriteString("p.observation.evaluated()\n")
+		}
 		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 		finish("emptyTFrame")
 		m.WriteString("\t} else {\n\t\tp.pos = start\n\t\tp.recovered = p.recovered[:rec]\n\t}\n\tp.env = prevEnv\n\treturn v, ok\n}\n\n")
@@ -623,7 +635,11 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		return
 	}
 	// u<id>: the call. An unmemoized call of a rule without captures is plain.
-	fmt.Fprintf(m, "// %s, called as by call\nfunc (p *tparser) u%d() (any, bool) {\n", r.name, r.id)
+	name := fmt.Sprintf("u%d", r.id)
+	if g.observability {
+		name = g.traceCallWrapper(r, name, false)
+	}
+	fmt.Fprintf(m, "// %s, called as by call\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
 	if g.directTypedDocument {
 		fmt.Fprintf(m, " if p.typedDocument != nil { return p.documentCall(trules[%d], 0, (*tparser).i%d) }\n", r.id, r.id)
 	}
@@ -644,6 +660,9 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc (p *tparser) i%d() (any, bool) {\n", r.name, r.id)
 	fmt.Fprintf(m, "\tf := p.newFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)\n\tp.frame, p.cut = f, false\n\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n\tstart := p.pos\n\t_ = start\n", len(s.names))
+	if g.observability {
+		m.WriteString("p.observation.evaluated()\n")
+	}
 	fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.frame, p.cut = prevFrame, prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 	finish("f")
 	m.WriteString("\t}\n\tp.env = prevEnv\n\tp.freeFrame(f)\n\treturn v, ok\n}\n\n")

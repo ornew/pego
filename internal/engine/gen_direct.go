@@ -1250,11 +1250,15 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 // directMethod writes the method name that calls the direct rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
 func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain bool) {
-	if g.observability {
+	observeBody := g.observability && g.table == "trules" && !r.plain
+	if g.observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
 	}
 	m := &g.methods
 	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n", r.name, comment, g.recv(), name, g.valType())
+	if observeBody {
+		m.WriteString("p.observation.evaluated()\n")
+	}
 	start, rec := d.start || plain && d.fail, plain && d.fail
 	m.WriteString("\tvar (\n")
 	if start {

@@ -456,13 +456,16 @@ func TestGenObservability(t *testing.T) {
 	if err != nil || !strings.Contains(out, "func WithTrace(") || !strings.Contains(out, "func Recognize(") {
 		t.Fatalf("trace generation: %v\n%s", err, out)
 	}
-	for _, flags := range [][]string{{"-types"}, {"-document"}, {"-lang", "ts"}} {
+	if out, err := runCLI(t, "", "gen", "-g", path, "-pkg", "fixture", "-observability", "-types"); err != nil || !strings.Contains(out, "func ParseAST(") || !strings.Contains(out, "func WithTrace(") {
+		t.Fatalf("typed trace generation: %v\n%s", err, out)
+	}
+	for _, flags := range [][]string{{"-document"}, {"-types", "-document"}, {"-lang", "ts"}} {
 		args := []string{"gen", "-g", path, "-observability"}
 		if flags[0] != "-lang" {
 			args = append(args, "-pkg", "fixture")
 		}
 		args = append(args, flags...)
-		if out, err := runCLI(t, "", args...); err == nil || out != "" || !strings.Contains(err.Error(), "Go Node batch") {
+		if out, err := runCLI(t, "", args...); err == nil || out != "" || !strings.Contains(err.Error(), "Go batch") {
 			t.Fatalf("unsupported combination %v: %v\n%s", flags, err, out)
 		}
 	}

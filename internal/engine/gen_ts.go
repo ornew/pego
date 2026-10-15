@@ -31,7 +31,7 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if opts.Observability {
-		return nil, fmt.Errorf("generated observability currently supports Go Node batch parsing only")
+		return nil, fmt.Errorf("generated observability currently supports Go batch parsing only")
 	}
 	if opts.Document {
 		return nil, fmt.Errorf("Document generation is only supported for Go")

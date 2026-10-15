@@ -273,14 +273,19 @@ The API and callback details are described in the
 and [streaming guide](../docs/guide/streaming.md). The design record specifies
 counter units, fatal cleanup and portability limits.
 
-## Generated Go Node Tracing
+## Generated Go Batch Tracing
 
 Standalone generated Go Node parsers may be generated with tracing enabled by
 `pego.WithGeneratedObservability()` or `pego gen -observability`. This mode
 supports batch `Parse` and `ParseRule`; it also supports `Recognize` when that
-entry point is generated. It cannot be combined with generated types or a
-generated `Document`, and TypeScript generation rejects the option. It does not
-provide profiling.
+entry point is generated. With generated types, it additionally supports
+`ParseAST` and `ParseRuleAST`, for both direct typed execution and Node-conversion
+fallback. Typed events describe rule calls made by the selected route;
+conversion itself is not a rule event, so Node and typed event streams may
+differ. Typed methods use the same event fields, filter, depth, interruption
+and callback-panic behavior as Node batch methods. The option cannot be
+combined with a generated `Document`, and TypeScript generation rejects it. It
+does not provide profiling.
 
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine

@@ -249,6 +249,11 @@ func (t *typedGen) name() {
 	for n := range runtimeNames {
 		used[n] = true
 	}
+	if t.g.observability {
+		for _, name := range []string{"TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth"} {
+			used[name] = true
+		}
+	}
 	if t.g.document {
 		for _, name := range []string{"Document", "NewDocument", "ParseStats"} {
 			used[name] = true

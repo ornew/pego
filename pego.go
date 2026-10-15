@@ -389,9 +389,9 @@ func WithDocument() GenOption {
 	return func(o *engine.GenOptions) { o.Document = true }
 }
 
-// WithGeneratedObservability emits rule tracing in a generated Go Node parser.
-// Trace callbacks are selected per invocation. Typed Go, TypeScript and Document
-// generation are not yet supported with this option.
+// WithGeneratedObservability emits rule tracing in a generated Go parser,
+// including typed entry points when WithTypes is enabled. Trace callbacks are
+// selected per invocation. TypeScript and Document generation are not supported.
 func WithGeneratedObservability() GenOption {
 	return func(o *engine.GenOptions) { o.Observability = true }
 }

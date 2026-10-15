@@ -25,7 +25,10 @@ func TestGeneratedTraceOptions(t *testing.T) {
 			t.Fatalf("ordinary output contains %s", marker)
 		}
 	}
-	for _, opts := range []GenOptions{{Types: true}, {Document: true}} {
+	if _, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true, Observability: true}); err != nil {
+		t.Fatal("typed observability:", err)
+	}
+	for _, opts := range []GenOptions{{Document: true}, {Document: true, Types: true}} {
 		opts.Package, opts.Start, opts.Observability = "fixture", "main", true
 		if _, err := Generate(g, opts); err == nil {
 			t.Fatal("unsupported combination accepted")

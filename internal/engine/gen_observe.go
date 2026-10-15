@@ -41,18 +41,25 @@ if o.trace != nil {
 }
 
 func (g *generator) tracePlainWrapper(r *rule, name string) string {
+	return g.traceCallWrapper(r, name, true)
+}
+
+func (g *generator) traceCallWrapper(r *rule, name string, evaluated bool) string {
 	body := name + "ObservedBody"
+	eval := ""
+	if evaluated {
+		eval = "p.observation.evaluated()\n"
+	}
 	fmt.Fprintf(&g.methods, `// %s observes one actual direct rule call.
-func (p *parser) %s() (*Node, bool) {
+func (p *%s) %s() (%s, bool) {
  if p.observation == nil { return p.%s() }
  p.observation.enter(%q, p.pos, 0)
- p.observation.evaluated()
- v, ok := p.%s()
+ %sv, ok := p.%s()
  p.observation.exit(ok, p.pos)
  return v, ok
 }
 
-`, name, name, body, r.name, body)
+`, name, g.recv(), name, g.valType(), body, r.name, eval, body)
 	return body
 }
 
@@ -113,6 +120,56 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 }
 
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+ if p.observation == nil { return p.invokePlainObservedBody(r, min) }
+ p.observation.enter(r.name, p.pos, min)
+ v, ok := p.invokePlainObservedBody(r, min)
+ p.observation.exit(ok, p.pos)
+ return v, ok
+}
+`
+
+// Typed AST entry points can bypass both the Node runtime and the generic typed
+// call path. The generated s/u entry wrappers cover those calls; runtime hooks
+// account for general calls and memo/growth work without adding another frame.
+func generatedTypedTraceRuntime(rt string) (string, error) {
+	for _, change := range [][2]string{
+		{"p.control = o.control", `p.control = o.control
+if o.trace != nil {
+ p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth}
+ if len(o.traceRules) != 0 {
+  p.observation.rules = make(map[string]bool, len(o.traceRules))
+  for _, name := range o.traceRules { p.observation.rules[name] = true }
+ }
+}`},
+		{"func (p *tparser) call(r *trule, min int)", "func (p *tparser) callObservedBody(r *trule, min int)"},
+		{"return p.invokePlain(r, min)", "return p.invokePlainObservedBody(r, min)"},
+		{"func (p *tparser) invokePlain(r *trule, min int)", "func (p *tparser) invokePlainObservedBody(r *trule, min int)"},
+	} {
+		if strings.Count(rt, change[0]) != 1 {
+			return "", fmt.Errorf("generated typed trace runtime anchor changed: %q", change[0])
+		}
+		rt = strings.Replace(rt, change[0], change[1], 1)
+	}
+	const memo = "\t\tif !e.growing {\n\t\t\tp.mergeExpected"
+	const eval = "v, ok := r.body(p, min)"
+	if strings.Count(rt, memo) != 2 || strings.Count(rt, eval) != 2 {
+		return "", fmt.Errorf("generated typed trace memo/evaluation anchors changed")
+	}
+	rt = strings.ReplaceAll(rt, memo, "\t\tp.observation.memoHit()\n"+memo)
+	rt = strings.ReplaceAll(rt, eval, "p.observation.evaluated()\n"+eval)
+	return rt + generatedTypedTraceWrappers, nil
+}
+
+const generatedTypedTraceWrappers = `
+func (p *tparser) call(r *trule, min int) (any, bool) {
+ if p.observation == nil { return p.callObservedBody(r, min) }
+ p.observation.enter(r.name, p.pos, min)
+ v, ok := p.callObservedBody(r, min)
+ p.observation.exit(ok, p.pos)
+ return v, ok
+}
+
+func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
  if p.observation == nil { return p.invokePlainObservedBody(r, min) }
  p.observation.enter(r.name, p.pos, min)
  v, ok := p.invokePlainObservedBody(r, min)

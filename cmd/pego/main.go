@@ -67,8 +67,8 @@ Commands:
       which returns the result as typed values, are generated too.
       -document adds a Go incremental Document; with -types it also provides
       Document.ParseAST. It cannot be combined with -lang ts.
-      -observability emits opt-in rule tracing for Go Node batch parsing; it
-      cannot be combined with -types, -document or -lang ts.
+      -observability emits opt-in rule tracing for Go batch parsing, including
+      typed entry points; it cannot be combined with -document or -lang ts.
       With -recognize, Recognize (recognize in TypeScript) checks input without
       building a tree.
       -nodoc leaves out the package comment
@@ -524,7 +524,7 @@ func gen(args []string, stdout io.Writer) error {
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
-	observability := fs.Bool("observability", false, "emit opt-in rule tracing for Go Node batch parsing")
+	observability := fs.Bool("observability", false, "emit opt-in rule tracing for Go batch parsing, including typed entry points")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")

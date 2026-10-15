@@ -410,15 +410,16 @@ Profile text prints the root-only total on its own summary line and the inclusiv
 `Profile.Rules` lists the rules in the order they were first called; sort them as you need. Engine tracing works with
 every backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to `NewDocument` traces each
 `Document.Parse`), and several `WithTrace` and `WithProfile` options can be combined. A `Profile` is not safe for
-concurrent parses. Generated Go Node parsers have a separate opt-in trace API described below; it does not provide
-engine tracing or profiling.
+concurrent parses. Generated Go Node and typed parsers have a separate opt-in
+trace API described below; it does not provide engine tracing or profiling.
 
-### Generated Go Node Traces
+### Generated Go Node and Typed Traces
 
-Generate a standalone Go Node parser with tracing hooks using `pego gen -observability`:
+Generate a standalone Go parser with tracing hooks using `pego gen -observability`. Add `-types` to trace typed entry points too:
 
 ```bash
 pego gen -g pairs.pego -pkg pairsparser -observability
+pego gen -g pairs.pego -pkg pairsparser -types -observability
 ```
 
 The generated package provides its own `TraceEvent` and options. Its callbacks
@@ -427,14 +428,14 @@ run synchronously and receive events for actual generated calls:
 ```go
 _, err := pairsparser.Parse(input,
 	pairsparser.WithTrace(func(e pairsparser.TraceEvent) {
-			switch e.Kind {
-			case pairsparser.TraceEnter:
-				fmt.Printf("enter %s depth=%d pos=%d\n", e.Rule, e.Depth, e.Pos)
-			case pairsparser.TraceExit:
-				fmt.Printf("exit %s matched=%t end=%d\n", e.Rule, e.Matched, e.End)
-			case pairsparser.TraceSkipped:
-				fmt.Printf("skip %s at %d (%s)\n", e.Rule, e.Pos, e.SkipReason)
-			}
+		switch e.Kind {
+		case pairsparser.TraceEnter:
+			fmt.Printf("enter %s depth=%d pos=%d\n", e.Rule, e.Depth, e.Pos)
+		case pairsparser.TraceExit:
+			fmt.Printf("exit %s matched=%t end=%d\n", e.Rule, e.Matched, e.End)
+		case pairsparser.TraceSkipped:
+			fmt.Printf("skip %s at %d (%s)\n", e.Rule, e.Pos, e.SkipReason)
+		}
 	}),
 	pairsparser.WithTraceFilter("pair"),
 	pairsparser.WithTraceMaxDepth(4),
@@ -450,13 +451,33 @@ reports only first-character dispatch skips whose target can be identified.
 input range. An aborted parse may omit exit events. Callback panics propagate
 unchanged after cleanup.
 
-This generation mode currently supports only Go Node batch `Parse`, `ParseRule`
-and, when generated with `-recognize`, `Recognize`. It cannot be combined with
-`-types` or `-document`, and TypeScript generation rejects it. It does not add
-profiling or promise event-for-event equivalence with engine traces. See
+With `-types`, `ParseAST` and `ParseRuleAST` accept the same trace options. This
+applies to both direct typed execution and Node-conversion fallback. Events
+describe the rule calls made by the selected path; typed conversion itself is
+not a separate rule event. The Node and typed traces can therefore differ.
+
+For example, the same callback can observe typed parsing:
+
+```go
+_, err := pairsparser.ParseAST(input,
+	pairsparser.WithTrace(func(e pairsparser.TraceEvent) {
+		fmt.Printf("%v %s depth=%d pos=%d\n", e.Kind, e.Rule, e.Depth, e.Pos)
+	}),
+)
+```
+
+This generation mode supports Go Node batch `Parse`, `ParseRule` and, when
+generated with `-recognize`, `Recognize`; with `-types`, it also supports
+`ParseAST` and `ParseRuleAST`. It cannot be combined with `-document`, and
+TypeScript generation rejects it. It does not add profiling or promise
+event-for-event equivalence with engine traces. See
 [code generation](code-generation.md#the-pego-gen-command) for the generation
-option. Enabling the mode adds runtime overhead even when the callback is
-omitted; see [the measured scope](../design/043-generated-parser-observability.md#performance-and-results).
+option. Focused synthetic measurements cover both Node and typed batch
+parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
+counts; callback cost depends on parser path and workload, and the measured
+callbacks store scalar event fields rather than logging. These are not
+workload-wide estimates. See
+[design 043](../design/043-generated-parser-observability.md#performance-and-results).
 
 ## 7. Costs and Limits
 
