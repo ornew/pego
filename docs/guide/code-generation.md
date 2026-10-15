@@ -27,7 +27,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](#recognition--recognize) |
-| Streaming, incremental, backends | Yes | Incremental Node `Document` with `-document`; no streaming or backend choice (see [what is supported](#what-is-supported)) |
+| Streaming, incremental, backends | Yes | Go Node `Document` with `-document`; `-types` adds per-call `ParseAST` conversion. No streaming or backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
 dependency on PEGO at run time. Use the engine when the grammar is data or when you need streaming. For incremental
@@ -170,7 +170,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of the generated `Parse` function |
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
-| `-document` | off | Also generate the Go incremental Node `Document` API (see [incremental documents](#incremental-documents--document)); cannot be combined with `-types` or `-lang ts` |
+| `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](#incremental-documents--document)); cannot be combined with `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
@@ -472,8 +472,14 @@ values such as maps remain shared. `ParseStats` has `Evaluated` and `Reused` fie
 
 This first generated implementation retains memo entries wholly before an edit and discards the suffix, rather
 than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
-length. The generated batch functions remain available. `-document` cannot be combined with `-types` or
+length. The generated batch functions remain available. `-document` can be combined with `-types`: this adds
+`Document.ParseAST`, which parses through the Node Document and converts the final result on each call. Typed
+values belong to that call, while CST `Node` members may share the mutable Document graph. Parsing and conversion
+share one work budget; interruption during conversion returns the result type's zero value and clears reusable state so a
+later call can retry. This is not direct typed incremental matching. `-document` cannot be combined with
 `-lang ts`; generated streams and engine-only Document controls such as `EditBatch` are separate work.
+The conversion visits the completed result on each call, so typed `Document.ParseAST` can cost more than direct
+batch `ParseAST` for simple grammars even when parsing reuses memo entries. See the [focused measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
 
 ## Recognition (`-recognize`)
 
@@ -578,7 +584,7 @@ generator rejects grammars that use it. See the [pragma specification](../../spe
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
 | `#stream` and `ParseStream` | Yes | **No**: `#stream` is generated as an ordinary repetition, and there is no `ParseStream` |
-| `Document` (incremental parsing) | Yes | Go Node only, with `-document`; typed Go and TypeScript are deferred |
+| `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds per-call `Document.ParseAST` conversion. Direct typed matching and TypeScript are deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
 | Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | Go: same package-local options |

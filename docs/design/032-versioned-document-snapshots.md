@@ -377,8 +377,9 @@ in [optimization 099](../optimizations/099-share-document-snapshot-child-runs.md
 ### Compatibility and Implementation Sequence
 
 Core Closure, Bytecode, and BytecodeIterative Documents are the initial scope,
-including AST-omitted compiled grammars on available bytecode backends. Generated
-Go/typed Go and TypeScript retain their current lack of Document support. Stream
+including AST-omitted compiled grammars on available bytecode backends. The
+generated Go Document has no snapshot API, whether used for Node parsing or
+per-call typed conversion; TypeScript generation has no Document API. Stream
 and recognition-only rejection remains unchanged. Public Node JSON and saved
 module formats remain unchanged; snapshot handles introduce no serialized format.
 

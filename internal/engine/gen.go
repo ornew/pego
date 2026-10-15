@@ -28,7 +28,8 @@ var documentSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Document includes the generated Go Node Document runner.
+	// Document includes the generated Go Document runner, with typed conversion
+	// when Types is enabled.
 	Document bool
 	// referenceWorkControls emits a generation-time disabled control for tests.
 	referenceWorkControls bool
@@ -117,9 +118,6 @@ type GenOptions struct {
 // runtime (genrt) behaves exactly like the engine
 // in this package. Stream parsing is not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
-	if opts.Document && opts.Types {
-		return nil, fmt.Errorf("Document generation cannot be combined with typed generation")
-	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
 	}

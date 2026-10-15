@@ -83,6 +83,11 @@ exports grammar declarations and configured-start `parseAST` conversion ([guide]
 [design 030](design/030-typed-typescript-values.md)). Generated paths preserve the engine's tree, error, depth,
 action and memo semantics.
 
+Generated Go `-document` can be combined with `-types`; it adds `Document.ParseAST`, which converts the completed
+Node result per invocation. This is not direct typed incremental matching, and CST Node members may share the
+mutable Document graph. See the [incremental parsing guide](guide/incremental.md) and
+[design 044](design/044-generated-incremental-and-stream-parsers.md).
+
 Generated Go typed-output cleanup has private full-sweep and bounded generation controls, both disabled by default. They cover typed `ParseAST`/`ParseRuleAST` publication, including conversion and returned `Match` values; Node parsing, recognition and TypeScript are unchanged. Unknown ownership falls back to keeping all cells. See [design 034](design/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
 
 ## Testing

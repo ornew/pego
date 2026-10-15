@@ -85,6 +85,30 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 
 `, doc, t.goType(st), t.goType(st), newConv, returnResult, start.id)
 	}
+	if g.document {
+		// A Document reuses Node results. Convert only the finalized result, with
+		// the same invocation controller and cleanup boundary as its Node parse.
+		needNodes = true
+		result := t.conv(st, "n")
+		newConv := ""
+		if strings.Contains(result, "a.") {
+			newConv = "\t\ta := &astConv{control: c}\n"
+		}
+		returnResult := "\t\treturn " + result + "\n"
+		if (g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep) && newConv != "" {
+			returnResult = "\t\tres := " + result + "\n\t\ta.publish(res, parseErr)\n\t\treturn res\n"
+		}
+		fmt.Fprintf(&entries, `// ParseAST converts the current Document result to typed values. Typed values
+// belong to this call; CST Node members may still share the Document's Node graph.
+func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
+ o, err := d.resolveParseOptions(opts)
+ if err != nil { var zero %s; return zero, err }
+ return documentParseConverted(d.state, o, func(n *Node, c *workControl, parseErr error) %s {
+%s%s })
+}
+
+`, t.goType(st), t.goType(st), t.goType(st), newConv, returnResult)
+	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
 	for _, r := range g.prog.rules {
@@ -204,6 +228,11 @@ func (t *typedGen) name() {
 	used := map[string]bool{}
 	for n := range runtimeNames {
 		used[n] = true
+	}
+	if t.g.document {
+		for _, name := range []string{"Document", "NewDocument", "ParseStats"} {
+			used[name] = true
+		}
 	}
 	var all []string
 	for name := range t.g.prog.types {

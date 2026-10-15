@@ -164,8 +164,9 @@ func TestGenerateDocumentCombinations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Document: true, Types: true}); err == nil {
-		t.Fatal("typed Document generation was accepted")
+	typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
+	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
+		t.Fatalf("typed Document generation: %v", err)
 	}
 	if _, err := GenerateTS(g, GenOptions{Start: "main", Document: true}); err == nil {
 		t.Fatal("TypeScript Document generation was accepted")

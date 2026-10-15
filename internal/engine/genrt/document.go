@@ -49,20 +49,28 @@ func (d *Document) Edit(start, end int, text string) error {
 // Parse parses the current text, applying invocation options after the
 // Document's construction defaults. An invocation cannot change its unit.
 func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
+	o, err := d.resolveParseOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	return d.state.parse(o)
+}
+
+func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error) {
 	o := d.defaults
 	for _, opt := range opts {
 		opt(&o)
 	}
 	if o.maxDepth < 0 {
-		return nil, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
+		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
 	}
 	if o.maxDepth == 0 {
 		o.maxDepth = defaultMaxDepth
 	}
 	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
-		return nil, fmt.Errorf("work controls are disabled in this generated reference parser")
+		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
 	}
-	return d.state.parse(o)
+	return o, nil
 }
 
 // Stats returns the evaluation and reuse counts of the last Parse.
@@ -253,13 +261,19 @@ func documentByteBoundary(text string, pos int) error {
 // parse retains completed memo entries after ordinary syntax failures. A
 // panic or work interruption discards all entries because they may depend on
 // unfinished left-recursion growth or partially evaluated actions.
-func (d *documentState) parse(o parseOptions) (n *Node, err error) {
-	defer recoverParse(&n, &err)
+func (d *documentState) parse(o parseOptions) (*Node, error) {
+	return documentParseConverted(d, o, func(n *Node, _ *workControl, _ error) *Node { return n })
+}
+
+// documentParseConverted keeps Node parsing and final typed conversion inside
+// the same work-controlled invocation and memo cleanup boundary.
+func documentParseConverted[T any](d *documentState, o parseOptions, convert func(*Node, *workControl, error) T) (res T, err error) {
+	defer recoverParse(&res, &err)
 	if o.unit != d.unit {
-		return nil, fmt.Errorf("document parse cannot change unit")
+		return res, fmt.Errorf("document parse cannot change unit")
 	}
 	if d.root == nil {
-		return nil, fmt.Errorf("document start rule is missing")
+		return res, fmt.Errorf("document start rule is missing")
 	}
 	o = prepareOptions(o)
 	p := &parser{unit: d.unit, maxDepth: o.maxDepth, control: o.control}
@@ -280,14 +294,19 @@ func (d *documentState) parse(o parseOptions) (n *Node, err error) {
 	p.control.check()
 	v, ok := p.call(d.root, 0)
 	p.control.check()
+	var n *Node
 	if ok && p.pos == p.n {
+		n = v
 		if len(p.recovered) > 0 {
-			return v, SyntaxErrors(p.recovered)
+			err = SyntaxErrors(p.recovered)
 		}
-		return v, nil
+	} else {
+		if ok {
+			p.expect(p.pos, idEndInput)
+		}
+		err = p.makeError(p.farthest, p.exp[p.expBase:])
 	}
-	if ok {
-		p.expect(p.pos, idEndInput)
-	}
-	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+	res = convert(n, o.control, err)
+	p.control.check()
+	return res, err
 }

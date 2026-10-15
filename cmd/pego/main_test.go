@@ -250,7 +250,8 @@ func TestGenDocument(t *testing.T) {
 	if err != nil || !strings.Contains(out, "func NewDocument(") {
 		t.Fatalf("-document: missing constructor: %v", err)
 	}
-	if _, err := runCLI(t, "", "gen", "-g", g, "-pkg", "node", "-document", "-types"); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+	typed, err := runCLI(t, "", "gen", "-g", g, "-pkg", "node", "-document", "-types")
+	if err != nil || !strings.Contains(typed, "func (d *Document) ParseAST(") {
 		t.Fatalf("-document -types: %v", err)
 	}
 	if _, err := runCLI(t, "", "gen", "-lang", "ts", "-g", g, "-document"); err == nil || !strings.Contains(err.Error(), "-document") {

@@ -1,23 +1,22 @@
 # 044. Standalone Generated Document and Stream Parsers
 
-- **Status**: Proposed
+- **Status**: Partially Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
 This design covers incremental Documents and committed stream parsing in standalone Go and TypeScript parsers.
-The initial implementation provides an opt-in generated Go Node `Document` with conservative prefix memo reuse; ordinary
-batch parsing remains available and unchanged by default. The overall design remains proposed: typed Documents,
-repetition resumption, Reader streams and TypeScript Documents/streams are not part of the current implementation.
-The sections below distinguish the current Go Node API from those future proposals.
+The opt-in generated Go `Document` supports Node parsing and, with typed generation, a `ParseAST` conversion of
+each completed Node result. Ordinary batch parsing remains available and unchanged by default. Direct typed
+incremental matching, repetition resumption, Reader streams and TypeScript Documents/streams are not implemented.
 
 ## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../internal/engine/document.go),
 [resume.go](../../internal/engine/resume.go), and [stream pragma](../../spec/pragmas.md#stream) define the
-engine reference. The current generated Go path supports only the Node `Document` described below; it does not
-generate typed Documents or streams. Generated TS still uses synchronous recursive expression functions
+engine reference. The current generated Go path supports a Node `Document` and an optional typed `ParseAST`
+conversion; it does not generate streams. Generated TS still uses synchronous recursive expression functions
 ([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and
 memo across calls alone does not implement edit invalidation or suspension.
 
@@ -28,10 +27,11 @@ TS VM, immutable snapshots, a new text-storage algorithm, or recognition on Docu
 
 ## Current and Proposed APIs
 
-The current Go Node Document is opt-in through `pego.WithDocument()` or the `-document` CLI option. It selects the
-configured start rule and is incompatible with typed Go (`-types`) and TypeScript generation. Existing generation
-without `WithDocument`/`-document` retains the batch source path. A generated `Document` is a mutable Node parse
-view, not an immutable snapshot or a typed result.
+The current Go Document is opt-in through `pego.WithDocument()` or the `-document` CLI option. It selects the
+configured start rule and can be combined with typed Go generation (`-types`), but not TypeScript generation.
+With types enabled, `Document.ParseAST` converts the completed Node result for each invocation; it is not direct
+typed incremental matching. Existing generation without `WithDocument`/`-document` retains the batch source path.
+A generated `Document` is a mutable parse view, not an immutable snapshot.
 
 The remaining generation options and APIs in this section are proposals. `pego.WithStream()` and `-stream` would
 generate stream machinery only when the configured start rule has a legal `#stream` repetition; in batch mode,
@@ -45,6 +45,8 @@ func NewDocument(text string, opts ...ParseOption) (*Document, error)
 func (d *Document) Text() string
 func (d *Document) Edit(start, end int, text string) error
 func (d *Document) Parse(opts ...ParseOption) (*Node, error)
+// Generated only with WithTypes / -types.
+func (d *Document) ParseAST(opts ...ParseOption) (StartValue, error)
 func (d *Document) Stats() ParseStats
 ```
 
@@ -64,11 +66,11 @@ preserves internal shared identities; it is not an immutable snapshot API and do
 values immutable.
 Text and diagnostic strings already handed out remain owned data, independent of discarded parser scratch.
 
-Typed Document parsing is not available in the current generator. A future `ParseAST` could convert the final Node
-result once, but its ownership contract must account for CST Node members that still reference the mutable
-Document graph. Preserve aliases that the existing converter preserves and never return storage later cleared for
-parser pooling. Pure typed incremental parsing remains deferred until ownership and invalidation can support public
-typed spans and position-valued fields safely; `WithTypes` alone must not imply an immutable snapshot.
+`ParseAST` parses through the Node Document path and converts the final result on each call. The returned typed
+values are owned by that invocation, while CST `Node` members may share the mutable Document graph; clone such
+members when they must be detached. Parsing and conversion use the same invocation work controller. If conversion
+is interrupted, the method returns the typed result's zero value and clears reusable state so a later call can retry.
+Direct typed incremental matching remains deferred; `WithTypes` does not make the Document immutable.
 
 ### Go Reader Streams and Typed Elements
 
@@ -168,7 +170,7 @@ values; no pooled parser or conversion arena is shared between concurrent invoca
 | --- | --- |
 | Closure and both engine VMs | Existing Document/Reader stream oracle; both position units |
 | Generated Go Node | Current opt-in prefix-memo Document; Reader streams remain proposed |
-| Generated typed Go | Typed Documents and per-element stream conversion remain proposed; direct path later |
+| Generated typed Go | `Document.ParseAST` converts the completed Node result; direct typed incremental matching and stream conversion remain proposed |
 | Generated TS Node/typed conversion | Documents and streams remain proposed; streams require continuation lowering |
 | Recognition | Continue rejecting Document/stream mode; batch recognition is unaffected |
 
@@ -179,8 +181,9 @@ unimplemented generation/backend combination fail explicitly, rather than silent
 Reserve the new exported type/value names in deterministic order and document resulting underscore migrations
 for colliding grammar declarations; generating helper methods must not alter existing handwritten types silently.
 
-The current candidate adds the generated Go Node Document with prefix-only memo reuse. Remaining work includes
-typed conversion, Reader streams, TS Documents, and TS push continuations. Snapshot/versioned-tree work is a
+The current implementation adds the generated Go Node Document with prefix-only memo reuse and per-call typed
+conversion through `ParseAST`. Remaining work includes direct typed incremental matching, Reader streams, TS Documents,
+and TS push continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
 Cancellation/work budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
@@ -227,3 +230,32 @@ and 631,864 vs 1,419,394 ns (4,096, Bytes). At 4,096 records, Document/fresh par
 2,488,807 B/op in CodePoints and 1,359,680/2,488,505 B/op in Bytes. The candidate edit path scans and copies
 the reusable memo prefix and discards the suffix. These synthetic measurements do not establish workload-wide
 gains.
+
+### Local Measurements for Typed Go Document Conversion
+
+The typed Document slice was measured against main `dd19e0f` on an Apple M3 Max (darwin/arm64), Go 1.27.1,
+`GOMAXPROCS=1`, `GOGC=100`, and `GOMEMLIMIT=off`. Three alternating 200 ms main/candidate pairs on the existing
+Node fixture found median candidate/main ratios of 0.984–1.003 across fresh batch and near-EOF `Edit+Parse`
+cases in both units; paired ranges were 0.975–1.025. Allocations per operation were unchanged and bytes per
+operation differed by at most two bytes. This supports no measurable Node-path regression on that fixture.
+
+The new [typed benchmark fixture](../../internal/engine/testdata/generated_document_bench/typed_bench_test.go)
+uses 256 or 4,096 records of `é😀=123;`. Five 200 ms samples of the same generated revision measured direct
+typed `ParseAST`, a warm `Document.ParseAST` without an edit, and near-EOF `Edit+Document.ParseAST`. The edit
+benchmark includes the edit and conversion; direct inputs are prebuilt. Values were compared against a fresh
+typed parse before timing.
+
+| Records | Unit | Direct `ParseAST` | Warm Document | Edit + Document | Direct / warm / edit B/op |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 256 | CodePoints | 39,127 ns/op | 70,693 ns/op | 154,353 ns/op | 70,115 / 139,248 / 312,864 |
+| 256 | Bytes | 41,075 ns/op | 64,917 ns/op | 152,218 ns/op | 70,115 / 122,864 / 329,248 |
+| 4,096 | CodePoints | 654,560 ns/op | 1,342,077 ns/op | 2,042,025 ns/op | 825,602 / 1,770,658 / 3,148,528 |
+| 4,096 | Bytes | 721,575 ns/op | 1,205,629 ns/op | 2,001,884 ns/op | 825,605 / 1,533,088 / 3,435,248 |
+
+The current implementation converts the full finalized Node graph on every call, so memo reuse does not imply
+typed-output reuse. On this simple grammar, direct typed batch parsing is faster even after a near-EOF edit.
+For the 4,096-record Bytes batch case, enabling Document generation on the same source also measured 1.03–1.14×
+the generation-disabled direct path across ten paired 300 ms runs, despite identical per-operation allocations;
+the cause of this timing difference has not been isolated. These measurements do not
+establish behavior for expensive grammars or typical editor workloads. Direct typed incremental matching remains
+a separate performance stage.

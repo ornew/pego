@@ -36,7 +36,28 @@ rule record = k:"é" ":" v:("0" / "1") ";"`)
 			t.Fatal(err)
 		}
 	}
-	for _, name := range []string{"batch_bench_test.go", "generateddocument/document_bench_test.go"} {
+	typedGrammar, err := syntax.Parse(`type Item struct { Key Match; Value Match; N int; S string; B bool }
+rule main []Item = item*
+rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, variant := range []struct {
+		name     string
+		document bool
+	}{
+		{"typedbatch", false},
+		{"typeddocument", true},
+	} {
+		code, err := Generate(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := writeGeneratedDocumentBenchmarkFile(dir, filepath.Join(variant.name, "parser.go"), code); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"batch_bench_test.go", "typed_bench_test.go", "generateddocument/document_bench_test.go"} {
 		source, err := os.ReadFile(filepath.Join("testdata", "generated_document_bench", name))
 		if err != nil {
 			t.Fatal(err)
