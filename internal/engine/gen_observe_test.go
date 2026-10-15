@@ -30,8 +30,8 @@ func TestGeneratedTraceOptions(t *testing.T) {
 	}
 	for _, opts := range []GenOptions{{Document: true}, {Document: true, Types: true}} {
 		opts.Package, opts.Start, opts.Observability = "fixture", "main", true
-		if _, err := Generate(g, opts); err == nil {
-			t.Fatal("unsupported combination accepted")
+		if _, err := Generate(g, opts); err != nil {
+			t.Fatal("Document observability:", err)
 		}
 	}
 	if code, err := GenerateTS(g, GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {

@@ -468,8 +468,8 @@ func TestGenObservability(t *testing.T) {
 			args = append(args, "-pkg", "fixture")
 		}
 		args = append(args, flags...)
-		if out, err := runCLI(t, "", args...); err == nil || out != "" || !strings.Contains(err.Error(), "Go batch") {
-			t.Fatalf("unsupported combination %v: %v\n%s", flags, err, out)
+		if out, err := runCLI(t, "", args...); err != nil || !strings.Contains(out, "func NewDocument(") || !strings.Contains(out, "func WithProfile(") {
+			t.Fatalf("Document observation combination %v: %v\n%s", flags, err, out)
 		}
 	}
 }

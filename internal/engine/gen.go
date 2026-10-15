@@ -34,8 +34,8 @@ var generatedProfileSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Observability emits opt-in tracing for Go and TypeScript batch parsing,
-	// and profiling for Go batch parsing.
+	// Observability emits opt-in tracing and profiling for generated Go batch
+	// and Document parsing, and for TypeScript batch parsing.
 	Observability bool
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.
@@ -129,9 +129,6 @@ type GenOptions struct {
 // runtime (genrt) behaves exactly like the engine
 // in this package. Stream parsing is not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
-	if opts.Observability && opts.Document {
-		return nil, fmt.Errorf("generated observability currently supports Go batch parsing only; Document is not supported")
-	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
 	}
@@ -213,6 +210,12 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString(work)
 	if opts.Document {
 		doc := documentSource[strings.Index(documentSource, "\n)\n")+len("\n)\n"):]
+		if opts.Observability {
+			doc, err = generatedDocumentTraceRuntime(doc)
+			if err != nil {
+				return nil, err
+			}
+		}
 		out.WriteString("\n// --- Incremental Node document ---\n")
 		out.WriteString(doc)
 	}
@@ -619,12 +622,12 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			g.directMethod(r, d, name, "called as by invokePlain", true)
 			return
 		}
-		if g.observability && r.plain {
+		if g.observability && r.plain && !g.directTypedDocument {
 			name = g.tracePlainWrapper(r, name)
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
 		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n")
-		if g.observability && !r.plain {
+		if g.observability && (!r.plain || g.directTypedDocument) {
 			m.WriteString("p.observation.evaluated()\n")
 		}
 		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
@@ -633,7 +636,11 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	}
 	if r.plain {
 		if g.directTypedDocument {
-			fmt.Fprintf(m, "func (p *tparser) s%d() (any, bool) {\n if p.typedDocument != nil { return p.documentCall(trules[%d], 0, (*tparser).ds%d) }; return p.ds%d()\n}\n", r.id, r.id, r.id, r.id)
+			name := fmt.Sprintf("s%d", r.id)
+			if g.observability {
+				name = g.traceCallWrapper(r, name, false)
+			}
+			fmt.Fprintf(m, "func (p *tparser) %s() (any, bool) {\n if p.typedDocument != nil { return p.documentCall(trules[%d], 0, (*tparser).ds%d) }; return p.ds%d()\n}\n", name, r.id, r.id, r.id)
 			plain(fmt.Sprintf("ds%d", r.id))
 			return
 		}

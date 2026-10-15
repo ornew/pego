@@ -66,6 +66,24 @@ before execution admission preserves the valid memo and the last published
 `Stats`. Once execution starts, an interruption clears the execution memo for
 a safe retry.
 
+With `-observability`, constructor `WithTrace` and `WithProfile` options are
+retained as defaults for later `Parse` and `ParseAST` calls; construction itself
+emits no parser events or profile counts. Per-call options override those
+defaults for that invocation only. `Edit` does not parse and emits no rule
+events. Events describe calls made during the current invocation. A memoized
+whole-call reuse reports that call as a memo hit (`Memo=true`, `Evals=0`)
+without replaying nested events from an earlier parse. Node parsing, direct
+typed matching, and Node-conversion fallback report their actual parser calls;
+conversion does not add a rule event. After a completed parse, the invocation's
+increases in profile `Evals` and `MemoHits` match `Document.Stats().Evaluated`
+and `.Reused`, respectively. `Stats` has no call counter. An interrupted parse
+can leave statistics for calls that began but did not complete. Examined-input
+metrics remain unavailable. Temporary per-invocation observer and profile
+state is released after return or panic, while constructor defaults remain for
+later calls. Callbacks MUST NOT invoke `Parse`, `ParseAST`, or `Edit` on the same
+Document. Callers can schedule later work or use another Document. Whether the
+runtime detects and rejects same-Document re-entry remains unresolved.
+
 Edit replaces [start,end), rejecting invalid range or byte character boundaries before modifying text or memo.
 Invalid UTF-8 bytes are individual characters, as in the engine; an edit can join bytes into a valid sequence.
 Document is not safe for concurrent use. A later Parse may reuse Node pointers held in memo entries retained before

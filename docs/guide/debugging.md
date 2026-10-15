@@ -469,8 +469,9 @@ _, err := pairsparser.ParseAST(input,
 
 This Go mode supports Node batch `Parse`, `ParseRule` and, when generated
 with `-recognize`, `Recognize`; with `-types`, it also supports `ParseAST` and
-`ParseRuleAST`. It cannot be combined with `-document`. Generated Go traces
-also report their generated execution strategy rather than promise
+`ParseRuleAST`. It can be combined with `-document`; see [Tracing and Profiling
+Generated Go Documents](#tracing-and-profiling-generated-go-documents). Generated Go
+traces also report their generated execution strategy rather than promise
 event-for-event equivalence with engine traces. Generated TypeScript traces
 and profiles have their own contracts and do not promise event-for-event
 equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)
@@ -483,9 +484,10 @@ workload-wide estimates. See
 
 #### Profiling Generated Go Batch Parsers
 
-With `-observability`, generated Go Node and typed batch packages also expose
-`Profile` and `WithProfile`. Use a zero-value profile to collect several parses,
-then take an owned, deterministic snapshot:
+With `-observability`, generated Go Node, typed batch and Document packages
+expose `Profile` and `WithProfile`. Use a zero-value profile to collect several
+parses, then take an owned, deterministic snapshot. For Document usage, see
+[Tracing and Profiling Generated Go Documents](#tracing-and-profiling-generated-go-documents).
 
 ```go
 var profile pairsparser.Profile
@@ -518,6 +520,54 @@ current generator without a profile was near parity with the prior
 trace-only generator. These are noisy, workload-specific comparisons, not a
 general estimate; see [design 043](../design/043-generated-parser-observability.md#generated-go-profile-measurements).
 TypeScript batch profiling has its own `Profile` API, described below.
+
+#### Tracing and Profiling Generated Go Documents
+
+Generate the Go Document with observability enabled:
+
+```bash
+pego gen -g pairs.pego -pkg pairsparser -document -observability
+```
+
+Constructor trace and profile options are defaults for later parses. They do
+not run during construction, and an option passed to `Parse` overrides that
+call only. Editing does not parse or emit events.
+
+```go
+var profile pairsparser.Profile
+doc, err := pairsparser.NewDocument(input,
+	pairsparser.WithTrace(func(e pairsparser.TraceEvent) {
+		fmt.Printf("%v %s depth=%d pos=%d memo=%t evals=%d\n",
+			e.Kind, e.Rule, e.Depth, e.Pos, e.Memo, e.Evals)
+	}),
+	pairsparser.WithProfile(&profile),
+)
+if err != nil {
+	log.Fatal(err)
+}
+node, err := doc.Parse()
+if err != nil {
+	log.Fatal(err)
+}
+_ = node
+_ = profile.Snapshot()
+```
+
+The trace reports calls made during each parse. A warm memoized call is
+reported as a memo hit (`Memo=true`, `Evals=0`); its earlier nested calls are
+not replayed. Direct typed parsing and Node-conversion fallback report their
+actual parser calls, without a separate conversion event. For completed parses,
+the invocation's increases in profile `Evals` and `MemoHits` match
+`doc.Stats().Evaluated` and `.Reused`, respectively; an interrupted parse can
+include calls that began but did not complete. Examined-input ranges are not
+available. Generated Documents do not resume repetition bodies, so there is no
+`ReusedElements` count.
+
+Do not call `Parse`, `ParseAST` or `Edit` on the same Document from its trace
+callback. Schedule that work after the current call or use another Document.
+Whether the runtime rejects same-Document re-entry is not specified yet.
+Per-call overrides do not change the constructor defaults, and temporary
+observer/profile state is released when a parse returns or panics.
 
 ### Generated TypeScript Traces
 

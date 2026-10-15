@@ -787,6 +787,7 @@ Limits to keep in mind:
   smaller [`-document` API](code-generation.md#incremental-documents--document); `-types` adds
   `Document.ParseAST`, with direct matching for grammars eligible for batch typed parsing and Node conversion
   otherwise. It does not include the history, batch-edit or snapshot APIs described above.
+- With `-observability`, generated Go Documents can trace and profile each `Parse` or `ParseAST` invocation. Constructor options are retained defaults; per-call options override only that invocation. Events report actual calls, including a memo hit without replaying nested calls, and per-invocation profile increases in `Evals` and `MemoHits` match `Stats().Evaluated` and `.Reused` after completed parses. Same-Document operations from a callback are unsupported; see [generated Document tracing](debugging.md#tracing-and-profiling-generated-go-documents).
 - A `Document` is single-threaded. Parse in the goroutine that owns it.
 
 ## Recipe: An Editor Loop

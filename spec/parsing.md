@@ -283,10 +283,9 @@ entry point is generated. With generated types, it additionally supports
 fallback. Typed events describe rule calls made by the selected route;
 conversion itself is not a rule event, so Node and typed event streams may
 differ. Typed methods use the same event fields, filter, depth, interruption
-and callback-panic behavior as Node batch methods. The option cannot be
-combined with a generated `Document`. Generated Go Node and typed batch
-parsers also provide profiling through `WithProfile`; TypeScript batch parsers
-provide profiling through `Profile` in per-call options.
+and callback-panic behavior as Node batch methods. Generated Go Node and typed
+batch parsers also provide profiling through `WithProfile`; TypeScript batch
+parsers provide profiling through `Profile` in per-call options.
 
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine
@@ -349,6 +348,33 @@ completed call; a panic in an enter callback does not synthesize an exit. The me
 opt-in profile path is documented in design 043; these measurements do not
 isolate the cost of individual counters or clock reads.
 
+## Generated Go Document Tracing and Profiling
+
+When generated Go observability and Document support are both enabled,
+`NewDocument` MUST accept `WithTrace` and `WithProfile` as retained defaults.
+Construction MUST NOT emit parser events or profile counts. `Document.Parse`
+and, with generated types, `Document.ParseAST` MUST accept invocation-local
+overrides; an override applies only to that call and MUST NOT replace the
+constructor default for later calls. `Edit` does not parse and MUST NOT emit
+rule events.
+
+Events MUST report actual rule calls in the current invocation, including Node,
+direct typed and Node-conversion fallback calls. Conversion itself MUST NOT
+emit a rule event. A memoized whole-call reuse MUST report that call with
+`Memo=true` and `Evals=0`; nested events from earlier parses MUST NOT be
+replayed. Generated Documents do not resume repetition bodies and MUST NOT
+report a `ReusedElements` count. `ExaminedKnown` MUST remain false.
+
+After a completed parse, the invocation's increases in profile `Evals` and
+`MemoHits` MUST equal `Document.Stats().Evaluated` and `.Reused`, respectively.
+`Stats` has no call counter. An
+interrupted parse MAY leave statistics for calls that began but did not
+complete. Temporary observer and profile state MUST be released after return
+or panic; retained constructor defaults remain available for later calls.
+Callbacks MUST NOT invoke `Parse`, `ParseAST`, or `Edit` on the same Document.
+Callers SHOULD schedule later work or use another Document. Whether the runtime
+detects and rejects same-Document re-entry remains unresolved.
+
 ## Generated TypeScript Batch Tracing
 
 TypeScript batch tracing MUST be enabled at generation with
@@ -385,7 +411,7 @@ use the selected unit. `matched`, `end`, `memo` and `evals` describe exits;
 evaluations. A skipped event is unpaired and is currently emitted only for
 identifiable first-character dispatch skips. `examinedKnown` is always false
 and `examined` MUST NOT be treated as a complete examined-input range. This
-batch API does not provide Document event tracing.
+TypeScript batch API does not provide Document event tracing.
 
 ### Generated TypeScript Batch Profiling
 

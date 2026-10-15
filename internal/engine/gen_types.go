@@ -184,7 +184,15 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	}
 	if g.directTypedDocument {
 		publication := t.documentClone(&b, st)
-		b.WriteString(typedDocumentSource)
+		document := typedDocumentSource
+		if g.observability {
+			var err error
+			document, err = generatedTypedDocumentTraceRuntime(document)
+			if err != nil {
+				return "", "", err
+			}
+		}
+		b.WriteString(document)
 		result := t.dconv(st, "v", "a")
 		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns independently owned typed values.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {

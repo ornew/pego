@@ -95,6 +95,9 @@ func TestProfile(t *testing.T){
  var rejected Profile;_,rejectedError:=Parse("\x00",WithProfile(&rejected));if rejectedError==nil{t.Fatal("invalid input accepted")};failedRoot:=false;for _,r:=range rejected.Snapshot().Rules{if r.Rule=="main"&&r.Failed==1{failedRoot=true}};if !failedRoot{t.Fatal("failed root unrecorded",rejected.Snapshot())}
  var nilProfile *Profile;if len(nilProfile.Snapshot().Rules)!=0{t.Fatal("nil snapshot")}
 }
+` + generatedProfileCheck
+
+const generatedProfileCheck = `
 func checkProfile(t *testing.T,s ProfileSnapshot,events []TraceEvent){
  t.Helper();entered,calls,evals,memo,skips:=0,0,0,0,0
  rows:=map[string][]TraceEvent{};for _,e:=range events{rows[e.Rule]=append(rows[e.Rule],e);switch e.Kind{case TraceEnter:entered++;case TraceExit:calls++;evals+=e.Evals;if e.Memo{memo++};case TraceSkipped:skips++}}
