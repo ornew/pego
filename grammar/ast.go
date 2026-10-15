@@ -5,7 +5,11 @@
 // and actions and predicates are value expressions (Term).
 package grammar
 
-import "sort"
+import (
+	"cmp"
+	"slices"
+	"sort"
+)
 
 // Pos is a 1-based position in the source. The zero value means that the
 // position is unknown.
@@ -35,8 +39,13 @@ type Grammar struct {
 
 // Rules returns the rule definitions of the grammar in declaration order.
 func (g *Grammar) Rules() []*RuleDef {
+	return g.rules(nil)
+}
+
+func (g *Grammar) rules(control *metadataControl) []*RuleDef {
 	var rs []*RuleDef
 	for _, s := range g.Statements {
+		control.poll()
 		if r, ok := s.(*RuleDef); ok {
 			rs = append(rs, r)
 		}
@@ -46,8 +55,13 @@ func (g *Grammar) Rules() []*RuleDef {
 
 // Types returns the type definitions of the grammar in declaration order.
 func (g *Grammar) Types() []*TypeDef {
+	return g.types(nil)
+}
+
+func (g *Grammar) types(control *metadataControl) []*TypeDef {
 	var ts []*TypeDef
 	for _, s := range g.Statements {
+		control.poll()
 		if t, ok := s.(*TypeDef); ok {
 			ts = append(ts, t)
 		}
@@ -425,6 +439,35 @@ func (a *Attribute) ExpressionArgs() []Expr {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
+		if e, ok := a.KwArgs[key].(Expr); ok {
+			result = append(result, e)
+		}
+	}
+	return result
+}
+
+func (a *Attribute) expressionArgs(control *metadataControl) []Expr {
+	if control == nil {
+		return a.ExpressionArgs()
+	}
+	var result []Expr
+	for _, value := range a.Args {
+		control.poll()
+		if e, ok := value.(Expr); ok {
+			result = append(result, e)
+		}
+	}
+	keys := make([]string, 0, len(a.KwArgs))
+	for key := range a.KwArgs {
+		control.poll()
+		keys = append(keys, key)
+	}
+	slices.SortFunc(keys, func(a, b string) int {
+		control.poll()
+		return cmp.Compare(a, b)
+	})
+	for _, key := range keys {
+		control.poll()
 		if e, ok := a.KwArgs[key].(Expr); ok {
 			result = append(result, e)
 		}

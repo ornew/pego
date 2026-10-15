@@ -47,7 +47,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 	// Check references in type definitions.
 	k.report = true
-	for _, td := range prog.Grammar.Types() {
+	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {
 		case *grammar.StructSpec:
@@ -68,7 +68,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 		}
 	}
 
-	rules := prog.Grammar.Rules()
+	rules := control.rules(prog.Grammar)
 	for _, rd := range rules {
 		control.poll()
 		if rd.Type != nil {
@@ -98,7 +98,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	// Keep the types for code generation (typedGo).
 	k.report = false
 	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}}
-	for _, td := range prog.Grammar.Types() {
+	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {
 		case *grammar.StructSpec:
@@ -586,9 +586,11 @@ func (k *checker) lineType(e grammar.Expr, action grammar.Term, locals map[strin
 }
 
 func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
+	control := k.control
 	t := k.expr(e.Expr, sc)
 	for _, a := range e.Attrs {
-		for _, arg := range a.ExpressionArgs() {
+		control.poll()
+		for _, arg := range control.expressionArgs(a) {
 			k.expr(arg, &scopeCheck{caps: caps{}})
 		}
 		if a.Name == "recover" && t != nil {

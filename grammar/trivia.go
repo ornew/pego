@@ -41,26 +41,33 @@ type LineBreak struct {
 
 // AllComments returns every comment kept in g, in no particular order.
 func (g *Grammar) AllComments() []*Comment {
+	return g.allComments(nil)
+}
+
+func (g *Grammar) allComments(control *metadataControl) []*Comment {
 	var cs []*Comment
 	add := func(b *LineBreak) {
+		control.poll()
 		if b == nil {
 			return
 		}
-		cs = append(cs, b.Comments...)
+		cs = appendMetadata(cs, b.Comments, control)
 		if b.Trailing != nil {
 			cs = append(cs, b.Trailing)
 		}
 	}
 	addAll := func(bs []*LineBreak) {
 		for _, b := range bs {
+			control.poll()
 			add(b)
 		}
 	}
 	var term func(Term)
 	var typ func(TypeExpr)
 	term = func(t Term) {
+		control.poll()
 		if n, ok := t.(SourceNode); ok && n.Source().Layout != nil {
-			cs = append(cs, n.Source().Layout.Before...)
+			cs = appendMetadata(cs, n.Source().Layout.Before, control)
 		}
 		switch t := t.(type) {
 		case *TermGroup:
@@ -76,8 +83,9 @@ func (g *Grammar) AllComments() []*Comment {
 			}
 		case *New:
 			for _, field := range t.Fields {
+				control.poll()
 				if field.Layout != nil {
-					cs = append(cs, field.Layout.Before...)
+					cs = appendMetadata(cs, field.Layout.Before, control)
 				}
 				term(field.Value)
 			}
@@ -108,6 +116,7 @@ func (g *Grammar) AllComments() []*Comment {
 		}
 	}
 	typ = func(t TypeExpr) {
+		control.poll()
 		switch t := t.(type) {
 		case *TypeGroup:
 			add(t.OpenBreak)
@@ -126,6 +135,7 @@ func (g *Grammar) AllComments() []*Comment {
 	}
 	var expr func(e Expr)
 	expr = func(e Expr) {
+		control.poll()
 		switch e := e.(type) {
 		case *Group:
 			add(e.BodyBreak)
@@ -145,7 +155,8 @@ func (g *Grammar) AllComments() []*Comment {
 			addAll(e.Breaks)
 			expr(e.Expr)
 			for _, attr := range e.Attrs {
-				for _, arg := range attr.ExpressionArgs() {
+				control.poll()
+				for _, arg := range attr.expressionArgs(control) {
 					expr(arg)
 				}
 			}
@@ -186,14 +197,17 @@ func (g *Grammar) AllComments() []*Comment {
 			add(e.CloseBreak)
 			expr(e.Skip)
 			for _, o := range e.Operands {
+				control.poll()
 				add(o.Break)
 				expr(o.Expr)
 				term(o.Action)
 			}
 			for _, l := range e.Levels {
+				control.poll()
 				add(l.Break)
 				add(l.CloseBreak)
 				for _, op := range l.Operators {
+					control.poll()
 					add(op.Break)
 					expr(op.Expr)
 					term(op.Action)
@@ -203,6 +217,7 @@ func (g *Grammar) AllComments() []*Comment {
 	}
 	add(g.PackageBreak)
 	for _, s := range g.Statements {
+		control.poll()
 		switch s := s.(type) {
 		case *TypeDef:
 			add(s.Break)

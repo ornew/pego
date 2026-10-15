@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 // CompileContext is the internal editor compilation entry point. Cancellation
@@ -58,4 +59,33 @@ func (c *compileControl) poll() {
 	if c.steps%256 == 0 {
 		c.check()
 	}
+}
+
+func (c *compileControl) rules(g *grammar.Grammar) []*grammar.RuleDef {
+	if c == nil {
+		return g.Rules()
+	}
+	result, err := g.RulesContext(c.ctx)
+	if err != nil {
+		panic(compileCancellation{err})
+	}
+	return result
+}
+
+func (c *compileControl) types(g *grammar.Grammar) []*grammar.TypeDef {
+	if c == nil {
+		return g.Types()
+	}
+	result, err := g.TypesContext(c.ctx)
+	if err != nil {
+		panic(compileCancellation{err})
+	}
+	return result
+}
+
+func (c *compileControl) expressionArgs(a *grammar.Attribute) []grammar.Expr {
+	if c == nil {
+		return a.ExpressionArgs()
+	}
+	return grammaranalysis.ExpressionArgsWithPoll(a, c.poll)
 }

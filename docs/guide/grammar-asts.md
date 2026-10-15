@@ -105,6 +105,35 @@ pego fmt -syntax grammar.pego
 follow the formatter's layout rules; comments attached only to omitted forms
 may be omitted.
 
+## Collect Metadata with Cancellation
+
+For large grammar ASTs, use the context-aware collection methods:
+
+```go
+rules, err := g.RulesContext(ctx)
+if err != nil {
+    return err
+}
+comments, err := g.AllCommentsContext(ctx)
+if err != nil {
+    return err
+}
+```
+
+`TypesContext` and `Attribute.ExpressionArgsContext` provide the same contract
+for type definitions and expression-valued attribute arguments. On cancellation,
+each method returns a nil slice and `ctx.Err()` rather than partial results.
+Successful results preserve the corresponding ordinary method's contents and
+ordering: rules and types stay in declaration order, expression arguments keep
+positional order followed by sorted keyword names, and comments follow the
+existing `AllComments` traversal. The returned slice is newly collected, but
+its elements retain their original AST pointers; collection does not modify the
+AST. Do not mutate the grammar or attribute concurrently with collection.
+
+Cancellation is cooperative rather than a hard latency bound. Polls cover
+collection, recursive traversal and keyword sorting, but an individual
+allocation or string comparison may finish before cancellation is observed.
+
 ## Load JSON
 
 `grammar.UnmarshalJSON(data)` accepts exactly one complete JSON value,

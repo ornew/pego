@@ -211,7 +211,7 @@ func (prog *Program) markMissingRules(control *compileControl) {
 		}
 		return false
 	}
-	for _, td := range prog.Grammar.Types() {
+	for _, td := range control.types(prog.Grammar) {
 		switch t := td.Spec.(type) {
 		case *grammar.StructSpec:
 			for _, f := range t.Fields {
@@ -230,7 +230,7 @@ func (prog *Program) markMissingRules(control *compileControl) {
 		if usesMissingType(r.def.Type) {
 			prog.hasMissing = true
 		}
-		walkExpr(r.def.Expr, func(e grammar.Expr) {
+		walkExprControlled(r.def.Expr, func(e grammar.Expr) {
 			control.poll()
 			switch e := e.(type) {
 			case *grammar.Attributed:
@@ -243,7 +243,7 @@ func (prog *Program) markMissingRules(control *compileControl) {
 			case *grammar.Ref:
 				refs[r] = append(refs[r], e.Name)
 			}
-		})
+		}, control)
 	}
 	for changed := true; changed; {
 		changed = false

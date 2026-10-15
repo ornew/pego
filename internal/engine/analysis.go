@@ -281,12 +281,12 @@ func allCalls(e grammar.Expr, acc []string) []string {
 }
 
 func allCallsControlled(e grammar.Expr, acc []string, control *compileControl) []string {
-	walkExpr(e, func(x grammar.Expr) {
+	walkExprControlled(e, func(x grammar.Expr) {
 		control.poll()
 		if r, ok := x.(*grammar.Ref); ok {
 			acc = append(acc, r.Name)
 		}
-	})
+	}, control)
 	return acc
 }
 
@@ -304,7 +304,7 @@ func ruleVariablesControlled(rules []*grammar.RuleDef, control *compileControl) 
 	for _, r := range rules {
 		control.poll()
 		var set map[string]bool
-		walkRuleTerms(r, func(t grammar.Term) {
+		walkRuleTermsControlled(r, func(t grammar.Term) {
 			control.poll()
 			if v, ok := t.(*grammar.VarRef); ok {
 				if set == nil {
@@ -312,7 +312,7 @@ func ruleVariablesControlled(rules []*grammar.RuleDef, control *compileControl) 
 				}
 				set[v.Name] = true
 			}
-		})
+		}, control)
 		if len(set) > 0 {
 			direct[r.Name] = set
 		} else {
@@ -383,58 +383,65 @@ func termReadsVars(t grammar.Term) bool {
 }
 
 // walkExpr visits the expression and its subexpressions in preorder.
-func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
+func walkExprControlled(e grammar.Expr, f func(grammar.Expr), control *compileControl) {
+	if control == nil {
+		walkExpr(e, f)
+		return
+	}
+	control.poll()
 	if e == nil {
 		return
 	}
 	f(e)
 	switch e := e.(type) {
 	case *grammar.Group:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Seq:
 		for _, it := range e.Items {
-			walkExpr(it, f)
+			walkExprControlled(it, f, control)
 		}
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
-			walkExpr(alt, f)
+			walkExprControlled(alt, f, control)
 		}
 	case *grammar.Repeat:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.InlineAction:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Optional:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.And:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Not:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Atomic:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Stream:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Recovery:
-		walkExpr(e.Expr, f)
-		walkExpr(e.Skip, f)
+		walkExprControlled(e.Expr, f, control)
+		walkExprControlled(e.Skip, f, control)
 	case *grammar.Discard:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Capture:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 	case *grammar.Attributed:
-		walkExpr(e.Expr, f)
+		walkExprControlled(e.Expr, f, control)
 		for _, at := range e.Attrs {
-			for _, arg := range at.ExpressionArgs() {
-				walkExpr(arg, f)
+			control.poll()
+			for _, arg := range control.expressionArgs(at) {
+				walkExprControlled(arg, f, control)
 			}
 		}
 	case *grammar.OperatorsRule:
-		walkExpr(e.Skip, f)
+		walkExprControlled(e.Skip, f, control)
 		for _, o := range e.Operands {
-			walkExpr(o.Expr, f)
+			walkExprControlled(o.Expr, f, control)
 		}
 		for _, l := range e.Levels {
+			control.poll()
 			for _, op := range l.Operators {
-				walkExpr(op.Expr, f)
+				walkExprControlled(op.Expr, f, control)
 			}
 		}
 	}
@@ -608,23 +615,27 @@ func propagateControlled(rules []*grammar.RuleDef, calls map[string][]string, se
 
 // walkRuleTerms visits every term in a rule's predicates and actions, including
 // Operators Rule operand and operator actions.
-func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) {
+func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *compileControl) {
+	control.poll()
 	walkTerm(r.Action, f)
-	walkExpr(r.Expr, func(e grammar.Expr) {
+	walkExprControlled(r.Expr, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Predicate:
 			walkTerm(e.Term, f)
 		case *grammar.OperatorsRule:
 			for _, o := range e.Operands {
+				control.poll()
 				walkTerm(o.Action, f)
 			}
 			for _, l := range e.Levels {
+				control.poll()
 				for _, op := range l.Operators {
+					control.poll()
 					walkTerm(op.Action, f)
 				}
 			}
 		}
-	})
+	}, control)
 }
 
 // ruleUsesPositions reports whether the rule's actions or predicates refer to startPos or
@@ -635,12 +646,12 @@ func ruleUsesPositions(r *grammar.RuleDef) bool {
 
 func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bool {
 	found := false
-	walkRuleTerms(r, func(x grammar.Term) {
+	walkRuleTermsControlled(r, func(x grammar.Term) {
 		control.poll()
 		if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") {
 			found = true
 		}
-	})
+	}, control)
 	return found
 }
 
@@ -651,3 +662,62 @@ func (a *analysis) alwaysSucceeds(e grammar.Expr) bool {
 	}
 	return grammaranalysis.AlwaysSucceedsWithPoll(e, a.succeeding, a.control.poll)
 }
+
+func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
+	if e == nil {
+		return
+	}
+	f(e)
+	switch e := e.(type) {
+	case *grammar.Group:
+		walkExpr(e.Expr, f)
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			walkExpr(it, f)
+		}
+	case *grammar.Choice:
+		for _, alt := range e.Alts {
+			walkExpr(alt, f)
+		}
+	case *grammar.Repeat:
+		walkExpr(e.Expr, f)
+	case *grammar.InlineAction:
+		walkExpr(e.Expr, f)
+	case *grammar.Optional:
+		walkExpr(e.Expr, f)
+	case *grammar.And:
+		walkExpr(e.Expr, f)
+	case *grammar.Not:
+		walkExpr(e.Expr, f)
+	case *grammar.Atomic:
+		walkExpr(e.Expr, f)
+	case *grammar.Stream:
+		walkExpr(e.Expr, f)
+	case *grammar.Recovery:
+		walkExpr(e.Expr, f)
+		walkExpr(e.Skip, f)
+	case *grammar.Discard:
+		walkExpr(e.Expr, f)
+	case *grammar.Capture:
+		walkExpr(e.Expr, f)
+	case *grammar.Attributed:
+		walkExpr(e.Expr, f)
+		for _, at := range e.Attrs {
+			for _, arg := range at.ExpressionArgs() {
+				walkExpr(arg, f)
+			}
+		}
+	case *grammar.OperatorsRule:
+		walkExpr(e.Skip, f)
+		for _, o := range e.Operands {
+			walkExpr(o.Expr, f)
+		}
+		for _, l := range e.Levels {
+			for _, op := range l.Operators {
+				walkExpr(op.Expr, f)
+			}
+		}
+	}
+}
+
+func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) { walkRuleTermsControlled(r, f, nil) }

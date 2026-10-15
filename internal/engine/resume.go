@@ -55,8 +55,9 @@ type runElem struct {
 // captures are written to the enclosing scope (those inside &, when the element has no captures of
 // its own) cannot be: reusing it would not write them.
 func (c *compiler) resumable(e grammar.Expr) bool {
-	ok := elementScoped(e) || !anyCapture(e)
-	walkExpr(e, func(x grammar.Expr) {
+	control := c.control
+	ok := elementScopedControlled(e, control) || !anyCaptureControlled(e, control)
+	walkExprControlled(e, func(x grammar.Expr) {
 		switch x := x.(type) {
 		case *grammar.Predicate:
 			ok = false
@@ -65,31 +66,33 @@ func (c *compiler) resumable(e grammar.Expr) bool {
 				ok = false
 			}
 		}
-	})
+	}, control)
 	return ok
 }
 
 // anyCapture reports whether e contains a capture anywhere, lookaheads included.
-func anyCapture(e grammar.Expr) bool {
+func anyCaptureControlled(e grammar.Expr, control *compileControl) bool {
+	control.poll()
 	found := false
-	walkExpr(e, func(x grammar.Expr) {
+	walkExprControlled(e, func(x grammar.Expr) {
 		if _, ok := x.(*grammar.Capture); ok {
 			found = true
 		}
-	})
+	}, control)
 	return found
 }
 
 // positional reports whether the value of e may contain position values.
 func (c *compiler) positional(e grammar.Expr) bool {
+	control := c.control
 	found := false
-	walkExpr(e, func(x grammar.Expr) {
+	walkExprControlled(e, func(x grammar.Expr) {
 		if x, ok := x.(*grammar.Ref); ok {
 			if r := c.prog.byName[x.Name]; r == nil || r.positional {
 				found = true
 			}
 		}
-	})
+	}, control)
 	return found
 }
 
@@ -397,3 +400,5 @@ func (p *parser) freeRunState(r *runState) {
 	clearWork(p, r.post)
 	p.freeRuns = append(p.freeRuns, r)
 }
+
+func anyCapture(e grammar.Expr) bool { return anyCaptureControlled(e, nil) }

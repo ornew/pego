@@ -261,7 +261,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 
 	var ds []*directive
 	ruleOf := map[*grammar.Comment]string{}
-	for _, r := range g.Rules() {
+	for _, r := range control.rules(g) {
 		control.poll()
 		if r.Break != nil {
 			for _, c := range r.Break.Comments {
@@ -270,7 +270,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 			}
 		}
 	}
-	for _, c := range g.AllComments() {
+	for _, c := range control.comments(g) {
 		control.poll()
 		if d := parseDirective(c); d != nil {
 			d.rule = ruleOf[c]

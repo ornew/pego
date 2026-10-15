@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 // RunContext is the internal editor entry point. Cancellation discards all
@@ -56,4 +57,44 @@ func (c *lintControl) poll() {
 	if c.steps%256 == 0 {
 		c.check()
 	}
+}
+
+func (c *lintControl) rules(g *grammar.Grammar) []*grammar.RuleDef {
+	if c == nil {
+		return g.Rules()
+	}
+	result, err := g.RulesContext(c.ctx)
+	if err != nil {
+		panic(lintCancellation{err})
+	}
+	return result
+}
+
+func (c *lintControl) types(g *grammar.Grammar) []*grammar.TypeDef {
+	if c == nil {
+		return g.Types()
+	}
+	result, err := g.TypesContext(c.ctx)
+	if err != nil {
+		panic(lintCancellation{err})
+	}
+	return result
+}
+
+func (c *lintControl) comments(g *grammar.Grammar) []*grammar.Comment {
+	if c == nil {
+		return g.AllComments()
+	}
+	result, err := g.AllCommentsContext(c.ctx)
+	if err != nil {
+		panic(lintCancellation{err})
+	}
+	return result
+}
+
+func (c *lintControl) expressionArgs(a *grammar.Attribute) []grammar.Expr {
+	if c == nil {
+		return a.ExpressionArgs()
+	}
+	return grammaranalysis.ExpressionArgsWithPoll(a, c.poll)
 }
