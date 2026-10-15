@@ -17,6 +17,9 @@ type Profile struct {
 	Calls    int `json:"calls"`
 	Evals    int `json:"evals"`
 	MemoHits int `json:"memoHits"`
+	// ReusedElements totals repetition elements reused by completed root calls. Nested rule
+	// rows also include this work, but their counts are not added to this total again.
+	ReusedElements int `json:"reusedElements"`
 	// Examined totals, over the parses, the end of the input the start rule examined.
 	Examined int `json:"examined"`
 	// Time totals the time of the parses' start rule calls (in nanoseconds in JSON).
@@ -49,6 +52,9 @@ type RuleProfile struct {
 	// Evals is the number of body evaluations: one per call not answered by the memo, and one more
 	// for each step a left-recursive match grows.
 	Evals int `json:"evals"`
+	// ReusedElements counts repetition elements reused during the calls, nested calls included.
+	// A nested call can report the same reuse as its parent; this is not a count of skipped calls.
+	ReusedElements int `json:"reusedElements"`
 	// Consumed totals the input matched by the calls that matched.
 	Consumed int `json:"consumed"`
 	// Wasted totals the input examined by the calls that evaluated the body and failed: the work
@@ -134,9 +140,11 @@ func (pr *Profile) Trace(e TraceEvent) {
 	} else {
 		pr.Time += d
 		pr.Examined += e.Examined
+		pr.ReusedElements += e.ReusedElements
 	}
 	r.Calls++
 	pr.Calls++
+	r.ReusedElements += e.ReusedElements
 	r.Evals += e.Evals
 	pr.Evals += e.Evals
 	if e.Memo {

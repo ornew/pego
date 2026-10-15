@@ -146,27 +146,31 @@ func (t *tracePrinter) result(e pego.TraceEvent) string {
 	if e.Evals > 1 {
 		fmt.Fprintf(&b, " [%d evaluations]", e.Evals)
 	}
+	if e.ReusedElements > 0 {
+		fmt.Fprintf(&b, " [%d reused elements]", e.ReusedElements)
+	}
 	return b.String()
 }
 
 // traceJSON is a trace event in JSON.
 type traceJSON struct {
-	Event     string       `json:"event"`
-	Rule      string       `json:"rule"`
-	Level     int          `json:"level,omitempty"`
-	Depth     int          `json:"depth"`
-	Pos       int          `json:"pos"`
-	Line      int          `json:"line"`
-	Col       int          `json:"col"`
-	Lookahead bool         `json:"lookahead,omitempty"`
-	Matched   *bool        `json:"matched,omitempty"`
-	End       *int         `json:"end,omitempty"`
-	EndLine   int          `json:"endLine,omitempty"`
-	EndCol    int          `json:"endCol,omitempty"`
-	Memo      bool         `json:"memo,omitempty"`
-	Evals     *int         `json:"evals,omitempty"`
-	Examined  *int         `json:"examined,omitempty"`
-	Failure   *failureJSON `json:"failure,omitempty"`
+	Event          string       `json:"event"`
+	Rule           string       `json:"rule"`
+	Level          int          `json:"level,omitempty"`
+	Depth          int          `json:"depth"`
+	Pos            int          `json:"pos"`
+	Line           int          `json:"line"`
+	Col            int          `json:"col"`
+	Lookahead      bool         `json:"lookahead,omitempty"`
+	Matched        *bool        `json:"matched,omitempty"`
+	End            *int         `json:"end,omitempty"`
+	EndLine        int          `json:"endLine,omitempty"`
+	EndCol         int          `json:"endCol,omitempty"`
+	Memo           bool         `json:"memo,omitempty"`
+	Evals          *int         `json:"evals,omitempty"`
+	Examined       *int         `json:"examined,omitempty"`
+	Failure        *failureJSON `json:"failure,omitempty"`
+	ReusedElements int          `json:"reusedElements,omitempty"`
 }
 
 type failureJSON struct {
@@ -184,6 +188,7 @@ func (t *tracePrinter) printJSON(e pego.TraceEvent) {
 		j.Matched, j.End, j.Evals, j.Examined = &e.Matched, &e.End, &e.Evals, &e.Examined
 		j.EndLine, j.EndCol = e.LineCol(e.End)
 		j.Memo = e.Memo
+		j.ReusedElements = e.ReusedElements
 		if f := e.Failure(); t.failures && f != nil && !e.Matched {
 			j.Failure = &failureJSON{Pos: f.Pos, Line: f.Line, Col: f.Col, Expected: f.Expected, Messages: f.Messages}
 		}

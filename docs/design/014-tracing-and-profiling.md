@@ -73,6 +73,10 @@ event.
   Successful growing left-recursion seeds carry the input bounds accumulated when they grew. A seed hit
   therefore propagates its dependency range even when a wrapper returns it without examining another character;
   lookahead beyond the match and line-start checks before the call remain part of those bounds.
+- **Reused repetition elements** (`ReusedElements`): the difference in the parser's repetition-resumption
+  counter across the call, including reuse in nested calls. This reports elements actually reused during the
+  current invocation, not historical work stored in a memo result. A memo hit therefore reports zero newly reused
+  elements. Calls skipped by resumption are not synthesized as enter/exit events, evaluations or memo hits.
 - **Expectations** (`Failure`): likewise, a traced call records the expectations made during it separately
   (`isolate`) and merges them back (`mergeExpected`) when it ends, as memoized calls already do. The merge replays the
   recorded expectations into the caller's record, which keeps only those at the farthest position, so the final error
@@ -87,6 +91,10 @@ during the trace function; the fields can be kept.
 nested calls, and per rule name (so that a value-free twin counts as its rule) it adds up:
 
 - calls, memo hits, matches, failures and body evaluations;
+- **reused elements** (`RuleProfile.ReusedElements`, JSON `reusedElements`): repetition elements reused during
+  completed calls, nested calls included. Parent and child rows can report the same reuse; these rows are inclusive
+  and must not be summed to obtain a parse total. `Profile.ReusedElements` counts only completed root exits, so each
+  reuse contributes once to that total;
 - **consumed**: the input matched by matching calls;
 - **wasted**: for each call that evaluated its body and failed, the input from its position to the end of what it
   examined. This is precise for what it counts: input the rule examined in a call whose result was a failure. It does
@@ -128,7 +136,11 @@ separately.
 `pego trace` prints a call whose nested calls are not shown on one line (`rule line:col -> result`) and other calls as
 an enter line and an exit line around their nested calls. It buffers only the last enter event, so the output streams.
 `-rule` and `-max-depth` select calls by rule and by depth relative to the top call shown; `-f json` prints one object
-per event. `pego profile` prints the table with `text/tabwriter` and the hints; `-f json` prints the same data.
+per event. Exit text appends `[N reused elements]` when repetition reuse is nonzero. Exit JSON appends
+`reusedElements` only when nonzero; enter events and zero-reuse exits omit that field, preserving the other fields.
+`pego profile` prints the table with `text/tabwriter` and the hints; `-f json` prints the same data. Text output keeps
+the execution-count summary and adds a root-only reused-element summary. The final `reused` column contains each
+rule's inclusive count; existing columns retain their order.
 
 ## Cost
 
@@ -199,6 +211,10 @@ one that gave a `Document` parse a fresh memo fails the document comparison 573 
   a panic in the trace function) ends the trace without the exit events of the calls in progress. A panic in the trace
   function is carried through the parse's recovery as an internal value and raised again unchanged, so that a runtime
   error there is not reported as invalid bytecode on the bytecode backends.
+- A `Document` can resume a repetition without executing the calls inside its unchanged elements. Those omitted
+  calls remain absent from call, evaluation and memo-hit counts. `TraceExit.ReusedElements` and the profile
+  `ReusedElements` fields report repetition reuse separately. An aborted parse without a root exit contributes no
+  reuse to `Profile.ReusedElements`, even if completed child rows already reported reuse.
 - A `Profile` must not be shared by concurrent parses.
 - In a stream parse, `LineCol` knows the lines of the input still held only; for other positions it gives 0, 0 (and a
   profile `Location` prints as `position N`). Keeping the line starts of discarded input would make a stream's memory

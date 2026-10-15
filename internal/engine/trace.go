@@ -59,6 +59,10 @@ type TraceEvent struct {
 	// memo, 1 usually, and one more per step for a left-recursive rule whose match grows. Bodies of
 	// nested calls are not included.
 	Evals int
+	// ReusedElements counts repetition elements reused during this call, including nested calls.
+	// It measures resumption performed in this invocation, not the calls skipped by reusing an
+	// element or work from the parse that originally built a memo result.
+	ReusedElements int
 	// Examined is the end of the input the call examined (exclusive): looking at a character to
 	// reject it counts, as do lookaheads.
 	Examined int
@@ -149,6 +153,8 @@ type tracedCallState struct {
 	// evals is the number of body evaluations of the parse when the call started, and nested
 	// those made by nested calls since.
 	evals, nested int
+	// resumed is the parse's repetition-element reuse count when the call started.
+	resumed int
 	// hw is the end of the examined input when the call started, and rec the number of
 	// recovered errors.
 	hw, rec int
@@ -179,7 +185,7 @@ func (p *parser) tracedCall(r *rule, min int) (*Node, bool) {
 // keep a maximum).
 func (p *parser) traceEnter(r *rule, min int) {
 	t := p.tr
-	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, hw: p.hw, rec: len(p.recovered)})
+	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, resumed: p.resumed, hw: p.hw, rec: len(p.recovered)})
 	p.hw = p.pos
 	t.stack[len(t.stack)-1].exp = p.isolate(p.pos)
 	t.emit(TraceEvent{Kind: TraceEnter, Rule: r.name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
@@ -193,7 +199,7 @@ func (p *parser) traceExit(ok bool) {
 	far, inner := p.unisolate(c.exp)
 	ev := TraceEvent{Kind: TraceExit, Rule: c.r.name, Level: c.min, Depth: len(t.stack), Pos: c.start,
 		Lookahead: p.silent > 0, Matched: ok, End: c.start, Memo: all == 0, Evals: all - c.nested,
-		Examined: p.hw, p: p, far: far, exp: inner}
+		Examined: p.hw, ReusedElements: p.resumed - c.resumed, p: p, far: far, exp: inner}
 	if ok {
 		ev.End = p.pos
 		if len(p.recovered) > c.rec {

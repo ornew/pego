@@ -212,7 +212,7 @@ Traces grow quickly, so narrow them down:
 For tools, `-f json` prints one JSON object per event and line. Enter events have `event`, `rule`, `level` (if not 0),
 `depth` (the absolute nesting depth, 1 for the start rule), `pos`, `line`, `col` and `lookahead`; exit events add
 `matched`, `end`, `endLine`, `endCol`, `memo`, `evals` (body evaluations), `examined` (the end of the input the call
-looked at) and, with `-failures`, `failure`:
+looked at), `reusedElements` when nonzero, and, with `-failures`, `failure`:
 
 ```
 $ pego trace -g config.pego -f json -rule call -max-depth 1 -failures < bad.txt
@@ -222,7 +222,10 @@ pego: 2:14: syntax error: expected ")", ",", [ \t\n]
 ```
 
 `trace` takes the flags of `parse` that select what is parsed (`-s`, `-i`, `-unit`, `-backend`) and exits with status
-1 when the input has a syntax error. The backends do not all make the same calls: each skips some calls that cannot
+1 when the input has a syntax error. When a call reuses repetition elements, text output appends
+`[N reused elements]`; JSON exit events append `reusedElements`. Both omit the addition for zero reuse, and JSON
+enter events never include it. The trace formatter can display these events from a `Document` reparse; the ordinary
+`trace` command parses its input once and normally has no repetition reuse. The backends do not all make the same calls: each skips some calls that cannot
 match the next character (first-character dispatch), not always the same ones, so their traces can differ in calls
 that fail on the first character; results never differ.
 
@@ -235,13 +238,14 @@ $ pego profile -g config.pego -n 5 < config.txt
 result: ok
 examined 35291 positions in 3.87ms (profiling included)
 12009 calls, 12009 body evaluations, 0 memo hits (0% of calls)
+0 reused repetition elements (completed root calls)
 
-    rule  calls  evals  memo  matched  failed  repeats  consumed  wasted     time     self  self%
-    args    300    300     0      300       0        0      4690       0   1.02ms  726.8µs   18.8
-   ident   2103   2103     0     2100       3      902     50700       3  602.7µs  602.7µs   15.6
-      ws   5401   5401     0     5401       0     1200      3000       0  548.6µs  548.6µs   14.2
-  update    601    601     0      300     301        0     10500    7801  741.7µs  434.1µs   11.2
-  assign    901    901     0      300     601        0     10800   17101  878.0µs  426.6µs   11.0
+    rule  calls  evals  memo  matched  failed  repeats  consumed  wasted     time     self  self%  reused
+    args    300    300     0      300       0        0      4690       0   1.02ms  726.8µs   18.8       0
+   ident   2103   2103     0     2100       3      902     50700       3  602.7µs  602.7µs   15.6       0
+      ws   5401   5401     0     5401       0     1200      3000       0  548.6µs  548.6µs   14.2       0
+  update    601    601     0      300     301        0     10500    7801  741.7µs  434.1µs   11.2       0
+  assign    901    901     0      300     601        0     10800   17101  878.0µs  426.6µs   11.0       0
 (4 more rules; -n 0 shows all)
 
 What to look at:
@@ -269,13 +273,14 @@ $ pego profile -g config_fast.pego -n 5 < config.txt
 result: ok
 examined 35291 positions in 3.16ms (profiling included)
 9304 calls, 9304 body evaluations, 0 memo hits (0% of calls)
+0 reused repetition elements (completed root calls)
 
-   rule  calls  evals  memo  matched  failed  repeats  consumed  wasted     time     self  self%
-   stmt    901    901     0      900       1        0     34390       1   2.57ms  778.0µs   24.6
-     ws   4501   4501     0     4501       0      300      2700       0  634.8µs  634.8µs   20.1
-   args    300    300     0      300       0        0      4690       0  756.4µs  425.7µs   13.5
-   main      1      1     0        1       0        0     35290       0   3.16ms  367.8µs   11.6
-  ident   1201   1201     0     1200       1        0     27000       1  357.3µs  357.3µs   11.3
+   rule  calls  evals  memo  matched  failed  repeats  consumed  wasted     time     self  self%  reused
+   stmt    901    901     0      900       1        0     34390       1   2.57ms  778.0µs   24.6       0
+     ws   4501   4501     0     4501       0      300      2700       0  634.8µs  634.8µs   20.1       0
+   args    300    300     0      300       0        0      4690       0  756.4µs  425.7µs   13.5       0
+   main      1      1     0        1       0        0     35290       0   3.16ms  367.8µs   11.6       0
+  ident   1201   1201     0     1200       1        0     27000       1  357.3µs  357.3µs   11.3       0
 (4 more rules; -n 0 shows all)
 
 What to look at:
@@ -305,6 +310,7 @@ printed even when the input has a syntax error (the `result` line shows it), and
 | `wasted` | Input examined by evaluating calls that failed, summed: from the call's position to the end of what it looked at, nested calls included |
 | `time` | Time in the rule's calls, nested calls included; a call within a call of the same rule counts once |
 | `self`, `self%` | Time in the rule's calls minus the time of the calls they made, and its share of the parse |
+| `reused` | Repetition elements reused during completed calls, including nested calls; these per-rule counts are inclusive and must not be summed. |
 
 How to use them:
 
@@ -373,7 +379,7 @@ main failed: 1:7: syntax error: expected [0-9]
 ```
 
 A `TraceEvent` has `Kind` (`TraceEnter` or `TraceExit`), `Rule`, `Level`, `Depth`, `Pos` and `Lookahead`; exit events
-also have `Matched`, `End`, `Memo`, `Evals` and `Examined`, and the methods `Text` (the input matched), `Failure`
+also have `Matched`, `End`, `Memo`, `Evals`, `ReusedElements` and `Examined`, and the methods `Text` (the input matched), `Failure`
 (the farthest failure recorded during the call, as a `*SyntaxError`, or nil) and `Recovered` (the errors `#recover`
 recovered from during the call, whose expectations `Failure` does not include). `LineCol` converts a position.
 
@@ -393,6 +399,14 @@ for _, h := range prof.Hints() {
 }
 ```
 
+`TraceExit.ReusedElements` counts repetition elements reused during that call, including nested calls.
+`RuleProfile.ReusedElements` accumulates the same inclusive counts; parent and child rows can describe the same
+reuse, so do not sum them. `Profile.ReusedElements` counts reuse once, from completed root exits. The profile JSON
+key is `reusedElements`. These counts describe reuse in the current parse; memo hits do not replay earlier reuse.
+
+Profile text prints the root-only total on its own summary line and the inclusive per-rule counts in the final
+`reused` column. JSON includes `reusedElements` in the profile and each rule row, including zero values.
+
 `Profile.Rules` lists the rules in the order they were first called; sort them as you need. Tracing works with every
 backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to `NewDocument` traces each
 `Document.Parse`), and several `WithTrace` and `WithProfile` options can be combined. A `Profile` is not safe for
@@ -411,10 +425,13 @@ concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
   edits on the backend corpus.
 - **A `Document` reparse skips calls.** It reuses the unchanged elements of long repetitions without calling their
   rules (see [incremental parsing](incremental.md#what-is-reused-and-why)), so those
-  calls appear in neither the trace nor the profile; memo hits do appear.
+  calls do not become synthetic trace events, calls, evaluations or memo hits. `ReusedElements` reports the number
+  of repetition elements reused separately; memo hits still appear as ordinary entered calls. A reused element can
+  contain several omitted calls, so this is an element count rather than a count of skipped rule calls.
 - **Aborted parses** (a runtime error in an action, an error from a stream's `emit` or reader, the nesting limit, a
   panic in the trace function, which propagates out of the parse) end the trace
-  without the exit events of the calls in progress.
+  without the exit events of the calls in progress. Without a root exit, the parse contributes no reuse to
+  `Profile.ReusedElements`, even if a completed child row already reported reuse.
 - **Streams forget lines.** A stream parse discards the input it has consumed, and with it the line structure:
   `LineCol` gives 0, 0 for a position that is no longer (or not yet) held, and a profile location that could not be
   converted prints as `position N`.

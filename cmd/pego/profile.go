@@ -79,11 +79,12 @@ func printProfile(w io.Writer, prof *pego.Profile, rules []*pego.RuleProfile, pe
 	}
 	fmt.Fprintf(w, "result: %s\n", result)
 	fmt.Fprintf(w, "examined %d positions in %s (profiling included)\n", prof.Examined, dur(prof.Time))
-	fmt.Fprintf(w, "%d calls, %d body evaluations, %d memo hits (%.0f%% of calls)\n\n", prof.Calls, prof.Evals, prof.MemoHits, pct(prof.MemoHits, prof.Calls))
+	fmt.Fprintf(w, "%d calls, %d body evaluations, %d memo hits (%.0f%% of calls)\n", prof.Calls, prof.Evals, prof.MemoHits, pct(prof.MemoHits, prof.Calls))
+	fmt.Fprintf(w, "%d reused repetition elements (completed root calls)\n\n", prof.ReusedElements)
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "rule\tcalls\tevals\tmemo\tmatched\tfailed\trepeats\tconsumed\twasted\ttime\tself\tself%\t")
+	fmt.Fprintln(tw, "rule\tcalls\tevals\tmemo\tmatched\tfailed\trepeats\tconsumed\twasted\ttime\tself\tself%\treused\t")
 	for _, r := range rules {
-		fmt.Fprintf(tw, "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%.1f\t\n", r.Rule, r.Calls, r.Evals, r.MemoHits, r.Matched, r.Failed, r.Repeats, r.Consumed, r.Wasted, dur(r.Time), dur(r.SelfTime), pct(int(r.SelfTime), int(prof.Time)))
+		fmt.Fprintf(tw, "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%.1f\t%d\t\n", r.Rule, r.Calls, r.Evals, r.MemoHits, r.Matched, r.Failed, r.Repeats, r.Consumed, r.Wasted, dur(r.Time), dur(r.SelfTime), pct(int(r.SelfTime), int(prof.Time)), r.ReusedElements)
 	}
 	if err := tw.Flush(); err != nil {
 		return err

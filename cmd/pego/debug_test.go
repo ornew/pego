@@ -144,7 +144,10 @@ func TestProfileCmd(t *testing.T) {
 	// Rows sorted by name; the counts do not depend on time.
 	var rows []string
 	for _, l := range strings.Split(out, "\n") {
-		if f := strings.Fields(l); len(f) == 12 && f[0] != "rule" {
+		if f := strings.Fields(l); len(f) == 13 && f[0] != "rule" {
+			if f[12] != "0" {
+				t.Errorf("ordinary parse reports reused elements: %s", l)
+			}
 			rows = append(rows, strings.Join(f[:9], " "))
 		}
 	}
