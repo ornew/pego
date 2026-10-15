@@ -4,6 +4,9 @@ PEGO is a Go parser framework using an extended PEG grammar language. Keep this
 file concise; put contracts, design rationale, measurements and workflow detail
 in the linked project documents.
 
+At the start of every development session, use the `onboarding` skill in
+`.agents/skills/onboarding/` to locate current sources and choose relevant checks.
+
 ## Documentation map
 
 - `README.md`: project overview and documentation index.
