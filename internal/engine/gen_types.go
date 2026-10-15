@@ -178,6 +178,9 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	if needNodes {
 		t.converters(&b)
 	}
+	if g.document && directStart {
+		t.documentClone(&b)
+	}
 	if g.enableBoundedTypedOutputSweep {
 		t.outputBoundedSweep(&b, needTyped, needNodes)
 	} else if g.enableTypedOutputSweep {

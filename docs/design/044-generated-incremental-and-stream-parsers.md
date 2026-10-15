@@ -20,8 +20,12 @@ conversion; it does not generate streams. Generated TS still uses synchronous re
 ([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and
 memo across calls alone does not implement edit invalidation or suspension.
 
-Documents must match a fresh parse after every legal edit, including diagnostics and action values. Streamed
-elements must match the engine's committed sequence and remain valid after subsequent input is discarded.
+Documents must match fresh-parse semantic results after every legal edit, including diagnostics and action values,
+when parsing completes within the configured resources. The depth-limit outcome is an explicit exception: under the
+physical nesting contract in [Parsing](../../spec/parsing.md#memoization), memo-answered calls do not nest, so a
+near-limit parse can succeed or fail depending on memoization. Document equivalence does not add logical-depth
+accounting or require cache flushing to force equal near-limit resource errors. Streamed elements must match the
+engine's committed sequence and remain valid after subsequent input is discarded.
 Generated packages stay independent of the compiler and engine at runtime. This design does not add a compiled
 TS VM, immutable snapshots, a new text-storage algorithm, or recognition on Documents/streams.
 
@@ -77,6 +81,28 @@ members when they must be detached. Parsing, diagnostic copying and conversion u
 controller. If parsing, diagnostic copying or conversion is interrupted, the method returns the result's zero value
 and clears reusable memo state as needed so a later call can retry.
 Direct typed incremental matching remains deferred; `WithTypes` does not make the Document immutable.
+
+### Proposed Direct Typed Document Matching
+
+The current `Document.ParseAST` fallback parses through the Node Document and converts the finalized result on
+each call. Direct typed matching is not implemented. A future opt-in direct path must preserve per-call ownership
+of returned typed values while reusing only completed parse work. Keep typed memo entries separate from Node memo
+entries, and use fresh parser and allocation arenas for each invocation so a later parse cannot overwrite values
+referenced by an earlier result.
+
+Retain only completed typed entries before the edit whose examined frontier is also before the edit; discard
+entries that depend on left-recursion growth, provisional results, or the edited suffix. Generated wrappers may
+memoize calls that are otherwise optimized away, but the existing default-off batch path must remain unchanged.
+Before publishing a result, make an ownership-preserving typed copy wherever cached or scratch storage could be
+observable. Preserve cycles, aliases and repeated references to the same slice view; unused slice capacity and
+arbitrary overlapping slice views need not be preserved, matching `Node.Clone`'s ownership boundary. Parsing and
+that copy use the same invocation controls. If either is interrupted, return the typed result's zero value and
+clear the cache state required for a clean retry.
+
+Direct typed matching should initially use the same eligibility rules as the current batch `ParseAST` path. Compare
+against both the exact main revision and a generation-disabled same-source control. Measure batch parsing, fresh
+Document parsing, warm parsing and edit-plus-parse, along with retained memory and allocations; do not infer typed
+incremental gains from Node memo reuse alone.
 
 ### Go Reader Streams and Typed Elements
 
@@ -203,8 +229,9 @@ but cannot safely reexecute actions or redeliver elements and does not provide b
 or async wrapper around synchronous TS does not make its execution suspend at demand reads. Sharing a bytecode VM
 could reduce generator complexity but adds a separate portable runtime/distribution choice.
 
-Proposed correctness gates compare fresh parses after random edits and all reader chunk partitions against all
-three engine backends. Cover both units, invalid UTF-8 repairs, surrogate strings, zero-width repeats, recovery,
+Proposed correctness gates compare semantic parse results, diagnostics and action values after random edits and all
+reader chunk partitions against all three engine backends; resource-limit outcomes such as near-cap nesting are
+excluded as specified above. Cover both units, invalid UTF-8 repairs, surrogate strings, zero-width repeats, recovery,
 EOF versus temporary starvation, finite maxima, cut/Operators Rule ties, LR abort/retry, variables and start/end positional
 actions. Exercise nil/action-discarded elements, typed concrete/union/list/any/CST conversions, retained text and
 aliases, callback stops/panics, unknown reader errors, concurrent independent instances and terminal stream calls.
