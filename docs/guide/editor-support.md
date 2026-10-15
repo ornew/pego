@@ -41,7 +41,7 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
 | Hover | For a rule, `rule <name> [<Type Expression>] = <Rule Expression>` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types, functions (`len`, `foldl`, ...), node fields (`startPos`, ...) and attributes (`@error`, ...), a description |
 | Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused |
-| Completion | Rule names in rule bodies, types where a type is expected, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, built-in functions, and struct types in constructors; and keywords |
+| Completion | Rule names in rule bodies, types where a type is expected, type names and a `FieldName Type` snippet at field-name positions in struct declarations, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, built-in functions, and struct types in constructors; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
 White space may separate Definition Statement keywords from names; comments

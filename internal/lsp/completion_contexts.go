@@ -7,7 +7,7 @@ import (
 
 // contextualItems recognizes unfinished syntax without requiring the containing
 // declaration to have survived partial parsing.
-func (a *analysis) contextualItems(prev int) ([]CompletionItem, bool) {
+func (a *analysis) contextualItems(prev, off int) ([]CompletionItem, bool) {
 	var stack []int
 	for i := 0; i <= prev; i++ {
 		if a.isDefKeyword(i) {
@@ -52,6 +52,23 @@ func (a *analysis) contextualItems(prev int) ([]CompletionItem, bool) {
 			}
 		}
 		return nil, false
+	}
+	if a.isIdent(name, "struct") {
+		typeName := a.previousSignificantToken(name - 1)
+		keyword := a.previousSignificantToken(typeName - 1)
+		if typeName >= 0 && a.toks[typeName].Kind == syntax.TokenIdent && a.isIdent(keyword, "type") && a.isDefKeyword(keyword) {
+			last := a.previousSignificantToken(prev)
+			// A field name starts after the opening brace, a semicolon or a
+			// physical newline. Open type groups are handled by the innermost
+			// parenthesis above, so their continuation is not a new field.
+			if last == open || a.isPunct(last, ";") || a.toks[last].End.Line < a.idx.position(off).Line+1 {
+				return append(a.typeItems(false), CompletionItem{
+					Label: "FieldName Type", Kind: completionKindSnippet, Detail: "struct field declaration",
+					InsertText: "${1:FieldName} ${2:Type}", InsertTextFormat: insertSnippet,
+				}), true
+			}
+			return nil, false // The existing field-type completion handles this position.
+		}
 	}
 	if name < 0 || a.toks[name].Kind != syntax.TokenIdent || !a.inValue(name) {
 		return nil, false

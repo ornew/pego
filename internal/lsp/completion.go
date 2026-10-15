@@ -139,7 +139,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 			prev = i - 1
 		}
 	}
-	if items, found := a.contextualItems(prev); found {
+	if items, found := a.contextualItems(prev, off); found {
 		return items
 	}
 	// The punctuation directly before the word (or the cursor).

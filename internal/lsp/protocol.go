@@ -165,6 +165,7 @@ const (
 	completionKindClass    = 7
 	completionKindProperty = 10
 	completionKindKeyword  = 14
+	completionKindSnippet  = 15
 	completionKindStruct   = 22
 )
 

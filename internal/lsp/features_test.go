@@ -497,7 +497,7 @@ func TestCompletion(t *testing.T) {
 		char int // -1: the end of the line
 		want []string
 	}{
-		{2, -1, nil},
+		{2, -1, sorted(userTypes, builtinTypeNames, []string{"FieldName Type"})},
 		{3, -1, sorted(userTypes, builtinTypeNames, statementKeywords)},
 		{4, -1, sorted(userTypes, builtinTypeNames)},
 		{5, -1, sorted(rules, statementKeywords)},
