@@ -137,6 +137,7 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 	d.edits, d.runs, d.kids, d.vals = nil, nil, nil, nil
 	d.runGen, d.resumed = 0, 0
 	d.sequence++
+	d.recordEdit(base, edits)
 	return nil
 }
 

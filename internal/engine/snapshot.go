@@ -296,12 +296,17 @@ func (c *snapshotContext) Err() error {
 // SnapshotWith parses and freezes the current text with fully resolved options.
 // Cancellation and work limits cover both phases; interruption returns nil.
 func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
+	return d.snapshotWith(o, nil)
+}
+
+func (d *Document) snapshotWith(o ParseOptions, legacy **Node) (*Snapshot, error) {
 	var observed *snapshotContext
 	if o.Context != nil {
 		observed = &snapshotContext{Context: o.Context}
 		o.Context = observed
 	}
 	var result *Snapshot
+	output := OutputUnavailable
 	_, err := d.parseWithCapture(o, func(p *parser, root *Node, parseErr error) error {
 		if observed != nil && observed.interrupted || errors.Is(parseErr, ErrWorkLimit) {
 			return parseErr
@@ -339,12 +344,25 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 		}
 		returnedError := copySnapshotError(p, err)
 		p.control.check()
-		result = &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.reportedStats()}
+		candidate := &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.reportedStats()}
+		nextOutput := OutputMayHaveChanged
+		if d.changes != nil && d.changes.previous != nil {
+			nextOutput = OutputChanged
+			if equalChangeSnapshotsControlled(p, d.changes.previous, candidate) {
+				nextOutput = OutputUnchanged
+			}
+		}
+		p.control.check()
+		result, output = candidate, nextOutput
+		if legacy != nil {
+			*legacy = root
+		}
 		if snapshotSharingEnabled {
 			d.previousSnapshot = weak.Make(&result.graph)
 		}
 		return returnedError
 	})
+	d.recordOutcome(result, output)
 	return result, err
 }
 

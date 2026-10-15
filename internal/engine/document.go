@@ -41,6 +41,7 @@ func useDocumentPieces(text string, unit Unit) bool {
 // The nodes of a shifted result are moved in place when the result is reused (moveResult), so
 // trees returned by earlier parses change with them.
 type Document struct {
+	changes  *documentChanges
 	identity *documentIdentity
 	sequence uint64
 	prog     *Program
@@ -118,6 +119,11 @@ func (d *Document) Parse() (*Node, error) { return d.ParseWith(d.defaults) }
 // ParseWith parses using fully resolved options. Unit, effective backend and
 // recognition mode must match construction; this method does not merge defaults.
 func (d *Document) ParseWith(o ParseOptions) (*Node, error) {
+	if d.changes != nil {
+		var n *Node
+		_, err := d.snapshotWith(o, &n)
+		return n, err
+	}
 	return d.parseWithCapture(o, nil)
 }
 
@@ -260,8 +266,10 @@ func (d *Document) Edit(start, end int, text string) error {
 	if err := d.nextVersion(); err != nil {
 		return err
 	}
+	from := d.Version()
 	delta := d.in.replace(start, end, text)
 	d.sequence++
+	d.recordEdit(from, []TextEdit{{Start: start, End: end, Text: text}})
 	if documentPieceInput && d.in.pieces == nil && d.in.loaded() >= documentPieceMinSize {
 		// A small Document can grow into the measured range where the piece
 		// representation wins. Promote once, after the flat edit has completed.

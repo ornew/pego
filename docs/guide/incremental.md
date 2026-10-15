@@ -19,6 +19,9 @@ A `Document` works with every backend ([Runtime](runtime.md)) and with both posi
 opposite one, an input too big to hold, see [Streaming](streaming.md): a `Document` is always parsed as a whole and
 `#stream` has no effect on it, so the two do not combine.
 
+To observe edits and parse outcomes for downstream indexes or highlights, enable
+the opt-in [Document change notifications](document-changes.md) before editing.
+
 The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md).
 
 - [The model](#the-model)
