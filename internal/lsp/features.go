@@ -22,7 +22,14 @@ func (s *Server) formatting(params json.RawMessage) (any, *rpcError) {
 	if err != nil {
 		return nil, err
 	}
-	return formatEdits(d.analysis()), nil
+	if s.requestContext == nil {
+		return formatEdits(d.analysis()), nil
+	}
+	edits, formatErr := formatEditsContext(s.requestContext, d.analysis())
+	if formatErr != nil {
+		return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
+	}
+	return edits, nil
 }
 
 // formatEdits returns the edits that format the document like pego fmt: none if it does not

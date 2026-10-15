@@ -11,8 +11,9 @@ import (
 // findings, including those accumulated before the stopping point. Run retains
 // its ordinary behavior without an active control. Polling covers lint-owned
 // analysis, check and suppression loops, recursive analyses and result sorting.
-// Shared success proofs and selected metadata walks also poll; character-range
-// work, grammar formatting and other individual operations retain unpolled spans. No wall-clock bound is promised.
+// Shared success proofs, metadata walks, character-range work and diagnostic
+// formatting also poll. Other individual operations retain unpolled spans; no
+// wall-clock bound is promised.
 func RunContext(ctx context.Context, g *grammar.Grammar, start string, opts Options) (findings []Finding, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -97,4 +98,27 @@ func (c *lintControl) expressionArgs(a *grammar.Attribute) []grammar.Expr {
 		return a.ExpressionArgs()
 	}
 	return grammaranalysis.ExpressionArgsWithPoll(a, c.poll)
+}
+
+func (c *lintControl) formatExpr(e grammar.Expr) string {
+	if c == nil {
+		return grammar.FormatExpr(e)
+	}
+	result, err := grammar.FormatExprContext(c.ctx, e)
+	if err != nil {
+		panic(lintCancellation{err})
+	}
+	return result
+}
+
+func (c *lintControl) formatTerm(t grammar.Term) string {
+	if c == nil {
+		return grammar.FormatTerm(grammaranalysis.UngroupTerm(t))
+	}
+	t = grammaranalysis.UngroupTermWithPoll(t, c.poll)
+	result, err := grammar.FormatTermContext(c.ctx, t)
+	if err != nil {
+		panic(lintCancellation{err})
+	}
+	return result
 }

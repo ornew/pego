@@ -113,14 +113,14 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 	for i, alt := range alts[:len(alts)-1] {
 		control.poll()
 		if a.succeeds(alt) {
-			later := fmt.Sprintf("%s %d (%s)", kind, i+2, show(alts[i+1]))
+			later := fmt.Sprintf("%s %d (%s)", kind, i+2, showControlled(alts[i+1], control))
 			if i+2 < len(alts) {
 				later = fmt.Sprintf("%ss %d to %d", kind, i+2, len(alts))
 			}
 			l.report(CheckShadowedAlt, Error, posOfControlled(alts[i+1], control),
 				fmt.Sprintf("remove what follows %s %d, or make it fail where it matches nothing", kind, i+1)+
 					a.shadowedSuffixCaveat(alt, alts[i+1:]...),
-				"%s never tried: %s %d (%s%s) always succeeds", plural(later), kind, i+1, show(alt), at(posOfControlled(alt, control)))
+				"%s never tried: %s %d (%s%s) always succeeds", plural(later), kind, i+1, showControlled(alt, control), at(posOfControlled(alt, control)))
 			alts = alts[:i+1]
 			break
 		}
@@ -132,11 +132,11 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 			switch a.covers(alts[i], alts[j]) {
 			case "duplicate":
 				l.report(CheckShadowedAlt, Error, posOfControlled(alts[j], control), "remove it"+a.leftRecursionCaveat(alts[j]),
-					"%s %d (%s) can never match: it is the same as %s %d%s", kind, j+1, show(alts[j]), kind, i+1, at(posOfControlled(alts[i], control)))
+					"%s %d (%s) can never match: it is the same as %s %d%s", kind, j+1, showControlled(alts[j], control), kind, i+1, at(posOfControlled(alts[i], control)))
 			case "prefix":
 				l.report(CheckShadowedAlt, Error, posOfControlled(alts[j], control), fmt.Sprintf("move it before %s %d", kind, i+1)+a.leftRecursionCaveat(alts[j]),
 					"%s %d (%s) can never match: %s %d (%s%s) matches first wherever it could",
-					kind, j+1, show(alts[j]), kind, i+1, show(alts[i]), at(posOfControlled(alts[i], control)))
+					kind, j+1, showControlled(alts[j], control), kind, i+1, showControlled(alts[i], control), at(posOfControlled(alts[i], control)))
 			default:
 				continue
 			}
@@ -250,7 +250,7 @@ func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool)
 			}
 			l.report(CheckShadowedAlt, Error, oj.Diagnostic(), "remove it, or merge the two operators",
 				"%s operator %s is never selected: the %s operator%s matches the same text and is declared first",
-				oj.Kind, show(oj.Expr), oi.Kind, at(oi.Diagnostic()))
+				oj.Kind, showControlled(oj.Expr, control), oi.Kind, at(oi.Diagnostic()))
 			break
 		}
 	}
@@ -280,17 +280,17 @@ func (l *linter) neverMatches() {
 			switch an.(type) {
 			case *grammar.EndInput:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "move $$ to the end of the sequence",
-					"`$$` is followed by %s, which cannot match at the end of the input, so the sequence can never match", show(after))
+					"`$$` is followed by %s, which cannot match at the end of the input, so the sequence can never match", showControlled(after, control))
 			case *grammar.BeginInput:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "move ^^ to the beginning of the sequence",
-					"`^^` follows %s, which must consume input, so the sequence can never match", show(before))
+					"`^^` follows %s, which must consume input, so the sequence can never match", showControlled(before, control))
 			case *grammar.EndLine:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "match the line break after $, or remove $",
 					"`$` (end of line) is followed by %s, which begins with %q rather than a line break, so the sequence can never match",
-					show(after), firstChar(a.prefix(after).s))
+					showControlled(after, control), firstChar(a.prefix(after).s))
 			case *grammar.BeginLine:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "remove ^, or match a line break before it",
-					"`^` (beginning of line) follows %s, which never ends with a line feed, so the sequence can never match", show(before))
+					"`^` (beginning of line) follows %s, which never ends with a line feed, so the sequence can never match", showControlled(before, control))
 			}
 		}, control)
 	})
@@ -484,16 +484,16 @@ func (l *linter) lookaheads() {
 				// Captures in a positive lookahead stay in effect, so it may be there for them.
 				if !hasCapturesControlled(e.Expr, control) && a.succeeds(e.Expr) {
 					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
-						"%s always succeeds, because %s always does: the lookahead has no effect", show(e), show(e.Expr))
+						"%s always succeeds, because %s always does: the lookahead has no effect", showControlled(e, control), showControlled(e.Expr, control))
 				}
 			case *grammar.Not:
 				switch {
 				case a.succeeds(e.Expr):
 					l.report(CheckUselessLookahead, Error, e.Diagnostic(), "negate an expression that must consume input",
-						"%s can never succeed, because %s always does (it can match without consuming input)", show(e), show(e.Expr))
+						"%s can never succeed, because %s always does (it can match without consuming input)", showControlled(e, control), showControlled(e.Expr, control))
 				case !a.mayMatch(e.Expr):
 					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
-						"%s always succeeds, because %s can never match", show(e), show(e.Expr))
+						"%s always succeeds, because %s can never match", showControlled(e, control), showControlled(e.Expr, control))
 				}
 			}
 		}, control)
@@ -545,15 +545,15 @@ func (l *linter) nullableRepetitions() {
 			fix := "make the element consume input"
 			switch inner := neutralControlled(rp.Expr, false, control).(type) {
 			case *grammar.Optional:
-				fix = fmt.Sprintf("repeat %s instead of %s", show(inner.Expr), show(inner))
+				fix = fmt.Sprintf("repeat %s instead of %s", showControlled(inner.Expr, control), showControlled(inner, control))
 			case *grammar.Repeat:
 				if inner.Min <= 1 && inner.Max < 0 {
-					fix = fmt.Sprintf("repeat %s once, without the inner repetition", show(inner.Expr))
+					fix = fmt.Sprintf("repeat %s once, without the inner repetition", showControlled(inner.Expr, control))
 				}
 			}
 			l.report(CheckNullableRepetition, Warning, rp.Diagnostic(), fix,
 				"the element of %s can match without consuming input: the repetition then stops, with an empty element in its list",
-				show(rp))
+				showControlled(rp, control))
 		}, control)
 	})
 }
@@ -570,7 +570,7 @@ func (l *linter) redundantOptionals() {
 			// x? has a value (nil) even where x has none, so only an x with a value is the same.
 			if o, ok := e.(*grammar.Optional); ok && visibleControlled(o.Expr, control) && a.succeeds(o.Expr) {
 				l.report(CheckRedundantOptional, Warning, o.Diagnostic(), "remove the ?",
-					"%s is the same as %s, which always succeeds", show(o), show(o.Expr))
+					"%s is the same as %s, which always succeeds", showControlled(o, control), showControlled(o.Expr, control))
 			}
 		}, control)
 	})
@@ -890,7 +890,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 	control.poll()
 
 	show := func(rg grammar.CharRange) string {
-		return strings.TrimSuffix(strings.TrimPrefix(grammar.FormatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "["), "]")
+		return strings.TrimSuffix(strings.TrimPrefix(control.formatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "["), "]")
 	}
 	fixed := &grammar.CharClass{Negated: c.Negated, Ranges: normalizeControlled(c.Ranges, control)}
 	for j, rj := range c.Ranges {
@@ -902,8 +902,8 @@ func (l *linter) charClass(c *grammar.CharClass) {
 				if ri == rj {
 					what = fmt.Sprintf("%s is listed twice", show(rj))
 				}
-				l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+grammar.FormatExpr(fixed),
-					"in %s, %s", grammar.FormatExpr(c), what)
+				l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+control.formatExpr(fixed),
+					"in %s, %s", control.formatExpr(c), what)
 				return
 			}
 		}
@@ -947,8 +947,8 @@ func (l *linter) charClass(c *grammar.CharClass) {
 	}
 	if len(spans) > 0 {
 		fix := &grammar.CharClass{Negated: c.Negated, Ranges: ranges}
-		l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+grammar.FormatExpr(fix)+" if only letters and digits are meant",
-			"in %s, %s", grammar.FormatExpr(c), strings.Join(spans, ", "))
+		l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+control.formatExpr(fix)+" if only letters and digits are meant",
+			"in %s, %s", control.formatExpr(c), strings.Join(spans, ", "))
 	}
 }
 
@@ -1182,7 +1182,7 @@ func (l *linter) longLookaheads() {
 			if rp := anyRepeatControlled(inner, control); rp != nil {
 				l.report(CheckLongLookahead, Hint, pos, "limit the lookahead to the current line or token",
 					"%s can examine any amount of input (%s repeats over any character, line breaks included): in a Document, "+
-						"an edit anywhere in what it examined makes this rule be evaluated again", show(e), show(rp))
+						"an edit anywhere in what it examined makes this rule be evaluated again", showControlled(e, control), showControlled(rp, control))
 			}
 		}, control)
 	})

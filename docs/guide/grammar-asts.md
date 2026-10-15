@@ -105,6 +105,29 @@ pego fmt -syntax grammar.pego
 follow the formatter's layout rules; comments attached only to omitted forms
 may be omitted.
 
+## Format With Cancellation
+
+Use the context-aware formatting functions when a large AST may need to be
+abandoned:
+
+```go
+formatted, err := grammar.FormatContext(ctx, g)
+if err != nil {
+    return err
+}
+```
+
+`FormatExprContext`, `FormatTermContext` and `FormatTypeContext` provide the
+same behavior for individual AST values. They produce the same text as
+`Format`, `FormatExpr`, `FormatTerm` and `FormatType`. If cancellation is
+observed, the result is an empty string and the context error; partial text is
+not returned. Keep the AST immutable for the duration of formatting.
+
+Cancellation is cooperative. The formatter checks while traversing the AST,
+processing layout and keyword ordering, and constructing output. Individual
+allocations, concatenations and string comparisons can finish before a check,
+so these functions do not guarantee a wall-clock deadline.
+
 ## Collect Metadata with Cancellation
 
 For large grammar ASTs, use the context-aware collection methods:

@@ -2,25 +2,19 @@ package grammar
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 // indentUnit is one level of indentation.
 const indentUnit = "    "
 
-// Format converts g to PEGO source code.
-//
-// Comments and line breaks recorded in the AST (see LineBreak) are kept, so
-// formatting parsed source preserves its comments. Struct field types and
-// trailing comments on consecutive lines are aligned. A grammar without such
-// layout information (for example, one decoded from JSON) is printed with a
-// blank line between definitions and one item per line in blocks.
-func Format(g *Grammar) string {
-	p := &printer{start: true, headers: map[Pos][]*Comment{}}
+// formatGrammar shares one control across the complete printing operation.
+func formatGrammar(g *Grammar, control *metadataControl) string {
+	pollFormat(control)
+	p := &printer{start: true, headers: map[Pos][]*Comment{}, control: control}
 	for _, comment := range g.HeaderComments {
+		pollFormat(control)
 		if comment != nil {
 			p.headers[comment.Header] = append(p.headers[comment.Header], comment)
 		}
@@ -31,6 +25,7 @@ func Format(g *Grammar) string {
 		p.write(" " + g.Package)
 	}
 	for _, s := range g.Statements {
+		pollFormat(control)
 		switch s := s.(type) {
 		case *TypeDef:
 			p.lineBreak(s.Break, "", true)
@@ -70,9 +65,11 @@ type printer struct {
 	// trailing are the trailing comments of the current line.
 	trailing []*Comment
 	headers  map[Pos][]*Comment
+	control  *metadataControl
 }
 
 func (p *printer) write(s string) {
+	pollFormat(p.control)
 	if p.cur == nil {
 		p.newLine("")
 	}
@@ -91,6 +88,7 @@ func joinMinusTokens(left, right string) string {
 // flush writes the trailing comments of the current line.
 func (p *printer) flush() {
 	for _, c := range p.trailing {
+		pollFormat(p.control)
 		if p.cur != nil && p.cur.comment == "" {
 			p.cur.comment = c.Text
 			continue
@@ -145,6 +143,7 @@ func (p *printer) comments(b *LineBreak, indent string, closing bool) bool {
 		return false
 	}
 	for _, c := range b.Comments {
+		pollFormat(p.control)
 		if c.Header.IsValid() {
 			continue
 		}
@@ -188,60 +187,66 @@ func (p *printer) closeBlock(b *LineBreak, indent string) {
 }
 
 func (p *printer) typeDef(t *TypeDef) {
+	pollFormat(p.control)
 	p.header("type", t.Pos)
 	p.write(" " + t.Name + " ")
 	switch spec := t.Spec.(type) {
 	case *StructSpec:
 		p.structSpec(spec, "")
 	case *AliasSpec:
-		p.write("= " + FormatType(spec.Type))
+		p.write("= " + formatType(spec.Type, p.control))
 	case *TerminalSpec:
 		p.write("terminal")
 	}
 }
 
 func (p *printer) structSpec(s *StructSpec, indent string) {
+	pollFormat(p.control)
 	p.write("struct ")
 	empty := noComments(s.CloseBreak)
 	for _, f := range s.Fields {
+		pollFormat(p.control)
 		empty = empty && noComments(f.Break)
 	}
 	if empty && (len(s.Fields) == 0 || s.OneLine) {
 		parts := make([]string, len(s.Fields))
 		for i, f := range s.Fields {
-			parts[i] = f.Name + " " + FormatType(f.Type)
+			pollFormat(p.control)
+			parts[i] = f.Name + " " + formatType(f.Type, p.control)
 			p.inline(f.Break)
 		}
 		p.inline(s.CloseBreak)
 		if len(parts) == 0 {
 			p.write("{}")
 		} else {
-			p.write("{ " + strings.Join(parts, "; ") + " }")
+			p.write("{ " + joinFormatParts(parts, "; ", p.control) + " }")
 		}
 		return
 	}
 	p.openBlock()
 	for _, f := range s.Fields {
+		pollFormat(p.control)
 		p.lineBreak(f.Break, indent+indentUnit, false)
 		p.cur.field = true
 		p.cur.name = f.Name
-		p.write(FormatType(f.Type))
+		p.write(formatType(f.Type, p.control))
 	}
 	p.closeBlock(s.CloseBreak, indent)
 }
 
 func (p *printer) ruleDef(r *RuleDef) {
+	pollFormat(p.control)
 	p.header("rule", r.Pos)
 	p.write(" " + r.Name)
 	if r.Type != nil {
-		p.write(" " + FormatType(r.Type))
+		p.write(" " + formatType(r.Type, p.control))
 	}
 	p.write(" = ")
 	if pr, ok := r.Expr.(*OperatorsRule); ok {
 		p.write("operators ")
 		p.operatorsRule(pr, "")
 	} else {
-		if r.BodyBreak != nil || r.ActionBreak != nil || expressionLayout(r.Expr) {
+		if r.BodyBreak != nil || r.ActionBreak != nil || expressionLayoutControlled(r.Expr, p.control) {
 			p.write("(")
 			p.lineBreak(r.BodyBreak, indentUnit, false)
 			p.body(r.Expr, indentUnit)
@@ -258,39 +263,45 @@ func (p *printer) ruleDef(r *RuleDef) {
 		if r.DefaultAction {
 			p.write("...")
 		} else {
-			p.write(FormatTerm(r.Action))
+			p.write(formatTerm(r.Action, 0, p.control))
 		}
 	}
 	p.comments(r.CloseBreak, indentUnit, true)
 	p.inline(r.CloseBreak)
 }
 
-func expressionLayout(e Expr) bool {
+func expressionLayoutControlled(e Expr, control *metadataControl) bool {
+	pollFormat(control)
 	switch e := e.(type) {
 	case *Seq:
 		for _, b := range e.Breaks {
+			pollFormat(control)
 			if b != nil {
 				return true
 			}
 		}
 		for _, it := range e.Items {
-			if expressionLayout(it) {
+			pollFormat(control)
+			if expressionLayoutControlled(it, control) {
 				return true
 			}
 		}
 	case *Choice:
 		for _, b := range e.Breaks {
+			pollFormat(control)
 			if b != nil {
 				return true
 			}
 		}
 		for _, alt := range e.Alts {
-			if expressionLayout(alt) {
+			pollFormat(control)
+			if expressionLayoutControlled(alt, control) {
 				return true
 			}
 		}
 	case *Attributed:
 		for _, b := range e.Breaks {
+			pollFormat(control)
 			if b != nil {
 				return true
 			}
@@ -304,19 +315,21 @@ func expressionLayout(e Expr) bool {
 	case *Stream:
 		return e.Break != nil
 	case *Capture:
-		return expressionLayout(e.Expr)
+		return expressionLayoutControlled(e.Expr, control)
 	case *And:
-		return expressionLayout(e.Expr)
+		return expressionLayoutControlled(e.Expr, control)
 	case *Not:
-		return expressionLayout(e.Expr)
+		return expressionLayoutControlled(e.Expr, control)
 	case *Discard:
-		return expressionLayout(e.Expr)
+		return expressionLayoutControlled(e.Expr, control)
 	}
 	return false
 }
 
-func undecorate(e Expr, attrs []*Attribute) (Expr, bool) {
+func undecorate(e Expr, attrs []*Attribute, control *metadataControl) (Expr, bool) {
+	pollFormat(control)
 	for _, a := range attrs {
+		pollFormat(control)
 		if a.Name == "atomic" {
 			x, ok := e.(*Atomic)
 			if !ok {
@@ -346,12 +359,14 @@ func undecorate(e Expr, attrs []*Attribute) (Expr, bool) {
 // body writes the expression of a rule body, keeping the line breaks
 // recorded in its top-level choice and sequences.
 func (p *printer) body(e Expr, indent string) {
+	pollFormat(p.control)
 	c, ok := e.(*Choice)
 	if !ok {
 		p.sequence(e, indent, precChoice)
 		return
 	}
 	for i, a := range c.Alts {
+		pollFormat(p.control)
 		if i == 0 {
 			p.sequence(a, indent, precSeq)
 			continue
@@ -368,11 +383,13 @@ func (p *printer) body(e Expr, indent string) {
 }
 
 func (p *printer) sequence(e Expr, indent string, outer int) {
+	pollFormat(p.control)
 	switch e := e.(type) {
 	case *Choice:
-		p.write(formatExpr(e, outer))
+		p.write(formatExpr(e, outer, p.control))
 	case *Seq:
 		for i, it := range e.Items {
+			pollFormat(p.control)
 			if i > 0 {
 				if b := breakAt(e.Breaks, i); b != nil {
 					p.lineBreak(b, indent, false)
@@ -390,6 +407,7 @@ func (p *printer) sequence(e Expr, indent string, outer int) {
 // item writes an item of a top-level sequence of a rule body, keeping the
 // line breaks before its attributes.
 func (p *printer) item(e Expr, indent string) {
+	pollFormat(p.control)
 	switch e := e.(type) {
 	case *Group:
 		p.group(e, indent)
@@ -403,7 +421,7 @@ func (p *printer) item(e Expr, indent string) {
 		p.write("!")
 		p.item(e.Expr, indent)
 	case *Atomic:
-		p.write(formatExpr(e.Expr, precSuffix))
+		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
@@ -411,7 +429,7 @@ func (p *printer) item(e Expr, indent string) {
 		}
 		p.write("#atomic")
 	case *Stream:
-		p.write(formatExpr(e.Expr, precSuffix))
+		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
@@ -419,19 +437,19 @@ func (p *printer) item(e Expr, indent string) {
 		}
 		p.write("#stream")
 	case *Recovery:
-		p.write(formatExpr(e.Expr, precSuffix))
+		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
 			p.write(" ")
 		}
-		p.write("#recover(skip=" + FormatExpr(e.Skip) + ")")
+		p.write("#recover(skip=" + formatExpr(e.Skip, precChoice, p.control) + ")")
 	case *Repeat:
 		if e.PragmaBreak == nil {
-			p.write(formatExpr(e, precPrefix))
+			p.write(formatExpr(e, precPrefix, p.control))
 			break
 		}
-		p.write(formatExpr(e.Expr, precSuffix))
+		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		p.lineBreak(e.PragmaBreak, indent, false)
 		if e.Min == e.Max {
 			p.write(fmt.Sprintf("#repeat(%d)", e.Min))
@@ -444,21 +462,23 @@ func (p *printer) item(e Expr, indent string) {
 		p.write("-")
 		p.item(e.Expr, indent)
 	case *Attributed:
-		p.write(formatExpr(e.Expr, precSuffix))
+		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		for i, a := range e.Attrs {
+			pollFormat(p.control)
 			if b := breakAt(e.Breaks, i); b != nil {
 				p.lineBreak(b, indent, false)
 			} else {
 				p.write(" ")
 			}
-			p.write(formatAttribute(a))
+			p.write(formatAttribute(a, p.control))
 		}
 	default:
-		p.write(formatExpr(e, precPrefix))
+		p.write(formatExpr(e, precPrefix, p.control))
 	}
 }
 
 func (p *printer) group(g *Group, indent string) {
+	pollFormat(p.control)
 	if g.OneLine && noComments(g.BodyBreak) && noComments(g.CloseBreak) {
 		p.write("(")
 		p.groupBody(g.Expr, indent)
@@ -476,13 +496,14 @@ func (p *printer) group(g *Group, indent string) {
 }
 
 func (p *printer) groupBody(e Expr, indent string) {
+	pollFormat(p.control)
 	if action, ok := e.(*InlineAction); ok {
 		p.body(action.Expr, indent)
 		p.write(" => ")
 		if action.DefaultAction {
 			p.write("...")
 		} else {
-			p.write(FormatTerm(action.Action))
+			p.write(formatTerm(action.Action, 0, p.control))
 		}
 		return
 	}
@@ -497,22 +518,25 @@ func breakAt(bs []*LineBreak, i int) *LineBreak {
 }
 
 func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
+	pollFormat(p.control)
 	inner := indent + indentUnit
 	p.openBlock()
 	if pr.Skip != nil {
 		p.lineBreak(pr.SkipBreak, inner, false)
-		p.write("skip " + FormatExpr(pr.Skip))
+		p.write("skip " + formatExpr(pr.Skip, precChoice, p.control))
 	}
 	for _, o := range pr.Operands {
+		pollFormat(p.control)
 		p.lineBreak(o.Break, inner, false)
-		p.write("operand " + FormatExpr(o.Expr))
+		p.write("operand " + formatExpr(o.Expr, precChoice, p.control))
 		if o.Action != nil {
-			p.write(" => " + FormatTerm(o.Action))
+			p.write(" => " + formatTerm(o.Action, 0, p.control))
 		} else if o.DefaultAction {
 			p.write(" => ...")
 		}
 	}
 	for _, l := range pr.Levels {
+		pollFormat(p.control)
 		p.lineBreak(l.Break, inner, false)
 		p.header("level", l.Pos)
 		p.write(" ")
@@ -521,12 +545,14 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		}
 		empty := noComments(l.CloseBreak)
 		for _, op := range l.Operators {
+			pollFormat(p.control)
 			empty = empty && noComments(op.Break)
 		}
 		switch {
 		case empty && (len(l.Operators) == 0 || l.OneLine):
 			p.write("{")
 			for i, op := range l.Operators {
+				pollFormat(p.control)
 				if i > 0 {
 					p.write(";")
 				}
@@ -542,6 +568,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		default:
 			p.openBlock()
 			for _, op := range l.Operators {
+				pollFormat(p.control)
 				p.lineBreak(op.Break, inner+indentUnit, false)
 				p.operator(op)
 			}
@@ -551,14 +578,15 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 	p.closeBlock(pr.CloseBreak, indent)
 }
 
-func formatOperator(op *OperatorsRuleOperator) string {
+func formatOperator(op *OperatorsRuleOperator, control *metadataControl) string {
+	pollFormat(control)
 	s := op.Kind + " "
 	if op.Assoc != "" {
 		s += op.Assoc + " "
 	}
-	s += FormatExpr(op.Expr)
+	s += formatExpr(op.Expr, precChoice, control)
 	if op.Action != nil {
-		s += " => " + FormatTerm(op.Action)
+		s += " => " + formatTerm(op.Action, 0, control)
 	} else if op.DefaultAction {
 		s += " => ..."
 	}
@@ -570,89 +598,101 @@ func (p *printer) String() string {
 	ls := p.lines
 	// Align the types of consecutive struct fields.
 	for i := 0; i < len(ls); {
+		pollFormat(p.control)
 		j, w := i, 0
 		for j < len(ls) && ls[j].field && ls[j].indent == ls[i].indent {
-			w = max(w, utf8.RuneCountInString(ls[j].name))
+			pollFormat(p.control)
+			w = max(w, formatRuneCount(ls[j].name, p.control))
 			j++
 		}
 		for _, l := range ls[i:j] {
-			l.text = pad(l.name, w) + " " + l.text
+			pollFormat(p.control)
+			l.text = pad(l.name, w, p.control) + " " + l.text
 		}
 		i = max(j, i+1)
 	}
 	// Align the trailing comments of consecutive lines.
 	for i := 0; i < len(ls); {
+		pollFormat(p.control)
 		j, w := i, 0
 		for j < len(ls) && ls[j].comment != "" && ls[j].indent == ls[i].indent {
-			w = max(w, utf8.RuneCountInString(ls[j].text))
+			pollFormat(p.control)
+			w = max(w, formatRuneCount(ls[j].text, p.control))
 			j++
 		}
 		for _, l := range ls[i:j] {
-			l.text = pad(l.text, w) + " " + l.comment
+			pollFormat(p.control)
+			l.text = pad(l.text, w, p.control) + " " + l.comment
 		}
 		i = max(j, i+1)
 	}
 	var b strings.Builder
 	for _, l := range ls {
+		pollFormat(p.control)
 		if !l.blank {
-			b.WriteString(strings.TrimRight(l.indent+l.text, " "))
+			writeFormatString(&b, trimFormatRight(l.indent+l.text, " ", p.control), p.control)
 		}
-		b.WriteString("\n")
+		writeFormatString(&b, "\n", p.control)
 	}
 	return b.String()
 }
 
-func pad(s string, w int) string {
-	return s + strings.Repeat(" ", w-utf8.RuneCountInString(s))
+func pad(s string, w int, control *metadataControl) string {
+	pollFormat(control)
+	return s + strings.Repeat(" ", w-formatRuneCount(s, control))
 }
 
 // FormatType returns t in PEGO syntax.
-func FormatType(t TypeExpr) string {
+func formatType(t TypeExpr, control *metadataControl) string {
+	pollFormat(control)
 	switch t := t.(type) {
 	case *TypeGroup:
-		return formatSourceGroup(FormatType(t.Type), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine)
+		return finishFormat(formatSourceGroup(formatType(t.Type, control), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, control), control)
 	case *TypeRef:
-		return t.Name
+		return finishFormat(t.Name, control)
 	case *ListType:
-		return "[]" + formatTypeTerm(t.Elem)
+		return finishFormat("[]"+formatTypeTerm(t.Elem, control), control)
 	case *OptionalType:
-		return "*" + formatTypeTerm(t.Elem)
+		return finishFormat("*"+formatTypeTerm(t.Elem, control), control)
 	case *UnionType:
 		parts := make([]string, len(t.Types))
 		for i, x := range t.Types {
-			parts[i] = formatTypeTerm(x)
+			pollFormat(control)
+			parts[i] = formatTypeTerm(x, control)
 		}
-		return strings.Join(parts, " | ")
+		return finishFormat(joinFormatParts(parts, " | ", control), control)
 	}
-	return "?"
+	return finishFormat("?", control)
 }
 
-func formatTypeTerm(t TypeExpr) string {
+func formatTypeTerm(t TypeExpr, control *metadataControl) string {
+	pollFormat(control)
 	if _, ok := t.(*UnionType); ok {
-		return "(" + FormatType(t) + ")"
+		return "(" + formatType(t, control) + ")"
 	}
-	return FormatType(t)
+	return formatType(t, control)
 }
 
 // formatSourceGroup keeps explicit delimiters and their boundary trivia.
-func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool) string {
+func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool, control *metadataControl) string {
+	pollFormat(control)
 	if oneLine {
-		leading, ok1 := groupInlineComments(open, true)
-		opening, ok0 := groupInlineComments(open, false)
-		before, ok2 := groupInlineComments(first, false)
-		after, ok3 := groupInlineComments(first, true)
-		closing, ok4 := groupInlineComments(close, false)
+		leading, ok1 := groupInlineComments(open, true, control)
+		opening, ok0 := groupInlineComments(open, false, control)
+		before, ok2 := groupInlineComments(first, false, control)
+		after, ok3 := groupInlineComments(first, true, control)
+		closing, ok4 := groupInlineComments(close, false, control)
 		if ok0 && ok1 && ok2 && ok3 && ok4 && (close == nil || close.Trailing == nil) {
 			return "(" + leading + opening + before + body + after + closing + ")"
 		}
 	}
-	p := &printer{}
+	p := &printer{control: control}
 	p.write("(")
 	p.inline(open)
 	p.start = true
 	p.comments(open, indentUnit, false)
 	p.lineBreak(first, indentUnit, false)
-	p.write(strings.ReplaceAll(body, "\n", "\n"+indentUnit))
+	p.write(replaceFormatNewlines(body, "\n", "\n"+indentUnit, control))
 	p.comments(close, indentUnit, true)
 	p.newLine("")
 	p.write(")")
@@ -661,7 +701,8 @@ func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool)
 	return strings.TrimSuffix(p.String(), "\n")
 }
 
-func groupInlineComments(b *LineBreak, trailing bool) (string, bool) {
+func groupInlineComments(b *LineBreak, trailing bool, control *metadataControl) (string, bool) {
+	pollFormat(control)
 	if b == nil {
 		return "", true
 	}
@@ -674,14 +715,15 @@ func groupInlineComments(b *LineBreak, trailing bool) (string, bool) {
 	}
 	var s strings.Builder
 	for _, c := range comments {
+		pollFormat(control)
 		if c.Header.IsValid() {
 			continue
 		}
-		if !strings.HasPrefix(c.Text, "/*") || strings.ContainsAny(c.Text, "\r\n") {
+		if !strings.HasPrefix(c.Text, "/*") || hasFormatNewline(c.Text, control) {
 			return "", false
 		}
 		s.WriteByte(' ')
-		s.WriteString(c.Text)
+		writeFormatString(&s, c.Text, control)
 		s.WriteByte(' ')
 	}
 	return s.String(), !b.Blank
@@ -696,7 +738,7 @@ const (
 )
 
 // FormatExpr returns the parser expression e in PEGO syntax.
-func FormatExpr(e Expr) string { return formatExpr(e, precChoice) }
+func FormatExpr(e Expr) string { return formatExpr(e, precChoice, nil) }
 
 func paren(s string, inner, outer int) string {
 	if inner < outer {
@@ -705,38 +747,41 @@ func paren(s string, inner, outer int) string {
 	return s
 }
 
-func formatExpr(e Expr, outer int) string {
+func formatExpr(e Expr, outer int, control *metadataControl) string {
+	pollFormat(control)
 	switch e := e.(type) {
 	case *InlineAction:
 		action := "..."
 		if !e.DefaultAction {
-			action = FormatTerm(e.Action)
+			action = formatTerm(e.Action, 0, control)
 		}
-		return "(" + FormatExpr(e.Expr) + " => " + action + ")"
+		return finishFormat("("+formatExpr(e.Expr, precChoice, control)+" => "+action+")", control)
 	case *Choice:
 		parts := make([]string, len(e.Alts))
 		for i, a := range e.Alts {
-			parts[i] = formatExpr(a, precSeq)
+			pollFormat(control)
+			parts[i] = formatExpr(a, precSeq, control)
 		}
-		return paren(strings.Join(parts, " / "), precChoice, outer)
+		return finishFormat(paren(joinFormatParts(parts, " / ", control), precChoice, outer), control)
 	case *Seq:
 		parts := make([]string, len(e.Items))
 		for i, it := range e.Items {
-			parts[i] = formatExpr(it, precPrefix)
+			pollFormat(control)
+			parts[i] = formatExpr(it, precPrefix, control)
 		}
-		return paren(strings.Join(parts, " "), precSeq, outer)
+		return finishFormat(paren(joinFormatParts(parts, " ", control), precSeq, outer), control)
 	case *Capture:
-		return paren(e.Name+":"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
+		return finishFormat(paren(e.Name+":"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *And:
-		return paren("&"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
+		return finishFormat(paren("&"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *Not:
-		return paren("!"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
+		return finishFormat(paren("!"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *Atomic:
-		return paren(formatExpr(e.Expr, precSuffix)+" #atomic", precSuffix, outer)
+		return finishFormat(paren(formatExpr(e.Expr, precSuffix, control)+" #atomic", precSuffix, outer), control)
 	case *Discard:
-		return paren(joinMinusTokens("-", formatExpr(e.Expr, precPrefix)), precPrefix, outer)
+		return finishFormat(paren(joinMinusTokens("-", formatExpr(e.Expr, precPrefix, control)), precPrefix, outer), control)
 	case *Repeat:
-		s := formatExpr(e.Expr, precSuffix)
+		s := formatExpr(e.Expr, precSuffix, control)
 		switch {
 		case e.Min == 0 && e.Max < 0:
 			s += "*"
@@ -749,64 +794,66 @@ func formatExpr(e Expr, outer int) string {
 		default:
 			s += fmt.Sprintf(" #repeat(%d, %d)", e.Min, e.Max)
 		}
-		return s
+		return finishFormat(s, control)
 	case *Optional:
-		return formatExpr(e.Expr, precSuffix) + "?"
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+"?", control)
 	case *Stream:
-		return formatExpr(e.Expr, precSuffix) + " #stream"
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+" #stream", control)
 	case *Recovery:
-		return formatExpr(e.Expr, precSuffix) + " #recover(skip=" + FormatExpr(e.Skip) + ")"
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+" #recover(skip="+formatExpr(e.Skip, precChoice, control)+")", control)
 	case *Attributed:
-		s := formatExpr(e.Expr, precSuffix)
+		s := formatExpr(e.Expr, precSuffix, control)
 		for _, a := range e.Attrs {
-			s += " " + formatAttribute(a)
+			pollFormat(control)
+			s += " " + formatAttribute(a, control)
 		}
-		return s
+		return finishFormat(s, control)
 	case *Group:
-		p := &printer{}
+		p := &printer{control: control}
 		p.group(e, "")
 		p.flush()
-		return strings.TrimSuffix(p.String(), "\n")
+		return finishFormat(strings.TrimSuffix(p.String(), "\n"), control)
 	case *Ref:
 		if e.Level != "" {
-			return "level(" + e.Name + ", " + e.Level + ")"
+			return finishFormat("level("+e.Name+", "+e.Level+")", control)
 		}
-		return e.Name
+		return finishFormat(e.Name, control)
 	case *Literal:
-		return quote(e.Value)
+		return finishFormat(quote(e.Value, control), control)
 	case *CharClass:
-		return formatCharClass(e)
+		return finishFormat(formatCharClass(e, control), control)
 	case *Any:
-		return "."
+		return finishFormat(".", control)
 	case *Cut:
-		return "--"
+		return finishFormat("--", control)
 	case *Top:
-		return "_"
+		return finishFormat("_", control)
 	case *Bottom:
-		return "_|_"
+		return finishFormat("_|_", control)
 	case *BeginInput:
-		return "^^"
+		return finishFormat("^^", control)
 	case *EndInput:
-		return "$$"
+		return finishFormat("$$", control)
 	case *BeginLine:
-		return "^"
+		return finishFormat("^", control)
 	case *EndLine:
-		return "$"
+		return finishFormat("$", control)
 	case *Predicate:
 		if block, ok := e.Term.(*Block); ok {
-			return FormatTerm(block)
+			return finishFormat(formatTerm(block, 0, control), control)
 		}
-		return FormatTerm(&Block{Statements: []Term{e.Term}, Breaks: e.Breaks, CloseBreak: e.CloseBreak, OneLine: e.OneLine || len(e.Breaks) == 0 && e.CloseBreak == nil})
+		return finishFormat(formatTerm(&Block{Statements: []Term{e.Term}, Breaks: e.Breaks, CloseBreak: e.CloseBreak, OneLine: e.OneLine || len(e.Breaks) == 0 && e.CloseBreak == nil}, 0, control), control)
 	case *OperatorsRule:
-		p := &printer{}
+		p := &printer{control: control}
 		p.operatorsRule(e, "")
 		p.flush()
-		return strings.TrimSuffix(p.String(), "\n")
+		return finishFormat(strings.TrimSuffix(p.String(), "\n"), control)
 	}
-	return fmt.Sprintf("<%T>", e)
+	return finishFormat(fmt.Sprintf("<%T>", e), control)
 }
 
-func formatAttribute(a *Attribute) string {
+func formatAttribute(a *Attribute, control *metadataControl) string {
+	pollFormat(control)
 	marker := "@"
 	if a.Pragma {
 		marker = "#"
@@ -817,15 +864,17 @@ func formatAttribute(a *Attribute) string {
 	}
 	var args []string
 	for _, value := range a.Args {
+		pollFormat(control)
 		if value == nil && len(a.Args) > 1 {
 			args = append(args, "")
 			continue
 		}
-		args = append(args, formatAttributeValue(value))
+		args = append(args, formatAttributeValue(value, control))
 	}
 	var keys []string
 	seen := map[string]bool{}
 	for _, key := range a.KeywordOrder {
+		pollFormat(control)
 		if _, exists := a.KwArgs[key]; exists && !seen[key] {
 			keys = append(keys, key)
 			seen[key] = true
@@ -833,50 +882,55 @@ func formatAttribute(a *Attribute) string {
 	}
 	var remaining []string
 	for key := range a.KwArgs {
+		pollFormat(control)
 		if !seen[key] {
 			remaining = append(remaining, key)
 		}
 	}
-	sort.Strings(remaining)
-	keys = append(keys, remaining...)
+	sortFormatKeys(remaining, control)
+	keys = appendMetadata(keys, remaining, control)
 	for _, key := range keys {
-		args = append(args, key+"="+formatAttributeValue(a.KwArgs[key]))
+		pollFormat(control)
+		args = append(args, key+"="+formatAttributeValue(a.KwArgs[key], control))
 	}
-	return s + "(" + strings.Join(args, ", ") + ")"
+	return s + "(" + joinFormatParts(args, ", ", control) + ")"
 }
 
-func formatAttributeValue(value any) string {
+func formatAttributeValue(value any, control *metadataControl) string {
+	pollFormat(control)
 	switch value := value.(type) {
 	case nil:
 		return "nil"
 	case int:
 		return strconv.Itoa(value)
 	case string:
-		return quote(value)
+		return quote(value, control)
 	case bool:
 		return strconv.FormatBool(value)
 	case Expr:
-		return FormatExpr(value)
+		return formatExpr(value, precChoice, control)
 	}
 	return fmt.Sprintf("<%T>", value)
 }
 
 // quote returns s as a PEGO string literal.
-func quote(s string) string {
+func quote(s string, control *metadataControl) string {
+	pollFormat(control)
 	var b strings.Builder
 	b.WriteByte('"')
 	for _, r := range s {
+		pollFormat(control)
 		switch r {
 		case '"':
-			b.WriteString(`\"`)
+			writeFormatString(&b, `\"`, control)
 		case '\\':
-			b.WriteString(`\\`)
+			writeFormatString(&b, `\\`, control)
 		case '\n':
-			b.WriteString(`\n`)
+			writeFormatString(&b, `\n`, control)
 		case '\t':
-			b.WriteString(`\t`)
+			writeFormatString(&b, `\t`, control)
 		case '\r':
-			b.WriteString(`\r`)
+			writeFormatString(&b, `\r`, control)
 		default:
 			if strconv.IsPrint(r) {
 				b.WriteRune(r)
@@ -889,11 +943,12 @@ func quote(s string) string {
 	return b.String()
 }
 
-func formatCharClass(e *CharClass) string {
+func formatCharClass(e *CharClass, control *metadataControl) string {
+	pollFormat(control)
 	var b strings.Builder
-	b.WriteString("[")
+	writeFormatString(&b, "[", control)
 	if e.Negated {
-		b.WriteString("^")
+		writeFormatString(&b, "^", control)
 	}
 	esc := func(r rune) string {
 		switch r {
@@ -912,12 +967,13 @@ func formatCharClass(e *CharClass) string {
 		return string(r)
 	}
 	for _, rg := range e.Ranges {
-		b.WriteString(esc(rg.Lo))
+		pollFormat(control)
+		writeFormatString(&b, esc(rg.Lo), control)
 		if rg.Hi != rg.Lo {
-			b.WriteString("-" + esc(rg.Hi))
+			writeFormatString(&b, "-"+esc(rg.Hi), control)
 		}
 	}
-	b.WriteString("]")
+	writeFormatString(&b, "]", control)
 	return b.String()
 }
 
@@ -929,36 +985,45 @@ var termPrec = map[string]int{
 }
 
 // FormatTerm returns the value expression t in PEGO syntax.
-func FormatTerm(t Term) string { return formatTerm(t, 0) }
+func FormatTerm(t Term) string { return formatTerm(t, 0, nil) }
 
-func formatTerm(t Term, outer int) (formatted string) {
+func formatTerm(t Term, outer int, control *metadataControl) (formatted string) {
+	pollFormat(control)
 	defer func() {
+		// Do not run layout traversal while unwinding a cancellation or a
+		// caller panic; it must not replace the original panic value.
+		if failure := recover(); failure != nil {
+			panic(failure)
+		}
 		if n, ok := t.(SourceNode); ok {
-			formatted = formatSourceLayout(n.Source().Layout, formatted)
+			formatted = formatSourceLayout(n.Source().Layout, formatted, control)
 		}
 	}()
 	switch t := t.(type) {
 	case *TermGroup:
-		return formatSourceGroup(FormatTerm(t.Term), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine)
+		return formatSourceGroup(formatTerm(t.Term, 0, control), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, control)
 	case *Block:
-		p := &printer{}
+		p := &printer{control: control}
 		if t.OneLine && noComments(t.CloseBreak) {
 			plain := true
 			for _, b := range t.Breaks {
+				pollFormat(control)
 				plain = plain && noComments(b)
 			}
 			if plain {
 				parts := make([]string, len(t.Statements))
 				for i, stmt := range t.Statements {
-					parts[i] = FormatTerm(stmt)
+					pollFormat(control)
+					parts[i] = formatTerm(stmt, 0, control)
 				}
-				return "{" + strings.Join(parts, "; ") + "}"
+				return "{" + joinFormatParts(parts, "; ", control) + "}"
 			}
 		}
 		p.openBlock()
 		for i, stmt := range t.Statements {
+			pollFormat(control)
 			p.lineBreak(breakAt(t.Breaks, i), indentUnit, false)
-			p.write(FormatTerm(stmt))
+			p.write(formatTerm(stmt, 0, control))
 		}
 		p.closeBlock(t.CloseBreak, "")
 		p.flush()
@@ -967,11 +1032,11 @@ func formatTerm(t Term, outer int) (formatted string) {
 		if t.Value == -int(^uint(0)>>1)-1 {
 			// The absolute minimum cannot be a positive source token. Use
 			// representable operands and honor the surrounding precedence.
-			return formatTerm(&Binary{Op: "-", L: &IntLit{Value: t.Value + 1}, R: &IntLit{Value: 1}}, outer)
+			return formatTerm(&Binary{Op: "-", L: &IntLit{Value: t.Value + 1}, R: &IntLit{Value: 1}}, outer, control)
 		}
 		return strconv.Itoa(t.Value)
 	case *StringLit:
-		return quote(t.Value)
+		return quote(t.Value, control)
 	case *BoolLit:
 		return strconv.FormatBool(t.Value)
 	case *NilLit:
@@ -983,33 +1048,37 @@ func formatTerm(t Term, outer int) (formatted string) {
 	case *VarRef:
 		return t.Name
 	case *Member:
-		return formatTerm(t.X, 7) + "." + t.Name
+		return formatTerm(t.X, 7, control) + "." + t.Name
 	case *New:
 		fields := make([]string, len(t.Fields))
 		for i, f := range t.Fields {
-			fields[i] = formatSourceLayout(f.Layout, f.Name+": "+FormatTerm(f.Value))
+			pollFormat(control)
+			fields[i] = formatSourceLayout(f.Layout, f.Name+": "+formatTerm(f.Value, 0, control), control)
 		}
-		return t.Type + "{" + strings.Join(fields, ", ") + "}"
+		return t.Type + "{" + joinFormatParts(fields, ", ", control) + "}"
 	case *ListConstructor:
 		items := make([]string, len(t.Items))
 		for i, item := range t.Items {
-			items[i] = FormatTerm(item)
+			pollFormat(control)
+			items[i] = formatTerm(item, 0, control)
 		}
-		return "[]" + formatTypeTerm(t.Elem) + "{" + strings.Join(items, ", ") + "}"
+		return "[]" + formatTypeTerm(t.Elem, control) + "{" + joinFormatParts(items, ", ", control) + "}"
 	case *TerminalConstructor:
 		args := make([]string, len(t.Args))
 		for i, arg := range t.Args {
-			args[i] = FormatTerm(arg)
+			pollFormat(control)
+			args[i] = formatTerm(arg, 0, control)
 		}
-		return t.Type + "{" + strings.Join(args, ", ") + "}"
+		return t.Type + "{" + joinFormatParts(args, ", ", control) + "}"
 	case *Call:
 		args := make([]string, len(t.Args))
 		for i, a := range t.Args {
-			args[i] = FormatTerm(a)
+			pollFormat(control)
+			args[i] = formatTerm(a, 0, control)
 		}
-		return t.Func + "(" + strings.Join(args, ", ") + ")"
+		return t.Func + "(" + joinFormatParts(args, ", ", control) + ")"
 	case *Lambda:
-		s := "(" + strings.Join(t.Params, ", ") + ") => " + FormatTerm(t.Body)
+		s := "(" + joinFormatParts(t.Params, ", ", control) + ") => " + formatTerm(t.Body, 0, control)
 		if outer > 0 {
 			return "(" + s + ")"
 		}
@@ -1022,15 +1091,15 @@ func formatTerm(t Term, outer int) (formatted string) {
 		if p == termPrec["=="] {
 			lp++ // comparison operators do not chain
 		}
-		s := formatTerm(t.L, lp) + " " + t.Op + " " + formatTerm(t.R, p+1)
+		s := formatTerm(t.L, lp, control) + " " + t.Op + " " + formatTerm(t.R, p+1, control)
 		if p < outer {
 			return "(" + s + ")"
 		}
 		return s
 	case *Unary:
-		return joinMinusTokens(t.Op, formatTerm(t.X, 6))
+		return joinMinusTokens(t.Op, formatTerm(t.X, 6, control))
 	case *Assign:
-		return t.Name + " := " + FormatTerm(t.Value)
+		return t.Name + " := " + formatTerm(t.Value, 0, control)
 	}
 	return fmt.Sprintf("<%T>", t)
 }
@@ -1040,6 +1109,7 @@ func formatTerm(t Term, outer int) (formatted string) {
 func (p *printer) header(word string, pos Pos) {
 	p.write(word)
 	for _, comment := range p.headers[pos] {
+		pollFormat(p.control)
 		p.write(" " + comment.Text)
 		if strings.HasPrefix(comment.Text, "//") {
 			p.newLine(indentUnit)
@@ -1047,14 +1117,15 @@ func (p *printer) header(word string, pos Pos) {
 	}
 }
 func (p *printer) operator(op *OperatorsRuleOperator) {
+	pollFormat(p.control)
 	p.header(op.Kind, op.Pos)
 	p.write(" ")
 	if op.Assoc != "" {
 		p.write(op.Assoc + " ")
 	}
-	p.write(FormatExpr(op.Expr))
+	p.write(formatExpr(op.Expr, precChoice, p.control))
 	if op.Action != nil {
-		p.write(" => " + FormatTerm(op.Action))
+		p.write(" => " + formatTerm(op.Action, 0, p.control))
 	} else if op.DefaultAction {
 		p.write(" => ...")
 	}
@@ -1063,13 +1134,15 @@ func (p *printer) operator(op *OperatorsRuleOperator) {
 // formatSourceLayout keeps the token-boundary line relationships that determine
 // documentation ownership. Identical comment text at different boundaries is
 // emitted independently; no content-based de-duplication is performed.
-func formatSourceLayout(layout *SourceLayout, body string) string {
+func formatSourceLayout(layout *SourceLayout, body string, control *metadataControl) string {
+	pollFormat(control)
 	if layout == nil || len(layout.Before) == 0 {
 		return body
 	}
 	var out strings.Builder
 	previous := layout.PreviousLine
 	for _, comment := range layout.Before {
+		pollFormat(control)
 		if comment == nil {
 			continue
 		}
@@ -1081,7 +1154,7 @@ func formatSourceLayout(layout *SourceLayout, body string) string {
 		} else {
 			out.WriteByte(' ')
 		}
-		out.WriteString(comment.Text)
+		writeFormatString(&out, comment.Text, control)
 		previous = comment.End.Line
 	}
 	if layout.NextLine > previous {
@@ -1092,6 +1165,6 @@ func formatSourceLayout(layout *SourceLayout, body string) string {
 	} else {
 		out.WriteByte(' ')
 	}
-	out.WriteString(body)
+	writeFormatString(&out, body, control)
 	return out.String()
 }

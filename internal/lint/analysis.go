@@ -903,10 +903,10 @@ func sameControlled(x, y grammar.Expr, caps bool, control *lintControl) bool {
 		return ok && x.Name == y.Name && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Predicate:
 		y, ok := y.(*grammar.Predicate)
-		return ok && grammar.FormatTerm(grammaranalysis.UngroupTerm(x.Term)) == grammar.FormatTerm(grammaranalysis.UngroupTerm(y.Term))
+		return ok && control.formatTerm(x.Term) == control.formatTerm(y.Term)
 	case *grammar.Attributed:
 		y, ok := y.(*grammar.Attributed)
-		return ok && grammar.FormatExpr(x) == grammar.FormatExpr(y) && sameControlled(x.Expr, y.Expr, caps, control)
+		return ok && control.formatExpr(x) == control.formatExpr(y) && sameControlled(x.Expr, y.Expr, caps, control)
 	case *grammar.Any, *grammar.Cut, *grammar.Top, *grammar.Bottom, *grammar.BeginInput, *grammar.EndInput,
 		*grammar.BeginLine, *grammar.EndLine:
 		return sameType(x, y)
@@ -1156,11 +1156,22 @@ func posOfControlled(e grammar.Expr, control *lintControl) grammar.Pos {
 	return grammar.Pos{}
 }
 
-// show formats e for a message, shortened if it is long.
-func show(e grammar.Expr) string {
-	s := grammar.FormatExpr(e)
-	if r := []rune(s); len(r) > 40 {
-		s = string(r[:37]) + "..."
+// showControlled formats e for a message, shortened if it is long.
+func showControlled(e grammar.Expr, control *lintControl) string {
+	s := control.formatExpr(e)
+	// Keep only the displayed prefix and a bounded lookahead. The rune
+	// conversion preserves the old normalization of invalid UTF-8 even in
+	// caller-built ASTs that have not passed validation.
+	var prefix [37]rune
+	count := 0
+	for _, r := range s {
+		if count == 40 {
+			return "`" + string(prefix[:]) + "...`"
+		}
+		if count < len(prefix) {
+			prefix[count] = r
+		}
+		count++
 	}
 	return "`" + s + "`"
 }
