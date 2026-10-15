@@ -44,7 +44,8 @@ type semClass struct {
 	mods int
 }
 
-func (s *Server) semanticTokens(params json.RawMessage) (any, *rpcError) {
+func (s *Server) semanticTokensControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	var p documentFormattingParams
 	if err := decode(params, &p); err != nil {
 		return nil, err
@@ -53,23 +54,26 @@ func (s *Server) semanticTokens(params json.RawMessage) (any, *rpcError) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"data": d.analysis().semanticTokens()}, nil
+	return map[string]any{"data": d.analysis().semanticTokensControlled(control)}, nil
 }
 
 // semanticTokens returns the semantic tokens of the document in the relative encoding of LSP:
 // five integers per token (line delta, start delta, length, type, modifiers).
-func (a *analysis) semanticTokens() []int {
+func (a *analysis) semanticTokensControlled(control *renderControl) []int {
+	control.poll()
 	data := []int{}
 	occ := 0
 	prevLine, prevChar := 0, 0
 	for i, t := range a.toks {
-		c, ok := a.classify(i, &occ)
+		control.poll()
+		c, ok := a.classifyControlled(i, &occ, control)
 		if !ok {
 			continue
 		}
 		start, end := a.idx.position(t.start), a.idx.position(t.end)
 		if end.Line != start.Line {
 			for line := start.Line; line <= end.Line; line++ {
+				control.poll()
 				lo, hi := a.idx.lines[line], t.end
 				if line == start.Line {
 					lo = t.start
@@ -78,6 +82,7 @@ func (a *analysis) semanticTokens() []int {
 					hi = a.idx.lines[line+1]
 				}
 				for hi > lo && (a.text[hi-1] == '\r' || a.text[hi-1] == '\n') {
+					control.poll()
 					hi--
 				}
 				if hi == lo {
@@ -87,6 +92,7 @@ func (a *analysis) semanticTokens() []int {
 				if line != prevLine {
 					prevChar = 0
 				}
+				control.poll()
 				data = append(data, line-prevLine, begin.Character-prevChar, finish.Character-begin.Character, int(c.typ), c.mods)
 				prevLine, prevChar = line, begin.Character
 			}
@@ -95,6 +101,7 @@ func (a *analysis) semanticTokens() []int {
 		if start.Line != prevLine {
 			prevChar = 0
 		}
+		control.poll()
 		data = append(data, start.Line-prevLine, start.Character-prevChar, end.Character-start.Character, int(c.typ), c.mods)
 		prevLine, prevChar = start.Line, start.Character
 	}
@@ -103,7 +110,8 @@ func (a *analysis) semanticTokens() []int {
 
 // classify returns the class of token i. occ is the index of the first occurrence that does not
 // end before the token; classify advances it.
-func (a *analysis) classify(i int, occ *int) (semClass, bool) {
+func (a *analysis) classifyControlled(i int, occ *int, control *renderControl) (semClass, bool) {
+	control.poll()
 	t := a.toks[i]
 	switch t.Kind {
 	case syntax.TokenComment:
@@ -124,6 +132,7 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 		return semClass{}, false
 	}
 	for *occ < len(a.occs) && a.occs[*occ].end <= t.start {
+		control.poll()
 		*occ++
 	}
 	if *occ < len(a.occs) && a.occs[*occ].start == t.start {
@@ -147,8 +156,8 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 	case "true", "false", "nil":
 		return semClass{semKeyword, 0}, true
 	case "left", "right", "none":
-		previous := a.previousSignificantToken(i - 1)
-		if a.isIdent(previous, "infix") && a.inOperatorsBody(i) {
+		previous := a.previousSignificantTokenControlled(i-1, control)
+		if a.isIdent(previous, "infix") && a.inOperatorsBodyControlled(i, control) {
 			return semClass{semKeyword, 0}, true
 		}
 		return semClass{}, false
@@ -160,18 +169,20 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 }
 
 // inOperatorsBody limits incomplete-source associativity coloring to operators rules.
-func (a *analysis) inOperatorsBody(i int) bool {
+func (a *analysis) inOperatorsBodyControlled(i int, control *renderControl) bool {
+	control.poll()
 	st := i
 	for st >= 0 && !a.isDefKeyword(st) {
+		control.poll()
 		st--
 	}
 	if !a.isIdent(st, "rule") {
 		return false
 	}
-	eq := a.ruleBodyStart(st, i)
+	eq := a.ruleBodyStartControlled(st, i, control)
 	if eq < 0 {
 		return false
 	}
-	value, operators := a.scanBody(eq, i)
+	value, operators := a.scanBodyControlled(eq, i, control)
 	return operators && !value
 }
