@@ -138,10 +138,13 @@ whole-input parse returns only its final ordinary syntax error. Each invocation
 has fresh insertion state, including concurrent and reentrant invocations.
 
 Only Closure whole-input Node parsing and recognition currently support this
-pragma. Document/streams, bytecode VMs, generated Go/TypeScript parsers and binary
-serialization reject grammars containing `#missing` or references to `Missing`.
-Positive insertion options also fail on unsupported parse entry points. Grammar
-AST JSON and formatting preserve the annotation. `Missing` is a reserved type
+pragma. Prefix parsing, Document/streams, bytecode VMs, generated Go/TypeScript
+parsers and binary serialization reject grammars containing `#missing` or
+references to `Missing`, even when insertion is disabled. Positive insertion
+options also fail on unsupported parse entry points, including `ParsePrefix`,
+even when the grammar contains no `#missing` annotation. Zero preserves strict
+prefix matching for grammars without `#missing`. Grammar AST JSON and formatting
+preserve the annotation. `Missing` is a reserved type
 name; a preexisting user type with that name must be renamed. The annotated literal infers `Match | Missing`; `Missing` is assignable wherever
 a node is expected, as with `Error`. Declare a union or keep the Node tree when
 consumers need the missing-token identity. Concrete generated typed mappings and

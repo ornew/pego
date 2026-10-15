@@ -103,7 +103,9 @@ func WithWorkLimits(limits WorkLimits) ParseOption {
 
 // WithMissingTokens bounds attempted #missing literal insertions in one parse.
 // Zero disables insertion; negative limits are invalid. Only Closure whole-input
-// parsing and recognition support insertion. Options resolve in order.
+// parsing and recognition support insertion. Positive limits are invalid with
+// ParsePrefix, even without #missing in the grammar. ParsePrefix also rejects
+// grammars containing #missing when insertion is disabled. Options resolve in order.
 func WithMissingTokens(limit int) ParseOption {
 	return func(o *engine.ParseOptions) { o.MissingTokens = limit }
 }
@@ -175,7 +177,7 @@ const (
 // the parser's state, so call them from f; its fields can be kept. With several WithTrace options, each
 // function is called in order. A nil f is ignored.
 //
-// Tracing works with every backend, with Parse, RecognizeOnly, ParseStream and Document (whose
+// Tracing works with every backend, with Parse, ParsePrefix, RecognizeOnly, ParseStream and Document (whose
 // option applies to every Document.Parse), but not with generated Go parsers.
 func WithTrace(f func(TraceEvent)) ParseOption {
 	return func(o *engine.ParseOptions) {
@@ -193,8 +195,8 @@ func WithTrace(f func(TraceEvent)) ParseOption {
 // WithDiagnosticCallback reports each committed #recover error during ParseStream or Iterate,
 // immediately before the corresponding stream element. Speculative recoveries are not reported.
 // The callback receives an independent copy; returning an error stops parsing and suppresses
-// that element. A nil callback disables delivery. Non-nil callbacks are invalid with Parse and
-// Document. Recoveries in a successful suffix are reported before the terminal result. With or
+// that element. A nil callback disables delivery. Non-nil callbacks are invalid with Parse,
+// ParsePrefix and Document. Recoveries in a successful suffix are reported before the terminal result. With or
 // without this option, recovered errors remain available at stream completion.
 func WithDiagnosticCallback(f func(*SyntaxError) error) ParseOption {
 	return func(o *engine.ParseOptions) { o.DiagnosticCallback = f }

@@ -1,6 +1,6 @@
 # 046. Position Maps and Fragment Parsing
 
-- **Status**: Proposed
+- **Status**: Partially Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-12
 
@@ -33,7 +33,7 @@ type PrefixResult struct {
 func (p *Parser) ParsePrefix(name, input string, opts ...ParseOption) (PrefixResult, error)
 ```
 
-Names and exact error types are proposals. `PositionEncoding` is distinct from parser `Unit`: UTF-16 is for editor coordinates, while `Unit` remains the parse-time choice for spans and actions.
+The `Parser.ParsePrefix` signature and `PrefixResult` fields shown above are accepted. Recovered success returns the result together with the existing `SyntaxErrors` error, following `Parse`. Position-map names and exact conversion error types remain proposals. `PositionEncoding` is distinct from parser `Unit`: UTF-16 is for editor coordinates, while `Unit` remains the parse-time choice for spans and actions.
 
 ## Motivation
 
@@ -110,4 +110,22 @@ The LSP index already uses checkpoints to avoid rescanning a long line from its 
 
 ## Limitations and Open Questions
 
-The exact exported names and whether recovered syntax errors should accompany a successful prefix in the existing `error` result need maintainer review. The recommendation is to preserve `Parse`'s existing `SyntaxErrors` behavior while returning consumption for that recovered success. Prefix parsing deliberately returns local coordinates; callers that need absolute positions must translate them.
+The prefix API and recovered-success result/error contract are implemented.
+Position-map exported names and exact conversion error types still need review.
+Prefix parsing deliberately returns local coordinates; callers that need
+absolute positions must translate them.
+
+## Implementation Status
+
+The named-prefix API is implemented independently of the position map. It uses
+an invocation-local runtime entry, records the successful cursor before returning
+the rule value, and does not change the parser's configured start rule. Normal
+code-point parses reuse the byte-offset table. Recognition and malformed input
+may require a second, work-limited decoding pass over the consumed prefix. The
+cursor-to-byte conversion uses the original source bytes, so a valid U+FFFD
+occupies three bytes while each malformed byte remains one byte. The guide
+[Parsing a Named Prefix](../guide/prefix-parsing.md) covers its public contract.
+
+The position-map API remains a proposal. Its adoption requires extraction of the
+private LSP index without changing protocol clamping, plus conversion and
+retention measurements. The prefix entry has no dependency on that API.

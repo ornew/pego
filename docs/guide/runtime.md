@@ -6,7 +6,8 @@ covers saving grammars as `.pegoc` files (in brief) and the `pego` command-line 
 
 It assumes you can already write a grammar. If not, start with the [language specification](../../spec/README.md).
 Related guides: [compiled grammars](compiled-grammars.md), [generating a standalone Go parser](code-generation.md),
-[streaming input](streaming.md) and [reparsing edited text](incremental.md).
+[parsing a named prefix](prefix-parsing.md), [streaming input](streaming.md) and
+[reparsing edited text](incremental.md).
 
 - [The pipeline](#the-pipeline)
 - [Compiling a grammar](#compiling-a-grammar)
@@ -206,13 +207,16 @@ n, err := keyParser.Parse("abc")
 fmt.Println(n, err) // "abc"@key <nil>
 ```
 
-A parse always has to consume the whole input. The start rule does not need an `$$` of its own: if the rule matches only a
+`Parser.Parse` always has to consume the whole input. The start rule does not need an `$$` of its own: if the rule matches only a
 prefix, the parse fails with `end of input` among the expected items at the first unconsumed position:
 
 ```go
 _, err = keyParser.Parse("abc=1")
 fmt.Println(err) // 1:4: syntax error: expected [a-zあ-ん], end of input
 ```
+
+To accept a named rule's prefix and get its consumed code-point and byte lengths, use
+[`Parser.ParsePrefix`](prefix-parsing.md). It selects a rule per call without changing the parser's start rule.
 
 On the command line, `-s` selects the start rule for `parse`, `compile` and `gen` (default: the one saved in a
 `.pegoc`, otherwise `main`).

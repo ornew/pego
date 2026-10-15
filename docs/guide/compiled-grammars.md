@@ -69,7 +69,7 @@ A few more facts:
 - `pego.IsCompiled(data)` tells a compiled grammar from other data by its magic number. The commands use it to decide
   whether `-g` names source, JSON or a compiled grammar.
 - A loaded parser is an ordinary `*pego.Parser`: it is safe for concurrent use, `WithStart` changes its start rule, and
-  `Parse`, `ParseStream`, `NewDocument` and the options of the [runtime guide](runtime.md) work on it, within the limits
+  `Parse`, `ParsePrefix`, `ParseStream`, `NewDocument` and the options of the [runtime guide](runtime.md) work on it, within the limits
   of the next section.
 - A parser loaded from a file preserves the same tree, positions and errors as one compiled from source. Keep a
   round-trip comparison in your own test suite for the grammars your application depends on.
@@ -96,7 +96,7 @@ AST-bearing files and legacy AST-less files do not carry one. What you keep and 
 
 | | With the AST | Without the AST (`WithoutAST`, `-no-ast`) |
 |:--|:--|:--|
-| `Parse`, `ParseStream`, `NewDocument` | yes | yes (bytecode backends) |
+| `Parse`, `ParsePrefix`, `ParseStream`, `NewDocument` | yes | yes (bytecode backends) |
 | Default backend | closure (the fastest of the three) | recursive bytecode |
 | `WithBackend(Closure)` | yes | error: `the closure backend needs the grammar, which the compiled grammar omits` |
 | `WithBackend(Bytecode)`, `WithBackend(BytecodeIterative)` | yes | yes |

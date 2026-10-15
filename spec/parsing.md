@@ -13,7 +13,7 @@ started.
 
 | Interface | How the start rule is selected |
 |:--|:--|
-| Go API | The `start` argument of `pego.Compile` and `pego.CompileSource`; `Parser.WithStart` makes a parser with another start rule |
+| Go API | The `start` argument of `pego.Compile` and `pego.CompileSource`; `Parser.WithStart` makes a parser with another start rule for whole-input parsing; `Parser.ParsePrefix` selects a named rule for one prefix parse without changing the configured start rule |
 | Command line | `pego parse -s <rule>`. It defaults to `main`, or to the start rule saved in a compiled grammar (`.pegoc`) |
 
 Any rule can be the start rule. It MUST be defined; parsing with an undefined
@@ -71,22 +71,28 @@ carriage return can end a line; see
 
 ## Whole Input
 
-A parse succeeds only if the start rule succeeds **and** consumes the entire
-input. Parsing evaluates the start rule at position 0. If the rule fails, the
-parse fails with a [syntax error](#syntax-errors). If the rule succeeds without
-reaching the end of the input, `end of input` is recorded as expected at the
-position where it stopped, and the parse fails with a syntax error: the error is reported at the farthest position that parsing reached, which
-can be beyond where the start rule stopped.
+Whole-input entry points such as `Parser.Parse` succeed only if the start rule
+succeeds **and** consumes the entire input. Parsing evaluates the start rule at
+position 0. If the rule fails, the parse fails with a
+[syntax error](#syntax-errors). If the rule succeeds without reaching the end of
+the input, `end of input` is recorded as expected at the position where it
+stopped, and the parse fails with a syntax error. The error is reported at the
+farthest position that parsing reached, which can be beyond where the start
+rule stopped.
 
 ```pego
 rule main = "a" ("b" "c")?
 ```
 
-For the input `abd` the parse fails at `1:3` expecting `"c"`; for the input `ad`
-it fails at `1:2` expecting `"b"` or the end of input. A grammar that is meant to
-parse a prefix of its input has to say so in the grammar, for example by ending
-the start rule with `.*`; to make the rule itself state the requirement, end it
-with the [anchor](parser-expressions.md#anchors) `$$`.
+For the input `abd` a whole-input parse fails at `1:3` expecting `"c"`; for
+the input `ad` it fails at `1:2` expecting `"b"` or the end of input.
+`Parser.ParsePrefix(name, input, ...)` instead evaluates the named rule at
+position 0 without an implicit end-of-input check. A successful prefix returns
+both the rule value and the consumed cursor in the selected position unit and
+original input bytes; an unconsumed suffix is allowed. An explicit
+[anchor](parser-expressions.md#anchors) `$$` inside that rule still requires the
+actual end of the supplied input. The API does not change the parser's
+configured start rule or shift positions to an enclosing document.
 
 ## Results
 
