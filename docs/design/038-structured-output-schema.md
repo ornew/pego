@@ -40,8 +40,9 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error
 ```
 
 `encoding/json` marshals the exported fields; `UnmarshalJSON` rejects unsupported
-formats and versions. Evolution beyond version 1 remains a proposal. The
-version-1 JSON envelope is:
+formats and versions, unknown JSON fields, incomplete envelopes, and malformed
+v1 identities or shape references. This is not complete semantic validation.
+Evolution beyond version 1 remains a proposal. The version-1 JSON envelope is:
 
 ```json
 {"format":"pego-output-schema","version":1,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
@@ -65,7 +66,7 @@ Schema export is metadata on a compiled grammar and is independent of runtime ba
 
 ## Remaining Implementation Sequence
 
-The Go v1 envelope, start-reachable/all-rules selection, declared and checked inferred types, CST/capture categories, and deterministic encoding are implemented. Remaining work is to define future envelope evolution, validate externally authored shape graphs, add schema diff support, and extend query type checking as described in [design 040](040-structural-queries-and-highlighting.md).
+The Go v1 envelope, start-reachable/all-rules selection, declared and checked inferred types, CST/capture categories, deterministic encoding, and strict JSON-key and basic graph checks for decoded v1 schemas are implemented. Remaining work includes complete semantic validation of externally authored graphs, validation for schemas constructed directly in memory, schema diff support, and extended query type checking as described in [design 040](040-structural-queries-and-highlighting.md).
 
 ## Alternatives Considered
 
@@ -76,13 +77,32 @@ The Go v1 envelope, start-reachable/all-rules selection, declared and checked in
 
 ## Testing and Performance Plan
 
-Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `any`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation. No measurements or performance promises are available.
+Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `any`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
+
+## Performance and Results
+
+A synthetic benchmark measures one-time JSON decoding of validated v1 schemas
+against decoding the same payload into plain DTOs. On Go 1.27.1, Apple M3 Max
+(darwin/arm64), with `GOMAXPROCS=4`, `GOGC=100`, and no memory limit, five
+grouped 250 ms samples gave these medians:
+
+| Types | Validated / DTO time | Validated / DTO bytes | Validated / DTO allocations |
+|---:|---:|---:|---:|
+| 16 | 59,579 / 35,279 ns/op (+68.9%) | 39,211 / 20,357 B/op (+92.6%) | 186 / 165 allocs/op |
+| 128 | 455,101 / 272,399 ns/op (+67.1%) | 310,428 / 165,574 B/op (+87.5%) | 1,223 / 1,199 allocs/op |
+
+The strict JSON decoder checks nested keys and trailing input. It copies the
+input into its buffer, making the one-time decode cost higher than the earlier
+graph-only validation measurement. Validation is limited to schema JSON decoding;
+the added code is not on the parse hot path, whose performance was not separately
+measured.
+The benchmark is in `internal/engine/output_schema_validate_bench_test.go`.
 
 ## Limitations and Open Questions
 
 The Go v1 API uses a start-reachable default with an explicit all-rules option.
 Cross-grammar schema identity remains absent until canonicalization is defined;
-validation of externally authored shape graphs and schema diff tooling are also
+complete validation of externally authored shape graphs and schema diff tooling are also
 open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
@@ -109,8 +129,15 @@ ordered optional node lists; their exact positional alternatives are not inferre
 A generic node child retains all reserved CST identities in the reachable export,
 so a schema-checked query can name an uncaptured `Match` below a `Seq`.
 
-The envelope decoder rejects unsupported formats and versions. The Go export does
-not yet validate externally authored shape graphs or persist schemas in compiled
-files. Schema diff tooling remains unimplemented. Focused determinism, reachability,
-round-trip, and category tests cover the implemented v1 API; export performance and
-broader backend/typed-output validation remain open.
+The envelope decoder rejects unsupported formats and versions. Its v1 graph check
+requires unique nonempty type IDs and rule names, nonempty unique field names,
+consistent type identities and origins, supported shape kinds and scalar names,
+valid shape members for each kind, list/optional elements, and references that
+resolve to an ID in the schema's type table. Named-reference cycles are allowed.
+The checker does not yet reject unknown JSON keys or empty unions. It runs during
+JSON unmarshaling; callers that construct an `OutputSchema` in memory do not
+receive full graph validation before passing it to consumers such as
+structural-query compilation. Persisting schemas in compiled files and schema
+diff tooling remain unimplemented. Focused tests cover the limited graph checks
+along with determinism, reachability, round trips and categories; export
+performance and broader backend/typed-output validation remain open.

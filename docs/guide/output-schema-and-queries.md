@@ -44,8 +44,19 @@ export root. Schema entries separate declared types, inferred rule shapes, and
 reserved CST types; scalar, optional, list, union, and dynamic `any` shapes are
 explicit. Fields and rules have stable ordering, so repeated exports of the
 same checked grammar produce identical JSON bytes. A decoder rejects other
-schema formats and versions. Type names alone do not establish compatibility
+schema formats and versions, unknown JSON keys, and incomplete envelopes.
+Type names alone do not establish compatibility
 between grammars.
+
+Decoding also performs limited structural checks for version 1: type IDs, rule
+names, and field names must be unique and nonempty; type identities and origins
+must agree; shape kinds, scalar names, and kind-specific members must be valid;
+list and optional shapes need elements; and references must resolve to IDs in
+the schema's type table. Recursive named references are allowed. This is not
+full semantic validation: empty unions are not currently rejected. Passing a
+schema constructed directly in Go to
+`CompileStructuralQuery` does not run this whole-graph check first. Schema
+diffing is not available.
 
 Export requires checked grammar metadata. A parser restored by `LoadParser`
 cannot export it, even if its compiled file includes the grammar AST; the error

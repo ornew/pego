@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 
 	"github.com/ornew/pego/grammar"
@@ -51,15 +53,31 @@ type SchemaField struct {
 	Shape  SchemaShape `json:"shape"`
 }
 
-// UnmarshalJSON rejects envelopes from unsupported schema formats.
+// UnmarshalJSON rejects unsupported envelopes, unknown fields and malformed v1
+// shape graphs.
 func (s *OutputSchema) UnmarshalJSON(data []byte) error {
 	type plain OutputSchema
 	var v plain
-	if err := json.Unmarshal(data, &v); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&v); err != nil {
 		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("trailing data after output schema")
 	}
 	if v.Format != "pego-output-schema" || v.Version != 1 {
 		return fmt.Errorf("unsupported output schema format %q version %d", v.Format, v.Version)
+	}
+	if v.Start == "" || !v.PositionUnitIndependent || v.Types == nil || v.Rules == nil {
+		return fmt.Errorf("invalid output schema envelope: start, positionUnitIndependent, types and rules are required")
+	}
+	if err := validateOutputSchemaGraph(OutputSchema(v)); err != nil {
+		return err
 	}
 	*s = OutputSchema(v)
 	return nil
