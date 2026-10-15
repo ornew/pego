@@ -160,7 +160,7 @@ func TestParseErrors(t *testing.T) {
 		{`rule a = [a-`, `1:10: unterminated character class`},
 		{`rule a = []`, `1:10: expected an expression, found '[]'`},
 		{`rule a = [z-a]`, `1:10: invalid range 'z'-'a'`},
-		{`foo`, `1:1: expected 'rule' or 'type', found 'foo'`},
+		{`foo`, `1:1: expected 'rule', 'type', or 'init', found 'foo'`},
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
 		{`type A struct { X }`, `1:19: expected identifier, found '}'`},
 		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},

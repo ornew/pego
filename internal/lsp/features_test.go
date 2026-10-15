@@ -28,7 +28,7 @@ func TestDiagnostics(t *testing.T) {
 			"several syntax errors", "rule a = (\nrule b = \"名前\"\n]\nrule c = \"ok\"",
 			[]Diagnostic{
 				{Range: rng(1, 7, 1, 8), Message: "expected ')', found '='"},
-				{Range: rng(2, 0, 2, 1), Message: "expected 'rule' or 'type', found ']'"},
+				{Range: rng(2, 0, 2, 1), Message: "expected 'rule', 'type', or 'init', found ']'"},
 			},
 		},
 		{

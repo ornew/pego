@@ -490,6 +490,7 @@ func parseResolvedWork(r *rule, seen int, input string, o parseOptions) (n *Node
 	}
 	p.memo.sparse = sparseSeen && p.memo.stride > 64 && p.n > 1024
 	p.control.check()
+	p.runInit()
 	v, ok := p.call(r, 0)
 	p.control.check()
 	if ok && p.pos == p.n {
@@ -502,6 +503,33 @@ func parseResolvedWork(r *rule, seen int, input string, o parseOptions) (n *Node
 		p.expect(p.pos, idEndInput)
 	}
 	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+}
+
+var initNames []string
+var initActions []func(*actx) any
+
+func (p *parser) runInit() {
+	for i, action := range initActions {
+		c := p.useCtx(actx{p: p, cbase: len(p.created)})
+		func() {
+			defer func() {
+				p.dropCreated(c.cbase)
+				if x := recover(); x != nil {
+					if e, ok := x.(evalError); ok {
+						panic(fatal{p.wrapEvalError("init", e.msg)})
+					}
+					panic(x)
+				}
+			}()
+			v := action(c)
+			switch v.(type) {
+			case int, string, bool:
+			default:
+				p.evalErrorf("variable %s must be int, string, or bool, got %s", initNames[i], typeName(v))
+			}
+			p.bind(initNames[i], v)
+		}()
+	}
 }
 
 // ppool keeps parsers of parse, with their scratch memory, for later parses. What a parse returns
@@ -3902,6 +3930,7 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 			}
 		}
 	}()
+	p.parser.runInit()
 	var ok bool
 	if r.entry != nil {
 		v, ok = r.entry(p)
