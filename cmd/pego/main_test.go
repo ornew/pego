@@ -459,7 +459,10 @@ func TestGenObservability(t *testing.T) {
 	if out, err := runCLI(t, "", "gen", "-g", path, "-pkg", "fixture", "-observability", "-types"); err != nil || !strings.Contains(out, "func ParseAST(") || !strings.Contains(out, "func WithTrace(") {
 		t.Fatalf("typed trace generation: %v\n%s", err, out)
 	}
-	for _, flags := range [][]string{{"-document"}, {"-types", "-document"}, {"-lang", "ts"}} {
+	if out, err := runCLI(t, "", "gen", "-g", path, "-lang", "ts", "-observability", "-types", "-recognize"); err != nil || !strings.Contains(out, "export interface TraceEvent") || !strings.Contains(out, "export function parseASTWithOptions(") {
+		t.Fatalf("TypeScript trace generation: %v\n%s", err, out)
+	}
+	for _, flags := range [][]string{{"-document"}, {"-types", "-document"}} {
 		args := []string{"gen", "-g", path, "-observability"}
 		if flags[0] != "-lang" {
 			args = append(args, "-pkg", "fixture")

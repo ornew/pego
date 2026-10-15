@@ -80,7 +80,15 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	}
 	repr := t.recipe(st)
 	stType := t.tsType(st)
-	fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr)
+	if g.observability {
+		api, err := generatedTSObservedInvocations(fmt.Sprintf(tsTypedAPI, stType, start.id, repr), 1)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(api)
+	} else {
+		fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr)
+	}
 	b.WriteString(tsTypedRuntime)
 	// recipe() reserves an ID before visiting child types, so recursive fields
 	// reference the same representation. Write the table after all registration.

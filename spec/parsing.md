@@ -284,8 +284,8 @@ fallback. Typed events describe rule calls made by the selected route;
 conversion itself is not a rule event, so Node and typed event streams may
 differ. Typed methods use the same event fields, filter, depth, interruption
 and callback-panic behavior as Node batch methods. The option cannot be
-combined with a generated `Document`, and TypeScript generation rejects it. It
-does not provide profiling.
+combined with a generated `Document`. This Go tracing mode does not provide
+profiling.
 
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine
@@ -311,6 +311,44 @@ empty filter selects every rule. `WithTraceMaxDepth` limits delivered events;
 the start rule counts as depth 1, and zero or a negative value means no limit.
 Filtering and depth limits do not change parsing. Trace state is local to one
 invocation.
+
+## Generated TypeScript Batch Tracing
+
+TypeScript batch tracing MUST be enabled at generation with
+`pego.WithGeneratedObservability()` or `pego gen -lang ts -observability`.
+It applies to generated `parseWithOptions`, `parseRuleWithOptions` and, when
+generated, `recognizeWithOptions`. With `-types`, the configured-start
+`parseASTWithOptions` also accepts trace options; the legacy positional-unit
+APIs do not. TypeScript does not expose a named typed-rule entry point.
+
+The tracing fields added to `ParseOptions` are:
+
+```ts
+trace?: (event: TraceEvent) => void;
+traceRules?: readonly string[];
+traceMaxDepth?: number;
+```
+
+`trace` is a synchronous callback receiving a copied `TraceEvent`;
+`traceRules` selects named rules and their descendants, and `traceMaxDepth`
+limits delivered events. Omitted or empty `traceRules` selects all rules;
+unknown names select none. `traceMaxDepth` MUST be a safe integer. The start
+rule has depth one; a nonpositive value means unlimited depth.
+Callback mutation MUST NOT affect parser state or later events. If a callback
+throws, the original thrown value MUST propagate after runtime cleanup, even
+when it is not an `Error`; an aborted parse may omit exits for active calls.
+Filtered events do not change matching. Typed-result conversion MUST NOT emit
+a separate event; observed calls correspond to the selected parser path.
+
+TypeScript events use camel-case fields. `kind` is `"enter"`, `"exit"` or
+`"skipped"`; events also contain `rule`, `level`, `depth`, `pos`, `matched`,
+`end`, `memo`, `evals`, `examined`, `examinedKnown` and `skipReason`. Positions
+use the selected unit. `matched`, `end`, `memo` and `evals` describe exits;
+`memo` indicates reuse without body evaluation, while `evals` counts body
+evaluations. A skipped event is unpaired and is currently emitted only for
+identifiable first-character dispatch skips. `examinedKnown` is always false
+and `examined` MUST NOT be treated as a complete examined-input range. This
+batch API does not provide profiling or Document event tracing.
 
 ## Modes
 

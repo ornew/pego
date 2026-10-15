@@ -31,7 +31,7 @@ var generatedTraceSource string
 
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Observability emits opt-in rule tracing for generated Go batch parsing.
+	// Observability emits opt-in rule tracing for generated Go and TypeScript batch parsing.
 	Observability bool
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.

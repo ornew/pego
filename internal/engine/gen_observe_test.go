@@ -34,8 +34,11 @@ func TestGeneratedTraceOptions(t *testing.T) {
 			t.Fatal("unsupported combination accepted")
 		}
 	}
-	if _, err := GenerateTS(g, GenOptions{Start: "main", Observability: true}); err == nil {
-		t.Fatal("TypeScript accepted unsupported option")
+	if code, err := GenerateTS(g, GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {
+		t.Fatal("TypeScript observability:", err)
+	}
+	if _, err := GenerateTS(g, GenOptions{Start: "main", Observability: true, Document: true}); err == nil {
+		t.Fatal("TypeScript accepted unsupported Document")
 	}
 }
 

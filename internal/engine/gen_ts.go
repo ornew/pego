@@ -20,6 +20,9 @@ var tsRuntimeSource string
 //go:embed tsrt/work.ts
 var tsWorkSource string
 
+//go:embed tsrt/trace.ts
+var tsTraceSource string
+
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
 
@@ -30,9 +33,6 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // expressions, as in Generate; the embedded runtime (tsrt/runtime.ts) mirrors genrt. opts.Package
 // is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
-	if opts.Observability {
-		return nil, fmt.Errorf("generated observability currently supports Go batch parsing only")
-	}
 	if opts.Document {
 		return nil, fmt.Errorf("Document generation is only supported for Go")
 	}
@@ -50,7 +50,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
+	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -79,9 +79,18 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		// read of a module-level control binding.
 		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "stride > 64 && this.n > 1024", 1)
 	}
+	work := tsWorkSource
+	if opts.Observability {
+		if rt, err = generatedTSTraceRuntime(rt); err != nil {
+			return nil, err
+		}
+		if work, err = generatedTSTraceWork(work); err != nil {
+			return nil, err
+		}
+	}
 	out.WriteString(rt)
 	out.WriteString("\n// --- Invocation work controls ---\n")
-	out.WriteString(tsWorkSource)
+	out.WriteString(work)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
@@ -130,6 +139,18 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 }
 
 `, rec.byName[start.name].id)
+	}
+	if opts.Observability {
+		n := 2
+		if rec != nil {
+			n++
+		}
+		source, err := generatedTSObservedInvocations(out.String(), n)
+		if err != nil {
+			return nil, err
+		}
+		out.Reset()
+		out.WriteString(source)
 	}
 	if opts.Types {
 		typed, err := gen.typedTS(start, out.String())
@@ -425,7 +446,8 @@ func (g *tsGen) rules() {
 // memoized and without captures) with a direct call of its body.
 func (g *tsGen) plainCall(r *rule, body string) {
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s%d(p: Parser): R {\n", r.name, g.plainPrefix(), r.id)
+	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.id))
+	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.name, name)
 	m.WriteString(`  p.stepWork();
   const start = p.pos;
   const rec = p.recovered.length;
@@ -556,7 +578,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("  const ch = p.peek();\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "  if (!(ch >= 0 && (%s)) && p.depth + %d <= p.maxDepth) {\n    p.expect(p.pos, %d);\n  } else ", tsWorkCond(cond), depth, desc)
+				fmt.Fprintf(&b, "  if (!(ch >= 0 && (%s)) && p.depth + %d <= p.maxDepth) {\n%s    p.expect(p.pos, %d);\n  } else ", tsWorkCond(cond), depth, g.traceSkipped(alt), desc)
 			} else {
 				b.WriteString("  ")
 			}

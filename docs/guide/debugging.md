@@ -466,20 +466,63 @@ _, err := pairsparser.ParseAST(input,
 )
 ```
 
-This generation mode supports Go Node batch `Parse`, `ParseRule` and, when
-generated with `-recognize`, `Recognize`; with `-types`, it also supports
-`ParseAST` and `ParseRuleAST`. It cannot be combined with `-document`, and
-TypeScript generation rejects it. It does not add profiling or promise
-event-for-event equivalence with engine traces. See
-[code generation](code-generation.md#the-pego-gen-command) for the generation
-option. Focused synthetic measurements cover both Node and typed batch
-parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
+This Go mode supports Node batch `Parse`, `ParseRule` and, when generated
+with `-recognize`, `Recognize`; with `-types`, it also supports `ParseAST` and
+`ParseRuleAST`. It cannot be combined with `-document`. Neither Go nor
+TypeScript generated tracing adds profiling or promises event-for-event
+equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)
+for the generation option. Focused synthetic measurements cover Go Node and
+typed batch parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
 counts; callback cost depends on parser path and workload, and the measured
 callbacks store scalar event fields rather than logging. These are not
 workload-wide estimates. See
 [design 043](../design/043-generated-parser-observability.md#performance-and-results).
 
+### Generated TypeScript Traces
+
+Generate tracing hooks with `pego gen -lang ts -observability`; add `-types` to
+trace typed-result parsing and `-recognize` to trace recognition calls. Tracing
+is delivered through the per-call options APIs, not the legacy positional-unit
+functions:
+
+```bash
+pego gen -lang ts -g pairs.pego -observability -types -recognize -o pairs.ts
+```
+
+```ts
+import { parseASTWithOptions } from "./pairs.ts";
+
+const result = parseASTWithOptions(input, {
+  trace: (event) => console.log(event.kind, event.rule, event.depth, event.pos),
+  traceRules: ["pair"],
+  traceMaxDepth: 4,
+});
+```
+
+`parseWithOptions`, `parseRuleWithOptions` and `recognizeWithOptions` accept the
+same trace options. With `-types`, the configured-start `parseASTWithOptions`
+does as well; TypeScript does not add a named typed-rule API. The legacy
+positional-unit functions do not accept trace callbacks. `traceMaxDepth` must
+be a safe integer; zero and negative values mean unlimited depth. Events use
+camel-case fields and the selected position unit. The `"enter"` and `"exit"`
+kinds describe actual calls; `"skipped"` currently identifies first-character
+dispatch skips. Omitted or empty `traceRules` delivers all rules; a selected
+rule includes all descendant calls, while unknown rule names select none.
+`examinedKnown` is always false. Callback
+events are copied values, callbacks run synchronously, and thrown values
+propagate unchanged after cleanup. Typed conversion does not add a separate
+event, and an aborted parse may have no exit for active calls. TypeScript traces
+do not provide profiling or Document tracing. In focused synthetic runs,
+no-callback option APIs ranged from 0.991–1.044× ordinary time, while parse
+callback profiles ranged from 1.052–1.288× depending on workload and filter; paired
+results were noisy and are not a general performance estimate. See
+[design 043](../design/043-generated-parser-observability.md#typescript-batch-measurements)
+for the measurement scope and limits.
+
 ## 7. Costs and Limits
+
+These costs and limits describe engine tracing and profiling; generated-parser
+measurements are linked above.
 
 - **Off, tracing costs nothing measurable.** A parse without `WithTrace` pays one pointer check per rule call that goes
   through the engine's general call path; plain calls of small rules skip that path and pay nothing. See
