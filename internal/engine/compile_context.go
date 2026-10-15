@@ -10,9 +10,9 @@ import (
 // discards the entire program and accumulated diagnostics. Existing Compile and
 // saved-program loading keep their ordinary path with no active control.
 // Polls cover grammar AST validation, source normalization, rule/dependency
-// loops, expression construction and type checking. Some shared analysis and
-// individual operations still have uncancellable stretches. This is not a wall-clock
-// latency guarantee.
+// loops, shared success proofs, expression construction and type checking.
+// Shared metadata and individual operations still have uncancellable stretches.
+// This is not a wall-clock latency guarantee.
 func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog *Program, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

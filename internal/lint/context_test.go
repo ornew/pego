@@ -76,7 +76,7 @@ func TestRunContextCancellationDiscardsFindings(t *testing.T) {
 func TestLintContextPhaseCancellation(t *testing.T) {
 	g := lintContextGrammar(t, lintManyRules())
 	an := newAnalysis(g)
-	for _, phase := range []string{"analysis", "dependency-graph", "shadowed", "suppression"} {
+	for _, phase := range []string{"analysis", "success-proof", "failure-proof", "cut-proof", "dependency-graph", "shadowed", "suppression"} {
 		t.Run(phase, func(t *testing.T) {
 			control := &lintControl{ctx: lintTestContext(t, 1)}
 			defer func() {
@@ -88,6 +88,22 @@ func TestLintContextPhaseCancellation(t *testing.T) {
 			switch phase {
 			case "analysis":
 				newAnalysisControlled(g, control)
+			case "success-proof", "failure-proof", "cut-proof":
+				items := make([]grammar.Expr, 1024)
+				for i := range items {
+					items[i] = &grammar.Top{}
+					if phase == "failure-proof" {
+						items[i] = &grammar.Bottom{}
+					}
+				}
+				controlled := &analysis{control: control}
+				if phase == "cut-proof" {
+					controlled.hasLooseCut(&grammar.Seq{Items: items})
+				} else if phase == "failure-proof" {
+					controlled.alwaysSucceeds(&grammar.Not{Expr: &grammar.Choice{Alts: items}})
+				} else {
+					controlled.alwaysSucceeds(&grammar.Seq{Items: items})
+				}
 			case "dependency-graph":
 				edges := map[string][]string{}
 				for i := range 1024 {
@@ -121,6 +137,8 @@ func TestRunContextOrdinaryParity(t *testing.T) {
 		lintManyRules(),
 		"// lint:ignore shadowed-alternative reason\nrule main = \"a\" / \"ab\"",
 		`rule main = operators { operand [0-9]; level sum { infix left "+" } }`,
+		`rule main = "" / "a"`,
+		`rule main = ("a" -- "b") / ""`,
 	} {
 		g := lintContextGrammar(t, source)
 		for _, opts := range []Options{{}, {Disable: map[string]bool{CheckUnreachableRule: true}}} {

@@ -99,7 +99,11 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 				}
 			}
 		}
-		a.succeeding = grammaranalysis.SucceedingRules(rules, a.cyclic)
+		if control == nil {
+			a.succeeding = grammaranalysis.SucceedingRules(rules, a.cyclic)
+		} else {
+			a.succeeding = grammaranalysis.SucceedingRulesWithPoll(rules, a.cyclic, control.poll)
+		}
 		next := map[string][]string{}
 		changed := false
 		for _, r := range rules {
@@ -219,7 +223,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
 			acc = a.leftCalls(alt, acc)
-			if grammaranalysis.AlwaysSucceeds(alt, a.succeeding) {
+			if a.alwaysSucceeds(alt) {
 				break
 			}
 		}
@@ -241,7 +245,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Attributed:
 		acc = a.leftCalls(e.Expr, acc)
-		if !grammaranalysis.AlwaysSucceeds(e.Expr, a.succeeding) {
+		if !a.alwaysSucceeds(e.Expr) {
 			for _, at := range e.Attrs {
 				if at.Name == "recover" {
 					if skip, ok := at.Arg("skip"); ok {
@@ -256,7 +260,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		}
 		for _, o := range e.Operands {
 			acc = a.leftCalls(o.Expr, acc)
-			if grammaranalysis.AlwaysSucceeds(o.Expr, a.succeeding) {
+			if a.alwaysSucceeds(o.Expr) {
 				break
 			}
 		}
@@ -638,4 +642,12 @@ func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bo
 		}
 	})
 	return found
+}
+
+// alwaysSucceeds preserves the ordinary proof and shares the invocation control.
+func (a *analysis) alwaysSucceeds(e grammar.Expr) bool {
+	if a.control == nil {
+		return grammaranalysis.AlwaysSucceeds(e, a.succeeding)
+	}
+	return grammaranalysis.AlwaysSucceedsWithPoll(e, a.succeeding, a.control.poll)
 }

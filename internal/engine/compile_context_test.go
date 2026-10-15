@@ -94,7 +94,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, phase := range []string{"static-analysis", "dependency-graph", "type-checking", "type-inference", "matcher-construction", "list-constructor-type"} {
+	for _, phase := range []string{"static-analysis", "success-proof", "failure-proof", "cut-proof", "dependency-graph", "type-checking", "type-inference", "matcher-construction", "list-constructor-type"} {
 		t.Run(phase, func(t *testing.T) {
 			ctx := compileTestContext(t, 1)
 			control := &compileControl{ctx: ctx}
@@ -108,6 +108,24 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 			switch phase {
 			case "static-analysis":
 				analyzeControlled(g.Rules(), control)
+			case "success-proof", "failure-proof", "cut-proof":
+				items := make([]grammar.Expr, 1024)
+				for i := range items {
+					items[i] = &grammar.Top{}
+					if phase == "failure-proof" {
+						items[i] = &grammar.Bottom{}
+					}
+				}
+				var expr grammar.Expr = &grammar.Seq{Items: items}
+				if phase == "failure-proof" {
+					expr = &grammar.Not{Expr: &grammar.Choice{Alts: items}}
+				} else if phase == "cut-proof" {
+					expr = &grammar.Optional{Expr: expr}
+				}
+				// Only the shared proof traversal can reach the first context
+				// checkpoint; no outer analysis loop contributes polling here.
+				a := &analysis{control: control}
+				a.alwaysSucceeds(expr)
 			case "dependency-graph":
 				edges := map[string][]string{}
 				for _, rd := range g.Rules() {
@@ -149,6 +167,8 @@ func TestCompileContextOrdinaryParity(t *testing.T) {
 	for _, src := range []string{
 		`type P struct {}; rule main = "a" => P{}`,
 		`rule main = operators { operand [0-9]; level sum { infix left "+" } }`,
+		`rule main = "" / "a"`,
+		`rule main = ("a" -- "b") / ""`,
 		`rule main = "a" / missing`,
 		`type P struct { X Match }; rule main = "a" => P{X: 1}`,
 	} {

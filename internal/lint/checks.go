@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 func at(p grammar.Pos) string {
@@ -153,7 +152,7 @@ func (a *analysis) shadowedSuffixCaveat(prior grammar.Expr, later ...grammar.Exp
 	control := a.control
 	control.poll()
 
-	if grammaranalysis.AlwaysSucceeds(prior, a.engineSucceeding) {
+	if a.alwaysSucceeds(prior) {
 		return ""
 	}
 	return a.leftRecursionCaveat(later...)

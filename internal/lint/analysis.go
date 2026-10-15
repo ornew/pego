@@ -98,7 +98,11 @@ func newAnalysisControlled(g *grammar.Grammar, control *lintControl) *analysis {
 				a.leftRecursive[r.Name] = true
 			}
 		}
-		a.engineSucceeding = grammaranalysis.SucceedingRules(a.order, a.leftRecursive)
+		if control == nil {
+			a.engineSucceeding = grammaranalysis.SucceedingRules(a.order, a.leftRecursive)
+		} else {
+			a.engineSucceeding = grammaranalysis.SucceedingRulesWithPoll(a.order, a.leftRecursive, control.poll)
+		}
 		next := map[string][]string{}
 		changed := false
 		for _, r := range a.order {
@@ -214,7 +218,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		for _, alt := range e.Alts {
 			control.poll()
 			acc = a.leftCalls(alt, acc)
-			if grammaranalysis.AlwaysSucceeds(alt, a.engineSucceeding) {
+			if a.alwaysSucceeds(alt) {
 				break
 			}
 		}
@@ -236,7 +240,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Attributed:
 		acc = a.leftCalls(e.Expr, acc)
-		if !grammaranalysis.AlwaysSucceeds(e.Expr, a.engineSucceeding) {
+		if !a.alwaysSucceeds(e.Expr) {
 			for _, at := range e.Attrs {
 				control.poll()
 				if at.Name == "recover" {
@@ -253,7 +257,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		for _, o := range e.Operands {
 			control.poll()
 			acc = a.leftCalls(o.Expr, acc)
-			if grammaranalysis.AlwaysSucceeds(o.Expr, a.engineSucceeding) {
+			if a.alwaysSucceeds(o.Expr) {
 				break
 			}
 		}
@@ -557,7 +561,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 			}
 			// A cut that commits the choice to an earlier alternative can make it fail before
 			// it gets here.
-			if hasLooseCut(alt) {
+			if a.hasLooseCut(alt) {
 				break
 			}
 		}
@@ -589,7 +593,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 			return cur
 		}
 		// Further iterations are optional, unless one fails after a cut.
-		if hasLooseCut(e.Expr) && !a.succeeds(e.Expr) {
+		if a.hasLooseCut(e.Expr) && !a.succeeds(e.Expr) {
 			return matchResult{}
 		}
 		return inexact
@@ -597,7 +601,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		if r := a.matchPrefix(e.Expr, t); r.ok {
 			return r
 		}
-		if !hasLooseCut(e.Expr) {
+		if !a.hasLooseCut(e.Expr) {
 			return inexact
 		}
 	case *grammar.Capture:
@@ -1158,4 +1162,19 @@ func analysisExpr(e grammar.Expr) grammar.Expr {
 		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Diagnostic(), Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": x.Skip}}}}
 	}
 	return e
+}
+
+// alwaysSucceeds preserves the ordinary proof and shares the invocation control.
+func (a *analysis) alwaysSucceeds(e grammar.Expr) bool {
+	if a.control == nil {
+		return grammaranalysis.AlwaysSucceeds(e, a.engineSucceeding)
+	}
+	return grammaranalysis.AlwaysSucceedsWithPoll(e, a.engineSucceeding, a.control.poll)
+}
+
+func (a *analysis) hasLooseCut(e grammar.Expr) bool {
+	if a.control == nil {
+		return hasLooseCut(e)
+	}
+	return grammaranalysis.HasLooseCutWithPoll(e, a.control.poll)
 }
