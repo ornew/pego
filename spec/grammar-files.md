@@ -215,6 +215,8 @@ non-whitespace data. JSON and hand-built ASTs must have nonnil required
 children and collection entries, nonnegative positional references, and valid
 repetition bounds. Pointer cycles and typed nil interface nodes are rejected.
 The public `grammar.Validate` function checks this structure before semantic
-compilation; see [building grammars as ASTs and JSON](../docs/guide/grammar-asts.md)
-for its diagnostics and compatibility rules. Unknown JSON fields remain
-ignored.
+compilation. `grammar.ValidateContext(ctx, g)` checks the same structure and
+error order, but may return `ctx.Err()` without a partial diagnostic when its
+context is canceled. Neither function changes the AST. See
+[building grammars as ASTs and JSON](../docs/guide/grammar-asts.md) for API
+details. Unknown JSON fields remain ignored.

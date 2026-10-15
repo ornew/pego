@@ -26,6 +26,13 @@ diagnostic position. Source-parsed grammars carry source spans and comment
 ownership in `SourceInfo`; hand-built nodes may leave those fields zero-valued.
 `Msg` describes the problem.
 
+For large grammars, `grammar.ValidateContext(ctx, g)` performs the same
+structural checks and deterministic first-error traversal cooperatively. If it
+observes cancellation, it returns `ctx.Err()` instead of a partial validation
+diagnostic; validation does not modify the AST. Cancellation is not a hard
+latency bound: individual string checks and sorting are uninterruptible, and
+character ranges are checked in chunks of at most 256 ranges between polls.
+
 Validation rejects a nil grammar, missing required children, nil entries in
 node collections, interfaces holding typed nil pointers, unsupported embedded
 node types, pointer cycles, negative positional references and malformed
@@ -63,11 +70,12 @@ or rejected bytecode.
 
 This is structural validation. It does not resolve names, check action types,
 validate attributes or enforce Operators Rule semantics; compile the grammar for those
-checks. It also does not validate source comments/layout or impose resource
-limits. `grammar.Format` and `grammar.MarshalJSON` expect structurally valid
-input; call `Validate` first for ASTs your tool constructs. The validator walks
-iteratively, though later formatting, serialization and compilation have
-their own nesting costs. Do not mutate the AST concurrently with these calls.
+checks. It also does not validate source comments/layout or impose size or
+depth limits. `grammar.Format` and `grammar.MarshalJSON` expect structurally valid
+input; call `Validate` or `ValidateContext` first for ASTs your tool constructs.
+Both validation functions walk iteratively, though later formatting,
+serialization and compilation have their own nesting costs. Do not mutate the
+AST concurrently with these calls.
 
 Integer constants use Go's native `int` range. Formatting the minimum integer
 uses `-MaxInt - 1`, with parentheses where required: its absolute value cannot

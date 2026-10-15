@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -48,5 +49,30 @@ func TestCompileCancellationDoesNotPublishDiagnostics(t *testing.T) {
 	// A cancellation must not poison the grammar or a subsequent snapshot.
 	if err := a.compileContext(context.Background()); err != nil || a.prog == nil || len(a.diags) != 0 {
 		t.Fatalf("subsequent ordinary compilation failed: %v, %+v", err, a.diags)
+	}
+}
+
+func TestGrammarValidationCancellationDoesNotPublishDiagnostics(t *testing.T) {
+	items := make([]grammar.Expr, 1024)
+	for i := range items {
+		items[i] = &grammar.Literal{Value: "a"}
+	}
+	items[len(items)-1] = nil
+	a := newAnalysis(`rule main = "a"`)
+	a.g = &grammar.Grammar{Statements: []grammar.Statement{
+		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
+	}}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	controlled := &lspCompilePollContext{Context: ctx, cancel: cancel, left: 4}
+	if err := a.compileContext(controlled); !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected validation cancellation, got %v", err)
+	}
+	if a.prog != nil || len(a.diags) != 0 {
+		t.Fatalf("cancelled validation published a result: %v, %+v", a.prog, a.diags)
+	}
+	items[len(items)-1] = &grammar.Literal{Value: "a"}
+	if err := a.compileContext(context.Background()); err != nil || a.prog == nil || len(a.diags) != 0 {
+		t.Fatalf("later compilation failed: %v, %+v", err, a.diags)
 	}
 }

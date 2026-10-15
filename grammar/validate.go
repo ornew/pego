@@ -1,6 +1,7 @@
 package grammar
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -44,6 +45,60 @@ type validationFrame struct {
 // Name resolution, types, attributes and OperatorsRule semantics are checked by the
 // compiler. Validation does not impose a size or depth limit.
 func Validate(g *Grammar) error {
+	return validate(g, nil)
+}
+
+// ValidateContext checks the same grammar invariants as Validate, but stops
+// without returning partial diagnostics when ctx is cancelled. It polls while
+// traversing the AST; individual string checks and sorting are not interruptible.
+func ValidateContext(ctx context.Context, g *Grammar) (err error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if ctx.Done() == nil {
+		return Validate(g)
+	}
+	control := &validationControl{ctx: ctx}
+	defer func() {
+		if failure := recover(); failure != nil {
+			if cancelled, ok := failure.(validationCancellation); ok {
+				err = cancelled.err
+			} else {
+				panic(failure)
+			}
+		}
+	}()
+	err = validate(g, control)
+	if cancelled := ctx.Err(); cancelled != nil {
+		return cancelled
+	}
+	return err
+}
+
+type validationCancellation struct{ err error }
+
+type validationControl struct {
+	ctx   context.Context
+	steps uint32
+}
+
+func (c *validationControl) poll() {
+	if c == nil {
+		return
+	}
+	c.steps++
+	if c.steps%256 == 0 {
+		c.check()
+	}
+}
+
+func (c *validationControl) check() {
+	if err := c.ctx.Err(); err != nil {
+		panic(validationCancellation{err})
+	}
+}
+
+func validate(g *Grammar, control *validationControl) error {
 	stack := []validationFrame{{node: g, index: -1}}
 	var path []validationFrame
 	seen := make(map[any]uint8)
@@ -77,12 +132,14 @@ func Validate(g *Grammar) error {
 		return &ValidationError{Path: b.String(), Pos: pos, Msg: message}
 	}
 	push := func(node any, field string, index int, optional bool) {
+		control.poll()
 		if optional && node == nil {
 			return
 		}
 		stack = append(stack, validationFrame{node: node, field: field, index: index})
 	}
 	for len(stack) != 0 {
+		control.poll()
 		f := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		if f.exit {
@@ -106,7 +163,7 @@ func Validate(g *Grammar) error {
 		if v.IsNil() {
 			return fail("", "required node is nil")
 		}
-		if field, name := invalidIdentifier(f.node); field != "" {
+		if field, name := invalidIdentifier(f.node, control); field != "" {
 			if name != "" && name[0] == '_' {
 				return fail(field, "identifier "+name+" is reserved")
 			}
@@ -121,16 +178,27 @@ func Validate(g *Grammar) error {
 			path = path[:len(path)-1]
 			continue
 		case *CharClass:
-			for i, r := range n.Ranges {
-				if !utf8.ValidRune(r.Lo) {
-					return fail("ranges["+strconv.Itoa(i)+"].lo", "character range lower bound must be a Unicode scalar value")
+			for start := 0; start < len(n.Ranges); {
+				end := len(n.Ranges)
+				if control != nil {
+					control.check()
+					end = start + min(256, end-start)
 				}
-				if !utf8.ValidRune(r.Hi) {
-					return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound must be a Unicode scalar value")
+				// The ordinary path validates the full slice without a polling
+				// branch per range; controlled validation checks each chunk.
+				for offset, r := range n.Ranges[start:end] {
+					i := start + offset
+					if !utf8.ValidRune(r.Lo) {
+						return fail("ranges["+strconv.Itoa(i)+"].lo", "character range lower bound must be a Unicode scalar value")
+					}
+					if !utf8.ValidRune(r.Hi) {
+						return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound must be a Unicode scalar value")
+					}
+					if r.Hi < r.Lo {
+						return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound is less than lower bound")
+					}
 				}
-				if r.Hi < r.Lo {
-					return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound is less than lower bound")
-				}
+				start = end
 			}
 			path = path[:len(path)-1]
 			continue
@@ -245,6 +313,7 @@ func Validate(g *Grammar) error {
 		case *Attribute:
 			keys := make([]string, 0, len(n.KwArgs))
 			for key := range n.KwArgs {
+				control.poll()
 				keys = append(keys, key)
 			}
 			sort.Strings(keys)
@@ -256,11 +325,13 @@ func Validate(g *Grammar) error {
 				return false
 			}
 			for _, key := range keys {
+				control.poll()
 				if !validValue(n.KwArgs[key]) {
 					return fail("kwArgs["+strconv.Quote(key)+"]", "attribute value must be a scalar or parser expression")
 				}
 			}
 			for i, value := range n.Args {
+				control.poll()
 				if !validValue(value) {
 					return fail("args["+strconv.Itoa(i)+"]", "attribute value must be a scalar or parser expression")
 				}
@@ -336,7 +407,7 @@ func Validate(g *Grammar) error {
 // invalidIdentifier checks source names without changing literal data or
 // treating the Top node's underscore spelling as an identifier. Empty optional
 // names (package and Operators Rule level) are valid.
-func invalidIdentifier(node any) (field, name string) {
+func invalidIdentifier(node any, control *validationControl) (field, name string) {
 	invalid := func(s string) bool {
 		if s == "" {
 			return true
@@ -405,6 +476,7 @@ func invalidIdentifier(node any) (field, name string) {
 		bad := ""
 		found := false
 		for key := range n.KwArgs {
+			control.poll()
 			if invalid(key) && (!found || key < bad) {
 				bad = key
 				found = true
@@ -415,6 +487,7 @@ func invalidIdentifier(node any) (field, name string) {
 		}
 	case *Lambda:
 		for i, param := range n.Params {
+			control.poll()
 			if invalid(param) {
 				return "params[" + strconv.Itoa(i) + "]", param
 			}

@@ -254,7 +254,12 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 
 func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
 	control.check()
-	validationError := grammar.Validate(g)
+	var validationError error
+	if control == nil {
+		validationError = grammar.Validate(g)
+	} else {
+		validationError = grammar.ValidateContext(control.ctx, g)
+	}
 	control.check()
 	if validationError != nil {
 		e := validationError.(*grammar.ValidationError)

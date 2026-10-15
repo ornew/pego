@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, selected compiler rule/dependency/matcher/type traversals, and lint-owned loops. Shared helpers and some large operations remain unpolled, and real-editor validation remains open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and lint-owned loops. Shared helpers and some large operations remain unpolled, and real-editor validation remains open.
 
 ## Prototype Implementation Boundary
 
@@ -84,11 +84,16 @@ grammar or diagnostics, so an incomplete analysis is not published.
 
 `internal/engine.CompileContext` is an internal entry point used by LSP
 analysis; the ordinary `Compile` API is unchanged. The context is polled during
-rule/dependency analysis, matcher compilation and type traversal. This is a
-partial compiler slice: `grammar.Validate`, attribute normalization, shared
-grammar-analysis success helpers and some large single type-helper operations
-remain unpolled. Lint and some request traversal/formatting routines also
-observe cancellation only at phase boundaries or lack checks. The checks bound
+grammar AST validation, rule/dependency analysis, matcher compilation and type
+traversal. Context-aware validation polls during frame processing, child
+enqueueing, character-range checks in chunks of at most 256 ranges, and
+attribute argument collection, returning no partial diagnostic on
+cancellation. Ordinary validation retains its previous result and ordering and
+does not poll per character range. Attribute normalization, shared
+grammar-analysis success helpers and some large single operations (including
+sorting and individual string checks) remain unpolled. Lint and some request
+traversal/formatting routines also observe cancellation only at phase
+boundaries or lack checks. The checks bound
 work at selected points, not total LSP cancellation latency. Suppression
 validation uses its request context before and after candidate analysis and
 lint. The VS Code
@@ -281,10 +286,37 @@ and cross parity; these measurements show no stable ordinary-time change. They
 do not measure actor or JSON-RPC latency, real-editor behavior, cancellation
 while a lint helper is active, or retained heap.
 
+A separate five-pair alternating comparison measured ordinary validation and
+LSP analysis after adding cancellable grammar validation, against main
+`87a4088` on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=4`, `GOGC=100`, with `GOMEMLIMIT` off. Validation subbenchmarks ran
+for 500 ms and existing LSP Analyze subbenchmarks for 300 ms. The following
+are medians of paired candidate/base time ratios, followed by the observed
+paired range (they are not quotients of aggregate medians):
+
+| Case | Candidate/base time ratio |
+| --- | ---: |
+| Validate: Small | 1.038 (1.009–1.364) |
+| Validate: WideRules | 1.027 (0.957–1.076) |
+| Validate: DeepOptional | 1.003 (0.898–1.025) |
+| Validate: AttributeKeys | 0.994 (0.840–1.016) |
+| Validate: CharacterRanges | 1.000 (0.945–1.006) |
+| LSP Analyze: generated | 1.009 (0.974–1.039) |
+| LSP Analyze: Go | 0.992 (0.909–1.121) |
+| LSP Analyze: Python | 1.043 (0.924–1.161) |
+
+The Small validation median was 533.4→547.3 ns/op with no allocation change;
+other allocation counts were effectively unchanged, except for one additional
+allocation in the Go Analyze case. The larger validation fixtures and all LSP
+cases have paired ranges crossing parity, so they do not establish a stable
+time change. Sources are `grammar/validate_bench_test.go` and
+`internal/lsp/responsive_bench_test.go`. These measurements do not cover the
+cancellable-context path, cancellation latency or input parsing.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing and selected compiler rule/dependency/matcher/type traversals poll context within phases. Lint-owned analysis, check and suppression loops, recursive analyses and result sorting also poll during execution. Grammar validation, normalization, shared grammar proofs/metadata walks, some formatting/comparison helpers and large single operations still have uncancellable spans; cancellation has no wall-clock bound.
+- Syntax parsing, grammar AST validation and selected compiler rule/dependency/matcher/type traversals poll context within phases. Lint-owned analysis, check and suppression loops, recursive analyses and result sorting also poll during execution. Normalization, shared grammar proofs/metadata walks, some formatting/comparison helpers and large single operations still have uncancellable spans; cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable enabling all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.

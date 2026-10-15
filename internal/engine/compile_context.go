@@ -9,9 +9,10 @@ import (
 // CompileContext is the internal editor compilation entry point. Cancellation
 // discards the entire program and accumulated diagnostics. Existing Compile and
 // saved-program loading keep their ordinary path with no active control.
-// Polls cover rule/dependency loops, expression construction and type checking;
-// validation, normalization and individual shared type/grammar operations still
-// have uncancellable stretches. This is not a wall-clock latency guarantee.
+// Polls cover grammar AST validation, rule/dependency loops, expression
+// construction and type checking; normalization and individual shared
+// operations still have uncancellable stretches. This is not a wall-clock
+// latency guarantee.
 func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog *Program, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

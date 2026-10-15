@@ -64,6 +64,30 @@ func TestCompileContextCancellation(t *testing.T) {
 	}
 }
 
+func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
+	items := make([]grammar.Expr, 1024)
+	for i := range items {
+		items[i] = &grammar.Literal{Value: "a"}
+	}
+	items[len(items)-1] = nil
+	g := &grammar.Grammar{Statements: []grammar.Statement{
+		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
+	}}
+	if _, err := Compile(g, Options{}); err == nil {
+		t.Fatal("fixture must fail ordinary grammar validation")
+	}
+	// CompileContext and buildControlled make two entry checks, followed by
+	// ValidateContext's entry check. The fourth check is within AST traversal.
+	ctx := compileTestContext(t, 4)
+	prog, err := CompileContext(ctx, g, Options{})
+	if prog != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("validation cancellation: program=%v error=%v", prog, err)
+	}
+	if ctx.left > 0 {
+		t.Fatal("compiler did not poll inside grammar validation")
+	}
+}
+
 func TestCompileContextPhaseCancellation(t *testing.T) {
 	g := compileTestGrammar(t)
 	p, err := Compile(g, Options{NoTypeCheck: true})
