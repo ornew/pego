@@ -113,9 +113,11 @@ func (s *Server) definition(params json.RawMessage) (any, *rpcError) {
 }
 
 // occurrencesOf returns the occurrences of the name of o, in source order.
-func (a *analysis) occurrencesOf(o occurrence) []occurrence {
+func (a *analysis) occurrencesOfControlled(o occurrence, control *renderControl) []occurrence {
+	control.poll()
 	var out []occurrence
 	for _, x := range a.occs {
+		control.poll()
 		if x.kind == o.kind && x.name == o.name {
 			out = append(out, x)
 		}
@@ -123,7 +125,8 @@ func (a *analysis) occurrencesOf(o occurrence) []occurrence {
 	return out
 }
 
-func (s *Server) references(params json.RawMessage) (any, *rpcError) {
+func (s *Server) referencesControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	var p referenceParams
 	if err := decode(params, &p); err != nil {
 		return nil, err
@@ -138,7 +141,8 @@ func (s *Server) references(params json.RawMessage) (any, *rpcError) {
 		return nil, nil
 	}
 	locs := []Location{}
-	for _, x := range a.occurrencesOf(o) {
+	for _, x := range a.occurrencesOfControlled(o, control) {
+		control.poll()
 		if x.def == nil || p.Context.IncludeDeclaration {
 			locs = append(locs, Location{URI: d.uri, Range: a.idx.rangeOf(x.start, x.end)})
 		}
@@ -146,7 +150,8 @@ func (s *Server) references(params json.RawMessage) (any, *rpcError) {
 	return locs, nil
 }
 
-func (s *Server) documentHighlight(params json.RawMessage) (any, *rpcError) {
+func (s *Server) documentHighlightControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	d, off, err := s.position(params)
 	if err != nil {
 		return nil, err
@@ -157,7 +162,8 @@ func (s *Server) documentHighlight(params json.RawMessage) (any, *rpcError) {
 		return nil, nil
 	}
 	hs := []documentHighlight{}
-	for _, x := range a.occurrencesOf(o) {
+	for _, x := range a.occurrencesOfControlled(o, control) {
+		control.poll()
 		kind := highlightRead
 		if x.def != nil {
 			kind = highlightWrite
@@ -374,7 +380,8 @@ func typeHoverControlled(d *definition, control *renderControl) string {
 
 // --- Rename ---
 
-func (s *Server) prepareRename(params json.RawMessage) (any, *rpcError) {
+func (s *Server) prepareRenameControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	d, off, err := s.position(params)
 	if err != nil {
 		return nil, err
@@ -406,7 +413,8 @@ func (a *analysis) renameTarget(off int) (*occurrence, *rpcError) {
 	return &o, nil
 }
 
-func (s *Server) rename(params json.RawMessage) (any, *rpcError) {
+func (s *Server) renameControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	var p renameParams
 	if err := decode(params, &p); err != nil {
 		return nil, err
@@ -423,32 +431,34 @@ func (s *Server) rename(params json.RawMessage) (any, *rpcError) {
 	if o == nil {
 		return nil, nil
 	}
-	if err := a.checkNewName(o.kind, o.name, p.NewName); err != nil {
+	if err := a.checkNewNameControlled(o.kind, o.name, p.NewName, control); err != nil {
 		return nil, err
 	}
 	edits := []TextEdit{}
-	for _, x := range a.occurrencesOf(*o) {
+	for _, x := range a.occurrencesOfControlled(*o, control) {
+		control.poll()
 		edits = append(edits, TextEdit{Range: a.idx.rangeOf(x.start, x.end), NewText: p.NewName})
 	}
 	return workspaceEdit{Changes: map[string][]TextEdit{d.uri: edits}}, nil
 }
 
 // checkNewName checks that the rule or type old can be renamed to name.
-func (a *analysis) checkNewName(kind symKind, old, name string) *rpcError {
+func (a *analysis) checkNewNameControlled(kind symKind, old, name string, control *renderControl) *rpcError {
+	control.poll()
 	fail := func(format string, args ...any) *rpcError {
 		return &rpcError{Code: codeRequestFailed, Message: fmt.Sprintf(format, args...)}
 	}
 	if name == old {
 		return nil
 	}
-	if !syntax.IsIdentifier(name) || name == "_" {
+	if !control.isIdentifier(name) || name == "_" {
 		return fail("%q is not a valid %s name", name, kind)
 	}
 	if kind == kindRule {
 		if a.rules[name] != nil {
 			return fail("rule %s is already defined", name)
 		}
-		return a.checkUnused(kind, name)
+		return a.checkUnusedControlled(kind, name, control)
 	}
 	if r, _ := utf8.DecodeRuneInString(name); !unicode.IsUpper(r) {
 		return fail("type %s must start with an uppercase letter", name)
@@ -459,13 +469,15 @@ func (a *analysis) checkNewName(kind symKind, old, name string) *rpcError {
 	if a.types[name] != nil {
 		return fail("type %s is already defined", name)
 	}
-	return a.checkUnused(kind, name)
+	return a.checkUnusedControlled(kind, name, control)
 }
 
 // checkUnused checks that name is not used in the namespace kind: renaming to the name of an
 // undefined rule or type would make its references refer to the renamed definition.
-func (a *analysis) checkUnused(kind symKind, name string) *rpcError {
+func (a *analysis) checkUnusedControlled(kind symKind, name string, control *renderControl) *rpcError {
+	control.poll()
 	for _, o := range a.occs {
+		control.poll()
 		if o.kind == kind && o.name == name {
 			return &rpcError{Code: codeRequestFailed, Message: fmt.Sprintf("%s %s is used (but not defined) in the file", kind, name)}
 		}

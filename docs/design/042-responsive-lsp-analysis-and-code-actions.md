@@ -135,6 +135,16 @@ full-phase resource measurements remain open; safe suppression application
 also remains open because the client API cannot atomically enforce the document
 version.
 
+References, document highlights, `prepareRename` and `rename` reuse the same
+request-local control. Polls cover full occurrence collection, unused-name
+scans (`checkUnused`), long new-name identifier checks and the loops that build
+reference, highlight and rename results. Successful responses preserve
+declaration inclusion, source order, highlight kinds, exact rename error
+messages and null-versus-array shapes. Cancellation returns a `nil` result with
+JSON-RPC `RequestCancelled` (-32800), so no partial locations, highlights or
+workspace edits escape. Foreign panic identity and actor stale
+`ContentModified` handling are unchanged.
+
 Hover and completion negotiate Markdown only when explicitly advertised;
 otherwise their documentation is plaintext. Labels, details and insertion text
 retain their established behavior. Completion uses current constructor
@@ -564,10 +574,51 @@ wire encoding, cancellation latency, real-editor behavior, and peak memory.
 The benchmark is `internal/lsp/render_context_bench_test.go`; raw results are
 outside the repository.
 
+### Occurrence Request Cancellation
+
+Five alternating 200 ms pairs compared main `fa2917c` with the occurrence
+cancellation change on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=1`, `GOGC=100`, and no `GOMEMLIMIT`. The 20 profiles cover 32 or
+4,096 references, plus a 64 KiB new identifier for rename, across references,
+document highlights, `prepareRename`, and rename. Inputs were analyzed before
+timing; request decoding, occurrence lookup and response construction were
+inside the timed call. The table shows paired-median candidate/main time ratios
+and ranges across pairs. The baseline used the exact parent `features.go` with
+the new controlled wrappers omitted, under the same independent harness. Its
+handlers use unpolled response builders even when given a context; the
+candidate context path used a live context, with no cancellation triggered.
+The source fixture included CRLF and a Unicode comment; the long-name case used
+a 64 KiB ASCII identifier.
+
+| Fixture | Response | No context | Cancellable context |
+|---|---|---:|---:|
+| 32 references | References | 1.107 (0.977–1.149) | 1.108 (1.085–1.200) |
+| 32 references | Document highlights | 1.121 (1.103–1.133) | 1.111 (1.100–1.143) |
+| 32 references | `prepareRename` | 1.039 (1.009–1.043) | 1.085 (1.057–1.095) |
+| 32 references | Rename | 1.114 (1.060–1.127) | 1.130 (1.119–1.163) |
+| 32 references, 64 KiB name | Rename | 1.009 (1.006–1.092) | 1.646 (1.542–1.662) |
+| 4,096 references | References | 1.106 (1.084–1.111) | 1.108 (1.082–1.120) |
+| 4,096 references | Document highlights | 1.100 (1.044–1.126) | 1.112 (1.060–1.130) |
+| 4,096 references | `prepareRename` | 1.051 (0.988–1.112) | 1.069 (1.031–1.096) |
+| 4,096 references | Rename | 1.103 (1.096–1.110) | 1.115 (1.004–1.128) |
+| 4,096 references, 64 KiB name | Rename | 1.089 (1.069–1.100) | 1.167 (1.161–1.181) |
+
+The 46 historical response and error fingerprints matched exactly. Active
+requests generally added one allocation; the 32-reference cases added 24
+B/op, and the 4,096-reference cases added 4–48 B/op. The 64 KiB name case
+was about 65% slower with 32 references and 17% slower with 4,096; its
+identifier scan is now cancellable. These focused successful-response
+measurements exclude grammar analysis, parser execution, wire encoding,
+cancellation latency, peak memory, and real-editor behavior; request decoding,
+occurrence lookup and response construction are included. They are not a
+general performance result. The shared harness is
+`internal/lsp/occurrence_context_bench_test.go`; raw results remain outside
+the repository.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover and completion requests also poll through selected render walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Individual string comparisons, allocations and other large operations remain uninterruptible, so cancellation has no wall-clock bound.
+- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
