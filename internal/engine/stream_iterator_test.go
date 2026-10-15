@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -92,6 +93,93 @@ func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 		}
 		if _, ok, err := it.Next(); ok || err != nil {
 			t.Fatal("empty repetition did not terminate")
+		}
+	}
+}
+
+func TestStreamIteratorCloseBeforeFirstNext(t *testing.T) {
+	p := compile(t, `rule main = "a"* #stream $$`)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, unit := range []Unit{CodePoints, Bytes} {
+			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
+				reader := &demandReader{reader: strings.NewReader("aaa")}
+				traces := 0
+				it, err := p.Iterate("main", reader, ParseOptions{Backend: backend, Unit: unit, Trace: func(TraceEvent) { traces++ }})
+				if err != nil {
+					t.Fatal(err)
+				}
+				it.Close()
+				it.Close()
+				if reader.calls != 0 || traces != 0 {
+					t.Fatalf("Close started parsing: reads=%d traces=%d", reader.calls, traces)
+				}
+				for range 2 {
+					if n, ok, err := it.Next(); n != nil || ok || err != ErrStreamClosed {
+						t.Fatalf("Next after Close: node=%v ok=%v err=%v", n, ok, err)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestStreamIteratorRecoveredErrorsMatchCallback(t *testing.T) {
+	p := compile(t, `rule main = item+ #stream $$
+rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
+	const input = "abX!abY?ab"
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, unit := range []Unit{CodePoints, Bytes} {
+			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
+				options := ParseOptions{Backend: backend, Unit: unit}
+				var wantNodes []string
+				wantErr := p.ParseStreamWith("main", strings.NewReader(input), func(n *Node) error {
+					wantNodes = append(wantNodes, dump(t, n, nil))
+					return nil
+				}, options)
+				var wantRecovered SyntaxErrors
+				if !errors.As(wantErr, &wantRecovered) || len(wantRecovered) != 2 || len(wantNodes) != 5 {
+					t.Fatalf("callback fixture: nodes=%d err=%v", len(wantNodes), wantErr)
+				}
+				it, err := p.Iterate("main", strings.NewReader(input), options)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var gotNodes []string
+				var terminal error
+				for {
+					n, ok, err := it.Next()
+					if !ok {
+						if n != nil {
+							t.Fatalf("terminal node: %v", n)
+						}
+						terminal = err
+						break
+					}
+					if err != nil {
+						t.Fatalf("element error: %v", err)
+					}
+					gotNodes = append(gotNodes, dump(t, n, nil))
+				}
+				var gotRecovered SyntaxErrors
+				if !reflect.DeepEqual(gotNodes, wantNodes) || !errors.As(terminal, &gotRecovered) || !reflect.DeepEqual(gotRecovered, wantRecovered) {
+					t.Fatalf("iterator differs: nodes=%v want=%v, error=%v want=%v", gotNodes, wantNodes, terminal, wantErr)
+				}
+				for range 2 {
+					if n, ok, again := it.Next(); n != nil || ok {
+						t.Fatalf("repeated terminal: node=%v ok=%v err=%v", n, ok, again)
+					} else {
+						var repeated SyntaxErrors
+						if !errors.As(again, &repeated) || len(repeated) != len(gotRecovered) || &repeated[0] != &gotRecovered[0] {
+							t.Fatalf("terminal error changed: %v", again)
+						}
+					}
+				}
+				it.Close()
+				var afterClose SyntaxErrors
+				if _, ok, err := it.Next(); ok || !errors.As(err, &afterClose) || &afterClose[0] != &gotRecovered[0] {
+					t.Fatalf("Close changed recovered terminal: %v", err)
+				}
+			})
 		}
 	}
 }
