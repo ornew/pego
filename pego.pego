@@ -14,8 +14,9 @@ type VarRef terminal
 type File struct { Package *PackageStmt; Defs []Def; Comments []Comment; TrailingComments []Comment; Text string }
 type PackageStmt = Package | Error
 type Package struct { Name Ident; Comments []Comment }
-type Def = TypeDef | RuleDef | Error
+type Def = TypeDef | RuleDef | InitDef | Error
 type TypeDef struct { Name Ident; Spec TypeSpec; Comments []Comment }
+type InitDef struct { Block ActionBlock; Comments []Comment }
 type TypeSpec = TypeAliasSpec | TerminalSpec | StructSpec
 type TypeAliasSpec struct { Type Type }
 type TerminalSpec struct {}
@@ -131,7 +132,7 @@ rule package_stmt Package = (
 ) => Package{Name: $name, Comments: concat($cs, $tc)}
 rule def_stmt Def = (
   !(comments $$)
-  d:((type_def_stmt / rule_def_stmt / _|_ @error(message="expected type or rule declaration")) #recover(skip=stmt_sync))
+  d:((type_def_stmt / rule_def_stmt / init_def_stmt / _|_ @error(message="expected type, rule, or init declaration")) #recover(skip=stmt_sync))
 ) => $d
 rule stmt_end []Comment = (
   cs:horizontal tail:(stmt_sep @error(message="expected semicolon, newline, or end of file"))
@@ -186,6 +187,12 @@ rule type_expr Type = operators {
     prefix "*" => OptionalType{Type: $rhs}
   }
 }
+
+// Initializer syntax shares the action-block parser. Assignment-only and
+// at-most-one constraints belong to semantic validation.
+rule init_def_stmt InitDef = (
+  cs:comments "init" -word_end -- -ws b:action_block tc:stmt_end
+) => InitDef{Block: $b, Comments: concat($cs, $tc)}
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

@@ -47,7 +47,7 @@ rule package_entry = &(comments "package" !ident_char) package_stmt
 rule package_stmt = comments "package" -word_end -- ident stmt_end
 rule def_stmt = (
     !(comments $$)
-    (type_def_stmt / rule_def_stmt / _|_)
+    (type_def_stmt / rule_def_stmt / init_def_stmt / _|_)
 )
 rule stmt_end = horizontal stmt_sep
 rule item_end = horizontal item_sep
@@ -96,6 +96,10 @@ rule type_expr = operators {
         prefix "*"
     }
 }
+
+// Initializer syntax shares the action-block parser. Assignment-only and
+// at-most-one constraints belong to semantic validation.
+rule init_def_stmt = comments "init" -word_end -- -ws action_block stmt_end
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

@@ -48,7 +48,10 @@ point the same explicit starting state without mutable package globals.
 This proposal does not add arbitrary startup callbacks, mutable parser-global
 state, input-consuming initialization, a second initialization phase for
 Document edits, or a general-purpose module initializer. It does not change
-Predicate Action or Value Action execution.
+Predicate Action or Value Action execution. The separate whole Operators Rule
+action contract is defined in [Operators Rule](../../spec/operators-rule.md):
+that action runs once after a selected rule invocation completes and receives
+the final folded value as `$1`, never an intermediate precedence-level result.
 
 ## Proposed Contract
 
