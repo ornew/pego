@@ -70,7 +70,15 @@ Reuse the Document's existing memo invalidation as the evidence source; do not c
 
 ## Compatibility and Backend Support
 
-This API extends the public core `pego.Document`; recognition remains outside its current contract. Closure, recursive bytecode, and iterative bytecode must agree on observable snapshot equality. Evidence ranges may be implementation-specific only when labeled as such. Generated Go and TypeScript parsers do not expose `Document`; no such support is implied. Existing `Edit`, `Parse`, `Text`, and `Stats` remain source-compatible. Position values use the existing Document unit.
+This API extends the public core `pego.Document`; recognition remains outside
+its current contract. Closure, recursive bytecode, and iterative bytecode must
+agree on observable snapshot equality. Evidence ranges may be
+implementation-specific only when labeled as such. Generated Go parsers expose
+a separate mutable Node `Document` and, with typed generation,
+`Document.ParseAST` ([design 044](044-generated-incremental-and-stream-parsers.md));
+neither generated API exposes these change notifications. TypeScript generation
+has no `Document` API. Existing `Edit`, `Parse`, `Text`, and `Stats` remain
+source-compatible. Position values use the existing Document unit.
 
 ## Implemented Scope
 
@@ -78,7 +86,8 @@ The opt-in path records accepted edits, queues versioned edit/outcome/full-refre
 notifications, and compares immutable snapshots after parsing. Edit events retain
 base-coordinate operations and conservative invalidation evidence; outcome events
 report whole-output comparison only. Minimal changed subtrees/ranges remain out of
-scope, as do generated Go and TypeScript `Document` support.
+scope. The notification API is limited to the core `pego.Document`; generated Go
+Documents do not emit these events, and TypeScript generation has no Document API.
 
 ## Alternatives Considered
 
