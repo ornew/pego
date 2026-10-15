@@ -27,6 +27,7 @@ type TraceEvent struct {
 
 type observation struct {
 	trace    func(TraceEvent)
+	profile  *profileObservation
 	rules    map[string]bool
 	maxDepth int
 	stack    []observationCall
@@ -42,7 +43,7 @@ type observationCall struct {
 type tracePanic struct{ value any }
 
 func (o *observation) deliver(e TraceEvent, selected bool) {
-	if !selected || o.maxDepth > 0 && e.Depth > o.maxDepth {
+	if o.trace == nil || !selected || o.maxDepth > 0 && e.Depth > o.maxDepth {
 		return
 	}
 	defer func() {
@@ -61,6 +62,7 @@ func (o *observation) enter(rule string, pos, level int) {
 	selected := o.selected(rule)
 	e := TraceEvent{Kind: TraceEnter, Rule: rule, Pos: pos, Level: level, Depth: len(o.stack) + 1}
 	o.stack = append(o.stack, observationCall{event: e, selected: selected})
+	o.profile.enter(e)
 	o.deliver(e, selected)
 }
 
@@ -82,12 +84,21 @@ func (o *observation) exit(matched bool, end int) {
 	o.stack = o.stack[:i]
 	e := call.event
 	e.Kind, e.Matched, e.End = TraceExit, matched, end
+	if o.profile == nil {
+		o.deliver(e, call.selected)
+		return
+	}
+	// Include the exit callback in this call, even when it panics. Its parent
+	// then excludes the same interval from self time.
+	defer o.profile.exit(e)
 	o.deliver(e, call.selected)
 }
 
 func (o *observation) skipped(rule string, pos, level int) {
 	if o != nil {
-		o.deliver(TraceEvent{Kind: TraceSkipped, Rule: rule, Pos: pos, Level: level,
-			Depth: len(o.stack) + 1, SkipReason: "first-character"}, o.selected(rule))
+		e := TraceEvent{Kind: TraceSkipped, Rule: rule, Pos: pos, Level: level,
+			Depth: len(o.stack) + 1, SkipReason: "first-character"}
+		o.profile.skipped(e)
+		o.deliver(e, o.selected(rule))
 	}
 }

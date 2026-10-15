@@ -410,8 +410,9 @@ Profile text prints the root-only total on its own summary line and the inclusiv
 `Profile.Rules` lists the rules in the order they were first called; sort them as you need. Engine tracing works with
 every backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to `NewDocument` traces each
 `Document.Parse`), and several `WithTrace` and `WithProfile` options can be combined. A `Profile` is not safe for
-concurrent parses. Generated Go Node and typed parsers have a separate opt-in
-trace API described below; it does not provide engine tracing or profiling.
+concurrent parses. Generated Go Node and typed parsers have separate opt-in
+trace and profile APIs described below; they do not provide the engine
+trace/profile API.
 
 ### Generated Go Node and Typed Traces
 
@@ -468,15 +469,55 @@ _, err := pairsparser.ParseAST(input,
 
 This Go mode supports Node batch `Parse`, `ParseRule` and, when generated
 with `-recognize`, `Recognize`; with `-types`, it also supports `ParseAST` and
-`ParseRuleAST`. It cannot be combined with `-document`. Neither Go nor
-TypeScript generated tracing adds profiling or promises event-for-event
-equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)
+`ParseRuleAST`. It cannot be combined with `-document`. Generated Go traces
+also report their generated execution strategy rather than promise
+event-for-event equivalence with engine traces. TypeScript generated tracing
+does not add profiling or promise event-for-event equivalence with engine
+traces. See [code generation](code-generation.md#the-pego-gen-command)
 for the generation option. Focused synthetic measurements cover Go Node and
 typed batch parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
 counts; callback cost depends on parser path and workload, and the measured
 callbacks store scalar event fields rather than logging. These are not
 workload-wide estimates. See
 [design 043](../design/043-generated-parser-observability.md#performance-and-results).
+
+#### Profiling Generated Go Batch Parsers
+
+With `-observability`, generated Go Node and typed batch packages also expose
+`Profile` and `WithProfile`. Use a zero-value profile to collect several parses,
+then take an owned, deterministic snapshot:
+
+```go
+var profile pairsparser.Profile
+_, err := pairsparser.Parse(input, pairsparser.WithProfile(&profile))
+if err != nil {
+	log.Fatal(err)
+}
+snapshot := profile.Snapshot()
+data, err := json.Marshal(snapshot)
+```
+
+`Snapshot` sorts rule rows and skip reasons and copies their slices. The
+snapshot separates entered calls from calls that completed, counts skips
+independently of trace filters, and reports `ExaminedKnown`/`WastedKnown` as
+false because generated profiling does not currently know those ranges.
+Position counts use the unit of each parse; avoid combining profiles collected
+with different units. A `Profile` is not safe for concurrent use, though
+reentrant parses on one goroutine have independent invocation state.
+
+Times include synchronous enter and exit callback durations when tracing is
+also enabled. Root time excludes input setup, whole-input end checks and typed
+conversion. A same-rule recursive call is counted once per invocation for its
+rule time; self time subtracts child time. Completed-call counters are
+published after the exit callback returns or panics, so a snapshot inside that
+callback can omit that call until the callback unwinds. Callback panics still
+propagate unchanged after cleanup. In focused synthetic runs, `WithProfile`
+was 3.8–26.9× the ordinary package time depending on API and fixture, adding
+about 45–395 KB/op and 25–50 allocations/op across the measured cases. The
+current generator without a profile was near parity with the prior
+trace-only generator. These are noisy, workload-specific comparisons, not a
+general estimate; see [design 043](../design/043-generated-parser-observability.md#generated-go-profile-measurements).
+TypeScript tracing has no `Profile` API.
 
 ### Generated TypeScript Traces
 

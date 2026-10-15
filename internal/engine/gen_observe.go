@@ -11,11 +11,11 @@ import (
 // receives observation fields, wrappers, options and evaluation/memo hooks.
 func generatedTraceRuntime(rt string) (string, error) {
 	for _, change := range [][2]string{
-		{"type parseOptions struct {", "type parseOptions struct {\ntrace func(TraceEvent)\ntraceRules []string\ntraceMaxDepth int"},
+		{"type parseOptions struct {", "type parseOptions struct {\ntrace func(TraceEvent)\nprofile *Profile\ntraceRules []string\ntraceMaxDepth int"},
 		{"type parser struct {", "type parser struct {\nobservation *observation"},
 		{"p.control = o.control", `p.control = o.control
-if o.trace != nil {
- p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth}
+if o.trace != nil || o.profile != nil {
+ p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth, profile: newProfileObservation(o.profile)}
  if len(o.traceRules) != 0 {
   p.observation.rules = make(map[string]bool, len(o.traceRules))
   for _, name := range o.traceRules { p.observation.rules[name] = true }
@@ -98,6 +98,12 @@ func WithTrace(trace func(TraceEvent)) ParseOption {
  return func(o *parseOptions) { o.trace = trace }
 }
 
+// WithProfile accumulates complete generated rule-call metrics. It is independent
+// of trace delivery filters. A Profile must not be shared by concurrent parses.
+func WithProfile(profile *Profile) ParseOption {
+ return func(o *parseOptions) { o.profile = profile }
+}
+
 // WithTraceFilter selects named rules and their nested calls. Unknown names
 // match nothing. With no names, every entered rule is selected.
 func WithTraceFilter(rules ...string) ParseOption {
@@ -134,8 +140,8 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 func generatedTypedTraceRuntime(rt string) (string, error) {
 	for _, change := range [][2]string{
 		{"p.control = o.control", `p.control = o.control
-if o.trace != nil {
- p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth}
+if o.trace != nil || o.profile != nil {
+ p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth, profile: newProfileObservation(o.profile)}
  if len(o.traceRules) != 0 {
   p.observation.rules = make(map[string]bool, len(o.traceRules))
   for _, name := range o.traceRules { p.observation.rules[name] = true }

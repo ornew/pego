@@ -172,7 +172,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](#incremental-documents--document)); cannot be combined with `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
-| `-observability` | off | Emit opt-in tracing for Go or TypeScript batch parsers; combines with `-types` and `-recognize`, but not Go `-document` (see [TypeScript traces](debugging.md#generated-typescript-traces)) |
+| `-observability` | off | Emit opt-in tracing for Go or TypeScript batch parsers, and profiling for Go batch parsers; combines with `-types` and `-recognize`, but not Go `-document` (see [generated Go tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
@@ -214,13 +214,14 @@ if err != nil {
 err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, and TypeScript batch parsers with or without `-types`. It cannot be combined with Go `WithDocument()`. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, and TypeScript batch parsers with or without `-types`. Generated Go Node and typed packages expose `WithProfile`; TypeScript tracing has no profiling API. Observability cannot be combined with Go `WithDocument()`. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
 When `-observability` is enabled, the generated Go or TypeScript package
-includes opt-in rule tracing hooks. See [generated Go Node and typed traces](debugging.md#generated-go-node-and-typed-traces)
+includes opt-in rule tracing hooks; generated Go also includes aggregate
+profiling. See [generated Go Node and typed traces](debugging.md#generated-go-node-and-typed-traces)
 and [generated TypeScript traces](debugging.md#generated-typescript-traces) for the event contract and examples.
 
 The ordinary generated source is unchanged when this option is off. Enabling
@@ -229,7 +230,9 @@ delivering events costs more. Focused Node measurements showed no-callback
 parse ratios around 1.01–1.06× and recognition around 1.02–1.20×. Typed
 no-callback ratios ranged from 0.995–1.075×; scalar-store callbacks ranged
 from 1.169–3.164× depending on workload and execution path. These are synthetic
-measurements, not workload-wide estimates; see
+measurements, not workload-wide estimates. Focused `WithProfile` runs were
+3.8–26.9× ordinary time and added about 45–395 KB/op and 25–50 allocations/op
+across the measured cases; see
 [design 043](../design/043-generated-parser-observability.md#performance-and-results)
 for scope and generation costs.
 

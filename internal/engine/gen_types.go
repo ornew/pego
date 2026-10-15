@@ -250,7 +250,7 @@ func (t *typedGen) name() {
 		used[n] = true
 	}
 	if t.g.observability {
-		for _, name := range []string{"TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth"} {
+		for _, name := range []string{"TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth", "WithProfile", "Profile", "ProfileSnapshot", "RuleProfile", "ProfileLocation", "SkipReasonCount"} {
 			used[name] = true
 		}
 	}

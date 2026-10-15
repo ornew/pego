@@ -6,11 +6,11 @@
 
 ## Summary
 
-Add opt-in rule-call tracing and per-rule profiling to standalone generated Go, typed Go and TypeScript parsers. Instrument generated direct-call paths as well as runtime-dispatched calls, and report optimized skips as skips rather than pretending they were calls. Generated traces are observations of each generated parser's execution strategy; they do not promise event-for-event equivalence with engine traces or between backends.
+Add opt-in rule-call tracing and per-rule profiling to standalone generated Go, typed Go and TypeScript parsers. Instrument generated direct-call paths as well as runtime-dispatched calls, and report optimized skips as skips rather than pretending they were calls. Generated traces and profiles observe each generated parser's execution strategy; they do not promise event-for-event equivalence with engine traces or between backends.
 
 ## Motivation
 
-Design 014 provides `pego.WithTrace`, `pego.Profile`, `pego.WithProfile`, and the `trace`, `profile` and `explain` CLI commands for the engine. Generated Go Node, typed Go, and TypeScript batch parsing now have separate generation-time opt-in tracing; it does not provide profiles or the engine event contract. The engine event reports rule, position, binding level, depth, match, memo use, body evaluations and examined input; callbacks are synchronous, and their panic is re-raised unchanged. Profiles accumulate per-rule call/evaluation/memo/match/failure counts, consumed and wasted positions, repeats and inclusive/self time.
+Design 014 provides `pego.WithTrace`, `pego.Profile`, `pego.WithProfile`, and the `trace`, `profile` and `explain` CLI commands for the engine. Generated Go Node and typed Go batch parsers support generation-time opt-in tracing and profiling; TypeScript batch parsers support tracing only. Generated APIs have their own event/profile contracts and do not promise engine equivalence. The engine event reports rule, position, binding level, depth, match, memo use, body evaluations and examined input; callbacks are synchronous, and their panic is re-raised unchanged. Profiles accumulate per-rule call/evaluation/memo/match/failure counts, consumed positions, repeats and inclusive/self time.
 
 Generated Go and TypeScript runtimes specialize calls into direct generated methods/functions and common call sites bypass the generic `call` path (`internal/engine/gen.go`, `gen_direct.go`, `gen_ts.go`, `genrt/runtime.go`, `tsrt/runtime.ts`). Generated Go has ordinary and typed runtimes; TypeScript has its own runtime and can convert node results to typed values. Literal/first-character dispatch can skip a call, and deferred memoization changes which calls evaluate a body. Adding a hook only to `parser.call` would therefore miss optimized calls and produce incomplete counts. The Go and TypeScript slices have focused synthetic measurements below; broader workload measurements remain unavailable.
 
@@ -25,8 +25,9 @@ dispatch skips only where the generated call site can identify the target.
 `ExaminedKnown` is always false. Named filters include descendants; unknown
 names select nothing. The start rule has depth one, and nonpositive maximum
 depth is unlimited. Callback panics propagate unchanged after cleanup, while
-aborted parses may omit exits. This slice does not provide profiling.
-Node or typed `Document` combinations are rejected during generation. Typed Go
+aborted parses may omit exits. Go Node and typed batch packages also expose the
+aggregate `Profile` API described below.
+Observability cannot be combined with a generated Go `Document`. Typed Go
 batch tracing is described below; Document tracing and profiling remain proposed.
 
 ### Typed Go Batch Trace Extension
@@ -38,7 +39,7 @@ fallback. Events describe parser calls made by the selected route; converting
 a Node result to typed values is not a rule call and emits no separate event.
 The same event, filter, depth, interruption and callback-panic contract
 applies, though Node and typed traces can differ because their execution paths
-differ. This extension does not add `Profile`; Document combinations remain
+differ. The typed package also exposes `Profile`. Document combinations remain
 unsupported.
 
 ### TypeScript Batch Trace
@@ -68,7 +69,7 @@ open.
 
 ## Goals
 
-- Expose explicit, opt-in trace/profile support in generated Go, generated typed Go and TypeScript parsers.
+- Expose explicit, opt-in trace/profile support in generated Go and typed Go parsers, and trace support in TypeScript parsers.
 - Observe direct, generic, value-free, typed and recognition calls with one documented event contract per generated backend.
 - Distinguish entered calls, memo hits, left-recursive body evaluations, and calls skipped by generated dispatch.
 - Define position units, filtering, callback panic/throw, reentrancy, concurrency, interruption and profile ownership.
@@ -86,9 +87,9 @@ open.
 
 ### Generation-Time Opt-In and Public API
 
-Generation-time opt-in keeps ordinary generated output free of observability fields, callbacks, clock reads, or trace branches. The implementation supports `GenerateGo` for standalone Go Node and typed batch parsers and `GenerateTypeScript` for TypeScript batch parsers, through `pego gen -observability`. Profiling and Document tracing remain proposed.
+Generation-time opt-in keeps ordinary generated output free of observability fields, callbacks, clock reads, or trace branches. Go Node and typed batch parsers support `GenerateGo` with `pego gen -observability`; TypeScript batch tracing supports `GenerateTypeScript`. Generated Go profiling is available for Node and typed batch parsers. TypeScript profiling and Document tracing remain proposed.
 
-Proposed complete generated Go API, including extensions beyond the initial implementation:
+Generated Go batch API:
 
 ```go
 type TraceKind uint8
@@ -124,9 +125,9 @@ func Recognize(input string, opts ...ParseOption) error
 
 For the Go Node and typed batch slices, tracing options compose with unit and depth options. Typed packages expose `ParseAST` and `ParseRuleAST` with the same `ParseOption` values, and optional `Recognize` remains available. Positions are half-open; `Examined` is an exclusive end where the backend can report it.
 
-The Go Node slice supports `Parse`, `ParseRule` and generated `Recognize`; the typed Go slice also supports `ParseAST` and `ParseRuleAST`. Both export `TraceEvent`, `WithTrace`, `WithTraceFilter` and `WithTraceMaxDepth`; neither exports `WithProfile`. TypeScript tracing uses per-call `ParseOptions` fields instead of Go functional options. Profiling remains proposed.
+The Go Node slice supports `Parse`, `ParseRule` and generated `Recognize`; the typed Go slice also supports `ParseAST` and `ParseRuleAST`. Both export `TraceEvent`, `WithTrace`, `WithTraceFilter`, `WithTraceMaxDepth` and `WithProfile`. TypeScript tracing uses per-call `ParseOptions` fields instead of Go functional options and does not expose `Profile`.
 
-The option callback receives a copied value event containing scalar/string fields, not a pointer into parser state. Callbacks run synchronously on the parsing goroutine/JavaScript stack. There is no retained input or parser-state accessor in this API. Per-invocation trace state is private; concurrent or reentrant parses of the same generated parser have independent state. A `Profile` aggregates across calls to that object and is not safe to share across concurrent parses.
+The option callback receives a copied value event containing scalar/string fields, not a pointer into parser state. Callbacks run synchronously on the parsing goroutine/JavaScript stack. There is no retained input or parser-state accessor in this API. Per-invocation trace/profile state is private; concurrent or reentrant parses of the same generated parser have independent state. A `Profile` aggregates across calls and is not safe to share across concurrent parses.
 
 ### Event Semantics
 
@@ -142,7 +143,11 @@ Generated backends can skip different candidate calls due to first-character dis
 
 `WithTraceFilter` / `traceRules` select rule names, and `WithTraceMaxDepth` / `traceMaxDepth` limit delivered events by depth. Filtering suppresses callback delivery only; it must not change parsing, dispatch or parent-depth numbering. Include calls nested within a selected rule, following engine `pego trace -rule` behavior. JSON/text formatting can be supplied as small generated-independent helpers or by adapting events in user code; generated parsers do not add CLI commands.
 
-`Profile` aggregates calls, entered calls, skipped calls by reason, body evaluations, memo hits, matches, failures, consumed positions, examined positions on failed evaluations, repeats at a `(rule, position, level)`, and inclusive/self time. Match the engine definitions where the data is available; explicitly mark fields unavailable rather than substituting estimates. In particular, a generated backend that cannot expose the engine's isolated farthest-expectation record must not claim engine-equivalent wasted-input accounting. Provide deterministic rule ordering in snapshots/JSON. Go durations are nanoseconds; TypeScript durations are milliseconds from the host monotonic clock. Times include instrumentation and are useful within one profile only.
+The generated Go `Profile` zero value is ready to use. Pass `WithProfile(&profile)` to accumulate measurements across calls, then call `profile.Snapshot()` for an owned snapshot. Snapshot rule rows and per-rule skip-reason rows are sorted by name/reason, so `json.Marshal(snapshot)` is deterministic. A nil profile disables collection. The profile sink is not safe for concurrent use; reentrant parses on the same goroutine keep independent per-invocation accounting.
+
+The snapshot contains total `Parses`, `Entered`, completed `Calls`, body `Evals`, `MemoHits`, `Skipped` and root `Time`, plus per-rule entered/completed calls, evaluations, memo hits, matches, failures, consumed positions, skips by reason, repeats and the maximum evaluation count/location. `Entered` includes calls interrupted before exit; completed-call counters do not. Skipped dispatch targets are separate from entered calls and do not depend on trace filters. `Repeats` and `MaxEvals` count completed non-memo calls with `Evals > 0` at the same `(rule, position, level)` within an invocation; `Evals` itself counts body attempts, including left-recursive growth. When maximum counts tie, `MaxEvalsAt` keeps the first observed location. `Examined` and `Wasted` are currently unavailable and their `Known` flags are false; they are not inferred from matched ranges. Position counts use each invocation's selected unit and are not normalized across calls that mix units.
+
+Root `Time` sums completed root rule calls and excludes input setup, whole-input end checks and typed-result conversion. Per-rule `Time` counts recursive calls of that rule once within each invocation; `SelfTime` subtracts child time. Both include instrumentation and synchronous enter/exit callback time. Reentrant parses have independent accounting and are included in the outer callback interval as well as their own invocation totals. A completed-exit update is published after the exit callback returns or panics, so a snapshot taken inside that callback can omit that exit until it unwinds. Callback panics still propagate unchanged after cleanup. An exit callback panic counts that completed call; an enter callback panic does not synthesize an exit. The measurements below include the overall `WithProfile` path; they do not isolate individual counter or clock costs.
 
 ### Callback Failure, Cancellation and Lifecycle
 
@@ -152,11 +157,11 @@ Each parse owns trace stack, counters, event filter and clock state. Generated s
 
 ### Compatibility and Implementation Sequence
 
-Observability types are emitted only with the generation option. Existing generated source and no-option APIs retain their source behavior; observability-enabled output is a distinct generated source form, with no `.pegoc` change. Implemented batch slices cover Go Node and typed Go calls, including recognition and typed direct/conversion paths, plus TypeScript Node and typed-result calls. Generated Go Document tracing and profiling remain proposed. Go and TypeScript generated parsers keep their current position-unit defaults and result/error contracts.
+Observability types are emitted only with the generation option. Existing generated source and no-option APIs retain their source behavior; observability-enabled output is a distinct generated source form, with no `.pegoc` change. Implemented tracing covers Go Node and typed Go calls, including recognition and typed direct/conversion paths, plus TypeScript Node and typed-result calls. Generated Go profiling covers Node and typed Go batch calls. TypeScript profiling and generated Go Document tracing/profiling remain proposed. Go and TypeScript generated parsers keep their current position-unit defaults and result/error contracts.
 
 1. **Implemented:** generation-time opt-in and event sinks for standalone Go Node and typed Go batch parsing, covering actual rule calls, memo results, typed direct/conversion paths, recognition and representable first-character skips.
 2. **Implemented:** TypeScript batch events and typed-result tracing preserve exception identity and per-invocation isolation.
-3. Add profiles only after event completeness is checked against instrumented generated call sites. Measure profiling separately before deciding whether runtime opt-in can replace generation-time opt-in.
+3. **Implemented for generated Go Node and typed batch parsers:** aggregate per-rule profiles over completed calls, with owned sorted snapshots. Focused synthetic `WithProfile` costs are measured below; broader workload costs and isolated counter/clock costs remain unmeasured. TypeScript profiling remains proposed.
 4. Keep generator/CLI guides aligned with supported combinations and validate generated output freshness and standalone consumer compatibility.
 
 ## Alternatives Considered
@@ -172,7 +177,7 @@ Observability types are emitted only with the generation option. Existing genera
 
 Generate fixtures for Go node, typed direct, typed conversion, recognition, TypeScript node and TypeScript typed output. For each, compare parsing values, syntax errors, recovered errors, positions and action behavior with instrumentation disabled and enabled in both position units. Assert exact small event streams for ordinary calls, memo hits, deferred memoization, left-recursion growth, failed calls, lookahead, recognition, typed dispatch, filtered nesting and each supported skipped-call reason.
 
-Verify every emitted enter has one exit on success; verify abort cases may end with open calls and never emit fabricated exits. Test profile counts against event-derived counts where available, deterministic serialization, unknown filter names, depth boundaries and unavailable metrics. Test callback panic/throw identity, panic after nested calls, parse-pool reuse after panic, callback reentrancy, concurrent Go parses sharing one parser, TypeScript reentrant calls, and that no observer leaks to a later no-trace parse. Test generation with and without the option, stable output, Go compilation/standalone module use and strict TypeScript checking. The Go Node and typed slices have focused fixture, ordinary-reference consumer and race coverage for direct and Node-conversion routes. The TypeScript slice has focused Node and typed-result fixtures and ordinary-output parity checks. Document tracing and profiling tests remain proposed.
+Verify every emitted enter has one exit on success; verify abort cases may end with open calls and never emit fabricated exits. Test profile counts against event-derived counts where available, deterministic serialization, unknown filter names, depth boundaries, unavailable metrics and callback timing. Test callback panic/throw identity, panic after nested calls, parse-pool reuse after panic, callback reentrancy, concurrent Go parses sharing one parser, TypeScript reentrant calls, and that no observer leaks to a later no-trace parse. Test generation with and without the option, stable output, Go compilation/standalone module use and strict TypeScript checking. The Go Node and typed slices have focused fixture, ordinary-reference consumer and race coverage for tracing and profiling across direct and Node-conversion routes. The TypeScript slice has focused Node and typed-result fixtures and ordinary-output parity checks for tracing. Generated Go Document observability and TypeScript profiling tests remain proposed.
 
 ## Performance and Results
 
@@ -226,6 +231,70 @@ grew 5.02%/4.39% for direct/conversion calculator, 9.14%/7.12% for JSON, and
 costs were not measured for this typed extension. The source is
 `internal/engine/gen_typed_observe_bench_test.go`; exported temporary fixtures
 and raw measurement logs are not repository artifacts.
+
+### Generated Go Profile Measurements
+
+Profile costs were measured with Go 1.27.1 on an Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=16` and the default garbage collector, using three serial
+alternating 150 ms pairs on the same JSON (64 objects), XML (64 items) and
+calculator (32 repetitions) fixtures in both position units. Node sources
+timed `Parse` and `Recognize`; typed sources timed `Parse`, `Recognize` and
+`ParseAST`. Typed Node-conversion fallback was tested but not timed. Ordinary
+output from all six Node/typed fixtures remained byte-identical to baseline
+`6592f45`.
+
+Without `WithProfile`, the current observed generator compared with the prior
+trace-only generator had per-profile paired median time ratios of 0.961–1.038
+for Node and 0.980–1.032 for typed parsers. Paired ranges were 0.941–1.113 and
+0.906–1.077, respectively; these noisy samples do not support a significance
+claim. Allocation counts were unchanged, with paired B/op differences from
+−40 to +44.
+
+For a separate trace-only comparison, a full scalar-store `WithTrace` callback
+was measured on Node `Parse` against the prior trace-enabled generator. Paired
+median time ratios were 1.026–1.114 for Node-generated packages and
+1.011–1.160 for typed-generated packages using their Node `Parse` entry point;
+individual-pair ranges were 1.022–1.160 and 0.969–1.161. Allocation counts
+were unchanged and paired B/op increased by 9–25. These are six focused
+fixtures/routes in both units, not a statistical or workload-wide claim, and
+they do not measure typed `ParseAST` tracing.
+
+With `WithProfile`, the table compares the profiled parser against the current
+ordinary package (no `WithTrace` callback). This measures the opt-in profile
+path, not the cost of an individual counter or clock operation.
+
+| API | Profiled / ordinary time ratio |
+|:--|--:|
+| Node `Parse` | 3.879–9.731× |
+| Node `Recognize` | 5.302–26.860× |
+| Typed `Parse` | 3.821–10.212× |
+| Typed `Recognize` | 5.397–25.639× |
+| Typed `ParseAST` | 4.117–14.432× |
+
+Across all profiled paths and fixtures, the measured additions ranged from
+44,990 to 395,085 B/op and 25 to 50 allocations/op; these ranges are not
+per-API estimates. Each benchmark reused one `Profile` per case and excluded
+`Snapshot`. Generated source grew versus the prior trace-enabled generator by
+0.870–4.530% for Node and 0.545–3.018% for typed output, depending on fixture.
+Binary size, retained heap and generation time were not measured. The benchmark
+source is `internal/engine/gen_profile_bench_test.go`; exported fixtures and
+raw results are not repository artifacts.
+
+To reproduce the candidate measurements, export the fixtures and run each
+ordinary/observed package in a separate process, alternating their order for
+each fixture and unit:
+
+```sh
+PEGO_PROFILE_BENCH_DIR=/tmp/pego-profile-bench go test ./internal/engine -run '^TestExportGeneratedGoProfileBenchmarks$' -count=1
+cd /tmp/pego-profile-bench/json/node/ordinary || exit 1
+go test -run '^$' -bench '^(Benchmark(Parse|ParseAST|Recognize|TraceParse)|BenchmarkProfile(Parse|Recognize|ParseAST))$' -benchmem -benchtime=150ms
+# Repeat from json/node/observed and the typed routes, then alternate order for xml and calc.
+```
+
+The comparison with the prior trace-enabled generator used the same exporter
+with `gen.go`, `gen_observe.go`, `gen_types.go` and `genrt/trace.go` under
+`internal/engine/` overlaid from `6592f45`, and `PEGO_PROFILE_BASE=1` to omit
+profile-specific benchmark references.
 
 ### Node Generation Cost
 

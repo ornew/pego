@@ -284,8 +284,9 @@ fallback. Typed events describe rule calls made by the selected route;
 conversion itself is not a rule event, so Node and typed event streams may
 differ. Typed methods use the same event fields, filter, depth, interruption
 and callback-panic behavior as Node batch methods. The option cannot be
-combined with a generated `Document`. This Go tracing mode does not provide
-profiling.
+combined with a generated `Document`. Generated Go Node and typed batch
+parsers also provide profiling through `WithProfile`; TypeScript tracing does
+not provide profiling.
 
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine
@@ -311,6 +312,42 @@ empty filter selects every rule. `WithTraceMaxDepth` limits delivered events;
 the start rule counts as depth 1, and zero or a negative value means no limit.
 Filtering and depth limits do not change parsing. Trace state is local to one
 invocation.
+
+### Generated Go Batch Profiling
+
+Generated Go Node and typed batch packages generated with
+`WithGeneratedObservability()` MUST expose `Profile`, `ProfileSnapshot`,
+`RuleProfile`, `ProfileLocation`, `SkipReasonCount` and `WithProfile`. The zero
+value of `Profile` MUST be ready to use; passing a nil profile disables
+collection. A profile sink is not safe for concurrent use. Reentrant parses on
+one goroutine MUST keep separate per-invocation accounting. `Snapshot()` MUST
+return an owned copy with rules sorted by name and each rule's skip reasons
+sorted by reason; callers may marshal the snapshot for deterministic JSON.
+
+`Parses` counts root invocations and `Entered` counts rule calls that began,
+including calls interrupted before exit. `Calls`, `Evals`, `MemoHits`, match and
+failure counts, consumed positions, and timing include only completed calls.
+`Evals` counts body attempts, including left-recursive growth. `Repeats` and
+`MaxEvals` count completed non-memo calls with `Evals > 0` at the same
+`(rule, position, level)` within an invocation; tied maximum locations retain
+the first observed location. `Skipped` and per-rule skip reasons count
+identifiable generated dispatch skips independently of trace filters; skips
+are not entered calls. Position counts use each invocation's configured unit
+and MUST NOT be treated as normalized when a sink accumulates multiple units.
+
+`Examined` and `Wasted` are unavailable in the current generated runtime, so
+`ExaminedKnown` and `WastedKnown` MUST be false; implementations MUST NOT infer
+these values from matched ranges. Root `Time` sums completed root rule calls
+and excludes input setup, whole-input end checks and typed-result conversion.
+Per-rule `Time` counts recursive calls of the same rule once within each
+invocation, while `SelfTime` excludes child time. Both include instrumentation
+and synchronous enter/exit callback time. A completed-exit update is published
+after the exit callback returns or panics; a snapshot taken inside that
+callback may omit its exit until it unwinds. Callback panics MUST propagate
+unchanged after cleanup. A panic in an exit callback MUST still count that
+completed call; a panic in an enter callback does not synthesize an exit. The measured
+opt-in profile path is documented in design 043; these measurements do not
+isolate the cost of individual counters or clock reads.
 
 ## Generated TypeScript Batch Tracing
 

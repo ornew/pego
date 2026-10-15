@@ -29,9 +29,13 @@ var documentSource string
 //go:embed genrt/trace.go
 var generatedTraceSource string
 
+//go:embed genrt/profile.go
+var generatedProfileSource string
+
 // GenOptions configures code generation.
 type GenOptions struct {
-	// Observability emits opt-in rule tracing for generated Go and TypeScript batch parsing.
+	// Observability emits opt-in tracing for Go and TypeScript batch parsing,
+	// and profiling for Go batch parsing.
 	Observability bool
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.
@@ -188,6 +192,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	// The standalone output merges the work helper's standard-library imports.
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	if opts.Observability {
+		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
 		rt, err = generatedTraceRuntime(rt)
 		if err != nil {
 			return nil, err
@@ -197,6 +202,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if opts.Observability {
 		out.WriteString("\n// --- Opt-in generated rule tracing ---\n")
 		out.WriteString(generatedTraceSource[strings.Index(generatedTraceSource, "package genrt")+len("package genrt"):])
+		out.WriteString(generatedProfileSource[strings.Index(generatedProfileSource, "\n)\n")+len("\n)\n"):])
 		out.WriteString(generatedTraceWrappers)
 	}
 	work := workSource[strings.Index(workSource, "\n)\n")+len("\n)\n"):]
