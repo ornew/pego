@@ -2,9 +2,8 @@ package engine
 
 import "fmt"
 
-// validateOutputSchemaGraph checks only the v1 identities and shape references
-// that a consumer must understand. Named-reference cycles are valid recursion;
-// the traversal deliberately does not expand references.
+// validateOutputSchemaGraph checks v1 identities and inline shapes. Named-reference
+// cycles are valid recursion; the traversal deliberately does not expand them.
 func validateOutputSchemaGraph(s OutputSchema) error {
 	ids := make(map[string]bool, len(s.Types))
 	for i := range s.Types {
@@ -17,7 +16,14 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			return fmt.Errorf("invalid output schema type identity %q", t.ID)
 		}
 	}
-	stack := make([]*SchemaShape, 0, 16)
+	type shapeFrame struct {
+		shape *SchemaShape
+		exit  bool
+	}
+	stack := make([]shapeFrame, 0, 32)
+	active := make(map[*SchemaShape]bool)
+	// Shared inline DAGs are valid. Rechecking them by path can take exponential work.
+	completed := make(map[*SchemaShape]bool)
 	seenFields := make(map[string]bool)
 	check := func(root *SchemaShape, ownerKind, ownerName string) error {
 		const (
@@ -28,11 +34,25 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			memberFields
 			memberChildren
 		)
-		stack = append(stack[:0], root)
+		stack = append(stack[:0], shapeFrame{shape: root})
 		for len(stack) > 0 {
-			shape := stack[len(stack)-1]
-			stack[len(stack)-1] = nil
+			frame := stack[len(stack)-1]
+			stack[len(stack)-1] = shapeFrame{}
 			stack = stack[:len(stack)-1]
+			shape := frame.shape
+			if frame.exit {
+				delete(active, shape)
+				completed[shape] = true
+				continue
+			}
+			if active[shape] {
+				return fmt.Errorf("cyclic inline output schema shape in %s %s", ownerKind, ownerName)
+			}
+			if completed[shape] {
+				continue
+			}
+			active[shape] = true
+			stack = append(stack, shapeFrame{shape: shape, exit: true})
 			members := 0
 			if shape.Ref != "" {
 				members |= memberRef
@@ -88,13 +108,13 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 				return fmt.Errorf("unresolved output schema reference %q in %s %s", shape.Ref, ownerKind, ownerName)
 			}
 			if shape.Element != nil {
-				stack = append(stack, shape.Element)
+				stack = append(stack, shapeFrame{shape: shape.Element})
 			}
 			if shape.Children != nil {
-				stack = append(stack, shape.Children)
+				stack = append(stack, shapeFrame{shape: shape.Children})
 			}
 			for i := range shape.Alternatives {
-				stack = append(stack, &shape.Alternatives[i])
+				stack = append(stack, shapeFrame{shape: &shape.Alternatives[i]})
 			}
 			if len(shape.Fields) > 2 {
 				clear(seenFields)
@@ -114,7 +134,7 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 				if (shape.Kind == "struct" && field.Origin != "declared") || (shape.Kind == "cst" && field.Origin != "capture") {
 					return fmt.Errorf("invalid output schema field origin %q for %s %s.%s", field.Origin, ownerKind, ownerName, field.Name)
 				}
-				stack = append(stack, &field.Shape)
+				stack = append(stack, shapeFrame{shape: &field.Shape})
 			}
 		}
 		return nil

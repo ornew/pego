@@ -53,6 +53,21 @@ type SchemaField struct {
 	Shape  SchemaShape `json:"shape"`
 }
 
+// Validate checks the version-1 envelope and shape graph. It also accepts
+// schemas constructed directly in memory; named references may be recursive.
+func (s *OutputSchema) Validate() error {
+	if s == nil {
+		return fmt.Errorf("nil output schema")
+	}
+	if s.Format != "pego-output-schema" || s.Version != 1 {
+		return fmt.Errorf("unsupported output schema format %q version %d", s.Format, s.Version)
+	}
+	if s.Start == "" || !s.PositionUnitIndependent || s.Types == nil || s.Rules == nil {
+		return fmt.Errorf("invalid output schema envelope: start, positionUnitIndependent, types and rules are required")
+	}
+	return validateOutputSchemaGraph(*s)
+}
+
 // UnmarshalJSON rejects unsupported envelopes, unknown fields and malformed v1
 // shape graphs.
 func (s *OutputSchema) UnmarshalJSON(data []byte) error {
@@ -70,16 +85,11 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error {
 		}
 		return fmt.Errorf("trailing data after output schema")
 	}
-	if v.Format != "pego-output-schema" || v.Version != 1 {
-		return fmt.Errorf("unsupported output schema format %q version %d", v.Format, v.Version)
-	}
-	if v.Start == "" || !v.PositionUnitIndependent || v.Types == nil || v.Rules == nil {
-		return fmt.Errorf("invalid output schema envelope: start, positionUnitIndependent, types and rules are required")
-	}
-	if err := validateOutputSchemaGraph(OutputSchema(v)); err != nil {
+	validated := OutputSchema(v)
+	if err := validated.Validate(); err != nil {
 		return err
 	}
-	*s = OutputSchema(v)
+	*s = validated
 	return nil
 }
 

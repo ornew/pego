@@ -115,6 +115,54 @@ rule unused = "z"`)
 		t.Fatal(err)
 	}
 }
+
+func TestOutputSchemaEmptyUnionRoundTrip(t *testing.T) {
+	g, err := syntax.Parse(`rule main = "a"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.Statements = append([]grammar.Statement{&grammar.TypeDef{
+		Name: "Empty", Spec: &grammar.AliasSpec{Type: &grammar.UnionType{}},
+	}}, g.Statements...)
+	if err := grammar.Validate(g); err != nil {
+		t.Fatalf("valid empty union grammar: %v", err)
+	}
+	p, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := p.OutputSchemaPrototype("main", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, typ := range schema.Types {
+		if typ.ID == "declared/Empty" {
+			found = true
+			if typ.Shape.Kind != "union" || len(typ.Shape.Alternatives) != 0 {
+				t.Fatalf("empty union shape: %+v", typ.Shape)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("all-rules schema omitted declared empty union")
+	}
+	if err := schema.Validate(); err != nil {
+		t.Fatalf("valid exported schema: %v", err)
+	}
+	data, err := json.Marshal(schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded OutputSchema
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("decode valid empty union: %v", err)
+	}
+	if !reflect.DeepEqual(schema, &decoded) {
+		t.Fatalf("empty union round trip changed schema: before=%+v after=%+v", schema, &decoded)
+	}
+}
+
 func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 	shape, err := schemaInferred(recordTy{fields: map[string]ty{"z": tyAny, "a": optTy{listTy{tyString}}}})
 	if err != nil {

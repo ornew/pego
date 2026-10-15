@@ -7,7 +7,8 @@ import (
 )
 
 // OutputSchema describes possible grammar outputs independently of a parse.
-// Its JSON format and version are checked when decoding it with encoding/json.
+// Validate checks its v1 envelope and shape graph, including schemas built in
+// memory. Decoding it with encoding/json performs the same check.
 type OutputSchema = engine.OutputSchema
 type SchemaType = engine.SchemaType
 type SchemaRule = engine.SchemaRule
@@ -58,7 +59,8 @@ var ErrQueryCycle = engine.ErrQueryCycle
 type StructuralQuery struct{ query *engine.StructuralQuery }
 
 // CompileStructuralQuery validates and copies a pattern. A nil schema defers
-// type and field checks until evaluation; a schema rejects known impossibilities.
+// type and field checks until evaluation; a supplied schema is validated first
+// and rejects known impossibilities.
 func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*StructuralQuery, error) {
 	q, err := engine.CompileStructuralQuery(pattern, schema)
 	if err != nil {

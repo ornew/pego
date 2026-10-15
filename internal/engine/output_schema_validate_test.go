@@ -146,3 +146,74 @@ func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
 		t.Fatalf("recursive schema: %+v", got)
 	}
 }
+
+func validInMemoryOutputSchema() OutputSchema {
+	return OutputSchema{
+		Format: "pego-output-schema", Version: 1, Start: "main", PositionUnitIndependent: true,
+		Types: []SchemaType{
+			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: SchemaShape{Kind: "struct"}},
+			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: SchemaShape{Kind: "ref", Ref: "declared/Item"}},
+		},
+		Rules: []SchemaRule{{Name: "main", Origin: "declared", Result: SchemaShape{Kind: "ref", Ref: "inferred/main"}}},
+	}
+}
+
+func TestOutputSchemaValidateInMemory(t *testing.T) {
+	if err := (*OutputSchema)(nil).Validate(); err == nil || !strings.Contains(err.Error(), "nil output schema") {
+		t.Fatalf("nil schema error = %v", err)
+	}
+	if err := new(OutputSchema).Validate(); err == nil || !strings.Contains(err.Error(), "unsupported") {
+		t.Fatalf("zero schema error = %v", err)
+	}
+	tests := []struct {
+		name string
+		edit func(*OutputSchema)
+		want string
+	}{
+		{"missing envelope flag", func(s *OutputSchema) { s.PositionUnitIndependent = false }, "envelope"},
+		{"missing arrays", func(s *OutputSchema) { s.Types = nil }, "envelope"},
+		{"duplicate type", func(s *OutputSchema) { s.Types = append(s.Types, s.Types[0]) }, "duplicate"},
+		{"unresolved reference", func(s *OutputSchema) { s.Types[1].Shape.Ref = "declared/Missing" }, "unresolved"},
+		{"inline cycle", func(s *OutputSchema) {
+			shape := &SchemaShape{Kind: "optional"}
+			shape.Element = shape
+			s.Types[0].Shape = *shape
+		}, "cyclic inline"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := validInMemoryOutputSchema()
+			tt.edit(&s)
+			if err := s.Validate(); err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("validation error = %v, want %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestOutputSchemaValidateAllowsNamedRecursionAndSharedInlineShape(t *testing.T) {
+	s := validInMemoryOutputSchema()
+	shared := &SchemaShape{Kind: "ref", Ref: "declared/Item"}
+	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{
+		{Name: "Left", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: shared}},
+		{Name: "Right", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: shared}},
+	}}
+	if err := s.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestOutputSchemaValidateLayeredSharedDAG(t *testing.T) {
+	s := validInMemoryOutputSchema()
+	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
+	for range 28 {
+		shared = &SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+			{Kind: "list", Element: shared},
+			{Kind: "optional", Element: shared},
+		}}
+	}
+	s.Types[0].Shape = *shared
+	if err := s.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

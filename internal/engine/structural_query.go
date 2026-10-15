@@ -49,8 +49,10 @@ var ErrQueryCycle = errors.New("structural query graph cycle")
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
 // predicates, highlighting and generated-runtime adapters are not implemented.
 func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*StructuralQuery, error) {
-	if schema != nil && (schema.Format != "pego-output-schema" || schema.Version != 1) {
-		return nil, fmt.Errorf("unsupported query schema")
+	if schema != nil {
+		if err := schema.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid query schema: %w", err)
+		}
 	}
 	copy, err := copyQueryPattern(pattern, schema, 0)
 	if err != nil {
@@ -144,6 +146,13 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 	return p, nil
 }
 func schemaMayHaveField(shape SchemaShape, name string, s *OutputSchema, active map[string]bool) bool {
+	return schemaMayHaveFieldAt(&shape, name, s, active, make(map[*SchemaShape]bool))
+}
+
+func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *OutputSchema, active map[string]bool, completed map[*SchemaShape]bool) bool {
+	if completed[shape] {
+		return false
+	}
 	for _, f := range shape.Fields {
 		if f.Name == name {
 			return true
@@ -153,23 +162,33 @@ func schemaMayHaveField(shape SchemaShape, name string, s *OutputSchema, active 
 	case "any", "node", "cst":
 		return true
 	case "optional":
-		return shape.Element != nil && schemaMayHaveField(*shape.Element, name, s, active)
+		if shape.Element != nil && schemaMayHaveFieldAt(shape.Element, name, s, active, completed) {
+			return true
+		}
 	case "union":
-		for _, a := range shape.Alternatives {
-			if schemaMayHaveField(a, name, s, active) {
+		for i := range shape.Alternatives {
+			if schemaMayHaveFieldAt(&shape.Alternatives[i], name, s, active, completed) {
 				return true
 			}
 		}
 	}
 	if shape.Ref != "" && !active[shape.Ref] {
 		active[shape.Ref] = true
-		defer delete(active, shape.Ref)
+		found := false
 		for _, t := range s.Types {
 			if t.ID == shape.Ref {
-				return schemaMayHaveField(t.Shape, name, s, active)
+				found = schemaMayHaveFieldAt(&t.Shape, name, s, active, completed)
+				break
 			}
 		}
+		delete(active, shape.Ref)
+		if found {
+			return true
+		}
 	}
+	// A completed nonmatch can be skipped on another path through the same
+	// inline shape. Named-reference back edges remain bounded by active.
+	completed[shape] = true
 	return false
 }
 
