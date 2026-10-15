@@ -356,6 +356,8 @@ func (d *Document) Edit(start, end int, text string) error { return d.doc.Edit(s
 // or recognition mode. Overrides do not change future defaults. Pre-execution
 // interruption preserves caches and statistics; execution or publication
 // interruption discards reusable state while preserving text for retry.
+// Parser-produced syntax diagnostics belong to that call: mutating them does
+// not affect later parses. Returned Nodes may share the mutable Document graph.
 func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
 	o := d.doc.ParseDefaults()
 	for _, opt := range opts {

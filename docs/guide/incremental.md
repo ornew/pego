@@ -76,6 +76,13 @@ reuse.
 | `doc.Version()` / `doc.Unit()` | The opaque current text revision and the fixed position unit. A new document starts at sequence 1; parsing does not advance it. |
 | `doc.EditBatch(base, edits...)` | Apply a batch of nonoverlapping replacements in coordinates from `base`. A stale/foreign version or invalid edit rejects the entire batch. A successful nonempty batch advances one revision and does not parse. |
 
+Recovered parser-produced syntax diagnostics returned by `Document.Parse` are owned by that call: each `SyntaxError`
+and its `Expected` and `Messages` slices are copied before publication. Ordinary parse failures are newly constructed.
+Caller-supplied errors such as `Context.Err` retain their identity. Mutating a returned parser diagnostic cannot change
+memoized errors or a later parse. This does not detach the returned `Node` graph, which may share nodes with the mutable
+document. Parsing and diagnostic publication use the same invocation controls; if publication is interrupted, `Parse`
+returns no result and clears reusable state needed for a clean retry.
+
 In byte mode, only the interior of a valid UTF-8 character is excluded as an edit boundary. Each invalid byte is
 a separate replacement character, so it can be replaced or have text inserted before or after it. An edit can join
 an incomplete prefix and continuation bytes into a valid character; the next parse invalidates results that depended

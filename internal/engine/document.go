@@ -116,7 +116,8 @@ func (d *Document) Text() string { return d.in.text(0, d.in.loaded()) }
 // Stats returns the evaluation and memo usage counts of the last Parse.
 func (d *Document) Stats() Stats { return d.stats }
 
-// Parse parses the current text.
+// Parse parses the current text. Parser-produced syntax diagnostics belong to
+// this call; returned Nodes can share the Document's mutable graph.
 func (d *Document) Parse() (*Node, error) { return d.ParseWith(d.defaults) }
 
 // ParseWith parses using fully resolved options. Unit, effective backend and
@@ -205,6 +206,14 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node,
 	n, err = active.run(p, d.back, d.start)
 	if !p.aborted {
 		c.check()
+		// Snapshot capture publishes its own diagnostics. Ordinary Parse must
+		// detach recovered errors from memo entries before exposing them.
+		if capture == nil {
+			if recovered, ok := err.(SyntaxErrors); ok {
+				err = copyDocumentDiagnostics(p, recovered)
+				c.check()
+			}
+		}
 	}
 	if capture != nil {
 		err = capture(p, n, err)
