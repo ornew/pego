@@ -62,6 +62,11 @@ Each type entry has an identity and shape. Declared identities use grammar type 
 
 Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `any`. `int`, `string`, and `bool` are scalar kinds, not child nodes. Optionality is grammar-level nil-capability; scalar `0`, empty string and `false` are ordinary values, not evidence that a type is optional. Target-language zero/default mappings are separate metadata; it does not promise a distinct absent-versus-present-nil runtime state or JSON key-presence behavior. Lists remain lists when empty or of length one. Unions retain alternative identities, including a valid empty union from the grammar AST. Inferred `any` remains dynamic and is never narrowed from examples.
 
+A reachable `list` shape also brings the reserved `cst/List` identity into the
+export. Parser repetitions and typed list fields are represented by runtime
+`Node` values of type `List`; retaining that identity lets schema-checked
+queries name the runtime value, including when a list is empty.
+
 A rule entry identifies its declared or inferred result shape and producing rule. It must not imply that a rule's ordinary CST output is a declared struct. CST entries describe ordered child edges and possible nil children; capture entries describe names and known or dynamic value categories. The schema describes possible values, not source spans, runtime values, retained punctuation/comments, or execution order.
 
 Canonical validation requires `Start` to name an entry in `Rules`. Each rule's
@@ -147,6 +152,22 @@ counts. Ordinary diff cases used less time and fewer allocations, with about
 8–9% more cumulative bytes; shared-DAG cases used substantially less time and
 allocated less. These are synthetic preparation/validation workloads, not
 parser input-path measurements.
+
+The list-identity fix was measured separately against baseline `ddee4ea` using
+`internal/engine/output_schema_export_bench_test.go`, with Go 1.27.1 on an
+Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`, no memory limit, and
+three alternating serial pairs at 200 ms per sample. When a reachable list
+shape adds the reserved `cst/List` type and its generic-node CST closure, small
+repetition export rose from 1,368 to 2,681 ns/op and export-plus-JSON from
+2,602 to 6,280 ns/op (serialized JSON size 392 to 1,015 bytes). For one list field, export
+rose from 1,964 to 3,975 ns/op and export-plus-JSON from 3,741 to 8,509 ns/op
+(serialized JSON size 588 to 1,288 bytes). With 128 list fields, export rose
+from 18,012 to 21,643 ns/op and export-plus-JSON from 64,022 to 70,515 ns/op
+(serialized JSON size 14,304 to 15,004 bytes; export allocation bytes 64,488
+to 69,264 B/op, with 23 additional
+allocations). The scalar control kept size and allocation counts unchanged,
+while timing ranges crossed parity. This is a focused schema-export tradeoff
+for retaining the runtime `List` identity, not a parser-path measurement.
 
 ### Earlier Validation Slice
 

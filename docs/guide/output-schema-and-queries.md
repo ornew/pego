@@ -93,9 +93,11 @@ occurrences in that graph; scalar values and lists cannot be query roots.
 (`node`, `int`, `string`, `bool`, `list`, or `nil`). Scalar and `list` categories
 apply to nested field-value patterns; `nil` can also match a nil child.
 Here `list` means an explicit `[]any` field value. An ordinary parser repetition
-is a `Node` with type `List`, so match it with `Type: "List"` and, if useful,
-`Category: "node"`. `Fields` require named values; `Children` are an ordered
-prefix, so extra children and fields are allowed.
+or typed list field is a `Node` with type `List`, so match it with `Type: "List"`
+and, if useful, `Category: "node"`. Export includes the reserved `cst/List`
+identity whenever a reachable schema shape is a list, including empty lists.
+`Fields` require named values; `Children` are an ordered prefix, so extra
+children and fields are allowed.
 `Capture` binds the value at that pattern. Patterns are copied at compilation.
 Supplying a schema rejects known impossible type, rule, field, and some scalar
 category constraints. For a directly declared optional scalar field such as

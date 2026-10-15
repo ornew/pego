@@ -169,6 +169,11 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	wanted := map[string]bool{}
 	var collect func(SchemaShape)
 	collect = func(shape SchemaShape) {
+		// Logical list shapes are represented by List nodes in the core Node
+		// API, including typed-list fields and inferred repetition results.
+		if shape.Kind == "list" {
+			collect(SchemaShape{Kind: "ref", Ref: "cst/" + TypeList})
+		}
 		// A generic node child can be any reserved CST kind. Keeping those
 		// identities in the export lets schema-checked queries name a Match
 		// below a Seq even when no capture or rule refers to Match directly.
