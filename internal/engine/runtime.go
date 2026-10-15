@@ -18,8 +18,9 @@ type parser struct {
 	stats Stats
 	// aborted reports an interrupted execution, whose partial caches cannot be
 	// reused by a Document. Normal syntax errors are completed executions.
-	aborted  bool
-	emitCall bool // the caller's stream callback is currently executing
+	aborted    bool
+	emitCall   bool // a caller-owned stream callback is currently executing
+	diagnostic func(*SyntaxError) error
 
 	env   *env            // predicate variables
 	bound map[string]bool // names assigned anywhere in this parse (a lookup hint)
@@ -46,6 +47,8 @@ type parser struct {
 	descs []string
 	// recovered holds the syntax errors recovered by #recover. Backtracking undoes them.
 	recovered []*SyntaxError
+	// diagnosed is the prefix of recovered already delivered to the stream diagnostic callback.
+	diagnosed int
 
 	// emit receives the elements of the #stream repetition when parsing a stream.
 	emit func(*Node) error

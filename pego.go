@@ -180,6 +180,16 @@ func WithTrace(f func(TraceEvent)) ParseOption {
 	}
 }
 
+// WithDiagnosticCallback reports each committed #recover error during ParseStream or Iterate,
+// immediately before the corresponding stream element. Speculative recoveries are not reported.
+// The callback receives an independent copy; returning an error stops parsing and suppresses
+// that element. A nil callback disables delivery. Non-nil callbacks are invalid with Parse and
+// Document. Recoveries in a successful suffix are reported before the terminal result. With or
+// without this option, recovered errors remain available at stream completion.
+func WithDiagnosticCallback(f func(*SyntaxError) error) ParseOption {
+	return func(o *engine.ParseOptions) { o.DiagnosticCallback = f }
+}
+
 // Profile accumulates the cost of each rule over the parses given WithProfile: calls, body evaluations,
 // memo hits, matches and failures, the input consumed and the input examined by failed calls, repeated
 // evaluations at a position, and time. Hints summarizes where to look. A Profile is not safe for
@@ -226,6 +236,8 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // reader or callback; the caller must arrange for it to return. A returned reader or emit error wins
 // over cancellation first observed after that call. Delivered elements remain caller-owned, and
 // retrying an interrupted stream requires caller-managed input replay.
+// WithDiagnosticCallback delivers committed recoveries immediately before their elements; its
+// error stops parsing before that element is emitted. Recovered errors are still returned at EOF.
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {
 	return p.prog.ParseStreamWith(p.start, r, emit, parseOptions(opts))
 }

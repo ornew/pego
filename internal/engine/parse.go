@@ -16,6 +16,9 @@ func (prog *Program) Parse(start, input string) (*Node, error) {
 
 // ParseWith parses with options such as the position unit.
 func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
+	if o.DiagnosticCallback != nil {
+		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	}
 	// Initialization can interrupt before run installs its execution recovery.
 	// Preserve caller panics: run already distinguishes bytecode faults from
 	// caller panics, so an outer boundary must not classify them again.
@@ -255,7 +258,12 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	control.check()
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
-	if streamPrefixIsolation && emit == nil {
+	p.diagnostic = o.DiagnosticCallback
+	if p.diagnostic != nil && p.emit == nil {
+		// A diagnostic-only stream still needs element commit boundaries.
+		p.emit = func(*Node) error { return nil }
+	}
+	if streamPrefixIsolation && p.emit == nil {
 		p.nodeChunks = 0 // No callback: collect the ordinary repetition instead.
 	}
 	p.descs = prog.descs(o.Backend)
@@ -276,6 +284,11 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
 		control.check()
+		if p.diagnostic != nil {
+			if err := p.reportRecovered(); err != nil {
+				return err
+			}
+		}
 		if len(p.recovered) > 0 {
 			return SyntaxErrors(p.recovered)
 		}
@@ -295,6 +308,11 @@ func (p *parser) emitStream(n *Node) error {
 	if workControlsEnabled {
 		p.control.check()
 	}
+	if p.diagnostic != nil {
+		if err := p.reportRecovered(); err != nil {
+			return err
+		}
+	}
 	p.emitCall = true
 	err := p.emit(n)
 	p.emitCall = false
@@ -302,4 +320,34 @@ func (p *parser) emitStream(n *Node) error {
 		p.control.check()
 	}
 	return err
+}
+
+// reportRecovered runs only at an irreversible stream boundary. Earlier
+// recoveries in a speculative branch may have been removed by backtracking.
+func (p *parser) reportRecovered() error {
+	if p.diagnostic == nil {
+		return nil
+	}
+	if p.diagnosed > len(p.recovered) {
+		p.diagnosed = len(p.recovered)
+	}
+	for p.diagnosed < len(p.recovered) {
+		if workControlsEnabled {
+			p.control.check()
+		}
+		e := *p.recovered[p.diagnosed]
+		e.Expected = append([]string(nil), e.Expected...)
+		e.Messages = append([]string(nil), e.Messages...)
+		p.emitCall = true
+		err := p.diagnostic(&e)
+		p.emitCall = false
+		if err != nil {
+			return err
+		}
+		p.diagnosed++
+		if workControlsEnabled {
+			p.control.check()
+		}
+	}
+	return nil
 }

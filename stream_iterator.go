@@ -15,7 +15,8 @@ type StreamIterator = engine.StreamIterator
 var ErrStreamClosed = engine.ErrStreamClosed
 
 // Iterate validates a #stream parser and returns a lazy pull iterator. Reader
-// access begins on Next; lookahead and buffering may still read ahead.
+// access begins on Next; lookahead and buffering may still read ahead. With a
+// diagnostic callback, Next reports committed recoveries before their element.
 func (p *Parser) Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 	return p.prog.Iterate(p.start, r, parseOptions(opts))
 }

@@ -57,6 +57,11 @@ rule main = ^^ header records:record* #stream $$
 
 Handed elements are not included in the repetition's returned list. Once
 handed over, an element is final and the parser does not backtrack before it.
+If a stream diagnostic callback is selected, committed recovery errors within
+an element are reported immediately before that element is handed over. A
+diagnostic callback error stops the parse without handing over that element;
+errors from branches later backtracked are never reported.
+
 Therefore a rule body contains at most one `#stream`, on the complete body, a
 top-level sequence element, or the expression captured by such an element.
 `#recover` cannot wrap the same repetition in either order. In an ordinary

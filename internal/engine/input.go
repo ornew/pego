@@ -48,6 +48,9 @@ type ParseOptions struct {
 	// Trace, if not nil, receives an event at the start and at the end of every rule call (see
 	// TraceEvent). Tracing does not change the result of the parse.
 	Trace func(TraceEvent)
+	// DiagnosticCallback receives committed recoveries during stream parsing, immediately before
+	// the corresponding element. It is invalid for batch parses and Documents.
+	DiagnosticCallback func(*SyntaxError) error
 }
 
 // Default limits on call nesting depth. Backends that run recursively use the host stack, so

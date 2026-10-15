@@ -3,7 +3,8 @@
 `Parser.Parse` takes a whole string and returns a whole tree. When the input is too big to hold, or arrives as a
 stream you want to process as it comes, `Parser.ParseStream` reads an `io.Reader` and hands your function each element
 of a repetition as soon as it matches. `Parser.Iterate` lets you request one element at a time. Both forget committed
-elements; memory use depends on the size of one element, not on the size of the input.
+elements; retained input and tree memory depend on the size of one element,
+not on the size of the input. Recovered diagnostics are retained until EOF.
 
 |  |  |
 |:--|:--|
@@ -395,6 +396,17 @@ recovered errors:
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. All recovered errors are kept until the end, so a
    very large input with an error on every line holds one `SyntaxError` per line.
    See [Errors and recovery](errors-and-recovery.md).
+
+Use `pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error { ... })` with
+`ParseStream` or `Iterate` to receive a committed recovery immediately before
+its element. `Next` invokes the diagnostic callback while advancing to that
+element. Backtracked recoveries are not reported. The callback receives a copy
+that you may keep or modify without changing the error returned at EOF. If it
+returns an error, parsing stops with that error and the corresponding element
+is not delivered. This option is rejected by `Parse` and `Document`; a nil
+callback disables it. Recoveries in a successful suffix are reported before
+the terminal result. Diagnostic delivery does not bound memory: recovered
+errors are still retained until EOF.
 
 A panic from your reader or callback propagates with its original value on every backend,
 including values implementing Go's `runtime.Error`. Already delivered elements remain valid;

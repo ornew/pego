@@ -24,7 +24,10 @@ type TruncatedSyntaxErrors struct {
 func (e *TruncatedSyntaxErrors) Unwrap() error
 ```
 
-These signatures are proposed. The two new functional parse options are valid only for streaming entry points; they are rejected by batch parse and `Document` entry points. The existing ParseStream(r, emit, opts...) accepts the same functional options.
+`StreamIterator` and `WithDiagnosticCallback` are implemented; `WithDiagnosticLimit`
+and `TruncatedSyntaxErrors` remain proposed. A non-nil diagnostic callback is
+valid only for streaming entry points and is rejected by batch parse and
+`Document` entry points. The existing `ParseStream(r, emit, opts...)` accepts it.
 
 ## Motivation
 
@@ -55,7 +58,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 `Next` returns `(node, true, nil)` for each committed element, including `(nil, true, nil)` for an element discarded by `-`. At clean EOF it returns `(nil, false, nil)`. A parse error or recovered-error result returns `(nil, false, err)`. The terminal `(ok, err)` result is stable: repeated calls return the same `ok` and error result rather than replacing the original terminal error with a synthetic done error. `Close` is idempotent. Closing before completion abandons parser state; subsequent `Next` calls return `(nil, false, ErrStreamClosed)`. Closing after termination does not change the stored terminal result.
 
-`WithDiagnosticCallback` is called once for each recovered syntax error when that recovery is committed. It is not called for speculative failures later rolled back by PEG backtracking. Each call receives an owned defensive copy of the `SyntaxError`, including independent `Expected` and `Messages` slices, so callback mutation cannot change parser state or the retained result. A callback error aborts parsing and is returned unchanged. The callback runs synchronously from `Next` or `ParseStream` and must not call back into the same iterator. A callback panic propagates as the original panic after parser cleanup; it is not converted into a generic parse error.
+`WithDiagnosticCallback` is called once for each recovered syntax error when that recovery is committed. It runs immediately before the corresponding stream element is delivered; an error from the diagnostic callback aborts parsing, returns unchanged and suppresses that element. Recoveries in a successful suffix after the streaming repetition are reported before the terminal result. It is not called for speculative failures later rolled back by PEG backtracking. Each call receives an owned defensive copy of the `SyntaxError`, including independent `Expected` and `Messages` slices, so callback mutation cannot change parser state or the retained result. The callback runs synchronously from `Next` or `ParseStream` and must not call back into the same iterator. A callback panic propagates as the original panic after parser cleanup; it is not converted into a generic parse error.
 
 A positive diagnostic limit retains a FIFO tail of at most that many committed errors while the callback still receives all committed errors in order. If the total exceeds the limit, return a proposed `TruncatedSyntaxErrors` wrapper with the retained `SyntaxErrors`, total count and dropped count. Its error text must identify truncation, and Unwrap exposes the retained SyntaxErrors to errors.As. Total and dropped counters saturate at the uint64 maximum and set CountsSaturated; they never wrap or stop an otherwise endless stream. Saturated counts are lower bounds, while the truncation status and retained tail remain reliable. Thus bounded results cannot be mistaken for a complete list, including when no callback was supplied. If the total does not exceed the limit, return ordinary `SyntaxErrors`. A limit of one retains the latest error. No limit option preserves the legacy complete result.
 
@@ -107,9 +110,9 @@ workloads.
 
 ## Limitations and Open Questions
 
-A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The state-machine extraction and committed-error drain points need prototype validation against nested recovery and backtracking before signatures are finalized.
+A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The bounded collector and its interaction with nested recovery and backtracking still need prototype validation before those signatures are finalized.
 
-## Implemented Pull Iteration
+## Implemented Pull Iteration and Diagnostic Callback
 
 The implemented slice exposes `Parser.Iterate`, `StreamIterator` and
 `ErrStreamClosed`. An internal `iter.Pull` adapter suspends the existing
@@ -120,11 +123,14 @@ from EOF, and terminal errors remain stable. Early `Close` unwinds parser
 state through the existing callback-error cleanup path without closing the
 reader. Calls to `Next` and `Close` must not overlap.
 
-The diagnostic callback, bounded tail, stream-only options and truncation
-wrapper remain proposals. They are not exposed or accepted by this prototype;
-the current stream parse still retains its full recovered-error list. Commit
-ordering and rollback behavior need to be settled before those controls are
-connected. The public and engine iterator tests cover all stream-capable
+The diagnostic callback is implemented as a stream-only parse option. At each
+element boundary, it reports recoveries surviving backtracking before the
+element callback runs; its error suppresses that element. It copies the error
+and its slices before invoking caller code. Batch parse and Document reject a
+non-nil callback. A successful stream suffix reports any remaining recoveries
+before the terminal result. The bounded tail and truncation wrapper remain
+proposals, so the stream still retains its full recovered-error list until EOF.
+The public and engine iterator tests cover all stream-capable
 backends and both position units, lazy reader access, EOF and error stability,
 nil elements, early close and caller-owned cancellation. A public comparison
 benchmark compares stream callback delivery, pull delivery and first-element

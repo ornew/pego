@@ -74,6 +74,9 @@ func (prog *Program) NewDocument(start, text string) (*Document, error) {
 // NewDocumentWith creates a Document with options such as the position unit. Positions passed
 // to Edit use the same unit.
 func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Document, err error) {
+	if o.DiagnosticCallback != nil {
+		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	}
 	defer func() {
 		if x := recover(); x != nil {
 			if f, ok := x.(fatal); ok {
@@ -121,6 +124,9 @@ func (d *Document) ParseWith(o ParseOptions) (*Node, error) {
 // parseWithCapture keeps parsing and result capture inside one interruption and
 // cleanup boundary. capture uses the same controller as the parser.
 func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node, error) error) (n *Node, err error) {
+	if o.DiagnosticCallback != nil {
+		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	}
 	if o.Unit != d.in.unit || d.prog.backend(o.Backend) != d.back || o.Recognize {
 		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")
 	}
