@@ -27,11 +27,12 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](#recognition--recognize) |
-| Streaming, incremental, backends | Yes | No (see [what is supported](#what-is-supported)) |
+| Streaming, incremental, backends | Yes | Incremental Node `Document` with `-document`; no streaming or backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
-dependency on PEGO at run time. Use the engine when the grammar is data, or when you need streaming or incremental
-parsing. A good deal of the time you can use both: the engine in tools and tests, and the generated code in production
+dependency on PEGO at run time. Use the engine when the grammar is data or when you need streaming. For incremental
+Node parsing, generate a Go `Document` with `-document`; the engine offers the broader Document API.
+A good deal of the time you can use both: the engine in tools and tests, and the generated code in production
 (see [Recipes](#recipes)).
 
 The generated parser returns the **same tree and the same errors** as the engine, so switching between them does not
@@ -158,7 +159,7 @@ The output is exactly what the engine prints for the same grammar and input.
 ## The `pego gen` Command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-nodoc] [-max-depth <n>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
@@ -169,6 +170,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recogniz
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of the generated `Parse` function |
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
+| `-document` | off | Also generate the Go incremental Node `Document` API (see [incremental documents](#incremental-documents--document)); cannot be combined with `-types` or `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
@@ -212,7 +214,7 @@ err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
 Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`, and
-`pego.WithRecognize()` is `-recognize`, `pego.WithoutPackageDoc()` is `-nodoc`, and
+`pego.WithDocument()` is `-document`, `pego.WithRecognize()` is `-recognize`, `pego.WithoutPackageDoc()` is `-nodoc`, and
 `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate
 identical source. Invalid defaults return an error before generated output is written.
 
@@ -437,6 +439,42 @@ Details:
   generated types, including function values whose `ParseAST` return type uses a renamed type.
   Untyped Go and TypeScript entry points are unchanged. See [design 029](../design/029-typed-named-rule-parsing.md).
 
+## Incremental Documents (`-document`)
+
+Generate with `pego gen -g grammar.pego -pkg parser -document -o parser/parser.go`, or pass
+`pego.WithDocument()` to `GenerateGo`. This adds a mutable Node `Document` alongside the ordinary batch `Parse` and
+`ParseRule` functions:
+
+```go
+doc, err := parser.NewDocument("first draft", parser.WithUnit(parser.CodePoints))
+if err != nil {
+	return err
+}
+tree, err := doc.Parse()
+if err := doc.Edit(6, 11, "revision"); err != nil {
+	return err
+}
+tree, err = doc.Parse()
+stats := doc.Stats() // rule evaluations and reused memo results from this Parse
+_ = tree
+_ = stats
+```
+
+`Edit(start, end, replacement)` replaces the half-open range in the unit selected at construction. It rejects
+invalid ranges and positions inside a UTF-8 character in `Bytes` mode without changing the text. `Text()` returns
+the exact current input. Construction options become defaults for later `Parse` calls; per-call options can change
+depth, context and work limits, but cannot change the unit. An interruption during execution discards memo history so a
+later call can retry. `Document` is single-goroutine, and results can share nodes with later parses. Call
+`tree.Clone()` if an earlier tree must remain detached from the Document. It copies Node graphs, including Node
+values in `[]any` and `[]*Node` fields, while preserving cycles and repeated references to the same slice view.
+Overlapping slice views with different lengths or capacities are copied independently; arbitrary mutable action
+values such as maps remain shared. `ParseStats` has `Evaluated` and `Reused` fields.
+
+This first generated implementation retains memo entries wholly before an edit and discards the suffix, rather
+than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
+length. The generated batch functions remain available. `-document` cannot be combined with `-types` or
+`-lang ts`; generated streams and engine-only Document controls such as `EditBatch` are separate work.
+
 ## Recognition (`-recognize`)
 
 With `-recognize` (`pego.WithRecognize()`), the generated package also has
@@ -525,8 +563,9 @@ these new names must be renamed by the consumer; the generator cannot inspect th
 
 ## What Is Supported
 
-Everything in the language that works with `Parse` is generated; the entry points that need engine-level machinery are
-not.
+The generator supports the language features listed below except for entry points that need runtime machinery it
+does not emit. For example, `#missing` currently works only with Closure whole-input parsing and recognition; the
+generator rejects grammars that use it. See the [pragma specification](../../spec/pragmas.md).
 
 | Feature | Engine | Generated |
 |:--|:--|:--|
@@ -535,10 +574,11 @@ not.
 | Predicates and variables, lookahead, cut | Yes | Yes |
 | Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes | Yes |
 | `@error` and `#recover`, `SyntaxErrors` | Yes | Yes |
+| `#missing` | Closure whole-input parsing and recognition only | **No**: generated parsers reject grammars containing `#missing`; see the [specification](../../spec/pragmas.md) |
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
 | `#stream` and `ParseStream` | Yes | **No**: `#stream` is generated as an ordinary repetition, and there is no `ParseStream` |
-| `Document` (incremental parsing) | Yes | **No** |
+| `Document` (incremental parsing) | Yes | Go Node only, with `-document`; typed Go and TypeScript are deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
 | Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | Go: same package-local options |
@@ -642,7 +682,7 @@ and inputs that exercise each feature of your grammar.
   is acceptable, loading a [`.pegoc`](compiled-grammars.md) is the cheaper alternative.
 - **Flexibility.** The grammar is frozen into the binary. Changing it means regenerating, rebuilding and redeploying;
   if users supply grammars at run time, use the engine.
-- **Features.** No streaming, incremental parsing or backend choice (see
+- **Features.** No streaming or backend choice; incremental Node parsing requires `-document` (see
   [what is supported](#what-is-supported)).
 - **Review noise.** Large diffs on regeneration (particularly after upgrading PEGO) are expected. Mark the files as
   generated for your review tool: the first line, `// Code generated by pego. DO NOT EDIT.`, follows the Go

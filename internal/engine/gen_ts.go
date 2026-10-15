@@ -30,6 +30,9 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // expressions, as in Generate; the embedded runtime (tsrt/runtime.ts) mirrors genrt. opts.Package
 // is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
+	if opts.Document {
+		return nil, fmt.Errorf("Document generation is only supported for Go")
+	}
 	if err := opts.validateMaxDepth(true); err != nil {
 		return nil, err
 	}

@@ -1,0 +1,59 @@
+package engine
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
+)
+
+// TestGeneratedDocumentBenchmarkFixture exports source for a focused benchmark.
+// It never runs the benchmarks. Keep the generated packages separate so the
+// batch control compiles the same grammar with and without Document generation.
+func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
+	dir := os.Getenv("PEGO_GENERATED_DOCUMENT_BENCH_DIR")
+	if dir == "" {
+		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
+	}
+	g, err := syntax.Parse(`rule main = record+ $$
+rule record = k:"é" ":" v:("0" / "1") ";"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, variant := range []struct {
+		name     string
+		document bool
+	}{
+		{"generatedbatch", false},
+		{"generateddocument", true},
+	} {
+		code, err := Generate(g, GenOptions{Package: variant.name, Start: "main", Document: variant.document})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := writeGeneratedDocumentBenchmarkFile(dir, filepath.Join(variant.name, "parser.go"), code); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"batch_bench_test.go", "generateddocument/document_bench_test.go"} {
+		source, err := os.ReadFile(filepath.Join("testdata", "generated_document_bench", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := writeGeneratedDocumentBenchmarkFile(dir, name, source); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := writeGeneratedDocumentBenchmarkFile(dir, "go.mod", []byte("module generateddocumentbench\n\ngo 1.27.1\n")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeGeneratedDocumentBenchmarkFile(dir, name string, contents []byte) error {
+	path := filepath.Join(dir, name)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, contents, 0o644)
+}

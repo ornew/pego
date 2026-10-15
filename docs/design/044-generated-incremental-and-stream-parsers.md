@@ -6,33 +6,39 @@
 
 ## Summary
 
-Propose opt-in generation of mutable incremental Documents and committed stream parsing in standalone Go and
-TypeScript parsers. Preserve the engine's examined-input dependency rules, PEG decisions, diagnostics and result
-ownership. The two features have different execution needs and can land independently; generated batch parsing
-remains available and unchanged by default. APIs below are proposed, not accepted exports.
+This design covers incremental Documents and committed stream parsing in standalone Go and TypeScript parsers.
+The initial implementation provides an opt-in generated Go Node `Document` with conservative prefix memo reuse; ordinary
+batch parsing remains available and unchanged by default. The overall design remains proposed: typed Documents,
+repetition resumption, Reader streams and TypeScript Documents/streams are not part of the current implementation.
+The sections below distinguish the current Go Node API from those future proposals.
 
 ## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../internal/engine/document.go),
 [resume.go](../../internal/engine/resume.go), and [stream pragma](../../spec/pragmas.md#stream) define the
-engine reference. Generated Go explicitly excludes these features in [gen.go](../../internal/engine/gen.go);
-generated TS uses synchronous recursive expression functions ([design 013](013-typescript-generation.md)).
-Retaining that runtime's input and memo across calls alone does not implement edit invalidation or suspension.
+engine reference. The current generated Go path supports only the Node `Document` described below; it does not
+generate typed Documents or streams. Generated TS still uses synchronous recursive expression functions
+([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and
+memo across calls alone does not implement edit invalidation or suspension.
 
 Documents must match a fresh parse after every legal edit, including diagnostics and action values. Streamed
 elements must match the engine's committed sequence and remain valid after subsequent input is discarded.
 Generated packages stay independent of the compiler and engine at runtime. This design does not add a compiled
 TS VM, immutable snapshots, a new text-storage algorithm, or recognition on Documents/streams.
 
-## Proposed APIs
+## Current and Proposed APIs
 
-Propose generation options `pego.WithDocument()` and `pego.WithStream()`, with CLI `-document` and `-stream`.
-Generate only the requested machinery. Existing generation without these options retains the batch source path;
-`#stream` still behaves as an ordinary repetition in a batch parse. Requesting streams requires a legal #stream
-repetition in the configured start rule; reject the generation request otherwise. Documents select that same
-start rule initially; generic named batch parsing remains separate.
+The current Go Node Document is opt-in through `pego.WithDocument()` or the `-document` CLI option. It selects the
+configured start rule and is incompatible with typed Go (`-types`) and TypeScript generation. Existing generation
+without `WithDocument`/`-document` retains the batch source path. A generated `Document` is a mutable Node parse
+view, not an immutable snapshot or a typed result.
 
-### Go Document
+The remaining generation options and APIs in this section are proposals. `pego.WithStream()` and `-stream` would
+generate stream machinery only when the configured start rule has a legal `#stream` repetition; in batch mode,
+`#stream` continues to behave as an ordinary repetition. Documents select the configured start rule initially;
+generic named batch parsing remains separate.
+
+### Current Generated Go Node Document
 
 ```go
 func NewDocument(text string, opts ...ParseOption) (*Document, error)
@@ -40,32 +46,29 @@ func (d *Document) Text() string
 func (d *Document) Edit(start, end int, text string) error
 func (d *Document) Parse(opts ...ParseOption) (*Node, error)
 func (d *Document) Stats() ParseStats
-// WithTypes only: StartValue is the existing generated configured-start type.
-func (d *Document) ParseAST(opts ...ParseOption) (StartValue, error)
 ```
 
 Constructor options resolve and validate once, without retaining the option functions. The unit and effective
 depth become Document-local settings; Edit and positional actions use that unit. No backend selector is needed
 for a standalone generated runtime. New APIs use functional options. Constructor settings provide defaults for
 each parse; invocation overrides follow [design 033](033-cancellable-parses-and-work-budgets.md),
-including ordered once-only resolution, context/limits/depth/trace overrides and rejection of incompatible
-unit changes. A fresh per-call context supports retries; memo state never retains an invocation controller.
+including ordered once-only resolution, context/limits/depth overrides and rejection of incompatible unit changes.
+A fresh per-call context supports retries; memo state never retains an invocation controller.
 
 Edit replaces [start,end), rejecting invalid range or byte character boundaries before modifying text or memo.
 Invalid UTF-8 bytes are individual characters, as in the engine; an edit can join bytes into a valid sequence.
-Document is not safe for concurrent use. Node results share reusable objects: later Parse may move old nodes,
-including objects shared through fields and children. Earlier trees cannot be read concurrently with Parse.
-Generate `Node.Clone` when generating Documents, preserving internal shared identities and detaching the tree
-from future edits. It is not an immutable snapshot API and does not make arbitrary mutable any values immutable.
+Document is not safe for concurrent use. A later Parse may reuse Node pointers held in memo entries retained before
+an edit; it does not shift or move those Nodes. Edits discard memo entries at and after the edit. Results can share
+Nodes through fields and children, so use `Node.Clone` to detach a tree before retaining or mutating it. Clone
+preserves internal shared identities; it is not an immutable snapshot API and does not make arbitrary mutable any
+values immutable.
 Text and diagnostic strings already handed out remain owned data, independent of discarded parser scratch.
 
-Initially implement Document.ParseAST by Node parsing followed by one conversion of the final result. The typed
-result belongs to that invocation and is detached from the Document's mutable internal Node graph for converted
-objects/arrays. CST Node members still reference the same Document graph: their documented mutation/concurrency
-contract is identical to Parse, and Clone or an explicit consumer copy is required to retain them. Preserve all
-aliases that the existing converter preserves; never return storage later cleared for parser pooling. Pure typed
-direct incremental parsing is deferred until ownership/invalidation can support moving public typed spans and
-position-valued fields safely. Do not promise that WithTypes makes every value an immutable snapshot.
+Typed Document parsing is not available in the current generator. A future `ParseAST` could convert the final Node
+result once, but its ownership contract must account for CST Node members that still reference the mutable
+Document graph. Preserve aliases that the existing converter preserves and never return storage later cleared for
+parser pooling. Pure typed incremental parsing remains deferred until ownership and invalidation can support public
+typed spans and position-valued fields safely; `WithTypes` alone must not imply an immutable snapshot.
 
 ### Go Reader Streams and Typed Elements
 
@@ -129,15 +132,18 @@ this proposal makes no implicit promise about closing or interrupting their unde
 
 ## Runtime Invariants
 
-For Documents, generated analysis tables must carry examined-range dependencies, transitive position/variable
-reads, recovery dependence, LR provisional dependence and resumption eligibility. Matching includes lookahead and
-previous-character anchors. Memo keys preserve variable environment and Operators Rule level. Edits shift only safe ranges;
-position-dependent values and recovered diagnostics cannot simply have their root span shifted. Empty nodes at
-insertion boundaries follow the engine's copy rule. Shared nodes move once per edit generation, across fields and
-children. Completed results dependent on a growing LR seed are invalid after edits; abort/cancel drops all partial
-memo/resumption state before retry, while a completed syntax failure may keep valid cache entries.
+For future suffix reuse and repetition resumption, generated analysis tables must carry examined-range
+dependencies, transitive position/variable reads, recovery dependence, LR provisional dependence and resumption
+eligibility. Matching includes lookahead and previous-character anchors. Memo keys preserve variable environment
+and Operators Rule level. Edits shift only safe ranges; position-dependent values and recovered diagnostics cannot
+simply have their root span shifted. Empty nodes at insertion boundaries follow the engine's copy rule. Shared
+nodes move once per edit generation, across fields and children. Completed results dependent on a growing LR seed
+are invalid after edits; abort/cancel drops all partial memo/resumption state before retry, while a completed syntax
+failure may keep valid cache entries.
 
-Begin with rule memo reuse; repetition resumption is a later equivalent optimization. When added, retain the exact
+The current Node Document takes a conservative approach: an edit retains only completed memo entries wholly before
+the edit and discards the suffix; it copies retained prefix entries and does not move suffix Nodes. It does not
+resume repetitions. Any broader reuse must retain the exact
 restrictions for predicates/variable reads, enclosing capture writes, recovered errors, provisional LR seeds and
 positional values on length-changing edits. Every empty successful iteration counts once and stops. Preserve
 repetition finite maxima/minima, cut scope, Operators Rule candidate-local diagnostics, and lookahead expectations.
@@ -161,9 +167,9 @@ values; no pooled parser or conversion arena is shared between concurrent invoca
 | Scope | Initial reference and proposed rollout |
 | --- | --- |
 | Closure and both engine VMs | Existing Document/Reader stream oracle; both position units |
-| Generated Go Node | Document memo invalidation, then demand-driven Reader stream runtime |
-| Generated typed Go | Node Document conversion and per-element stream conversion first; direct path later |
-| Generated TS Node/typed conversion | Document first; streams only after continuation lowering passes parity |
+| Generated Go Node | Current opt-in prefix-memo Document; Reader streams remain proposed |
+| Generated typed Go | Typed Documents and per-element stream conversion remain proposed; direct path later |
+| Generated TS Node/typed conversion | Documents and streams remain proposed; streams require continuation lowering |
 | Recognition | Continue rejecting Document/stream mode; batch recognition is unaffected |
 
 This source-generation feature needs no .pegoc or ISA change by itself. If continuation tables are instead stored
@@ -173,11 +179,11 @@ unimplemented generation/backend combination fail explicitly, rather than silent
 Reserve the new exported type/value names in deterministic order and document resulting underscore migrations
 for colliding grammar declarations; generating helper methods must not alter existing handwritten types silently.
 
-Port input/edit abstractions and ownership before memo reuse, then generated Go Document, typed conversion, Reader
-streams, TS Document, and finally TS push continuations. Snapshot/versioned-tree work is a separate dependency only
-if immutable views are exposed; do not block the mutable Document compatibility path on it. Chunked input storage
-is a separate measured experiment: start with the current contiguous edit contract. Cancellation/work budgets
-need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
+The current candidate adds the generated Go Node Document with prefix-only memo reuse. Remaining work includes
+typed conversion, Reader streams, TS Documents, and TS push continuations. Snapshot/versioned-tree work is a
+separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
+Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
+Cancellation/work budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
 
 ## Alternatives, Validation and Performance
 
@@ -201,4 +207,23 @@ separately. Include local/distant edits, large repetitions, LR/Operators Rule, g
 Report allocations, live/peak memory, input/memo capacity, generated source/build sizes and public Node/typed
 materialization cost; retained caller results and per-feed arrays are separate from runtime working memory.
 Pin revisions, inputs and toolchains, serialize paired measurements, and gate ordinary batch regressions even
-when only dormant parser fields change. Implementation stages remain Proposed until their gates pass.
+when only dormant parser fields change. The remaining implementation stages remain Proposed until their gates pass.
+
+### Local Measurements for the Go Node Document Candidate
+
+On an Apple M3 Max with Go 1.27.1 and GOMAXPROCS=1, ten paired one-second runs compared default generated `Parse`
+against the parent revision across eight cases. Median time deltas ranged from -1.2% to +6.3%, with allocations
+and B/op essentially unchanged. Recovery's +6.3% time result was noisy and should not be read as a stable cost
+estimate.
+
+A same-source generation-flag comparison used five 500 ms samples on a 4,096-record near-EOF fixture. Default-off
+versus Document-enabled fresh `Parse` measured 1,444,747 vs 1,428,190 ns/op in CodePoints and 1,476,083 vs
+1,483,182 ns/op in Bytes. Bytes/op and allocations were effectively identical: 2,487,670 vs 2,487,651 B/op
+and 132 vs 132 allocations in CodePoints; 2,487,646 vs 2,487,645 B/op and 132 vs 132 allocations in Bytes.
+
+For Document-enabled near-EOF edits, median `Edit+Parse` versus fresh-`Parse` times were 42,280 vs 70,035 ns
+(256 records, CodePoints), 35,845 vs 73,114 ns (256, Bytes), 758,497 vs 1,404,930 ns (4,096, CodePoints),
+and 631,864 vs 1,419,394 ns (4,096, Bytes). At 4,096 records, Document/fresh parsing used 1,498,944/
+2,488,807 B/op in CodePoints and 1,359,680/2,488,505 B/op in Bytes. The candidate edit path scans and copies
+the reusable memo prefix and discards the suffix. These synthetic measurements do not establish workload-wide
+gains.

@@ -400,7 +400,13 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 					cond += fmt.Sprintf(" && p.in[p.pos+%d] == %d", i, r)
 				}
 			}
-			cond = "(!workControlsEnabled || p.control == nil) && (" + cond + ")"
+			// A Document records the full examined range in matchLiteral. Its
+			// direct-read fast path has no equivalent dependency record yet.
+			if g.document {
+				cond = "p.document == nil && (!workControlsEnabled || p.control == nil) && (" + cond + ")"
+			} else {
+				cond = "(!workControlsEnabled || p.control == nil) && (" + cond + ")"
+			}
 			if !d.dead {
 				d.used[fail] = true
 			}
@@ -420,12 +426,12 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		return v
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
-		d.line("%s", peek(ch, size, ok))
+		d.line("%s", d.peek(ch, size, ok))
 		d.failIf(fmt.Sprintf("!%s || %s", ok, g.controlledClassReject(e)), fail, fmt.Sprintf("p.expect(p.pos, %d)", g.desc(charClassString(e))))
 		return d.single(build)
 	case *grammar.Any:
 		size, ok := d.rd(d.shared("size", "int")), d.ok()
-		d.line("%s", peek("_", size, ok))
+		d.line("%s", d.peek("_", size, ok))
 		d.failIf("!"+ok, fail, "p.expect(p.pos, idAny)")
 		return d.single(build)
 	case *grammar.Ref:
@@ -625,8 +631,12 @@ const maxInlineLiteral = 4
 
 // peek returns the statement that assigns what p.peek returns to ch, size and ok, with the
 // common case written out: the compiler does not inline peek. In Bytes, p.in is empty.
-func peek(ch, size, ok string) string {
-	return fmt.Sprintf("if p.pos < len(p.in) {\np.inputWork(1)\n%s, %s, %s = p.in[p.pos], 1, true\n} else {\n%[1]s, %[2]s, %[3]s = p.peek()\n}", ch, size, ok)
+func (d *dgen) peek(ch, size, ok string) string {
+	guard := "p.pos < len(p.in)"
+	if d.g.document {
+		guard = "p.document == nil && " + guard
+	}
+	return fmt.Sprintf("if %s {\np.inputWork(1)\n%s, %s, %s = p.in[p.pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.peek()\n}", guard, ch, size, ok)
 }
 
 // single consumes the character whose size is in size (after a successful peek), as single.
@@ -690,7 +700,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 			// The alternative is skipped when the next character cannot start it (see first).
 			if ch == "" {
 				ch, more = d.decl("x", "rune"), d.decl("x", "bool")
-				d.line("%s", peek(ch, "_", more))
+				d.line("%s", d.peek(ch, "_", more))
 			}
 			skip = d.label()
 			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
@@ -835,10 +845,10 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 	var cond string
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
-		cond = fmt.Sprintf("%s\nif !%s || %s {\np.expect(p.pos, %d)", peek(d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()), d.ok(),
+		cond = fmt.Sprintf("%s\nif !%s || %s {\np.expect(p.pos, %d)", d.peek(d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()), d.ok(),
 			d.g.controlledClassReject(x), d.g.desc(charClassString(x)))
 	case *grammar.Any:
-		cond = fmt.Sprintf("%s\nif !%s {\np.expect(p.pos, idAny)", peek("_", d.rd(d.shared("size", "int")), d.ok()), d.ok())
+		cond = fmt.Sprintf("%s\nif !%s {\np.expect(p.pos, idAny)", d.peek("_", d.rd(d.shared("size", "int")), d.ok()), d.ok())
 	default:
 		return "", false
 	}

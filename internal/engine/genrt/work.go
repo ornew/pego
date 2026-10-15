@@ -191,6 +191,15 @@ func saturatingAdd(a, b uint64) uint64 {
 
 // Work helpers keep long engine-owned scans between bounded reservations.
 func (p *parser) inputWork(n uint64) {
+	if documentEnabled && p.document != nil {
+		// Generated matchers can read directly after charging input work.
+		// Overestimating the dependency only discards a reusable memo entry.
+		if n > uint64(int(^uint(0)>>1)-p.pos) {
+			p.documentTouch(int(^uint(0) >> 1))
+		} else {
+			p.documentTouch(p.pos + int(n))
+		}
+	}
 	if workControlsEnabled && p.control != nil {
 		p.control.charge(n, 1)
 	}

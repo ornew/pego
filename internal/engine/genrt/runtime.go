@@ -564,10 +564,14 @@ const (
 
 type parser struct {
 	control *workControl
-	unit    Unit
-	in      []rune // code points (CodePoints)
-	bs      string // the input (Bytes)
-	n       int    // input length in units
+	// document is set only by the private incremental runner.
+	document       *documentState
+	docHigh        int  // exclusive upper bound examined by the active rule call
+	docProvisional bool // active call observed an unresolved LR result
+	unit           Unit
+	in             []rune // code points (CodePoints)
+	bs             string // the input (Bytes)
+	n              int    // input length in units
 	// src and offs give token text without copying in CodePoints mode: offs[i] is the byte offset
 	// of code point i (len(in)+1 entries). offs is nil for invalid UTF-8, whose text is built
 	// from in so that U+FFFD replacement stays the same.
@@ -614,6 +618,31 @@ type parser struct {
 	saved          []*Node // captures saved across a reset in longest
 }
 
+// documentState owns reusable memo entries. The regular Parse path never sets
+// parser.document.
+type documentState struct {
+	root  *rule
+	text  string
+	unit  Unit
+	memo  memoTable
+	stats documentStats
+}
+
+type documentStats struct {
+	Evaluated int
+	Reused    int
+}
+
+// The generator disables Document branches at compile time for batch-only parsers.
+// The embedded runtime keeps them enabled for its own Document tests.
+const documentEnabled = true
+
+func (p *parser) documentTouch(end int) {
+	if documentEnabled && p.document != nil && end > p.docHigh {
+		p.docHigh = end
+	}
+}
+
 // memoTable maps (rule, position, level) to results. Each position has a chain of entries;
 // entries are allocated in slabs.
 type memoTable struct {
@@ -654,6 +683,9 @@ type seenCalls struct {
 // so memoizing every first call cost an entry each for nothing; deferring memoization to the
 // second call evaluates a rule at most twice per position, which keeps parse time linear.
 func (p *parser) firstCall(r *rule) bool {
+	if documentEnabled && p.document != nil {
+		return false // Documents memoize on the first call.
+	}
 	if workControlsEnabled && p.control != nil {
 		return p.controlledFirstCall(r)
 	}
@@ -842,6 +874,7 @@ type memoEntry struct {
 	next     *memoEntry     // next entry at the same position
 	env      []any          // values of the rule's variables at the call (memo key)
 	end      int
+	examined int // exclusive upper bound examined by a Document call
 	far      int
 	rule     int32
 	min      int32
@@ -850,7 +883,8 @@ type memoEntry struct {
 	// outside lookaheads it is computed again.
 	silent bool
 	// growing marks a provisional result of a growing left-recursive call.
-	growing bool
+	growing     bool
+	provisional bool // a completed result observed a provisional LR seed
 }
 
 func (t *memoTable) get(rule, pos, min int, env []any) *memoEntry {
@@ -1224,16 +1258,20 @@ func (p *parser) setSource(s string) {
 func (p *parser) peek() (rune, int, bool) {
 	p.inputWork(1)
 	if p.pos >= p.n {
+		p.documentTouch(p.pos + 1)
 		return 0, 0, false
 	}
 	if p.unit == Bytes {
 		if c := p.bs[p.pos]; c < utf8.RuneSelf {
+			p.documentTouch(p.pos + 1)
 			return rune(c), 1, true
 		}
 		p.inputWork(uint64(min(utf8.UTFMax, p.n-p.pos)))
 		r, size := utf8.DecodeRuneInString(p.bs[p.pos:])
+		p.documentTouch(p.pos + size)
 		return r, size, true
 	}
+	p.documentTouch(p.pos + 1)
 	return p.in[p.pos], 1, true
 }
 
@@ -1257,6 +1295,7 @@ func (p *parser) unitLen(s string) int {
 
 // expect records that id was expected at pos.
 func (p *parser) expect(pos int, id expID) {
+	p.documentTouch(pos + 1)
 	if p.silent > 0 || pos < p.farthest {
 		return
 	}
@@ -1390,7 +1429,15 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 func (p *parser) call(r *rule, min int) (*Node, bool) {
 	p.stepWork()
 	start := p.pos
-	if !r.memo && !r.leader || p.firstCall(r) {
+	if documentEnabled && p.document != nil {
+		oldHigh, oldProvisional := p.docHigh, p.docProvisional
+		p.docHigh, p.docProvisional = start+1, false
+		defer func() {
+			p.docHigh = max(oldHigh, p.docHigh)
+			p.docProvisional = oldProvisional || p.docProvisional
+		}()
+	}
+	if ((!documentEnabled || p.document == nil) && !r.memo && !r.leader) || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
 		if len(r.scope) == 0 {
 			return p.invokePlain(r, min)
@@ -1407,6 +1454,11 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
 	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+		if documentEnabled && p.document != nil {
+			p.documentTouch(e.examined)
+			p.docProvisional = p.docProvisional || e.growing || e.provisional
+			p.document.stats.Reused++
+		}
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
@@ -1438,6 +1490,11 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	}
 	far, inner := p.unisolate(m)
 	e.far, e.expected = far, p.keep(inner)
+	if documentEnabled && p.document != nil {
+		p.documentTouch(p.pos + 1)
+		e.examined = p.docHigh
+		e.provisional = p.docProvisional || r.leader
+	}
 	p.mergeExpected(far, inner)
 	if !ok {
 		p.pos = start
@@ -1473,6 +1530,9 @@ func (p *parser) grow(r *rule, min int, env []any) (*Node, bool) {
 
 // invoke evaluates the body of r and makes the rule's value.
 func (p *parser) invoke(r *rule, min int) (*Node, bool) {
+	if documentEnabled && p.document != nil {
+		p.document.stats.Evaluated++
+	}
 	f := p.newFrame(len(r.scope))
 	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
 	p.frame, p.cut = f, false
@@ -1496,6 +1556,9 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 // frame (the body never writes one, so the caller's stays current), with the failure handling of
 // call.
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+	if documentEnabled && p.document != nil {
+		p.document.stats.Evaluated++
+	}
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -1608,11 +1671,13 @@ func (p *parser) literalText(start int, text string) string {
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
 	if p.unit == Bytes {
+		p.documentTouch(start + len(text))
 		if !p.hasLiteralPrefix(text) {
 			return p.matchReplacementLiteral(rs, text, desc, build)
 		}
 		p.pos += len(text)
 	} else {
+		p.documentTouch(start + len(rs))
 		for _, r := range rs {
 			p.inputWork(1)
 			if p.pos >= p.n || p.in[p.pos] != r {
@@ -1678,6 +1743,7 @@ func (p *parser) anchor(ok bool, desc expID) (*Node, bool) {
 }
 
 func (p *parser) atLineStart() bool {
+	p.documentTouch(p.pos)
 	if p.pos == 0 {
 		return true
 	}
@@ -1692,7 +1758,10 @@ func (p *parser) atLineEnd() bool {
 	return !ok || ch == '\n' || ch == '\r'
 }
 
-func (p *parser) atEnd() bool { return p.pos == p.n }
+func (p *parser) atEnd() bool {
+	p.documentTouch(p.pos + 1)
+	return p.pos == p.n
+}
 
 // --- Attributes ---
 

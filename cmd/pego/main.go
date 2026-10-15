@@ -6,7 +6,7 @@
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize] [-nodoc] [-max-depth n]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-recognize] [-nodoc] [-max-depth n]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
@@ -58,14 +58,16 @@ Commands:
       Convert a grammar between PEGO source and JSON. -to defaults to the
       other format of the input and is required for compiled grammars.
 
-  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-max-depth <n>]
+  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-max-depth <n>]
         [-nodoc]
   gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize] [-max-depth <n>]
       Generate a Go parser (or, with -lang ts, a TypeScript module) from a
       grammar. Without -o, the code is written to standard output. With
       -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
-      which returns the result as typed values, are generated too;
-      with -recognize, Recognize (recognize in TypeScript), which checks
+      which returns the result as typed values, are generated too.
+      -document adds a Go incremental Node Document; it cannot be combined
+      with -types or -lang ts. With -recognize, Recognize (recognize in
+      TypeScript) is generated to check
       input without building a tree. -nodoc leaves out the package comment
       of the Go code, for a package documented in another file. -max-depth
       sets the generated default nested rule-call limit (0 selects 100000).
@@ -518,6 +520,7 @@ func gen(args []string, stdout io.Writer) error {
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
+	document := fs.Bool("document", false, "also generate a Go incremental Node Document (incompatible with -types and -lang ts)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
@@ -533,8 +536,8 @@ func gen(args []string, stdout io.Writer) error {
 		if *grammarPath == "" {
 			return fmt.Errorf("-g is required")
 		}
-		if *pkg != "" || *nodoc {
-			return fmt.Errorf("-pkg and -nodoc are not supported with -lang ts")
+		if *pkg != "" || *nodoc || *document {
+			return fmt.Errorf("-pkg, -nodoc and -document are not supported with -lang ts")
 		}
 	default:
 		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
@@ -549,6 +552,9 @@ func gen(args []string, stdout io.Writer) error {
 	opts := []pego.GenOption{pego.WithGeneratedMaxDepth(*maxDepth)}
 	if *types {
 		opts = append(opts, pego.WithTypes())
+	}
+	if *document {
+		opts = append(opts, pego.WithDocument())
 	}
 	if *recognize {
 		opts = append(opts, pego.WithRecognize())

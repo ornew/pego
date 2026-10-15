@@ -23,8 +23,13 @@ var workSource string
 //go:embed genrt/typed.go
 var typedSource string
 
+//go:embed genrt/document.go
+var documentSource string
+
 // GenOptions configures code generation.
 type GenOptions struct {
+	// Document includes the generated Go Node Document runner.
+	Document bool
 	// referenceWorkControls emits a generation-time disabled control for tests.
 	referenceWorkControls bool
 	// referenceWorkControlLayout removes added invocation state and the new
@@ -110,8 +115,11 @@ type GenOptions struct {
 // The generated code depends only on the standard library. Eligible rule bodies inline their expressions;
 // other expressions become Go methods. Actions and predicates become Go expressions, and the embedded
 // runtime (genrt) behaves exactly like the engine
-// in this package. Stream and incremental parsing are not generated (#stream becomes a plain repetition).
+// in this package. Stream parsing is not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
+	if opts.Document && opts.Types {
+		return nil, fmt.Errorf("Document generation cannot be combined with typed generation")
+	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
 	}
@@ -132,7 +140,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -161,6 +169,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt = strings.Replace(rt, "// Walk visits", "// WalkTree visits", 1)
 	rt = strings.Replace(rt, "return Walk(c.Root,", "return WalkTree(c.Root,", 1)
 	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000", fmt.Sprintf("const defaultMaxDepth = %d", opts.generatedMaxDepth()), 1)
+	rt = strings.Replace(rt, "const documentEnabled = true", fmt.Sprintf("const documentEnabled = %t", opts.Document), 1)
 	if opts.disableNodeFrameScratch {
 		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)
 	}
@@ -177,6 +186,11 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	out.WriteString("\n// --- Invocation work controls ---\n")
 	out.WriteString(work)
+	if opts.Document {
+		doc := documentSource[strings.Index(documentSource, "\n)\n")+len("\n)\n"):]
+		out.WriteString("\n// --- Incremental Node document ---\n")
+		out.WriteString(doc)
+	}
 	out.WriteString("\n// --- Generated code ---\n\n")
 	if gen.goWorkControls {
 		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
@@ -185,6 +199,10 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
 	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], nseen, input, opts) }\n\n", start.id)
+	if opts.Document {
+		fmt.Fprintf(&out, "// NewDocument creates an incremental Node document for the start rule %s.\n", start.name)
+		fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) { return makeDocument(rules[%d], text, opts) }\n\n", start.id)
+	}
 	if rec != nil {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
@@ -269,6 +287,7 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
+	document                        bool
 	goWorkControls                  bool
 	workClassNames                  map[string]string
 	workClassKeys                   []string
@@ -871,6 +890,9 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	}
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {
+	case g.document && g.table == "rules":
+		// Document parses memoize every rule call, including otherwise plain rules.
+		return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
 	case r.plain && !operatorsRule:
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).

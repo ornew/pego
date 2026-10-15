@@ -244,6 +244,20 @@ func TestGen(t *testing.T) {
 	}
 }
 
+func TestGenDocument(t *testing.T) {
+	g := writeFile(t, "node.pego", `rule main = "a"`)
+	out, err := runCLI(t, "", "gen", "-g", g, "-pkg", "node", "-document")
+	if err != nil || !strings.Contains(out, "func NewDocument(") {
+		t.Fatalf("-document: missing constructor: %v", err)
+	}
+	if _, err := runCLI(t, "", "gen", "-g", g, "-pkg", "node", "-document", "-types"); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+		t.Fatalf("-document -types: %v", err)
+	}
+	if _, err := runCLI(t, "", "gen", "-lang", "ts", "-g", g, "-document"); err == nil || !strings.Contains(err.Error(), "-document") {
+		t.Fatalf("-lang ts -document: %v", err)
+	}
+}
+
 func TestGenTypeScript(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
 	out, err := runCLI(t, "", "gen", "-lang", "ts", "-g", g)

@@ -361,6 +361,12 @@ func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
 }
 
+// WithDocument generates a mutable incremental Node Document for Go.
+// It cannot currently be combined with WithTypes or used for TypeScript.
+func WithDocument() GenOption {
+	return func(o *engine.GenOptions) { o.Document = true }
+}
+
 // WithRecognize also generates a function Recognize, which checks the input against the start rule
 // without building a tree, like Parse with RecognizeOnly.
 func WithRecognize() GenOption {
@@ -381,8 +387,8 @@ func WithoutPackageDoc() GenOption {
 }
 
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
-// depends only on the standard library; its Parse(input) parses from the rule start. It does not support
-// stream or incremental parsing.
+// depends only on the standard library; its Parse(input) parses from the rule start.
+// WithDocument adds incremental Node parsing. Stream parsing is not generated.
 func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byte, error) {
 	o := engine.GenOptions{Package: pkg, Start: start}
 	for _, opt := range opts {
@@ -394,7 +400,7 @@ func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byt
 // GenerateTypeScript generates the source code of a standalone TypeScript parser for g: a single ES
 // module without dependencies, whose parse(input) parses from the rule start and returns the same
 // trees and errors as the engine. WithRecognize also generates recognize; WithTypes adds typed
-// declarations and configured-start parseAST/parseASTWithOptions. Like GenerateGo, it does not
+// declarations and configured-start parseAST/parseASTWithOptions. It does not
 // support stream or incremental parsing.
 func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]byte, error) {
 	o := engine.GenOptions{Start: start}

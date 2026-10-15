@@ -9,14 +9,19 @@ the new text from scratch.
 |  |  |
 |:--|:--|
 | Input | A text in memory that is edited again and again |
-| API | `Parser.NewDocument`, `Document.Edit`, `Document.EditBatch`, `Document.Version`, `Document.Parse`, `Document.Stats`, `Document.CacheStats`, `Document.ResetHistory` |
+| Engine API | `Parser.NewDocument`, `Document.Edit`, `Document.EditBatch`, `Document.Version`, `Document.Parse`, `Document.Stats`, `Document.CacheStats`, `Document.ResetHistory` |
 | Grammar | Any grammar (some are much faster to reparse than others) |
 | You get | A full tree for every version of the text |
 | Saves | Time: unchanged parts are not parsed again |
 
-A `Document` works with every backend ([Runtime](runtime.md)) and with both position units. It does not work with
-`RecognizeOnly` (`NewDocument` returns an error) or with parsers produced by `GenerateGo`. If the problem is the
-opposite one, an input too big to hold, see [Streaming](streaming.md): a `Document` is always parsed as a whole and
+An engine `Document` works with every backend ([Runtime](runtime.md)) and with both position units. It does
+not work with `RecognizeOnly` (`NewDocument` returns an error). Standalone generated Go parsers support an opt-in,
+Node-only Document with the [`-document` option](code-generation.md#incremental-documents--document); typed
+generation is incompatible. The model, history APIs, performance examples and recipes below describe the engine
+Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` and `Node.Clone`, without the engine's
+`EditBatch`, `Version`, `Unit`, `Snapshot`, `CacheStats` or `ResetHistory` controls. Its `Stats` exposes only
+`Evaluated` and `Reused`; it does not resume repetitions. If the problem is an input too big to hold, see
+[Streaming](streaming.md): a `Document` is always parsed as a whole and
 `#stream` has no effect on it, so the two do not combine.
 
 To observe edits and parse outcomes for downstream indexes or highlights, enable
@@ -765,9 +770,13 @@ Limits to keep in mind:
 
 - Positions are in code points (default) or bytes, never UTF-16 units. An editor protocol that counts UTF-16 units needs
   a conversion, or a `Document` in `Bytes` mode with its own mapping.
-- The whole text and the whole memo table are in memory. There is no way to drop old entries other than editing.
-- `Parse` returns a complete tree each time; there is no API for a list of changed nodes beyond comparing trees.
-- Not available with `RecognizeOnly`, with [streams](streaming.md), or in generated Go parsers.
+- The whole text and memo table are in memory. The engine can discard reuse history with `ResetHistory`; generated
+  Go's Node Document has no reset method.
+- `Parse` returns a complete tree each time. The engine Document can report conservative changes through
+  [opt-in notifications](document-changes.md); generated Go's Node Document has no change-notification API.
+- The engine Document is unavailable with `RecognizeOnly` or [streams](streaming.md). Generated Go offers the
+  smaller Node-only [`-document` API](code-generation.md#incremental-documents--document); it cannot be combined
+  with typed generation and does not include the history, batch-edit or snapshot APIs described above.
 - A `Document` is single-threaded. Parse in the goroutine that owns it.
 
 ## Recipe: An Editor Loop
