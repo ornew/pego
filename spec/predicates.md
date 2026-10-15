@@ -19,9 +19,13 @@ only where a primary form of a Rule Expression is expected.
 rule deeper_indent = s:spaces { len($s) > indent } { indent := len($s) }
 ```
 
-Multi-statement Predicate Action blocks parse, format and appear in source
-ASTs, but semantic analysis rejects them as unsupported. No predicate block
-executes multiple statements.
+A nonempty Predicate Action block may contain statements separated by
+semicolons or hard newlines. They execute in source order, like adjacent
+Predicate Actions at the same Rule Expression position. An assignment updates
+the current invocation's variable environment; a term fails the predicate if
+it evaluates to `false` or errors. Evaluation stops at the first failure.
+The block adds no variable, capture, rollback, memoization or recovery scope.
+An empty block is a compile-time error.
 
 The expression has the same operators and built-in functions as a
 [Value Action](actions.md#operators-and-functions). Capture visibility follows the enclosing
@@ -36,10 +40,11 @@ against a value from outside it.
 | `{ name }`, `{ name == 1 }`, ... | Read the variable `name` |
 | `{ name := value }` | Define the variable `name` |
 
-A binding expression `name := value` makes up the whole single-term
-predicate. It succeeds unless evaluating `value` is an error. A multi-statement
-block such as `{ name := value; test }` is preserved as source syntax but is
-not executable.
+A binding expression `name := value` makes up a single-term predicate. It
+succeeds unless evaluating `value` is an error, then binds the value for the
+current invocation. A block such as `{ name := value; test }` runs the binding
+and test in order; the test can read the binding, and backtracking rolls it
+back under the same rules as adjacent Predicate Actions.
 
 - **Values.** A variable value is an `int`, `string`, or `bool`.
 - **Definition before use.** Reading an undefined variable is an evaluation
