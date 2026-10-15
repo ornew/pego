@@ -512,8 +512,10 @@ What it does not do:
   fails a full parse with `action in main: division by zero` but is accepted by recognition (`pego parse -check` prints
   `ok`). Use recognition for syntax checks, and a full parse where action errors matter.
 - Captures that [predicates](../../spec/predicates.md) read are still built, since a predicate can depend on them.
-- It needs the grammar AST, so a parser loaded from a [`.pegoc` saved without the AST](compiled-grammars.md#with-and-without-the-ast)
-  returns an error (`recognition needs the grammar, which the compiled grammar omits`).
+- Recognition needs either the grammar AST or a saved recognition bundle. A version 3 AST-less `.pegoc` can recognize
+  on bytecode backends; a legacy AST-less file without a bundle returns
+  `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source`. The [compiled
+  grammars guide](compiled-grammars.md#with-and-without-the-ast) explains the distinction.
 - It cannot be combined with `ParseStream` or `NewDocument`: both return errors (`recognition is not supported for
   stream parsing`, `recognition is not supported for documents`).
 
@@ -528,21 +530,24 @@ with a checksum. Loading one skips parsing, analysis, type checking and compilat
 grammar can ship as data (a file or a `go:embed` byte slice).
 
 ```go
-data, err := p.MarshalBinary()            // bytecode + grammar AST + start rule
-slim, err := p.Marshal(pego.WithoutAST()) // bytecode + start rule only
+data, err := p.MarshalBinary()            // version 2: bytecode + grammar AST + start rule
+slim, err := p.Marshal(pego.WithoutAST()) // version 3: bytecode + start rule + recognition bundle, when complete
 q, err := pego.LoadParser(slim)
 ```
 
 ```bash
-pego compile -g pairs.pego -o pairs.pegoc               # with the AST
-pego compile -g pairs.pego -no-ast -o pairs-noast.pegoc # bytecode only
+pego compile -g pairs.pego -o pairs.pegoc               # version 2, with the AST
+pego compile -g pairs.pego -no-ast -o pairs-noast.pegoc # version 3 with a complete recognition bundle
 pego parse -g pairs-noast.pegoc -f sexpr -i 'abc=12'    # a .pegoc is accepted wherever a grammar is
 ```
 
-A file without the AST runs only on the bytecode backends, and it cannot be used for recognition mode, linting,
-conversion back to source or code generation. The [compiled grammars guide](compiled-grammars.md) covers what is kept
-and lost, sizes and load times, embedding with `go:embed`, versions and compatibility, loading untrusted data, and when
-to use a `.pegoc` rather than [`pego gen`](code-generation.md) or compiling at start-up. Load only trusted files.
+A file without the AST runs only on the bytecode backends. Source saves without the AST use version 3 when a complete
+recognition bundle is available; that bundle supports `RecognizeOnly()` and `pego parse -check`. Older AST-less files
+without a bundle cannot recognize. AST-less files
+also cannot be linted, converted back to source or used for code generation. The [compiled grammars
+guide](compiled-grammars.md) covers what is kept and lost, sizes and load times, embedding with `go:embed`, versions
+and compatibility, loading untrusted data, and when to use a `.pegoc` rather than
+[`pego gen`](code-generation.md) or compiling at start-up. Load only trusted files.
 
 ## Memoization
 
@@ -691,7 +696,9 @@ pego compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
 ```
 
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
-the file, and `-no-ast` omits the AST. Both `-g` and `-o` are required.
+the file, and `-no-ast` omits the AST. When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
+AST-less input without it rather than implying that the missing AST was restored. A version 3 recognition bundle is
+preserved when re-saving with `-no-ast`. Both `-g` and `-o` are required.
 
 When `<grammar>` is an AST-less `.pegoc`, `-no-ast` is required. Without it, compilation reports the missing AST and
 writes no output. The option preserves bytecode-only form; it cannot restore source grammar data.

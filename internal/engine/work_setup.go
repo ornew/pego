@@ -6,16 +6,23 @@ import "fmt"
 // is not charged, but active calls check immediately around each component.
 func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *rule, *workControl, error) {
 	if o.Context == nil && o.WorkLimits.MaxInputWork == 0 && o.WorkLimits.MaxSteps == 0 {
+		if o.Recognize {
+			if _, err := prog.preflightRule(o.Backend, start, stream); err != nil {
+				return nil, nil, nil, err
+			}
+			active, err := prog.recognizer()
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			r, err := active.rule(o.Backend, start)
+			return active, r, nil, err
+		}
 		r, err := prog.rule(o.Backend, start)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		if stream && !r.stream {
 			return nil, nil, nil, fmt.Errorf("rule %s has no #stream repetition", start)
-		}
-		if o.Recognize {
-			active, err := prog.recognizer()
-			return active, r, nil, err
 		}
 		return prog, r, nil, nil
 	}
@@ -26,8 +33,8 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 	if stream && !isStream {
 		return nil, nil, nil, fmt.Errorf("rule %s has no #stream repetition", start)
 	}
-	if o.Recognize && prog.Grammar == nil {
-		return nil, nil, nil, fmt.Errorf("recognition needs the grammar, which the compiled grammar omits")
+	if o.Recognize && prog.Grammar == nil && prog.recognitionModule == nil {
+		return nil, nil, nil, fmt.Errorf("recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source")
 	}
 	c := newWorkControl(o.Context, o.WorkLimits)
 	if !workControlsEnabled && c != nil {

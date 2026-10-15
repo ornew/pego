@@ -411,6 +411,9 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	if *check && *stream {
+		return fmt.Errorf("-check and -stream cannot be used together")
+	}
 	if *grammarPath == "" {
 		return fmt.Errorf("-g is required")
 	}

@@ -57,7 +57,12 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 func (prog *Program) recognizer() (*Program, error) {
 	prog.recOnce.Do(func() {
 		if prog.Grammar == nil {
-			prog.recErr = fmt.Errorf("recognition needs the grammar, which the compiled grammar omits")
+			if prog.recognitionModule != nil {
+				prog.rec = moduleProgram(prog.recognitionModule)
+				prog.rec.recognitionStarts = prog.recognitionEntries
+				return
+			}
+			prog.recErr = fmt.Errorf("recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source")
 			return
 		}
 		flags := make([]ruleFlags, len(prog.rules))
@@ -65,6 +70,10 @@ func (prog *Program) recognizer() (*Program, error) {
 			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
 		}
 		prog.rec, prog.recErr = build(prog.Grammar, Options{recognize: true}, flags)
+		if prog.recErr == nil && prog.recognitionModule != nil {
+			prog.rec.moduleOnce.Do(func() { prog.rec.module = prog.recognitionModule })
+			prog.rec.recognitionStarts = prog.recognitionEntries
+		}
 	})
 	return prog.rec, prog.recErr
 }
@@ -86,10 +95,10 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	switch prog.backend(b) {
 	case Bytecode:
 		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module(), false) })
-		r = prog.vm.byName[name]
+		r = prog.vmRule(prog.vm, name)
 	case BytecodeIterative:
 		prog.ivmOnce.Do(func() { prog.ivm = newVMProgram(prog.Module(), true) })
-		r = prog.ivm.byName[name]
+		r = prog.vmRule(prog.ivm, name)
 	case Closure:
 		if prog.Grammar == nil {
 			return nil, fmt.Errorf("the closure backend needs the grammar, which the compiled grammar omits")

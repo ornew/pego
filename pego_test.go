@@ -186,10 +186,6 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	full, _ := p.MarshalBinary()
-	if len(data) >= len(full) {
-		t.Errorf("without AST %d bytes, with AST %d bytes", len(data), len(full))
-	}
 	bare, err := pego.LoadParser(data)
 	if err != nil {
 		t.Fatal(err)
@@ -199,6 +195,11 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	}
 	if n, err := bare.Parse("abc=12"); err != nil || n.String() != `(Pair Key="abc" Value="12")` {
 		t.Errorf("bare: %v %v", n, err)
+	}
+	for _, backend := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
+		if n, err := bare.Parse("abc=12", pego.WithBackend(backend), pego.RecognizeOnly()); n != nil || err != nil {
+			t.Errorf("bare recognition on %v: %v %v", backend, n, err)
+		}
 	}
 	if _, err := bare.Parse("abc=12", pego.WithBackend(pego.Closure)); err == nil {
 		t.Error("closure backend without AST")

@@ -298,21 +298,22 @@ Expectation strings are those the compiler placed in the string table: literals 
 
 ## File Format
 
-A module is stored in the `.pegoc` version 2 format. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
+A compiled grammar uses container version 2 or 3. Version 2 stores one module and an optional grammar AST. Version 3 keeps that prefix and can add a length-delimited recognition bundle before the AST-present flag. The container version and each module's instruction-set version are separate version axes. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
 | Part | Contents |
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
-| Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, and 8 when diagnostic labels are used). A runtime loads supported instruction sets up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, and version 8 diagnostic-label mode for `LABEL`. Version 7 is reserved and rejected. |
+| Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
+| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, and 8 when diagnostic labels are used). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, and version 8 diagnostic-label mode for `LABEL`. Version 7 is reserved and rejected. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
 | Module | See below |
-| AST present | Boolean. If true, the grammar AST and the static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and the formatter of the reference implementation; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
+| Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices match the main module. |
+| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
-The module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise.
+The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.
 
 1. The number of module strings, unsigned (this many strings from the start of the string table form the module's string table).
 2. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
@@ -327,7 +328,7 @@ The module is laid out in the following order. A *list* is a count (unsigned) fo
 On load, a runtime checks the following and rejects the file if any check fails:
 
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
-- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range.
+- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
 - Every opcode is known, and every flag operand is within its range.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility.

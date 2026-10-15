@@ -41,10 +41,14 @@ func TestCompiledRoundTrip(t *testing.T) {
 			if err != nil || !bytes.Equal(data, again) {
 				t.Errorf("re-marshaled data differs (%v)", err)
 			}
-			// A file without the AST is smaller and returns the same results on the bytecode backend.
+			// An AST-less file carries a recognition bundle and returns the same
+			// results on the bytecode backend. The bundle can make it larger.
 			bare, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil || len(bare) >= len(data) {
-				t.Fatalf("omitting the AST: %d >= %d bytes (%v)", len(bare), len(data), err)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if data[len(compiledMagic)] != 2 || bare[len(compiledMagic)] != 3 {
+				t.Fatalf("compiled versions: with AST %d, without AST %d", data[len(compiledMagic)], bare[len(compiledMagic)])
 			}
 			bareProg, _, err := LoadProgram(bare, Options{})
 			if err != nil {

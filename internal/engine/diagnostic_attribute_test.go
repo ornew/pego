@@ -81,8 +81,12 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if data[len(compiledMagic)] != compiledVersion {
-			t.Fatalf("diagnostic module version: %d", data[len(compiledMagic)])
+		wantVersion := byte(2)
+		if options.OmitAST {
+			wantVersion = compiledVersion
+		}
+		if data[len(compiledMagic)] != wantVersion {
+			t.Fatalf("diagnostic module version: %d, want %d", data[len(compiledMagic)], wantVersion)
 		}
 		if data[len(compiledMagic)+1] != 8 {
 			t.Fatalf("diagnostic module ISA: %d", data[len(compiledMagic)+1])

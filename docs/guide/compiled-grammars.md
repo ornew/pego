@@ -76,21 +76,23 @@ A few more facts:
 
 ## With and Without the AST
 
-A compiled grammar always holds the bytecode. It holds the grammar AST (and the results of static analysis) too, unless
-you leave it out:
+A compiled grammar always holds bytecode. An AST-bearing save uses container version 2 and has no recognition
+bundle. When the AST is omitted and a complete recognizer is available, the save uses version 3 with an independent
+recognition bundle:
 
 ```go
-full, err := p.MarshalBinary()               // bytecode + grammar AST + start rule
-slim, err := p.Marshal(pego.WithoutAST())    // bytecode + start rule
+full, err := p.MarshalBinary()               // version 2: bytecode + grammar AST + start rule
+slim, err := p.Marshal(pego.WithoutAST())    // version 3: bytecode + start rule + recognition bundle
 ```
 
 ```bash
-pego compile -g pairs.pego -o pairs.pegoc                # with the AST
-pego compile -g pairs.pego -no-ast -o pairs-noast.pegoc  # without it
+pego compile -g pairs.pego -o pairs.pegoc                # version 2, with the AST
+pego compile -g pairs.pego -no-ast -o pairs-noast.pegoc  # version 3, without the AST and with recognition
 ```
 
-The AST serves the closure backend, recognition mode and every tool that works on the grammar; the bytecode serves the
-two bytecode backends. What you keep and lose without it:
+The AST serves the closure backend and tools that inspect the grammar. Recognition can use the AST or, for bytecode
+backends, a saved recognition bundle. Version 3 is used for AST-less files with a complete bundle; version 2
+AST-bearing files and legacy AST-less files do not carry one. What you keep and lose without the AST:
 
 | | With the AST | Without the AST (`WithoutAST`, `-no-ast`) |
 |:--|:--|:--|
@@ -98,7 +100,7 @@ two bytecode backends. What you keep and lose without it:
 | Default backend | closure (the fastest of the three) | recursive bytecode |
 | `WithBackend(Closure)` | yes | error: `the closure backend needs the grammar, which the compiled grammar omits` |
 | `WithBackend(Bytecode)`, `WithBackend(BytecodeIterative)` | yes | yes |
-| `RecognizeOnly()`, `pego parse -check` | yes | error: `recognition needs the grammar, which the compiled grammar omits` |
+| `RecognizeOnly()`, `pego parse -check` | yes | yes on bytecode backends when a version 3 recognition bundle is present; legacy files without a bundle return an error |
 | `Parser.Grammar()` | the grammar, without source positions | `nil` |
 | `pego.Lint`, `pego lint` | yes | no |
 | `pego.GenerateGo`, `pego.GenerateTS`, `pego gen` | yes (the output is the same as from source) | no |
@@ -108,14 +110,17 @@ two bytecode backends. What you keep and lose without it:
 | `WithStart`, `Marshal` again | yes | yes |
 
 `pego compile -g file.pegoc -no-ast` drops the AST of an existing file. An AST-less input cannot be recompiled into
-an AST-bearing file: bytecode does not retain enough source grammar structure to reconstruct it. Recompiling without
-`-no-ast` fails without writing output. Keep the original source or an AST-bearing file for a full artifact. To copy
-an AST-less file in bytecode-only form, request that form explicitly:
+an AST-bearing file: bytecode does not retain enough source grammar structure to reconstruct it. Recompiling an
+AST-less input without `-no-ast` fails without writing output. Compiling a source or AST-bearing input with
+`-no-ast` writes a version 3 bundle when a complete recognizer is available; re-saving a version 3 AST-less file
+with `-no-ast` preserves its bundle. A legacy version 2 AST-less file without a bundle cannot gain recognition
+support by re-saving. A valid legacy or experimental version-3 AST-bearing file may load, but saving it again
+writes canonical version 2 and drops its recognition bundle. Keep the original source or an AST-bearing file for a
+full artifact. To copy an AST-less file in bytecode-only form, request that form explicitly:
 
 ```bash
 pego compile -g existing-noast.pegoc -no-ast -o copy-noast.pegoc
 ```
-
 Choose the file without the AST for a build artifact that is only ever executed, and the full file when something may
 want to read the grammar again (a tool that lints, formats or generates from it) or when the closure backend's speed
 matters more than the load time. The effects on size and load time are in the next section. The effect on parse speed
@@ -132,8 +137,8 @@ fmt.Println(q.Grammar() == nil) // true
 _, err := q.Parse("abc=12", pego.WithBackend(pego.Closure))
 fmt.Println(err) // the closure backend needs the grammar, which the compiled grammar omits
 
-_, err = q.Parse("abc=12", pego.RecognizeOnly())
-fmt.Println(err) // recognition needs the grammar, which the compiled grammar omits
+n, err := q.Parse("abc=12", pego.RecognizeOnly()) // a version 3 file carries a recognition bundle
+fmt.Println(n, err) // <nil> <nil>
 
 node, err := q.Parse("abc=12") // runs on the bytecode backend
 fmt.Println(node, err)         // [(Pair Key="abc"@key Value="12"@value)] <nil>
@@ -141,34 +146,12 @@ fmt.Println(node, err)         // [(Pair Key="abc"@key Value="12"@value)] <nil>
 
 ## Size and Load Time
 
-What a compiled grammar costs in size, measured for four grammars of the repository (a file with the AST is larger than
-the source, and a file without it is smaller):
-
-| Grammar | Source | `.pegoc` | `.pegoc` without the AST |
-|:--|--:|--:|--:|
-| `pairs.pego` (this guide) | 219 bytes | 552 bytes | 410 bytes |
-| `examples/minilang` | 4,416 bytes | 6,751 bytes | 4,899 bytes |
-| `parsers/python` | 84,841 bytes | 129,065 bytes | 94,379 bytes |
-| `parsers/duckdb` | 222,544 bytes | 501,989 bytes | 369,530 bytes |
-
-The time until a parser has made its first parse, measured by the program below (Apple M3 Max, Go 1.27.1, one run of
-`testing.Benchmark` per row; the figures vary by some percent from run to run). Each row prepares a parser from scratch
-and parses a one-line input, so the work that happens on the first parse after loading (assembling closures or
-preparing the VM) is included:
-
-| Grammar | Compile from source | Load `.pegoc` | Load `.pegoc` without the AST |
-|:--|--:|--:|--:|
-| `pairs.pego` | 34 µs | 38 µs | 27 µs |
-| `examples/minilang` | 638 µs | 228 µs | 93 µs |
-| `parsers/python` | 17.3 ms | 7.1 ms | 0.97 ms |
-| `parsers/duckdb` | 58.6 ms | 35.3 ms | 4.8 ms |
-
-The savings grow with the grammar. For a grammar as small as `pairs.pego` there is nothing to save, and for a large
-one the file without the AST loads an order of magnitude faster than compiling and allocates a tenth or less. A file
-with the AST takes about as long as compiling for a small grammar, because it also rebuilds the AST, and the gap opens
-as the grammar grows. The [benchmarks](../benchmarks.md#preparation-time-until-a-grammar-is-ready-to-use)
-measure the same on the JSON and minilang grammars of the benchmark suite, including the memory of each step, and the
-[analysis](../performance.md#where-pego-stands) summarizes it.
+The repository's older size and startup figures used AST-less version 2 files without a recognition bundle; they do
+not describe current AST-less saves. Current AST-bearing files remain version 2. AST-less saves with a complete
+recognizer use version 3 and include the additional module and entry map. The focused synthetic comparison and its
+limits are recorded in [design 045](../design/045-compiled-grammar-recognition.md#focused-ast-less-bundle-measurements).
+The program below measures your grammar with the current writer; results depend on grammar size and recognition
+dependencies.
 
 The program (run it as `go run . grammar.pego 'input'` in a module that requires PEGO; the start rule is `main`):
 
@@ -225,15 +208,6 @@ func main() {
 		return p
 	})
 }
-```
-
-For `parsers/duckdb/duckdb.pego` and the input `SELECT 1;` it printed:
-
-```
-source 222544 bytes, .pegoc 501989 bytes, .pegoc without AST 369530 bytes
-compile from source          58616781 ns/op 68464729 B/op 417683 allocs/op
-load .pegoc                  35276369 ns/op 28399086 B/op 164313 allocs/op
-load .pegoc without AST       4849960 ns/op  5489814 B/op  36362 allocs/op
 ```
 
 </details>
@@ -369,8 +343,8 @@ A file carries two version numbers after its magic number:
 
 | Number | Now | Meaning |
 |:--|--:|:--|
-| Format version | 2 | The layout of the file. A runtime loads files of version 1 and 2 and refuses any other. |
-| Instruction-set version | 3 or 4 | The instructions the bytecode may use. Version 4 adds full-width repetition bounds; modules without them still use version 3. A runtime loads files of every instruction-set version up to its own. |
+| Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
+| Instruction-set version | 1–6, 8 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, and version 8 diagnostic-label mode. A version 3 recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own. |
 
 The consequences:
 
@@ -424,7 +398,7 @@ Three ways to get a grammar into a Go program:
 | Parsing speed | Closure backend | Closure with the AST, bytecode without | Generated Go takes 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes across current workloads ([benchmarks](../benchmarks.md)) |
 | Depends on PEGO at run time | Yes | Yes (the engine and `LoadParser`) | No: standard library only |
 | Change the grammar without rebuilding the program | Yes (read the file) | Yes (read the file) | No |
-| Streaming, incremental parsing, backend choice, recognition mode | Yes | Yes (recognition needs the AST) | No |
+| Streaming, incremental parsing, backend choice, recognition mode | Yes | Bytecode backends support parsing; recognition also works when a version 3 bundle is present | No |
 | Errors in the grammar are found | At start-up | When you build the file | When you generate |
 | Typical use | Development, tools, tests, grammars that users supply | A fixed grammar in a program with short runs or many processes; grammars that ship as data | A fixed grammar on a hot path, a small binary, no dependency on PEGO |
 
@@ -437,8 +411,8 @@ Rules of thumb:
   ([streaming and incremental parsing](streaming.md), [backends](runtime.md#backends)) and still skip the compile.
 - **Use `pego gen`** when the parser is on a hot path or you want no dependency on PEGO at run time: it has no
   start-up and the fastest parsing. The cost is that the grammar is frozen into the binary, and that the generated
-  source is large: `parsers/python/parser.go` is 3,948,176 bytes, against 84,841 bytes for `python.pego` and 94,379 for
-  its `.pegoc` without the AST, and `parsers/duckdb/parser.go` is 13,216,774 bytes against 222,544 and 369,530.
+  source is large: `parsers/python/parser.go` is 3,948,176 bytes against 84,841 bytes for `python.pego`, and
+  `parsers/duckdb/parser.go` is 13,216,774 bytes against 222,544 bytes for `duckdb.pego`.
 
 The three give the same trees and the same errors, so you can start with source, move to a file when start-up shows up
 in a profile, and to generated code when parsing speed does.
@@ -448,19 +422,20 @@ in a profile, and to generated code when parsing speed does.
 | Message | Cause |
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number: it is a source file, JSON, or something else. |
-| `unsupported compiled grammar version N (want 2)` | The file was written by a different format version. Rebuild it with your release. |
-| `unsupported instruction set version N (want 1 to 4)` | The file requires a newer instruction set. Upgrade PEGO or rebuild the file. |
+| `unsupported compiled grammar version N (want 3)` | The file was written by a different format version. Rebuild it with your release. |
+| `unsupported instruction set version N` | The file requires an unsupported or newer instruction set. Upgrade PEGO or rebuild the file. |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed (a bad download, an editor that converted line endings, a merge). |
 | `invalid compiled grammar: ...` (other) | The structure is wrong, though the checksum matches. Rebuild the file. |
 | `the closure backend needs the grammar, which the compiled grammar omits` | You asked a file without the AST for `Closure`. Use a bytecode backend, or the full file. |
-| `recognition needs the grammar, which the compiled grammar omits` | `RecognizeOnly()` or `pego parse -check` on a file without the AST. Use the full file, or parse and ignore the tree. |
+| `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source` | Recognition was requested for a legacy AST-less file without a bundle. Recompile from source with `-no-ast` to write a version 3 recognition bundle. |
 | `the compiled grammar omits the AST` | `pego convert`, `pego gen` or `pego lint` on a file without the AST. Use the source, or a full file. |
+| Compiling an AST-less `.pegoc` without `-no-ast` | The input has no grammar AST to restore. The command writes no output. Pass `-no-ast` to preserve the AST-less form, or compile from the original source. |
 
 The errors of a damaged file, as `LoadParser` reports them (from a program that changes a copy of `pairs.pegoc`):
 
 ```
 intact                 <nil>
-format version 3       unsupported compiled grammar version 3 (want 2)
+format version 4       unsupported compiled grammar version 4 (want 3)
 one byte changed       invalid compiled grammar: checksum mismatch
 truncated              invalid compiled grammar: checksum mismatch
 PEGO source            not a compiled PEGO grammar

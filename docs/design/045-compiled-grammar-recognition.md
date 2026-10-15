@@ -1,16 +1,17 @@
 # 045. Serialized Recognition Programs for Compiled Grammars
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Propose storing a separate recognition module in newly serialized compiled grammars, so the existing
-`Parser.Parse(input, pego.RecognizeOnly())` and `pego parse -check` work without the grammar AST. Keep ordinary
-parsing and recognition caches separate. Recognition builds only values needed by predicates and their callees;
-it does not evaluate unrelated actions merely to discard their trees. No new public recognition entry point is
-required. The file-format change and defaults described below are proposed, not implemented contracts.
+Store a separate recognition module only in compiled files without the grammar AST, so the existing
+`Parser.Parse(input, pego.RecognizeOnly())` and `pego parse -check` work for bytecode backends without that AST.
+AST-bearing files remain container version 2; AST-less files with an available complete recognizer use version 3.
+Keep ordinary parsing and recognition caches separate. Recognition builds only values needed by predicates and
+their callees; it does not evaluate unrelated actions merely to discard their trees. No new public recognition
+entry point is required.
 
 ## Current Behavior
 
@@ -26,19 +27,20 @@ start rules may have no such twin. Matching a full module with CALL.keep=0 or di
 executes actions and builds intermediate values. A recognizer must preserve predicate capture dependencies,
 variable reads and diagnostics, not simply jump to an arbitrary duplicate name in the rule table.
 
-The authoritative writer in [compiled.go](../../internal/engine/compiled.go) stores format version 2, an ISA version,
-the main module and optional AST. The current spec uses ISA 3 for ordinary modules and 4 for wide bounds. Loading
-validates checksum, tables, operands and recovery regions; it does not establish general termination or recheck
-all type/stack behavior. This proposal preserves the trusted-module restriction.
+Version-2 containers store an ISA version, the main module and optional AST. The current spec uses ISA 3 for
+ordinary modules, 4 for wide bounds, and higher versions for later instruction additions. Loading validates
+checksum, tables, operands and recovery regions; it does not establish general termination or recheck all
+type/stack behavior. The version-3 extension preserves the trusted-module restriction.
 
 ## Design
 
 ### API, Start Selection and Backend Behavior
 
 Keep `MarshalBinary`, `Marshal`, `WithoutAST`, `LoadParser`, `WithStart` and RecognizeOnly signatures unchanged.
-Propose that the new default serialization includes the recognition module, including with WithoutAST.
-Source compilation uses the existing recognition transformation and analysis; do not introduce a weaker bytecode
-recognizer. Compile/serialize it once on demand through a thread-safe initialization path, not on each parse.
+AST-bearing saves use container version 2 without a recognition bundle. When the AST is omitted and a complete
+recognizer is available, serialization uses version 3 and includes that bundle. Source compilation uses the
+existing recognition transformation and analysis; do not introduce a weaker bytecode recognizer. Compile and
+serialize it once on demand through a thread-safe initialization path, not on each parse.
 
 The recognition bundle includes an explicit ordered entry map from every original grammar rule name to its
 recognition rule index. This map must cover all possible WithStart selections, not just the saved default. A
@@ -66,14 +68,16 @@ diagnostics as an error as it does today. Validate the incompatible -check/-stre
 ignoring -check. Document and ParseStream continue rejecting recognition; generated recognition stays independent
 of this file-format feature. Generation/formatting from an AST-less module still requires its absent grammar AST.
 
-### Proposed Versioned Layout
+### Versioned Layout
 
-Allocate compiled-container version 3 if still free when this lands. Keep the main v2 prefix (header, ISA, outer
-string table, start/package and main module); insert a recognition-present boolean and, when true, a length-delimited
-recognition bundle before the existing AST-present flag and AST payload. The recognition bundle has its own ISA
-version, local string table, module, and ordered name/index entry map. Its indices never refer to the main module's
-tables. The existing CRC covers the complete container. Deterministic ordering and local string interning must
-make repeated serialization and load/save byte-identical for the same capability set.
+Container version 3 keeps the version-2 prefix (header, ISA, outer string table, start/package and main module),
+then stores a recognition-present boolean and, when true, a length-delimited recognition bundle before the
+AST-present flag and AST payload. The recognition bundle has its own ISA version, local string table, module, and
+ordered name/index entry map. Its indices never refer to the main module's tables. The existing CRC covers the
+complete container. Deterministic ordering and local string interning make repeated serialization and load/save
+byte-identical for the same writer-emitted form. AST-bearing files use version 2 without a bundle. Loaders may accept
+legacy or experimental version-3 AST-bearing files, but re-saving them canonically writes version 2 and drops the
+recognition bundle.
 
 Store the full semantic recognition program, including predicate-required expression code/type tables. There is
 no need for new match opcodes just to execute the second program. Each module declares the ISA actually required,
@@ -82,7 +86,8 @@ in the recognizer denotes execution semantics, while the explicit entry map deno
 Specify that distinction without rewriting the meaning of twins in legacy normal modules.
 
 Old loaders reject version 3. New loaders accept versions 1, 2 and 3 with their documented capability differences.
-Version 3 may represent an absent bundle, but absence must be explicit and cannot mean "use normal twins".
+The loader requires bundle absence to be explicit and never treats it as "use normal twins"; the writer emits
+version 3 only when a recognition bundle is present.
 Reject noncanonical booleans, invalid bundle lengths/trailing bytes, invalid ISA, indices, duplicated/missing
 start names, and mismatched names before exposing a Parser. Validate every module, even one not selected by the
 current default backend. Valid checksum alone is insufficient. Do not add executable user callbacks to the format.
@@ -118,18 +123,17 @@ untrusted adversarial modules is safe or terminating.
 | Input/program | Closure | Recursive VM | Iterative VM | Generated Go/typed Go/TS |
 | --- | --- | --- | --- | --- |
 | Source or loaded AST | Existing recognizer, preserved | Existing semantics, parity gate | Existing semantics, parity gate | Existing standalone recognizers |
-| New AST-less recognition bundle | Explicit unavailable error | Proposed supported | Proposed supported | No new loading/generation API |
+| New AST-less version-3 recognition bundle | Explicit unavailable error | Supported | Supported | No new loading/generation API |
 | Legacy AST-less file | Explicit unavailable error | Explicit capability error | Explicit capability error | Not applicable |
 
 All supported engine cells require CodePoints and Bytes, including invalid UTF-8. Generated TS's string/byte,
 integer and Unicode contracts are unchanged; a portable compiled VM is outside this feature. Public node/scalar
 typing restrictions are unchanged, including top-level scalar rejection.
 
-First expose the existing source recognizer's module with a complete start map and compare execution through both
-VMs. Then specify/implement the versioned writer/loader and corruption checks. Finally wire AST-less recognition
-and CLI behavior, publish migration docs, and refresh bytecode/specification and format golden fixtures together.
-Keep proposed format numbers subject to collision checks against the then-current spec, not magic constants in
-multiple independent patches.
+The candidate writer/loader follows the selected contract: AST-bearing saves remain version 2, while AST-less
+saves include the complete recognition bundle when available. Finish backend parity, legacy-format, corruption,
+generated-parser and full-suite validation before integration; keep the user guide and bytecode format tables
+synchronized with the final writer behavior.
 
 ## Alternatives Considered
 
@@ -147,7 +151,7 @@ multiple independent patches.
 
 ## Validation and Performance Plan
 
-Proposed differential tests run every corpus start rule through source recognition and AST-bearing/AST-less
+Differential tests run every corpus start rule through source recognition and AST-bearing/AST-less
 save/load recognition, both units and both VM models. Cover EOF/trailing text, invalid UTF-8, variables, nested
 predicate captures and transitive action dependencies, skipped action failures versus required action errors,
 LR/Operators Rule, labels/cuts, recovery rollback, silent memo reuse, streaming annotations and wide zero/large bounds.
@@ -157,10 +161,61 @@ version-3 golden determinism, AST-less legacy resaving, missing/duplicate entry 
 bundles, unknown ISA/opcodes and independent section-length/index errors. CLI tests cover saved and overridden
 start rules, -check output/status, both backend flags, units and -check/-stream rejection.
 
-No performance result is claimed. Measure save/load, first recognition preparation and warm recognition separately
+No broad performance result is claimed. Measure save/load, first recognition preparation and warm recognition separately
 from source compilation and full parsing. Compare exact parent AST-bearing recognition, candidate AST-bearing and
 AST-less bundles, and ordinary parsing as a regression control; do not time the parent's expected capability error
 as equivalent useful work. Include action-free and predicate-heavy corpora, LR/Operators Rule, recovery and both units.
 Record container/AST/module bytes, executable size where affected, time/allocations, retained prepared-module
-memory and transient/live memory during loading. Pair serialized runs with pinned revisions/toolchains/inputs;
-default bundle size and startup costs require evidence before adopting the proposed new writer default.
+memory and transient/live memory during loading. Pair serialized runs with pinned revisions/toolchains/inputs.
+
+### Focused AST-less Bundle Measurements
+
+A focused prototype comparison used synthetic grammars with 16 and 128 rules on Go 1.27.1, Apple M3 Max
+(`darwin/arm64`, `GOMAXPROCS=16`). Each benchmark used five samples with a 100 ms benchtime. It compared an
+AST-less version 2 file without a recognition bundle against an AST-less version 3 file with one:
+
+| Rules | File size, v2 → v3 | Cached save, v2 → v3 | First compile + save, v2 → v3 | Load, v2 → v3 |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 1,208 → 2,415 B | 11,384 → 11,423 ns (+0.3%) | 55,814 → 96,482 ns (+73%) | 18,766 → 24,955 ns (+33%) |
+| 128 | 10,189 → 20,619 B | 78,539 → 84,609 ns (+7.7%) | 454,742 → 787,141 ns (+73%) | 131,411 → 200,003 ns (+52%) |
+
+The writer caches the encoded recognition bundle for repeated saves. A separate earlier run, before that cache was
+added, measured v3 repeated-save medians of 23,686 ns and 174,388 ns for these grammar sizes. Since those results
+came from a different run, they do not isolate the cache's effect. The focused comparison does not measure ordinary
+parsing or the full test suite, and synthetic grammar results may not predict application workloads. These
+measurements describe the selected AST-less bundle but do not establish costs for application grammars.
+
+### Rejected AST-Bearing Bundle Alternative
+
+A separate synthetic comparison measured the earlier alternative of adding a recognition bundle to AST-bearing
+files. The selected design excludes that mode: AST-bearing saves stay version 2. On an Apple M3 Max
+(`darwin/arm64`) with Go 1.27.1, GOMAXPROCS=4, GOGC=100 and
+GOMEMLIMIT disabled, grouped benchmarks used five 100 ms samples. The version 3 recognition bundle's encoded
+cache capacity was 1,280 B for 16 rules and 10,880 B for 128 rules.
+
+| Rules | File size, v2 → v3 | First compile + save, v2 → v3 | Load, v2 → v3 |
+| ---: | ---: | ---: | ---: |
+| 16 | 1,430 → 2,637 B | 66,735 → 112,304 ns | 30,318 → 41,304 ns |
+| 128 | 12,127 → 22,557 B | 520,695 → 938,359 ns | 237,661 → 309,062 ns |
+
+Ordinary `Parse` on the same fixtures had equal allocation counts in Default and bytecode modes, with timing
+variation within measurement noise. An independent five-pair alternating 128-rule comparison (250 ms per sample)
+measured v2/v3 medians of 557,708/944,768 ns for first compile plus save (+69.4%) and 240,047/300,357 ns for
+load (+25.1%); version 3 was slower in each pair. These results are limited to synthetic grammars and do not
+establish costs for application grammars. The benchmark source is
+`internal/engine/compiled_recognition_bench_test.go`; raw result files remain outside the repository.
+
+Reproduce the AST-less serialization matrix with:
+
+```sh
+go test -run '^$' -bench '^BenchmarkCompiledRecognitionSerialization$' -benchmem -benchtime=100ms -count=5 ./internal/engine
+```
+
+Run the AST-bearing matrix with:
+
+```sh
+go test -run '^$' -bench '^BenchmarkCompiledRecognition(ASTBearing|Serialization)$' -benchmem -benchtime=100ms -count=5 ./internal/engine
+```
+
+The separate alternating 128-rule comparison used repeated v2 and v3 benchmark invocations in alternating order;
+`-count=5` alone does not reproduce that pairing.
