@@ -15,21 +15,27 @@ func generatedTSTraceRuntime(rt string) (string, error) {
 		count            int
 	}{
 		{"export interface ParseOptions {", `export interface ParseOptions {
+  /** Accumulate unfiltered rule metrics; requires host performance.now(). */
+  profile?: Profile | null;
   /** Synchronous scalar events; thrown callback values propagate unchanged. */
   trace?: (event: TraceEvent) => void;
   /** Named rules and descendants; empty selects all, unknown names select none. */
   traceRules?: readonly string[];
   /** Start depth is one; nonpositive values leave delivery unlimited. */
   traceMaxDepth?: number;`, 1},
-		{"  const unit = options?.unit === Bytes ? Bytes : CodePoints;", `  const trace = options?.trace ?? null;
+		{"  const unit = options?.unit === Bytes ? Bytes : CodePoints;", `  const profile = options?.profile ?? null;
+  if (profile !== null && (!(profile instanceof Profile) || !profileData.has(profile))) return new Error("profile must be a Profile");
+  const profileClock = profile === null ? null : resolveProfileClock();
+  if (profileClock instanceof Error) return profileClock;
+  const trace = options?.trace ?? null;
   const traceMaxDepth = options?.traceMaxDepth ?? 0;
   if (trace !== null && typeof trace !== "function") return new Error("trace must be a function");
   if (!Number.isSafeInteger(traceMaxDepth)) return new Error("trace max depth must be a safe integer");
   const traceRules = Array.from(options?.traceRules ?? []);
   const unit = options?.unit === Bytes ? Bytes : CodePoints;`, 1},
-		{"return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };", "return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps, trace, traceRules, traceMaxDepth };", 1},
+		{"return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };", "return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps, trace, traceRules, traceMaxDepth, profile, profileClock };", 1},
 		{"control: WorkControl | null = null): ParseResult {", "control: WorkControl | null = null, traceOptions: ResolvedParseOptions | null = null): ParseResult {", 1},
-		{"    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);", "    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);\n    p.observation = traceOptions?.trace == null ? null : new Observation(traceOptions);", 1},
+		{"    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);", "    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);\n    p.observation = traceOptions?.profile != null ? new ProfileObservation(traceOptions) : traceOptions?.trace == null ? null : new Observation(traceOptions);", 1},
 		{"    throw x;\n  }\n}\n\n// isStackOverflow", "    throw x;\n  } finally {\n    p?.observation?.release();\n    if (p !== null) p.observation = null;\n  }\n}\n\n// isStackOverflow", 1},
 		{"class Parser {", "class Parser {\n  observation: Observation | null = null;", 1},
 		{"  call(r: Rule, min: number): R {", "  callObservedBody(r: Rule, min: number): R {", 1},
@@ -47,7 +53,7 @@ func generatedTSTraceRuntime(rt string) (string, error) {
 	// Install wrappers after renaming the original methods.
 	const parser = "class Parser {\n  observation: Observation | null = null;"
 	rt = strings.Replace(rt, parser, parser+"\n"+tsObservedCallMethods, 1)
-	return rt + "\n" + tsTraceSource, nil
+	return rt + "\n" + tsTraceSource + "\n" + tsProfileSource, nil
 }
 
 func generatedTSTraceWork(rt string) (string, error) {
@@ -56,6 +62,8 @@ func generatedTSTraceWork(rt string) (string, error) {
 		return "", fmt.Errorf("generated TypeScript trace option anchor changed")
 	}
 	return strings.Replace(rt, anchor, anchor+`
+  profile: Profile | null;
+  profileClock: (() => number) | null;
   trace: ((event: TraceEvent) => void) | null;
   traceRules: readonly string[];
   readonly traceMaxDepth: number;`, 1), nil

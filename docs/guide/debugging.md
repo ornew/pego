@@ -471,9 +471,9 @@ This Go mode supports Node batch `Parse`, `ParseRule` and, when generated
 with `-recognize`, `Recognize`; with `-types`, it also supports `ParseAST` and
 `ParseRuleAST`. It cannot be combined with `-document`. Generated Go traces
 also report their generated execution strategy rather than promise
-event-for-event equivalence with engine traces. TypeScript generated tracing
-does not add profiling or promise event-for-event equivalence with engine
-traces. See [code generation](code-generation.md#the-pego-gen-command)
+event-for-event equivalence with engine traces. Generated TypeScript traces
+and profiles have their own contracts and do not promise event-for-event
+equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)
 for the generation option. Focused synthetic measurements cover Go Node and
 typed batch parsers. Typed no-callback runs added about 48 B/op with unchanged allocation
 counts; callback cost depends on parser path and workload, and the measured
@@ -517,7 +517,7 @@ about 45–395 KB/op and 25–50 allocations/op across the measured cases. The
 current generator without a profile was near parity with the prior
 trace-only generator. These are noisy, workload-specific comparisons, not a
 general estimate; see [design 043](../design/043-generated-parser-observability.md#generated-go-profile-measurements).
-TypeScript tracing has no `Profile` API.
+TypeScript batch profiling has its own `Profile` API, described below.
 
 ### Generated TypeScript Traces
 
@@ -552,13 +552,62 @@ rule includes all descendant calls, while unknown rule names select none.
 `examinedKnown` is always false. Callback
 events are copied values, callbacks run synchronously, and thrown values
 propagate unchanged after cleanup. Typed conversion does not add a separate
-event, and an aborted parse may have no exit for active calls. TypeScript traces
-do not provide profiling or Document tracing. In focused synthetic runs,
+event, and an aborted parse may have no exit for active calls. Generated
+TypeScript traces do not promise event-for-event equivalence with the engine.
+In focused synthetic runs,
 no-callback option APIs ranged from 0.991–1.044× ordinary time, while parse
 callback profiles ranged from 1.052–1.288× depending on workload and filter; paired
 results were noisy and are not a general performance estimate. See
 [design 043](../design/043-generated-parser-observability.md#typescript-batch-measurements)
 for the measurement scope and limits.
+
+#### Profiling Generated TypeScript Batch Parsers
+
+Generate with `-observability` to export `Profile` and `ProfileSnapshot`.
+Pass one profile to a per-call options API and read its owned snapshot after
+the parse:
+
+```ts
+import { Profile, parseWithOptions } from "./pairs.ts";
+
+const profile = new Profile();
+const result = parseWithOptions(input, { profile });
+const snapshot = profile.snapshot();
+console.log(JSON.stringify(snapshot));
+```
+
+The same option works with `parseRuleWithOptions` and
+`recognizeWithOptions`; with `-types`, it also works with
+`parseASTWithOptions`. The legacy positional-unit APIs do not accept profiling
+options. A `Profile` aggregates across parses, but cannot be shared by
+concurrent calls. Its snapshot owns rule rows sorted by name, skip-reason
+counts sorted by reason, and each `maxEvalsAt` location. Modifying a snapshot
+does not change later snapshots. No input, callback, parser history or
+per-call state is retained.
+
+The camel-case counters mirror the generated Go profile. `entered` counts
+started calls; `calls`, evaluation counts, matches/failures and timings cover
+completed calls. Skips are counted independently of trace filters.
+`examinedKnown` and `wastedKnown` are false. `time` and `selfTime` are in
+milliseconds and use the host's monotonic `performance.now()` clock. Root time
+excludes input setup, whole-input end checks and typed-result conversion; rule
+time counts recursive calls of the same rule once per invocation, and self
+time excludes child time. Both include synchronous trace callback work. When
+the exit-time clock read succeeds, an exit is recorded after its callback
+returns or throws. A snapshot taken inside that callback can omit the current
+call until it unwinds. Callback throws retain their original value after
+cleanup.
+
+Profiling requires `performance.now()`; without it, a profiled invocation
+returns an `Error`. The runtime has no `Date.now()` fallback. Clock access or
+invocation failures preserve the thrown value, while non-finite or backward
+readings fail explicitly and can leave a partial profile. If both a trace
+callback and a later clock read fail, the callback's original thrown value
+wins and that exit may be omitted from the profile. Focused Node 24.19 runs
+measured profile paths at 1.58–4.02× ordinary time, depending on API and fixture. These synthetic runs did not measure
+JavaScript allocations, retained heap or browser timing; see [design
+043](../design/043-generated-parser-observability.md#typescript-profile-measurements)
+for conditions and limits.
 
 ## 7. Costs and Limits
 

@@ -41,12 +41,12 @@ class Observation {
   private scope: object | null;
   private rules: Set<string> | null;
   private readonly maxDepth: number;
-  private readonly stack: ObservationCall[] = [];
+  protected readonly stack: ObservationCall[] = [];
 
   constructor(o: ResolvedParseOptions) {
     this.callback = o.trace;
     this.scope = o;
-    this.rules = o.traceRules.length === 0 ? null : new Set(o.traceRules);
+    this.rules = o.trace === null ? new Set() : o.traceRules.length === 0 ? null : new Set(o.traceRules);
     this.maxDepth = o.traceMaxDepth;
   }
 
@@ -111,6 +111,8 @@ function withObservedOptions<T>(o: ResolvedParseOptions, body: (control: WorkCon
     if (x instanceof TraceFailure && x.scope === o) throw x.value;
     throw x;
   } finally {
+    o.profile = null;
+    o.profileClock = null;
     o.trace = null;
     o.traceRules = [];
   }

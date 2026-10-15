@@ -35,6 +35,9 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 			used[m[1]] = true
 		}
 	}
+	if g.observability {
+		used["WeakMap"], used["globalThis"] = true, true
+	}
 	for name := range g.prog.types {
 		t.all = append(t.all, name)
 	}

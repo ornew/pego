@@ -23,6 +23,9 @@ var tsWorkSource string
 //go:embed tsrt/trace.ts
 var tsTraceSource string
 
+//go:embed tsrt/profile.ts
+var tsProfileSource string
+
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
 

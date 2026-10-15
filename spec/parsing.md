@@ -285,8 +285,8 @@ conversion itself is not a rule event, so Node and typed event streams may
 differ. Typed methods use the same event fields, filter, depth, interruption
 and callback-panic behavior as Node batch methods. The option cannot be
 combined with a generated `Document`. Generated Go Node and typed batch
-parsers also provide profiling through `WithProfile`; TypeScript tracing does
-not provide profiling.
+parsers also provide profiling through `WithProfile`; TypeScript batch parsers
+provide profiling through `Profile` in per-call options.
 
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine
@@ -385,7 +385,60 @@ use the selected unit. `matched`, `end`, `memo` and `evals` describe exits;
 evaluations. A skipped event is unpaired and is currently emitted only for
 identifiable first-character dispatch skips. `examinedKnown` is always false
 and `examined` MUST NOT be treated as a complete examined-input range. This
-batch API does not provide profiling or Document event tracing.
+batch API does not provide Document event tracing.
+
+### Generated TypeScript Batch Profiling
+
+TypeScript batch profiling MUST be emitted only when observability is enabled
+with `pego.WithGeneratedObservability()` or `pego gen -lang ts
+-observability`. The generated module MUST export `Profile` and
+`ProfileSnapshot`, and add `profile?: Profile | null` to `ParseOptions`.
+`parseWithOptions`, `parseRuleWithOptions`, and `recognizeWithOptions` MUST
+accept this option; with `-types`, `parseASTWithOptions` MUST accept it too.
+Legacy positional-unit APIs MUST NOT accept profiling options, and TypeScript
+MUST NOT add a named typed-rule API for this feature.
+Omitting the option or passing `null` MUST disable collection.
+
+`Profile` MUST aggregate completed calls across invocations without retaining
+input, callbacks, parser history or per-invocation frames. Each invocation MUST
+keep independent accounting. A profile sink MUST NOT be shared by concurrent
+calls. `snapshot()` MUST return independent rows and nested collections sorted
+by rule name and skip reason, so JSON serialization is deterministic and
+caller mutation cannot change the sink. Counters MUST use camel-case field
+names corresponding to the generated Go profile. Entered-call counts MUST
+include calls that began; completed-call counts and timings MUST exclude calls
+without an exit. Profile collection MUST be independent of `traceRules` and
+`traceMaxDepth`; skip counts MUST be independent of trace filters.
+The snapshot's total fields are `parses`, `entered`, `calls`, `evals`,
+`memoHits`, `skipped`, `time` and `rules`. Each rule row MUST expose `rule`,
+`entered`, `calls`, `evals`, `memoHits`, `matched`, `failed`, `consumed`,
+`skipped`, `skipReasons`, `repeats`, `maxEvals`, `maxEvalsAt`, `examined`,
+`examinedKnown`, `wasted`, `wastedKnown`, `time` and `selfTime`.
+Each `skipReasons` item MUST contain `reason` and `count`; `maxEvalsAt` MUST
+contain `pos` and `level`. `repeats` MUST count additional completed non-memo
+calls with `evals > 0` at the same `(rule, pos, level)` within an invocation.
+`maxEvals` MUST be the largest such call count at a location, and ties MUST
+retain the first observed location.
+
+`examinedKnown` and `wastedKnown` MUST be false because examined and wasted
+ranges are unavailable; implementations MUST NOT infer them. `time` and
+`selfTime` MUST be milliseconds from the host's monotonic `performance.now()`
+clock. Root time MUST exclude input setup, whole-input end checks and
+typed-result conversion. Per-rule time MUST count recursive calls of the same
+rule once per invocation; `selfTime` MUST exclude child time. Both MUST include
+synchronous trace-callback work. When the exit-time clock read succeeds, a
+completed call MUST be published after its exit callback returns or throws.
+A snapshot inside that callback MAY omit the current exit until it unwinds.
+An enter callback throw MUST NOT synthesize an exit.
+
+Profiling MUST require `performance.now()` and MUST NOT fall back to
+`Date.now()`. If the clock is unavailable, the profiled invocation MUST return
+an `Error`. Valid clock readings MAY have coarse resolution and produce zero
+durations. A thrown clock getter/call MUST preserve its original thrown value;
+non-finite and backward readings MUST fail explicitly and MAY leave a partial
+profile. If both a trace callback and a later clock read fail, the callback's
+original thrown value MUST take precedence, and collection MAY omit that
+exit. The implementation MUST NOT require DOM type declarations.
 
 ## Modes
 

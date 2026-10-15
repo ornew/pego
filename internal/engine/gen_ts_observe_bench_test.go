@@ -58,6 +58,8 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 				path := fixture.name + "/" + route + "/" + variant
 				write(path+"/parser.ts", code)
 				write(path+"/package.json", []byte(`{"type":"module"}`))
+				profileDriver := strings.NewReplacer("INPUT", fmt.Sprintf("%q", fixture.input), "OBSERVED", fmt.Sprint(enabled), "TYPED", fmt.Sprint(typed)).Replace(generatedTSProfileBenchmark)
+				write(path+"/profile-bench.mjs", []byte(profileDriver))
 				manifest[path] = len(code)
 				if typed {
 					driver := strings.NewReplacer("INPUT", fmt.Sprintf("%q", fixture.input), "OBSERVED", fmt.Sprint(enabled)).Replace(generatedTSTraceBenchmark)
