@@ -273,6 +273,40 @@ The API and callback details are described in the
 and [streaming guide](../docs/guide/streaming.md). The design record specifies
 counter units, fatal cleanup and portability limits.
 
+## Generated Go Node Tracing
+
+Standalone generated Go Node parsers may be generated with tracing enabled by
+`pego.WithGeneratedObservability()` or `pego gen -observability`. This mode
+supports batch `Parse` and `ParseRule`; it also supports `Recognize` when that
+entry point is generated. It cannot be combined with generated types or a
+generated `Document`, and TypeScript generation rejects the option. It does not
+provide profiling.
+
+The generated package defines its own `TraceEvent` and trace options. Events
+observe actual generated execution, not an event-for-event replay of engine
+parser calls. `TraceEnter` begins a rule call before its memo lookup or body
+dispatch; `TraceExit` reports the call's result and end position. The start
+rule has depth 1. An exit describes the rule call only: whole-input acceptance
+can still fail because input remains after the rule returns. `TraceSkipped` is
+unpaired and is emitted only for identifiable first-character dispatch skips.
+A call aborted by a runtime error or callback panic may have no exit event.
+
+Event positions use the selected position unit. `Memo=true` means the call
+reused an existing memo result without evaluating its body, so `Evals` is zero.
+Calls that evaluate left-recursion growth attempts have `Memo=false`; their
+`Evals` counts their own body attempts, including growth attempts. Recursive
+calls that reuse the growing seed have `Memo=true` and `Evals=0`. The generated
+trace currently reports `ExaminedKnown` as false; consumers MUST NOT treat `Examined` as a complete examined-input range.
+
+Trace callbacks receive copied scalar and string event fields synchronously.
+Events do not expose parser state or input text. Callback panics propagate with
+their original value after cleanup. `WithTraceFilter` limits callback delivery
+to named rules and their descendants; an unknown name matches no rule, and an
+empty filter selects every rule. `WithTraceMaxDepth` limits delivered events;
+the start rule counts as depth 1, and zero or a negative value means no limit.
+Filtering and depth limits do not change parsing. Trace state is local to one
+invocation.
+
 ## Modes
 
 The same grammar can be run in several modes. Except where stated, each mode

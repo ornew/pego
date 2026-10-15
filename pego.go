@@ -382,10 +382,18 @@ func WithTypes() GenOption {
 }
 
 // WithDocument generates a mutable incremental Document for Go. Combined with
-// WithTypes, it also generates Document.ParseAST, which converts the completed
-// Node result for each invocation. TypeScript generation does not support Documents.
+// WithTypes, it also generates Document.ParseAST with direct incremental matching
+// for eligible grammars and Node conversion otherwise. TypeScript generation does
+// not support Documents.
 func WithDocument() GenOption {
 	return func(o *engine.GenOptions) { o.Document = true }
+}
+
+// WithGeneratedObservability emits rule tracing in a generated Go Node parser.
+// Trace callbacks are selected per invocation. Typed Go, TypeScript and Document
+// generation are not yet supported with this option.
+func WithGeneratedObservability() GenOption {
+	return func(o *engine.GenOptions) { o.Observability = true }
 }
 
 // WithRecognize also generates a function Recognize, which checks the input against the start rule
@@ -410,7 +418,7 @@ func WithoutPackageDoc() GenOption {
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
 // depends only on the standard library; its Parse(input) parses from the rule start.
 // WithDocument adds incremental Node parsing; combined with WithTypes it also
-// generates Document.ParseAST conversion. Stream parsing is not generated.
+// generates typed Document.ParseAST. Stream parsing is not generated.
 func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byte, error) {
 	o := engine.GenOptions{Package: pkg, Start: start}
 	for _, opt := range opts {

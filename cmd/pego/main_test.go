@@ -449,3 +449,21 @@ func TestGenMaxDepth(t *testing.T) {
 		}
 	}
 }
+
+func TestGenObservability(t *testing.T) {
+	path := writeFile(t, "trace.pego", `rule main = "a"`)
+	out, err := runCLI(t, "", "gen", "-g", path, "-pkg", "fixture", "-observability", "-recognize")
+	if err != nil || !strings.Contains(out, "func WithTrace(") || !strings.Contains(out, "func Recognize(") {
+		t.Fatalf("trace generation: %v\n%s", err, out)
+	}
+	for _, flags := range [][]string{{"-types"}, {"-document"}, {"-lang", "ts"}} {
+		args := []string{"gen", "-g", path, "-observability"}
+		if flags[0] != "-lang" {
+			args = append(args, "-pkg", "fixture")
+		}
+		args = append(args, flags...)
+		if out, err := runCLI(t, "", args...); err == nil || out != "" || !strings.Contains(err.Error(), "Go Node batch") {
+			t.Fatalf("unsupported combination %v: %v\n%s", flags, err, out)
+		}
+	}
+}

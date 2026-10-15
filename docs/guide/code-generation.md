@@ -159,7 +159,7 @@ The output is exactly what the engine prints for the same grammar and input.
 ## The `pego gen` Command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-nodoc] [-max-depth <n>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-observability] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
@@ -172,6 +172,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](#incremental-documents--document)); cannot be combined with `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
+| `-observability` | off | Emit opt-in tracing for Go Node batch parsing; cannot be combined with `-types`, `-document`, or `-lang ts` (see [generated Go traces](debugging.md#generated-go-node-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
@@ -213,13 +214,22 @@ if err != nil {
 err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`, and
-`pego.WithDocument()` is `-document`, `pego.WithRecognize()` is `-recognize`, `pego.WithoutPackageDoc()` is `-nodoc`, and
-`pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate
-identical source. Invalid defaults return an error before generated output is written.
+Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability generation is currently limited to standalone Go Node batch parsers; it cannot be combined with `WithTypes()` or `WithDocument()`, and `GenerateTypeScript` rejects it. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
+
+When `-observability` is enabled, the generated Go package includes opt-in rule
+tracing hooks. See [generated Go Node traces](debugging.md#generated-go-node-traces)
+for the event contract and an example.
+
+The ordinary generated source is unchanged when this option is off. Enabling
+it adds generated code and some parse overhead even when no callback is passed;
+delivering events costs more. In focused synthetic measurements, no-callback
+parse ratios ranged from about 1.01–1.06× and recognition from 1.02–1.20×;
+callbacks ranged from 1.26–2.29× depending on workload and filter. These are
+not workload-wide estimates; see [design 043](../design/043-generated-parser-observability.md#performance-and-results)
+for scope and generation costs.
 
 ## The Generated API
 

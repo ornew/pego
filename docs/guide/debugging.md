@@ -407,10 +407,56 @@ key is `reusedElements`. These counts describe reuse in the current parse; memo 
 Profile text prints the root-only total on its own summary line and the inclusive per-rule counts in the final
 `reused` column. JSON includes `reusedElements` in the profile and each rule row, including zero values.
 
-`Profile.Rules` lists the rules in the order they were first called; sort them as you need. Tracing works with every
-backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to `NewDocument` traces each
+`Profile.Rules` lists the rules in the order they were first called; sort them as you need. Engine tracing works with
+every backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to `NewDocument` traces each
 `Document.Parse`), and several `WithTrace` and `WithProfile` options can be combined. A `Profile` is not safe for
-concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
+concurrent parses. Generated Go Node parsers have a separate opt-in trace API described below; it does not provide
+engine tracing or profiling.
+
+### Generated Go Node Traces
+
+Generate a standalone Go Node parser with tracing hooks using `pego gen -observability`:
+
+```bash
+pego gen -g pairs.pego -pkg pairsparser -observability
+```
+
+The generated package provides its own `TraceEvent` and options. Its callbacks
+run synchronously and receive events for actual generated calls:
+
+```go
+_, err := pairsparser.Parse(input,
+	pairsparser.WithTrace(func(e pairsparser.TraceEvent) {
+			switch e.Kind {
+			case pairsparser.TraceEnter:
+				fmt.Printf("enter %s depth=%d pos=%d\n", e.Rule, e.Depth, e.Pos)
+			case pairsparser.TraceExit:
+				fmt.Printf("exit %s matched=%t end=%d\n", e.Rule, e.Matched, e.End)
+			case pairsparser.TraceSkipped:
+				fmt.Printf("skip %s at %d (%s)\n", e.Rule, e.Pos, e.SkipReason)
+			}
+	}),
+	pairsparser.WithTraceFilter("pair"),
+	pairsparser.WithTraceMaxDepth(4),
+)
+```
+
+Filtering a rule includes its named descendants; unknown names match nothing.
+With no filter names, all entered rules are delivered. Depth starts at one for
+the start rule; zero or a negative limit is unlimited. `TraceEnter` and
+`TraceExit` describe calls that ran. `TraceSkipped` is unpaired and currently
+reports only first-character dispatch skips whose target can be identified.
+`ExaminedKnown` is always false, so do not interpret `Examined` as a complete
+input range. An aborted parse may omit exit events. Callback panics propagate
+unchanged after cleanup.
+
+This generation mode currently supports only Go Node batch `Parse`, `ParseRule`
+and, when generated with `-recognize`, `Recognize`. It cannot be combined with
+`-types` or `-document`, and TypeScript generation rejects it. It does not add
+profiling or promise event-for-event equivalence with engine traces. See
+[code generation](code-generation.md#the-pego-gen-command) for the generation
+option. Enabling the mode adds runtime overhead even when the callback is
+omitted; see [the measured scope](../design/043-generated-parser-observability.md#performance-and-results).
 
 ## 7. Costs and Limits
 

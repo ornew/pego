@@ -704,7 +704,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 			}
 			skip = d.label()
 			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
-				fmt.Sprintf("p.expect(p.pos, %d)", desc))
+				fmt.Sprintf("p.expect(p.pos, %d)", desc)+g.traceSkip(alt))
 		}
 		f := d.label()
 		x, cut := d.cutExpr(alt, s, build, f)
@@ -1250,6 +1250,9 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 // directMethod writes the method name that calls the direct rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
 func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain bool) {
+	if g.observability {
+		name = g.tracePlainWrapper(r, name)
+	}
 	m := &g.methods
 	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n", r.name, comment, g.recv(), name, g.valType())
 	start, rec := d.start || plain && d.fail, plain && d.fail

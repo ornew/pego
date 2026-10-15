@@ -11,7 +11,7 @@ nesting depth, and at the end of the call its outcome, end position, whether the
 evaluated the body, how far it examined the input, and the farthest failure it recorded. A per-rule profile
 (`pego.Profile`, `pego.WithProfile`) is built on the same events. The `pego` command gains `trace`, `profile` and
 `explain`. Tracing works on the closure backend and both bytecode VMs, in recognition mode, in stream parses and in
-`Document`; generated Go parsers do not have it. When tracing is off, an ordinary parse pays one nil check per call
+`Document`; the engine tracing API does not instrument standalone generated Go parsers (see [Generated Parser Tracing and Profiling](043-generated-parser-observability.md)). When tracing is off, an ordinary parse pays one nil check per call
 that goes through the general call path, and nothing on the plain call path. The user guide is
 [docs/guide/debugging.md](../guide/debugging.md).
 
@@ -154,7 +154,7 @@ What an ordinary parse executes in addition, exactly:
 | `parser` struct | | one pointer (`tr`) and one bool (`noPlain`) |
 
 Nothing changes in `invoke`, `invokePlain`, `callBegin`, `callEnd`, the memo, or the code of expressions. The
-generated parsers' runtimes (`genrt`) are untouched.
+generated parsers' runtimes (`genrt`) are untouched by this engine-side design; generated Go tracing is specified separately in [design 043](043-generated-parser-observability.md).
 
 With tracing on, every call also goes through `tracedCall`, isolates its expectations and examined range, and calls the
 trace function; plain calls lose their shortcut. The trace function itself (formatting, or the profile's map of
@@ -199,7 +199,7 @@ one that gave a `Document` parse a fresh memo fails the document comparison 573 
 
 ## Limitations
 
-- Generated Go parsers have no tracing.
+- The engine tracing API does not instrument standalone generated Go parsers; see [design 043](043-generated-parser-observability.md) for their separate opt-in trace API.
 - The backends skip different calls by first-character dispatch, so their traces can differ in calls that fail at
   once; results and memoization decisions do not.
 - `wasted` counts failed calls only; work thrown away by a backtracking choice in a successful call shows as repeats.

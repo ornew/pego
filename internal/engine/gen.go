@@ -26,8 +26,13 @@ var typedSource string
 //go:embed genrt/document.go
 var documentSource string
 
+//go:embed genrt/trace.go
+var generatedTraceSource string
+
 // GenOptions configures code generation.
 type GenOptions struct {
+	// Observability emits opt-in rule tracing for generated Go Node batch parsing.
+	Observability bool
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.
 	Document bool
@@ -120,6 +125,9 @@ type GenOptions struct {
 // runtime (genrt) behaves exactly like the engine
 // in this package. Stream parsing is not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
+	if opts.Observability && (opts.Types || opts.Document) {
+		return nil, fmt.Errorf("generated observability currently supports Go Node batch parsing only; Types and Document are not supported")
+	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
 	}
@@ -140,7 +148,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{observability: opts.Observability, disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -179,7 +187,18 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	// The standalone output merges the work helper's standard-library imports.
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
+	if opts.Observability {
+		rt, err = generatedTraceRuntime(rt)
+		if err != nil {
+			return nil, err
+		}
+	}
 	out.WriteString(rt)
+	if opts.Observability {
+		out.WriteString("\n// --- Opt-in generated rule tracing ---\n")
+		out.WriteString(generatedTraceSource[strings.Index(generatedTraceSource, "package genrt")+len("package genrt"):])
+		out.WriteString(generatedTraceWrappers)
+	}
 	work := workSource[strings.Index(workSource, "\n)\n")+len("\n)\n"):]
 	if opts.referenceWorkControls || opts.referenceWorkControlLayout {
 		work = strings.Replace(work, "const workControlsEnabled = true", "const workControlsEnabled = false", 1)
@@ -293,6 +312,7 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
+	observability                   bool
 	directTypedDocument             bool
 	disableDirectTypedDocument      bool
 	document                        bool
@@ -686,7 +706,11 @@ func describe(e grammar.Expr) string {
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
 func (g *generator) plainCall(r *rule, body string) {
-	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *%s) %s%d() (%s, bool) {\n\tp.stepWork()\n", r.name, g.recv(), g.plainPrefix(), r.id, g.valType())
+	name := fmt.Sprintf("%s%d", g.plainPrefix(), r.id)
+	if g.observability {
+		name = g.tracePlainWrapper(r, name)
+	}
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n", r.name, g.recv(), name, g.valType())
 	g.methods.WriteString(`	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -805,7 +829,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("\tch, _, more := p.peek()\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "\tif !(more && (%s)) && %s {\n\t\tp.stepWork()\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depthLimit(depth), desc)
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && %s {\n\t\tp.stepWork()\n\t\tp.expect(p.pos, %d)\n%s\t} else ", cond, depthLimit(depth), desc, g.traceSkip(alt))
 			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.cut\n\t\tp.cut = false\n\t\tv, ok := p.%s()\n\t\tcut := p.cut\n\t\tp.cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)
