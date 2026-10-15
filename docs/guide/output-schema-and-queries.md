@@ -53,10 +53,31 @@ names, and field names must be unique and nonempty; type identities and origins
 must agree; shape kinds, scalar names, and kind-specific members must be valid;
 list and optional shapes need elements; and references must resolve to IDs in
 the schema's type table. Recursive named references are allowed. This is not
-full semantic validation: empty unions are not currently rejected. Passing a
-schema constructed directly in Go to
-`CompileStructuralQuery` does not run this whole-graph check first. Schema
-diffing is not available.
+full semantic validation. Passing a schema constructed directly in Go to
+`CompileStructuralQuery` does not run this whole-graph check first.
+
+`pego.DiffOutputSchemas(before, after)` compares version-1 schema contents by
+type ID and rule name. It returns sorted added, removed, and changed entries;
+unchanged schemas have empty `Types` and `Rules` slices:
+
+```go
+diff, err := pego.DiffOutputSchemas(before, after)
+if err != nil {
+    log.Fatal(err)
+}
+for _, change := range diff.Types {
+    fmt.Println(change.ID, change.Kind)
+}
+```
+
+The comparison ignores type/rule entry order, struct-field order, union
+alternative order, and envelope fields such as `Start`. Child order and named
+references remain significant. A diff is descriptive only; it does not classify
+compatibility. It rejects unsupported schema format/version, invalid or duplicate
+type/rule identities, empty or duplicate field names, shapes without a kind,
+references without an ID, and cyclic inline shapes. It compares reference IDs
+without checking that their targets exist, and does not perform full graph
+validation; JSON unmarshaling has the separate limited checks described above.
 
 Export requires checked grammar metadata. A parser restored by `LoadParser`
 cannot export it, even if its compiled file includes the grammar AST; the error

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export described under Implemented Go API is implemented. Schema diffing and broader validation remain proposals.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. Broader validation remains incomplete.
 
 ## Motivation
 
@@ -37,12 +37,13 @@ func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error)
 func WithAllSchemaRules() SchemaOption
 var ErrSchemaUnavailable error
 func (s *OutputSchema) UnmarshalJSON(data []byte) error
+func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error)
 ```
 
 `encoding/json` marshals the exported fields; `UnmarshalJSON` rejects unsupported
 formats and versions, unknown JSON fields, incomplete envelopes, and malformed
 v1 identities or shape references. This is not complete semantic validation.
-Evolution beyond version 1 remains a proposal. The version-1 JSON envelope is:
+Evolution beyond version 1 remains a proposal. `DiffOutputSchemas` returns sorted added, removed, or changed entries for types keyed by namespace-qualified type ID and rules keyed by rule name. It does not classify compatibility. The version-1 JSON envelope is:
 
 ```json
 {"format":"pego-output-schema","version":1,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
@@ -56,6 +57,12 @@ Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `any
 
 A rule entry identifies its declared or inferred result shape and producing rule. It must not imply that a rule's ordinary CST output is a declared struct. CST entries describe ordered child edges and possible nil children; capture entries describe names and known or dynamic value categories. The schema describes possible values, not source spans, runtime values, retained punctuation/comments, or execution order.
 
+## Semantic Schema Diff
+
+`DiffOutputSchemas(before, after)` accepts version-1 schemas and compares type and rule contents by identity. It ignores type/rule entry order, struct-field order, and union-alternative order. It preserves child order and named references. Envelope fields such as `Start` are ignored. Added, removed, and changed results are sorted by type ID or rule name; unchanged inputs return non-nil empty change slices.
+
+The diff rejects unsupported format/version, invalid or duplicate type/rule identities, empty or duplicate field names, shapes without a kind, references without an ID, and cyclic inline shapes. Named `ref` values are compared as written; the diff does not verify that reference targets exist or perform the full external-graph validation described above. JSON unmarshaling performs its own limited v1 graph checks. No source-compatibility or binary-compatibility classification is implied.
+
 ## Implementation and Determinism
 
 Build the export from the checked grammar/type information behind `pego.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. A loaded parser lacks the checked metadata and returns an error matching ErrSchemaUnavailable, even when its compiled file includes an AST; bytecode behavior and names alone cannot reconstruct that information. Persisting schemas with compiled artifacts requires a separate versioned-format design. Add stable repeated-export and round-trip checks, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
@@ -66,7 +73,7 @@ Schema export is metadata on a compiled grammar and is independent of runtime ba
 
 ## Remaining Implementation Sequence
 
-The Go v1 envelope, start-reachable/all-rules selection, declared and checked inferred types, CST/capture categories, deterministic encoding, and strict JSON-key and basic graph checks for decoded v1 schemas are implemented. Remaining work includes complete semantic validation of externally authored graphs, validation for schemas constructed directly in memory, schema diff support, and extended query type checking as described in [design 040](040-structural-queries-and-highlighting.md).
+The Go v1 envelope, start-reachable/all-rules selection, declared and checked inferred types, CST/capture categories, deterministic encoding, strict JSON-key and basic graph checks for decoded v1 schemas, and semantic schema diff are implemented. Remaining work includes complete semantic validation of externally authored graphs, validation for schemas constructed directly in memory, and extended query type checking as described in [design 040](040-structural-queries-and-highlighting.md).
 
 ## Alternatives Considered
 
@@ -102,8 +109,8 @@ The benchmark is in `internal/engine/output_schema_validate_bench_test.go`.
 
 The Go v1 API uses a start-reachable default with an explicit all-rules option.
 Cross-grammar schema identity remains absent until canonicalization is defined;
-complete validation of externally authored shape graphs and schema diff tooling are also
-open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
+complete validation of externally authored shape graphs, direct in-memory validation,
+and compatibility classification for diffs are also open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
 
@@ -134,10 +141,10 @@ requires unique nonempty type IDs and rule names, nonempty unique field names,
 consistent type identities and origins, supported shape kinds and scalar names,
 valid shape members for each kind, list/optional elements, and references that
 resolve to an ID in the schema's type table. Named-reference cycles are allowed.
-The checker does not yet reject unknown JSON keys or empty unions. It runs during
+The checker does not yet reject empty unions. It runs during
 JSON unmarshaling; callers that construct an `OutputSchema` in memory do not
 receive full graph validation before passing it to consumers such as
-structural-query compilation. Persisting schemas in compiled files and schema
-diff tooling remain unimplemented. Focused tests cover the limited graph checks
+structural-query compilation. Persisting schemas in compiled files remains unimplemented. The semantic diff
+is implemented separately and does not perform this whole-graph validation. Focused tests cover the limited graph checks
 along with determinism, reachability, round trips and categories; export
 performance and broader backend/typed-output validation remain open.
