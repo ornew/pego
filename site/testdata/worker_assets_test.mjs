@@ -7,6 +7,7 @@ const source = readFileSync(new URL("../static/playground/worker.js", import.met
 const base = "https://site.test/playground/";
 const a = { wasm: "wasm/pego-0123456789abcdef.wasm", runtime: "runtime/wasm_exec-1111111111111111.js" };
 const b = { wasm: "wasm/pego-fedcba9876543210.wasm", runtime: "runtime/wasm_exec-2222222222222222.js" };
+const tiny = { wasm: "wasm/pego-3333333333333333.wasm", runtime: "runtime/wasm_exec-4444444444444444.js" };
 
 function worker(manifest, { ok = true } = {}) {
   const imported = [], fetched = [], messages = [];
@@ -31,6 +32,16 @@ for (const [name, asset] of [["current", b], ["previous", a]]) {
     assert.equal(w.messages[0].type, "ready");
   });
 }
+test("worker selects the TinyGo binary's own runtime", async () => {
+  const w = worker({ version: 1, current: b, previous: a, tinygoCurrent: tiny });
+  await w.init(base + tiny.wasm);
+  assert.deepEqual(w.imported, [base + tiny.runtime]);
+});
+test("worker retains a preceding TinyGo binary in a Go-only build", async () => {
+  const w = worker({ version: 1, current: b, tinygoPrevious: tiny });
+  await w.init(base + tiny.wasm);
+  assert.deepEqual(w.imported, [base + tiny.runtime]);
+});
 test("unhashed external WASM retains the explicit stable-runtime convention", async () => {
   const w = worker(null);
   await w.init(base + "pego.wasm");

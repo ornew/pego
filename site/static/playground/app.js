@@ -8,7 +8,24 @@ import { describeResult } from "./status.js";
 import { TreeView } from "./tree.js";
 
 const $ = (id) => document.getElementById(id);
-const client = new PegoClient(siteRoot() + "playground/");
+const pageURL = new URL(location.href);
+const compiler = pageURL.searchParams.get("compiler") === "tinygo" ? "tinygo" : "go";
+const tinygoWasm = document.documentElement.dataset.tinygoWasm;
+const unavailableTinyGo = compiler === "tinygo" && !tinygoWasm;
+const unavailableError = "TinyGo is unavailable in this site build. Select Go or open a dual-mode build.";
+const client = unavailableTinyGo ? {
+  start: async () => { throw new Error(unavailableError); },
+  call: async () => { throw new Error(unavailableError); },
+} : new PegoClient(siteRoot() + "playground/", compiler === "tinygo" ? { wasm: new URL(tinygoWasm, location.href).href } : {});
+const compilerSelect = $("pg-compiler");
+compilerSelect.value = compiler;
+$("pg-compiler-tinygo").disabled = !tinygoWasm;
+compilerSelect.addEventListener("change", () => {
+  const url = new URL(location.href);
+  if (compilerSelect.value === "tinygo") url.searchParams.set("compiler", "tinygo");
+  else url.searchParams.delete("compiler");
+  location.assign(url.href);
+});
 
 // ---------------------------------------------------------------- Editors
 

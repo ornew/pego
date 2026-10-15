@@ -26,6 +26,7 @@ and validation are handled by Nanosite. The project-specific flags are:
 | `-repo` | `..` | The root of the repository |
 | `-out` | `dist` | The output directory. It is replaced by each build, but only if a previous build wrote it |
 | `-wasm` | `true` | Build the playground's WebAssembly binary. Without it, the pages are built but the playground cannot run |
+| `-wasm-mode` | `go` | `go` builds the standard Playground binary; `dual` builds both Go and TinyGo binaries. Dual mode requires TinyGo and Binaryen's `wasm-opt` on `PATH`; the TinyGo distribution does not include `wasm-opt`, so install Binaryen separately. The build fails if either tool is missing or compilation fails; there is no automatic fallback |
 | `-check` | `true` | Fail if a page links to a missing page, file or anchor |
 | `-previous-site` | Empty locally; production `URL` on Netlify | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
 | `-deploy-url` | Empty locally; production `DEPLOY_URL` on Netlify | Record this immutable deploy root for the next build's asset downloads |
@@ -48,7 +49,7 @@ The build output (`site/dist`) is not committed.
 | `/` | The landing page, assembled from [`README.md`](../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
 | `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
 | `/reference/` | The API reference of packages `pego` and `grammar`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
-| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing the current/previous generations; every page records the current WASM in `<html data-wasm>`. The stable `wasm_exec.js` supports pre-manifest workers |
+| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing current/previous Go and optional TinyGo generations; every page records the current Go WASM in `<html data-wasm>` and dual builds also record `data-tinygo-wasm`. The stable `wasm_exec.js` supports pre-manifest workers |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
 
 Nothing is copied by hand, so the site cannot drift from the repository: rebuilding it picks up every change.
@@ -59,9 +60,21 @@ until the switch in the header is used), and work on phone screens.
 ## Deploying on Netlify
 
 Production builds download the currently published WASM and its matching Go runtime before generating the new site.
-The output retains at most the new pair and one previous pair; deploy/branch previews do not import production assets
+The output retains at most the new pair and one previous pair per compiler; deploy/branch previews do not import production assets
 automatically. A page from the preceding deploy can therefore start its old parser after publication. The worker reads
 `assets.json` and imports the matching hashed runtime. Generations outside that window must reload.
+
+Dual mode is opt-in: `site/build.sh -wasm-mode=dual` requires a compatible
+TinyGo installation and Binaryen's `wasm-opt` executable on `PATH`. The
+regular site builds use `go` mode. In a dual build, the Playground defaults to Go and offers
+TinyGo under Options; the choice is carried by `?compiler=tinygo` in shared links. A TinyGo link
+opened on a Go-only build reports that TinyGo is unavailable. Before enabling dual mode for
+production, install TinyGo in the build environment and verify the browser worker and API parity.
+The manifest keeps its version-one `current` and `previous` fields for Go, with optional
+`tinygoCurrent` and `tinygoPrevious` pairs. Older workers can still select Go. An older site builder
+uses strict JSON decoding and rejects the added TinyGo fields when importing a dual build with
+`-previous-site`; rolling the builder back requires a deliberate retention reset or a builder that
+understands these fields.
 
 The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
 immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing

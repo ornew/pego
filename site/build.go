@@ -28,6 +28,7 @@ type Config struct {
 	Repo         string // root of the repository
 	Out          string // output directory
 	Wasm         bool   // build the playground's WebAssembly binary
+	WasmMode     string // go (default) or dual (Go and TinyGo)
 	Check        bool   // fail on broken internal links
 	GitHub       string // repository URL, for links to files that are not pages of the site
 	Ref          string // branch or tag for those links
@@ -89,13 +90,14 @@ func (s *Section) Contains(p *Page) bool { return slices.Contains(s.Pages, p) }
 
 // Site is a site being built.
 type Site struct {
-	cfg      Config
-	pages    []*Page
-	bySrc    map[string]*Page // by the repository path of the source
-	byDir    map[string]*Page // by the repository directory the page is the index of
-	sections []*Section
-	problems []string
-	wasm     string // site path of the playground's WebAssembly binary
+	cfg        Config
+	pages      []*Page
+	bySrc      map[string]*Page // by the repository path of the source
+	byDir      map[string]*Page // by the repository directory the page is the index of
+	sections   []*Section
+	problems   []string
+	wasm       string // site path of the playground's WebAssembly binary
+	tinygoWasm string // optional site path of the TinyGo binary
 }
 
 //go:embed templates
@@ -275,6 +277,7 @@ type layoutData struct {
 	Prev, Next *Page
 	GitHub     string
 	Wasm       string // relative URL of the playground's WebAssembly binary
+	TinyGoWasm string // relative URL of the optional TinyGo binary
 }
 
 // URL returns the relative URL of a site path from the page.
@@ -331,24 +334,49 @@ func readExamples(repo string) ([]example, error) {
 	return exs, nil
 }
 
-// buildWasm builds the playground's WebAssembly binary into dir/wasm, named after a hash of its
-// content so that it can be cached forever (see netlify.toml), and copies the Go runtime support
-// (wasm_exec.js) into dir. It returns the path of the binary relative to dir.
-func buildWasm(repo, dir string) (string, error) {
-	goTool, err := exec.LookPath("go")
-	if err != nil {
-		return "", fmt.Errorf("building the playground needs the go command: %w", err)
+type wasmBuildSpec struct {
+	command    string
+	args       []string
+	rootVar    string
+	runtimeRel string
+}
+
+func selectWasmBuild(toolchain, output string) (wasmBuildSpec, error) {
+	if toolchain == "" {
+		toolchain = "go"
 	}
+	switch toolchain {
+	case "go":
+		return wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}, nil
+	case "tinygo":
+		return wasmBuildSpec{"tinygo", []string{"build", "-target=wasm", "-no-debug", "-o", output, "./playground"}, "TINYGOROOT", "targets/wasm_exec.js"}, nil
+	default:
+		return wasmBuildSpec{}, fmt.Errorf("unsupported WASM toolchain %q (want go or tinygo)", toolchain)
+	}
+}
+
+// buildWasm builds the playground's WebAssembly binary into dir/wasm, named after a hash of its
+// content so that it can be cached forever (see netlify.toml), and copies the matching runtime
+// support (wasm_exec.js) into dir. It returns the path of the binary relative to dir.
+func buildWasm(repo, dir, toolchain string) (string, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err
 	}
 	tmp := filepath.Join(abs, "pego.wasm.tmp")
-	cmd := exec.Command(goTool, "build", "-trimpath", "-ldflags=-s -w", "-o", tmp, "./playground")
+	spec, err := selectWasmBuild(toolchain, tmp)
+	if err != nil {
+		return "", err
+	}
+	compiler, err := exec.LookPath(spec.command)
+	if err != nil {
+		return "", fmt.Errorf("building the playground needs the %s command: %w", spec.command, err)
+	}
+	cmd := exec.Command(compiler, spec.args...)
 	cmd.Dir = repo
 	cmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("building pego.wasm: %v\n%s", err, out)
+		return "", fmt.Errorf("building pego.wasm with %s: %v\n%s", spec.command, err, out)
 	}
 	data, err := os.ReadFile(tmp)
 	if err != nil {
@@ -362,11 +390,16 @@ func buildWasm(repo, dir string) (string, error) {
 	if err := os.Remove(tmp); err != nil {
 		return "", err
 	}
-	out, err := exec.Command(goTool, "env", "GOROOT").Output()
+	out, err := exec.Command(compiler, "env", spec.rootVar).Output()
 	if err != nil {
-		return "", fmt.Errorf("go env GOROOT: %w", err)
+		return "", fmt.Errorf("%s env %s: %w", spec.command, spec.rootVar, err)
 	}
-	support, err := os.ReadFile(filepath.Join(strings.TrimSpace(string(out)), "lib", "wasm", "wasm_exec.js"))
+	root := strings.TrimSpace(string(out))
+	if root == "" {
+		return "", fmt.Errorf("%s env %s returned an empty path", spec.command, spec.rootVar)
+	}
+	runtimePath := filepath.Join(root, filepath.FromSlash(spec.runtimeRel))
+	support, err := os.ReadFile(runtimePath)
 	if err != nil {
 		return "", err
 	}

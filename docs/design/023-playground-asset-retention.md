@@ -103,7 +103,41 @@ one additional WASM/runtime pair in published storage. No parsing work changes. 
 browser compilation and CDN compression. Correctness-related measurements are recorded in the implementation commit;
 they are not tuning methods in the optimization table.
 
+The dual-compiler prototype was measured on an Apple M3 Max (darwin/arm64) with
+Go 1.27.1, Node 22, TinyGo 0.43.0 and Binaryen 131 (`wasm-opt`), using five
+alternating pairs and matched WASM/runtime files. The Go WASM was 9.6 MiB and
+the TinyGo WASM 3.5 MiB; the dual site build was 25.4 MB versus 21.7 MB for a
+Go-only build. Across calculator, JSON, XML and pairs examples, TinyGo's
+Node-measured startup-to-ready ratios were 0.33–0.34× Go, compile-call ratios
+0.73–0.91×, and warm parse-only ratios 0.75–0.92×. Full warm parse API calls
+were slower for JSON (2.33×) and XML (2.17×), while calculator and pairs were
+near parity. The tree-heavy API-call regressions are why Go remains the default.
+These are Node measurements, not browser latency; a Chrome run verified worker
+startup, compiler switching and shared-link reload behavior.
+
+A separate narrow 64-bit engine comparison used five alternating pairs.
+`BenchmarkLoad/compiled` candidate/main had a median ratio of 1.001 (range
+0.916–1.087), with bytes and allocations unchanged. Closure/CodePoints
+`BenchmarkDocumentReparse` had a median ratio of 0.990 (range 0.976–1.005),
+with bytes, allocations and resumed counts unchanged. These two profiles show
+no stable regression; they are not a full benchmark comparison.
+
 ## Limitations and Open Questions
+
+### Dual-compiler prototype
+
+An opt-in `-wasm-mode=dual` build extends the version-one manifest with optional
+`tinygoCurrent` and `tinygoPrevious` pairs. The required `current` and optional
+`previous` fields continue to identify Go binaries, so older workers still
+resolve Go. Dual builds keep up to four binary/runtime pairs (current and
+preceding Go and TinyGo); a Go-only build may retain a preceding TinyGo pair
+for one deployment so an older page can restart. TinyGo requires its own
+`wasm_exec.js`, and the worker chooses by the requested binary's manifest pair.
+The added fields are accepted by the updated builder, but a builder from before
+this extension rejects them because it decodes manifests with
+`DisallowUnknownFields`. A rollback to that builder therefore needs an explicit
+retention reset or a compatible manifest reader. Browser startup and API parity
+remain validation gates before enabling dual mode in production.
 
 A page older than one retained generation must reload. A page already holding a compiled module still needs a matching
 runtime from a retained generation when restarting its worker. Stable application scripts and parser API schemas are not

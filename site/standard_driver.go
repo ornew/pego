@@ -13,6 +13,16 @@ import (
 	"github.com/ornew/nanosite/sitegen"
 )
 
+func selectWasmMode(mode string) (string, error) {
+	if mode == "" {
+		mode = "go"
+	}
+	if mode != "go" && mode != "dual" {
+		return "", fmt.Errorf("unsupported WASM mode %q (want go or dual)", mode)
+	}
+	return mode, nil
+}
+
 // Build uses Nanosite for document selection, Markdown, indexes, navigation,
 // search and publication. Hooks supply only PEGO's product-specific pages.
 func Build(cfg Config) (Stats, error) {
@@ -127,7 +137,15 @@ func Build(cfg Config) (Stats, error) {
 		if cfg.PreviousSite != "" && !cfg.Wasm {
 			return fmt.Errorf("-previous-site requires -wasm")
 		}
-		previous, err := readPreviousAssets(cfg.PreviousSite)
+		mode, err := selectWasmMode(cfg.WasmMode)
+		if err != nil {
+			return err
+		}
+		if mode == "dual" && !cfg.Wasm {
+			return fmt.Errorf("-wasm-mode=dual requires -wasm")
+		}
+		var previousTinyGo *assetBytes
+		previous, err := readPreviousAssetsWithTinyGo(cfg.PreviousSite, &previousTinyGo)
 		if err != nil {
 			return err
 		}
@@ -137,12 +155,39 @@ func Build(cfg Config) (Stats, error) {
 				return err
 			}
 			defer os.RemoveAll(temp)
-			name, err := buildWasm(cfg.Repo, temp)
+			name, err := buildWasm(cfg.Repo, temp, "go")
 			if err != nil {
 				return err
 			}
 			s.wasm = "playground/" + name
+			var tinygo *assetBytes
+			if mode == "dual" {
+				tinyDir := filepath.Join(temp, "tinygo")
+				if err := os.Mkdir(tinyDir, 0755); err != nil {
+					return err
+				}
+				tinyName, err := buildWasm(cfg.Repo, tinyDir, "tinygo")
+				if err != nil {
+					return err
+				}
+				wasm, err := os.ReadFile(filepath.Join(tinyDir, filepath.FromSlash(tinyName)))
+				if err != nil {
+					return err
+				}
+				runtime, err := os.ReadFile(filepath.Join(tinyDir, "wasm_exec.js"))
+				if err != nil {
+					return err
+				}
+				tinygo = &assetBytes{asset: describeAssets(wasm, runtime), wasm: wasm, runtime: runtime}
+				s.tinygoWasm = "playground/" + tinygo.asset.Wasm
+				if err := os.RemoveAll(tinyDir); err != nil {
+					return err
+				}
+			}
 			if err := publishAssets(temp, name, cfg.DeployURL, previous); err != nil {
+				return err
+			}
+			if err := publishTinyGoAssets(temp, tinygo, previousTinyGo); err != nil {
 				return err
 			}
 			err = filepath.WalkDir(temp, func(file string, d fs.DirEntry, err error) error {
@@ -208,7 +253,11 @@ func Build(cfg Config) (Stats, error) {
 		s.sections = secs
 		p := lookup(v.Page)
 		p.Body = v.Body
-		return layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: secs, Prev: lookup(v.Previous), Next: lookup(v.Next), GitHub: cfg.GitHub, Wasm: relURL(p.URL, s.wasm)}, nil
+		tinygoWasm := ""
+		if s.tinygoWasm != "" {
+			tinygoWasm = relURL(p.URL, s.tinygoWasm)
+		}
+		return layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: secs, Prev: lookup(v.Previous), Next: lookup(v.Next), GitHub: cfg.GitHub, Wasm: relURL(p.URL, s.wasm), TinyGoWasm: tinygoWasm}, nil
 	}
 	if cfg.Check {
 		ext.Validate = func(stage string) error {

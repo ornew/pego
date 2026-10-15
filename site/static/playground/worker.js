@@ -11,7 +11,7 @@ async function init(msg) {
     const resp = await fetch(msg.base + "assets.json", { cache: "no-cache" });
     if (!resp.ok) throw new Error(`cannot load playground assets: ${resp.status}`);
     const manifest = await resp.json();
-    const asset = [manifest.current, manifest.previous].find((a) =>
+    const asset = [manifest.current, manifest.previous, manifest.tinygoCurrent, manifest.tinygoPrevious].find((a) =>
       a && new URL(a.wasm, msg.base).href === wasmURL.href);
     if (manifest.version !== 1 || !asset || !/^runtime\/wasm_exec-[0-9a-f]{16}\.js$/.test(asset.runtime)) {
       throw new Error("the requested parser is no longer available; reload this page");

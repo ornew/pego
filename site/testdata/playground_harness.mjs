@@ -10,6 +10,7 @@ import { TreeView } from "../static/playground/tree.js";
 export class Element {
   value = "";
   checked = false;
+  disabled = false;
   textContent = "";
   innerHTML = "";
   style = {};
@@ -28,7 +29,7 @@ export class Element {
 }
 
 export async function playground({ state, app, decode = decodeState, encode = encodeState,
-  waitForInit = true, fetchExamples } = {}) {
+  waitForInit = true, fetchExamples, compiler = "go", tinygoWasm = "" } = {}) {
   const elements = new Map();
   let document;
   const el = (id) => {
@@ -47,16 +48,19 @@ export async function playground({ state, app, decode = decodeState, encode = en
   el("gen-types").checked = true;
   el("pg-go").firstElementChild = new Element();
   document = {
+    documentElement: { dataset: { tinygoWasm } },
     getElementById: el, querySelector: el, createElement: () => new Element(),
     addEventListener() {},
   };
   for (const element of elements.values()) element.ownerDocument = document;
-  const listeners = {}, timers = new Map(), calls = [], writes = [], copies = [], warnings = [];
+  const listeners = {}, timers = new Map(), calls = [], writes = [], copies = [], warnings = [], clients = [];
   let timerID = 0;
-  const location = { hash: state ? "#" + await encodeState(state) : "" };
-  Object.defineProperty(location, "href", { get: () => "https://example.test/playground/" + location.hash });
+  const location = { hash: state ? "#" + await encodeState(state) : "", assigned: "" };
+  Object.defineProperty(location, "href", { get: () => "https://example.test/playground/" + (compiler === "tinygo" ? "?compiler=tinygo" : "") + location.hash });
+  location.assign = (href) => { location.assigned = href; };
   el("pg-share").textContent = "Share";
   class PegoClient {
+    constructor(base, options) { clients.push({ base, options }); }
     async start() { return { module: "controlled", go: "controlled" }; }
     async call(method, req) {
       calls.push({ method, req: structuredClone(req) });
@@ -69,7 +73,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
   }
   const context = vm.createContext({
     ...highlighting, decodeState: decode, encodeState: encode, describeResult, TreeView,
-    PegoClient, siteRoot: () => "/", document, location,
+    PegoClient, siteRoot: () => "/", document, location, URL,
     console: { ...console, warn: (...args) => warnings.push(args) },
     navigator: { clipboard: { writeText: async (text) => copies.push(text) } },
     window: { addEventListener: (name, fn) => { listeners[name] = fn; } },
@@ -88,7 +92,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
   };
   const ready = initialization.then(() => flush(0));
   const h = {
-    el, calls, writes, copies, warnings, timers, location, flush, context, ready,
+    el, calls, clients, writes, copies, warnings, timers, location, flush, context, ready,
     async event(id, name, event = {}) {
       for (const fn of el(id).listeners[name] || []) await fn(event);
     },

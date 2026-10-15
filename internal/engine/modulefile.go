@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
@@ -96,7 +97,15 @@ func (w *encoder) module(m *Module) {
 
 // int32 reads an instruction operand.
 func (r *decoder) int32() int32 {
-	n := r.int()
+	if r.err != nil {
+		return 0
+	}
+	n, k := binary.Varint(r.data[r.pos:])
+	if k <= 0 {
+		r.fail("invalid integer")
+		return 0
+	}
+	r.pos += k
 	if n < -1<<31 || n >= 1<<31 {
 		r.fail("integer %d out of range", n)
 		return 0
