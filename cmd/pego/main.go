@@ -3,6 +3,7 @@
 // Usage:
 //
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
+//	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize] [-nodoc] [-max-depth n]
@@ -41,6 +42,11 @@ Commands:
         [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative]
       Parse the input with a grammar and print the syntax tree. Without -i,
       the input is read from standard input.
+
+  test -f <suite.json> [-format text|json] [-backend <names>] [-equivalence] [-update]
+      Run a versioned JSON fixture suite. Outcomes distinguish accepted,
+      recovered, and rejected parses; selected backend equivalence is reported
+      separately. -update refreshes node and location goldens for one backend.
 
   fmt [-w] [-l] [-syntax] [<file.pego> ...]
       Format PEGO source files, keeping comments. Without files, standard
@@ -124,6 +130,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	switch args[0] {
 	case "parse":
 		return parse(args[1:], stdin, stdout)
+	case "test":
+		return testCmd(args[1:], stdout)
 	case "gen":
 		return gen(args[1:], stdout)
 	case "compile":

@@ -10,6 +10,7 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 |:--|:--|:--|
 | [Examples](#examples-what-is-accepted-and-rejected) | The language you meant: accepted, rejected, and where the error is | A few lines per case |
 | [Golden files](#golden-files) | Any change to a tree or an error message, in whole documents | One file per input; `-update` rewrites them |
+| [Fixture suites](#fixture-suites) | Versioned JSON examples, outcomes, backend comparisons and safe golden updates | One suite per grammar |
 | [Properties](#properties-that-hold-for-every-input) | Panics, wrong positions, backends and recognition that disagree | Written once, runs on every input |
 | [Generated inputs](#generated-inputs) | Parts of the grammar that no example reaches, and the error paths | A few lines, with `package sample` |
 | [Fuzzing](#fuzzing) | Inputs nobody thought of | The same property function |
@@ -20,6 +21,7 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 - [The grammar under test](#the-grammar-under-test)
 - [Examples: what is accepted and rejected](#examples-what-is-accepted-and-rejected)
 - [Golden files](#golden-files)
+- [Fixture suites](#fixture-suites)
 - [Properties that hold for every input](#properties-that-hold-for-every-input)
 - [Generated inputs](#generated-inputs)
 - [Fuzzing](#fuzzing)
@@ -242,6 +244,72 @@ Notes:
 - Keep a few inputs that **fail**, with the error in the golden file. Error messages are part of a parser's interface.
 - The same layout is used by [examples/](../../examples/) and by every module of [parsers/](../../parsers/); the pego
   command makes a golden file too: `pego parse -g pairs.pego -f sexpr < testdata/basic.txt`.
+
+## Fixture Suites
+
+For a reusable command-line suite, put a versioned JSON file beside its grammar. The grammar path is relative to the
+suite file; each case must provide an `input` string and an expected outcome:
+
+```json
+{
+  "version": 1,
+  "grammar": "grammar.pego",
+  "backends": ["closure", "bytecode"],
+  "equivalence": true,
+  "cases": [
+    {"name": "clean", "input": "a", "expect": {"outcome": "accepted"}},
+    {"name": "recovered", "input": "x;", "expect": {"outcome": "recovered"}},
+    {"name": "rejected", "input": "", "expect": {"outcome": "rejected"}}
+  ]
+}
+```
+
+For example, `grammar.pego` can contain:
+
+```pego
+rule main = "a" #recover(skip=[^;]+ ";"?)
+```
+
+Run the suite with:
+
+```sh
+pego test -f suite.json
+```
+
+The three outcomes are independent of whether the parse produced a node: a successful or recovered parse may have
+`node: null`. `accepted` means a clean whole-input match, `recovered` means the whole input matched after `#recover`,
+and `rejected` means parsing failed. The report gives a result for each case/backend. Runtime errors are reported for
+that case and backend, and later cases continue; syntax errors are represented by the `recovered` or `rejected`
+outcome and their locations.
+
+The `backends` list may be omitted to use the default backend. Equivalence is opt-in and compared separately from
+the expected outcome and goldens. The suite may select a `start` rule and a `unit` (`codepoints` or `bytes`). Expectations
+may additionally include node JSON, root `start`/`end` positions, and ordered syntax-error locations.
+
+To refresh observed node and location goldens for one backend, select it explicitly:
+
+```sh
+pego test -f suite.json -backend closure -update
+```
+
+The update refuses to write if any selected case has a runtime error or its observed outcome differs from the
+expected outcome. It changes node JSON, spans and syntax-error locations only, never fixture inputs or expected
+outcomes, and writes the suite atomically. Review the resulting diff before accepting a new golden.
+
+Backend overrides inherit optional goldens from `expect`. Use `clear` to suppress selected inherited fields:
+
+```json
+{
+  "expect": {"outcome": "rejected", "node": {"type": "Root"}, "start": 0, "end": 1},
+  "byBackend": {"bytecode": {"clear": ["node", "start", "end"]}}
+}
+```
+
+The clear list may contain `node`, `start`, `end`, or `errors`. A field cannot both have a value and be cleared in the
+same override. When `-update` observes an absent node or span that would inherit a shared golden, it records a clear;
+it also clears inherited nonempty error lists when no syntax errors were observed. An explicit `errors: []` remains an
+assertion that there are no syntax errors. An explicit `byBackend: {}` makes updates target a backend override while
+leaving the shared expectations intact.
 
 ## Properties That Hold for Every Input
 
