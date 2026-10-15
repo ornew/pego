@@ -61,6 +61,10 @@ for a standalone generated runtime. New APIs use functional options. Constructor
 each parse; invocation overrides follow [design 033](033-cancellable-parses-and-work-budgets.md),
 including ordered once-only resolution, context/limits/depth overrides and rejection of incompatible unit changes.
 A fresh per-call context supports retries; memo state never retains an invocation controller.
+For direct typed `ParseAST`, cancellation or a caller-context panic detected
+before execution admission preserves the valid memo and the last published
+`Stats`. Once execution starts, an interruption clears the execution memo for
+a safe retry.
 
 Edit replaces [start,end), rejecting invalid range or byte character boundaries before modifying text or memo.
 Invalid UTF-8 bytes are individual characters, as in the engine; an edit can join bytes into a valid sequence.

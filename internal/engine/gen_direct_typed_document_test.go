@@ -150,17 +150,31 @@ func TestEditsAndReuse(t *testing.T){
   }
  }
 }
+type admissionPanicContext struct {context.Context; token any; donePanic bool; done chan struct{}}
+func(c *admissionPanicContext)Done()<-chan struct{}{if c.donePanic{panic(c.token)};return c.done}
+func(c *admissionPanicContext)Err()error{panic(c.token)}
 func TestControlsAndInvalidOptions(t *testing.T){
- d,err:=NewDocument(inputs[0]);if err!=nil{t.Fatal(err)}
- assertDirect(t,d,CodePoints)
- old:=d.typedMemo
- if _,err:=d.ParseAST(WithMaxDepth(-1));err==nil||d.typedMemo!=old{t.Fatal("invalid options changed cache")}
- if err:=d.Edit(-1,0,"");err==nil||d.typedMemo!=old{t.Fatal("invalid edit changed cache")}
- ctx,cancel:=context.WithCancel(context.Background());cancel()
- if _,err:=d.ParseAST(WithContext(ctx));!errors.Is(err,context.Canceled)||d.typedMemo!=nil{t.Fatalf("cancellation cleanup: %v",err)}
- assertDirect(t,d,CodePoints)
- if _,err:=d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps:1}));!errors.Is(err,ErrWorkLimit)||d.typedMemo!=nil{t.Fatalf("budget cleanup: %v",err)}
- assertDirect(t,d,CodePoints)
+ for _,unit:=range []Unit{CodePoints,Bytes}{
+  d,err:=NewDocument(inputs[0],WithUnit(unit));if err!=nil{t.Fatal(err)}
+  assertDirect(t,d,unit)
+  assertDirect(t,d,unit)
+  before,old:=d.Stats(),d.typedMemo
+  if before.Evaluated!=0||before.Reused!=1{t.Fatal("root was not warm",before)}
+  unchanged:=func(){t.Helper();if d.typedMemo!=old||d.Stats()!=before{t.Fatal("pre-admission failure changed cache or stats",d.Stats())}}
+  reused:=func(){t.Helper();assertDirect(t,d,unit);if d.Stats()!=before{t.Fatal("valid cache was not reused after pre-admission failure",d.Stats())}}
+  if _,err:=d.ParseAST(WithMaxDepth(-1));err==nil{t.Fatal("invalid depth accepted")};unchanged();reused()
+  if _,err:=d.ParseAST(WithUnit(Unit(1-int(unit))));err==nil{t.Fatal("unit change accepted")};unchanged();reused()
+  if err:=d.Edit(-1,0,"");err==nil{t.Fatal("invalid edit accepted")};unchanged();reused()
+  ctx,cancel:=context.WithCancel(context.Background());cancel()
+  if _,err:=d.ParseAST(WithContext(ctx));!errors.Is(err,context.Canceled){t.Fatalf("pre-admission cancellation: %v",err)};unchanged();reused()
+  for _,donePanic:=range []bool{false,true}{
+   token:=new(int);ctx:=&admissionPanicContext{Context:context.Background(),token:token,donePanic:donePanic,done:make(chan struct{})}
+   func(){defer func(){if recover()!=token{t.Fatal("context panic identity changed")}}();d.ParseAST(WithContext(ctx));t.Fatal("context did not panic")}()
+   unchanged();reused()
+  }
+  if _,err:=d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps:1}));!errors.Is(err,ErrWorkLimit)||d.typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
+  assertDirect(t,d,unit)
+ }
 }
 func poisonValue(v reflect.Value,seen map[uintptr]bool){
  if !v.IsValid(){return}

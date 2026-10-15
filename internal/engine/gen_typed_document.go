@@ -60,16 +60,16 @@ func (d *typedDocumentState) invalidate(start int) {
 func typedDocumentParse[T any](d *Document, root *trule, o parseOptions, a *tslabs, publish func(any,*typedDocumentClone)T)(res T,err error) {
  defer recoverParse(&res,&err)
  if o.unit!=d.state.unit {return res,fmt.Errorf("document parse cannot change unit")}
+ o=prepareOptions(o)
  cache,ok:=d.typedMemo.(*typedDocumentState)
  if !ok {
   cache=&typedDocumentState{owner:d.state,meta:make(map[*tmemoEntry]typedDocumentMeta)}
   d.typedMemo=cache
  }
- // Establish cleanup before preparing controls: even caller-owned context code
- // can panic during its first checkpoint.
+ // Admission leaves reusable state untouched. Once execution can begin,
+ // discard private memo values on interruption or caller-context panic.
  completed:=false
  defer func(){if !completed {d.typedMemo=nil}}()
- o=prepareOptions(o)
  p:=&tparser{parser:&parser{control:o.control},typedDocument:cache,memoSlots:cache.slots}
  // Do not recycle p: memo values and expectations may refer into its arenas.
  a.setWorkControl(o.control)
