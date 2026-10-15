@@ -892,7 +892,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 	show := func(rg grammar.CharRange) string {
 		return strings.TrimSuffix(strings.TrimPrefix(grammar.FormatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "["), "]")
 	}
-	fixed := &grammar.CharClass{Negated: c.Negated, Ranges: normalize(c.Ranges)}
+	fixed := &grammar.CharClass{Negated: c.Negated, Ranges: normalizeControlled(c.Ranges, control)}
 	for j, rj := range c.Ranges {
 		control.poll()
 		for _, ri := range c.Ranges[:j] {
@@ -1209,7 +1209,7 @@ func consumesAnyControlled(e grammar.Expr, control *lintControl) bool {
 	case *grammar.Any:
 		return true
 	case *grammar.CharClass:
-		return e.Negated && classAccepts(e, '\n')
+		return e.Negated && classAcceptsControlled(e, '\n', control)
 	case *grammar.Not, *grammar.And, *grammar.Ref:
 		return false
 	}

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, and selected lint metadata traversals. Other metadata walks and large operations remain partly unpolled, and real-editor validation remains open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, selected lint metadata traversals, and class-descriptor/range analysis. Other metadata walks and large operations remain partly unpolled, and real-editor validation remains open.
 
 ## Prototype Implementation Boundary
 
@@ -109,10 +109,14 @@ pointer identity without mutating the grammar. Lint also polls while unwrapping
 groups and neutral wrappers, traversing attributes and grouped types,
 extracting visibility and positions, comparing expression structure, and
 scanning captures, predicates, index use, position reads and repetition
-metadata. Character-class range operations, grammar formatting, individual
-string comparisons, allocations and other large single operations may remain
-unpolled or indivisible. These checks bound work at selected points, not total
-LSP cancellation latency. Suppression
+metadata. Compiler class analysis polls descriptor construction, range copies,
+ASCII bitmap visits and first-terminal analysis in bounded chunks of at most
+256 visits. Lint polls range membership and range normalization, sorting,
+merging and equality scans. The context is used only during the invocation and
+is not retained; ordinary helpers and parser runtimes keep their existing
+paths. Grammar formatting, individual string comparisons, allocations and
+other large single operations may remain unpolled or indivisible. These checks
+bound work at selected points, not total LSP cancellation latency. Suppression
 validation uses its request context before and after candidate analysis and
 lint. The VS Code
 explanation-command handler is implemented. Real-editor validation and
@@ -439,10 +443,40 @@ through nested metadata collection. The public grammar API separately exposes
 `Attribute.ExpressionArgsContext` for callers collecting expression
 arguments directly.
 
+### Character-Class Analysis Cancellation
+
+Five alternating 200 ms pairs compared main `4bbbb7e` with the class-analysis
+change. Go 1.27.1 on an Apple M3 Max (darwin/arm64), `GOMAXPROCS=1`,
+`GOGC=100`, and no `GOMEMLIMIT` were used. Measurements cover whole
+`Compile`/`CompileContext` and `Run`/`RunContext` calls on already-parsed JSON,
+source-grammar, 64-`@error`-annotation, and 512-range class fixtures. Entries
+show paired-median candidate/base time ratios and the range across pairs:
+
+| Fixture | `Compile` | `CompileContext` | `Run` | `RunContext` |
+|---|---:|---:|---:|---:|
+| JSON grammar | 0.985 (0.944–1.005) | 1.010 (0.889–1.018) | 1.009 (0.989–1.031) | 1.000 (0.997–1.006) |
+| Source grammar | 1.000 (0.966–1.002) | 1.002 (0.990–1.026) | 0.999 (0.987–1.079) | 1.015 (0.960–1.116) |
+| 64 `@error` annotations | 1.002 (0.989–1.010) | 0.990 (0.983–1.003) | 1.035 (0.998–1.169) | 1.018 (0.990–1.042) |
+| 512-range class | 1.004 (0.985–1.040) | 1.225 (1.219–1.251) | 0.994 (0.963–1.024) | 1.021 (1.014–1.044) |
+
+The 512-range context compile and lint cases were slower in all five pairs,
+with median increases of 22.5% and 2.1%. All other profiles crossed parity.
+Context lint reduced the JSON case by 9 allocations and 144 B/op, and the
+source case by 14 allocations and 292–295 B/op. Other allocation counts
+matched except for source-grammar compile variation (ordinary −1 to +3,
+context −1 to 0); B/op varied by −64 to +182 for ordinary and −4 to 0 for
+context compilation. Other B/op differences were at most 4 bytes. The
+benchmarks use the existing compiler/lint drivers and
+`internal/engine/class_context_bench_test.go` plus
+`internal/lint/class_context_bench_test.go`; baseline overlays add the same
+drivers. These results measure whole compile/lint calls, not parser execution,
+cancellation latency, peak memory or real-editor behavior. They do not support
+a general speedup or regression claim.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Character-class range work, grammar formatting, individual string comparisons, allocations and other large operations still have uncancellable spans; cancellation has no wall-clock bound.
+- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. Grammar formatting, individual string comparisons, allocations and other large operations still have uncancellable spans; cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.

@@ -738,8 +738,8 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		}
 
 	case *grammar.CharClass:
-		desc := c.desc(charClassString(e))
-		return c.single(build, desc, classAccept(e))
+		desc := c.desc(charClassStringControlled(e, c.control))
+		return c.single(build, desc, classAcceptControlled(e, c.control))
 
 	case *grammar.Any:
 		return c.single(build, idAny, func(*parser, rune) bool { return true })
@@ -1058,12 +1058,12 @@ type firstGuard struct {
 }
 
 func (c *compiler) first(e grammar.Expr) firstGuard {
-	switch t, depth := firstTerminal(c.prog, e, 0, map[string]bool{}); t := t.(type) {
+	switch t, depth := firstTerminalControlled(c.prog, e, 0, map[string]bool{}, c.control); t := t.(type) {
 	case *grammar.Literal:
 		r0, _ := utf8.DecodeRuneInString(t.Value)
 		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, c.desc(quote(t.Value)), depth}
 	case *grammar.CharClass:
-		return firstGuard{classAccept(t), c.desc(charClassString(t)), depth}
+		return firstGuard{classAcceptControlled(t, c.control), c.desc(charClassStringControlled(t, c.control)), depth}
 	}
 	return firstGuard{}
 }
@@ -1164,7 +1164,7 @@ func (c *compiler) scanRepeat(e *grammar.Repeat, build bool) matcher {
 	var desc expID
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
-		accept, desc = classAccept(x), c.desc(charClassString(x))
+		accept, desc = classAcceptControlled(x, c.control), c.desc(charClassStringControlled(x, c.control))
 	case *grammar.Any:
 		accept, desc = func(*parser, rune) bool { return true }, idAny
 	default:

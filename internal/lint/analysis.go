@@ -529,7 +529,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 			return ok(t[len(e.Value):])
 		}
 	case *grammar.CharClass:
-		if r, size := utf8.DecodeRuneInString(t); t != "" && classAccepts(e, r) {
+		if r, size := utf8.DecodeRuneInString(t); t != "" && classAcceptsControlled(e, r, control) {
 			return ok(t[size:])
 		}
 	case *grammar.Any:
@@ -661,7 +661,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 		return !strings.HasPrefix(t, e.Value) && !strings.HasPrefix(e.Value, t)
 	case *grammar.CharClass:
 		r, _ := utf8.DecodeRuneInString(t)
-		return t != "" && !classAccepts(e, r)
+		return t != "" && !classAcceptsControlled(e, r, control)
 	case *grammar.Bottom:
 		return true
 	case *grammar.Seq:
@@ -879,7 +879,7 @@ func sameControlled(x, y grammar.Expr, caps bool, control *lintControl) bool {
 		return ok && x.Value == y.Value
 	case *grammar.CharClass:
 		y, ok := y.(*grammar.CharClass)
-		return ok && x.Negated == y.Negated && sameRanges(normalize(x.Ranges), normalize(y.Ranges))
+		return ok && x.Negated == y.Negated && sameRangesControlled(normalizeControlled(x.Ranges, control), normalizeControlled(y.Ranges, control), control)
 	case *grammar.Seq:
 		y, ok := y.(*grammar.Seq)
 		return ok && sameListControlled(x.Items, y.Items, caps, control)
