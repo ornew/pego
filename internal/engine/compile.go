@@ -329,7 +329,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		return nil, unsupported
 	}
 	var normalizationError error
-	g, normalizationError = normalizeAttributesWithCopies(g, opts.eagerAttributeCopies)
+	g, normalizationError = normalizeAttributesControlled(g, opts.eagerAttributeCopies, control)
 	control.check()
 	if normalizationError != nil {
 		return nil, normalizationError

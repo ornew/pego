@@ -16,8 +16,17 @@ func normalizeAttributes(g *grammar.Grammar) (*grammar.Grammar, error) {
 // eager preserves the allocation-heavy normalization path for counterfactual
 // measurements. It affects compilation only, never generated parser execution.
 func normalizeAttributesWithCopies(g *grammar.Grammar, eager bool) (*grammar.Grammar, error) {
-	n := &attributeNormalizer{eager: eager}
-	statements, changed := normalizeItems(g.Statements, eager, n.statement)
+	return normalizeAttributesControlled(g, eager, nil)
+}
+
+func normalizeAttributesControlled(g *grammar.Grammar, eager bool, control *compileControl) (*grammar.Grammar, error) {
+	control.check()
+	n := &attributeNormalizer{eager: eager, control: control}
+	if control != nil {
+		n.poll = control.poll
+	}
+	statements, changed := normalizeItems(g.Statements, eager, n.statement, control)
+	control.check()
 	if len(n.errors) != 0 {
 		return nil, n.errors
 	}
@@ -30,16 +39,18 @@ func normalizeAttributesWithCopies(g *grammar.Grammar, eager bool) (*grammar.Gra
 }
 
 type attributeNormalizer struct {
-	errors ErrorList
-	eager  bool
+	errors  ErrorList
+	eager   bool
+	control *compileControl
+	poll    func()
 }
 
 func (n *attributeNormalizer) statement(statement grammar.Statement) grammar.Statement {
 	switch rd := statement.(type) {
 	case *grammar.RuleDef:
 		expr := n.expr(rd.Expr)
-		typ := grammaranalysis.UngroupType(rd.Type)
-		action := grammaranalysis.UngroupTerm(rd.Action)
+		typ := grammaranalysis.UngroupTypeWithPoll(rd.Type, n.poll)
+		action := grammaranalysis.UngroupTermWithPoll(rd.Action, n.poll)
 		if !n.eager && expr == rd.Expr && typ == rd.Type && action == rd.Action {
 			return rd
 		}
@@ -55,18 +66,21 @@ func (n *attributeNormalizer) statement(statement grammar.Statement) grammar.Sta
 
 // Changed containers are copied before their first write. Nil input containers
 // still become nonnil empty slices, matching the executable AST representation.
-func normalizeItems[T comparable](items []T, eager bool, normalize func(T) T) ([]T, bool) {
+func normalizeItems[T comparable](items []T, eager bool, normalize func(T) T, control *compileControl) ([]T, bool) {
 	var normalized []T
 	changed := eager || items == nil
 	if changed {
+		control.check()
 		normalized = make([]T, len(items))
-		copy(normalized, items)
+		normalizationCopy(normalized, items, control)
 	}
 	for i, item := range items {
+		control.poll()
 		child := normalize(item)
 		if child != item && !changed {
+			control.check()
 			normalized = make([]T, len(items))
-			copy(normalized, items)
+			normalizationCopy(normalized, items, control)
 			changed = true
 		}
 		if changed {
@@ -94,16 +108,19 @@ func (n *attributeNormalizer) value(value any) (any, bool) {
 }
 
 func (n *attributeNormalizer) attribute(a *grammar.Attribute) *grammar.Attribute {
+	n.control.poll()
 	copy := *a
 	changed := n.eager || a.Args == nil || (len(a.KeywordOrder) == 0 && a.KeywordOrder != nil)
 	argsCopied := n.eager || a.Args == nil
 	if argsCopied {
+		n.control.check()
 		copy.Args = make([]any, len(a.Args))
 	}
 	for i, value := range a.Args {
+		n.control.poll()
 		child, lowered := n.value(value)
 		if lowered && !argsCopied {
-			copy.Args = append([]any(nil), a.Args...)
+			copy.Args = normalizationClone(a.Args, n.control)
 			argsCopied, changed = true, true
 		}
 		if argsCopied {
@@ -112,12 +129,14 @@ func (n *attributeNormalizer) attribute(a *grammar.Attribute) *grammar.Attribute
 	}
 	keywordsCopied := n.eager && a.KwArgs != nil
 	if keywordsCopied {
+		n.control.check()
 		copy.KwArgs = make(map[string]any, len(a.KwArgs))
 	}
 	for name, value := range a.KwArgs {
+		n.control.poll()
 		child, lowered := n.value(value)
 		if lowered && !keywordsCopied {
-			copy.KwArgs = cloneAttributeKeywords(a.KwArgs)
+			copy.KwArgs = cloneAttributeKeywords(a.KwArgs, n.control)
 			keywordsCopied, changed = true, true
 		}
 		if keywordsCopied {
@@ -127,7 +146,7 @@ func (n *attributeNormalizer) attribute(a *grammar.Attribute) *grammar.Attribute
 	if len(a.KeywordOrder) == 0 {
 		copy.KeywordOrder = nil
 	} else if n.eager {
-		copy.KeywordOrder = append([]string(nil), a.KeywordOrder...)
+		copy.KeywordOrder = normalizationClone(a.KeywordOrder, n.control)
 	}
 	if !changed {
 		return a
@@ -135,9 +154,11 @@ func (n *attributeNormalizer) attribute(a *grammar.Attribute) *grammar.Attribute
 	return &copy
 }
 
-func cloneAttributeKeywords(values map[string]any) map[string]any {
+func cloneAttributeKeywords(values map[string]any, control *compileControl) map[string]any {
+	control.check()
 	copy := make(map[string]any, len(values))
 	for name, value := range values {
+		control.poll()
 		copy[name] = value
 	}
 	return copy
@@ -157,7 +178,7 @@ func (n *attributeNormalizer) bind(a *grammar.Attribute, name string) *grammar.A
 	}
 	if !n.eager {
 		copy := *a
-		copy.KwArgs = cloneAttributeKeywords(a.KwArgs)
+		copy.KwArgs = cloneAttributeKeywords(a.KwArgs, n.control)
 		a = &copy
 	} else if a.KwArgs == nil {
 		a.KwArgs = map[string]any{}
@@ -209,15 +230,16 @@ func (n *attributeNormalizer) repeat(e grammar.Expr, a *grammar.Attribute) gramm
 }
 
 func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
+	n.control.poll()
 	switch e := expr.(type) {
 	case *grammar.Group:
 		return n.expr(e.Expr)
 	case *grammar.Predicate:
 		term := e.Term
 		if block, ok := term.(*grammar.Block); ok && len(block.Statements) > 0 {
-			return predicateBlock(e, block)
+			return predicateBlockControlled(e, block, n.control)
 		}
-		term = grammaranalysis.UngroupTerm(term)
+		term = grammaranalysis.UngroupTermWithPoll(term, n.poll)
 		if !n.eager && term == e.Term {
 			return e
 		}
@@ -225,8 +247,8 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		copy.Term = term
 		return &copy
 	case *grammar.Seq:
-		items, changed := normalizeItems(e.Items, n.eager, n.expr)
-		items, expanded := expandPredicateBlocks(e.Items, items)
+		items, changed := normalizeItems(e.Items, n.eager, n.expr, n.control)
+		items, expanded := expandPredicateBlocksControlled(e.Items, items, n.control)
 		changed = changed || expanded
 		if !changed {
 			return e
@@ -235,7 +257,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		copy.Items = items
 		return &copy
 	case *grammar.Choice:
-		items, changed := normalizeItems(e.Alts, n.eager, n.expr)
+		items, changed := normalizeItems(e.Alts, n.eager, n.expr, n.control)
 		if !changed {
 			return e
 		}
@@ -306,6 +328,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		inner := n.expr(e.Expr)
 		seenDiagnostic := false
 		for _, source := range e.Attrs {
+			n.control.poll()
 			a := n.attribute(source)
 			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream" || a.Name == "missing"
 			if pragma && !a.Pragma {
@@ -349,7 +372,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 			}
 			if old, ok := inner.(*grammar.Attributed); ok {
 				copy := *old
-				copy.Attrs = append(append([]*grammar.Attribute(nil), old.Attrs...), a)
+				copy.Attrs = appendNormalizedAttribute(old.Attrs, a, n.control)
 				inner = &copy
 			} else {
 				inner = &grammar.Attributed{Expr: inner, Attrs: []*grammar.Attribute{a}}
@@ -358,8 +381,8 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		return inner
 	case *grammar.OperatorsRule:
 		skip := n.expr(e.Skip)
-		operands, operandsChanged := normalizeItems(e.Operands, n.eager, n.operand)
-		levels, levelsChanged := normalizeItems(e.Levels, n.eager, n.level)
+		operands, operandsChanged := normalizeItems(e.Operands, n.eager, n.operand, n.control)
+		levels, levelsChanged := normalizeItems(e.Levels, n.eager, n.level, n.control)
 		if !n.eager && skip == e.Skip && !operandsChanged && !levelsChanged {
 			return e
 		}
@@ -371,7 +394,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 }
 
 func (n *attributeNormalizer) operand(o *grammar.OperatorsRuleOperand) *grammar.OperatorsRuleOperand {
-	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTerm(o.Action)
+	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTermWithPoll(o.Action, n.poll)
 	if !n.eager && expr == o.Expr && action == o.Action {
 		return o
 	}
@@ -381,7 +404,7 @@ func (n *attributeNormalizer) operand(o *grammar.OperatorsRuleOperand) *grammar.
 }
 
 func (n *attributeNormalizer) level(l *grammar.OperatorsRuleLevel) *grammar.OperatorsRuleLevel {
-	operators, changed := normalizeItems(l.Operators, n.eager, n.operator)
+	operators, changed := normalizeItems(l.Operators, n.eager, n.operator, n.control)
 	if !changed {
 		return l
 	}
@@ -391,7 +414,7 @@ func (n *attributeNormalizer) level(l *grammar.OperatorsRuleLevel) *grammar.Oper
 }
 
 func (n *attributeNormalizer) operator(o *grammar.OperatorsRuleOperator) *grammar.OperatorsRuleOperator {
-	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTerm(o.Action)
+	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTermWithPoll(o.Action, n.poll)
 	if !n.eager && expr == o.Expr && action == o.Action {
 		return o
 	}
@@ -420,7 +443,7 @@ func annotationMarker(a *grammar.Attribute) string {
 func (n *attributeNormalizer) wrap(e grammar.Expr, a *grammar.Attribute) grammar.Expr {
 	if old, ok := e.(*grammar.Attributed); ok {
 		copy := *old
-		copy.Attrs = append(append([]*grammar.Attribute(nil), old.Attrs...), a)
+		copy.Attrs = appendNormalizedAttribute(old.Attrs, a, n.control)
 		return &copy
 	}
 	return &grammar.Attributed{Expr: e, Attrs: []*grammar.Attribute{a}}
@@ -432,7 +455,7 @@ func (n *attributeNormalizer) typeDef(td *grammar.TypeDef) *grammar.TypeDef {
 	spec := td.Spec
 	switch s := spec.(type) {
 	case *grammar.AliasSpec:
-		child := grammaranalysis.UngroupType(s.Type)
+		child := grammaranalysis.UngroupTypeWithPoll(s.Type, n.poll)
 		if child != s.Type {
 			v := *s
 			v.Type = child
@@ -441,12 +464,13 @@ func (n *attributeNormalizer) typeDef(td *grammar.TypeDef) *grammar.TypeDef {
 	case *grammar.StructSpec:
 		var fields []*grammar.Field
 		for i, f := range s.Fields {
-			child := grammaranalysis.UngroupType(f.Type)
+			n.control.poll()
+			child := grammaranalysis.UngroupTypeWithPoll(f.Type, n.poll)
 			if child == f.Type {
 				continue
 			}
 			if fields == nil {
-				fields = append([]*grammar.Field(nil), s.Fields...)
+				fields = normalizationClone(s.Fields, n.control)
 			}
 			v := *f
 			v.Type = child
