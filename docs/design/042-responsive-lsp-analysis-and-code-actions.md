@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation now covers text-index construction, lexical tokenization and syntax parsing; cancellation within compilation and lint, plus real-editor validation, remains open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, selected compiler rule/dependency/matcher/type traversals, and lint-owned loops. Shared helpers and some large operations remain unpolled, and real-editor validation remains open.
 
 ## Prototype Implementation Boundary
 
@@ -214,9 +214,9 @@ For many rules, median time was 1.4% higher and bytes were 3,143,447 versus
 10.3% higher for emoji, and 6.9% higher for whitespace. Allocated bytes were
 1,067,991 versus 936,899 for ASCII, 647,266 versus 516,175 for emoji, and
 778,422 versus 778,386 for whitespace. These measurements cover this analysis
-entry point and these workloads only. At the time of this comparison, parser,
-compiler and lint cancellation remained limited to phase boundaries; the
-parser-phase change described above is measured separately below.
+entry point and these workloads only. This comparison predates the later
+parser-, compiler- and lint-polling slices described and measured separately
+below.
 
 A separate five-pair, 300 ms alternating comparison measured the ordinary
 `syntax.Parse` path on the same Go 1.27.1, Apple M3 Max, `GOMAXPROCS=16` and
@@ -284,7 +284,7 @@ while a lint helper is active, or retained heap.
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing and selected compiler rule/dependency/matcher/type traversals poll context within phases. Some validation, normalization, shared analysis helpers, large type-helper operations and lint work remain unpolled.
+- Syntax parsing and selected compiler rule/dependency/matcher/type traversals poll context within phases. Lint-owned analysis, check and suppression loops, recursive analyses and result sorting also poll during execution. Grammar validation, normalization, shared grammar proofs/metadata walks, some formatting/comparison helpers and large single operations still have uncancellable spans; cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable enabling all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
