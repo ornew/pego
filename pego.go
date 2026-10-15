@@ -27,6 +27,10 @@ type MissingTokenLimitError = engine.MissingTokenLimitError
 // SyntaxErrors lists the syntax errors recovered with #recover or #missing.
 type SyntaxErrors = engine.SyntaxErrors
 
+// TruncatedSyntaxErrors reports a bounded tail of recovered stream errors.
+// Total and Dropped are lower bounds when CountsSaturated is true.
+type TruncatedSyntaxErrors = engine.TruncatedSyntaxErrors
+
 // ParseGrammar parses PEGO source code into a grammar AST.
 func ParseGrammar(src string) (*grammar.Grammar, error) {
 	return syntax.Parse(src)
@@ -202,6 +206,17 @@ func WithDiagnosticCallback(f func(*SyntaxError) error) ParseOption {
 	return func(o *engine.ParseOptions) { o.DiagnosticCallback = f }
 }
 
+// WithDiagnosticLimit retains at most n committed stream recoveries, keeping the latest errors.
+// Zero retains every error, as in an unconfigured stream parse. Negative values are invalid.
+// This option is valid only with ParseStream and Iterate, including when n is zero.
+// When errors are dropped, the terminal error is *TruncatedSyntaxErrors.
+func WithDiagnosticLimit(n int) ParseOption {
+	return func(o *engine.ParseOptions) {
+		o.DiagnosticLimit = n
+		o.DiagnosticLimitSet = true
+	}
+}
+
 // Profile accumulates the cost of each rule over the parses given WithProfile: calls, body evaluations,
 // memo hits, matches and failures, the input consumed and the input examined by failed calls, repeated
 // evaluations at a position, and time. Hints summarizes where to look. A Profile is not safe for
@@ -250,6 +265,7 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // retrying an interrupted stream requires caller-managed input replay.
 // WithDiagnosticCallback delivers committed recoveries immediately before their elements; its
 // error stops parsing before that element is emitted. Recovered errors are still returned at EOF.
+// WithDiagnosticLimit bounds the retained recovery tail and explicitly marks a truncated result.
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {
 	return p.prog.ParseStreamWith(p.start, r, emit, parseOptions(opts))
 }

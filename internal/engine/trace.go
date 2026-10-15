@@ -202,7 +202,11 @@ func (p *parser) traceExit(ok bool) {
 		Examined: p.hw, ReusedElements: p.resumed - c.resumed, p: p, far: far, exp: inner}
 	if ok {
 		ev.End = p.pos
-		if len(p.recovered) > c.rec {
+		if len(t.stack) == 1 && p.diagnosticTail.limit > 0 {
+			// A bounded stream has released earlier committed recoveries.
+			// Report the same ordered tail, including a successful suffix.
+			ev.rec = p.diagnosticTail.preview(p, p.recovered)
+		} else if len(p.recovered) > c.rec {
 			ev.rec = p.recovered[c.rec:len(p.recovered):len(p.recovered)]
 		}
 	}

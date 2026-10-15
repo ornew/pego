@@ -78,8 +78,8 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if prog.hasMissing || o.MissingTokens != 0 {
 		return nil, missingUnsupported("Document parsing")
 	}
-	if o.DiagnosticCallback != nil {
-		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	if err := o.validateStreamDiagnostics(false); err != nil {
+		return nil, err
 	}
 	defer func() {
 		if x := recover(); x != nil {
@@ -136,8 +136,8 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node,
 	if d.prog.hasMissing || o.MissingTokens != 0 {
 		return nil, missingUnsupported("Document parsing")
 	}
-	if o.DiagnosticCallback != nil {
-		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	if err := o.validateStreamDiagnostics(false); err != nil {
+		return nil, err
 	}
 	if o.Unit != d.in.unit || d.prog.backend(o.Backend) != d.back || o.Recognize {
 		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")

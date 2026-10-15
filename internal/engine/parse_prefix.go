@@ -1,7 +1,5 @@
 package engine
 
-import "fmt"
-
 // PrefixResult records the successful cursor independently of the rule's value.
 type PrefixResult struct {
 	Node          *Node
@@ -14,8 +12,8 @@ type PrefixResult struct {
 // and fatal errors return a zero result. Explicit EOF assertions still see the
 // entire supplied input.
 func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (result PrefixResult, err error) {
-	if o.DiagnosticCallback != nil {
-		return PrefixResult{}, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	if err := o.validateStreamDiagnostics(false); err != nil {
+		return PrefixResult{}, err
 	}
 	if prog.hasMissing || o.MissingTokens > 0 {
 		return PrefixResult{}, missingUnsupported("prefix parsing")

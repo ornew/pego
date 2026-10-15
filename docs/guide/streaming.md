@@ -4,7 +4,8 @@
 stream you want to process as it comes, `Parser.ParseStream` reads an `io.Reader` and hands your function each element
 of a repetition as soon as it matches. `Parser.Iterate` lets you request one element at a time. Both forget committed
 elements; retained input and tree memory depend on the size of one element,
-not on the size of the input. Recovered diagnostics are retained until EOF.
+not on the size of the input. By default, recovered diagnostics are retained
+until EOF; `WithDiagnosticLimit` can bound the retained diagnostic tail.
 
 |  |  |
 |:--|:--|
@@ -393,20 +394,45 @@ recovered errors:
 4. **Recovered errors.** With [`#recover`](../../spec/pragmas.md#recover) inside the element, a bad element becomes
    an `Error` node (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
    recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
-   diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. All recovered errors are kept until the end, so a
-   very large input with an error on every line holds one `SyntaxError` per line.
+   diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. By default all recovered
+   errors are kept until the end, so a very large input with an error on every line holds one `SyntaxError` per line.
    See [Errors and recovery](errors-and-recovery.md).
 
 Use `pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error { ... })` with
-`ParseStream` or `Iterate` to receive a committed recovery immediately before
+`ParseStream` or `Iterate` to receive each committed recovery immediately before
 its element. `Next` invokes the diagnostic callback while advancing to that
 element. Backtracked recoveries are not reported. The callback receives a copy
-that you may keep or modify without changing the error returned at EOF. If it
-returns an error, parsing stops with that error and the corresponding element
-is not delivered. This option is rejected by `Parse` and `Document`; a nil
-callback disables it. Recoveries in a successful suffix are reported before
-the terminal result. Diagnostic delivery does not bound memory: recovered
-errors are still retained until EOF.
+that you may keep or modify without changing the retained result. If it returns
+an error, parsing stops with that error and the corresponding element is not
+delivered. Recoveries in a successful suffix are reported before the terminal
+result.
+
+By default, the terminal error retains every recovered diagnostic as
+`pego.SyntaxErrors`. Add `pego.WithDiagnosticLimit(n)` to retain only the latest
+`n` committed recoveries in occurrence order. A positive limit bounds the
+retained tail while the callback, if supplied, still receives every committed
+recovery for as long as it returns nil. If any errors were dropped, the terminal
+error is `*pego.TruncatedSyntaxErrors`; use `errors.As` to inspect its `Errors`, `Total`,
+`Dropped`, and `CountsSaturated` fields. Its `Unwrap` method also exposes the
+retained errors as `pego.SyntaxErrors`. Counts saturate rather than wrap; when
+`CountsSaturated` is true, `Total` and `Dropped` are lower bounds. If the total
+does not exceed the limit, the terminal error is an ordinary
+`pego.SyntaxErrors`.
+
+A limit of zero keeps the legacy unbounded result. Supplying zero explicitly is
+still a stream-only option, as is any positive limit; negative limits are
+invalid. Diagnostic options are rejected by `Parse`, `ParsePrefix`, and
+`Document`. Retaining a bounded tail does not bound errors that the callback
+stores itself. When tracing is enabled with a positive limit, the successful
+start-rule exit event exposes the same ordered retained tail through
+`TraceEvent.Recovered()`, including recoveries from a successful suffix. The
+trace event exposes only the retained errors; inspect the terminal
+`TruncatedSyntaxErrors` for total and dropped counts. `WithContext` and
+`WithWorkLimits` apply to the whole stream invocation, including diagnostic
+callbacks and the work to copy a bounded tail. If a work check observes
+interruption before the stream reaches its terminal result, the interruption
+error is returned instead of a completed diagnostic result. A callback or reader already blocked in caller-owned code cannot be
+preempted by the parser.
 
 A panic from your reader or callback propagates with its original value on every backend,
 including values implementing Go's `runtime.Error`. Already delivered elements remain valid;

@@ -36,6 +36,9 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 			}
 		}
 	}()
+	if err := o.validateStreamDiagnostics(true); err != nil {
+		return nil, err
+	}
 	if o.Recognize {
 		return nil, fmt.Errorf("recognition is not supported for stream parsing")
 	}

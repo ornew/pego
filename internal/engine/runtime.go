@@ -18,9 +18,10 @@ type parser struct {
 	stats Stats
 	// aborted reports an interrupted execution, whose partial caches cannot be
 	// reused by a Document. Normal syntax errors are completed executions.
-	aborted    bool
-	emitCall   bool // a caller-owned stream callback is currently executing
-	diagnostic func(*SyntaxError) error
+	aborted        bool
+	emitCall       bool // a caller-owned stream callback is currently executing
+	diagnostic     func(*SyntaxError) error
+	diagnosticTail streamDiagnosticTail
 
 	env   *env            // predicate variables
 	bound map[string]bool // names assigned anywhere in this parse (a lookup hint)

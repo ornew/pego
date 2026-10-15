@@ -1,12 +1,12 @@
 # 036. Stream Iteration and Bounded Diagnostics
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Add pull-based iteration for `#stream` parsers and an opt-in bounded diagnostic tail with a callback for committed recoveries. Each `Next` advances parsing only as far as needed to yield one element or reach a terminal result. A successful element may have a nil value; the separate `ok` result distinguishes it from EOF. Existing `ParseStream` behavior remains unchanged when called without diagnostic options.
+Provide pull-based iteration for `#stream` parsers, immediate callbacks for committed recoveries, and an opt-in bounded diagnostic tail. Each `Next` advances parsing only as far as needed to yield one element or reach a terminal result. A successful element may have a nil value; the separate `ok` result distinguishes it from EOF. Without diagnostic options, `ParseStream` retains its legacy complete `SyntaxErrors` result.
 
 ```go
 type StreamIterator struct { /* opaque */ }
@@ -24,10 +24,11 @@ type TruncatedSyntaxErrors struct {
 func (e *TruncatedSyntaxErrors) Unwrap() error
 ```
 
-`StreamIterator` and `WithDiagnosticCallback` are implemented; `WithDiagnosticLimit`
-and `TruncatedSyntaxErrors` remain proposed. A non-nil diagnostic callback is
-valid only for streaming entry points and is rejected by batch parse and
-`Document` entry points. The existing `ParseStream(r, emit, opts...)` accepts it.
+`StreamIterator`, `WithDiagnosticCallback`, `WithDiagnosticLimit` and
+`TruncatedSyntaxErrors` are implemented. A non-nil diagnostic callback is
+valid only for streaming entry points and is rejected by batch parse,
+`ParsePrefix` and `Document` entry points. The existing
+`ParseStream(r, emit, opts...)` accepts it.
 
 ## Motivation
 
@@ -54,13 +55,26 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 ### Public Behavior and Contracts
 
-`Iterate` validates the same start rule, backend and `#stream` requirements as `ParseStream`. Existing `ParseOption`s still select unit, backend, trace and depth. `WithDiagnosticLimit(0)` means retain all errors; a negative value is invalid. The default, with neither diagnostic option set, preserves today's full-list behavior. Supplying either diagnostic option to non-stream `Parse` or `Document` is an invalid configuration and returns an error before parsing begins.
+`Iterate` validates the same start rule, backend and `#stream` requirements as `ParseStream`. Existing `ParseOption`s still select unit, backend, trace and depth. `WithDiagnosticLimit(n)` accepts zero or a positive value; a negative value is invalid. The default, with neither diagnostic option set, preserves today's full-list behavior. An explicitly supplied limit, including zero, or a non-nil callback is valid only for stream entry points and is rejected by batch parse, `ParsePrefix`, and `Document` before parsing begins.
 
 `Next` returns `(node, true, nil)` for each committed element, including `(nil, true, nil)` for an element discarded by `-`. At clean EOF it returns `(nil, false, nil)`. A parse error or recovered-error result returns `(nil, false, err)`. The terminal `(ok, err)` result is stable: repeated calls return the same `ok` and error result rather than replacing the original terminal error with a synthetic done error. `Close` is idempotent. Closing before completion abandons parser state; subsequent `Next` calls return `(nil, false, ErrStreamClosed)`. Closing after termination does not change the stored terminal result.
 
 `WithDiagnosticCallback` is called once for each recovered syntax error when that recovery is committed. It runs immediately before the corresponding stream element is delivered; an error from the diagnostic callback aborts parsing, returns unchanged and suppresses that element. Recoveries in a successful suffix after the streaming repetition are reported before the terminal result. It is not called for speculative failures later rolled back by PEG backtracking. Each call receives an owned defensive copy of the `SyntaxError`, including independent `Expected` and `Messages` slices, so callback mutation cannot change parser state or the retained result. The callback runs synchronously from `Next` or `ParseStream` and must not call back into the same iterator. A callback panic propagates as the original panic after parser cleanup; it is not converted into a generic parse error.
 
-A positive diagnostic limit retains a FIFO tail of at most that many committed errors while the callback still receives all committed errors in order. If the total exceeds the limit, return a proposed `TruncatedSyntaxErrors` wrapper with the retained `SyntaxErrors`, total count and dropped count. Its error text must identify truncation, and Unwrap exposes the retained SyntaxErrors to errors.As. Total and dropped counters saturate at the uint64 maximum and set CountsSaturated; they never wrap or stop an otherwise endless stream. Saturated counts are lower bounds, while the truncation status and retained tail remain reliable. Thus bounded results cannot be mistaken for a complete list, including when no callback was supplied. If the total does not exceed the limit, return ordinary `SyntaxErrors`. A limit of one retains the latest error. No limit option preserves the legacy complete result.
+A positive diagnostic limit retains a FIFO tail of at most that many committed
+errors while the callback receives each committed error in order for as long as
+it returns nil. If the total exceeds the limit, return
+`*TruncatedSyntaxErrors` with the retained `SyntaxErrors`, total count and
+dropped count. Its error text identifies truncation, and `Unwrap` exposes the
+retained `SyntaxErrors` to `errors.As`. Total and dropped counters saturate at
+the uint64 maximum; if another increment would overflow, `CountsSaturated` is
+set. They never wrap or stop an otherwise endless stream. Saturated counts are
+lower bounds, while the truncation status and retained tail remain reliable.
+Thus bounded results cannot be mistaken for a complete list, including when no
+callback was supplied. If the total does not exceed the limit, return ordinary
+`SyntaxErrors`. A limit of one retains the latest error. An explicit zero limit
+preserves the legacy complete result; without either diagnostic option, the
+same legacy result is used.
 
 The iterator and reader remain caller-owned. The iterator is single-owner and is not safe for concurrent `Next` or `Close`; closing concurrently with a blocked `Next` is not supported. `Close` does not close the reader and cannot interrupt a `Read` already blocked in caller-owned code. The caller must use and cancel/close a reader it owns if it needs that behavior. The pull adapter uses `iter.Pull`, whose runtime coroutine has an internal goroutine but no independently scheduled producer or element queue.
 
@@ -70,18 +84,23 @@ The iterator and reader remain caller-owned. The iterator is single-owner and is
 
 Factor the current synchronous stream parser into state that can pause at an element boundary and resume on request. `ParseStream` can drive the same state repeatedly and invoke `emit`; its no-option behavior must retain the full recovered-error list. Keep diagnostic options in the existing functional parse-option path but mark them stream-only, validating that boundary before parsing a non-stream input.
 
-Drain diagnostics only at a recovery commit point, after the parser knows the recovery was not rolled back. Copy error slices before invoking user callbacks. Use one bounded collector for callback and iterator modes; preserve an explicit dropped count so the final wrapper accurately describes incomplete retention. Terminal state records EOF, parse failure, callback failure, input failure or explicit close and returns the same terminal result on repeated calls.
+The parser reports diagnostics only at a recovery commit point, after the parser knows the recovery was not rolled back. It copies error slices before invoking user callbacks. One bounded collector serves callback and iterator modes; an explicit dropped count makes incomplete retention visible in the final wrapper. Terminal state records EOF, parse failure, callback failure, input failure or explicit close and returns the same terminal result on repeated calls. `WithContext` and `WithWorkLimits` apply to the invocation, including callback boundaries and bounded-tail copying. If a work check observes cancellation or a work limit before completion, that interruption error is returned instead of a completed diagnostic result.
 
 ### Compatibility and Backend Support
 
-This is an additive Go API for the stream-capable closure and bytecode backends; recognition remains unsupported. Both byte and rune position units are supported. Generated Go, typed Go and TypeScript parsers remain unsupported for streams. `ParseStream` retains its signature, element order, nil callback values and complete recovered-error result unless the caller explicitly adds a diagnostic option. Stream-only diagnostic options are rejected for batch `Parse` and `Document` rather than silently ignored.
+This is an additive Go API for the stream-capable closure and bytecode backends; recognition remains unsupported. Both byte and rune position units are supported. Generated Go, typed Go and TypeScript parsers remain unsupported for streams. `ParseStream` retains its signature, element order, nil callback values and complete recovered-error result unless the caller explicitly adds a diagnostic option. Stream-only diagnostic options are rejected for batch `Parse`, `ParsePrefix` and `Document` rather than silently ignored.
 
-### Implementation Sequence
+### Implemented Slices
 
-1. Extract resumable stream state and preserve `ParseStream` output and terminal errors.
-2. Add `Iterate` with explicit EOF/nil semantics, idempotent terminal results and early close.
-3. Add stream-only functional parse options for committed diagnostic callbacks and bounded-tail retention; use them through `ParseStream` and `Iterate`.
-4. Document reader ownership, read-ahead, finite-input compatibility and endless-stream use.
+1. `Iterate` pauses at committed element boundaries, distinguishes a nil
+   element from EOF, and preserves stable terminal results and early-close
+   cleanup.
+2. Stream-only diagnostic options report committed recoveries before element
+   delivery and optionally retain a bounded FIFO tail with explicit truncation
+   metadata.
+3. `ParseStream` uses the same commit boundaries while preserving the complete
+   legacy result when no positive limit is selected. Reader ownership, read-ahead,
+   cancellation and work limits are documented for both stream entry points.
 
 ## Alternatives Considered
 
@@ -92,7 +111,7 @@ This is an additive Go API for the stream-capable closure and bytecode backends;
 
 ## Testing
 
-For both units and every stream-capable backend, compare `ParseStream` and iterator output for value order, nil elements, spans, recovered errors and terminal errors. Cover clean EOF, malformed final input, callback and emit failures, callback order across backtracking, positive limits, zero-limit compatibility, invalid limits, rejected stream options in batch and `Document`, repeated `Next`, early `Close`, stable terminal errors and stable prior elements. Verify defensive callback copies, unchanged callback errors, original panic propagation and `errors.As` through truncated diagnostics. Test a long faulty stream with many recoveries: retained diagnostics stay bounded, the callback sees all of them and the final wrapper reports the dropped count. Use a blocking reader to document that `Close` alone does not cancel `Read`; test cancellation only through a caller-owned closable reader. Include lookahead read-ahead, empty-element termination, Unicode and byte/rune positions.
+Public and engine tests cover both position units and all stream-capable backends for element order, nil elements, spans, recovered and terminal errors, EOF, callback and emit failures, backtracking, positive and zero limits, invalid options, repeated `Next`, early `Close`, stable terminal results, defensive callback copies, panic propagation and `errors.As` through truncated results. Long faulty streams verify bounded retention, callback delivery of every committed recovery, dropped counts and saturating counters. Tests also cover trace preview, work-limit interruption, blocking-reader ownership, read-ahead, empty-element termination and Unicode.
 
 ## Performance and Results
 
@@ -108,14 +127,31 @@ These measurements compare the two delivery methods on the tested stream
 workload; they do not measure retained memory or establish behavior for other
 workloads.
 
+A separate 1,000-recovery stream (4,000 input bytes) compared complete
+retention with `WithDiagnosticLimit(32)`, after diagnostic-tail scratch reuse,
+using five 200 ms samples per subbenchmark across Closure, bytecode VM and
+iterative VM in both position units. The bounded case reduced cumulative
+`B/op` by about 16,705–16,724 and `allocs/op` by one; median time ratios ranged
+from 0.997 to 1.053, which does not show a robust speed change. `B/op` is
+cumulative allocation per operation, not retained heap. The limit bounds the
+retained diagnostic slice structurally; this benchmark did not measure heap
+retention.
+
+For the no-option path, three alternating 200 ms pairs compared main with the
+candidate on the 50,001-element CSV stream. Per-profile median time ratios were
+0.985–1.017 for callback delivery and 0.995–1.011 for iteration. Per-pair
+ranges were wider, and allocations differed by at most one. These observations
+do not establish a default-path speedup.
+
 ## Limitations and Open Questions
 
-A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The bounded collector and its interaction with nested recovery and backtracking still need prototype validation before those signatures are finalized.
+A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit bounds parser-retained errors, but cannot bound diagnostics retained by caller callbacks. The successful start-rule trace exit exposes the same ordered latest-n tail as the terminal result, including recoveries in a successful suffix. The trace event does not carry truncation counts; use the terminal `TruncatedSyntaxErrors` for those.
 
-## Implemented Pull Iteration and Diagnostic Callback
+## Implemented Stream Iteration and Diagnostic Controls
 
-The implemented slice exposes `Parser.Iterate`, `StreamIterator` and
-`ErrStreamClosed`. An internal `iter.Pull` adapter suspends the existing
+The implementation exposes `Parser.Iterate`, `StreamIterator`,
+`ErrStreamClosed`, `WithDiagnosticCallback`, `WithDiagnosticLimit` and
+`TruncatedSyntaxErrors`. An internal `iter.Pull` adapter suspends the existing
 `ParseStreamWith` execution at each committed element, preserving closure and
 VM stream behavior. Construction validates the stream entry point without
 reading the caller-owned reader. `Next` distinguishes successful nil elements
@@ -128,10 +164,22 @@ element boundary, it reports recoveries surviving backtracking before the
 element callback runs; its error suppresses that element. It copies the error
 and its slices before invoking caller code. Batch parse and Document reject a
 non-nil callback. A successful stream suffix reports any remaining recoveries
-before the terminal result. The bounded tail and truncation wrapper remain
-proposals, so the stream still retains its full recovered-error list until EOF.
-The public and engine iterator tests cover all stream-capable
-backends and both position units, lazy reader access, EOF and error stability,
-nil elements, early close and caller-owned cancellation. A public comparison
-benchmark compares stream callback delivery, pull delivery and first-element
-latency under the conditions reported above.
+before the terminal result. With a positive `WithDiagnosticLimit`, committed
+recoveries are copied into a bounded FIFO tail and older parser-retained stream
+entries are retired. The callback sees each committed recovery in order,
+immediately before its element, while it continues returning nil; a callback
+error stops parsing and suppresses that element. An explicit limit of zero
+preserves the complete legacy error list. Both an explicit zero and a positive
+limit are stream-only; negative limits are rejected. When errors are dropped,
+the terminal result is `*TruncatedSyntaxErrors`, with the retained tail,
+saturating `Total` and `Dropped` counters, and `CountsSaturated` if another increment would overflow a counter. `Unwrap` exposes the retained `SyntaxErrors`.
+
+For a positive limit, the successful start-rule `TraceExit.Recovered()`
+returns the same ordered latest-n tail as the terminal result, including
+recoveries from a successful suffix. Truncation counts are available only from
+the terminal `TruncatedSyntaxErrors`. The
+public and engine tests cover both position units and all stream-capable
+backends, including ordering, bounded retention, callback errors, truncation,
+trace preview and work-limit interruption. The iterator delivery and bounded-tail measurements are reported above; they
+show the tested allocation and timing ranges, not retained-heap or broad
+workload performance.

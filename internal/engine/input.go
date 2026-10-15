@@ -54,6 +54,10 @@ type ParseOptions struct {
 	// DiagnosticCallback receives committed recoveries during stream parsing, immediately before
 	// the corresponding element. It is invalid for batch parses and Documents.
 	DiagnosticCallback func(*SyntaxError) error
+	// DiagnosticLimit retains only the latest committed stream recoveries when positive.
+	// DiagnosticLimitSet records an explicit zero limit, which is stream-only too.
+	DiagnosticLimit    int
+	DiagnosticLimitSet bool
 }
 
 // Default limits on call nesting depth. Backends that run recursively use the host stack, so
@@ -626,6 +630,22 @@ func (p *parser) commit(pos int) {
 		}
 		p.pruneStreamMemo(pos)
 		p.pruned = pos
+	}
+	if p.diagnosticTail.limit > 0 {
+		// The element boundary is irreversible. Its recovered errors have
+		// already been delivered and collected. Without tracing, callbacks
+		// own defensive copies and memo entries own separate slices, so a
+		// small cleared backing array can serve the next element. A trace
+		// callback may retain Recovered(), and large scratch is released.
+		// The active start-rule call saved an empty recovery prefix;
+		// speculative element marks are no longer active after emission.
+		if p.tr == nil && cap(p.recovered) <= streamRecoveryScratchMax {
+			clearWork(p, p.recovered[:cap(p.recovered)])
+			p.recovered = p.recovered[:0]
+		} else {
+			p.recovered = nil
+		}
+		p.diagnosed = 0
 	}
 }
 

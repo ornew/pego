@@ -16,8 +16,8 @@ func (prog *Program) Parse(start, input string) (*Node, error) {
 
 // ParseWith parses with options such as the position unit.
 func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
-	if o.DiagnosticCallback != nil {
-		return nil, fmt.Errorf("diagnostic callback is only supported for stream parsing")
+	if err := o.validateStreamDiagnostics(false); err != nil {
+		return nil, err
 	}
 	// Initialization can interrupt before run installs its execution recovery.
 	// Preserve caller panics: run already distinguishes bytecode faults from
@@ -251,6 +251,9 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 			}
 		}
 	}()
+	if err := o.validateStreamDiagnostics(true); err != nil {
+		return err
+	}
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
@@ -265,7 +268,8 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
 	p.diagnostic = o.DiagnosticCallback
-	if p.diagnostic != nil && p.emit == nil {
+	p.diagnosticTail.limit = o.DiagnosticLimit
+	if (p.diagnostic != nil || o.DiagnosticLimit > 0) && p.emit == nil {
 		// A diagnostic-only stream still needs element commit boundaries.
 		p.emit = func(*Node) error { return nil }
 	}
@@ -290,10 +294,13 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
 		control.check()
-		if p.diagnostic != nil {
+		if p.diagnostic != nil || p.diagnosticTail.limit > 0 {
 			if err := p.reportRecovered(); err != nil {
 				return err
 			}
+		}
+		if p.diagnosticTail.limit > 0 {
+			return p.diagnosticTail.result(p)
 		}
 		if len(p.recovered) > 0 {
 			return SyntaxErrors(p.recovered)
@@ -314,7 +321,7 @@ func (p *parser) emitStream(n *Node) error {
 	if workControlsEnabled {
 		p.control.check()
 	}
-	if p.diagnostic != nil {
+	if p.diagnostic != nil || p.diagnosticTail.limit > 0 {
 		if err := p.reportRecovered(); err != nil {
 			return err
 		}
@@ -331,7 +338,7 @@ func (p *parser) emitStream(n *Node) error {
 // reportRecovered runs only at an irreversible stream boundary. Earlier
 // recoveries in a speculative branch may have been removed by backtracking.
 func (p *parser) reportRecovered() error {
-	if p.diagnostic == nil {
+	if p.diagnostic == nil && p.diagnosticTail.limit == 0 {
 		return nil
 	}
 	if p.diagnosed > len(p.recovered) {
@@ -341,14 +348,20 @@ func (p *parser) reportRecovered() error {
 		if workControlsEnabled {
 			p.control.check()
 		}
-		e := *p.recovered[p.diagnosed]
-		e.Expected = append([]string(nil), e.Expected...)
-		e.Messages = append([]string(nil), e.Messages...)
-		p.emitCall = true
-		err := p.diagnostic(&e)
-		p.emitCall = false
-		if err != nil {
-			return err
+		original := p.recovered[p.diagnosed]
+		if p.diagnostic != nil {
+			e := *original
+			e.Expected = append([]string(nil), e.Expected...)
+			e.Messages = append([]string(nil), e.Messages...)
+			p.emitCall = true
+			err := p.diagnostic(&e)
+			p.emitCall = false
+			if err != nil {
+				return err
+			}
+		}
+		if p.diagnosticTail.limit > 0 {
+			p.diagnosticTail.add(original)
 		}
 		p.diagnosed++
 		if workControlsEnabled {
