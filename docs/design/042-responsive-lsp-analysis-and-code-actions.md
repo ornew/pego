@@ -869,6 +869,38 @@ the paired median ratio was 1.012 (0.982–1.057). These are synthetic in-proces
 means, not tail latencies. `BenchmarkResponsiveDispatch` measures a sequential
 framed request/reply path; it does not cover concurrent editor workloads.
 
+### Incremental Change Application
+
+The protocol actor applies `didChange` content changes itself, and that work
+cannot be cancelled. Each change applies to the result of the previous ones,
+so applying them one at a time indexed and copied the whole document per
+change: one notification with k changes cost O(k·n). A client can order a
+multi-cursor edit's changes from the bottom of the document up, so that each
+change is unaffected by the previous ones. A change whose lines and line
+terminators end at or before the start of the previous pending change, or that
+lies at the start of the text, is now located in the index of the text before
+the pending changes, and consecutive such changes are spliced in one copy. A change in any other order first applies the pending
+changes and indexes the result, as before. A differential test compares 20,000
+random notifications with sequential application across all line terminators,
+surrogate pairs, out-of-range and reversed ranges, and full replacements; it
+rejects mutants that loosen the line condition, ignore the end line or accept
+the last line.
+
+`BenchmarkApplyChanges` applies 1,024 column-zero insertions to a 1 MiB
+document. Five alternating pairs against sequential application used Go 1.27.1
+on an Apple M3 Max with default `GOMAXPROCS`:
+
+| Order | Sequential | Spliced | Allocated per notification |
+|---|---:|---:|---:|
+| Bottom-up | 1.71–1.80 s | 2.00–2.10 ms | 3.75 GB → 3.78 MB |
+| Top-down | 1.71–1.75 s | 1.72–1.74 s | 3.75 GB → 3.75 GB |
+| Single change | 1.71–1.77 ms | 1.68–1.87 ms | 3.65 MB → 3.66 MB |
+
+Top-down notifications keep their quadratic cost; supporting them would require
+mapping positions through earlier edits. Which order real editors send is not
+yet verified and belongs to real-editor validation. The measurement covers
+change application only, not the analysis that follows each version.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.

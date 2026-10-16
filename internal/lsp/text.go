@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"sort"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
@@ -226,4 +227,78 @@ func applyChange(text string, c contentChange) string {
 		start, end = end, start
 	}
 	return text[:start] + c.Text + text[end:]
+}
+
+// applyChanges applies the content changes of a notification in order and returns the new text.
+//
+// Each change applies to the result of the previous ones, so applying them one by one indexes and
+// copies the whole text for each change. A client can order the changes of a multi-cursor edit
+// from the bottom of the document up, so that each is unaffected by the previous ones. Such a
+// change, or one at the start of the text, is located in the index of the text before the pending
+// changes and spliced together with them in one copy. A change in any other order first applies
+// the pending changes and indexes the result.
+func applyChanges(text string, changes []contentChange) string {
+	type splice struct {
+		start, end int
+		text       string
+	}
+	var idx *textIndex
+	// pending are in order of application, so by non-increasing start. Equal starts, at the start
+	// of the text, are written newest first, as sequential application inserts them.
+	var pending []splice
+	flush := func() {
+		if len(pending) == 0 {
+			return
+		}
+		size := len(text)
+		for _, s := range pending {
+			size += len(s.text) - (s.end - s.start)
+		}
+		var b strings.Builder
+		b.Grow(size)
+		off := 0
+		for i := len(pending) - 1; i >= 0; i-- {
+			s := pending[i]
+			b.WriteString(text[off:s.start])
+			b.WriteString(s.text)
+			off = s.end
+		}
+		b.WriteString(text[off:])
+		text, idx, pending = b.String(), nil, pending[:0]
+	}
+	for _, c := range changes {
+		if c.Range == nil {
+			text, idx, pending = c.Text, nil, pending[:0]
+			continue
+		}
+		if len(pending) > 0 && !idx.unchangedBefore(*c.Range, pending[len(pending)-1].start) {
+			flush()
+		}
+		if idx == nil {
+			idx = newTextIndex(text)
+		}
+		start, end := idx.offset(c.Range.Start), idx.offset(c.Range.End)
+		if end < start {
+			start, end = end, start
+		}
+		pending = append(pending, splice{start, end, c.Text})
+	}
+	flush()
+	return text
+}
+
+// unchangedBefore reports whether the offsets of the range r are the same in t's text and in the
+// text changed only at offset limit or after it. It holds when the lines of r and their
+// terminators end by limit: offsets in a line depend only on its start and on its end, which is
+// before its terminator. A change after a lone "\r" can make it part of "\r\n", but the line still
+// ends before the "\r".
+func (t *textIndex) unchangedBefore(r Range, limit int) bool {
+	line := max(r.Start.Line, r.End.Line)
+	if line < 0 {
+		return true // the start of the text
+	}
+	if line+1 >= len(t.lines) {
+		return false // the last line, which ends at the end of the text
+	}
+	return t.lines[line+1] <= limit
 }

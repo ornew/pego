@@ -214,9 +214,7 @@ func (s *Server) notification(msg *incoming) {
 		if d == nil {
 			return
 		}
-		for _, c := range p.ContentChanges {
-			d.text = applyChange(d.text, c)
-		}
+		d.text = applyChanges(d.text, p.ContentChanges)
 		d.version, d.an = p.TextDocument.Version, nil
 		s.publish(d)
 	case "textDocument/didSave":
