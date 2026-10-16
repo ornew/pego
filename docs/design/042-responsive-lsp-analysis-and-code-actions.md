@@ -816,6 +816,46 @@ latency, or real-editor behavior, and does not justify changing defaults. The
 harness is `internal/lsp/responsive_resources_test.go`; raw results remain
 outside the repository.
 
+### Bounded Dispatch Candidate
+
+Cancellation acknowledges a logical request before its handler necessarily
+returns. With four canceled handlers held at an indivisible-operation barrier,
+the previous implementation started workers for another 64 admitted requests.
+The candidate reserves an execution slot on the actor before starting a worker;
+waiting requests remain in the existing admission map without a worker or a
+copied document. Every completion releases its slot, including obsolete results,
+and rechecks pending requests. The four execution slots and 64 logical-request
+limit remain unchanged. This does not add FIFO fairness or establish an exact
+whole-process goroutine ceiling.
+
+A comparison against `1aeff8d` used the same framed resource harness with only
+`responsive.go` restored for the baseline. Five alternating fresh-process pairs
+covered 1 and 64 requests, each with tiny hover or large code-action parameters
+(40 processes). The environment was Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=16`, `GOGC=100`, and no `GOMEMLIMIT`. Post-GC process heap deltas
+include the client, framing and runtime; they are neither peak RSS nor isolated
+server retention. For 64 held requests:
+
+| Payload | Baseline Held Heap Δ KiB | Candidate Held Heap Δ KiB | Held Goroutine Δ, Baseline → Candidate |
+|---|---:|---:|---:|
+| Tiny hover | 141.5 (136.7–147.7) | 59.8 (58.9–65.7) | +64 → +4 |
+| Large code action | 68,369.4 (67,276.9–69,454.5) | 68,291.0 (66,116.3–68,300.9) | +64 → +4 |
+
+Heap values are medians with ranges across five samples. Large parameter bodies
+still dominate retention. Both versions returned to the idle goroutine count
+after cancellation and joining; this is not a leak or cancellation-latency test.
+The raw measurements remain outside the repository.
+
+The focused responsive tests, race checks and scoped LSP vet pass. Regression
+cases cover held cancellation tails, obsolete completion wakeups, ID reuse,
+pending cancellation, close invalidation, panic recovery and early cancellation.
+Qualification remains incomplete: only two request/cancellation timing pairs
+finished before a candidate run exceeded its 330-second harness timeout. No
+speed conclusion follows from those incomplete timings. Investigate the timeout,
+finish timing and full-module validation, and check the documentation build
+before adoption. `BenchmarkResponsiveDispatch` measures a sequential framed
+request/reply path; it does not cover concurrent editor workloads.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.

@@ -141,16 +141,7 @@ func (s *Server) runResponsive() error {
 				return actor.writeErr
 			}
 		case result := <-actor.results:
-			key := requestKey(result.request.message.ID)
-			if actor.requests[key] != result.request {
-				continue
-			}
-			d := s.docs[result.request.snapshot.URI]
-			if d == nil || !matchesSnapshot(d.snapshot(), result.request.snapshot) {
-				result.value = nil
-				result.err = &rpcError{Code: codeContentModified, Message: "document changed during request"}
-			}
-			if err := actor.finish(result.request, result.value, result.err); err != nil {
+			if err := actor.complete(result); err != nil {
 				return err
 			}
 		}
@@ -222,36 +213,64 @@ func (a *responsiveActor) handle(message *incoming) error {
 	return nil
 }
 
+// start reserves execution capacity on the actor before creating a worker.
+// Waiting requests stay in requests, without a worker or a document copy.
 func (a *responsiveActor) start(request *snapshotRequest) {
-	d := a.server.docs[request.snapshot.URI]
-	if d == nil || !matchesSnapshot(d.snapshot(), request.snapshot) {
+	if request.started || len(a.slots) == cap(a.slots) {
 		return
 	}
-	if d.an == nil || d.an.text != d.text {
+	d := a.server.docs[request.snapshot.URI]
+	if d == nil || !matchesSnapshot(d.snapshot(), request.snapshot) || d.an == nil {
+		return
+	}
+	if d.an.text != d.text {
 		_ = a.finish(request, nil, &rpcError{Code: codeContentModified, Message: "current document analysis unavailable"})
 		return
 	}
 	copyDocument := *d
 	worker := &Server{docs: map[string]*document{d.uri: &copyDocument}, state: stateInitialized, client: a.server.client, version: a.server.version, requestContext: request.ctx}
 	request.started = true
+	a.slots <- struct{}{}
 	a.workers.Add(1)
 	go func() {
 		defer a.workers.Done()
-		select {
-		case a.slots <- struct{}{}:
-		case <-request.ctx.Done():
-			return
-		}
-		defer func() { <-a.slots }()
-		if request.ctx.Err() != nil {
-			return
-		}
 		value, rerr := runSnapshotRequest(worker, request)
+		// Cancellation acknowledges the logical request immediately, but only
+		// this completion releases its execution slot. Even obsolete results
+		// must reach the actor so pending requests can make progress.
 		select {
 		case a.results <- snapshotResponse{request: request, value: value, err: rerr}:
 		case <-a.ctx.Done():
 		}
 	}()
+}
+
+func (a *responsiveActor) complete(result snapshotResponse) error {
+	<-a.slots
+	key := requestKey(result.request.message.ID)
+	if a.requests[key] == result.request {
+		d := a.server.docs[result.request.snapshot.URI]
+		if d == nil || !matchesSnapshot(d.snapshot(), result.request.snapshot) {
+			result.value = nil
+			result.err = &rpcError{Code: codeContentModified, Message: "document changed during request"}
+		}
+		if err := a.finish(result.request, result.value, result.err); err != nil {
+			return err
+		}
+	}
+	// Scan the bounded admission map rather than retaining a second queue
+	// containing canceled requests. A nil analysis leaves a request waiting
+	// for its document's analysis result; started requests are already active.
+	for _, request := range a.requests {
+		a.start(request)
+		if a.writeErr != nil {
+			return a.writeErr
+		}
+		if len(a.slots) == cap(a.slots) {
+			break
+		}
+	}
+	return nil
 }
 
 func runSnapshotRequest(worker *Server, request *snapshotRequest) (value any, rerr *rpcError) {
@@ -261,6 +280,9 @@ func runSnapshotRequest(worker *Server, request *snapshotRequest) (value any, re
 			rerr = &rpcError{Code: codeInternalError, Message: "request worker failed"}
 		}
 	}()
+	if request.ctx.Err() != nil {
+		return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
+	}
 	if requestHook != nil {
 		requestHook(request.ctx, request.message.Method)
 	}

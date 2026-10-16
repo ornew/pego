@@ -200,8 +200,9 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 		assertResponseError(t, c.response(strconv.Itoa(100+i)), codeRequestCancelled)
 		result.CancelledResponses++
 	}
-	// All Add calls happened before the sequence reply. No further document
-	// update or text request is sent until Wait returns, so no Add races Wait.
+	// Every admitted request has now been canceled and removed. No further
+	// document update or text request is sent until Wait returns, so pending
+	// dispatch cannot Add while Wait observes an empty job count.
 	joined := make(chan struct{})
 	go func() { peer.server.actor.workers.Wait(); close(joined) }()
 	awaitBarrier(t, joined)
