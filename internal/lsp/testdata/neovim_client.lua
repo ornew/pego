@@ -150,6 +150,46 @@ local format = client:request_sync("textDocument/formatting", { textDocument = {
 if not format or format.err then
   fail("formatting: " .. vim.inspect(format))
 end
+
+-- Cancellation: Neovim sends $/cancelRequest and drops RequestCancelled replies after clearing the
+-- request, so a request that is neither answered with a result nor left pending was acknowledged.
+-- A larger grammar keeps the responsive server busy when the cancellation arrives.
+local big = { "rule main = " .. table.concat(vim.tbl_map(function(i) return string.format("e%04d", i) end, vim.fn.range(0, 1023)), " ") }
+for i = 0, 1023 do
+  big[#big + 1] = string.format('rule e%04d = "token%04d"', i, i)
+end
+vim.fn.writefile(big, dir .. "/cancel.pego")
+vim.cmd.edit(dir .. "/cancel.pego")
+local cbuf = vim.api.nvim_get_current_buf()
+if not vim.wait(10000, function() return vim.lsp.buf_is_attached(cbuf, client.id) end, 20) then
+  fail("cancellation buffer did not attach")
+end
+local curi = vim.uri_from_bufnr(cbuf)
+tokens(cbuf)
+local results = 0
+for _ = 1, 8 do
+  local ok, id = client:request("textDocument/semanticTokens/full", { textDocument = { uri = curi } }, function(err)
+    if err then
+      fail("cancelled request error: " .. vim.inspect(err))
+    end
+    results = results + 1
+  end, cbuf)
+  if not ok then
+    fail("request not sent")
+  end
+  client:cancel_request(id)
+end
+if not vim.wait(10000, function() return next(client.requests) == nil end, 10) then
+  fail("cancelled requests left pending: " .. vim.inspect(client.requests))
+end
+settle()
+say(string.format("cancellation      requests=8 results=%d acknowledged=%d", results, 8 - results))
+if responsive and results == 8 then
+  fail("responsive server acknowledged no cancellation")
+end
+if #tokens(cbuf) == 0 then
+  fail("no tokens after cancellation")
+end
 say("PASS")
 client:stop()
 vim.wait(2000, function() return client:is_stopped() end, 20)
