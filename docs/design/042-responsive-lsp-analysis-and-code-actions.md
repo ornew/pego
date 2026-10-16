@@ -900,6 +900,39 @@ Top-down notifications keep their quadratic cost; supporting them would require
 mapping positions through earlier edits. The measurement covers change
 application only, not the analysis that follows each version.
 
+### Multi-Document Resource Probe
+
+`TestDocumentResourceProbe` (run with `PEGO_LSP_DOCUMENT_PROBE=1`, a document
+count in `PEGO_LSP_DOCUMENT_COUNT` and `PEGO_LSP_RESPONSIVE=0` or `1`) opens
+copies of the 65,542-byte benchmark grammar under distinct URIs. It then sends
+one change to every document followed by a hover on the last one, reading
+replies concurrently as a client does, and finally closes them all. Three
+fresh processes per configuration ran on Go 1.27.1, Apple M3 Max
+(darwin/arm64), `GOMAXPROCS=16`, `GOGC=100` and no `GOMEMLIMIT`. Values are
+medians, with ranges in parentheses; heap figures are post-GC process heap,
+including the client, not peak heap or RSS.
+
+| Documents | Mode | Heap per open document MiB | Heap after closing Δ MiB | Burst until all published ms | Burst until hover reply ms |
+|---:|---|---:|---:|---:|---:|
+| 1 | synchronous | 3.8 (3.8–3.8) | 1.2 | 8.0 (7.4–10.8) | 8.1 (7.5–11.0) |
+| 1 | responsive | 3.8 (3.8–3.8) | 1.2 | 8.3 (7.7–8.7) | 8.4 (7.8–8.8) |
+| 8 | synchronous | 2.8 (2.8–2.8) | 1.2 | 53.6 (53.4–53.9) | 53.6 (53.5–53.9) |
+| 8 | responsive | 2.8 (2.8–2.8) | 1.2 | 52.8 (52.7–53.8) | 52.9 (52.7–53.9) |
+| 64 | synchronous | 2.7 (2.7–2.7) | 1.3 | 419.2 (413.5–419.2) | 419.2 (413.6–419.3) |
+| 64 | responsive | 2.7 (2.7–2.7) | 1.3 | 419.0 (416.7–425.9) | 419.1 (416.8–426.0) |
+| 256 | synchronous | 2.7 (2.7–2.7) | 1.3 | 1,675.5 (1,674.4–1,681.2) | 1,675.5 (1,674.5–1,681.3) |
+| 256 | responsive | 2.7 (2.7–2.7) | 1.4 | 1,663.3 (1,654.2–1,680.2) | 1,663.4 (1,654.2–1,680.3) |
+
+Each open document retains about 43 times its source size in text, indexes
+and analysis, and the server has no limit on open documents; the editor
+decides how many are open. After every document closes, the heap returns to
+within 1.2–1.4 MiB of the idle session regardless of the count, so closing
+releases per-document state. Analysis runs one document at a time, about
+6.5 ms per change of this grammar. A hover on the last changed document is
+answered only after every earlier change has been analysed, in both modes:
+the synchronous server handles messages in order, and the responsive queue
+analyses documents in the order they changed.
+
 ### Neovim Client Validation
 
 `TestNeovimClient` runs Neovim's built-in client, configured as in the editor
@@ -926,7 +959,7 @@ VS Code, Helix and Emacs remain unvalidated.
 - The responsive actor remains opt-in; ordinary clients retain the synchronous path. Neovim edits keep the server text in sync in both modes, but VS Code, Helix and Emacs, and cancellation from a real client, remain unvalidated.
 - Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Semantic-token classification and encoding also poll through token/occurrence traversal and multiline output construction while preserving exact token data. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
-- The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
+- The exact work bound and worker-count default should be selected from measurements on large grammars and editor workloads; the multi-document probe measures retention and analysis order, not request concurrency.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
 - **Proposed explanation command:** use the small `pego.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request is another option, but would add a custom request method and editor UI contract.
 - No grammar-changing action is approved by this design until each transformation has a check-specific proof and review.
