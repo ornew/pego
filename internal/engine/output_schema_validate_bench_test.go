@@ -75,7 +75,6 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 			b.Run("UnmarshalValidated", func(b *testing.B) {
 				b.ReportAllocs()
 				b.SetBytes(int64(len(data)))
-				b.ReportMetric(float64(len(data)), "B/input")
 				for b.Loop() {
 					var got OutputSchema
 					if err := json.Unmarshal(data, &got); err != nil {
@@ -83,11 +82,11 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 					}
 					outputSchemaValidatedSink = got
 				}
+				b.ReportMetric(float64(len(data)), "B/input") // after the loop, which resets metrics
 			})
 			b.Run("UnmarshalPlainDTO", func(b *testing.B) {
 				b.ReportAllocs()
 				b.SetBytes(int64(len(data)))
-				b.ReportMetric(float64(len(data)), "B/input")
 				for b.Loop() {
 					var got outputSchemaUnvalidated
 					if err := json.Unmarshal(data, &got); err != nil {
@@ -95,6 +94,7 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 					}
 					outputSchemaUnvalidatedSink = got
 				}
+				b.ReportMetric(float64(len(data)), "B/input") // after the loop, which resets metrics
 			})
 		})
 	}
