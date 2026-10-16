@@ -897,13 +897,33 @@ on an Apple M3 Max with default `GOMAXPROCS`:
 | Single change | 1.71–1.77 ms | 1.68–1.87 ms | 3.65 MB → 3.66 MB |
 
 Top-down notifications keep their quadratic cost; supporting them would require
-mapping positions through earlier edits. Which order real editors send is not
-yet verified and belongs to real-editor validation. The measurement covers
-change application only, not the analysis that follows each version.
+mapping positions through earlier edits. The measurement covers change
+application only, not the analysis that follows each version.
+
+### Neovim Client Validation
+
+`TestNeovimClient` runs Neovim's built-in client, configured as in the editor
+guide, against the synchronous and the responsive server. It runs only with
+`PEGO_LSP_NEOVIM=1`. Neovim 0.11.1 edits a 202-line grammar with ordinary
+editor commands: an insert, a range substitution, `:global` with `normal`,
+a visual-block insert, joins, deletions, a single undo and redo of all of
+those, multibyte insertion, `nvim_buf_set_lines`, thirty separate appends and
+a twenty-line macro. After each operation, the semantic tokens of the edited
+document are compared with those of a fresh copy of the buffer, which detects
+any divergence of the server's text; a server that applied only the first
+change of each notification failed at the undo step. Hover and formatting
+requests also succeed in both modes.
+
+Every operation except undo and redo arrived as one change per notification,
+including `:global`, the macro and visual-block insertion, so none exercised
+multi-change ordering. The undo and redo notifications each carried 136
+changes in mixed order, which take the sequential path. No editor tested so far
+sends top-down notifications. The test does not exercise cancellation, and
+VS Code, Helix and Emacs remain unvalidated.
 
 ## Limitations and Open Questions
 
-- The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
+- The responsive actor remains opt-in; ordinary clients retain the synchronous path. Neovim edits keep the server text in sync in both modes, but VS Code, Helix and Emacs, and cancellation from a real client, remain unvalidated.
 - Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Semantic-token classification and encoding also poll through token/occurrence traversal and multiline output construction while preserving exact token data. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
