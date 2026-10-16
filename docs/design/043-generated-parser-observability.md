@@ -169,14 +169,33 @@ After a completed parse, the invocation's increases in profile `Evals` and
 `Stats` has no call counter. Interrupted
 parses can leave statistics for calls that began but did not complete. Temporary
 observer and profile state is released after return or panic; constructor
-defaults remain for later calls. Callbacks MUST NOT invoke `Parse`, `ParseAST`,
-or `Edit` on the same Document; callers can schedule later work or use another
-Document. Whether the runtime detects and rejects same-Document re-entry remains
-unresolved.
+defaults remain for later calls. While a Document parses, its `Parse`,
+`ParseAST` and `Edit` return the generated `ErrDocumentBusy` without changing
+it, so a callback cannot re-enter the same Document; callers can schedule later
+work or use another Document. The guard is generated only with observability,
+whose callbacks are the documented way to run caller code during a parse, so
+ordinary generated sources remain unchanged. A `context.Context` passed with
+`WithContext` also runs caller code, but re-entry from it is not detected. The
+check precedes option validation, so a re-entrant call with invalid options
+still reports `ErrDocumentBusy`.
 
-Focused generated Document race tests with Go Profile behavior and regeneration
-coverage pass; full root, nested-module and site validation and performance
-measurements remain pending. The broader design therefore remains proposed.
+The guard was measured against the same observed source without it, on the
+generated Document benchmark fixture: 4,096 records, node and typed drivers, both
+units, cold, warm and edit parses, with and without a trace, in ten alternating
+rounds of 2,000 iterations. Median time ratios were 0.986–1.036; the largest
+ratios came from the sub-microsecond warm byte-unit parse, whose rounds ranged
+0.73–1.49. Bytes and allocations per parse were unchanged.
+
+On the same fixture, observed source without a trace or profile was compared
+with ordinary generated source. Median time ratios were 1.000–1.044, except
+for the warm byte-unit parse: it is a 0.2 µs memo hit, and its ratio was 1.18
+(0.83–1.28). Warm parses allocate 48 more bytes per call; cold and edit parses
+allocate within a few bytes of the ordinary source. Ordinary generated source
+does not pay this cost, because it is unchanged.
+
+Generated Document race tests with Go Profile behavior, regeneration coverage,
+full root, nested-module and site validation pass. The broader design remains
+proposed.
 
 ### TypeScript Batch Profiling
 

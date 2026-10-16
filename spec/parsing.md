@@ -371,9 +371,12 @@ After a completed parse, the invocation's increases in profile `Evals` and
 interrupted parse MAY leave statistics for calls that began but did not
 complete. Temporary observer and profile state MUST be released after return
 or panic; retained constructor defaults remain available for later calls.
-Callbacks MUST NOT invoke `Parse`, `ParseAST`, or `Edit` on the same Document.
-Callers SHOULD schedule later work or use another Document. Whether the runtime
-detects and rejects same-Document re-entry remains unresolved.
+While a Document generated with observability parses, its `Parse`,
+`ParseAST` and `Edit` MUST return the generated `ErrDocumentBusy`, before
+validating options and without changing the Document; this rejects calls a
+callback makes on the same Document. The outer parse continues unaffected.
+Callers SHOULD schedule later work or use another Document; parses of other
+Documents and batch `Parse` calls remain allowed from callbacks.
 
 ## Generated TypeScript Batch Tracing
 

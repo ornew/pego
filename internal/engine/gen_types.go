@@ -102,13 +102,13 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		fmt.Fprintf(&entries, `// ParseAST converts the current Document result to typed values. Typed values
 // belong to this call; CST Node members may still share the Document's Node graph.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
- o, err := d.resolveParseOptions(opts)
+%s o, err := d.resolveParseOptions(opts)
  if err != nil { var zero %s; return zero, err }
  return documentParseConverted(d.state, o, func(n *Node, c *workControl, parseErr error) %s {
 %s%s })
 }
 
-`, t.goType(st), t.goType(st), t.goType(st), newConv, returnResult)
+`, t.goType(st), generatedDocumentParseGuard(g.observability, t.goType(st)), t.goType(st), t.goType(st), newConv, returnResult)
 	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
@@ -196,7 +196,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 		result := t.dconv(st, "v", "a")
 		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns independently owned typed values.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
- o, err := d.resolveParseOptions(opts)
+%s o, err := d.resolveParseOptions(opts)
  if err != nil { var zero %s; return zero, err }
  a := &tslabs{}
  return typedDocumentParse(d, trules[%d], o, a, func(v any, c *typedDocumentClone) %s {
@@ -204,7 +204,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
   return %s
  })
 }
-`, t.goType(st), t.goType(st), start.id, t.goType(st), result, publication)
+`, t.goType(st), generatedDocumentParseGuard(g.observability, t.goType(st)), t.goType(st), start.id, t.goType(st), result, publication)
 	}
 	if g.enableBoundedTypedOutputSweep {
 		t.outputBoundedSweep(&b, needTyped, needNodes)
@@ -265,6 +265,9 @@ func (t *typedGen) name() {
 	if t.g.document {
 		for _, name := range []string{"Document", "NewDocument", "ParseStats"} {
 			used[name] = true
+		}
+		if t.g.observability {
+			used["ErrDocumentBusy"] = true
 		}
 	}
 	var all []string

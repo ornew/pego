@@ -206,3 +206,56 @@ func TestCollision(t *testing.T) {
 		t.Fatalf("generated typed Document collision build/test: %v\n%s", err, out)
 	}
 }
+
+func TestGenerateObservedDocumentNameCollisions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds a standalone generated parser")
+	}
+	g, err := syntax.Parse(`type ErrDocumentBusy terminal
+rule main ErrDocumentBusy = "a"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(plain), "type ErrDocumentBusy struct") {
+		t.Fatal("unobserved Document renamed a grammar type it does not clash with")
+	}
+	code, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true, Observability: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(code), "type ErrDocumentBusy_ struct") {
+		t.Fatal("generated type ErrDocumentBusy collides with the observed Document API")
+	}
+	dir := t.TempDir()
+	for name, source := range map[string]string{
+		"go.mod":    "module observedcollision\n\ngo 1.27.1\n",
+		"parser.go": string(code),
+		"parser_test.go": `package fixture
+import ("errors"; "testing")
+func TestCollision(t *testing.T) {
+ d, err := NewDocument("a")
+ if err != nil { t.Fatal(err) }
+ got, err := d.ParseAST()
+ var typed *ErrDocumentBusy_ = got
+ if err != nil || typed.Text != "a" { t.Fatal(got, err) }
+ var inner error
+ d.ParseAST(WithTrace(func(TraceEvent) { if inner == nil { _, inner = d.ParseAST(WithMaxDepth(-1)) } }))
+ if !errors.Is(inner, ErrDocumentBusy) { t.Fatal("busy Document checked options first", inner) }
+}
+`,
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command("go", "test", "./...")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated observed Document collision build/test: %v\n%s", err, out)
+	}
+}

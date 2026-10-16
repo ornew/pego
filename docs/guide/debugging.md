@@ -563,9 +563,10 @@ include calls that began but did not complete. Examined-input ranges are not
 available. Generated Documents do not resume repetition bodies, so there is no
 `ReusedElements` count.
 
-Do not call `Parse`, `ParseAST` or `Edit` on the same Document from its trace
-callback. Schedule that work after the current call or use another Document.
-Whether the runtime rejects same-Document re-entry is not specified yet.
+A trace callback cannot call `Parse`, `ParseAST` or `Edit` on the Document
+being parsed: those calls return `ErrDocumentBusy` and leave the Document
+unchanged, while the outer parse continues. Schedule that work after the
+current call or use another Document.
 Per-call overrides do not change the constructor defaults, and temporary
 observer/profile state is released when a parse returns or panics.
 

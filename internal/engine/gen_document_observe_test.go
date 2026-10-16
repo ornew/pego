@@ -139,5 +139,31 @@ func TestDocumentDefaultsAndIsolation(t *testing.T){
  var unfiltered Profile;makeDoc().Parse(WithProfile(&unfiltered));for _,opts:=range [][]ParseOption{{WithTraceFilter("unknown")},{WithTraceMaxDepth(1)},{WithTraceFilter("main")}}{var filtered Profile;opts=append(opts,WithProfile(&filtered),WithTrace(func(TraceEvent){}));makeDoc().Parse(opts...);if !reflect.DeepEqual(scalarProfile(unfiltered.Snapshot()),scalarProfile(filtered.Snapshot())){t.Fatal("profile depends on trace filter")}};released(t)
  var nested Profile;entered:=false;makeDoc().Parse(WithProfile(&nested),WithTrace(func(TraceEvent){if !entered{entered=true;other:=makeDoc();other.Parse(WithProfile(&nested));Parse(testInput(),WithProfile(&nested))}}));if nested.Snapshot().Parses!=3{t.Fatal("independent reentry lost")};released(t)
 }
+func TestDocumentReentryRejected(t *testing.T){
+ routes:=[]func(*Document,...ParseOption)(any,error){func(d *Document,opts ...ParseOption)(any,error){return d.Parse(opts...)}}
+ referenceRoutes:=[]func(*reference.Document)(any,error){func(d *reference.Document)(any,error){return d.Parse()}}
+ TYPED
+ ref,err:=reference.NewDocument(testInput());if err!=nil{t.Fatal(err)}
+ for i,parse:=range routes{
+  for _,kind:=range []TraceKind{TraceEnter,TraceExit}{
+  d,err:=NewDocument(testInput());if err!=nil{t.Fatal(err)}
+  fresh,err:=NewDocument(testInput());if err!=nil{t.Fatal(err)};parse(fresh)
+  var inner []error;text:=d.Text()
+  v,gotErr:=parse(d,WithTrace(func(e TraceEvent){if e.Kind!=kind||len(inner)!=0{return};for _,again:=range routes{_,err:=again(d);inner=append(inner,err);_,err=again(d,WithMaxDepth(-1));inner=append(inner,err)};inner=append(inner,d.Edit(0,0,"x"))}))
+  if len(inner)!=2*len(routes)+1{t.Fatal("callback did not run")}
+  for _,err:=range inner{if !errors.Is(err,ErrDocumentBusy){t.Fatal("same-Document reentry was not rejected",err)}}
+  want,wantErr:=referenceRoutes[i](ref);documentEqual(t,v,want);documentEqual(t,gotErr,wantErr)
+  if d.Text()!=text{t.Fatal("rejected edit changed the text")}
+  if d.Stats()!=fresh.Stats(){t.Fatal("rejected calls changed statistics",d.Stats(),fresh.Stats())}
+  for j,again:=range routes{v,err:=again(d);want,wantErr:=referenceRoutes[j](ref);documentEqual(t,v,want);documentEqual(t,err,wantErr)}
+  if err:=d.Edit(0,0,"");err!=nil{t.Fatal("edit after parse",err)}
+  func(){defer func(){recover()}();parse(d,WithTrace(func(TraceEvent){panic("stop")}))}()
+  if _,err:=parse(d);errors.Is(err,ErrDocumentBusy){t.Fatal("callback panic left the Document busy")}
+  if err:=d.Edit(0,0,"");err!=nil{t.Fatal(err)};parse(d,WithWorkLimits(WorkLimits{MaxSteps:1}))
+  if _,err:=parse(d);errors.Is(err,ErrDocumentBusy){t.Fatal("work interruption left the Document busy")}
+  }
+ }
+ released(t)
+}
 func TestDocumentConcurrentIsolation(t *testing.T){var wg sync.WaitGroup;for range 4{wg.Go(func(){d,err:=NewDocument(testInput());if err!=nil{t.Error(err);return};var profile Profile;d.Parse(WithProfile(&profile));d.Parse(WithProfile(&profile));if profile.Snapshot().Parses!=2{t.Error("independent profile not accumulated")}})};wg.Wait();released(t)}
 `
