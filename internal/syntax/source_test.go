@@ -167,23 +167,23 @@ func TestSourceSpansAndDiagnostics(t *testing.T) {
 			atomic := a.Expr.(*grammar.Atomic)
 			repeat := atomic.Expr.(*grammar.Repeat)
 			return []grammar.SourceNode{rd, a, atomic, repeat, repeat.Expr.(*grammar.Ref), a.Attrs[0]}
-		}, [][2]grammar.Pos{{{1, 1}, {1, 34}}, {{1, 10}, {1, 34}}, {{1, 10}, {1, 20}}, {{1, 10}, {1, 12}}, {{1, 10}, {1, 11}}, {{1, 21}, {1, 34}}}},
+		}, [][2]grammar.Pos{{{Line: 1, Col: 1}, {Line: 1, Col: 34}}, {{Line: 1, Col: 10}, {Line: 1, Col: 34}}, {{Line: 1, Col: 10}, {Line: 1, Col: 20}}, {{Line: 1, Col: 10}, {Line: 1, Col: 12}}, {{Line: 1, Col: 10}, {Line: 1, Col: 11}}, {{Line: 1, Col: 21}, {Line: 1, Col: 34}}}},
 		{"rule a = (x => 1)", func(g *grammar.Grammar) []grammar.SourceNode {
 			gr := g.Rules()[0].Expr.(*grammar.Group)
 			return []grammar.SourceNode{gr, gr.Expr.(*grammar.InlineAction)}
-		}, [][2]grammar.Pos{{{1, 10}, {1, 18}}, {{1, 11}, {1, 17}}}},
+		}, [][2]grammar.Pos{{{Line: 1, Col: 10}, {Line: 1, Col: 18}}, {{Line: 1, Col: 11}, {Line: 1, Col: 17}}}},
 		{"rule a = {x := 1}", func(g *grammar.Grammar) []grammar.SourceNode {
 			p := g.Rules()[0].Expr.(*grammar.Predicate)
 			return []grammar.SourceNode{p, p.Term.(*grammar.Assign)}
-		}, [][2]grammar.Pos{{{1, 10}, {1, 18}}, {{1, 11}, {1, 17}}}},
+		}, [][2]grammar.Pos{{{Line: 1, Col: 10}, {Line: 1, Col: 18}}, {{Line: 1, Col: 11}, {Line: 1, Col: 17}}}},
 		{"rule a = \"あ\" => 1 + 2 * 3", func(g *grammar.Grammar) []grammar.SourceNode {
 			b := g.Rules()[0].Action.(*grammar.Binary)
 			return []grammar.SourceNode{b, b.R.(*grammar.Binary)}
-		}, [][2]grammar.Pos{{{1, 17}, {1, 26}}, {{1, 21}, {1, 26}}}},
+		}, [][2]grammar.Pos{{{Line: 1, Col: 17}, {Line: 1, Col: 26}}, {{Line: 1, Col: 21}, {Line: 1, Col: 26}}}},
 		{"rule a = \"x\" => $x.A.B", func(g *grammar.Grammar) []grammar.SourceNode {
 			b := g.Rules()[0].Action.(*grammar.Member)
 			return []grammar.SourceNode{b, b.X.(*grammar.Member)}
-		}, [][2]grammar.Pos{{{1, 17}, {1, 23}}, {{1, 17}, {1, 21}}}},
+		}, [][2]grammar.Pos{{{Line: 1, Col: 17}, {Line: 1, Col: 23}}, {{Line: 1, Col: 17}, {Line: 1, Col: 21}}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.input, func(t *testing.T) {

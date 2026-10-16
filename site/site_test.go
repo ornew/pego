@@ -477,13 +477,13 @@ func TestHeadingText(t *testing.T) {
 
 func TestSlug(t *testing.T) {
 	for in, want := range map[string]string{
-		"Compiled grammars (.pegoc)":         "compiled-grammars-pegoc",
-		"Deep nesting and WithMaxDepth":      "deep-nesting-and-withmaxdepth",
-		"005. Operators Rule (operators rule)":     "005-operators-rule-operators-rule",
-		"Choosing: a cheat sheet":            "choosing-a-cheat-sheet",
-		"Snake_case and--dashes":             "snake_case-and--dashes",
-		"Unicode: あいう":                       "unicode-あいう",
-		"Errors, recovery & the `@error` op": "errors-recovery--the-error-op",
+		"Compiled grammars (.pegoc)":           "compiled-grammars-pegoc",
+		"Deep nesting and WithMaxDepth":        "deep-nesting-and-withmaxdepth",
+		"005. Operators Rule (operators rule)": "005-operators-rule-operators-rule",
+		"Choosing: a cheat sheet":              "choosing-a-cheat-sheet",
+		"Snake_case and--dashes":               "snake_case-and--dashes",
+		"Unicode: あいう":                         "unicode-あいう",
+		"Errors, recovery & the `@error` op":   "errors-recovery--the-error-op",
 	} {
 		if got := slug(in); got != want {
 			t.Errorf("slug(%q) = %q, want %q", in, got, want)
