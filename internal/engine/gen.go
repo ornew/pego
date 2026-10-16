@@ -26,6 +26,9 @@ var typedSource string
 //go:embed genrt/document.go
 var documentSource string
 
+//go:embed genrt/stream.go
+var streamSource string
+
 //go:embed genrt/trace.go
 var generatedTraceSource string
 
@@ -42,6 +45,10 @@ type GenOptions struct {
 	Document bool
 	// disableDirectTypedDocument retains Node conversion for differential tests.
 	disableDirectTypedDocument bool
+	// Stream generates ParseStream, which reads the input from an io.Reader
+	// and passes the committed elements of the start rule's #stream
+	// repetition to a callback. The start rule must have one.
+	Stream bool
 	// referenceWorkControls emits a generation-time disabled control for tests.
 	referenceWorkControls bool
 	// referenceWorkControlLayout removes added invocation state and the new
@@ -127,7 +134,7 @@ type GenOptions struct {
 // The generated code depends only on the standard library. Eligible rule bodies inline their expressions;
 // other expressions become Go methods. Actions and predicates become Go expressions, and the embedded
 // runtime (genrt) behaves exactly like the engine
-// in this package. Stream parsing is not generated (#stream becomes a plain repetition).
+// in this package. Without opts.Stream, #stream is a plain repetition.
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
@@ -149,9 +156,23 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
+	if opts.Stream {
+		if !start.stream {
+			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
+		}
+		if opts.Types {
+			return nil, fmt.Errorf("stream generation does not support typed values yet")
+		}
+	}
 	gen := &generator{observability: opts.Observability, disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	if opts.Stream {
+		gen.streamStart = start
+	}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
+	if gen.streamErr != nil {
+		return nil, gen.streamErr
+	}
 	var rec *Program
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
@@ -188,6 +209,9 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	// The standalone output merges the work helper's standard-library imports.
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
+	if opts.Stream {
+		rt = strings.Replace(rt, "\"bytes\"", "\"bufio\"\n\t\"bytes\"", 1)
+	}
 	if opts.Observability {
 		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
 		rt, err = generatedTraceRuntime(rt)
@@ -219,6 +243,16 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		out.WriteString("\n// --- Incremental Node document ---\n")
 		out.WriteString(doc)
 	}
+	if opts.Stream {
+		stream := streamSource[strings.Index(streamSource, "\n)\n")+len("\n)\n"):]
+		if opts.Observability {
+			if stream, err = generatedStreamTraceRuntime(stream); err != nil {
+				return nil, err
+			}
+		}
+		out.WriteString("\n// --- Stream parsing ---\n")
+		out.WriteString(stream)
+	}
 	out.WriteString("\n// --- Generated code ---\n\n")
 	if gen.goWorkControls {
 		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
@@ -227,6 +261,11 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
 	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], nseen, input, opts) }\n\n", start.id)
+	if opts.Stream {
+		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.name)
+		out.WriteString("// its #stream repetition to emit (nil if the element has no value) without retaining it. Committed\n// elements are final even if the parse fails later. A non-EOF error from r or an error returned by\n// emit ends the parse and is returned unchanged. A nil emit collects the repetition instead.\n")
+		out.WriteString("func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {\n\treturn parseStream(streamRule, nseen, r, emit, opts)\n}\n\n")
+	}
 	if opts.Document {
 		fmt.Fprintf(&out, "// NewDocument creates an incremental Node document for the start rule %s.\n", start.name)
 		fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) { return makeDocument(rules[%d], text, opts) }\n\n", start.id)
@@ -290,7 +329,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	out.WriteString(gen.init.String())
 	out.WriteString("}\n\n")
 	out.WriteString(gen.methods.String())
-	src, err := format.Source([]byte(out.String()))
+	src, err := format.Source([]byte(streamRegions(out.String(), opts.Stream)))
 	if err != nil {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
 	}
@@ -301,6 +340,19 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		return specializeOrdinaryMethods(src, gen.methods.String())
 	}
 	return src, nil
+}
+
+var streamRegion = regexp.MustCompile(`(?ms)^[ \t]*// stream:begin\n.*?^[ \t]*// stream:end\n`)
+var streamMarker = regexp.MustCompile(`(?m)^[ \t]*// stream:(begin|end)\n`)
+
+// streamRegions keeps or removes the runtime code between "// stream:begin"
+// and "// stream:end" lines, which only stream parsing uses. Without streams,
+// the runtime is the same as before stream parsing existed.
+func streamRegions(src string, stream bool) string {
+	if stream {
+		return streamMarker.ReplaceAllString(src, "")
+	}
+	return streamRegion.ReplaceAllString(src, "")
 }
 
 // useSparseMemo removes the representation selector entirely when neither
@@ -378,6 +430,11 @@ type generator struct {
 	// description to its ID.
 	descs   []string
 	descIDs map[string]expID
+	// streamStart is the start rule of ParseStream, whose separate body
+	// (generated while streamBody is set) emits its #stream elements.
+	streamStart *rule
+	streamBody  bool
+	streamErr   error
 }
 
 type generatedMethod struct {
@@ -550,6 +607,21 @@ func (g *generator) rules() {
 				g.plainCall(r, bodies[r])
 			}
 		}
+	}
+	if r := g.streamStart; r != nil && g.table == "rules" {
+		// ParseStream calls a copy of the start rule whose body emits the
+		// #stream elements, generated last so that the batch code is the same
+		// as without streams. Its captures have a layout of their own.
+		g.cur, g.proj, g.streamBody = r, g.projections(r), true
+		s := newScope()
+		body := g.expr(r.def.Expr, s, !r.lean)
+		g.proj, g.streamBody = nil, false
+		if strings.Join(s.names, "\x00") != strings.Join(scopes[r].names, "\x00") {
+			// The copied action addresses captures by the batch body's slots.
+			g.streamErr = fmt.Errorf("internal error: the stream body of %s has a different capture layout", r.name)
+		}
+		fmt.Fprintf(init, "\tstreamRule = new(rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.scope = %s\n\tstreamRule.body = func(p *parser, _ int) (*Node, bool) { return p.%s() }\n", r.id, goStrings(s.names), body)
+		g.methods.WriteString("// streamRule is the start rule of ParseStream.\nvar streamRule *rule\n\n")
 	}
 	if g.table != "rules" {
 		return // the recognizer shares the struct fields
@@ -868,7 +940,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		}
 		b.WriteString("\treturn nil, false\n")
 	case *grammar.Repeat:
-		g.repeat(&b, e, s, build)
+		g.repeat(&b, e, s, build, false)
 	case *grammar.Optional:
 		m := g.expr(e.Expr, s, build)
 		fmt.Fprintf(&b, "\tm0 := p.mark()\n\tprevCut := p.cut\n\tp.cut = false\n\tv, ok := p.%s()\n\tcut := p.cut\n\tp.cut = prevCut\n"+
@@ -980,8 +1052,8 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
 }
 
-func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bool) {
-	if !build && g.scanRepeat(b, e) {
+func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build, stream bool) {
+	if !build && !stream && g.scanRepeat(b, e) {
 		return
 	}
 	// An element with captures has its own scope per iteration (elementScoped).
@@ -996,6 +1068,9 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		b.WriteString("\tstart := p.pos\n\tbase := len(p.kidStack)\n")
 	}
 	b.WriteString("\tcount := 0\n")
+	if stream {
+		b.WriteString("\tif p.stream != nil && p.stream.emit != nil && p.depth == 1 {\n\t\tp.streamStart()\n\t}\n")
+	}
 	if e.Max < 0 {
 		b.WriteString("\tfor {\n")
 	} else {
@@ -1027,6 +1102,16 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		b.WriteString("\t\tp.dropTrail(m0.trail)\n\t\tp.freeFrame(f)\n")
 	}
 	b.WriteString("\t\tcount++\n")
+	if stream {
+		// Elements of the start rule's #stream are passed on without being retained, and committed.
+		b.WriteString("\t\tif p.stream != nil && p.stream.emit != nil && p.depth == 1 {\n")
+		if build {
+			b.WriteString("\t\t\tp.emitStream(v, p.pos)\n")
+		} else {
+			b.WriteString("\t\t\tp.emitStream(nil, p.pos)\n")
+		}
+		b.WriteString("\t\t\tif p.pos == m0.pos {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tcontinue\n\t\t}\n")
+	}
 	if build {
 		b.WriteString("\t\tp.kidStack = append(p.kidStack, v)\n")
 	}
@@ -1154,7 +1239,14 @@ func classReject(e *grammar.CharClass) string {
 }
 
 func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) string {
-	m := g.expr(e.Expr, s, build)
+	var m string
+	if rep, ok := e.Expr.(*grammar.Repeat); ok && g.streamBody && isStream(e) {
+		var b strings.Builder
+		g.repeat(&b, rep, s, build, true)
+		m = g.method(describe(e), b.String())
+	} else {
+		m = g.expr(e.Expr, s, build)
+	}
 	for _, a := range e.Attrs {
 		switch a.Name {
 		case "error":

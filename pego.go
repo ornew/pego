@@ -389,6 +389,15 @@ func WithDocument() GenOption {
 	return func(o *engine.GenOptions) { o.Document = true }
 }
 
+// WithStream generates ParseStream for Go, which reads the input from an
+// io.Reader and passes each committed element of the start rule's #stream
+// repetition to a callback, as Parser.ParseStream does. The start rule must
+// have a #stream repetition. It cannot yet be combined with WithTypes, and
+// TypeScript generation does not support it.
+func WithStream() GenOption {
+	return func(o *engine.GenOptions) { o.Stream = true }
+}
+
 // WithGeneratedObservability emits rule tracing and profiling for Go batch
 // parsers and Documents, and for TypeScript batch parsers. Both include typed
 // entry points when WithTypes is enabled. Collection is selected per invocation.
@@ -418,7 +427,7 @@ func WithoutPackageDoc() GenOption {
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
 // depends only on the standard library; its Parse(input) parses from the rule start.
 // WithDocument adds incremental Node parsing; combined with WithTypes it also
-// generates typed Document.ParseAST. Stream parsing is not generated.
+// generates typed Document.ParseAST. WithStream adds Node stream parsing.
 func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byte, error) {
 	o := engine.GenOptions{Package: pkg, Start: start}
 	for _, opt := range opts {

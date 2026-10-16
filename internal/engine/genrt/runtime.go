@@ -616,6 +616,10 @@ type parser struct {
 	lines          []int // positions where lines start (makeError)
 	ac             actx
 	saved          []*Node // captures saved across a reset in longest
+	// stream:begin
+	// stream is set only by ParseStream: positions then index its buffer.
+	stream *streamInput
+	// stream:end
 }
 
 // documentState owns reusable memo entries. The regular Parse path never sets
@@ -662,6 +666,10 @@ type memoTable struct {
 	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
 	// are frequent, the rule is memoized on the first call (eager).
 	calls []seenCalls
+	// stream:begin
+	// free links entries retired by stream memo pruning through next.
+	free *memoEntry
+	// stream:end
 }
 
 // seenRulePages caches the last visited page beside its directory. Most calls
@@ -686,6 +694,11 @@ func (p *parser) firstCall(r *rule) bool {
 	if documentEnabled && p.document != nil {
 		return false // Documents memoize on the first call.
 	}
+	// stream:begin
+	if p.stream != nil {
+		return false // streams memoize on the first call, as the engine does
+	}
+	// stream:end
 	if workControlsEnabled && p.control != nil {
 		return p.controlledFirstCall(r)
 	}
@@ -966,6 +979,12 @@ func (p *parser) envValues(names []string) []any {
 }
 
 func (t *memoTable) alloc() *memoEntry {
+	// stream:begin
+	if e := t.free; e != nil {
+		t.free, e.next = e.next, nil
+		return e
+	}
+	// stream:end
 	if len(t.slab) == 0 {
 		if t.used < len(t.chunks) {
 			t.slab = t.chunks[t.used]
@@ -995,6 +1014,11 @@ func (p *parser) newNode(v Node) *Node {
 	p.stepWork()
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
+		// stream:begin
+		if p.stream != nil {
+			p.stream.nodeChunks++
+		}
+		// stream:end
 	}
 	n := &p.nodeSlab[0]
 	p.nodeSlab = p.nodeSlab[1:]
@@ -1256,6 +1280,11 @@ func (p *parser) setSource(s string) {
 
 // peek returns the character at the current position and its size in units.
 func (p *parser) peek() (rune, int, bool) {
+	// stream:begin
+	if p.stream != nil {
+		return p.streamPeek()
+	}
+	// stream:end
 	p.inputWork(1)
 	if p.pos >= p.n {
 		p.documentTouch(p.pos + 1)
@@ -1380,6 +1409,11 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 }
 
 func (p *parser) text(start, end int) string {
+	// stream:begin
+	if p.stream != nil {
+		return p.streamText(start, end)
+	}
+	// stream:end
 	if p.unit == Bytes {
 		return p.bs[start:end]
 	}
@@ -1407,6 +1441,12 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 		}
 	}
 	sort.Strings(e.Expected)
+	// stream:begin
+	if p.stream != nil {
+		e.Line, e.Col = p.streamLineCol(pos)
+		return e
+	}
+	// stream:end
 	// Look the line up in a table of line starts, built on the first error, instead of scanning
 	// from the start of the input for each error.
 	if p.lines == nil {
@@ -1478,6 +1518,13 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	if r.leader {
 		v, ok = p.grow(r, min, env)
 		e = p.memoGet(r.id, start, min, env)
+		// stream:begin
+		if e == nil {
+			// A stream commit pruned the slot of a growing start rule; its
+			// result needs no entry.
+			e = &memoEntry{}
+		}
+		// stream:end
 	} else {
 		v, ok = p.invoke(r, min)
 		if !ok {
@@ -1669,6 +1716,11 @@ func (p *parser) literalText(start int, text string) string {
 }
 
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
+	// stream:begin
+	if p.stream != nil {
+		return p.streamMatchLiteral(rs, text, desc, build)
+	}
+	// stream:end
 	start := p.pos
 	if p.unit == Bytes {
 		p.documentTouch(start + len(text))
@@ -1744,6 +1796,11 @@ func (p *parser) anchor(ok bool, desc expID) (*Node, bool) {
 
 func (p *parser) atLineStart() bool {
 	p.documentTouch(p.pos)
+	// stream:begin
+	if p.stream != nil {
+		return p.streamAtLineStart()
+	}
+	// stream:end
 	if p.pos == 0 {
 		return true
 	}
@@ -1760,6 +1817,11 @@ func (p *parser) atLineEnd() bool {
 
 func (p *parser) atEnd() bool {
 	p.documentTouch(p.pos + 1)
+	// stream:begin
+	if p.stream != nil {
+		return p.streamAtEnd()
+	}
+	// stream:end
 	return p.pos == p.n
 }
 

@@ -6,7 +6,7 @@
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-recognize] [-observability] [-nodoc] [-max-depth n]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth n]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
@@ -58,8 +58,8 @@ Commands:
       Convert a grammar between PEGO source and JSON. -to defaults to the
       other format of the input and is required for compiled grammars.
 
-  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-observability] [-max-depth <n>]
-        [-nodoc]
+  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-stream] [-recognize] [-observability]
+        [-max-depth <n>] [-nodoc]
   gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize] [-observability] [-max-depth <n>]
       Generate a Go parser (or, with -lang ts, a TypeScript module) from a
       grammar. Without -o, the code is written to standard output. With
@@ -67,6 +67,9 @@ Commands:
       which returns the result as typed values, are generated too.
       -document adds a Go incremental Document; with -types it also provides
       Document.ParseAST. It cannot be combined with -lang ts.
+      -stream adds Go ParseStream, which reads an io.Reader and passes each
+      committed element of the start rule's #stream repetition to a callback.
+      It cannot be combined with -types or -lang ts.
       -observability emits opt-in rule tracing and profiling for Go batch
       parsing and Documents, and TypeScript batch parsing, including typed
       entry points.
@@ -525,6 +528,7 @@ func gen(args []string, stdout io.Writer) error {
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
+	stream := fs.Bool("stream", false, "also generate Go ParseStream for the start rule's #stream repetition (incompatible with -types and -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
@@ -541,8 +545,8 @@ func gen(args []string, stdout io.Writer) error {
 		if *grammarPath == "" {
 			return fmt.Errorf("-g is required")
 		}
-		if *pkg != "" || *nodoc || *document {
-			return fmt.Errorf("-pkg, -nodoc and -document are not supported with -lang ts")
+		if *pkg != "" || *nodoc || *document || *stream {
+			return fmt.Errorf("-pkg, -nodoc, -document and -stream are not supported with -lang ts")
 		}
 	default:
 		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
@@ -560,6 +564,9 @@ func gen(args []string, stdout io.Writer) error {
 	}
 	if *document {
 		opts = append(opts, pego.WithDocument())
+	}
+	if *stream {
+		opts = append(opts, pego.WithStream())
 	}
 	if *recognize {
 		opts = append(opts, pego.WithRecognize())

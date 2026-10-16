@@ -8,16 +8,16 @@
 
 This design covers incremental Documents and committed stream parsing in standalone Go and TypeScript parsers.
 The opt-in generated Go `Document` supports Node parsing and direct typed incremental matching for the same
-eligible grammars as batch typed parsing; other typed results use Node conversion. Ordinary batch parsing remains
-available and unchanged by default. Repetition resumption, Reader streams and TypeScript Documents/streams are not
-implemented.
+eligible grammars as batch typed parsing; other typed results use Node conversion. The opt-in generated Go
+`ParseStream` reads Node streams from an `io.Reader`. Ordinary batch parsing remains available and unchanged by
+default. Repetition resumption, typed streams and TypeScript Documents/streams are not implemented.
 
 ## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../internal/engine/document.go),
 [resume.go](../../internal/engine/resume.go), and [stream pragma](../../spec/pragmas.md#stream) define the
-engine reference. The current generated Go path supports a Node `Document` and an optional typed `ParseAST`
-conversion; it does not generate streams. Generated TS still uses synchronous recursive expression functions
+engine reference. The current generated Go path supports a Node `Document` with an optional typed `ParseAST`, and a
+Node Reader stream. Generated TS still uses synchronous recursive expression functions
 ([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and
 memo across calls alone does not implement edit invalidation or suspension.
 
@@ -38,10 +38,11 @@ For grammars eligible for direct batch typed parsing, `Document.ParseAST` uses d
 other grammars keep the Node-result conversion path. Existing generation without `WithDocument`/`-document`
 retains the batch source path. A generated `Document` is a mutable parse view, not an immutable snapshot.
 
-The remaining generation options and APIs in this section are proposals. `pego.WithStream()` and `-stream` would
-generate stream machinery only when the configured start rule has a legal `#stream` repetition; in batch mode,
-`#stream` continues to behave as an ordinary repetition. Documents select the configured start rule initially;
-generic named batch parsing remains separate.
+The current Go Node stream is opt-in through `pego.WithStream()` or the `-stream` CLI option. Generation fails
+unless the configured start rule has a `#stream` repetition at its top level; batch `Parse` still treats `#stream`
+as an ordinary repetition. Stream generation cannot yet be combined with typed values or TypeScript, and both
+requests fail explicitly. Observability is supported. Documents select the configured start rule initially; generic
+named batch parsing remains separate. The remaining APIs in this section are proposals.
 
 ### Current Generated Go Node Document
 
@@ -142,6 +143,22 @@ func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error
 func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error
 ```
 
+`ParseStream` is implemented; `ParseStreamAST` remains proposed. The generated Node stream keeps the batch fast
+paths' empty input fields, so every inlined input check falls back to stream-aware peek and literal matching that
+read through a `bufio.Reader` exactly as the engine's input does. Rules are memoized on their first call, as in the
+engine. `ParseStream` calls a copy of the start rule with a body of its own, generated after all batch code, so the
+batch parsing code of a `-stream` package is unchanged. When its `#stream` repetition starts, elements get fresh
+allocation chunks. After the callback accepts an element, the stream discards the input before it once at least half
+of the buffer can go, clears the rollback trail, and rewinds the capture frame scratch to its state when the
+repetition started; capture frames are referenced only by active calls, and a left-recursive start rule starts the
+repetition again after allocating its next frame. Like the engine, it starts new node, child and field chunks once
+the node chunk is nearly used or more than one was started, so a chunk shared by consecutive elements cannot chain
+them all to the parser. Every 1,024 positions it moves the memo entries before the commit to a free list, ignores
+memo lookups before them, and drops a profile's evaluation counts there. Node text is sliced from 1,024-unit owned
+snapshots of loaded input, so a returned string retains at most one snapshot. Stream diagnostic callbacks and limits,
+and the engine's pull-based `Iterate`, have no generated counterpart yet; recovered diagnostics are returned together
+at the end.
+
 These APIs do not return a start-rule tree. The callback receives each committed element, including nil where
 the repeated expression produces no value. StreamValue follows the existing Go typed mapping of that expression,
 including unions, aliases, lists, CST/any and recovery's nil/Error representations; it need not equal StartValue.
@@ -231,7 +248,7 @@ values; no pooled parser or conversion arena is shared between concurrent invoca
 | Scope | Initial reference and proposed rollout |
 | --- | --- |
 | Closure and both engine VMs | Existing Document/Reader stream oracle; both position units |
-| Generated Go Node | Current opt-in prefix-memo Document; Reader streams remain proposed |
+| Generated Go Node | Current opt-in prefix-memo Document and Reader stream; stream diagnostic callbacks and pull iteration remain proposed |
 | Generated typed Go | Direct typed `Document.ParseAST` for batch-eligible grammars; Node conversion fallback otherwise; stream conversion remains proposed |
 | Generated TS Node/typed conversion | Documents and streams remain proposed; streams require continuation lowering |
 | Recognition | Continue rejecting Document/stream mode; batch recognition is unaffected |
@@ -244,8 +261,9 @@ Reserve the new exported type/value names in deterministic order and document re
 for colliding grammar declarations; generating helper methods must not alter existing handwritten types silently.
 
 The current implementation adds the generated Go Node Document with prefix-only memo reuse, plus direct typed
-matching for batch-eligible grammars and per-call Node conversion for other typed results. Remaining work includes
-Reader streams, TS Documents, and TS push continuations. Snapshot/versioned-tree work is a
+matching for batch-eligible grammars and per-call Node conversion for other typed results, and the Go Node Reader
+stream. Remaining work includes typed Reader streams, stream diagnostic callbacks, TS Documents, and TS push
+continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
 Cancellation/work budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
@@ -349,3 +367,23 @@ history.
 The three 200 ms pairs are focused pilot samples on one synthetic grammar, not a statistical performance
 guarantee; they do not establish workload-wide gains. Direct typed Document matching remains opt-in with these
 costs; improving the near-EOF edit path remains separate work.
+
+### Local Measurements for Generated Go Node Streams
+
+The Node stream was measured on an Apple M3 Max (darwin/arm64) with Go 1.27.1 and `GOMAXPROCS=4`, using six
+one-second samples of a 1.14 MB key/value fixture with 60,000 elements read from a `strings.Reader`. The engine's
+default-backend `ParseStream`, the generated `ParseStream` and generated batch `Parse` of the same text took 58.3,
+48.5 and 28.0 ms in CodePoints and 53.6, 44.2 and 32.3 ms in Bytes. Both streams allocated 229 MiB in 16,770/16,630
+allocations, against 117 MiB in 5,915/5,917 for generated batch parsing: starting new allocation chunks at element
+boundaries abandons the rest of the previous ones, which bounds retained memory at the cost of allocation volume.
+Before text snapshots, one string per Node text gave the generated stream about 400,000 more allocations. The
+generated stream is slower than batch parsing because all input goes through the stream-aware reads instead of the
+inlined batch fast paths.
+
+Standalone consumers bound the reachable heap growth from the first third to the end of a 60,000-element stream at
+4 MiB in both units, for fixed-size records and for elements with lists of pseudo-random length, with and without a
+profile and with the reference frame allocator. Without the capture scratch rewind the growth was about 16 MiB;
+without the chunk split, about 38 MiB; without dropping profile counts, about 49 MiB. Generating with `-stream`
+leaves default output byte-identical and the batch code of the package unchanged. Eight alternating samples of
+batch `Parse` from packages generated with and without `-stream` measured 28.3 vs 28.7 ms in CodePoints and 31.9 vs
+31.4 ms (not significant) in Bytes, with equal allocations.

@@ -470,8 +470,10 @@ _, err := pairsparser.ParseAST(input,
 This Go mode supports Node batch `Parse`, `ParseRule` and, when generated
 with `-recognize`, `Recognize`; with `-types`, it also supports `ParseAST` and
 `ParseRuleAST`. It can be combined with `-document`; see [Tracing and Profiling
-Generated Go Documents](#tracing-and-profiling-generated-go-documents). Generated Go
-traces also report their generated execution strategy rather than promise
+Generated Go Documents](#tracing-and-profiling-generated-go-documents). With
+`-stream`, `ParseStream` accepts the same options for the whole stream; its
+events report no examined range, and a profile counts the stream as one parse.
+Generated Go traces also report their generated execution strategy rather than promise
 event-for-event equivalence with engine traces. Generated TypeScript traces
 and profiles have their own contracts and do not promise event-for-event
 equivalence with engine traces. See [code generation](code-generation.md#the-pego-gen-command)

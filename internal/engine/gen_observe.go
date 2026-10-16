@@ -9,18 +9,48 @@ import (
 
 // The ordinary runtime is kept byte-for-byte unchanged. Only opt-in output
 // receives observation fields, wrappers, options and evaluation/memo hooks.
-func generatedTraceRuntime(rt string) (string, error) {
-	for _, change := range [][2]string{
-		{"type parseOptions struct {", "type parseOptions struct {\ntrace func(TraceEvent)\nprofile *Profile\ntraceRules []string\ntraceMaxDepth int"},
-		{"type parser struct {", "type parser struct {\nobservation *observation"},
-		{"p.control = o.control", `p.control = o.control
+// observationSetup starts an invocation's observation where a parse entry
+// point sets its work control.
+const (
+	observationAnchor = "p.control = o.control"
+	observationSetup  = `p.control = o.control
 if o.trace != nil || o.profile != nil {
  p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth, profile: newProfileObservation(o.profile)}
  if len(o.traceRules) != 0 {
   p.observation.rules = make(map[string]bool, len(o.traceRules))
   for _, name := range o.traceRules { p.observation.rules[name] = true }
  }
-}`},
+}`
+)
+
+// generatedStreamTraceRuntime observes stream parses (stream.go). A profile
+// forgets the evaluation counts of positions a stream discarded, where no rule
+// is evaluated again.
+func generatedStreamTraceRuntime(src string) (string, error) {
+	const prune = "p.pruneStreamMemo(pos)"
+	if strings.Count(src, observationAnchor) != 1 || strings.Count(src, prune) != 1 {
+		return "", fmt.Errorf("generated stream trace anchor changed")
+	}
+	src = strings.Replace(src, observationAnchor, observationSetup, 1)
+	src = strings.Replace(src, prune, prune+"\np.observation.dropDiscarded(pos)", 1)
+	return src + generatedStreamProfile, nil
+}
+
+const generatedStreamProfile = `
+// dropDiscarded forgets the profile's evaluation counts before pos.
+func (o *observation) dropDiscarded(pos int) {
+ if o == nil || o.profile == nil { return }
+ for k := range o.profile.seen {
+  if k.pos < pos { delete(o.profile.seen, k) }
+ }
+}
+`
+
+func generatedTraceRuntime(rt string) (string, error) {
+	for _, change := range [][2]string{
+		{"type parseOptions struct {", "type parseOptions struct {\ntrace func(TraceEvent)\nprofile *Profile\ntraceRules []string\ntraceMaxDepth int"},
+		{"type parser struct {", "type parser struct {\nobservation *observation"},
+		{observationAnchor, observationSetup},
 		{"case contextPanic:", "case tracePanic:\npanic(x.value)\ncase contextPanic:"},
 		{"func (p *parser) call(r *rule, min int)", "func (p *parser) callObservedBody(r *rule, min int)"},
 		{"return p.invokePlain(r, min)", "return p.invokePlainObservedBody(r, min)"},
@@ -146,14 +176,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 // account for general calls and memo/growth work without adding another frame.
 func generatedTypedTraceRuntime(rt string) (string, error) {
 	for _, change := range [][2]string{
-		{"p.control = o.control", `p.control = o.control
-if o.trace != nil || o.profile != nil {
- p.observation = &observation{trace: o.trace, maxDepth: o.traceMaxDepth, profile: newProfileObservation(o.profile)}
- if len(o.traceRules) != 0 {
-  p.observation.rules = make(map[string]bool, len(o.traceRules))
-  for _, name := range o.traceRules { p.observation.rules[name] = true }
- }
-}`},
+		{observationAnchor, observationSetup},
 		{"func (p *tparser) call(r *trule, min int)", "func (p *tparser) callObservedBody(r *trule, min int)"},
 		{"return p.invokePlain(r, min)", "return p.invokePlainObservedBody(r, min)"},
 		{"func (p *tparser) invokePlain(r *trule, min int)", "func (p *tparser) invokePlainObservedBody(r *trule, min int)"},

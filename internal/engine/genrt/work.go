@@ -631,6 +631,12 @@ func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
 		}
 	}
 	p.sortExpected(e.Expected)
+	// stream:begin
+	if p.stream != nil {
+		e.Line, e.Col = p.streamLineCol(pos)
+		return e
+	}
+	// stream:end
 	if p.lines == nil {
 		p.lines = append(p.lines, 0)
 		for i := 0; i < p.n; i++ {
@@ -779,6 +785,15 @@ func (p *parser) lookupEnvControlled(name string) (any, bool) {
 }
 
 func (p *parser) memoGet(rule, pos, min int, key []any) *memoEntry {
+	// stream:begin
+	if p.stream != nil {
+		// A call at a position before the pruned memo needs no entry (a
+		// start rule called at 0, or still growing there).
+		if pos -= p.stream.memoBase; pos < 0 {
+			return nil
+		}
+	}
+	// stream:end
 	if !workControlsEnabled || p.control == nil {
 		return p.memo.get(rule, pos, min, key)
 	}
@@ -796,6 +811,13 @@ func (p *parser) memoGet(rule, pos, min int, key []any) *memoEntry {
 }
 
 func (p *parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
+	// stream:begin
+	if p.stream != nil {
+		if pos -= p.stream.memoBase; pos < 0 {
+			return
+		}
+	}
+	// stream:end
 	if !workControlsEnabled || p.control == nil {
 		p.memo.put(rule, pos, min, key, e)
 		return

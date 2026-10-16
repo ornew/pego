@@ -89,6 +89,11 @@ conversion. Returned typed graphs are cloned per invocation, while CST Node memb
 Document graph. See the [incremental parsing guide](guide/incremental.md) and
 [design 044](design/044-generated-incremental-and-stream-parsers.md).
 
+Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reader stream contract; it cannot yet be
+combined with `-types` or TypeScript. `TestGeneratedStreamMatchesEngine` compares emitted elements, errors and reader
+call counts with the engine across chunkings, units, controls, observability and Document generation; changes to
+the stream runtime should keep it and the bounded-memory consumer in `TestGeneratedStreamAPI` passing.
+
 Generated Go typed-output cleanup has private full-sweep and bounded generation controls, both disabled by default. They cover typed `ParseAST`/`ParseRuleAST` publication, including conversion and returned `Match` values; Node parsing, recognition and TypeScript are unchanged. Unknown ownership falls back to keeping all cells. See [design 034](design/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
 
 ## Testing

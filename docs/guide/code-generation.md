@@ -27,11 +27,12 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](#recognition--recognize) |
-| Streaming, incremental, backends | Yes | Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No streaming or backend choice (see [what is supported](#what-is-supported)) |
+| Streaming, incremental, backends | Yes | Go Node `ParseStream` with `-stream`; Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
-dependency on PEGO at run time. Use the engine when the grammar is data or when you need streaming. For incremental
-Node parsing, generate a Go `Document` with `-document`; the engine offers the broader Document API.
+dependency on PEGO at run time. Use the engine when the grammar is data. For streams of Nodes, generate a Go
+`ParseStream` with `-stream`; for incremental Node parsing, generate a Go `Document` with `-document`. The engine offers
+the broader stream and Document APIs.
 A good deal of the time you can use both: the engine in tools and tests, and the generated code in production
 (see [Recipes](#recipes)).
 
@@ -159,7 +160,7 @@ The output is exactly what the engine prints for the same grammar and input.
 ## The `pego gen` Command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-recognize] [-observability] [-nodoc] [-max-depth <n>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
@@ -171,8 +172,9 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](#incremental-documents--document)); cannot be combined with `-lang ts` |
+| `-stream` | off | Also generate the Go Node `ParseStream` (see [streams](#streams--stream)); the start rule must have a `#stream` repetition, and it cannot be combined with `-types` or `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
-| `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
+| `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
@@ -214,7 +216,7 @@ if err != nil {
 err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
@@ -504,9 +506,32 @@ Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: r
 their `Expected` and `Messages` slices are copied; ordinary failures are freshly constructed. Mutating a returned
 error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and typed publication share one
 work budget; interruption returns the result type's zero value and clears reusable state as needed for a retry.
-`-document` cannot be combined with `-lang ts`; generated streams and engine-only Document controls such as
-`EditBatch` are separate work. See the [direct typed measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
+`-document` cannot be combined with `-lang ts`; engine-only Document controls such as `EditBatch` are separate work. See the [direct typed measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
 and the [conversion fallback measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
+
+## Streams (`-stream`)
+
+Generate with `pego gen -g grammar.pego -pkg parser -stream -o parser/parser.go`, or pass `pego.WithStream()` to
+`GenerateGo`. The start rule must have a [`#stream`](../../spec/pragmas.md#stream) repetition; otherwise generation
+fails. This adds a Go `ParseStream` beside the ordinary `Parse`, which still treats `#stream` as a plain repetition:
+
+```go
+err := parser.ParseStream(r, func(n *parser.Node) error {
+	fmt.Println(n.Kind(), n.Text)
+	return nil
+}, parser.WithUnit(parser.Bytes))
+```
+
+`ParseStream` follows the engine's [stream contract](streaming.md): it reads only as much input as matching needs,
+hands each element of the start rule's `#stream` repetition to the callback as soon as it matches, and then discards the
+element with the input and memo entries before it. Elements are final and own their text. A callback error stops the
+parse and is returned unchanged; a non-EOF reader error ends it as well. A nil callback parses the stream without
+handing elements over. Recovered diagnostics are returned together as `SyntaxErrors` at the end, and positions and
+lines stay absolute. `WithContext`, `WithWorkLimits`, `WithMaxDepth` and, with `-observability`, tracing and profiling
+apply to the whole invocation; a cancelled or limited stream checks between reads and elements, and a reader blocked
+in `Read` is not interrupted. The engine's `Iterate`, `WithDiagnosticCallback` and `WithDiagnosticLimit` have no
+generated counterpart yet, and `-stream` cannot be combined with `-types` or `-lang ts`. The measurements are in
+[design record 044](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
 
 ## Recognition (`-recognize`)
 
@@ -610,7 +635,7 @@ generator rejects grammars that use it. See the [pragma specification](../../spe
 | `#missing` | Closure whole-input parsing and recognition only | **No**: generated parsers reject grammars containing `#missing`; see the [specification](../../spec/pragmas.md) |
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
-| `#stream` and `ParseStream` | Yes | **No**: `#stream` is generated as an ordinary repetition, and there is no `ParseStream` |
+| `#stream` and `ParseStream` | Yes | Go Node `ParseStream` with `-stream`; without it, `#stream` is an ordinary repetition. Typed and TypeScript streams are deferred |
 | `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds direct typed `Document.ParseAST` for eligible grammars, with Node conversion fallback otherwise. TypeScript is deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
@@ -627,9 +652,9 @@ Notes:
   deeper nesting beyond the host stack, the engine's `BytecodeIterative` backend with `WithMaxDepth` is the tool
   ([runtime guide](runtime.md#deep-nesting-and-withmaxdepth)).
 - **Memory.** Generated parsers memoize in the same way as the engine, so memory still grows with the input. For input
-  larger than memory you need the engine's `ParseStream`.
-- Using a stream grammar with the generator is fine: the `#stream` pragma is simply ignored, so the same grammar file
-  serves both the engine (streaming) and the generated parser (whole-input).
+  larger than memory, generate `ParseStream` with `-stream` or use the engine's `ParseStream`.
+- Using a stream grammar with the generator is fine: `Parse` treats the `#stream` pragma as an ordinary repetition, so
+  the same grammar file serves both streaming and whole-input parsing.
 
 ## Keeping Generated Code up to Date
 
@@ -715,7 +740,7 @@ and inputs that exercise each feature of your grammar.
   is acceptable, loading a [`.pegoc`](compiled-grammars.md) is the cheaper alternative.
 - **Flexibility.** The grammar is frozen into the binary. Changing it means regenerating, rebuilding and redeploying;
   if users supply grammars at run time, use the engine.
-- **Features.** No streaming or backend choice; incremental Node parsing requires `-document` (see
+- **Features.** No backend choice; streaming requires `-stream` and incremental Node parsing `-document` (see
   [what is supported](#what-is-supported)).
 - **Review noise.** Large diffs on regeneration (particularly after upgrading PEGO) are expected. Mark the files as
   generated for your review tool: the first line, `// Code generated by pego. DO NOT EDIT.`, follows the Go
