@@ -771,6 +771,51 @@ matched their expected results, and targeted race checks passed. The harness
 is `internal/lsp/metadata_context_bench_test.go`; raw results remain outside
 the repository.
 
+### Responsive Request Resource Probe
+
+The current actor configuration admits up to 64 logical requests with four
+worker slots. A framed-protocol probe held requests at a pre-dispatch barrier
+after preparing a 65,542-byte immutable analyzed source. Eight configurations
+(1, 4, 16 or 64 requests; tiny hover or large code-action payload) were
+measured in five counterbalanced fresh-process runs each on Go 1.27.1, Apple
+M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, and no `GOMEMLIMIT`. The
+hover body was 150 bytes; the valid stress code-action body was 1,048,807 bytes
+with 65,536 `context.only` entries. The barrier prevents handler execution,
+so this measures retained request/session state rather than handler load. This
+is a configuration probe, not a before/after comparison.
+
+The table reports post-GC `HeapAlloc` delta from the prepared idle session,
+in KiB as median (range), while requests are held and after all request workers
+join. The 64-request held sample is taken after the 65th-request rejection;
+other held samples follow the admission-sequence acknowledgement. Goroutine
+deltas are shown in parentheses. Heap and cumulative-allocation figures are
+whole-process client, server, session and framing state, not attribution solely
+to retained requests or handler work.
+
+| In flight | Payload | Held heap Δ KiB (goroutines) | Joined heap Δ KiB (goroutines) |
+|---:|---|---:|---:|
+| 1 | Tiny hover | 11.8 (11.4–12.1) (+1) | 13.2 (12.5–18.3) (0) |
+| 1 | Large code action | 2,135.3 (1,047.1–2,140.5) (+1) | 16.2 (11.4–17.2) (0) |
+| 4 | Tiny hover | 27.2 (22.0–28.3) (+4) | 30.3 (25.3–32.2) (0) |
+| 4 | Large code action | 4,153.7 (4,149.0–5,246.8) (+4) | 34.7 (25.1–45.1) (0) |
+| 16 | Tiny hover | 55.0 (48.8–55.3) (+16) | 41.3 (36.0–63.7) (0) |
+| 16 | Large code action | 17,656.7 (16,573.9–17,662.8) (+16) | 52.1 (41.2–61.5) (0) |
+| 64 | Tiny hover | 141.8 (140.6–152.2) (+64) | 80.7 (80.7–90.2) (0) |
+| 64 | Large code action | 68,377.2 (67,286.5–69,472.2) (+64) | 98.4 (91.3–116.6) (0) |
+
+At 64 admitted requests, a 65th received `ServerCancelled`. Every admitted
+request received one cancellation response; queued replies drained, all
+workers joined, a normal retry succeeded, and shutdown completed. These checks
+do not establish a physical goroutine ceiling during cancellation churn: the
+limit counts logical admitted requests, and requests were held before handler
+dispatch. Forced-GC heap deltas include runtime, pool and short-lived join-probe
+state and are not a leak test. Cumulative `TotalAlloc` includes client and
+server transport activity, so it is not a per-request allocation rate. This
+probe does not measure peak RSS, handler throughput, natural cancellation
+latency, or real-editor behavior, and does not justify changing defaults. The
+harness is `internal/lsp/responsive_resources_test.go`; raw results remain
+outside the repository.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
