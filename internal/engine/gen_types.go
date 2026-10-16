@@ -110,6 +110,44 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 
 `, t.goType(st), generatedDocumentParseGuard(g.observability, t.goType(st)), t.goType(st), t.goType(st), newConv, returnResult)
 	}
+	if r := g.streamStart; r != nil {
+		// Elements are converted from the committed nodes that ParseStream
+		// emits, each with a converter of its own, so that typed values
+		// share nothing with later elements.
+		needNodes = true
+		et, ok := info.streams[r.name]
+		if !ok {
+			return "", "", fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.name)
+		}
+		result := t.conv(et, "n")
+		newConv := ""
+		if strings.Contains(result, "a.") {
+			newConv = "\t\t\ta := &astConv{control: c}\n"
+		}
+		fmt.Fprintf(&entries, `// StreamValue is the typed value of an element of the #stream repetition of the rule %[1]s.
+type StreamValue = %[2]s
+
+// ParseStreamAST parses the input read from r like ParseStream and passes each committed element of the
+// #stream repetition of the rule %[1]s to emit as a typed value (the zero value if the element has no
+// value). The values are independent of the parser and of later elements. Committed elements are final
+// even if the parse fails later. A non-EOF error from r or an error returned by emit ends the parse and
+// is returned unchanged. A nil emit collects the repetition instead.
+func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error {
+	var e func(*Node, *workControl) error
+	if emit != nil {
+		e = func(n *Node, c *workControl) error {
+			if n == nil {
+				var zero StreamValue
+				return emit(zero)
+			}
+%[3]s			return emit(%[4]s)
+		}
+	}
+	return parseStreamWork(streamRule, nseen, r, e, opts)
+}
+
+`, r.name, t.goType(et), newConv, result)
+	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
 	for _, r := range g.prog.rules {
@@ -259,6 +297,11 @@ func (t *typedGen) name() {
 	}
 	if t.g.observability {
 		for _, name := range []string{"TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth", "WithProfile", "Profile", "ProfileSnapshot", "RuleProfile", "ProfileLocation", "SkipReasonCount"} {
+			used[name] = true
+		}
+	}
+	if t.g.streamStart != nil {
+		for _, name := range []string{"ParseStream", "ParseStreamAST", "StreamValue"} {
 			used[name] = true
 		}
 	}

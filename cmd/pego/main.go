@@ -543,7 +543,7 @@ func gen(args []string, stdout io.Writer) error {
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
-	stream := fs.Bool("stream", false, "also generate Go ParseStream for the start rule's #stream repetition (incompatible with -types and -lang ts)")
+	stream := fs.Bool("stream", false, "also generate Go ParseStream for the start rule's #stream repetition (and ParseStreamAST with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")

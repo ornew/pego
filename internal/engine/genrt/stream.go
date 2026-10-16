@@ -19,8 +19,9 @@ type streamInput struct {
 	baseLine, baseCol int
 	eof               bool
 	// emit receives the committed elements of the start rule's #stream
-	// repetition. Nil collects the repetition as a batch parse does.
-	emit func(*Node) error
+	// repetition with the parse's work control. Nil collects the repetition
+	// as a batch parse does.
+	emit func(*Node, *workControl) error
 	// memoBase is the position of memo.slots[0]; pruned is the position up to
 	// which memo entries were last discarded.
 	memoBase, pruned int
@@ -95,7 +96,17 @@ func (r *streamReader) Read(dst []byte) (int, error) {
 
 // parseStream parses the input read from reader with rule r, passing each
 // committed element of the rule's #stream repetition to emit.
-func parseStream(r *rule, seen int, reader io.Reader, emit func(*Node) error, opts []ParseOption) (err error) {
+func parseStream(r *rule, seen int, reader io.Reader, emit func(*Node) error, opts []ParseOption) error {
+	var e func(*Node, *workControl) error
+	if emit != nil {
+		e = func(n *Node, _ *workControl) error { return emit(n) }
+	}
+	return parseStreamWork(r, seen, reader, e, opts)
+}
+
+// parseStreamWork is parseStream with emit also given the parse's work
+// control, so that converting elements to typed values is charged to it.
+func parseStreamWork(r *rule, seen int, reader io.Reader, emit func(*Node, *workControl) error, opts []ParseOption) (err error) {
 	o, err := resolveOptions(opts)
 	if err != nil {
 		return err
@@ -147,7 +158,7 @@ func (p *parser) emitStream(v *Node, end int) {
 	if v != nil {
 		v.fresh = false
 	}
-	if err := p.stream.emit(v); err != nil {
+	if err := p.stream.emit(v, p.control); err != nil {
 		panic(fatal{err})
 	}
 	p.control.check()

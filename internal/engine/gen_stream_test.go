@@ -383,7 +383,6 @@ rule other = "b"`)
 		want string
 	}{
 		{GenOptions{Start: "other", Stream: true}, "needs a #stream repetition"},
-		{GenOptions{Start: "main", Stream: true, Types: true}, "does not support typed values"},
 	} {
 		tc.opts.Package = "fixture"
 		if _, err := Generate(g, tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
@@ -392,6 +391,299 @@ rule other = "b"`)
 	}
 	if _, err := GenerateTS(g, GenOptions{Start: "main", Stream: true}); err == nil {
 		t.Error("TypeScript accepted stream generation")
+	}
+	typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})
+	if err != nil || !strings.Contains(string(typed), "func ParseStreamAST(") || !strings.Contains(string(typed), "type StreamValue = ") {
+		t.Fatalf("typed stream output: %v", err)
+	}
+	if typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true}); err != nil || strings.Contains(string(typed), "ParseStreamAST") {
+		t.Fatalf("typed output without streams: %v", err)
+	}
+}
+
+// typedStreamCorpus has #stream grammars whose element types cover the typed
+// mappings. batch extracts the repetition from the value bv of the batch
+// ParseAST; empty skips the batch comparison.
+var typedStreamCorpus = []struct {
+	name, src, batch string
+	inputs           []string
+}{
+	{"structs", `type Pair struct { Key Match; Value Match }
+rule main = item* #stream
+rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, "bv", []string{"a=1\nbc=22\n", "a=1\nb=x\n", "", strings.Repeat("ab=12\n", 1500)}},
+	{"unions", `type A terminal
+type B terminal
+type U = A | B
+rule main = item* #stream
+rule item U = a / b
+rule a A = "a"
+rule b B = "b"`, "bv", []string{"abba", "abc", ""}},
+	{"records", `rule main = item* #stream
+rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";"`, "bv", []string{"a=1;bc=22;", "a=1;b", strings.Repeat("ab=1;", 2000)}},
+	{"inline records", `rule main = (k:[a-z] v:[0-9]?)* #stream $$`, "", []string{"a1bc2", "a1!"}},
+	{"recovered", `type S struct { N Match }
+rule main = (stmt #recover(skip=[^;]+ ";"))* #stream
+rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`, "bv", []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
+	{"nil", `rule main = item* #stream
+rule item = "a" => nil`, "bv", []string{"aaa", "ab"}},
+	{"matches", `rule main = ("a" / "é")* #stream`, "bv", []string{"aéa", "é\xc3", "a\xffa"}},
+	{"lists", `rule main = item* #stream
+rule item = xs:[a-z]* ";" => $xs`, "bv", []string{"ab;;c;", "ab;c"}},
+	{"aliases", `type P struct { A Match; B Match }
+rule main = item* #stream
+rule item P = x:[a-z] => P{A: $x, B: $x}`, "bv", []string{"abc", "a1"}},
+	{"surrounded", `rule main = h:"#" xs:item* #stream t:"!"?
+rule item = [a-z] #atomic`, "", []string{"#ab!", "#", "#a?"}},
+	{"captured", `type I struct { C Match }
+rule main = "<" xs:(item* #stream) ">"
+rule item I = c:[a-z] ";" => I{C: $c}`, "", []string{"<a;b;>", "<>", "<a;b"}},
+}
+
+// TestGeneratedTypedStreamMatchesBatch compares the elements that generated
+// ParseStreamAST passes to emit with the repetition of the batch ParseAST
+// value, and its errors and number of elements with ParseStream, for reader
+// chunkings, reader errors, emit errors and a nil callback, in both units.
+func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	if _, err := os.Stat(goBin); err != nil {
+		t.Skip("go command not found")
+	}
+	dir := t.TempDir()
+	write := func(name, content string) {
+		path := filepath.Join(dir, name)
+		os.MkdirAll(filepath.Dir(path), 0o755)
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module typedstream\n\ngo 1.24\n")
+	var imports, parsers strings.Builder
+	var runs []streamRun
+	var names []string
+	for i, c := range typedStreamCorpus {
+		g, err := syntax.Parse(c.src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Stream: true, Types: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		write(fmt.Sprintf("g%d/parser.go", i), string(code))
+		fmt.Fprintf(&imports, "\tg%d \"typedstream/g%d\"\n", i, i)
+		batch := "nil"
+		if c.batch != "" {
+			batch = "func(input string, b bool) (any, error) {\n\t\tbv, err := g%[1]d.ParseAST(input, g%[1]d.WithUnit(unit%[1]d(b)))\n\t\treturn " + c.batch + ", err\n\t}"
+		}
+		fmt.Fprintf(&parsers, `	%[1]d: {
+		typed: func(r io.Reader, emit func(any) error, b bool) error {
+			var e func(g%[1]d.StreamValue) error
+			if emit != nil {
+				e = func(v g%[1]d.StreamValue) error { return emit(v) }
+			}
+			return g%[1]d.ParseStreamAST(r, e, g%[1]d.WithUnit(unit%[1]d(b)))
+		},
+		nodes: func(r io.Reader, emit func(any) error, b bool) error {
+			var e func(*g%[1]d.Node) error
+			if emit != nil {
+				e = func(n *g%[1]d.Node) error { return emit(n) }
+			}
+			return g%[1]d.ParseStream(r, e, g%[1]d.WithUnit(unit%[1]d(b)))
+		},
+		batch: `+batch+`,
+	},
+`, i)
+		write(fmt.Sprintf("unit%d.go", i), fmt.Sprintf("package main\n\nimport g%[1]d \"typedstream/g%[1]d\"\n\nfunc unit%[1]d(b bool) g%[1]d.Unit {\n\tif b {\n\t\treturn g%[1]d.Bytes\n\t}\n\treturn g%[1]d.CodePoints\n}\n", i))
+		for _, in := range c.inputs {
+			for _, bytes := range []bool{false, true} {
+				variants := []streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}
+				if len(in) > 1000 {
+					variants = []streamRun{{Chunk: 0}, {Chunk: 7, StopAt: 1500}}
+				}
+				for _, v := range variants {
+					v.Case, v.Input, v.Bytes = i, []byte(in), bytes
+					runs = append(runs, v)
+					names = append(names, fmt.Sprintf("%s %q %+v", c.name, in, v))
+				}
+			}
+		}
+	}
+	write("main.go", `package main
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+`+imports.String()+`)
+
+var (
+	errStreamRead = errors.New("read failed")
+	errStreamStop = errors.New("stop")
+)
+
+`+streamTestReader+`
+type parser struct {
+	typed, nodes func(io.Reader, func(any) error, bool) error
+	batch        func(string, bool) (any, error)
+}
+
+var parsers = map[int]parser{
+`+parsers.String()+`}
+
+type run struct {
+	Case        int
+	Input       []byte
+	Bytes       bool
+	Chunk       int
+	EOFWithData bool
+	Fail        bool
+	StopAt      int
+	NilEmit     bool
+}
+
+type result struct {
+	Emits    []json.RawMessage `+"`json:\"emits\"`"+`
+	Err      string            `+"`json:\"err\"`"+`
+	Nodes    int               `+"`json:\"nodes\"`"+`
+	NodeErr  string            `+"`json:\"nodeErr\"`"+`
+	Batch    json.RawMessage   `+"`json:\"batch,omitempty\"`"+`
+	BatchErr string            `+"`json:\"batchErr\"`"+`
+	Retained json.RawMessage   `+"`json:\"retained\"`"+`
+}
+
+func errString(err error) string {
+	switch {
+	case err == nil:
+		return ""
+	case err == errStreamRead || err == errStreamStop:
+		return "caller " + err.Error()
+	case errors.Is(err, errStreamRead) || errors.Is(err, errStreamStop):
+		return "wrapped " + err.Error()
+	}
+	return err.Error()
+}
+
+func encode(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func main() {
+	var runs []run
+	data, _ := os.ReadFile(os.Args[1])
+	if err := json.Unmarshal(data, &runs); err != nil {
+		panic(err)
+	}
+	for _, v := range runs {
+		p := parsers[v.Case]
+		var res result
+		var values []any
+		emit := func(store bool) func(any) error {
+			if v.NilEmit {
+				return nil
+			}
+			n := 0
+			return func(x any) error {
+				n++
+				if store {
+					res.Emits = append(res.Emits, encode(x))
+					values = append(values, x)
+				} else {
+					res.Nodes++
+				}
+				if n == v.StopAt {
+					return errStreamStop
+				}
+				return nil
+			}
+		}
+		res.Err = errString(p.typed(&chunkReader{s: string(v.Input), chunk: v.Chunk, eofWithData: v.EOFWithData, fail: v.Fail}, emit(true), v.Bytes))
+		// Values kept until the parse ended still encode as when emitted.
+		res.Retained = encode(values)
+		res.NodeErr = errString(p.nodes(&chunkReader{s: string(v.Input), chunk: v.Chunk, eofWithData: v.EOFWithData, fail: v.Fail}, emit(false), v.Bytes))
+		if p.batch != nil {
+			bv, err := p.batch(string(v.Input), v.Bytes)
+			res.Batch, res.BatchErr = encode(bv), errString(err)
+		}
+		fmt.Println(string(encode(res)))
+	}
+}
+`)
+	data, _ := json.Marshal(runs)
+	write("runs.json", string(data))
+	cmd := exec.Command(goBin, "run", ".", "runs.json")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "GOTOOLCHAIN=local")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go run: %v\n%s", err, out)
+	}
+	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
+	if len(lines) != len(runs) {
+		t.Fatalf("got %d results, want %d\n%s", len(lines), len(runs), out)
+	}
+	compared := 0
+	for k, line := range lines {
+		var res struct {
+			Emits    []json.RawMessage `json:"emits"`
+			Err      string            `json:"err"`
+			Nodes    int               `json:"nodes"`
+			NodeErr  string            `json:"nodeErr"`
+			Batch    json.RawMessage   `json:"batch"`
+			BatchErr string            `json:"batchErr"`
+			Retained json.RawMessage   `json:"retained"`
+		}
+		if err := json.Unmarshal([]byte(line), &res); err != nil {
+			t.Fatalf("%s: %v\n%s", names[k], err, line)
+		}
+		v := runs[k]
+		if res.Err != res.NodeErr || len(res.Emits) != res.Nodes {
+			t.Errorf("%s\n typed  %d elements, %s\n nodes  %d elements, %s", names[k], len(res.Emits), res.Err, res.Nodes, res.NodeErr)
+		}
+		emits, _ := json.Marshal(res.Emits)
+		if res.Emits == nil {
+			emits = []byte("null")
+		}
+		if string(res.Retained) != string(emits) {
+			t.Errorf("%s: retained values changed\n emitted  %s\n retained %s", names[k], emits, res.Retained)
+		}
+		// Only a parse read to its end with every element emitted has
+		// the batch value's elements.
+		if res.Batch == nil || v.Fail || v.StopAt != 0 || v.NilEmit {
+			continue
+		}
+		if res.Err != res.BatchErr {
+			t.Errorf("%s\n stream %s\n batch  %s", names[k], res.Err, res.BatchErr)
+			continue
+		}
+		if res.Err != "" && string(res.Batch) == "null" {
+			continue // a failed batch parse has no value
+		}
+		var batch []json.RawMessage
+		if err := json.Unmarshal(res.Batch, &batch); err != nil {
+			t.Fatalf("%s: batch value %s: %v", names[k], res.Batch, err)
+		}
+		if len(batch) != len(res.Emits) {
+			t.Errorf("%s\n stream %s\n batch  %s", names[k], emits, res.Batch)
+			continue
+		}
+		for j := range batch {
+			if string(batch[j]) != string(res.Emits[j]) {
+				t.Errorf("%s element %d\n stream %s\n batch  %s", names[k], j, res.Emits[j], batch[j])
+			}
+		}
+		compared++
+	}
+	if compared == 0 {
+		t.Fatal("no batch comparison")
 	}
 }
 
@@ -512,6 +804,18 @@ rule atom = [a-z] #atomic " "?`)
 		t.Fatal(err)
 	}
 	files["memo/parser.go"] = string(code)
+	typed, err := syntax.Parse(`type P struct { A Match; B Match; Xs []Match }
+rule main = item* #stream $$
+rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err = Generate(typed, GenOptions{Package: "typed", Start: "main", Stream: true, Types: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files["typed/parser.go"] = string(code)
+	files["typed/parser_test.go"] = generatedTypedStreamConsumer
 	files["memo/parser_test.go"] = generatedStreamMemoConsumer
 	for _, pkg := range []string{"lists", "listsref"} {
 		code, err := Generate(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true, disableNodeFrameScratch: pkg == "listsref"})
@@ -535,6 +839,73 @@ rule atom = [a-z] #atomic " "?`)
 		t.Fatalf("%v\n%s", err, out)
 	}
 }
+
+const generatedTypedStreamConsumer = `package typed
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+)
+
+func TestParseStreamAST(t *testing.T) {
+	var got []*P
+	err := ParseStreamAST(strings.NewReader("a12;b;"), func(v StreamValue) error { got = append(got, v); return nil })
+	if err != nil || len(got) != 2 {
+		t.Fatal(err, got)
+	}
+	// A node in two fields converts to one value.
+	if got[0].A != got[0].B || got[0].A.Text != "a" || len(got[0].Xs) != 2 || got[0].Xs[1].Text != "2" || got[1].Xs != nil && len(got[1].Xs) != 0 {
+		t.Fatal(got[0], got[1])
+	}
+	if got[1].Start != 4 || got[1].A.Start != 4 {
+		t.Fatal(got[1])
+	}
+	if err := ParseStreamAST(strings.NewReader("a;1"), nil); err == nil {
+		t.Fatal("nil emit accepted a syntax error")
+	}
+}
+
+// Converting elements is charged to the work limits like parsing them.
+func TestParseStreamASTWorkControls(t *testing.T) {
+	input := strings.Repeat("a"+strings.Repeat("1", 50)+";", 200)
+	steps := func(f func(limits WorkLimits) error) int {
+		lo, hi := 1, 1<<20
+		for lo < hi {
+			mid := (lo + hi) / 2
+			var limit *WorkLimitError
+			if err := f(WorkLimits{MaxSteps: uint64(mid)}); errors.As(err, &limit) {
+				lo = mid + 1
+			} else if err != nil {
+				t.Fatal(err)
+			} else {
+				hi = mid
+			}
+		}
+		return lo
+	}
+	nodes := steps(func(l WorkLimits) error {
+		return ParseStream(strings.NewReader(input), func(*Node) error { return nil }, WithWorkLimits(l))
+	})
+	values := steps(func(l WorkLimits) error {
+		return ParseStreamAST(strings.NewReader(input), func(StreamValue) error { return nil }, WithWorkLimits(l))
+	})
+	if values <= nodes {
+		t.Fatalf("typed stream needs %d steps, node stream %d", values, nodes)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	n := 0
+	err := ParseStreamAST(strings.NewReader(input), func(StreamValue) error { n++; cancel(); return nil }, WithContext(ctx))
+	if !errors.Is(err, context.Canceled) || n != 1 {
+		t.Fatal(err, n)
+	}
+	stop := errors.New("stop")
+	if err := ParseStreamAST(strings.NewReader(input), func(StreamValue) error { return stop }); err != stop {
+		t.Fatal(err)
+	}
+}
+`
 
 const generatedStreamConsumer = `package fixture
 

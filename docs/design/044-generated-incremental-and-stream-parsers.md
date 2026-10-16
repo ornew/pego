@@ -9,8 +9,9 @@
 This design covers incremental Documents and committed stream parsing in standalone Go and TypeScript parsers.
 The opt-in generated Go `Document` supports Node parsing and direct typed incremental matching for the same
 eligible grammars as batch typed parsing; other typed results use Node conversion. The opt-in generated Go
-`ParseStream` reads Node streams from an `io.Reader`. Ordinary batch parsing remains available and unchanged by
-default. Repetition resumption, typed streams and TypeScript Documents/streams are not implemented.
+`ParseStream` reads Node streams from an `io.Reader`, and with typed values `ParseStreamAST` passes the elements
+as typed values. Ordinary batch parsing remains available and unchanged by default. Repetition resumption and
+TypeScript Documents/streams are not implemented.
 
 ## Existing Contracts and Goals
 
@@ -40,8 +41,8 @@ retains the batch source path. A generated `Document` is a mutable parse view, n
 
 The current Go Node stream is opt-in through `pego.WithStream()` or the `-stream` CLI option. Generation fails
 unless the configured start rule has a `#stream` repetition at its top level; batch `Parse` still treats `#stream`
-as an ordinary repetition. Stream generation cannot yet be combined with typed values or TypeScript, and both
-requests fail explicitly. Observability is supported. Documents select the configured start rule initially; generic
+as an ordinary repetition. Combined with typed values it also adds `ParseStreamAST`; stream generation cannot yet be
+combined with TypeScript, which fails explicitly. Observability is supported. Documents select the configured start rule initially; generic
 named batch parsing remains separate. The remaining APIs in this section are proposals.
 
 ### Current Generated Go Node Document
@@ -143,7 +144,7 @@ func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error
 func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error
 ```
 
-`ParseStream` is implemented; `ParseStreamAST` remains proposed. The generated Node stream keeps the batch fast
+Both are implemented. The generated Node stream keeps the batch fast
 paths' empty input fields, so every inlined input check falls back to stream-aware peek and literal matching that
 read through a `bufio.Reader` exactly as the engine's input does. Rules are memoized on their first call, as in the
 engine. `ParseStream` calls a copy of the start rule with a body of its own, generated after all batch code, so the
@@ -167,6 +168,18 @@ Conversion occurs after the element is finalized and before callback publication
 storage; Node/CST fields and text survive buffer compaction and later elements. Cross-element aliases, if allowed
 by grammar values, retain their identity and cannot refer to reusable scratch. A conservative detached copy is a
 valid first implementation; retain ownership costs in measurements.
+
+`ParseStreamAST` is implemented as Node conversion of the elements `ParseStream` commits. The checker records the
+final element type of each rule's `#stream` repetition, which is the type of the repeated expression, or the record
+of its captures when the element has a scope of its own; `StreamValue` is an alias of that type's Go mapping. Each
+element is converted with a converter of its own, so aliases within an element keep their identity and nothing is
+shared with later elements; Node, CST and text values are the committed element's, which `ParseStream` already
+detaches from the parser. The conversion runs inside the parse and is charged to its work control like batch
+conversion, so `WithWorkLimits` and `WithContext` cover it, and a nil element is passed as the zero value.
+`StreamValue`, `ParseStream` and `ParseStreamAST` are reserved generated names. The direct typed matching of batch
+`ParseAST` is not used for streams: its values are built during matching, before an element is committed.
+`TestGeneratedTypedStreamMatchesBatch` compares the elements with the repetition of the batch `ParseAST` value, and
+the errors and element counts with `ParseStream`, across chunkings, reader and callback errors and both units.
 
 Reader streams may block in Read; the parser does not make a generic Reader cancellable and does not close it.
 Complete characters must not trigger unrelated reads; incomplete UTF-8 prefixes need more bytes or actual EOF.
@@ -262,7 +275,7 @@ for colliding grammar declarations; generating helper methods must not alter exi
 
 The current implementation adds the generated Go Node Document with prefix-only memo reuse, plus direct typed
 matching for batch-eligible grammars and per-call Node conversion for other typed results, and the Go Node Reader
-stream. Remaining work includes typed Reader streams, stream diagnostic callbacks, TS Documents, and TS push
+stream with its typed elements. Remaining work includes stream diagnostic callbacks, TS Documents, and TS push
 continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.

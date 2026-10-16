@@ -25,6 +25,8 @@ type checker struct {
 	// resolving holds the type aliases being resolved (for cycle detection).
 	resolving map[string]bool
 	rule      *grammar.RuleDef
+	// streams holds the element type of the #stream repetition of each rule that has one.
+	streams map[string]ty
 }
 
 func (k *checker) errorf(pos grammar.Pos, format string, args ...any) {
@@ -43,7 +45,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 }
 
 func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
-	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}}
+	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}, streams: map[string]ty{}}
 
 	// Check references in type definitions.
 	k.report = true
@@ -97,7 +99,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 	// Keep the types for code generation (typedGo).
 	k.report = false
-	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}}
+	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams}
 	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {
@@ -118,6 +120,7 @@ type typeInfo struct {
 	rules   map[string]ty           // the type of each rule
 	fields  map[string][]typedField // the fields of each struct type, in declaration order
 	aliases map[string]ty           // the type each alias stands for
+	streams map[string]ty           // the element type of the #stream repetition of each rule with one
 }
 
 // RuleType returns the type of the rule name, declared or inferred, as written in a grammar (for
@@ -598,6 +601,10 @@ func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
 		}
 		if a.Name == "missing" && t != nil {
 			t = union(t, tyMissing)
+		}
+		// The checking pass, which follows inference, records the final element type.
+		if l, ok := t.(listTy); ok && a.Name == "stream" && k.rule != nil {
+			k.streams[k.rule.Name] = l.elem
 		}
 	}
 	return t

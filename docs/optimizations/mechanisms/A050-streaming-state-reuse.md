@@ -13,8 +13,9 @@ the stream policy; result callbacks can still retain arbitrary output.
 
 ## Scope and State
 
-Default engine streaming in closure and both VMs. Generated Go Node/typed Go and
-TypeScript expose no streaming API. This bounds particular input/memo owners,
+Default engine streaming in closure and both VMs, and generated Go `-stream`
+parsers, whose typed `ParseStreamAST` converts the elements the Node stream
+commits. TypeScript exposes no streaming API. This bounds particular input/memo owners,
 not total process heap.
 
 ## Reference Control

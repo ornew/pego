@@ -89,8 +89,9 @@ conversion. Returned typed graphs are cloned per invocation, while CST Node memb
 Document graph. See the [incremental parsing guide](guide/incremental.md) and
 [design 044](design/044-generated-incremental-and-stream-parsers.md).
 
-Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reader stream contract; it cannot yet be
-combined with `-types` or TypeScript. `TestGeneratedStreamMatchesEngine` compares emitted elements, errors and reader
+Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reader stream contract, and with
+`-types` a `ParseStreamAST` that converts each element; it cannot yet be combined with TypeScript.
+`TestGeneratedTypedStreamMatchesBatch` compares the typed elements with batch `ParseAST`. `TestGeneratedStreamMatchesEngine` compares emitted elements, errors and reader
 call counts with the engine across chunkings, units, controls, observability and Document generation; changes to
 the stream runtime should keep it and the bounded-memory consumer in `TestGeneratedStreamAPI` passing.
 

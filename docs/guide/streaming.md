@@ -17,7 +17,8 @@ until EOF; `WithDiagnosticLimit` can bound the retained diagnostic tail.
 
 `#stream` has no effect on `Parse`, and `ParseStream` works with every backend ([Runtime](runtime.md)) and with both
 position units. It does not work with `RecognizeOnly` (`ParseStream` returns an error). A parser produced by `GenerateGo` has a
-`ParseStream` of its own when generated with `-stream` ([Code generation](code-generation.md#streams--stream)). If the problem is the opposite one, a text that stays in memory and is edited again and again, see
+`ParseStream` of its own when generated with `-stream`, and with `-types` also a `ParseStreamAST` that passes typed
+elements ([Code generation](code-generation.md#streams--stream)). If the problem is the opposite one, a text that stays in memory and is edited again and again, see
 [Incremental parsing](incremental.md): a `Document` is always parsed as a whole, so the two do not combine.
 
 The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md); the pragma is specified in

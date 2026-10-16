@@ -27,7 +27,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize`, with [`-recognize`](#recognition--recognize) |
-| Streaming, incremental, backends | Yes | Go Node `ParseStream` with `-stream`; Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No backend choice (see [what is supported](#what-is-supported)) |
+| Streaming, incremental, backends | Yes | Go Node `ParseStream` with `-stream` (`-types` adds `ParseStreamAST`); Go Node `Document` with `-document`; `-types` adds `Document.ParseAST`, using direct incremental matching for eligible grammars and Node conversion otherwise. No backend choice (see [what is supported](#what-is-supported)) |
 
 Generate a parser when the grammar is fixed, the parser is on a hot path or in a small binary, or you want no
 dependency on PEGO at run time. Use the engine when the grammar is data. For streams of Nodes, generate a Go
@@ -172,7 +172,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](#incremental-documents--document)); cannot be combined with `-lang ts` |
-| `-stream` | off | Also generate the Go Node `ParseStream` (see [streams](#streams--stream)); the start rule must have a `#stream` repetition, and it cannot be combined with `-types` or `-lang ts` |
+| `-stream` | off | Also generate the Go Node `ParseStream` (see [streams](#streams--stream)); the start rule must have a `#stream` repetition; with `-types` it also generates `ParseStreamAST`, and it cannot be combined with `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
@@ -530,8 +530,32 @@ handing elements over. Recovered diagnostics are returned together as `SyntaxErr
 lines stay absolute. `WithContext`, `WithWorkLimits`, `WithMaxDepth` and, with `-observability`, tracing and profiling
 apply to the whole invocation; a cancelled or limited stream checks between reads and elements, and a reader blocked
 in `Read` is not interrupted. The engine's `Iterate`, `WithDiagnosticCallback` and `WithDiagnosticLimit` have no
-generated counterpart yet, and `-stream` cannot be combined with `-types` or `-lang ts`. The measurements are in
+generated counterpart yet, and `-stream` cannot be combined with `-lang ts`. The measurements are in
 [design record 044](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
+
+With `-types`, the package also has
+
+```go
+type StreamValue = ... // the typed value of one element of the #stream repetition
+func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error
+```
+
+`ParseStreamAST` behaves like `ParseStream` but passes each element as the value its expression has in the
+[Go type mapping](#typed-values--types) — a rule's declared type, a union, a list, `*Match`, or `*Node` for a record of
+captures — and the zero value for an element without a value. `StreamValue` is the type of the repeated element,
+not of the start rule:
+
+```go
+// rule main = item* #stream
+// rule item Pair = k:[a-z]+ "=" v:[0-9]+ "\n" => Pair{Key: $k, Value: $v}
+err := parser.ParseStreamAST(r, func(p *parser.Pair) error {
+	fmt.Println(p.Key.Text, p.Value.Text)
+	return nil
+})
+```
+
+Each element is converted on its own once it is committed, so values stay valid after the callback returns and share
+nothing with later elements. The conversion counts toward `WithWorkLimits` and observes `WithContext`.
 
 ## Recognition (`-recognize`)
 
@@ -635,7 +659,7 @@ generator rejects grammars that use it. See the [pragma specification](../../spe
 | `#missing` | Closure whole-input parsing and recognition only | **No**: generated parsers reject grammars containing `#missing`; see the [specification](../../spec/pragmas.md) |
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
-| `#stream` and `ParseStream` | Yes | Go Node `ParseStream` with `-stream`; without it, `#stream` is an ordinary repetition. Typed and TypeScript streams are deferred |
+| `#stream` and `ParseStream` | Yes | Go Node `ParseStream` with `-stream`, and typed `ParseStreamAST` with `-types` as well; without it, `#stream` is an ordinary repetition. TypeScript streams are deferred |
 | `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds direct typed `Document.ParseAST` for eligible grammars, with Node conversion fallback otherwise. TypeScript is deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
