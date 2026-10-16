@@ -300,8 +300,10 @@ Event positions use the selected position unit. `Memo=true` means the call
 reused an existing memo result without evaluating its body, so `Evals` is zero.
 Calls that evaluate left-recursion growth attempts have `Memo=false`; their
 `Evals` counts their own body attempts, including growth attempts. Recursive
-calls that reuse the growing seed have `Memo=true` and `Evals=0`. The generated
-trace currently reports `ExaminedKnown` as false; consumers MUST NOT treat `Examined` as a complete examined-input range.
+calls that reuse the growing seed have `Memo=true` and `Evals=0`. Generated
+batch parses report `ExaminedKnown` as false; consumers MUST NOT treat
+`Examined` as a complete examined-input range when it is false. Generated Go
+Document parses report a known examined frontier, described below.
 
 Trace callbacks receive copied scalar and string event fields synchronously.
 Events do not expose parser state or input text. Callback panics propagate with
@@ -334,9 +336,11 @@ identifiable generated dispatch skips independently of trace filters; skips
 are not entered calls. Position counts use each invocation's configured unit
 and MUST NOT be treated as normalized when a sink accumulates multiple units.
 
-`Examined` and `Wasted` are unavailable in the current generated runtime, so
-`ExaminedKnown` and `WastedKnown` MUST be false; implementations MUST NOT infer
-these values from matched ranges. Root `Time` sums completed root rule calls
+`Examined` and `Wasted` are unavailable for generated batch parses, so a rule
+with a completed call outside a Document parse MUST report `ExaminedKnown` and
+`WastedKnown` as false, and a rule with no completed call MUST also report them
+as false; implementations MUST NOT infer these values from matched ranges.
+Generated Go Document profiling defines them below. Root `Time` sums completed root rule calls
 and excludes input setup, whole-input end checks and typed-result conversion.
 Per-rule `Time` counts recursive calls of the same rule once within each
 invocation, while `SelfTime` excludes child time. Both include instrumentation
@@ -363,7 +367,27 @@ direct typed and Node-conversion fallback calls. Conversion itself MUST NOT
 emit a rule event. A memoized whole-call reuse MUST report that call with
 `Memo=true` and `Evals=0`; nested events from earlier parses MUST NOT be
 replayed. Generated Documents do not resume repetition bodies and MUST NOT
-report a `ReusedElements` count. `ExaminedKnown` MUST remain false.
+report a `ReusedElements` count.
+
+Every exit event of a Document parse MUST report `ExaminedKnown=true`.
+`Examined` is then the exclusive end of the input the Document treats the call
+as having examined: the frontier against which a later edit decides whether
+the call's memo result is reused. A call that records a memo result MUST report
+the frontier stored with that result. A memo hit reports the stored frontier of
+the result it reuses, but at least one position past its start. The frontier is conservative: it is at least one position
+past the call's start and its end where the call records or reuses a memo
+result, so it can exceed the input actually read and the engine's examined
+range, and can be one position past the end of the input. It never includes
+input examined by the caller before the call. A call that reuses a growing
+left-recursive seed sees the frontier stored with an earlier seed, so a call
+that completes in such a provisional context reports at least its end; these
+results are never reused after an edit.
+
+A rule's profile `Examined` sums, over completed calls, `Examined - Pos`;
+`Wasted` sums the same over completed failed calls with `Memo=false`. Both, and
+their `Known` flags, are known only when every completed call of the rule in the
+profile reported a known frontier; a profile that also accumulates batch parses
+of the rule reports them as unknown.
 
 After a completed parse, the invocation's increases in profile `Evals` and
 `MemoHits` MUST equal `Document.Stats().Evaluated` and `.Reused`, respectively.

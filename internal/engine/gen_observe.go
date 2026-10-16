@@ -54,8 +54,10 @@ func (g *generator) traceCallWrapper(r *rule, name string, evaluated bool) strin
 func (p *%s) %s() (%s, bool) {
  if p.observation == nil { return p.%s() }
  p.observation.enter(%q, p.pos, 0)
+ h := p.examinedBegin()
  %sv, ok := p.%s()
- p.observation.exit(ok, p.pos)
+ x, known := p.examinedEnd(h)
+ p.observation.exit(ok, p.pos, x, known)
  return v, ok
 }
 
@@ -93,7 +95,8 @@ func (g *generator) traceSkip(expr grammar.Expr) string {
 const generatedTraceWrappers = `
 // WithTrace observes actual generated calls synchronously. Callback panics
 // propagate unchanged after cleanup; an aborted parse can omit exit events.
-// Events do not expose input or parser state. ExaminedKnown is currently false.
+// Events do not expose input or parser state. ExaminedKnown is true only for
+// Document parses, where Examined is the frontier used for edit reuse.
 func WithTrace(trace func(TraceEvent)) ParseOption {
  return func(o *parseOptions) { o.trace = trace }
 }
@@ -120,16 +123,20 @@ func WithTraceMaxDepth(n int) ParseOption {
 func (p *parser) call(r *rule, min int) (*Node, bool) {
  if p.observation == nil { return p.callObservedBody(r, min) }
  p.observation.enter(r.name, p.pos, min)
+ h := p.examinedBegin()
  v, ok := p.callObservedBody(r, min)
- p.observation.exit(ok, p.pos)
+ x, known := p.examinedEnd(h)
+ p.observation.exit(ok, p.pos, x, known)
  return v, ok
 }
 
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
  if p.observation == nil { return p.invokePlainObservedBody(r, min) }
  p.observation.enter(r.name, p.pos, min)
+ h := p.examinedBegin()
  v, ok := p.invokePlainObservedBody(r, min)
- p.observation.exit(ok, p.pos)
+ x, known := p.examinedEnd(h)
+ p.observation.exit(ok, p.pos, x, known)
  return v, ok
 }
 `
@@ -170,16 +177,20 @@ const generatedTypedTraceWrappers = `
 func (p *tparser) call(r *trule, min int) (any, bool) {
  if p.observation == nil { return p.callObservedBody(r, min) }
  p.observation.enter(r.name, p.pos, min)
+ h := p.examinedBegin()
  v, ok := p.callObservedBody(r, min)
- p.observation.exit(ok, p.pos)
+ x, known := p.examinedEnd(h)
+ p.observation.exit(ok, p.pos, x, known)
  return v, ok
 }
 
 func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
  if p.observation == nil { return p.invokePlainObservedBody(r, min) }
  p.observation.enter(r.name, p.pos, min)
+ h := p.examinedBegin()
  v, ok := p.invokePlainObservedBody(r, min)
- p.observation.exit(ok, p.pos)
+ x, known := p.examinedEnd(h)
+ p.observation.exit(ok, p.pos, x, known)
  return v, ok
 }
 `

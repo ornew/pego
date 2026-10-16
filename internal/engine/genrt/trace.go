@@ -10,7 +10,10 @@ const (
 )
 
 // TraceEvent observes actual generated rule execution. Positions use the
-// invocation's selected unit. Examined is valid only when ExaminedKnown.
+// invocation's selected unit. Examined is valid only when ExaminedKnown, which
+// holds for exits of Document parses: it is then the exclusive end of the input
+// the Document treats the call as having examined when deciding reuse after an
+// edit. That frontier is conservative and can exceed the input actually read.
 // An aborted parse may leave enters without exits.
 type TraceEvent struct {
 	Kind              TraceKind
@@ -78,12 +81,15 @@ func (o *observation) memoHit() {
 	}
 }
 
-func (o *observation) exit(matched bool, end int) {
+func (o *observation) exit(matched bool, end, examined int, examinedKnown bool) {
 	i := len(o.stack) - 1
 	call := o.stack[i]
 	o.stack = o.stack[:i]
 	e := call.event
 	e.Kind, e.Matched, e.End = TraceExit, matched, end
+	if examinedKnown {
+		e.Examined, e.ExaminedKnown = examined, true
+	}
 	if o.profile == nil {
 		o.deliver(e, call.selected)
 		return
@@ -101,4 +107,33 @@ func (o *observation) skipped(rule string, pos, level int) {
 		o.profile.skipped(e)
 		o.deliver(e, o.selected(rule))
 	}
+}
+
+// examinedBegin starts measuring an observed call's examined frontier in a
+// Document parse, returning the enclosing frontier for examinedEnd. The call
+// itself, and any memo entry it reads or records, extends the frontier as in an
+// unobserved parse, so observation does not change reuse.
+func (p *parser) examinedBegin() int {
+	h := p.docHigh
+	if documentEnabled && p.document != nil {
+		p.docHigh = p.pos
+	}
+	return h
+}
+
+// examinedEnd returns the call's frontier and merges it into the enclosing one.
+// Outside a Document parse the frontier is unknown. A call that reuses a
+// growing left-recursive seed sees the frontier recorded with an earlier seed;
+// such results are provisional and never reused after an edit, so in a
+// provisional context the report is raised to the call's end without changing the frontier the Document keeps.
+func (p *parser) examinedEnd(enclosing int) (int, bool) {
+	if !documentEnabled || p.document == nil {
+		return 0, false
+	}
+	x := p.docHigh
+	p.docHigh = max(enclosing, x)
+	if p.docProvisional {
+		x = max(x, p.pos)
+	}
+	return x, true
 }

@@ -448,8 +448,8 @@ With no filter names, all entered rules are delivered. Depth starts at one for
 the start rule; zero or a negative limit is unlimited. `TraceEnter` and
 `TraceExit` describe calls that ran. `TraceSkipped` is unpaired and currently
 reports only first-character dispatch skips whose target can be identified.
-`ExaminedKnown` is always false, so do not interpret `Examined` as a complete
-input range. An aborted parse may omit exit events. Callback panics propagate
+In batch parses `ExaminedKnown` is false, so do not interpret `Examined` as a
+complete input range; Document parses report it, as described below. An aborted parse may omit exit events. Callback panics propagate
 unchanged after cleanup.
 
 With `-types`, `ParseAST` and `ParseRuleAST` accept the same trace options. This
@@ -502,7 +502,8 @@ data, err := json.Marshal(snapshot)
 `Snapshot` sorts rule rows and skip reasons and copies their slices. The
 snapshot separates entered calls from calls that completed, counts skips
 independently of trace filters, and reports `ExaminedKnown`/`WastedKnown` as
-false because generated profiling does not currently know those ranges.
+false for rules called in batch parses, because their examined ranges are not
+tracked.
 Position counts use the unit of each parse; avoid combining profiles collected
 with different units. A `Profile` is not safe for concurrent use, though
 reentrant parses on one goroutine have independent invocation state.
@@ -559,8 +560,17 @@ not replayed. Direct typed parsing and Node-conversion fallback report their
 actual parser calls, without a separate conversion event. For completed parses,
 the invocation's increases in profile `Evals` and `MemoHits` match
 `doc.Stats().Evaluated` and `.Reused`, respectively; an interrupted parse can
-include calls that began but did not complete. Examined-input ranges are not
-available. Generated Documents do not resume repetition bodies, so there is no
+include calls that began but did not complete. Exit events report
+`ExaminedKnown=true`, and `Examined` is the end of the input the Document
+treats the call as having read: an edit starting before that position
+discards the call's memo result, as does an edit at or before the call's
+position. It is conservative, typically one position past what the call looked
+at and possibly one past the end of the input, so use it to see why reuse
+stopped rather than as an exact read count. Edits that complete a UTF-8
+sequence just before them, and left-recursive results still growing, also
+prevent reuse. Profiles of Document parses sum it into per-rule `Examined` and
+`Wasted` (failed calls only); mixing batch parses into the same `Profile` makes
+those values unknown. Generated Documents do not resume repetition bodies, so there is no
 `ReusedElements` count.
 
 A trace callback cannot call `Parse`, `ParseAST` or `Edit` on the Document

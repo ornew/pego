@@ -11,7 +11,14 @@ import (
 // nodes, callbacks or per-position history after a parse returns.
 type Profile struct {
 	totals ProfileSnapshot
-	rows   map[string]*RuleProfile
+	rows   map[string]*profileRow
+}
+
+// profileRow accumulates one rule. unknown records a completed call whose
+// examined frontier was unknown, which makes Examined and Wasted incomplete.
+type profileRow struct {
+	RuleProfile
+	unknown bool
 }
 
 // ProfileSnapshot is an owned copy of a profile, with Rules sorted by name.
@@ -32,6 +39,11 @@ type ProfileSnapshot struct {
 
 // RuleProfile describes actual generated calls of one rule. Skipped counts
 // only identifiable optimized dispatch sites and is separate from Entered.
+// Examined sums, over completed calls, the input from each call's position to
+// its trace Examined frontier; Wasted sums the same for completed failed calls
+// that did not reuse a memo result. Both are known only when every completed call of the
+// rule had a known frontier, that is, when the rule was profiled only in
+// Document parses; like the frontier, they are conservative.
 // Within one invocation, Time counts recursive calls of the same rule once;
 // SelfTime excludes children. Reentrant invocations are accumulated separately.
 // Both include instrumentation and callback costs within the timed boundary.
@@ -69,10 +81,11 @@ type SkipReasonCount struct {
 	Count  int    `json:"count"`
 }
 
-// Snapshot returns independent, deterministically ordered counters. Examined
-// and Wasted are unavailable in the current generated runtime; their Known
-// flags are false, rather than inferring examined input from matched ranges.
-// Like parsing, Snapshot requires exclusive access to the Profile.
+// Snapshot returns independent, deterministically ordered counters. A rule
+// with no completed call, or with a completed call outside a Document parse,
+// reports Examined and Wasted as unknown rather than inferring examined input
+// from matched ranges. Like parsing, Snapshot requires exclusive access to the
+// Profile.
 func (pr *Profile) Snapshot() ProfileSnapshot {
 	if pr == nil {
 		return ProfileSnapshot{Rules: []RuleProfile{}}
@@ -80,7 +93,12 @@ func (pr *Profile) Snapshot() ProfileSnapshot {
 	s := pr.totals
 	s.Rules = make([]RuleProfile, 0, len(pr.rows))
 	for _, row := range pr.rows {
-		r := *row
+		r := row.RuleProfile
+		r.ExaminedKnown = r.Calls > 0 && !row.unknown
+		r.WastedKnown = r.ExaminedKnown
+		if !r.ExaminedKnown {
+			r.Examined, r.Wasted = 0, 0
+		}
 		r.SkipReasons = append([]SkipReasonCount{}, r.SkipReasons...)
 		sort.Slice(r.SkipReasons, func(i, j int) bool { return r.SkipReasons[i].Reason < r.SkipReasons[j].Reason })
 		s.Rules = append(s.Rules, r)
@@ -89,14 +107,14 @@ func (pr *Profile) Snapshot() ProfileSnapshot {
 	return s
 }
 
-func (pr *Profile) rule(name string) *RuleProfile {
+func (pr *Profile) rule(name string) *profileRow {
 	if row := pr.rows[name]; row != nil {
 		return row
 	}
 	if pr.rows == nil {
-		pr.rows = make(map[string]*RuleProfile)
+		pr.rows = make(map[string]*profileRow)
 	}
-	r := &RuleProfile{Rule: name}
+	r := &profileRow{RuleProfile: RuleProfile{Rule: name}}
 	pr.rows[name] = r
 	return r
 }
@@ -110,7 +128,7 @@ type profileObservation struct {
 }
 
 type profileFrame struct {
-	row   *RuleProfile
+	row   *profileRow
 	start time.Time
 	child time.Duration
 }
@@ -175,6 +193,15 @@ func (o *profileObservation) exit(e TraceEvent) {
 		r.Consumed += e.End - e.Pos
 	} else {
 		r.Failed++
+	}
+	if e.ExaminedKnown {
+		n := e.Examined - e.Pos
+		r.Examined += n
+		if !e.Matched && !e.Memo {
+			r.Wasted += n
+		}
+	} else {
+		r.unknown = true
 	}
 	if !e.Memo && e.Evals > 0 {
 		k := profileKey{rule: e.Rule, pos: e.Pos, level: e.Level}

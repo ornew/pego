@@ -22,7 +22,7 @@ standalone generated Go Node parsers. Generation uses
 parsers trace `Parse`, `ParseRule` and `Recognize`. Events cover actual plain,
 direct, general, memoized and left-recursive calls, plus first-character
 dispatch skips only where the generated call site can identify the target.
-`ExaminedKnown` is always false. Named filters include descendants; unknown
+`ExaminedKnown` is false in batch parses. Named filters include descendants; unknown
 names select nothing. The start rule has depth one, and nonpositive maximum
 depth is unlimited. Callback panics propagate unchanged after cleanup, while
 aborted parses may omit exits. Go Node and typed batch packages also expose the
@@ -144,7 +144,7 @@ Generated backends can skip different candidate calls due to first-character dis
 
 The generated Go `Profile` zero value is ready to use. Pass `WithProfile(&profile)` to accumulate measurements across calls, then call `profile.Snapshot()` for an owned snapshot. Snapshot rule rows and per-rule skip-reason rows are sorted by name/reason, so `json.Marshal(snapshot)` is deterministic. A nil profile disables collection. The profile sink is not safe for concurrent use; reentrant parses on the same goroutine keep independent per-invocation accounting.
 
-The snapshot contains total `Parses`, `Entered`, completed `Calls`, body `Evals`, `MemoHits`, `Skipped` and root `Time`, plus per-rule entered/completed calls, evaluations, memo hits, matches, failures, consumed positions, skips by reason, repeats and the maximum evaluation count/location. `Entered` includes calls interrupted before exit; completed-call counters do not. Skipped dispatch targets are separate from entered calls and do not depend on trace filters. `Repeats` and `MaxEvals` count completed non-memo calls with `Evals > 0` at the same `(rule, position, level)` within an invocation; `Evals` itself counts body attempts, including left-recursive growth. When maximum counts tie, `MaxEvalsAt` keeps the first observed location. `Examined` and `Wasted` are currently unavailable and their `Known` flags are false; they are not inferred from matched ranges. Position counts use each invocation's selected unit and are not normalized across calls that mix units.
+The snapshot contains total `Parses`, `Entered`, completed `Calls`, body `Evals`, `MemoHits`, `Skipped` and root `Time`, plus per-rule entered/completed calls, evaluations, memo hits, matches, failures, consumed positions, skips by reason, repeats and the maximum evaluation count/location. `Entered` includes calls interrupted before exit; completed-call counters do not. Skipped dispatch targets are separate from entered calls and do not depend on trace filters. `Repeats` and `MaxEvals` count completed non-memo calls with `Evals > 0` at the same `(rule, position, level)` within an invocation; `Evals` itself counts body attempts, including left-recursive growth. When maximum counts tie, `MaxEvalsAt` keeps the first observed location. In batch parses `Examined` and `Wasted` are unavailable and their `Known` flags are false; they are not inferred from matched ranges. Document parses supply them, as described below. Position counts use each invocation's selected unit and are not normalized across calls that mix units.
 
 Root `Time` sums completed root rule calls and excludes input setup, whole-input end checks and typed-result conversion. Per-rule `Time` counts recursive calls of that rule once within each invocation; `SelfTime` subtracts child time. Both include instrumentation and synchronous enter/exit callback time. Reentrant parses have independent accounting and are included in the outer callback interval as well as their own invocation totals. A completed-exit update is published after the exit callback returns or panics, so a snapshot taken inside that callback can omit that exit until it unwinds. Callback panics still propagate unchanged after cleanup. An exit callback panic counts that completed call; an enter callback panic does not synthesize an exit. The measurements below include the overall `WithProfile` path; they do not isolate individual counter or clock costs.
 
@@ -162,7 +162,37 @@ direct typed calls and Node-conversion fallback calls. Conversion itself is not
 a rule call. Reusing a memoized whole call reports that call with `Memo=true`
 and `Evals=0`; nested calls from earlier parses are not replayed. Generated
 Documents do not resume repetition bodies, so there is no `ReusedElements`
-counter. `ExaminedKnown` remains false.
+counter.
+
+Exit events of Document parses report `ExaminedKnown=true`, with `Examined`
+set to the frontier the Document keeps for edit reuse. A call that records a
+memo result reports the frontier stored with it, and a memo hit reports the
+stored frontier it reuses, but at least one position past its start. Each wrapper starts the call's frontier at its
+position and merges it back into the caller's afterwards, so the caller's
+earlier lookahead is excluded and the Document's own frontier is unchanged.
+The frontier is conservative rather than the engine's exact examined range:
+calls that record or reuse memo results count at least one position past their
+start and end, which keeps edit reuse safe without tracking every read for
+validity. Reporting this frontier makes the trace explain reuse decisions
+exactly; an exact range would need a second high-water mark and an extra field
+per memo entry. A recursive call that reuses a growing left-recursive seed sees
+the frontier stored with an earlier seed, so any call completing in such a
+provisional context reports at least its end; the raise affects only the
+report, not the Document's frontier. Values can be one position past the end
+of the input.
+
+The examined frontier was measured against the previous observed source on the
+same generated Document fixture with 4,096 records: node and typed drivers,
+both units, batch, cold, warm and edit parses, each traced and profiled, in
+eight alternating rounds of 400 iterations. Median time ratios were
+0.974–1.017, except for the profiled warm byte-unit node parse, a 0.4 µs memo
+hit whose ratio was 1.069 (0.97–1.48). Allocations per parse were unchanged.
+An earlier version that kept unknown rules in a map measured up to 1.040 for
+profiled batch parses; a flag on each rule row removed that lookup. Ordinary
+generated source is unchanged. Profiles sum `Examined - Pos` per
+rule over completed calls into `Examined`, and over completed failed non-memo
+calls into `Wasted`; a rule's values are known only when every completed call
+in the profile was a Document call.
 
 After a completed parse, the invocation's increases in profile `Evals` and
 `MemoHits` match `Document.Stats().Evaluated` and `.Reused`, respectively.
