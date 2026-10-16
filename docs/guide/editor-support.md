@@ -157,7 +157,7 @@ With Eglot (built into Emacs 29 and later):
 ```elisp
 (define-derived-mode pego-mode prog-mode "PEGO"
   "Major mode for PEGO grammars."
-  (setq-local comment-start "# "))
+  (setq-local comment-start "// "))
 (add-to-list 'auto-mode-alist '("\\.pego\\'" . pego-mode))
 (with-eval-after-load 'eglot
   (add-to-list 'eglot-server-programs '(pego-mode "pego" "lsp")))
