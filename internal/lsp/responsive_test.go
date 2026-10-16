@@ -317,3 +317,46 @@ func TestResponsiveSaveRejectsOldFindingGenerationProtocol(t *testing.T) {
 		t.Fatalf("old generation actions: %+v", actions)
 	}
 }
+
+func TestResponsiveRequestPrioritizesAnalysisProtocol(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseWorker := func() { releaseOnce.Do(func() { close(release) }) }
+	analyzed := make(chan string, 4)
+	analyzeHook = func(text string) {
+		analyzed <- text
+		if strings.Contains(text, "blocked") {
+			close(started)
+			<-release
+		}
+	}
+	t.Cleanup(func() { analyzeHook = nil })
+	c := newResponsiveClient(t, false)
+	defer func() { releaseWorker(); c.exit() }()
+	open := func(name string) {
+		c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///" + name + ".pego", "version": 1, "text": "rule " + name + " = \"a\""}})
+	}
+	open("blocked")
+	awaitBarrier(t, started)
+	open("first")
+	open("second")
+	open("requested")
+	asyncRequest(c, 101, "textDocument/documentSymbol", docParams("file:///requested.pego"))
+	// A reply to a later request proves the actor admitted the waiting request.
+	asyncRequest(c, 102, "sequence/unknown", nil)
+	assertResponseError(t, c.response("102"), codeMethodNotFound)
+	releaseWorker()
+	var symbols []DocumentSymbol
+	if err := json.Unmarshal(c.response("101")["result"], &symbols); err != nil || len(symbols) != 1 || symbols[0].Name != "requested" {
+		t.Fatalf("symbols=%+v error=%v", symbols, err)
+	}
+	var order []string
+	for range 4 {
+		text := <-analyzed
+		order = append(order, strings.Fields(text)[1])
+	}
+	if strings.Join(order, " ") != "blocked requested first second" {
+		t.Fatalf("analysis order %v", order)
+	}
+}

@@ -276,3 +276,40 @@ func TestLintDiagnosticsPrototypeIsOptIn(t *testing.T) {
 		t.Fatalf("non-opt-in actions: %+v", actions)
 	}
 }
+
+func TestAnalysisQueuePrioritize(t *testing.T) {
+	started := make(chan string, 4)
+	release := make(chan struct{})
+	q := newAnalysisQueue(func(ctx context.Context, snapshot analysisSnapshot) (*analysis, error) {
+		started <- snapshot.URI
+		if snapshot.URI == "running" {
+			<-release
+		}
+		return newAnalysis(snapshot.Text), nil
+	})
+	defer q.stop()
+	go func() {
+		for range q.results {
+		}
+	}()
+	q.submit(analysisSnapshot{URI: "running", Version: 1})
+	if got := <-started; got != "running" {
+		t.Fatalf("started %s", got)
+	}
+	for _, uri := range []string{"a", "b", "c", "d"} {
+		q.submit(analysisSnapshot{URI: uri, Version: 1})
+	}
+	q.prioritize("c")
+	q.prioritize("running") // running, not pending
+	q.prioritize("unknown")
+	q.prioritize("c") // already first
+	q.prioritize("d")
+	close(release)
+	var order []string
+	for range 4 {
+		order = append(order, <-started)
+	}
+	if strings.Join(order, " ") != "d c a b" {
+		t.Fatalf("order %v", order)
+	}
+}

@@ -928,10 +928,33 @@ and analysis, and the server has no limit on open documents; the editor
 decides how many are open. After every document closes, the heap returns to
 within 1.2–1.4 MiB of the idle session regardless of the count, so closing
 releases per-document state. Analysis runs one document at a time, about
-6.5 ms per change of this grammar. A hover on the last changed document is
-answered only after every earlier change has been analysed, in both modes:
-the synchronous server handles messages in order, and the responsive queue
-analyses documents in the order they changed.
+6.5 ms per change of this grammar. In these measurements a hover on the last
+changed document was answered only after every earlier change had been
+analysed, in both modes: the synchronous server handles messages in order, and
+the responsive queue analysed documents in the order they changed.
+
+### Request Analysis Priority
+
+A request waits for the analysis of its document's current version. The
+responsive server now moves that analysis to the front of the queue when such a
+request arrives; an analysis already running is not interrupted, and other
+pending documents keep their order. Requests therefore no longer wait for
+documents that changed earlier. A document that is both edited and queried
+faster than it can be analysed can postpone the diagnostics of other
+documents; it cannot postpone its own.
+
+The probe compared the previous and the new server in three alternating
+fresh-process pairs per count, in the environment above:
+
+| Documents | Burst until hover reply ms, before → after | Burst until all published ms, before → after |
+|---:|---:|---:|
+| 8 | 54.6 (54.1–58.6) → 14.0 (14.0–14.6) | 54.5 (54.0–58.6) → 54.9 (54.5–55.1) |
+| 64 | 423.3 (420.3–423.7) → 19.7 (19.6–19.9) | 423.2 (420.2–423.6) → 418.1 (417.1–423.2) |
+| 256 | 1,672.1 (1,665.4–1,690.3) → 40.8 (40.3–40.8) | 1,672.0 (1,665.4–1,690.2) → 1,666.9 (1,665.3–1,673.6) |
+
+The hover reply now follows the analysis already running and that of its own
+document; the time to analyse every change is unchanged. The synchronous server
+still handles messages in order.
 
 ### Neovim Client Validation
 

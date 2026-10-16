@@ -209,6 +209,8 @@ func (a *responsiveActor) handle(message *incoming) error {
 	a.requests[key] = request
 	if d.an != nil {
 		a.start(request)
+	} else {
+		s.queue.prioritize(d.uri)
 	}
 	return nil
 }

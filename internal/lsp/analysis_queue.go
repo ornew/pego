@@ -74,6 +74,23 @@ func (q *analysisQueue) submit(snapshot analysisSnapshot) {
 	}
 }
 
+// prioritize moves a pending analysis of uri to the front of the queue, so that a request waiting
+// for it is not delayed by analyses of documents that changed earlier.
+func (q *analysisQueue) prioritize(uri string) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if _, ok := q.pending[uri]; !ok {
+		return
+	}
+	for i := range q.order {
+		if q.order[i] == uri {
+			copy(q.order[1:i+1], q.order[:i])
+			q.order[0] = uri
+			return
+		}
+	}
+}
+
 func (q *analysisQueue) closeDocument(uri string) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
