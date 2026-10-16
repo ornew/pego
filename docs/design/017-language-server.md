@@ -46,6 +46,8 @@ The lifecycle follows the specification:
 or 1 accordingly, as the specification asks.
 A body that is not JSON gets a `ParseError` response with a null id and the server goes on; a header without
 `Content-Length` cannot be resynchronized, so the server stops with an error.
+A header longer than 8 KiB, or a `Content-Length` above 64 MiB, is treated as corrupt framing in the same way;
+neither is accumulated or allocated first.
 A panic in a request handler becomes an `InternalError` response instead of ending the server.
 A stack overflow cannot be recovered from, so nothing in the analysis recurses without bound: the lexer skips invalid
 characters in a loop, and the parser reports nesting deeper than about 500 levels of parentheses as an error

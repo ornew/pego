@@ -19,6 +19,12 @@ import (
 // corrupt header rather than allocated.
 const maxMessage = 64 << 20
 
+// maxHeader is the size of the largest message header read, including its line ends and the
+// blank line. Base-protocol headers have one or two short fields.
+const maxHeader = 8 << 10
+
+var errHeaderTooLarge = fmt.Errorf("message header exceeds %d bytes", maxHeader)
+
 // JSON-RPC and LSP error codes.
 const (
 	codeParseError           = -32700
@@ -55,14 +61,36 @@ type incoming struct {
 // hasID reports whether the message has a non-null id.
 func (m *incoming) hasID() bool { return len(m.ID) > 0 && string(m.ID) != "null" }
 
+// readHeaderLine reads one header line, counting its bytes in used. A header line without an end,
+// or a header without its blank line, is rejected once it exceeds maxHeader instead of being
+// accumulated.
+func readHeaderLine(r *bufio.Reader, used *int) (string, error) {
+	var line []byte
+	for {
+		chunk, err := r.ReadSlice('\n')
+		*used += len(chunk)
+		if *used > maxHeader {
+			return "", errHeaderTooLarge
+		}
+		line = append(line, chunk...)
+		if err != bufio.ErrBufferFull {
+			return string(line), err
+		}
+	}
+}
+
 // readMessage reads the content of the next message. It returns io.EOF at the end of the input
 // before a message starts.
 func readMessage(r *bufio.Reader) ([]byte, error) {
 	length := -1
 	first := true
+	headerBytes := 0
 	for {
-		line, err := r.ReadString('\n')
+		line, err := readHeaderLine(r, &headerBytes)
 		if err != nil {
+			if errors.Is(err, errHeaderTooLarge) {
+				return nil, err
+			}
 			if err == io.EOF && first && line == "" {
 				return nil, io.EOF
 			}
