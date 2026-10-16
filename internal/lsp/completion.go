@@ -59,16 +59,18 @@ func (a *analysis) declarationStart(i int) bool {
 
 // indexDeclarationStarts scans once; completion and semantic lookup must not
 // rescan the entire token prefix for every potential contextual keyword.
-func (a *analysis) indexDeclarationStarts() {
+func (a *analysis) indexDeclarationStartsControlled(control *renderControl) {
+	control.poll()
 	a.declarationStarts = make([]bool, len(a.toks))
 	depth, previous := 0, -1
 	for i, t := range a.toks {
+		control.poll()
 		if t.Kind == syntax.TokenComment {
 			continue
 		}
 		boundary := previous < 0 || a.isPunct(previous, ";") || a.toks[previous].End.Line < t.Pos.Line
 		if boundary && len(a.syntaxErrs) > 0 && (a.isIdent(i, "rule") || a.isIdent(i, "type")) {
-			next := a.significantToken(i + 1)
+			next := a.significantTokenControlled(i+1, control)
 			if next < len(a.toks) && a.toks[next].Kind == syntax.TokenIdent {
 				depth = 0
 			}

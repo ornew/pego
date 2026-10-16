@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, selected lint metadata traversals, class-descriptor/range analysis, context-aware grammar and LSP formatting, and semantic-token classification and encoding. Other metadata walks and large operations remain partly unpolled, and real-editor validation remains open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation covers text-index construction, lexical tokenization, syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, shared grammar-success proofs, attribute normalization, context-aware grammar metadata collection, selected lint metadata traversals, class-descriptor/range analysis, context-aware grammar and LSP formatting, and semantic-token classification and encoding. Other shared operations and large primitives remain partly unpolled, and real-editor validation remains open.
 
 ## Prototype Implementation Boundary
 
@@ -715,6 +715,60 @@ behavior. Fifty historical response and error fingerprints matched exactly.
 The existing panic-to-error conversion in candidate analysis is unchanged;
 new polling rethrows unrelated panics. The harness is
 `internal/lsp/code_action_context_bench_test.go`; raw results remain outside
+the repository.
+
+### LSP Analysis Metadata Cancellation
+
+Request-local analysis carries the invocation's render control through
+declaration-start indexing, collection and definition of declarations,
+documentation comments, type expressions and terms, and attributes, including
+expression-argument traversal. The same control covers occurrence and
+diagnostic mapping, range conversion and ordering. Cancellation discards
+partial analysis; controlled compilation rolls back staged program and
+diagnostic results. Existing comment joining and trimming use their controlled
+helpers, while ordinary background paths retain their existing behavior.
+Allocations, map operations and individual string comparisons remain
+indivisible, so polling does not establish a wall-clock bound.
+
+Five alternating 200 ms pairs compared main `d7fd2ab` and the metadata
+cancellation change on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=1`, `GOGC=100`, and no `GOMEMLIMIT`. The full stage includes
+text-index and declaration-index construction, tokenization, parsing,
+compilation and diagnostic handling. The metadata-only stage starts from
+prepared immutable syntax and token indexes and measures declaration indexing
+and collection, including documentation and occurrence sorting; it excludes
+parsing, compilation and diagnostic mapping. Ordinary runs use no control;
+live-context runs use a non-canceled context. The parent already polls
+parser/compiler phases; its LSP metadata stage checks cancellation at
+boundaries but lacks inner traversal polls. Values are paired-median
+candidate/base time ratios with ranges across pairs.
+
+| Stage | Fixture | Ordinary | Live context |
+|---|---|---:|---:|
+| Full | JSON | 1.003 (0.970–1.025) | 1.003 (0.986–1.022) |
+| Full | Source grammar | 0.978 (0.945–1.014) | 1.007 (0.953–1.031) |
+| Full | 512 wide rules | 1.004 (0.926–1.056) | 1.011 (0.950–1.050) |
+| Full | 512 rules plus partial rule | 0.988 (0.983–1.001) | 1.004 (0.993–1.017) |
+| Full | 512 compile errors | 1.007 (0.975–1.111) | 1.022 (1.004–1.066) |
+| Full | 512 documentation lines | 0.996 (0.989–1.013) | 0.992 (0.964–1.026) |
+| Metadata only | JSON | 0.997 (0.976–1.019) | 1.032 (1.004–1.068) |
+| Metadata only | Source grammar | 0.996 (0.948–1.032) | 1.061 (0.931–1.131) |
+| Metadata only | 512 wide rules | 0.999 (0.908–1.011) | 1.028 (0.962–1.040) |
+| Metadata only | 512 rules plus partial rule | 1.010 (0.993–1.064) | 1.043 (1.017–1.113) |
+| Metadata only | 512 compile errors | 0.992 (0.922–1.013) | 1.027 (0.972–1.041) |
+| Metadata only | 512 documentation lines | 0.999 (0.903–1.013) | 1.413 (1.382–1.442) |
+
+Ordinary metadata-only allocation counts and B/op were unchanged; live-context
+metadata-only runs added one allocation and 24 B/op. Full-path allocations
+varied by up to nine allocations and 434 B/op, with no consistent change.
+Most timing ranges overlap parity. For live contexts, all five pairs were slower
+for full-path 512 compile errors (+2.2%, 1.004–1.066), metadata-only JSON (+3.2%,
+1.004–1.068), 512 rules plus a partial rule (+4.3%, 1.017–1.113), and
+512 documentation lines (+41.3%, 1.382–1.442). These measurements do not
+establish a broad speedup.
+Eighteen historical fingerprints and fourteen cancellation-phase controls
+matched their expected results, and targeted race checks passed. The harness
+is `internal/lsp/metadata_context_bench_test.go`; raw results remain outside
 the repository.
 
 ## Limitations and Open Questions

@@ -14,8 +14,8 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// A render control belongs to one immutable-snapshot request. It is never
-// stored on the shared analysis or returned with a response.
+// A render control belongs to one analysis or immutable-snapshot request. It is
+// never stored on the shared analysis or returned with a response.
 type renderControl struct {
 	ctx   context.Context
 	steps uint32

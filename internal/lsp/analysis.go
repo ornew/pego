@@ -149,10 +149,9 @@ func analyze(text string) *analysis {
 	return a
 }
 
-// analyzeContext cancels during tokenization and initial parsing lexing, and
-// in compiler rule/dependency/type-checking traversals, and at later phase
-// boundaries. Parser loops and several shared compiler operations remain
-// uncancellable within their calls.
+// analyzeContext polls during text indexing, tokenization, parsing, selected
+// compiler traversals and local metadata construction. Individual primitives
+// and other shared compiler operations remain indivisible.
 func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -183,30 +182,9 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ctx.Err(); err != nil {
+	if err := a.finishMetadataContext(ctx); err != nil {
 		return nil, err
 	}
-	a.indexDeclarationStarts()
-	a.collect()
-	for _, e := range a.syntaxErrs {
-		r := a.errorRange(e.Pos, false)
-		if e.End.IsValid() {
-			r = a.idx.rangeOf(a.idx.pegoOffset(e.Pos), a.idx.pegoOffset(e.End))
-		}
-		a.diag(r, e.Msg)
-	}
-	if len(a.syntaxErrs) == 0 {
-		if err := a.compileContext(ctx); err != nil {
-			return nil, err
-		}
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	sort.SliceStable(a.diags, func(i, j int) bool {
-		pi, pj := a.diags[i].Range.Start, a.diags[j].Range.Start
-		return pi.Line < pj.Line || pi.Line == pj.Line && pi.Character < pj.Character
-	})
 	return a, nil
 }
 
@@ -220,7 +198,8 @@ func (a *analysis) diag(r Range, msg string) {
 
 // compileContext records ordinary compile errors; cancellation publishes neither
 // a program nor diagnostics for the unfinished compilation.
-func (a *analysis) compileContext(ctx context.Context) error {
+func (a *analysis) compileContextControlled(ctx context.Context, control *renderControl) error {
+	control.poll()
 	prog, err := compileContextSafely(ctx, a.g)
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return err
@@ -234,13 +213,7 @@ func (a *analysis) compileContext(ctx context.Context) error {
 		a.diag(a.idx.rangeOf(0, 0), err.Error())
 		return nil
 	}
-	for i, e := range list {
-		if i == maxCompileErrors {
-			a.diag(a.errorRange(e.Pos, true), fmt.Sprintf("%d more errors", len(list)-i))
-			break
-		}
-		a.diag(a.errorRange(e.Pos, true), e.Msg)
-	}
+	a.mapCompileDiagnosticsControlled(list, control)
 	return nil
 }
 
@@ -262,10 +235,12 @@ func compileContextSafely(ctx context.Context, g *grammar.Grammar) (prog *engine
 // errorRange returns the range to report an error at pos at: the token at pos, or else the
 // character at pos. The compiler reports errors about a definition at its keyword; with
 // definitions set, they are reported at its name instead.
-func (a *analysis) errorRange(pos grammar.Pos, definitions bool) Range {
+func (a *analysis) errorRangeControlled(pos grammar.Pos, definitions bool, control *renderControl) Range {
+	control.poll()
 	off := a.idx.pegoOffset(pos)
 	if definitions {
 		for _, d := range a.defs {
+			control.poll()
 			if d.kwStart == off {
 				return a.idx.rangeOf(d.nameStart, d.nameEnd)
 			}
@@ -310,13 +285,15 @@ func (a *analysis) previousSignificantTokenControlled(i int, control *renderCont
 }
 
 // collect records the definitions and the occurrences of names in the grammar.
-func (a *analysis) collect() {
+func (a *analysis) collectControlled(control *renderControl) {
+	control.poll()
 	a.mark(a.g.PackageSource.Diagnostic(), semKeyword, 0)
 	for _, s := range a.g.Statements {
+		control.poll()
 		switch s := s.(type) {
 		case *grammar.RuleDef:
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.define(kindRule, s.Name, s.Diagnostic())
+			d := a.defineControlled(kindRule, s.Name, s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -325,15 +302,15 @@ func (a *analysis) collect() {
 				a.rules[s.Name] = d
 			}
 			if s.Type != nil {
-				a.walkType(s.Type)
+				a.walkTypeControlled(s.Type, control)
 			}
-			a.walkExpr(s.Expr)
+			a.walkExprControlled(s.Expr, control)
 			if s.Action != nil {
-				a.walkTerm(s.Action)
+				a.walkTermControlled(s.Action, control)
 			}
 		case *grammar.TypeDef:
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.define(kindType, s.Name, s.Diagnostic())
+			d := a.defineControlled(kindType, s.Name, s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -342,8 +319,8 @@ func (a *analysis) collect() {
 				a.types[s.Name] = d
 			}
 			if i, ok := a.tokenIndex(s.Diagnostic()); ok {
-				name := a.significantToken(i + 1)
-				spec := a.significantToken(name + 1)
+				name := a.significantTokenControlled(i+1, control)
+				spec := a.significantTokenControlled(name+1, control)
 				if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") {
 					a.markToken(spec, semKeyword, 0)
 				}
@@ -351,15 +328,16 @@ func (a *analysis) collect() {
 			switch spec := s.Spec.(type) {
 			case *grammar.StructSpec:
 				for _, f := range spec.Fields {
+					control.poll()
 					a.mark(f.Diagnostic(), semProperty, modDeclaration)
-					a.walkType(f.Type)
+					a.walkTypeControlled(f.Type, control)
 				}
 			case *grammar.AliasSpec:
-				a.walkType(spec.Type)
+				a.walkTypeControlled(spec.Type, control)
 			}
 		}
 	}
-	sort.SliceStable(a.occs, func(i, j int) bool { return a.occs[i].start < a.occs[j].start })
+	a.sortOccurrencesControlled(control)
 }
 
 // mark records the semantic token class of the token at pos.
@@ -376,12 +354,13 @@ func (a *analysis) markToken(i int, typ semTokenType, mods int) {
 }
 
 // define records the definition whose keyword is at pos.
-func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definition {
+func (a *analysis) defineControlled(kind symKind, name string, pos grammar.Pos, control *renderControl) *definition {
+	control.poll()
 	i, ok := a.tokenIndex(pos)
 	if !ok {
 		return nil
 	}
-	next := a.significantToken(i + 1)
+	next := a.significantTokenControlled(i+1, control)
 	if next >= len(a.toks) || a.toks[next].Kind != syntax.TokenIdent || a.toks[next].Text != name {
 		return nil
 	}
@@ -391,6 +370,7 @@ func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definitio
 	// constructor or operators block closing brace can still precede an action.
 	last, depth := next, 0
 	for j := next + 1; j < len(a.toks); j++ {
+		control.poll()
 		t := a.toks[j]
 		if depth == 0 && (a.isDefKeyword(j) || a.declarationStart(j) && a.isIdent(j, "package") || a.isPunct(j, ";")) {
 			break
@@ -409,7 +389,7 @@ func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definitio
 	}
 
 	d.end = a.toks[last].end
-	d.doc = a.docComment(i, last)
+	d.doc = a.docCommentControlled(i, last, control)
 	a.defs = append(a.defs, d)
 	a.occs = append(a.occs, occurrence{kind: kind, name: name, start: n.start, end: n.end, def: d})
 	return d
@@ -418,34 +398,38 @@ func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definitio
 // docComment returns the documentation of the definition from token first to token last: the
 // comments on the lines directly above it (each the first token of its line), or else a comment
 // at the end of its line if it takes one line.
-func (a *analysis) docComment(first, last int) string {
+func (a *analysis) docCommentControlled(first, last int, control *renderControl) string {
+	control.poll()
 	var lines []string
 	line := a.toks[first].Pos.Line
 	for k := first - 1; k >= 0; k-- {
+		control.poll()
 		t := a.toks[k]
 		if t.Kind != syntax.TokenComment || t.End.Line != line-1 || k > 0 && a.toks[k-1].End.Line == t.Pos.Line {
 			break
 		}
-		lines = append(lines, commentText(t.Text))
+		lines = append(lines, commentTextControlled(t.Text, control))
 		line = t.Pos.Line
 	}
 	if len(lines) == 0 && a.toks[last].Pos.Line == a.toks[first].Pos.Line && last+1 < len(a.toks) {
 		if t := a.toks[last+1]; t.Kind == syntax.TokenComment && t.Pos.Line == a.toks[last].End.Line {
-			return commentText(t.Text)
+			return commentTextControlled(t.Text, control)
 		}
 	}
 	for i, j := 0, len(lines)-1; i < j; i, j = i+1, j-1 {
+		control.poll()
 		lines[i], lines[j] = lines[j], lines[i]
 	}
-	return strings.Join(lines, "\n")
+	return control.join(lines, "\n")
 }
 
-func commentText(c string) string {
-	if strings.HasPrefix(c, "/*") {
-		return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(c, "/*"), "*/"))
+func commentTextControlled(text string, control *renderControl) string {
+	control.poll()
+	if strings.HasPrefix(text, "/*") {
+		return control.trimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
 	}
-	c = strings.TrimPrefix(c, "//")
-	return strings.TrimPrefix(c, " ")
+	text = strings.TrimPrefix(text, "//")
+	return strings.TrimPrefix(text, " ")
 }
 
 // ref records a reference to the name at pos.
@@ -466,35 +450,38 @@ func (a *analysis) refToken(kind symKind, name string, i int) {
 	a.occs = append(a.occs, occurrence{kind: kind, name: name, start: t.start, end: t.end})
 }
 
-func (a *analysis) walkType(t grammar.TypeExpr) {
+func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl) {
+	control.poll()
 	switch t := t.(type) {
 	case *grammar.TypeGroup:
-		a.walkType(t.Type)
+		a.walkTypeControlled(t.Type, control)
 	case *grammar.TypeRef:
 		a.ref(kindType, t.Name, t.Diagnostic())
 	case *grammar.ListType:
-		a.walkType(t.Elem)
+		a.walkTypeControlled(t.Elem, control)
 	case *grammar.OptionalType:
-		a.walkType(t.Elem)
+		a.walkTypeControlled(t.Elem, control)
 	case *grammar.UnionType:
 		for _, u := range t.Types {
-			a.walkType(u)
+			control.poll()
+			a.walkTypeControlled(u, control)
 		}
 	}
 }
 
-func (a *analysis) walkExpr(e grammar.Expr) {
+func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
+	control.poll()
 	switch e := e.(type) {
 	case *grammar.Group:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.InlineAction:
-		a.walkExpr(e.Expr)
-		a.walkTerm(e.Action)
+		a.walkExprControlled(e.Expr, control)
+		a.walkTermControlled(e.Action, control)
 	case *grammar.Ref:
 		if e.Level != "" {
 			if i, ok := a.tokenIndex(e.Diagnostic()); ok {
-				open := a.previousSignificantToken(i - 1)
-				keyword := a.previousSignificantToken(open - 1)
+				open := a.previousSignificantTokenControlled(i-1, control)
+				keyword := a.previousSignificantTokenControlled(open-1, control)
 				if a.isPunct(open, "(") && a.isIdent(keyword, "level") {
 					a.markToken(keyword, semKeyword, 0)
 				}
@@ -503,37 +490,40 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 		a.ref(kindRule, e.Name, e.Diagnostic())
 	case *grammar.Seq:
 		for _, x := range e.Items {
-			a.walkExpr(x)
+			control.poll()
+			a.walkExprControlled(x, control)
 		}
 	case *grammar.Choice:
 		for _, x := range e.Alts {
-			a.walkExpr(x)
+			control.poll()
+			a.walkExprControlled(x, control)
 		}
 	case *grammar.Repeat:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Optional:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.And:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Not:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Atomic:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Stream:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Recovery:
-		a.walkExpr(e.Expr)
-		a.walkExpr(e.Skip)
+		a.walkExprControlled(e.Expr, control)
+		a.walkExprControlled(e.Skip, control)
 	case *grammar.Discard:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Capture:
 		a.mark(e.Diagnostic(), semVariable, modDeclaration)
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 	case *grammar.Predicate:
-		a.walkTerm(e.Term)
+		a.walkTermControlled(e.Term, control)
 	case *grammar.Attributed:
-		a.walkExpr(e.Expr)
+		a.walkExprControlled(e.Expr, control)
 		for _, at := range e.Attrs {
+			control.poll()
 			if i, ok := a.tokenIndex(at.Diagnostic()); ok {
 				// Attribute names and markers must be adjacent; comments are
 				// not permitted between them by the lexical contract.
@@ -541,53 +531,59 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 					a.markToken(i+1, semDecorator, 0)
 				}
 			}
-			for _, arg := range at.ExpressionArgs() {
-				a.walkExpr(arg)
+			for _, arg := range control.expressionArgs(at) {
+				control.poll()
+				a.walkExprControlled(arg, control)
 			}
 		}
 	case *grammar.OperatorsRule:
 		if i, ok := a.tokenIndex(e.Diagnostic()); ok {
-			a.markToken(a.previousSignificantToken(i-1), semKeyword, 0)
+			a.markToken(a.previousSignificantTokenControlled(i-1, control), semKeyword, 0)
 		}
 		a.mark(e.SkipSource.Diagnostic(), semKeyword, 0)
 		if e.Skip != nil {
-			a.walkExpr(e.Skip)
+			a.walkExprControlled(e.Skip, control)
 		}
 		for _, o := range e.Operands {
+			control.poll()
 			a.mark(o.Diagnostic(), semKeyword, 0)
-			a.walkExpr(o.Expr)
+			a.walkExprControlled(o.Expr, control)
 			if o.Action != nil {
-				a.walkTerm(o.Action)
+				a.walkTermControlled(o.Action, control)
 			}
 		}
 		for _, l := range e.Levels {
+			control.poll()
 			a.mark(l.Diagnostic(), semKeyword, 0)
 			for _, op := range l.Operators {
+				control.poll()
 				a.mark(op.Diagnostic(), semKeyword, 0)
 				if op.Kind == grammar.Infix {
 					if i, ok := a.tokenIndex(op.Diagnostic()); ok {
-						a.markToken(a.significantToken(i+1), semKeyword, 0)
+						a.markToken(a.significantTokenControlled(i+1, control), semKeyword, 0)
 					}
 				}
-				a.walkExpr(op.Expr)
+				a.walkExprControlled(op.Expr, control)
 				if op.Action != nil {
-					a.walkTerm(op.Action)
+					a.walkTermControlled(op.Action, control)
 				}
 			}
 		}
 	}
 }
 
-func (a *analysis) walkTerm(t grammar.Term) {
+func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
+	control.poll()
 	switch t := t.(type) {
 	case *grammar.TermGroup:
-		a.walkTerm(t.Term)
+		a.walkTermControlled(t.Term, control)
 	case *grammar.Block:
 		for _, stmt := range t.Statements {
-			a.walkTerm(stmt)
+			control.poll()
+			a.walkTermControlled(stmt, control)
 		}
 	case *grammar.Member:
-		a.walkTerm(t.X)
+		a.walkTermControlled(t.X, control)
 		mods := 0
 		if findBuiltin(builtinMembers, t.Name) != nil {
 			mods = modDefaultLibrary
@@ -599,39 +595,43 @@ func (a *analysis) walkTerm(t grammar.Term) {
 			a.refToken(kindType, t.Type, i)
 		}
 		for _, f := range t.Fields {
+			control.poll()
 			a.mark(f.Diagnostic(), semProperty, 0)
-			a.walkTerm(f.Value)
+			a.walkTermControlled(f.Value, control)
 		}
 	case *grammar.Call:
 		a.mark(t.Diagnostic(), semFunction, modDefaultLibrary)
 		for _, x := range t.Args {
-			a.walkTerm(x)
+			control.poll()
+			a.walkTermControlled(x, control)
 		}
 	case *grammar.ListConstructor:
-		a.walkType(t.Elem)
+		a.walkTypeControlled(t.Elem, control)
 		for _, item := range t.Items {
-			a.walkTerm(item)
+			control.poll()
+			a.walkTermControlled(item, control)
 		}
 	case *grammar.TerminalConstructor:
 		if i, ok := a.tokenIndex(t.Diagnostic()); ok {
 			a.refToken(kindType, t.Type, i)
 		}
 		for _, arg := range t.Args {
-			a.walkTerm(arg)
+			control.poll()
+			a.walkTermControlled(arg, control)
 		}
 	case *grammar.Lambda:
-		a.walkTerm(t.Body)
+		a.walkTermControlled(t.Body, control)
 	case *grammar.Binary:
-		a.walkTerm(t.L)
-		a.walkTerm(t.R)
+		a.walkTermControlled(t.L, control)
+		a.walkTermControlled(t.R, control)
 	case *grammar.Unary:
-		a.walkTerm(t.X)
+		a.walkTermControlled(t.X, control)
 	case *grammar.VarRef:
 		a.mark(t.Diagnostic(), semVariable, 0)
 	case *grammar.Assign:
 		a.vars[t.Name] = true
 		a.mark(t.Diagnostic(), semVariable, modDeclaration)
-		a.walkTerm(t.Value)
+		a.walkTermControlled(t.Value, control)
 	}
 }
 
