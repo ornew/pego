@@ -986,10 +986,52 @@ in each of three runs. Both left no request pending and served a later request.
 A server mutant that ignores `$/cancelRequest` fails the responsive check.
 VS Code, Helix and Emacs remain unvalidated.
 
+### Cancellation Poll Intervals
+
+`TestPollIntervalProbe` (run with `PEGO_LSP_POLL_PROBE=1`) passes a
+never-cancelled context that records the wall-clock interval between
+consecutive cancellation checks and the two callers of each check. Its `Done`
+channel is non-nil, so the controlled paths run. The longest interval bounds
+how long work continues after a cancellation, excluding the code before the
+first check and after the last. The probe covers responsive analysis with lint
+and every analysed request: semantic tokens, document symbols, formatting,
+hover, definition, highlights, completion, prepare-rename, references, rename
+and code actions. Name-based requests use the middle occurrence of the
+most-referenced rule. Inputs are the repository's parser grammars, `pego.pego`,
+the 64 KiB benchmark grammar, and three 256 KiB single-token inputs: a string
+literal, a comment and a character class. Each configuration ran three times
+and kept its run with the shortest longest interval; the probe was run three
+times on an Apple M3 Max.
+
+| Input | Bytes | Analysis longest (μs) | Request longest (μs) |
+|---|---:|---:|---:|
+| `duckdb.pego` | 192,992 | 285–822 | 105–399 (formatting) |
+| `typescript.pego` | 127,132 | 190–366 | 62–71 |
+| `python.pego` | 71,708 | 244–302 | 61–69 |
+| `golang.pego` | 56,593 | 235–336 | 49–53 |
+| 64 KiB benchmark grammar | 65,542 | 115–135 | 233–260 (formatting) |
+| other parser grammars and `pego.pego` | 1,508–34,595 | 47–205 | 13–27 |
+| 256 KiB literal | 262,159 | 1,125–1,143 | 10–16 |
+| 256 KiB comment | 262,164 | 38–40 | 22–579 (hover) |
+| 256 KiB class | 262,158 | 53–92 | 14–22 |
+
+For the repository grammars, the site of the longest interval changes from run
+to run among the token loop, lexer and compiler checks. No single unpolled
+operation dominates; the larger values include scheduling and garbage
+collection. The 256 KiB literal is the one reproducible outlier: compiling it
+spends about 1.1 ms between checks on whole-literal operations that are each
+linear in its length. These are unescaping, rune conversion and quoting the
+literal for error messages, the last being about 40% of compile time for a
+1 MiB literal. Polling only one of them would not remove the interval, so they
+remain indivisible. The 579 μs hover maximum on the large comment occurred in one
+of the three probe runs; the others measured 22 and 55 μs. These are measurements of these inputs and this machine, not
+bounds: the work between checks is proportional to the largest single token,
+and JSON decoding and wire encoding are outside the measured intervals.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in; ordinary clients retain the synchronous path. Neovim edits keep the server text in sync in both modes, and Neovim's cancellation is acknowledged by the responsive server; VS Code, Helix and Emacs remain unvalidated.
-- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Semantic-token classification and encoding also poll through token/occurrence traversal and multiline output construction while preserving exact token data. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound.
+- Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Semantic-token classification and encoding also poll through token/occurrence traversal and multiline output construction while preserving exact token data. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound. On the repository grammars the longest measured interval between checks stayed below 1 ms; work on a single token, such as compiling a 256 KiB literal, runs about 1.1 ms between checks and grows with the token.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and editor workloads; the multi-document probe measures retention and analysis order, not request concurrency.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
