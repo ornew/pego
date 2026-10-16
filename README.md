@@ -137,6 +137,7 @@ pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeS
 pego gen -lang ts -g grammar.pego -types -o parser.ts # also emit declarations and parseAST
 pego gen -g grammar.pego -pkg parser -max-depth 600000 -o parser.go # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
+pego edit-fuzz -g grammar.pego -minimize -save-failures out  # check Document edits against fresh parses
 ```
 
 Run `pego` without arguments for every command and flag.

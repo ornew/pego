@@ -400,6 +400,9 @@ Replace the body of the fuzz function with what you want to hold for every input
 must not panic, must not loop, and must handle `SyntaxError` and `SyntaxErrors` (from `#recover`). Keep seeds short
 with `WithMaxLen`: the fuzzer works best on short inputs.
 
+To fuzz incremental parsing, use `pego edit-fuzz`, which starts from generated inputs too and edits them; see
+[fuzzing edits](incremental.md#fuzzing-edits).
+
 ## How It Works, and What It Cannot Do
 
 The generator walks the grammar from the start rule, making a random decision at each ordered choice, repetition,

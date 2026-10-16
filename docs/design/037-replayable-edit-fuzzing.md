@@ -1,6 +1,6 @@
 # 037. Replayable Edit Fuzzing
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
@@ -17,7 +17,7 @@ Illustrative saved input:
   "grammar_normalization": "none",
   "start": "main",
   "backend": "bytecode-iterative",
-  "unit": "rune",
+  "unit": "codepoints",
   "seed": 41,
   "text_encoding": "base64",
   "initial_base64": "YcOp",
@@ -30,7 +30,45 @@ Illustrative saved input:
 }
 ```
 
-The schema and API names are proposed. Text and replacement payloads are base64-encoded raw bytes; edit offsets use the selected unit and refer to the text state immediately before the operation.
+Text and replacement payloads are base64-encoded raw bytes; edit offsets use the selected unit and refer to the text state immediately before the operation.
+
+## Implementation
+
+Package [`editfuzz`](../../editfuzz) and `pego edit-fuzz` implement this design; the guide is
+[fuzzing edits](../guide/incremental.md#fuzzing-edits). The implementation settles the open names and refines some
+rules:
+
+- The API is `editfuzz.Fuzz(src, Options)`, `Replay(src, *Sequence)`, `Minimize(src, *Sequence, maxAttempts)`,
+  `Save` and `Load`. `Fuzz` returns a `*Failure` holding the sequence, its saved path and the minimized sequence;
+  `Replay` returns a `*Mismatch` or an `*InvalidError`. `Options` also has `Sequences`, `Minimize` and
+  `MaxAttempts`, which the CLI exposes as `-sequences`, `-minimize` and `-max-attempts`.
+- Units are written `codepoints` and `bytes`, and backends `closure`, `bytecode` and `bytecode-iterative`, the names
+  of the other `pego` commands. `-backend` and `-unit` take comma-separated lists and default to all of them.
+- Undo and redo do not apply the inverse of the recorded edit. Undo restores the observed text with the smallest
+  single edit on character boundaries, found by a common prefix and suffix of whole characters. Such an edit
+  always reproduces the exact bytes, so there is no rebuild fallback: a Document that ends with other text is a
+  failure. This keeps every undo incremental, including after an edit joined bytes into a character or CodePoints
+  normalization changed the replacement.
+- After every edit, undo and redo, `Document.Text()` must equal the expected text: the splice of the replacement
+  in Bytes, and the splice of the replacement with each invalid byte replaced by U+FFFD in CodePoints. The fresh
+  parse reads `Document.Text()`, so without this check a wrong text would go unnoticed.
+- A failure is a `*Mismatch` whose category is `value`, `error`, `text` or `panic`. `text` also covers an undo or
+  redo edit that the Document rejects, which cannot be the sequence's fault. A panic is a failure even if both
+  parses panic alike; its path, `panic.edit`, `panic.document`, `panic.fresh` or `panic.both`, keeps minimization
+  from turning an incremental failure into a crash of every parse. The mismatch holds the two differing values at
+  its path, not the whole results.
+- Results are compared through their JSON encoding, which replaces invalid UTF-8 with U+FFFD; strings of the tree
+  that are not valid UTF-8 are therefore also compared quoted, under `value_invalid_utf8` (category `value`),
+  after the value itself, so that Bytes results differing only in invalid bytes differ.
+- Decoding requires exactly the fields of the format, with case-sensitive names and no duplicates, and a lowercase
+  hex grammar hash.
+- One sequence in eight starts from initial texts joined into about 6 KiB, so that Documents also use the
+  representation they choose for texts of 4 KiB or more.
+- Failure files are named after a hash of their contents and created with a hard link from a synced temporary file,
+  or exclusively where hard links are unsupported, so an existing file is never replaced; saving identical
+  contents returns the existing file. Writing validates a sequence as reading does. `pego edit-fuzz`
+  requires `-save-failures` with `-minimize` when it generates sequences, and rejects generation flags with
+  `-replay`.
 
 ## Motivation
 
