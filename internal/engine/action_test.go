@@ -298,6 +298,66 @@ func TestIntegerWrapAround(t *testing.T) {
 	}
 }
 
+const actionEnvironmentGrammar = `type Item struct { Depth int; Tag string; Size int; Name Match; Note *Match }
+type Out struct { Items []Item; Count int; Sum int; Tag string }
+rule main Out = {depth := 0} {tag := "top"} peek? xs:item* $$ => Out{Items: $xs, Count: len($xs), Sum: foldl(depth, $xs, (s, i) => $s + $i.Depth * 10 + $i.Size), Tag: tag}
+rule peek = {depth := 5} (item "%" / plain "%")
+rule item Item = nested / tagged / deep / shout / listed / late / plain
+rule nested Item = "(" {depth := depth + 1} i:item ")" => $i
+rule tagged Item = "#" w:word {tag := tag + "/" + text($w)} ":" i:item => $i
+rule deep Item = {depth > 1 && depth < 5 && (tag != "top" || missing == 0)} n:name => Item{Depth: depth, Tag: tag, Size: 100, Name: $n}
+rule shout Item = n:name {tag := "shadow"} m:"!"? "!" => Item{Depth: depth, Tag: tag, Size: 0 - len(text($n)), Name: $n, Note: $m}
+rule listed Item = "[" (n:name {last := text($n)} ","?)* m:"]" => Item{Depth: depth, Tag: last, Size: len(last), Name: $m}
+rule late Item = "~" n:name => Item{Depth: never, Tag: tag, Size: 0, Name: $n}
+rule plain Item = n:name m:"?"? => Item{Depth: depth, Tag: tag, Size: len(text($n)) * (depth + 1), Name: $n, Note: $m}
+rule name = [a-z]+ #atomic
+rule word = [a-z]+ #atomic`
+
+// TestActionEnvironments pins the variable environment that actions see on
+// every backend; the shared generated corpus compares the other parsers with
+// these results.
+func TestActionEnvironments(t *testing.T) {
+	prog := compile(t, actionEnvironmentGrammar)
+	// peek calls plain at the start twice with another depth, so batch parsers
+	// memoize it there before main calls it.
+	if r := prog.byName["plain"]; !r.memo || r.transient || len(r.vars) != 2 {
+		t.Fatal("plain must be memoized by its two variables")
+	}
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, tc := range []struct{ input, want string }{
+			// The values peek defined do not reach main's calls, and its
+			// definitions are visible to its own calls.
+			{"a", "(Out Count=1 Items=[(Item Depth=0 Name=\"a\"@name Note=nil Size=1 Tag=`top`)] Sum=1 Tag=`top`)"},
+			{"a%b", "(Out Count=1 Items=[(Item Depth=0 Name=\"b\"@name Note=nil Size=1 Tag=`top`)] Sum=1 Tag=`top`)"},
+			// Callers' variables reach nested calls.
+			{"(((a)))", "(Out Count=1 Items=[(Item Depth=3 Name=\"a\"@name Note=nil Size=4 Tag=`top`)] Sum=34 Tag=`top`)"},
+			// A shadowing definition is visible only below its invocation.
+			{"a(#t:b)c?", "(Out Count=3 Items=[(Item Depth=0 Name=\"a\"@name Note=nil Size=1 Tag=`top`) (Item Depth=1 Name=\"b\"@name Note=nil Size=2 Tag=`top/t`) (Item Depth=0 Name=\"c\"@name Note=\"?\" Size=1 Tag=`top`)] Sum=14 Tag=`top`)"},
+			// The undefined variable fails deep's predicate unless the
+			// left operand of || short-circuits it.
+			{"((b))", "(Out Count=1 Items=[(Item Depth=2 Name=\"b\"@name Note=nil Size=3 Tag=`top`)] Sum=23 Tag=`top`)"},
+			{"#x:((b))", "(Out Count=1 Items=[(Item Depth=2 Name=\"b\"@name Size=100 Tag=`top/x`)] Sum=120 Tag=`top`)"},
+			// shout's definition is rolled back when it fails.
+			{"a!!", "(Out Count=1 Items=[(Item Depth=0 Name=\"a\"@name Note=\"!\" Size=-1 Tag=`shadow`)] Sum=-1 Tag=`top`)"},
+			{"ab?", "(Out Count=1 Items=[(Item Depth=0 Name=\"ab\"@name Note=\"?\" Size=2 Tag=`top`)] Sum=2 Tag=`top`)"},
+			// The last repetition element's definition remains.
+			{"[a,bc]", "(Out Count=1 Items=[(Item Depth=0 Name=\"]\" Size=2 Tag=`bc`)] Sum=2 Tag=`top`)"},
+		} {
+			if got, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: b}); err != nil || got.String() != tc.want {
+				t.Errorf("%v %q: got %v, %v\nwant %s", b, tc.input, got, err, tc.want)
+			}
+		}
+		for _, tc := range []struct{ input, want string }{
+			{"~a", "action in late: variable never is not defined"},
+			{"[]", "action in listed: variable last is not defined"},
+		} {
+			if got, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: b}); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("%v %q: got %v, %v, want error %q", b, tc.input, got, err, tc.want)
+			}
+		}
+	}
+}
+
 // TestLenOfStrings checks that len counts the characters of strings in the position unit on
 // every backend, for strings that do not come from the input too.
 func TestLenOfStrings(t *testing.T) {

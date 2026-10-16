@@ -126,6 +126,12 @@ rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
 rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
 		{"memo keyed by variables", `rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
+		// Value and predicate actions read callers' variables, shadow them,
+		// roll back failed definitions and keep definitions from repetition
+		// elements; the failing peek first calls the memoized plain twice
+		// with another depth at the same position. An undefined variable fails
+		// a predicate but aborts the parse in a value action.
+		{"action environments", actionEnvironmentGrammar, []string{"a", "a%b", "(a)", "((ab?))", "#x:a", "#x:((b))", "#x:(#y:b!)", "((b))", "a!!", "a!", "(((a)))", "~a", "a(#t:b)c?", "[a,bc]", "[]", "(#q:[x])y", "a)", ""}},
 		{"empty prefix and postfix", `rule main = e $$
 rule e = operators {
     operand "x"
