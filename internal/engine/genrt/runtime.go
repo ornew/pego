@@ -334,6 +334,10 @@ type rule struct {
 	memo bool
 	// leader is the leader of a left-recursive cycle; its results are always memoized.
 	leader bool
+	// docMemo means Documents memoize the rule, transient or not. It is false
+	// for the other rules of a left-recursive cycle, whose results depend on
+	// the leader's growing seed, as in the engine.
+	docMemo bool
 	// seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (firstCall), or -1.
 	seen          int
@@ -1477,7 +1481,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 			p.docProvisional = oldProvisional || p.docProvisional
 		}()
 	}
-	if ((!documentEnabled || p.document == nil) && !r.memo && !r.leader) || p.firstCall(r) {
+	if ((!documentEnabled || p.document == nil) && !r.memo && !r.leader) || (documentEnabled && p.document != nil && !r.docMemo) || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
 		if len(r.scope) == 0 {
 			return p.invokePlain(r, min)

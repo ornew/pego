@@ -124,14 +124,26 @@ func typedDocumentError(err error,c *typedDocumentClone)error {
  return err
 }
 
-// documentCall memoizes all typed rule entries, including generated direct
-// wrappers. Examined and provisional metadata stays outside batch memo entries.
+// documentCall memoizes typed rule entries (rule.docMemo), including generated
+// direct wrappers. Examined and provisional metadata stays outside batch memo
+// entries.
 func(p *tparser) documentCall(r *trule,min int,inv func(*tparser)(any,bool))(any,bool) {
  p.stepWork()
  start:=p.pos
  oldHigh,oldProvisional:=p.docHigh,p.docProvisional
  p.docHigh,p.docProvisional=start+1,false
  defer func(){p.docHigh=max(oldHigh,p.docHigh);p.docProvisional=oldProvisional||p.docProvisional}()
+ if !r.docMemo {
+  rec:=len(p.recovered)
+  var v any
+  var ok bool
+  if inv!=nil {
+   p.document.stats.Evaluated++
+   v,ok=inv(p)
+  } else {v,ok=p.invoke(r,min)}
+  if !ok {p.pos=start;p.recovered=p.recovered[:rec]}
+  return v,ok
+ }
  env:=p.envValues(r.vars)
  old:=p.memoGet(r.id,start,min,env)
  if old!=nil && (old.growing || (!old.silent || p.silent>0) && (len(old.errs)==0 || old.silent==(p.silent>0))) {

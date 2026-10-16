@@ -43,7 +43,7 @@ The design is in [design record 007](../design/007-streaming-and-incremental-par
 
 ## The Model
 
-A `Document` is a text plus the memo table of its last parse. The memo table has an entry for every rule call: the rule,
+A `Document` is a text plus the memo table of its last parse. The memo table has an entry for every rule call (with one exception, below): the rule,
 the position, and the result, together with **the range of input the call looked at** (the matched text, plus every
 character that was examined to decide, such as the character after a `+` that ended it, and lookahead). When the text is
 edited, an entry stays valid if the edit lies outside the range it examined, and is dropped otherwise. The next `Parse`
@@ -337,7 +337,9 @@ Consequences, all of which can be read off the numbers in the next section:
 
 - **Reuse is per rule call.** Only rule results are memoized, so the unit of reuse is a rule. A grammar written as one
   big rule has nothing to reuse. `Document` memoizes every rule call, even those an ordinary `Parse` does not (rules that
-  call no rule, and rules referenced only once), precisely so that these small rules can be reused.
+  call no rule, and rules referenced only once), precisely so that these small rules can be reused. The exception is the
+  rules of a left-recursive cycle other than its leader, the rule that grows the seed: their results depend on the
+  growing match, so no parse memoizes them.
 - **Every ancestor of the edit runs again**, because it examined the edit. For a flat list of lines that is `main`, the
   line, and the rule inside it that contains the change: 3 evaluations, however large the file.
 - **Looking ahead widens the range.** The range includes the character after a token (the check that ended a `+` or
@@ -679,7 +681,7 @@ Reading the table:
   take about 2 ms against 159 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 1 ms
   against 25 ms. Everything in one rule gains as much: its repetition resumes.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
-  every rule call is memoized (an ordinary parse memoizes only calls that repeat).
+  nearly every rule call is memoized (an ordinary parse memoizes only calls that repeat).
 - **Memory is a multiple of the tree.** The line starting "memory" shows the live heap for the first grammar at 100,000
   lines: the tree from `Parse` alone against a `Document` that also holds the memo table (an entry per rule call), the
   records of long repetitions (about 80 bytes per element), the text as code points (four bytes each) and an offset

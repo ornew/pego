@@ -9,11 +9,11 @@ import (
 
 func documentTestRules() (*rule, *rule) {
 	descs = []string{"any", "begin input", "end input", "begin line", "end line"}
-	item := &rule{id: 1, name: "item", memo: true, seen: -1}
+	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
 	item.body = func(p *parser, _ int) (*Node, bool) {
 		return p.matchLiteral([]rune("a"), "a", idAny, true)
 	}
-	main := &rule{id: 0, name: "main", memo: true, seen: -1}
+	main := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	main.body = func(p *parser, _ int) (*Node, bool) {
 		start := p.pos
 		var children []*Node
@@ -62,7 +62,7 @@ func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 
 func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
 	descs = []string{"any", "begin input", "end input", "begin line", "end line"}
-	item := &rule{id: 1, name: "item", memo: true, seen: -1}
+	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
 	item.body = func(p *parser, _ int) (*Node, bool) {
 		start := p.pos
 		v, ok := p.matchLiteral([]rune("a"), "a", idAny, true)
@@ -73,7 +73,7 @@ func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
 		p.pos = start + 1
 		return v, ok
 	}
-	main := &rule{id: 0, name: "main", memo: true, seen: -1}
+	main := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	main.body = func(p *parser, _ int) (*Node, bool) { return p.call(item, 0) }
 	d := newDocumentState(main, "ab", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
@@ -139,7 +139,7 @@ func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 }
 
 func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
-	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	r.body = func(p *parser, _ int) (*Node, bool) {
 		p.pos = 1
 		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
@@ -166,7 +166,7 @@ func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
 
 func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 	calls := 0
-	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	r.body = func(p *parser, _ int) (*Node, bool) {
 		calls++
 		p.pos = 1
@@ -223,7 +223,7 @@ func (c *diagnosticCancelContext) Err() error {
 }
 
 func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
-	r := &rule{id: 0, name: "main", memo: true, seen: -1}
+	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	r.body = func(p *parser, _ int) (*Node, bool) {
 		p.pos = 1
 		p.recovered = append(p.recovered, &SyntaxError{Expected: make([]string, 2048)})

@@ -569,8 +569,12 @@ func (g *generator) rules() {
 	} else {
 		fmt.Fprintf(init, "\t%s = []*rule{\n", g.table)
 		for _, r := range all {
-			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, bodyIsSeq: %v, terminalType: %q, memo: %v, leader: %v, seen: %d, novalue: %v, vars: %s},\n",
-				r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, r.seen, r.novalue, goStrings(r.vars))
+			docMemo := ""
+			if g.document && (r.leader || r.memo) {
+				docMemo = "docMemo: true, "
+			}
+			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, bodyIsSeq: %v, terminalType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
+				r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, docMemo, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
 		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.terminalType)\n\t}\n", g.table)
@@ -1035,7 +1039,8 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {
 	case g.document && g.table == "rules":
-		// Document parses memoize every rule call, including otherwise plain rules.
+		// Document parses route every call through call, which memoizes per rule.docMemo,
+		// including otherwise plain rules.
 		return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
 	case g.directTypedDocument && g.table == "trules" && operatorsRule:
 		return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
