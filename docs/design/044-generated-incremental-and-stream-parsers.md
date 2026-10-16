@@ -81,11 +81,13 @@ can leave statistics for calls that began but did not complete. Examined-input
 metrics remain unavailable. Temporary per-invocation observer and profile
 state is released after return or panic, while constructor defaults remain for
 later calls. Callbacks MUST NOT invoke `Parse`, `ParseAST`, or `Edit` on the same
-Document. Callers can schedule later work or use another Document. Whether the
-runtime detects and rejects same-Document re-entry remains unresolved.
+Document. Callers can schedule later work or use another Document. A Document
+generated with observability rejects such a call with `ErrDocumentBusy`.
 
 Edit replaces [start,end), rejecting invalid range or byte character boundaries before modifying text or memo.
 Invalid UTF-8 bytes are individual characters, as in the engine; an edit can join bytes into a valid sequence.
+Such a join changes characters before the edit, so up to three invalid bytes immediately before it, the most an
+incomplete sequence can have, are treated as edited, and results that examined them are not reused.
 Document is not safe for concurrent use. A later Parse may reuse Node pointers held in memo entries retained before
 an edit; it does not shift or move those Nodes. Edits discard memo entries at and after the edit. Results can share
 Nodes through fields and children, so use `Node.Clone` to detach a tree before retaining or mutating it. Clone

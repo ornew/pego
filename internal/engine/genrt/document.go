@@ -44,11 +44,12 @@ func (d *Document) Text() string { return d.state.text }
 
 // Edit replaces [start,end) in the Document's position unit.
 func (d *Document) Edit(start, end int, text string) error {
-	if err := d.state.edit(start, end, text); err != nil {
+	reuse, err := d.state.editReuse(start, end, text)
+	if err != nil {
 		return err
 	}
 	if d.typedMemo != nil {
-		d.typedMemo.invalidate(start)
+		d.typedMemo.invalidate(reuse)
 	}
 	return nil
 }
@@ -193,24 +194,42 @@ func newDocumentState(root *rule, text string, unit Unit) *documentState {
 }
 
 func (d *documentState) edit(start, end int, replacement string) error {
+	_, err := d.editReuse(start, end, replacement)
+	return err
+}
+
+// editReuse applies an edit and returns the position before which memo
+// results remain valid.
+func (d *documentState) editReuse(start, end int, replacement string) (int, error) {
 	length := len(d.text)
 	if d.unit != Bytes {
 		length = utf8.RuneCountInString(d.text)
 	}
 	if start < 0 || end < start || end > length {
-		return fmt.Errorf("invalid range [%d,%d) for text of length %d", start, end, length)
+		return start, fmt.Errorf("invalid range [%d,%d) for text of length %d", start, end, length)
 	}
 	startByte, endByte := start, end
 	if d.unit == Bytes {
 		if err := documentByteBoundary(d.text, start); err != nil {
-			return err
+			return start, err
 		}
 		if err := documentByteBoundary(d.text, end); err != nil {
-			return err
+			return start, err
 		}
 	} else {
 		startByte = documentByteOffset(d.text, start)
 		endByte = documentByteOffset(d.text, end)
+	}
+	// The replacement can complete an incomplete UTF-8 sequence before start,
+	// turning invalid bytes, each a separate character, into one character.
+	// Such a sequence has at most UTFMax-1 bytes, each one position in either
+	// unit, so results that examined them are not retained.
+	reuse := start
+	for i := 0; i < utf8.UTFMax-1 && i < startByte; i++ {
+		if r, size := utf8.DecodeLastRuneInString(d.text[:startByte-i]); r != utf8.RuneError || size != 1 {
+			break
+		}
+		reuse--
 	}
 
 	// Retain only entries wholly before the edit. This intentionally does not
@@ -218,9 +237,9 @@ func (d *documentState) edit(start, end int, replacement string) error {
 	// positional-value invalidation. A retained entry's input and positions
 	// are unchanged, and a future parse can still reuse it.
 	var kept memoTable
-	for pos := 0; pos < len(d.memo.slots) && pos < start; pos++ {
+	for pos := 0; pos < len(d.memo.slots) && pos < reuse; pos++ {
 		for e := d.memo.slots[pos]; e != nil; e = e.next {
-			if e.examined > start || e.growing || e.provisional {
+			if e.examined > reuse || e.growing || e.provisional {
 				continue
 			}
 			copyEntry := kept.alloc()
@@ -233,7 +252,7 @@ func (d *documentState) edit(start, end int, replacement string) error {
 	// bytes are preserved, and a replacement may complete an existing prefix.
 	next := d.text[:startByte] + replacement + d.text[endByte:]
 	d.text, d.memo = next, kept
-	return nil
+	return reuse, nil
 }
 
 func documentByteOffset(text string, index int) int {
