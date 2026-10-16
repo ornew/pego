@@ -106,6 +106,14 @@ type streamResult struct {
 	Err   string            `json:"err,omitempty"`
 }
 
+// streamMemoGrammar's elements backtrack into a memoized rule that reads
+// variables, assign variables and produce nil.
+const streamMemoGrammar = `rule main = {n := 0} item* #stream $$
+rule item = (k:key ":" / k:key {n := n + 1} {last := text($k)} "=") val "\n" => nil
+rule key = {n >= 0} word
+rule word = [a-z]+ #atomic
+rule val = [0-9]+ #atomic`
+
 var streamCorpus = []genCase{
 	{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n", "#records\n", "", "#records\na=1\nb"}},
 	{"actions", `type Pair struct { Key Match; Value Match }
@@ -141,6 +149,8 @@ rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9
 rule ch = "é" / "😀" / "\u{fffd}" / [a-z]`, []string{"aé😀b", "é\xe2\x82", "\xff\xfe", "a\xe2\x82\xacb", "\xf0\x9f\x98", "😀😀"}},
 	{"errors after discard", `rule main = line* #stream $$
 rule line = [a-z]+ #atomic "\n"`, []string{strings.Repeat("abc\n", 3000) + "x1\n", strings.Repeat("ab\n", 2000) + "\n"}},
+	// Elements backtrack into a memoized rule that reads variables.
+	{"memoized elements", streamMemoGrammar, []string{"a=1\nb:2\n", "a=1\n:2\n", strings.Repeat("ab=1\ncd:2\n", 1500)}},
 	// The start rule is memoized at 0 after the memo before it was pruned.
 	{"recursive start", `rule main = item* #stream
 rule item = "(" main ")" / [a-z] / "[" main "]" / "(" [0-9]`, []string{strings.Repeat("x", 3000), strings.Repeat("(a)", 1000), "[a(b)]c(1", "(1"}},
@@ -493,6 +503,16 @@ rule atom = [a-z] #atomic " "?`)
 	if err != nil {
 		t.Fatal(err)
 	}
+	memo, err := syntax.Parse(streamMemoGrammar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err = Generate(memo, GenOptions{Package: "memo", Start: "main", Stream: true, Observability: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files["memo/parser.go"] = string(code)
+	files["memo/parser_test.go"] = generatedStreamMemoConsumer
 	for _, pkg := range []string{"lists", "listsref"} {
 		code, err := Generate(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true, disableNodeFrameScratch: pkg == "listsref"})
 		if err != nil {
@@ -694,6 +714,66 @@ func TestMemoryIsBounded(t *testing.T) {
 				opts = append(opts, WithProfile(&Profile{}))
 			}
 			err := ParseStream(&listReader{n: n, seed: 1}, func(*Node) error {
+				count++
+				if count == n/3 || count == n {
+					var ms runtime.MemStats
+					runtime.GC()
+					runtime.ReadMemStats(&ms)
+					at[count/n] = ms.HeapAlloc
+				}
+				return nil
+			}, opts...)
+			if err != nil || count != n {
+				t.Fatal(err, count)
+			}
+			if grown := int64(at[1]) - int64(at[0]); grown > 4<<20 {
+				t.Errorf("profiled %v, unit %v: reachable memory grew by %d KiB", profiled, unit, grown>>10)
+			}
+		}
+	}
+}
+`
+
+const generatedStreamMemoConsumer = `package memo
+
+import (
+	"io"
+	"runtime"
+	"testing"
+)
+
+type lineReader struct {
+	line string
+	n    int
+	buf  string
+}
+
+func (r *lineReader) Read(b []byte) (int, error) {
+	for len(r.buf) < len(b) && r.n > 0 {
+		r.buf += r.line
+		r.n--
+	}
+	if r.buf == "" {
+		return 0, io.EOF
+	}
+	n := copy(b, r.buf)
+	r.buf = r.buf[n:]
+	return n, nil
+}
+
+// Retaining memo entries, variable state or elements would take tens of
+// megabytes.
+func TestMemoryIsBounded(t *testing.T) {
+	for _, profiled := range []bool{false, true} {
+		for _, unit := range []Unit{CodePoints, Bytes} {
+			const n = 60000
+			var at [2]uint64
+			count := 0
+			opts := []ParseOption{WithUnit(unit)}
+			if profiled {
+				opts = append(opts, WithProfile(&Profile{}))
+			}
+			err := ParseStream(&lineReader{line: "key=42\n", n: n}, func(*Node) error {
 				count++
 				if count == n/3 || count == n {
 					var ms runtime.MemStats

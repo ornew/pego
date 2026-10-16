@@ -144,9 +144,19 @@ rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,
 		"lines": `rule main = line* #stream $$
 rule line = [a-z0-9=]+ #atomic "\n"`,
+		// Each element backtracks into a memoized, variable-reading rule, assigns
+		// variables and produces nil.
+		"memo, variables and nil": `rule main = {n := 0} item* #stream $$
+rule item = (k:key ":" / k:key {n := n + 1} {last := text($k)} "=") val "\n" => nil
+rule key = {n >= 0} word
+rule word = [a-z]+ #atomic
+rule val = [0-9]+ #atomic`,
 	}
 	for name, src := range grammars {
 		prog := compile(t, src)
+		if r := prog.byName["key"]; r != nil && (!r.memo || r.transient || len(r.vars) == 0) {
+			t.Fatalf("%s: key must be memoized, non-transient and read variables", name)
+		}
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			header := ""
 			if name == "records" {
@@ -165,8 +175,8 @@ rule line = [a-z0-9=]+ #atomic "\n"`,
 				}
 				return nil
 			}, ParseOptions{Backend: b})
-			if err != nil {
-				t.Fatal(err)
+			if err != nil || count != n {
+				t.Fatalf("%s, %v: %d elements, %v", name, b, count, err)
 			}
 			// Retaining the elements would take tens of megabytes here.
 			if grown := int64(at[1]) - int64(at[0]); grown > 4<<20 {
