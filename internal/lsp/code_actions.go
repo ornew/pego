@@ -139,7 +139,8 @@ func (d *document) lintDiagnosticsContext(ctx context.Context) ([]Diagnostic, er
 	return out, nil
 }
 
-func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
+func (s *Server) codeActionsControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
 	var p struct {
 		TextDocument textDocumentIdentifier `json:"textDocument"`
 		Range        Range                  `json:"range"`
@@ -162,6 +163,7 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 	if len(p.Context.Only) > 0 {
 		allowed := false
 		for _, kind := range p.Context.Only {
+			control.poll()
 			if kind == "" || kind == "quickfix" {
 				allowed = true
 			}
@@ -180,6 +182,7 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 		return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
 	}
 	for _, diagnostic := range current {
+		control.poll()
 		if ctx.Err() != nil {
 			return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
 		}
@@ -188,6 +191,7 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 		}
 		matched := false
 		for _, supplied := range p.Context.Diagnostics {
+			control.poll()
 			if supplied.Data != nil && *supplied.Data == *diagnostic.Data && supplied.Range == diagnostic.Range && supplied.Code == diagnostic.Code && supplied.Message == diagnostic.Message && supplied.Source == diagnostic.Source {
 				matched = true
 				break
@@ -199,15 +203,20 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 		if s.client.Experimental.Pego.ShowExplanation {
 			explanation := ""
 			for _, check := range lint.Checks {
+				control.poll()
 				if check.Name == diagnostic.Code {
 					explanation = check.Summary
 					break
 				}
 			}
+			control.poll()
 			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "pego.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
 		}
 		if s.client.Workspace.WorkspaceEdit.DocumentChanges {
-			if edit, ok := d.suppressionEditContext(ctx, diagnostic); ok {
+			edit, ok := d.suppressionEditControlled(ctx, diagnostic, control)
+			control.check()
+			if ok {
+				control.poll()
 				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this finding line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
 			}
 		}
@@ -225,7 +234,8 @@ func rangesOverlap(a, b Range) bool {
 
 // suppressionEdit is deliberately conservative: validate the edited grammar and
 // verify that the targeted finding disappears. Human-readable Fix is never an edit.
-func (d *document) suppressionEditContext(ctx context.Context, diagnostic Diagnostic) (TextEdit, bool) {
+func (d *document) suppressionEditControlled(ctx context.Context, diagnostic Diagnostic, control *renderControl) (TextEdit, bool) {
+	control.poll()
 	if ctx.Err() != nil {
 		return TextEdit{}, false
 	}
@@ -244,6 +254,7 @@ func (d *document) suppressionEditContext(ctx context.Context, diagnostic Diagno
 	}
 	// Never splice a new directive into an existing comment or multiline token.
 	for _, tok := range a.toks {
+		control.poll()
 		if tok.start < start && tok.end > start {
 			return TextEdit{}, false
 		}

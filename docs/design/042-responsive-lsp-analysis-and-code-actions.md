@@ -662,6 +662,61 @@ error fingerprints matched exactly. The harness is
 `internal/lsp/semantic_context_bench_test.go`; raw results remain outside the
 repository.
 
+### Code-Action Request Cancellation
+
+Code-action construction uses the request-local render control while filtering
+`context.only`, matching supplied diagnostics, building lint-check explanations,
+and scanning tokens for suppression edits. Existing context checks in lint
+analysis, per-diagnostic context checks and the 256-item finding/definition
+scans remain in place. A final
+control check immediately after suppression analysis and another at request
+completion prevent cancellation from being reported as an ordinary unavailable
+edit or publishing a partial action list.
+
+The response retains the existing capability filters, diagnostic URI, version,
+generation, key, range, code, message and source matching, action order,
+versioned edits, and final document-version guard. Cancellation returns no
+partial actions and `RequestCancelled`; stale actor requests and foreign panics
+keep their existing behavior. The control is request-local. JSON decoding,
+`strings.Contains`, candidate-string construction, individual comparisons,
+formatting, allocations, and wire encoding remain indivisible, so this does not
+provide a wall-clock bound.
+
+Five alternating 200 ms pairs compared the code-action request path with parent
+`4c744fd` on Go 1.27.1, Apple M3 Max (darwin/arm64), `GOMAXPROCS=1`,
+`GOGC=100`, and no `GOMEMLIMIT`. The eight workloads include request JSON
+decoding, cached lint-result mapping and response construction, plus
+suppression-candidate analysis and lint where applicable; initial snapshot
+analysis, standalone parser throughput, wire encoding and editor latency are
+excluded. The baseline already had per-diagnostic context checks, 256-item
+finding/definition checks, and controlled candidate analysis/lint, but lacked
+the new inner-walk and request-envelope checks. Ordinary runs used no request
+context; cancellable runs used a live context without triggering cancellation.
+Values are paired-median candidate/baseline time ratios with the range across
+pairs.
+
+| Workload | Ordinary | Live context |
+|---|---:|---:|
+| Disabled | 1.002 (0.957–1.016) | 1.025 (0.996–1.039) |
+| Explanation | 1.016 (1.006–1.033) | 1.017 (1.011–1.066) |
+| 128 findings | 1.002 (0.994–1.017) | 1.035 (1.005–1.044) |
+| 4,096 `only` filters | 0.986 (0.959–1.067) | 1.030 (1.020–1.062) |
+| 4,096 nonmatches plus target (4,097 supplied), match | 1.005 (0.996–1.023) | 1.000 (0.996–1.019) |
+| 4,096 supplied diagnostics, miss | 1.000 (0.991–1.015) | 1.005 (0.991–1.039) |
+| Suppression edit | 1.010 (0.987–1.053) | 1.017 (0.997–1.142) |
+| Suppression with 512 rule references | 1.003 (0.995–1.009) | 1.001 (0.999–1.023) |
+
+Ordinary allocation counts were unchanged and B/op differed by at most two.
+Live-context runs added one allocation and 23–30 B/op (typically 24, with
+rounding variation on the larger JSON workloads). These synthetic request
+measurements do not quantify cancellation latency, initial snapshot analysis,
+standalone parser throughput, wire encoding, retained memory or real-editor
+behavior. Fifty historical response and error fingerprints matched exactly.
+The existing panic-to-error conversion in candidate analysis is unchanged;
+new polling rethrows unrelated panics. The harness is
+`internal/lsp/code_action_context_bench_test.go`; raw results remain outside
+the repository.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
