@@ -120,6 +120,8 @@ rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest,
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A struct { N int }
 rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
+		// Integers are 64-bit and wrap around; the operands depend on the input.
+		{"integer boundaries", integerBoundaryGrammar, []string{"a", "aa", ""}},
 		{"cut and lookahead", `rule main = ("a" -- "b" / "a" -- "c") rest
 rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
 		{"memo keyed by variables", `rule main = {n := 1} r "x" / {n := 2} r .*

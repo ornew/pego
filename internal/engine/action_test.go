@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+	"math"
 	"strings"
 	"testing"
 )
@@ -259,6 +261,39 @@ rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		if n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b}); err != nil || n.String() != want {
 			t.Errorf("%v: got %v, %v, want %s", b, n, err, want)
+		}
+	}
+}
+
+// integerBoundaryGrammar computes integers beyond the 64-bit range from the
+// length of the input, so that they are not constants.
+const integerBoundaryGrammar = `type I struct { Add int; Sub int; Mul int; Neg int; Quo int; Rem int; Big int }
+rule main = x:"a"* #atomic => I{
+    Add: 9223372036854775807 + len($x),
+    Sub: 0 - 9223372036854775807 - 1 - len($x),
+    Mul: 9223372036854775807 * (len($x) + 1),
+    Neg: -(0 - 9223372036854775807 - len($x)),
+    Quo: (0 - 9223372036854775807 - 1) / (0 - len($x)),
+    Rem: (0 - 9223372036854775807 - 1) % (0 - len($x)),
+    Big: 9223372036854775807 - len($x),
+}`
+
+// TestIntegerWrapAround checks that integer arithmetic wraps around in 64 bits
+// with Go's results on every backend, including the most negative integer
+// divided by -1, and that dividing by zero is a runtime error.
+func TestIntegerWrapAround(t *testing.T) {
+	prog := compile(t, integerBoundaryGrammar)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, n := range []int64{1, 2} {
+			maxInt, minInt := int64(math.MaxInt64), int64(math.MinInt64)
+			want := fmt.Sprintf("(I Add=%d Big=%d Mul=%d Neg=%d Quo=%d Rem=%d Sub=%d)",
+				maxInt+n, maxInt-n, maxInt*(n+1), -(-maxInt - n), minInt/-n, minInt%-n, minInt-n)
+			if got, err := prog.ParseWith("main", strings.Repeat("a", int(n)), ParseOptions{Backend: b}); err != nil || got.String() != want {
+				t.Errorf("%v, %d: got %v, %v, want %s", b, n, got, err, want)
+			}
+		}
+		if got, err := prog.ParseWith("main", "", ParseOptions{Backend: b}); err == nil || !strings.Contains(err.Error(), "division by zero") {
+			t.Errorf("%v: dividing by zero gave %v, %v", b, got, err)
 		}
 	}
 }
