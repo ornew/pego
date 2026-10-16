@@ -23,7 +23,10 @@ import (
 // at most Chunk bytes per Read (all of the rest if zero); EOFWithData returns
 // io.EOF with the last bytes, and Fail returns errStreamRead instead of EOF.
 // StopAt makes the StopAt-th emit return errStreamStop; NilEmit passes no
-// callback.
+// callback. Diag records the committed recoveries with a diagnostic callback,
+// whose DiagStopAt-th call returns errDiagStop, and Limit sets a diagnostic
+// limit if LimitSet. Iterate pulls the elements with an iterator instead,
+// closing it where emit would stop.
 type streamRun struct {
 	Case        int
 	Input       []byte // bytes: JSON would replace invalid UTF-8 in a string
@@ -33,11 +36,23 @@ type streamRun struct {
 	Fail        bool
 	StopAt      int
 	NilEmit     bool
+	Diag        bool
+	DiagStopAt  int
+	Limit       int
+	LimitSet    bool
+	Iterate     bool
 }
+
+// streamDiagVariants are the stream runs with diagnostic options and
+// iterators of a differential test.
+var streamDiagVariants = []streamRun{{Diag: true}, {Diag: true, Chunk: 1, DiagStopAt: 1}, {Diag: true, NilEmit: true},
+	{LimitSet: true, Limit: 1}, {LimitSet: true, Limit: 0}, {LimitSet: true, Limit: 2, NilEmit: true},
+	{Iterate: true}, {Iterate: true, Chunk: 1, StopAt: 2}, {Iterate: true, Diag: true, LimitSet: true, Limit: 1}}
 
 var (
 	errStreamRead = errors.New("read failed")
 	errStreamStop = errors.New("stop")
+	errDiagStop   = errors.New("diagnostic stop")
 )
 
 // streamTestReader is shared, as source, with the generated test program.
@@ -69,6 +84,63 @@ func (r *chunkReader) Read(b []byte) (int, error) {
 	return n, nil
 }
 `
+
+// streamTestDrain is shared, as source, with the generated test program.
+const streamTestDrain = `
+// drain pulls every element of an iterator and passes it to emit. An emit
+// error closes the iterator, which must then report it closed, and is
+// returned. Repeated calls after the end return the same result.
+func drain[T any](next func() (T, bool, error), close func(), emit func(T) error, closed func(error) bool) error {
+	for {
+		n, ok, err := next()
+		if !ok {
+			if _, ok2, err2 := next(); ok2 || fmt.Sprintf("%T %v", err2, err2) != fmt.Sprintf("%T %v", err, err) {
+				panic("unstable iterator result")
+			}
+			close()
+			if _, _, err3 := next(); fmt.Sprintf("%T %v", err3, err3) != fmt.Sprintf("%T %v", err, err) {
+				panic("close changed the result")
+			}
+			return err
+		}
+		if err := emit(n); err != nil {
+			close()
+			close()
+			if _, ok, err := next(); ok || !closed(err) {
+				panic("closed iterator returned " + fmt.Sprint(ok, err))
+			}
+			return err
+		}
+	}
+}
+`
+
+// drain pulls every element of an iterator and passes it to emit. An emit
+// error closes the iterator, which must then report it closed, and is
+// returned. Repeated calls after the end return the same result.
+func drain[T any](next func() (T, bool, error), close func(), emit func(T) error, closed func(error) bool) error {
+	for {
+		n, ok, err := next()
+		if !ok {
+			if _, ok2, err2 := next(); ok2 || fmt.Sprintf("%T %v", err2, err2) != fmt.Sprintf("%T %v", err, err) {
+				panic("unstable iterator result")
+			}
+			close()
+			if _, _, err3 := next(); fmt.Sprintf("%T %v", err3, err3) != fmt.Sprintf("%T %v", err, err) {
+				panic("close changed the result")
+			}
+			return err
+		}
+		if err := emit(n); err != nil {
+			close()
+			close()
+			if _, ok, err := next(); ok || !closed(err) {
+				panic("closed iterator returned " + fmt.Sprint(ok, err))
+			}
+			return err
+		}
+	}
+}
 
 type chunkReader struct {
 	s           string
@@ -103,6 +175,7 @@ func (r *chunkReader) Read(b []byte) (int, error) {
 type streamResult struct {
 	Emits []json.RawMessage `json:"emits"`
 	Calls []int             `json:"calls"`
+	Diags []string          `json:"diags,omitempty"`
 	Err   string            `json:"err,omitempty"`
 }
 
@@ -214,13 +287,43 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenO
 		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"streamtest/g%d\"\n", i, i)
-		fmt.Fprintf(&parsers, "\t%d: func(r io.Reader, emit func(any) error, b bool) error {\n\t\tu := g%d.CodePoints\n\t\tif b {\n\t\t\tu = g%[2]d.Bytes\n\t\t}\n\t\tvar e func(*g%[2]d.Node) error\n\t\tif emit != nil {\n\t\t\te = func(n *g%[2]d.Node) error { return emit(n) }\n\t\t}\n\t\treturn g%[2]d.ParseStream(r, e, g%[2]d.WithUnit(u))\n\t},\n", i, i)
+		fmt.Fprintf(&parsers, `	%[1]d: func(r io.Reader, emit func(any) error, v run, diag func(string) error) error {
+		u := g%[1]d.CodePoints
+		if v.Bytes {
+			u = g%[1]d.Bytes
+		}
+		opts := []g%[1]d.ParseOption{g%[1]d.WithUnit(u)}
+		if diag != nil {
+			opts = append(opts, g%[1]d.WithDiagnosticCallback(func(e *g%[1]d.SyntaxError) error {
+				err := diag(e.Error())
+				// The callback owns its copy.
+				e.Expected, e.Messages, e.Pos = append(e.Expected, "mutated"), nil, -1
+				return err
+			}))
+		}
+		if v.LimitSet {
+			opts = append(opts, g%[1]d.WithDiagnosticLimit(v.Limit))
+		}
+		if v.Iterate {
+			it, err := g%[1]d.Iterate(r, opts...)
+			if err != nil {
+				return err
+			}
+			return drain(it.Next, it.Close, func(n *g%[1]d.Node) error { return emit(n) }, func(err error) bool { return err == g%[1]d.ErrStreamClosed })
+		}
+		var e func(*g%[1]d.Node) error
+		if emit != nil {
+			e = func(n *g%[1]d.Node) error { return emit(n) }
+		}
+		return g%[1]d.ParseStream(r, e, opts...)
+	},
+`, i)
 		prog := compile(t, c.src, Options{noProjections: true})
 		for _, in := range c.inputs {
 			for _, bytes := range []bool{false, true} {
-				variants := []streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}
+				variants := append([]streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}, streamDiagVariants...)
 				if len(in) > 1000 {
-					variants = []streamRun{{Chunk: 0}, {Chunk: 4093}, {Chunk: 7, StopAt: 1500}}
+					variants = []streamRun{{Chunk: 0}, {Chunk: 4093}, {Chunk: 7, StopAt: 1500}, {Iterate: true, Chunk: 4093, Diag: true, LimitSet: true, Limit: 3}}
 				}
 				for _, v := range variants {
 					v.Case, v.Input, v.Bytes = i, []byte(in), bytes
@@ -244,10 +347,11 @@ import (
 var (
 	errStreamRead = errors.New("read failed")
 	errStreamStop = errors.New("stop")
+	errDiagStop   = errors.New("diagnostic stop")
 )
 
-`+streamTestReader+`
-var parsers = map[int]func(io.Reader, func(any) error, bool) error{
+`+streamTestReader+streamTestDrain+`
+var parsers = map[int]func(io.Reader, func(any) error, run, func(string) error) error{
 `+parsers.String()+`}
 
 type run struct {
@@ -259,6 +363,11 @@ type run struct {
 	Fail        bool
 	StopAt      int
 	NilEmit     bool
+	Diag        bool
+	DiagStopAt  int
+	Limit       int
+	LimitSet    bool
+	Iterate     bool
 }
 
 func main() {
@@ -272,7 +381,18 @@ func main() {
 		var res struct {
 			Emits []json.RawMessage `+"`json:\"emits\"`"+`
 			Calls []int             `+"`json:\"calls\"`"+`
+			Diags []string          `+"`json:\"diags,omitempty\"`"+`
 			Err   string            `+"`json:\"err,omitempty\"`"+`
+		}
+		var diag func(string) error
+		if v.Diag {
+			diag = func(e string) error {
+				res.Diags = append(res.Diags, fmt.Sprint(len(res.Emits), " ", e))
+				if len(res.Diags) == v.DiagStopAt {
+					return errDiagStop
+				}
+				return nil
+			}
 		}
 		var emit func(any) error
 		if !v.NilEmit {
@@ -289,11 +409,11 @@ func main() {
 				return nil
 			}
 		}
-		if err := parsers[v.Case](r, emit, v.Bytes); err != nil {
+		if err := parsers[v.Case](r, emit, v, diag); err != nil {
 			res.Err = err.Error()
-			if err == errStreamRead || err == errStreamStop {
+			if err == errStreamRead || err == errStreamStop || err == errDiagStop {
 				res.Err = "caller " + err.Error()
-			} else if errors.Is(err, errStreamRead) || errors.Is(err, errStreamStop) {
+			} else if errors.Is(err, errStreamRead) || errors.Is(err, errStreamStop) || errors.Is(err, errDiagStop) {
 				res.Err = "wrapped " + err.Error()
 			}
 		}
@@ -342,15 +462,34 @@ func engineStream(prog *Program, v streamRun) string {
 			return nil
 		}
 	}
-	unit := CodePoints
+	o := ParseOptions{Unit: CodePoints, DiagnosticLimit: v.Limit, DiagnosticLimitSet: v.LimitSet}
 	if v.Bytes {
-		unit = Bytes
+		o.Unit = Bytes
 	}
-	if err := prog.ParseStreamWith("main", r, emit, ParseOptions{Unit: unit}); err != nil {
+	if v.Diag {
+		o.DiagnosticCallback = func(e *SyntaxError) error {
+			res.Diags = append(res.Diags, fmt.Sprint(len(res.Emits), " ", e.Error()))
+			e.Expected, e.Messages, e.Pos = append(e.Expected, "mutated"), nil, -1
+			if len(res.Diags) == v.DiagStopAt {
+				return errDiagStop
+			}
+			return nil
+		}
+	}
+	var err error
+	if v.Iterate {
+		var it *StreamIterator
+		if it, err = prog.Iterate("main", r, o); err == nil {
+			err = drain(it.Next, it.Close, emit, func(err error) bool { return err == ErrStreamClosed })
+		}
+	} else {
+		err = prog.ParseStreamWith("main", r, emit, o)
+	}
+	if err != nil {
 		res.Err = err.Error()
-		if err == errStreamRead || err == errStreamStop {
+		if err == errStreamRead || err == errStreamStop || err == errDiagStop {
 			res.Err = "caller " + err.Error()
-		} else if errors.Is(err, errStreamRead) || errors.Is(err, errStreamStop) {
+		} else if errors.Is(err, errStreamRead) || errors.Is(err, errStreamStop) || errors.Is(err, errDiagStop) {
 			res.Err = "wrapped " + err.Error()
 		}
 	}
@@ -369,7 +508,7 @@ rule other = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{"stream:", "streamInput", "func ParseStream", "\"bufio\""} {
+	for _, marker := range []string{"stream:", "streamInput", "func ParseStream", "\"bufio\"", "\"iter\"", "WithDiagnostic", "func Iterate", "StreamIterator"} {
 		if strings.Contains(string(plain), marker) {
 			t.Errorf("ordinary output contains %s", marker)
 		}
@@ -524,6 +663,7 @@ import (
 var (
 	errStreamRead = errors.New("read failed")
 	errStreamStop = errors.New("stop")
+	errDiagStop   = errors.New("diagnostic stop")
 )
 
 `+streamTestReader+`
@@ -815,6 +955,18 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys}`)
 		t.Fatal(err)
 	}
 	files["typed/parser.go"] = string(code)
+	recovering, err := syntax.Parse(`type S struct { N Match }
+rule main = (stmt #recover(skip=[^;]+ ";"))* #stream $$
+rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err = Generate(recovering, GenOptions{Package: "recovering", Start: "main", Stream: true, Types: true, Document: true, Recognize: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files["recovering/parser.go"] = string(code)
+	files["recovering/parser_test.go"] = generatedRecoveringStreamConsumer
 	files["typed/parser_test.go"] = generatedTypedStreamConsumer
 	files["memo/parser_test.go"] = generatedStreamMemoConsumer
 	for _, pkg := range []string{"lists", "listsref"} {
@@ -839,6 +991,169 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys}`)
 		t.Fatalf("%v\n%s", err, out)
 	}
 }
+
+const generatedRecoveringStreamConsumer = `package recovering
+
+import (
+	"errors"
+	"io"
+	"runtime"
+	"strings"
+	"testing"
+)
+
+type lineReader struct {
+	line string
+	n    int
+	buf  string
+}
+
+func (r *lineReader) Read(b []byte) (int, error) {
+	for len(r.buf) < len(b) && r.n > 0 {
+		r.buf += r.line
+		r.n--
+	}
+	if r.buf == "" {
+		return 0, io.EOF
+	}
+	n := copy(b, r.buf)
+	r.buf = r.buf[n:]
+	return n, nil
+}
+
+// Retaining every recovered error would take tens of megabytes.
+func TestDiagnosticLimitBoundsMemory(t *testing.T) {
+	for _, unit := range []Unit{CodePoints, Bytes} {
+		const n = 100000
+		var at [2]uint64
+		count, diags := 0, 0
+		err := ParseStream(&lineReader{line: "ab;1x;", n: n}, func(*Node) error {
+			count++
+			if count == 2*n/3 || count == 2*n {
+				var ms runtime.MemStats
+				runtime.GC()
+				runtime.ReadMemStats(&ms)
+				at[count/(2*n)] = ms.HeapAlloc
+			}
+			return nil
+		}, WithUnit(unit), WithDiagnosticLimit(3), WithDiagnosticCallback(func(*SyntaxError) error { diags++; return nil }))
+		var truncated *TruncatedSyntaxErrors
+		if !errors.As(err, &truncated) || truncated.Total != n || truncated.Dropped != n-3 || truncated.CountsSaturated || count != 2*n || diags != n {
+			t.Fatal(err, count, diags)
+		}
+		var list SyntaxErrors
+		if !errors.As(err, &list) || len(list) != 3 || list[2].Pos != 6*n-3 || list[1].Pos != 6*n-9 {
+			t.Fatal(list)
+		}
+		if grown := int64(at[1]) - int64(at[0]); grown > 4<<20 {
+			t.Errorf("unit %v: reachable memory grew by %d KiB", unit, grown>>10)
+		}
+	}
+}
+
+func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
+	for _, opt := range []ParseOption{WithDiagnosticLimit(0), WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
+		check := func(name string, err error) {
+			if err == nil || !strings.Contains(err.Error(), "only supported for stream parsing") {
+				t.Errorf("%s: %v", name, err)
+			}
+		}
+		_, err := Parse("ab;", opt)
+		check("Parse", err)
+		_, err = ParseRule("stmt", "ab;", opt)
+		check("ParseRule", err)
+		_, err = ParseAST("ab;", opt)
+		check("ParseAST", err)
+		check("Recognize", Recognize("ab;", opt))
+		d, err := NewDocument("ab;", opt)
+		check("NewDocument", err)
+		if d, err = NewDocument("ab;"); err != nil {
+			t.Fatal(err)
+		}
+		_, err = d.Parse(opt)
+		check("Document.Parse", err)
+		_, err = d.ParseAST(opt)
+		check("Document.ParseAST", err)
+	}
+	// A nil callback is not an option to reject.
+	if _, err := Parse("ab;", WithDiagnosticCallback(nil)); err != nil {
+		t.Error(err)
+	}
+	read := false
+	r := readFunc(func([]byte) (int, error) { read = true; return 0, io.EOF })
+	if err := ParseStream(r, nil, WithDiagnosticLimit(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
+		t.Error(err)
+	}
+	if _, err := Iterate(r, WithDiagnosticLimit(-1)); err == nil {
+		t.Error("Iterate accepted a negative limit")
+	}
+	if _, err := IterateAST(r, WithMaxDepth(-1)); err == nil {
+		t.Error("IterateAST accepted a negative depth")
+	}
+	if read {
+		t.Error("invalid options read the input")
+	}
+}
+
+type readFunc func([]byte) (int, error)
+
+func (f readFunc) Read(b []byte) (int, error) { return f(b) }
+
+func TestIterateAST(t *testing.T) {
+	var want []StreamValue
+	err := ParseStreamAST(strings.NewReader("ab;1x;cd;"), func(v StreamValue) error { want = append(want, v); return nil })
+	var errs SyntaxErrors
+	if !errors.As(err, &errs) || len(errs) != 1 || len(want) != 3 {
+		t.Fatal(err, want)
+	}
+	var diags []*SyntaxError
+	it, err := IterateAST(strings.NewReader("ab;1x;cd;"), WithDiagnosticCallback(func(e *SyntaxError) error { diags = append(diags, e); return nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; ; i++ {
+		v, ok, err := it.Next()
+		if !ok {
+			if i != 3 || err == nil || err.Error() != errs.Error() || len(diags) != 1 {
+				t.Fatal(i, err, diags)
+			}
+			break
+		}
+		if i == 1 {
+			if _, isError := v.(*Error); !isError || len(diags) != 1 || diags[0].Pos != 3 {
+				t.Fatal(v, diags)
+			}
+		}
+		if s, isS := v.(*S); isS && s.N.Text != want[i].(*S).N.Text {
+			t.Fatal(i, s, want[i])
+		}
+	}
+	// Closing early abandons the parse.
+	it, _ = IterateAST(strings.NewReader("ab;cd;"))
+	if _, ok, err := it.Next(); !ok || err != nil {
+		t.Fatal(ok, err)
+	}
+	it.Close()
+	if _, ok, err := it.Next(); ok || err != ErrStreamClosed {
+		t.Fatal(ok, err)
+	}
+	// A callback panic reaches the caller of Next unchanged.
+	type marker struct{}
+	nodes, _ := Iterate(strings.NewReader("1x;"), WithDiagnosticCallback(func(*SyntaxError) error { panic(marker{}) }))
+	func() {
+		defer func() {
+			if x := recover(); x != (marker{}) {
+				t.Fatal(x)
+			}
+		}()
+		nodes.Next()
+		t.Fatal("no panic")
+	}()
+	if _, ok, _ := nodes.Next(); ok {
+		t.Fatal("iterator continued after a panic")
+	}
+}
+`
 
 const generatedTypedStreamConsumer = `package typed
 

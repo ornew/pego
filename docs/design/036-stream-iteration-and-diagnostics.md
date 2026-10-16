@@ -48,7 +48,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 - No asynchronous channel, background reader, forced read cancellation or automatic closing of an arbitrary `io.Reader`.
 - No rollback of elements already returned or emitted.
-- No recognition-only stream mode, generated-parser stream support or change to `#recover` semantics.
+- No recognition-only stream mode, generated-parser stream support (designed separately in [044](044-generated-incremental-and-stream-parsers.md)) or change to `#recover` semantics.
 - No global memory budget for input; only retained diagnostics are bounded when a positive limit is selected.
 
 ## Design
@@ -88,7 +88,7 @@ The parser reports diagnostics only at a recovery commit point, after the parser
 
 ### Compatibility and Backend Support
 
-This is an additive Go API for the stream-capable closure and bytecode backends; recognition remains unsupported. Both byte and rune position units are supported. Generated Go, typed Go and TypeScript parsers remain unsupported for streams. `ParseStream` retains its signature, element order, nil callback values and complete recovered-error result unless the caller explicitly adds a diagnostic option. Stream-only diagnostic options are rejected for batch `Parse`, `ParsePrefix` and `Document` rather than silently ignored.
+This is an additive Go API for the stream-capable closure and bytecode backends; recognition remains unsupported. Both byte and rune position units are supported. TypeScript parsers remain unsupported for streams; generated Go stream packages provide the same iterator and options, as described in [design 044](044-generated-incremental-and-stream-parsers.md). `ParseStream` retains its signature, element order, nil callback values and complete recovered-error result unless the caller explicitly adds a diagnostic option. Stream-only diagnostic options are rejected for batch `Parse`, `ParsePrefix` and `Document` rather than silently ignored.
 
 ### Implemented Slices
 

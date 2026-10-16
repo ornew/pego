@@ -396,6 +396,14 @@ type parseOptions struct {
 	limits   WorkLimits
 	control  *workControl
 	prepared bool
+	// stream:begin
+	// streaming is set by the stream entry points, which alone accept the
+	// diagnostic options.
+	streaming          bool
+	diagnostic         func(*SyntaxError) error
+	diagnosticLimit    int
+	diagnosticLimitSet bool
+	// stream:end
 }
 
 // WithUnit selects the unit of input positions (CodePoints by default).
@@ -433,8 +441,27 @@ func resolveOptions(opts []ParseOption) (parseOptions, error) {
 	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
 	}
+	// stream:begin
+	if err := o.validateDiagnostics(); err != nil {
+		return o, err
+	}
+	// stream:end
 	return o, nil
 }
+
+// stream:begin
+// validateDiagnostics accepts the diagnostic options only for stream entry points.
+func (o *parseOptions) validateDiagnostics() error {
+	if o.diagnosticLimit < 0 {
+		return fmt.Errorf("diagnostic limit must be nonnegative")
+	}
+	if !o.streaming && (o.diagnostic != nil || o.diagnosticLimitSet) {
+		return fmt.Errorf("diagnostic options are only supported for stream parsing")
+	}
+	return nil
+}
+
+// stream:end
 
 // prepareOptions is called after fixed option and rule-name validation.
 // The resolved state can be shared with a result converter without new counters.

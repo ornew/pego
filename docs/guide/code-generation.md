@@ -529,15 +529,44 @@ parse and is returned unchanged; a non-EOF reader error ends it as well. A nil c
 handing elements over. Recovered diagnostics are returned together as `SyntaxErrors` at the end, and positions and
 lines stay absolute. `WithContext`, `WithWorkLimits`, `WithMaxDepth` and, with `-observability`, tracing and profiling
 apply to the whole invocation; a cancelled or limited stream checks between reads and elements, and a reader blocked
-in `Read` is not interrupted. The engine's `Iterate`, `WithDiagnosticCallback` and `WithDiagnosticLimit` have no
-generated counterpart yet, and `-stream` cannot be combined with `-lang ts`. The measurements are in
+in `Read` is not interrupted. `-stream` cannot be combined with `-lang ts`. The measurements are in
 [design record 044](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
+
+The package also has the engine's pull iteration and diagnostic controls, with the same contracts as in
+[streaming](streaming.md):
+
+```go
+it, err := parser.Iterate(r, parser.WithDiagnosticCallback(func(e *parser.SyntaxError) error {
+	log.Print(e) // a committed recovery, just before its element
+	return nil
+}), parser.WithDiagnosticLimit(100))
+if err != nil {
+	return err // invalid options; r has not been read
+}
+defer it.Close()
+for {
+	n, ok, err := it.Next()
+	if !ok {
+		return err // nil at a clean end, or the result ParseStream would return
+	}
+	use(n) // nil for an element without a value
+}
+```
+
+`Iterate` returns a `*StreamIterator` whose `Next` parses only as far as the next committed element; `Close`
+abandons the parse without closing `r`, and `Next` then returns `ErrStreamClosed`. `WithDiagnosticCallback`
+receives a copy of each committed recovered error before its element, and its error ends the parse without that
+element. `WithDiagnosticLimit(n)` keeps only the latest `n` recovered errors and returns `*TruncatedSyntaxErrors`
+when it dropped some, so a long faulty stream holds a bounded number of them. Both options are accepted only by
+the stream entry points; `Parse`, `ParseRule`, `ParseAST`, `Recognize`, `NewDocument` and the `Document` methods
+reject them.
 
 With `-types`, the package also has
 
 ```go
 type StreamValue = ... // the typed value of one element of the #stream repetition
 func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error
+func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) // Next returns StreamValue
 ```
 
 `ParseStreamAST` behaves like `ParseStream` but passes each element as the value its expression has in the

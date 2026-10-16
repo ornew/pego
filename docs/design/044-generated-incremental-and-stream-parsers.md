@@ -156,9 +156,20 @@ repetition again after allocating its next frame. Like the engine, it starts new
 the node chunk is nearly used or more than one was started, so a chunk shared by consecutive elements cannot chain
 them all to the parser. Every 1,024 positions it moves the memo entries before the commit to a free list, ignores
 memo lookups before them, and drops a profile's evaluation counts there. Node text is sliced from 1,024-unit owned
-snapshots of loaded input, so a returned string retains at most one snapshot. Stream diagnostic callbacks and limits,
-and the engine's pull-based `Iterate`, have no generated counterpart yet; recovered diagnostics are returned together
-at the end.
+snapshots of loaded input, so a returned string retains at most one snapshot.
+
+Stream packages also have the engine's `Iterate`, `WithDiagnosticCallback` and `WithDiagnosticLimit`
+([design 036](036-stream-iteration-and-diagnostics.md)) with the same contracts, and typed packages an `IterateAST`.
+The options set fields of the generated options that exist only in stream packages; the stream entry points mark
+their options as streaming, and every other entry point rejects diagnostic options, so non-stream output is
+unchanged. Before each element the stream reports the recovered errors committed since the last boundary to the
+callback, whose error ends the parse without the element, and to a ring of the latest errors; with a positive limit,
+the commit then empties the recovered list, which only the start rule's call, with an empty saved prefix, still
+refers to. Recoveries after the repetition are reported before the result. The iterators wrap the push entry points
+in a standard library `iter.Pull` coroutine, as the engine does, through one generic core for Node and typed
+elements. `TestGeneratedStreamMatchesEngine` compares callbacks, iterators and limits, including the element before
+which each diagnostic arrives, with the engine's. Ordering a truncated tail is charged as one step per retained error
+in one reservation, rather than in the engine's chunks, so step counts at an exhausted limit can differ slightly.
 
 These APIs do not return a start-rule tree. The callback receives each committed element, including nil where
 the repeated expression produces no value. StreamValue follows the existing Go typed mapping of that expression,
@@ -261,8 +272,8 @@ values; no pooled parser or conversion arena is shared between concurrent invoca
 | Scope | Initial reference and proposed rollout |
 | --- | --- |
 | Closure and both engine VMs | Existing Document/Reader stream oracle; both position units |
-| Generated Go Node | Current opt-in prefix-memo Document and Reader stream; stream diagnostic callbacks and pull iteration remain proposed |
-| Generated typed Go | Direct typed `Document.ParseAST` for batch-eligible grammars; Node conversion fallback otherwise; stream conversion remains proposed |
+| Generated Go Node | Current opt-in prefix-memo Document and Reader stream with pull iteration and diagnostic controls |
+| Generated typed Go | Direct typed `Document.ParseAST` for batch-eligible grammars; Node conversion fallback otherwise; streams convert committed elements |
 | Generated TS Node/typed conversion | Documents and streams remain proposed; streams require continuation lowering |
 | Recognition | Continue rejecting Document/stream mode; batch recognition is unaffected |
 
@@ -275,7 +286,7 @@ for colliding grammar declarations; generating helper methods must not alter exi
 
 The current implementation adds the generated Go Node Document with prefix-only memo reuse, plus direct typed
 matching for batch-eligible grammars and per-call Node conversion for other typed results, and the Go Node Reader
-stream with its typed elements. Remaining work includes stream diagnostic callbacks, TS Documents, and TS push
+stream with its typed elements, pull iteration and diagnostic controls. Remaining work includes TS Documents, and TS push
 continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
@@ -400,3 +411,11 @@ without the chunk split, about 38 MiB; without dropping profile counts, about 49
 leaves default output byte-identical and the batch code of the package unchanged. Eight alternating samples of
 batch `Parse` from packages generated with and without `-stream` measured 28.3 vs 28.7 ms in CodePoints and 31.9 vs
 31.4 ms (not significant) in Bytes, with equal allocations.
+
+With diagnostic controls and iterators added, six one-second samples of a 60,000-element key/value stream (0.9 MB)
+measured generated `ParseStream` at 23.2 ms (±2%) against 23.0 ms (±1%) before, with one more allocation per call,
+so the per-element report check costs nothing measurable. Pulling the same elements through `Iterate` took 27.7 ms
+(one coroutine switch per element), and typed `ParseStreamAST` 31.6 ms with 47.4 MiB and 303,000 allocations against
+27.3 MiB and 3,090: each element gets its own converter and value chunks. A consumer with a diagnostic limit of 3 over
+100,000 recoveries keeps reachable heap growth under 4 MiB; without emptying the recovered list at commits it grew
+about 6.9 MiB.

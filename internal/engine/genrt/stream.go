@@ -2,7 +2,11 @@ package genrt
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
+	"iter"
+	"math"
 	"unicode/utf8"
 )
 
@@ -31,6 +35,11 @@ type streamInput struct {
 	scratch frameScratchMark
 	// nodeChunks counts the node chunks started since the last split.
 	nodeChunks int
+	// diagnostic receives the committed recovered errors; diagnosed is the
+	// prefix of p.recovered already delivered to it or to tail.
+	diagnostic func(*SyntaxError) error
+	diagnosed  int
+	tail       streamDiagnosticTail
 	text       streamTextSnapshot
 	// lines holds the line starts once the whole input is loaded and
 	// nothing was discarded.
@@ -107,9 +116,13 @@ func parseStream(r *rule, seen int, reader io.Reader, emit func(*Node) error, op
 // parseStreamWork is parseStream with emit also given the parse's work
 // control, so that converting elements to typed values is charged to it.
 func parseStreamWork(r *rule, seen int, reader io.Reader, emit func(*Node, *workControl) error, opts []ParseOption) (err error) {
-	o, err := resolveOptions(opts)
+	o, err := resolveOptions(append(opts[:len(opts):len(opts)], streaming))
 	if err != nil {
 		return err
+	}
+	if emit == nil && (o.diagnostic != nil || o.diagnosticLimit > 0) {
+		// A diagnostic-only stream still needs element commit boundaries.
+		emit = func(*Node, *workControl) error { return nil }
 	}
 	var n *Node
 	defer recoverParse(&n, &err)
@@ -119,12 +132,20 @@ func parseStreamWork(r *rule, seen int, reader io.Reader, emit func(*Node, *work
 	}
 	p := &parser{unit: o.unit, maxDepth: o.maxDepth}
 	p.control = o.control
-	p.stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, emit: emit}
+	p.stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, emit: emit, diagnostic: o.diagnostic}
+	p.stream.tail.limit = o.diagnosticLimit
 	p.memo.stride = seen
 	p.control.check()
 	_, ok := p.call(r, 0)
 	p.control.check()
 	if ok && p.streamAtEnd() {
+		// Recoveries in the successful suffix are reported before the result.
+		if err := p.reportRecovered(); err != nil {
+			return err
+		}
+		if p.stream.tail.limit > 0 {
+			return p.stream.tail.result(p)
+		}
 		if len(p.recovered) > 0 {
 			return SyntaxErrors(p.recovered)
 		}
@@ -155,6 +176,9 @@ func (p *parser) streamStart() {
 // final once emitted: a caller error ends the parse unchanged.
 func (p *parser) emitStream(v *Node, end int) {
 	p.control.check()
+	if err := p.reportRecovered(); err != nil {
+		panic(fatal{err}) // the element is not emitted
+	}
 	if v != nil {
 		v.fresh = false
 	}
@@ -195,7 +219,224 @@ func (p *parser) streamCommit(pos int) {
 		p.pruneStreamMemo(pos)
 		s.pruned = pos
 	}
+	if s.tail.limit > 0 {
+		// The recovered errors before the boundary were delivered and
+		// collected, and no active call restores a longer prefix of them:
+		// the start rule's call saved an empty one, and the element marks
+		// are no longer active. Memo entries own copies of their lists.
+		if cap(p.recovered) <= streamRecoveryScratchMax {
+			clear(p.recovered[:cap(p.recovered)])
+			p.recovered = p.recovered[:0]
+		} else {
+			p.recovered = nil
+		}
+		s.diagnosed = 0
+	}
 }
+
+// reportRecovered delivers the recovered errors committed since the last
+// call to the diagnostic callback and the retained tail. It runs only at
+// stream boundaries, which recoveries in abandoned alternatives never reach.
+func (p *parser) reportRecovered() error {
+	s := p.stream
+	if s.diagnostic == nil && s.tail.limit == 0 {
+		return nil
+	}
+	if s.diagnosed > len(p.recovered) {
+		s.diagnosed = len(p.recovered)
+	}
+	for s.diagnosed < len(p.recovered) {
+		p.control.check()
+		original := p.recovered[s.diagnosed]
+		if s.diagnostic != nil {
+			e := *original
+			e.Expected = append([]string(nil), e.Expected...)
+			e.Messages = append([]string(nil), e.Messages...)
+			if err := s.diagnostic(&e); err != nil {
+				return err
+			}
+		}
+		if s.tail.limit > 0 {
+			s.tail.add(original)
+		}
+		s.diagnosed++
+		p.control.check()
+	}
+	return nil
+}
+
+// streaming marks the options of a stream entry point.
+func streaming(o *parseOptions) { o.streaming = true }
+
+// WithDiagnosticCallback reports each committed #recover error during ParseStream or Iterate,
+// immediately before the corresponding stream element. Recoveries in abandoned alternatives are not
+// reported. The callback receives an independent copy; returning an error stops parsing, suppresses
+// that element and is returned unchanged. A nil callback disables delivery. The option is invalid
+// with other entry points. Recoveries after the #stream repetition are reported before the result.
+// With or without this option, recovered errors remain available at the end of the stream.
+func WithDiagnosticCallback(f func(*SyntaxError) error) ParseOption {
+	return func(o *parseOptions) { o.diagnostic = f }
+}
+
+// WithDiagnosticLimit retains at most n committed stream recoveries, keeping the latest ones.
+// Zero retains every error, as without the option. Negative values are invalid. The option,
+// including zero, is valid only with stream entry points. When errors are dropped, the result is
+// a *TruncatedSyntaxErrors.
+func WithDiagnosticLimit(n int) ParseOption {
+	return func(o *parseOptions) { o.diagnosticLimit, o.diagnosticLimitSet = n, true }
+}
+
+// Keep only small recovery scratch slices across stream elements. The
+// diagnostic tail, not this scratch, owns committed errors.
+const streamRecoveryScratchMax = 16
+
+// TruncatedSyntaxErrors is the incomplete result of a stream parsed with a
+// positive diagnostic limit. Errors is the retained tail in occurrence order.
+// Saturated counts are lower bounds; truncation and the tail remain exact.
+type TruncatedSyntaxErrors struct {
+	Errors          SyntaxErrors
+	Total           uint64
+	Dropped         uint64
+	CountsSaturated bool
+}
+
+func (e *TruncatedSyntaxErrors) Error() string {
+	return fmt.Sprintf("recovered syntax errors truncated (total %d, dropped %d):\n%s", e.Total, e.Dropped, e.Errors)
+}
+
+// Unwrap exposes the retained errors to errors.As as SyntaxErrors.
+func (e *TruncatedSyntaxErrors) Unwrap() error { return e.Errors }
+
+// streamDiagnosticTail is populated only at stream boundaries. The ring
+// avoids shifting a large tail for each committed recovery.
+type streamDiagnosticTail struct {
+	limit           int
+	errors          SyntaxErrors
+	head            int
+	total           uint64
+	dropped         uint64
+	truncated       bool
+	countsSaturated bool
+}
+
+func (t *streamDiagnosticTail) add(e *SyntaxError) {
+	if t.total == math.MaxUint64 {
+		t.countsSaturated = true
+	} else {
+		t.total++
+	}
+	if len(t.errors) < t.limit {
+		t.errors = append(t.errors, e)
+		return
+	}
+	t.truncated = true
+	if t.dropped == math.MaxUint64 {
+		t.countsSaturated = true
+	} else {
+		t.dropped++
+	}
+	t.errors[t.head] = e
+	t.head++
+	if t.head == t.limit {
+		t.head = 0
+	}
+}
+
+func (t *streamDiagnosticTail) result(p *parser) error {
+	p.control.check()
+	if len(t.errors) == 0 {
+		return nil
+	}
+	if !t.truncated {
+		return t.errors
+	}
+	ordered := t.errors
+	if t.head != 0 {
+		p.control.charge(0, uint64(len(t.errors)))
+		ordered = append(append(make(SyntaxErrors, 0, len(t.errors)), t.errors[t.head:]...), t.errors[:t.head]...)
+	}
+	p.control.check()
+	return &TruncatedSyntaxErrors{Errors: ordered, Total: t.total, Dropped: t.dropped, CountsSaturated: t.countsSaturated}
+}
+
+// ErrStreamClosed is returned by Next after an iterator is closed before the end of its stream.
+var ErrStreamClosed = errors.New("stream iterator is closed")
+var errIteratorStop = errors.New("stream iterator stopped")
+
+// streamPull advances a stream parse synchronously to one committed element
+// at a time. The standard library pull coroutine has no independently
+// scheduled producer.
+type streamPull[T any] struct {
+	next     func() (T, bool)
+	stop     func()
+	terminal bool
+	err      error
+}
+
+// iterateStream validates the options of a stream entry point and returns a
+// lazy iterator over the elements that parse passes to emit.
+func iterateStream[T any](opts []ParseOption, parse func(emit func(T) error) error) (*streamPull[T], error) {
+	if _, err := resolveOptions(append(opts[:len(opts):len(opts)], streaming)); err != nil {
+		return nil, err
+	}
+	it := &streamPull[T]{}
+	it.next, it.stop = iter.Pull(func(yield func(T) bool) {
+		it.err = parse(func(v T) error {
+			if !yield(v) {
+				return errIteratorStop
+			}
+			return nil
+		})
+	})
+	return it, nil
+}
+
+func (it *streamPull[T]) Next() (v T, ok bool, err error) {
+	if it.terminal {
+		return v, false, it.err
+	}
+	defer func() {
+		if x := recover(); x != nil {
+			// Pull propagates the original caller panic after the parser unwinds.
+			it.terminal = true
+			it.next, it.stop = nil, nil
+			panic(x)
+		}
+	}()
+	v, ok = it.next()
+	if ok {
+		return v, true, nil
+	}
+	it.terminal = true
+	it.next, it.stop = nil, nil
+	return v, false, it.err
+}
+
+func (it *streamPull[T]) Close() {
+	if it.terminal {
+		return
+	}
+	it.terminal = true
+	stop := it.stop
+	it.next, it.stop = nil, nil
+	defer func() { it.err = ErrStreamClosed }()
+	stop()
+}
+
+// StreamIterator returns the committed elements of a stream one at a time. It is single-owner: Next
+// and Close must not overlap, including from callbacks. Close releases the parser state but never
+// closes or interrupts the reader.
+type StreamIterator struct{ pull *streamPull[*Node] }
+
+// Next returns (node, true, nil) for each committed element, with a nil node for an element without a
+// value. At the end of a clean stream it returns (nil, false, nil), and after a failure (nil, false,
+// err); later calls return the same result.
+func (it *StreamIterator) Next() (*Node, bool, error) { return it.pull.Next() }
+
+// Close abandons unfinished parsing, after which Next returns ErrStreamClosed. It is idempotent and does
+// not change the result of a finished stream. It cannot interrupt a Read already blocked in caller
+// code, and must not overlap a call to Next.
+func (it *StreamIterator) Close() { it.pull.Close() }
 
 // streamDiscard discards the input before keep. The buffer holds read-ahead
 // input, so it is compacted only once at least half of it can go.

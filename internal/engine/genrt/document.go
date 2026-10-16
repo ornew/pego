@@ -78,6 +78,11 @@ func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error)
 	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
 	}
+	// stream:begin
+	if err := o.validateDiagnostics(); err != nil {
+		return o, err
+	}
+	// stream:end
 	return o, nil
 }
 

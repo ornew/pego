@@ -146,6 +146,27 @@ func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOpti
 	return parseStreamWork(streamRule, nseen, r, e, opts)
 }
 
+// StreamASTIterator returns the typed elements of a stream one at a time, like StreamIterator.
+type StreamASTIterator struct{ pull *streamPull[StreamValue] }
+
+// IterateAST returns an iterator over the typed elements that ParseStreamAST would pass to emit, parsing
+// only as far as each call to Next needs. Options are validated before it returns; r is first read by Next.
+func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) {
+	pull, err := iterateStream(opts, func(emit func(StreamValue) error) error { return ParseStreamAST(r, emit, opts...) })
+	if err != nil {
+		return nil, err
+	}
+	return &StreamASTIterator{pull}, nil
+}
+
+// Next returns (value, true, nil) for each committed element, with the zero value for an element without
+// a value. At the end of a clean stream it returns ok false and a nil error, and after a failure the error;
+// later calls return the same result.
+func (it *StreamASTIterator) Next() (StreamValue, bool, error) { return it.pull.Next() }
+
+// Close abandons unfinished parsing, like StreamIterator.Close.
+func (it *StreamASTIterator) Close() { it.pull.Close() }
+
 `, r.name, t.goType(et), newConv, result)
 	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
@@ -301,7 +322,8 @@ func (t *typedGen) name() {
 		}
 	}
 	if t.g.streamStart != nil {
-		for _, name := range []string{"ParseStream", "ParseStreamAST", "StreamValue"} {
+		for _, name := range []string{"ParseStream", "ParseStreamAST", "StreamValue", "Iterate", "IterateAST", "StreamIterator",
+			"StreamASTIterator", "ErrStreamClosed", "WithDiagnosticCallback", "WithDiagnosticLimit", "TruncatedSyntaxErrors"} {
 			used[name] = true
 		}
 	}

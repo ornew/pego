@@ -208,6 +208,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	if opts.Stream {
 		rt = strings.Replace(rt, "\"bytes\"", "\"bufio\"\n\t\"bytes\"", 1)
+		rt = strings.Replace(rt, "\"io\"", "\"io\"\n\t\"iter\"", 1)
 	}
 	if opts.Observability {
 		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
@@ -262,6 +263,18 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.name)
 		out.WriteString("// its #stream repetition to emit (nil if the element has no value) without retaining it. Committed\n// elements are final even if the parse fails later. A non-EOF error from r or an error returned by\n// emit ends the parse and is returned unchanged. A nil emit collects the repetition instead.\n")
 		out.WriteString("func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {\n\treturn parseStream(streamRule, nseen, r, emit, opts)\n}\n\n")
+		out.WriteString(`// Iterate returns an iterator over the elements that ParseStream would pass to emit, parsing only as
+// far as each call to Next needs. Options are validated before it returns; r is first read by Next.
+// The parser's lookahead and buffering may read ahead of the returned elements.
+func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
+	pull, err := iterateStream(opts, func(emit func(*Node) error) error { return parseStream(streamRule, nseen, r, emit, opts) })
+	if err != nil {
+		return nil, err
+	}
+	return &StreamIterator{pull}, nil
+}
+
+`)
 	}
 	if opts.Document {
 		fmt.Fprintf(&out, "// NewDocument creates an incremental Node document for the start rule %s.\n", start.name)
