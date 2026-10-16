@@ -816,12 +816,12 @@ latency, or real-editor behavior, and does not justify changing defaults. The
 harness is `internal/lsp/responsive_resources_test.go`; raw results remain
 outside the repository.
 
-### Bounded Dispatch Candidate
+### Bounded Request Dispatch
 
 Cancellation acknowledges a logical request before its handler necessarily
 returns. With four canceled handlers held at an indivisible-operation barrier,
 the previous implementation started workers for another 64 admitted requests.
-The candidate reserves an execution slot on the actor before starting a worker;
+The actor now reserves an execution slot before starting a worker;
 waiting requests remain in the existing admission map without a worker or a
 copied document. Every completion releases its slot, including obsolete results,
 and rechecks pending requests. The four execution slots and 64 logical-request
@@ -849,12 +849,25 @@ The raw measurements remain outside the repository.
 The focused responsive tests, race checks and scoped LSP vet pass. Regression
 cases cover held cancellation tails, obsolete completion wakeups, ID reuse,
 pending cancellation, close invalidation, panic recovery and early cancellation.
-Qualification remains incomplete: only two request/cancellation timing pairs
-finished before a candidate run exceeded its 330-second harness timeout. No
-speed conclusion follows from those incomplete timings. Investigate the timeout,
-finish timing and full-module validation, and check the documentation build
-before adoption. `BenchmarkResponsiveDispatch` measures a sequential framed
-request/reply path; it does not cover concurrent editor workloads.
+Three source mutants were each rejected by these cases: skipping the pending
+scan after a completion, releasing a slot only for current results, and removing
+the cancellation check before the handler.
+
+Timing used the same binaries and five alternating fresh-process pairs. At
+`GOMAXPROCS=1`, `BenchmarkResponsiveDispatch` measured candidate/baseline
+median ratios of 1.004 (0.935–1.068) for hover and 1.020 (0.960–1.046) for
+document symbols, with equal allocations. `BenchmarkF08ProtocolCancel` is
+unsuitable for duration-based runs at `GOMAXPROCS=1`: the busy synthetic handler
+delays the benchmark goroutine about 24 ms per iteration outside the timed
+region, while `B.Loop` sizes iteration counts from the timed region alone. Fast
+early samples can therefore request about 10,000 iterations and exceed a harness
+timeout without a hang. Its single-processor cancel latency also ranged from
+0.87× to 3.6× between pairs, which supports no comparison. With 2,000 fixed
+iterations at `GOMAXPROCS=16`, mean cancel-to-reply latency had medians of
+11.6 µs (11.3–11.9) for the baseline and 11.8 µs (11.3–12.0) for the candidate;
+the paired median ratio was 1.012 (0.982–1.057). These are synthetic in-process
+means, not tail latencies. `BenchmarkResponsiveDispatch` measures a sequential
+framed request/reply path; it does not cover concurrent editor workloads.
 
 ## Limitations and Open Questions
 
