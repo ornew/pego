@@ -145,7 +145,8 @@ _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 
 | Token | Use |
 |:--|:--|
-| `_|_`, `^^`, `$$`, `^`, `$`, `.`, `--` | Bottom, anchors, any character, and cut in Rule Expressions |
+| `_|_`, `^^`, `$$`, `^`, `$`, `.` | Bottom, anchors and any character in Rule Expressions |
+| `--` | Reserved: rejected with a diagnostic that names `#cut`, the cut syntax |
 | `/`, `*`, `+`, `?`, `&`, `!`, `@`, `-`, `:`, `(`, `)`, `{`, `}`, `,`, `;` | Rule Expression operators, repetition, captures, annotations, and Definition Statement separators |
 | `{`, `}` | Predicate delimiters where a primary Rule Expression form is expected; they also delimit source action blocks in their respective contexts |
 | `//`, `/*`, `*/` | Line and nested block comments |
@@ -201,11 +202,11 @@ parse:
 | Construct | Adjacent form | Separated form |
 |:--|:--|:--|
 | Capture `label:expr` | `x:expr` | `x :expr` is invalid |
-| Pragma | `#atomic`, `#repeat(2)` | `# atomic`, `#repeat (2)` are invalid |
+| Pragma | `#atomic`, `#repeat(2)`, `#cut` | `# atomic`, `#repeat (2)`, `# cut` are invalid |
 | Action function call | `len($s)` | `len ($s)` is a variable followed by a grouped expression |
 | Operators Rule level call | `level(expr, assignment)` | `level (expr, assignment)` is not a level call |
 
-The lexer takes the longest punctuation token. Thus `--` is one cut token,
+The lexer takes the longest punctuation token. Thus `--` is one reserved token,
 `$$` is one end-of-input anchor, and `$` followed by a letter, `_`, or digit
 begins a capture reference. A `{` begins a Predicate Action where a primary Rule Expression form is expected; `[]` remains a character class in Rule Expressions and a type-list
 prefix in Type Expressions. `@` attributes, `#` pragmas and comment markers are

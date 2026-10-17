@@ -161360,7 +161360,7 @@ func (p *parser) e829() (*Node, bool) {
 	return nil, ok
 }
 
-// --
+// #cut
 func (p *parser) e830() (*Node, bool) {
 	if p.control == nil {
 
@@ -161373,7 +161373,7 @@ func (p *parser) e830() (*Node, bool) {
 	return nil, true
 }
 
-// &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken -- -ws
+// &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken #cut -ws
 func (p *parser) e831() (*Node, bool) {
 	if p.control == nil {
 
@@ -161488,7 +161488,7 @@ func (p *parser) e836() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken -- -ws
+// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken #cut -ws
 func (p *parser) e837() (*Node, bool) {
 	if p.control == nil {
 
@@ -161603,7 +161603,7 @@ func (p *parser) e842() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/|] -ws o:barToken -- -ws
+// &[\n\r\u{2028}\u{2029}/|] -ws o:barToken #cut -ws
 func (p *parser) e843() (*Node, bool) {
 	if p.control == nil {
 
@@ -161718,7 +161718,7 @@ func (p *parser) e848() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken -- -ws
+// &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken #cut -ws
 func (p *parser) e849() (*Node, bool) {
 	if p.control == nil {
 
@@ -161789,7 +161789,7 @@ func (p *parser) e851() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken -- -ws
+// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken #cut -ws
 func (p *parser) e852() (*Node, bool) {
 	if p.control == nil {
 
@@ -161904,7 +161904,7 @@ func (p *parser) e857() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken -- -ws
+// &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken #cut -ws
 func (p *parser) e858() (*Node, bool) {
 	if p.control == nil {
 
@@ -162019,7 +162019,7 @@ func (p *parser) e863() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken -- -ws
+// &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken #cut -ws
 func (p *parser) e864() (*Node, bool) {
 	if p.control == nil {
 
@@ -162181,7 +162181,7 @@ func (p *parser) e871() (*Node, bool) {
 	return nil, ok
 }
 
-// &[a] "as" !idPart -- -ws t:typeNode
+// &[a] "as" !idPart #cut -ws t:typeNode
 func (p *parser) e872() (*Node, bool) {
 	if p.control == nil {
 
@@ -162283,7 +162283,7 @@ func (p *parser) e875() (*Node, bool) {
 	return p.matchLiteral(lit372, "satisfies", 172, false)
 }
 
-// &[s] "satisfies" !idPart -- -ws t:typeNode
+// &[s] "satisfies" !idPart #cut -ws t:typeNode
 func (p *parser) e876() (*Node, bool) {
 	if p.control == nil {
 
@@ -162404,7 +162404,7 @@ func (p *parser) e881() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken -- -ws
+// &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken #cut -ws
 func (p *parser) e882() (*Node, bool) {
 	if p.control == nil {
 
@@ -162519,7 +162519,7 @@ func (p *parser) e887() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken -- -ws
+// &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken #cut -ws
 func (p *parser) e888() (*Node, bool) {
 	if p.control == nil {
 
@@ -162634,7 +162634,7 @@ func (p *parser) e893() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken -- -ws
+// &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken #cut -ws
 func (p *parser) e894() (*Node, bool) {
 	if p.control == nil {
 
@@ -162749,7 +162749,7 @@ func (p *parser) e899() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken -- -ws
+// &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken #cut -ws
 func (p *parser) e900() (*Node, bool) {
 	if p.control == nil {
 
@@ -163435,7 +163435,7 @@ func (p *parser) e914() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] -- -ws n:memberName
+// &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] #cut -ws n:memberName
 func (p *parser) e915() (*Node, bool) {
 	if p.control == nil {
 
@@ -163592,7 +163592,7 @@ func (p *parser) e922() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws n:identifierName
+// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws n:identifierName
 func (p *parser) e923() (*Node, bool) {
 	if p.control == nil {
 
@@ -163768,7 +163768,7 @@ func (p *parser) e931() (*Node, bool) {
 	return p.matchLiteral(lit143, "]", 80, false)
 }
 
-// &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" -- -ws e:expressionAllowIn -ws "]"
+// &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" #cut -ws e:expressionAllowIn -ws "]"
 func (p *parser) e932() (*Node, bool) {
 	if p.control == nil {
 
@@ -163852,7 +163852,7 @@ func (p *parser) e933() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
+// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws "[" -ws e:expressionAllowIn -ws "]"
 func (p *parser) e934() (*Node, bool) {
 	if p.control == nil {
 
@@ -164121,7 +164121,7 @@ func (p *parser) e945() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
+// &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" #cut l:taggedTemplate
 func (p *parser) e946() (*Node, bool) {
 	if p.control == nil {
 
@@ -164619,7 +164619,7 @@ func (p *parser) e968() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
+// &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" #cut a:arguments
 func (p *parser) e969() (*Node, bool) {
 	if p.control == nil {
 
@@ -292580,7 +292580,7 @@ func (p *parser) e1565() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken -- -ws
+// &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken #cut -ws
 func (p *parser) e1566() (*Node, bool) {
 	if p.control == nil {
 
@@ -292651,7 +292651,7 @@ func (p *parser) e1568() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken -- -ws
+// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken #cut -ws
 func (p *parser) e1569() (*Node, bool) {
 	if p.control == nil {
 
@@ -292722,7 +292722,7 @@ func (p *parser) e1571() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/|] -ws o:barToken -- -ws
+// &[\n\r\u{2028}\u{2029}/|] -ws o:barToken #cut -ws
 func (p *parser) e1572() (*Node, bool) {
 	if p.control == nil {
 
@@ -292793,7 +292793,7 @@ func (p *parser) e1574() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken -- -ws
+// &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken #cut -ws
 func (p *parser) e1575() (*Node, bool) {
 	if p.control == nil {
 
@@ -292864,7 +292864,7 @@ func (p *parser) e1577() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken -- -ws
+// &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken #cut -ws
 func (p *parser) e1578() (*Node, bool) {
 	if p.control == nil {
 
@@ -292935,7 +292935,7 @@ func (p *parser) e1580() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken -- -ws
+// &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken #cut -ws
 func (p *parser) e1581() (*Node, bool) {
 	if p.control == nil {
 
@@ -293006,7 +293006,7 @@ func (p *parser) e1583() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken -- -ws
+// &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken #cut -ws
 func (p *parser) e1584() (*Node, bool) {
 	if p.control == nil {
 
@@ -293113,7 +293113,7 @@ func (p *parser) e1588() (*Node, bool) {
 	return nil, ok
 }
 
-// &[a] "as" !idPart -- -ws t:typeNode
+// &[a] "as" !idPart #cut -ws t:typeNode
 func (p *parser) e1589() (*Node, bool) {
 	if p.control == nil {
 
@@ -293160,7 +293160,7 @@ func (p *parser) e1589() (*Node, bool) {
 	return nil, true
 }
 
-// &[s] "satisfies" !idPart -- -ws t:typeNode
+// &[s] "satisfies" !idPart #cut -ws t:typeNode
 func (p *parser) e1590() (*Node, bool) {
 	if p.control == nil {
 
@@ -293237,7 +293237,7 @@ func (p *parser) e1592() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken -- -ws
+// &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken #cut -ws
 func (p *parser) e1593() (*Node, bool) {
 	if p.control == nil {
 
@@ -293308,7 +293308,7 @@ func (p *parser) e1595() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken -- -ws
+// &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken #cut -ws
 func (p *parser) e1596() (*Node, bool) {
 	if p.control == nil {
 
@@ -293379,7 +293379,7 @@ func (p *parser) e1598() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken -- -ws
+// &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken #cut -ws
 func (p *parser) e1599() (*Node, bool) {
 	if p.control == nil {
 
@@ -293450,7 +293450,7 @@ func (p *parser) e1601() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken -- -ws
+// &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken #cut -ws
 func (p *parser) e1602() (*Node, bool) {
 	if p.control == nil {
 
@@ -294035,7 +294035,7 @@ func (p *parser) e1610() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] -- -ws n:memberName
+// &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] #cut -ws n:memberName
 func (p *parser) e1611() (*Node, bool) {
 	if p.control == nil {
 
@@ -294148,7 +294148,7 @@ func (p *parser) e1615() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws n:identifierName
+// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws n:identifierName
 func (p *parser) e1616() (*Node, bool) {
 	if p.control == nil {
 
@@ -294225,7 +294225,7 @@ func (p *parser) e1618() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" -- -ws e:expressionAllowIn -ws "]"
+// &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" #cut -ws e:expressionAllowIn -ws "]"
 func (p *parser) e1619() (*Node, bool) {
 	if p.control == nil {
 
@@ -294309,7 +294309,7 @@ func (p *parser) e1620() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
+// &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws "[" -ws e:expressionAllowIn -ws "]"
 func (p *parser) e1621() (*Node, bool) {
 	if p.control == nil {
 
@@ -294500,7 +294500,7 @@ func (p *parser) e1627() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
+// &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" #cut l:taggedTemplate
 func (p *parser) e1628() (*Node, bool) {
 	if p.control == nil {
 
@@ -294756,7 +294756,7 @@ func (p *parser) e1636() (*Node, bool) {
 	return nil, ok
 }
 
-// &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
+// &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" #cut a:arguments
 func (p *parser) e1637() (*Node, bool) {
 	if p.control == nil {
 

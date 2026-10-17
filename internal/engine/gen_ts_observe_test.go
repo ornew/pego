@@ -40,7 +40,7 @@ type N struct { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = "a"`, "a", `check(count("part","enter")===1,"framed calls");`},
 		{"predicate", `type W terminal
-rule main W = {x:=1} -- p:part {x==1} => $p
+rule main W = {x:=1} #cut p:part {x==1} => $p
 rule part W = "a"`, "a", `check(count("part","enter")===1,"predicate calls");`},
 		{"leftrec", `type W terminal
 rule main W = expr

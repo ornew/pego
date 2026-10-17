@@ -7,9 +7,9 @@ import (
 
 func TestRecoverySkipCutCanReachFallback(t *testing.T) {
 	for _, expr := range []string{
-		`(_|_ #recover(skip=(-- "x")))?`,
-		`(_|_ #recover(skip=(-- "x")))*`,
-		`((_|_ #recover(skip=(-- "x"))) / _)`,
+		`(_|_ #recover(skip=(#cut "x")))?`,
+		`(_|_ #recover(skip=(#cut "x")))*`,
+		`((_|_ #recover(skip=(#cut "x"))) / _)`,
 	} {
 		_, findings := lintSource(t, "rule main = "+expr+` / ""`, Options{})
 		for _, f := range findings {

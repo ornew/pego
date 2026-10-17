@@ -104,8 +104,8 @@ rule atom Atom = "a"?
 	{"typed/OperatorsRule_framed_cuts", `type Doc struct { Text Match }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = operators {
-    operand x:"a" #atomic -- => Doc{Text: $x}
-    level { prefix "-" -- "z" => Doc{Text: $op} }
+    operand x:"a" #atomic #cut => Doc{Text: $x}
+    level { prefix "-" #cut "z" => Doc{Text: $op} }
 }
 `, []string{"a", "-za", "-a", "-z", "a?", "", "-x"}},
 	{"typed/OperatorsRule_recovery", `type Doc struct { Text Match }

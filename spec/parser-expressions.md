@@ -59,7 +59,7 @@ The following rules determine the shape of the tree.
 3. **Expressions without a value.** The following expressions have no value and
    never appear as children of a `Seq` node:
    - anchors: `^^`, `$$`, `^`, `$`;
-   - cut (`--`), discard (`-a`), bottom (`_|_`), lookahead (`&a`, `!a`) and
+   - cut (`#cut`), discard (`-a`), bottom (`_|_`), lookahead (`&a`, `!a`) and
      [predicates](predicates.md).
 
    An optional expression `a?` that does not match does have a value, `nil`,
@@ -92,7 +92,7 @@ The reasons for making choices transparent are recorded in
 | `&a` / `!a` | positive / negative lookahead | no |
 | `a #atomic` | atomic | yes |
 | `-a` | discard | yes |
-| `--` | cut | no |
+| `#cut` | cut | no |
 | `label:a` | capture | yes |
 | `{ term }` | [Predicate Action](predicates.md) | no |
 | `@name(...)` | diagnostic/metadata [attribute](attributes.md) | depends on the attribute |
@@ -323,19 +323,19 @@ rule s = " "+
 rule sentence = word (-s word)+
 ```
 
-Because `--` is a single token, `--a` is a [cut](#cut) followed by `a`, not a
-discard of a discard.
+Because `--` is a single reserved token, `--a` is an error rather than a
+discard of a discard; write `- -a` for that. A [cut](#cut) is written `#cut`.
 
 ### Cut
 
-A cut `--` commits to the current alternative: once parsing passes a cut, the
+A cut `#cut` commits to the current alternative: once parsing passes a cut, the
 enclosing choice does not backtrack into its other alternatives. Use it to
 avoid pointless backtracking where the grammar makes the choice unambiguous.
 
 ```pego
 // Matches "ab" but not "ac": after "a", the cut commits to the first
 // alternative, so the second alternative is never tried.
-rule a = "a" -- "b" / "a" -- "c"
+rule a = "a" #cut "b" / "a" #cut "c"
 ```
 
 A cut commits the innermost enclosing choice within the same rule. A repetition
@@ -383,7 +383,7 @@ The following restrictions apply:
 - Captures MUST NOT appear inside `a #atomic`, `-a`, `!a`, the `skip` argument of
   [`#recover`](pragmas.md#recover), or the [`skip`](operators-rule.md#skip) item of a
   Operators Rule.
-- The captured expression MUST have a value: `x:&a`, `x:-a` and `x:--` are
+- The captured expression MUST have a value: `x:&a`, `x:-a` and `x:#cut` are
   errors.
 
 ## Rule Calls

@@ -33,7 +33,7 @@ func typedFramedCutCases(t *testing.T) []genCase {
 	cases = append(cases, genCase{"typed/framed_cut_LR_elements", `type Doc struct { Items []Match; N int }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = (
-    previous:expr ";" -- items:(x:[a-z] #atomic -- -",") #repeat(1, 3) / items:(x:[a-z] #atomic -- -",") #repeat(1, 3)
+    previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat(1, 3) / items:(x:[a-z] #atomic #cut -",") #repeat(1, 3)
 ) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a", "a,b", "a,;c", "a,;c,d,?", ""}},
 		genCase{"typed/framed_cut_OperatorsRule_longest", `type Atom struct { Text string }
@@ -41,13 +41,13 @@ type Prefix struct { X Expr; Tag int; Text Match }
 type Expr = Atom | Prefix
 rule main Expr = {n := 0} e:expr $$ => $e
 rule expr Expr = operators {
-    skip (" " -- "!")*
-    operand x:"a" #atomic -- => Prefix{X: Atom{Text: "a"}, Tag: n, Text: $x}
-    operand x:"-x" #atomic -- => Prefix{X: Atom{Text: "-x"}, Tag: n, Text: $x}
+    skip (" " #cut "!")*
+    operand x:"a" #atomic #cut => Prefix{X: Atom{Text: "a"}, Tag: n, Text: $x}
+    operand x:"-x" #atomic #cut => Prefix{X: Atom{Text: "-x"}, Tag: n, Text: $x}
     level {
-        prefix o:"-" #atomic -- {n := 1} "z" => Prefix{X: $rhs, Tag: n, Text: $o}
-        prefix o:"--" #atomic -- {n := 2} => Prefix{X: $rhs, Tag: n, Text: $o}
-        prefix o:"--" #atomic -- {n := 3} => Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"-" #atomic #cut {n := 1} "z" => Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"--" #atomic #cut {n := 2} => Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"--" #atomic #cut {n := 3} => Prefix{X: $rhs, Tag: n, Text: $o}
     }
 }
 `, []string{"a", "-x", "-za", "--a", "---a", "-z", "--", " !a", " a", "-x?", ""}})

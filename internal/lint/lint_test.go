@@ -96,10 +96,10 @@ func TestShadowedAlternative(t *testing.T) {
 		{name: "left-recursive call", src: "rule main = r\nrule r = r / \"a\""},
 		{name: "left-recursive call, then something else", src: "rule main = r\nrule r = r \"x\" / \"a\" / \"a\"",
 			want: []string{"2:24 error shadowed-alternative"}},
-		{name: "a cut can make an optional fail", src: `rule main = ("a" -- "b")? / "c"`},
-		{name: "a cut inside a choice stays there", src: `rule main = ("a" -- "b" / "x")? / "c"`,
-			want: []string{"1:35 error shadowed-alternative"}},
-		{name: "a cut can make the choice fail first", src: `rule main = ("a" -- "b" / "a"? "c") / "d"`},
+		{name: "a cut can make an optional fail", src: `rule main = ("a" #cut "b")? / "c"`},
+		{name: "a cut inside a choice stays there", src: `rule main = ("a" #cut "b" / "x")? / "c"`,
+			want: []string{"1:37 error shadowed-alternative"}},
+		{name: "a cut can make the choice fail first", src: `rule main = ("a" #cut "b" / "a"? "c") / "d"`},
 		{name: "recovery is not a prefix", src: `rule main = ("x" "y") #recover(skip=[^;]+) / "z"`},
 		{name: "explicit failure with a message", src: `rule main = "hello" / _|_ @error(message="expected hello")`},
 		{name: "nested choice", src: `rule main = "(" ("<" / "<=") ")"`,
@@ -180,7 +180,7 @@ func TestRedundantOptional(t *testing.T) {
 		{name: "optional repetition", src: `rule main = "a"*? "b"`, want: []string{"1:13 warning redundant-optional"}},
 		{name: "double optional", src: `rule main = "a"??`, want: []string{"1:13 warning redundant-optional"}},
 		{name: "optional", src: `rule main = "a"? "b"`},
-		{name: "optional that a cut can make fail", src: `rule main = ("a" -- "b"*)? "c"`},
+		{name: "optional that a cut can make fail", src: `rule main = ("a" #cut "b"*)? "c"`},
 	})
 }
 

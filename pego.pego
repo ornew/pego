@@ -141,7 +141,7 @@ rule package_stmt Package = (
   Span: $body, Leading: $lead.Leading, Detached: $lead.Detached, Trailing: $tail.Trailing,
 }}
 rule package_body PackageBody = (
-  "package" -word_end -- name:(ident @error(message="expected package name"))
+  "package" -word_end #cut name:(ident @error(message="expected package name"))
 ) => PackageBody{Name: $name}
 rule source_package_tail SourceBoundary = -";"? b:source_after_boundary => $b
 rule def_stmt Def = (
@@ -181,12 +181,12 @@ rule type_def_stmt TypeDef = (
 // The body starts at the keyword and ends before the statement separator.
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_def_body TypeDefBody = (
-  "type" -word_end -- name:(ident @error(message="expected type name")) -ws
+  "type" -word_end #cut name:(ident @error(message="expected type name")) -ws
   spec:(type_spec @error(message="expected struct, terminal, or type alias"))
 ) => TypeDefBody{Name: $name, Spec: $spec}
 rule type_spec TypeSpec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec StructSpec = (
-  "struct" -word_end -- "{" {ml := false} fields:(f:field_spec)* cs:comments
+  "struct" -word_end #cut "{" {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
 ) => StructSpec{Fields: map($fields, (x) => $x.f), Comments: $cs}
 rule field_spec FieldSpec = !(comments "}") f:(field #recover(skip=field_sync)) => $f
@@ -210,7 +210,7 @@ rule type_expr Type = operators {
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_def_stmt RuleDef = (
-  cs:comments "rule" -word_end -- name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
+  cs:comments "rule" -word_end #cut name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
   -("=" @error(message="expected '=' after rule header")) -ws x:(ops_rule_expr / rule_expr)
   @error(message="expected rule expression") -ws a:whole_action? tc:stmt_end
 ) => RuleDef{Name: $name, Type: $t, Expr: $x, Action: $a, Comments: concat($cs, $tc)}
@@ -244,7 +244,7 @@ rule rule_group RuleGroup = (
 rule inline_action InlineAction = x:rule_expr -ws "=>" -ws a:action => InlineAction{Expr: $x, Action: $a}
 rule rule_ref RuleRef = name:ident !"(" => RuleRef{Name: $name}
 rule level_call LevelCall = (
-  "level(" {ml := true} -ws -- name:(ident @error(message="expected target rule in level call")) -ws
+  "level(" {ml := true} -ws #cut name:(ident @error(message="expected target rule in level call")) -ws
   -("," @error(message="expected comma in level call")) -ws
   lev:(ident @error(message="expected level name")) -ws
   -(")" @error(message="expected closing parenthesis for level call"))
@@ -256,7 +256,7 @@ rule begin_line BeginLine = "^"
 rule end_input EndInput = "$$"
 rule end_line EndLine = "$" !(ident_start / digit)
 rule any Any = "."
-rule cut Cut = "--"
+rule cut Cut = "#cut" !ident_char !"("
 rule predicate Predicate = b:action_block => Predicate{Actions: $b.Actions, Comments: $b.Comments}
 
 // Postfix pragmas have dedicated payloads. Metadata attributes retain ordered
@@ -304,7 +304,7 @@ rule signed_int Int = ("-" -ws)? digit+ #atomic
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr OperatorsRule = (
-  "operators" !ident_char -ws &"{" -- "{" {ml := false} items:(-empty_stmts i:ops_stmt)* -empty_stmts
+  "operators" !ident_char -ws &"{" #cut "{" {ml := false} items:(-empty_stmts i:ops_stmt)* -empty_stmts
   cs:comments -("}" @error(message="expected closing brace for operators"))
 ) => OperatorsRule{Items: map($items, (x) => $x.i), Comments: $cs}
 rule ops_stmt OperatorsStmt = (
@@ -312,14 +312,14 @@ rule ops_stmt OperatorsStmt = (
   s:((ops_skip_stmt / ops_operand_stmt / ops_level_stmt / _|_ @error(message="expected skip, operand, or level")) #recover(skip=item_sync))
 ) => $s
 rule ops_skip_stmt OperatorsSkip = (
-  cs:comments "skip" -word_end -- x:(rule_expr @error(message="expected skip expression")) tc:item_end
+  cs:comments "skip" -word_end #cut x:(rule_expr @error(message="expected skip expression")) tc:item_end
 ) => OperatorsSkip{Expr: $x, Comments: concat($cs, $tc)}
 rule ops_operand_stmt OperatorsOperand = (
-  cs:comments "operand" -word_end -- x:(rule_expr @error(message="expected operand expression")) -ws
+  cs:comments "operand" -word_end #cut x:(rule_expr @error(message="expected operand expression")) -ws
   a:whole_action? tc:item_end
 ) => OperatorsOperand{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
 rule ops_level_stmt OperatorsLevel = (
-  cs:comments "level" -word_end -- name:ident? -ws
+  cs:comments "level" -word_end #cut name:ident? -ws
   -("{" @error(message="expected opening brace for level")) xs:(-empty_stmts o:ops_operator)*
   -empty_stmts tc:comments -("}" @error(message="expected closing brace for level")) end:item_end
 ) => OperatorsLevel{Name: $name, Operators: map($xs, (x) => $x.o), Comments: concat($cs, $tc, $end)}
@@ -328,15 +328,15 @@ rule ops_operator OpsOperator = (
   s:((ops_prefix / ops_postfix / ops_infix / _|_ @error(message="expected prefix, postfix, or infix")) #recover(skip=item_sync))
 ) => $s
 rule ops_prefix Prefix = (
-  cs:comments "prefix" -word_end -- x:(rule_expr @error(message="expected prefix expression")) -ws
+  cs:comments "prefix" -word_end #cut x:(rule_expr @error(message="expected prefix expression")) -ws
   a:whole_action? tc:item_end
 ) => Prefix{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
 rule ops_postfix Postfix = (
-  cs:comments "postfix" -word_end -- x:(rule_expr @error(message="expected postfix expression")) -ws
+  cs:comments "postfix" -word_end #cut x:(rule_expr @error(message="expected postfix expression")) -ws
   a:whole_action? tc:item_end
 ) => Postfix{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
 rule ops_infix Infix = (
-  cs:comments "infix" -word_end --
+  cs:comments "infix" -word_end #cut
   assoc:(("left" / "right" / "none") @error(message="expected left, right, or none associativity"))
   -word_end x:(rule_expr @error(message="expected infix expression")) -ws a:whole_action? tc:item_end
 ) => Infix{Assoc: text($assoc), Expr: $x, Action: $a, Comments: concat($cs, $tc)}
@@ -376,23 +376,23 @@ rule action_group ActionGroup = (
   -(")" @error(message="expected closing parenthesis for action expression"))
 ) => ActionGroup{Expr: $x}
 rule call Call = (
-  name:var_name "(" {ml := true} -ws -- args:action_args? -ws
+  name:var_name "(" {ml := true} -ws #cut args:action_args? -ws
   -(")" @error(message="expected closing parenthesis for function call"))
 ) => Call{X: $name, Args: concat($args)}
 rule action_args []ActionExpr = (
   first:action_expr rest:(-ws "," -ws x:action_expr)* (-ws "," -ws)?
 ) => concat(list($first), map($rest, (x) => $x.x))
 rule list_constructor ListConstructor = (
-  "[]" -ws -- elem:level(type_expr, prefix) -ws
+  "[]" -ws #cut elem:level(type_expr, prefix) -ws
   -("{" @error(message="expected opening brace for list constructor")) {ml := true} -ws
   items:action_args? cs:comments -("}" @error(message="expected closing brace for list constructor"))
 ) => ListConstructor{Elem: $elem, Items: concat($items), Comments: $cs}
 rule terminal_constructor TerminalConstructor = (
-  name:var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") --
+  name:var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") #cut
   args:action_args cs:comments -("}" @error(message="expected closing brace for terminal constructor"))
 ) => TerminalConstructor{Type: $name, Args: $args, Comments: $cs}
 rule constructor Constructor = (
-  name:var_name -ws "{" {ml := true} -ws -- fields:constructor_fields? cs:comments
+  name:var_name -ws "{" {ml := true} -ws #cut fields:constructor_fields? cs:comments
   -("}" @error(message="expected closing brace for constructor"))
 ) => Constructor{X: $name, Inits: concat($fields), Comments: $cs}
 rule constructor_fields []InitField = (

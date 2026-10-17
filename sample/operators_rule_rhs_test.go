@@ -67,19 +67,19 @@ func TestSampleOperatorsRuleIncompleteRHS(t *testing.T) {
 		{"later tighter cut", `e "!a*x"`, `rule e = operators {
     operand "a"
     level { infix left "!" }
-    level { infix left "*" -- "b" }
+    level { infix left "*" #cut "b" }
 }`, "a!a*x", true, false},
 		{"cut first tie caller", `e "!~"`, `rule e = operators {
     operand "a" / "~"
-    level { prefix "~" --; prefix "~"; infix left "!" }
+    level { prefix "~" #cut; prefix "~"; infix left "!" }
 }`, "a!~", true, false},
 		{"plain first tie fallback", "e", `rule e = operators {
     operand "a" / "~"
-    level { prefix "~"; prefix "~" --; infix left "!" }
+    level { prefix "~"; prefix "~" #cut; infix left "!" }
 }`, "a!~", true, false},
 		{"outer cut cannot stop", `e "!~"`, `rule e = operators {
     operand "a"
-    level { prefix "~"; infix left "!" -- }
+    level { prefix "~"; infix left "!" #cut }
 }`, "a!~", false, false},
 		{"complete RHS cannot stop", `e "!~a"`, sampleRHSLevels, "a!~a", false, true},
 		{"nullable complete cannot stop", `e "!~"`, `rule e = operators {
@@ -88,11 +88,11 @@ func TestSampleOperatorsRuleIncompleteRHS(t *testing.T) {
 }`, "a!~", false, true},
 		{"cut first tie rejects fallback", "e", `rule e = operators {
     operand "a" / "~"
-    level { prefix "~" --; prefix "~"; infix left "!" }
+    level { prefix "~" #cut; prefix "~"; infix left "!" }
 }`, "a!~", false, false},
 		{"plain first tie consumes RHS", `e "!~"`, `rule e = operators {
     operand "a" / "~"
-    level { prefix "~"; prefix "~" --; infix left "!" }
+    level { prefix "~"; prefix "~" #cut; infix left "!" }
 }`, "a!~", false, false},
 	} {
 		t.Run(c.name, func(t *testing.T) {

@@ -16,7 +16,7 @@ func TestFormatPreservesMinusSemantics(t *testing.T) {
 	for _, src := range []string{
 		`rule main = - -"a" $$`,
 		`rule main = (- -"a" / "b") $$`,
-		`rule main = (- -- "a" "b" / "a" "c") $$`,
+		`rule main = (- #cut "a" "b" / "a" "c") $$`,
 		`rule main = "a" {- -1 == 1} $$`,
 		"type P struct { N int }\nrule main P = \"a\" $$ => P{N: - -1}",
 	} {

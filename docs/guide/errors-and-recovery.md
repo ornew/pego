@@ -419,7 +419,7 @@ line would require every place that can continue the statement to skip only spac
 
 ### Cuts and Error Messages
 
-A cut (`--`) does not change how the farthest failure is chosen. What it does is stop the enclosing choice from trying
+A cut (`#cut`) does not change how the farthest failure is chosen. What it does is stop the enclosing choice from trying
 its other alternatives, so their failures are never recorded. When a keyword makes the rest of the alternative
 unambiguous, a cut also removes the expectations of the generic alternatives that would otherwise have failed at the
 same position:
@@ -433,12 +433,12 @@ rule call = name ws "(" ")" ";"
 
 // The cut and the choice it commits are in the same rule.
 rule committed = stmt_cut $$
-rule stmt_cut = "let" -- ws name ws "=" ws num ";" / call
+rule stmt_cut = "let" #cut ws name ws "=" ws num ";" / call
 
 // The cut is in another rule than the choice, so it commits nothing.
 rule elsewhere = stmt_far $$
 rule stmt_far = let_cut / call
-rule let_cut = "let" -- ws name ws "=" ws num ";"
+rule let_cut = "let" #cut ws name ws "=" ws num ";"
 
 rule name = [a-z]+
 rule num = [0-9]+

@@ -16,7 +16,7 @@ definition and the place where the term is defined.
 | choice | `a / b`: an ordered choice, which commits to the first alternative that succeeds. See [Ordered choice](parser-expressions.md#ordered-choice). |
 | code point | A Unicode code point; the unit in which the input is matched. See [Input and positions](parsing.md#input-and-positions). |
 | concrete syntax tree (CST) | The tree of nodes that Rule Expressions produce when no action is involved. See [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree). |
-| cut | `--`: commits the enclosing choice to the current alternative. See [Cut](parser-expressions.md#cut). |
+| cut | `#cut`: commits the enclosing choice to the current alternative. See [Cut](parser-expressions.md#cut). |
 | Definition Statement | A Type Definition Statement or Rule Definition Statement in a `.pego` file. See [Grammar Files](grammar-files.md#structure). |
 | discard | `-a`: matches `a` and has no value. See [Discard](parser-expressions.md#discard). |
 | expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. See [Syntax errors](parsing.md#syntax-errors). |
@@ -29,7 +29,7 @@ definition and the place where the term is defined.
 | node | A value in the tree that parsing produces. Every node has a type and a range in the input. See [Nodes](parsing.md#nodes). |
 | operand, operator | The parts of an Operators Rule: an operand is the leading element of an expression, an operator is a prefix, infix or postfix form. See [Operators Rule](operators-rule.md). |
 | Rule Expression | An expression that matches input; the body of an ordinary rule. See [Rule Expressions](parser-expressions.md). |
-| pragma | A postfix `#` annotation that changes expression behavior or structure, such as `#atomic`, `#recover`, `#repeat(...)` or `#stream`. See [Pragmas](pragmas.md). |
+| pragma | A `#` annotation that changes expression behavior or structure, such as `#atomic`, `#recover`, `#repeat(...)` or `#stream`, which follow an expression, and `#cut`, which stands in place of one. See [Pragmas](pragmas.md). |
 | position | A number that identifies a place between two characters of the input, counted in the position unit. See [Input and positions](parsing.md#input-and-positions). |
 | position unit | The unit in which positions and lengths in the input are measured: code points or bytes. See [Input and positions](parsing.md#input-and-positions). |
 | Operators Rule | A rule declaration that declares operators by precedence and associativity. See [Operators Rule](operators-rule.md). |

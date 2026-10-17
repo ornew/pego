@@ -320,6 +320,11 @@
     "attribute": {
       "patterns": [
         {
+          "comment": "#cut, the cut pragma",
+          "match": "#cut(?![A-Za-z0-9_])",
+          "name": "keyword.control.cut.pego"
+        },
+        {
           "comment": "@attribute(args) or #pragma(args)",
           "begin": "([@#])([A-Za-z_][A-Za-z0-9_]*)(\\()",
           "beginCaptures": {
@@ -446,10 +451,6 @@
         {
           "match": "_\\|_",
           "name": "constant.language.bottom.pego"
-        },
-        {
-          "match": "--",
-          "name": "keyword.control.cut.pego"
         },
         {
           "match": "\\^\\^|\\$\\$|\\^|\\$",

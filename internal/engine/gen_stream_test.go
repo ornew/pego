@@ -213,7 +213,7 @@ rule e = operators {
     level { prefix "-" }
 }`, []string{"1+-2;3;", "-;", "1+2+3;"}},
 	{"cut elements", `rule main = item* #stream $$
-rule item = "a" -- "b" / "c"`, []string{"abc", "ac", "abab"}},
+rule item = "a" #cut "b" / "c"`, []string{"abc", "ac", "abab"}},
 	{"variables", `rule main = {n := 0} item* #stream $$
 rule item = "a" {n := n + 1} / "b" {n > 0}`, []string{"ab", "b", "aab"}},
 	{"recovery", `rule main = stmt* #stream $$

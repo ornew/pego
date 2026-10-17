@@ -37,7 +37,7 @@ The chapters are in reading order: each builds on the ones before it.
 | 8 | [Actions](actions.md) | Building the value of a rule: captures, constructors, operators and built-in functions |
 | 9 | [Type Checking](type-checking.md) | The type of each expression, type inference and the errors that the checker reports |
 | 10 | [Attributes](attributes.md) | Diagnostic annotations and argument syntax, including `@error` |
-| 11 | [Pragmas](pragmas.md) | Behavioral and structural annotations: `#recover`, `#repeat`, `#stream`, and `#atomic` |
+| 11 | [Pragmas](pragmas.md) | Behavioral and structural annotations: `#recover`, `#repeat`, `#stream`, `#atomic`, and `#cut` |
 | 12 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results and nodes, syntax errors, memoization, limits and modes |
 | 13 | [Grammar Syntax](syntax.md) | A self-hosted syntax projection tested against the reference parser |
 | 14 | [Glossary](glossary.md) | The terms of this specification, with the place where each is defined |

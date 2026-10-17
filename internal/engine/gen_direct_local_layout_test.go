@@ -54,13 +54,13 @@ rule body Doc = (
 	{"typed/local_optional_cut", `type Doc struct { Text *Match; Missing *Match; N int }
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
-    _|_ ignored:"z" #atomic / (x:"é" #atomic -- {n := n + 1} "!")? "x"
+    _|_ ignored:"z" #atomic / (x:"é" #atomic #cut {n := n + 1} "!")? "x"
 ) => Doc{Text: $x, Missing: $ignored, N: n}
 `, []string{"x", "é!x", "é?x", "éx", "é!", "é", "", "é!xx"}},
 	{"typed/local_choice_cut", `type Doc struct { Text *Match; Missing *Match; N int }
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
-    _|_ ignored:"z" #atomic / x:"é" #atomic -- {n := n + 1} "!" / x:"é" #atomic "?"
+    _|_ ignored:"z" #atomic / x:"é" #atomic #cut {n := n + 1} "!" / x:"é" #atomic "?"
 ) => Doc{Text: $x, Missing: $ignored, N: n}
 `, []string{"é!", "é?", "é", "z", "", "é!!"}},
 	{"typed/local_lookahead", `type Doc struct { Text Match; Missing *Match }

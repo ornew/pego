@@ -55,7 +55,7 @@ func TestSampleOperatorsRuleLongestCallerStops(t *testing.T) {
 }`, "a!"},
 		{"uncertain cut part", `level(e, tight) "!?" "a"`, `rule e = operators {
     operand "a"
-    level { postfix "!?" -- }
+    level { postfix "!?" #cut }
     level tight { postfix "!" }
 }`, "a!?a"},
 		{"true postfix continuation", `level(e, tight)`, `rule e = operators {

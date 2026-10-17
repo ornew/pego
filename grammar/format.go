@@ -76,7 +76,7 @@ func (p *printer) write(s string) {
 	p.cur.text = joinMinusTokens(p.cur.text, s)
 }
 
-// joinMinusTokens keeps adjacent minus operators from becoming the cut
+// joinMinusTokens keeps adjacent minus operators from becoming the reserved
 // token "--". It is also used when a complete expression is formatted.
 func joinMinusTokens(left, right string) string {
 	if strings.HasSuffix(left, "-") && strings.HasPrefix(right, "-") {
@@ -825,7 +825,7 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	case *Any:
 		return finishFormat(".", control)
 	case *Cut:
-		return finishFormat("--", control)
+		return finishFormat("#cut", control)
 	case *Top:
 		return finishFormat("_", control)
 	case *Bottom:

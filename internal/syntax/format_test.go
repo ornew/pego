@@ -93,7 +93,7 @@ func TestFormatMinusBoundaries(t *testing.T) {
 		`rule main = - -"a"`,
 		`rule main = - - -"a"`,
 		`rule main = (- -"a" / "b") $$`,
-		`rule main = (- -- "a" "b" / "a" "c") $$`,
+		`rule main = (- #cut "a" "b" / "a" "c") $$`,
 		`rule main = xs:(x:- -"a")* $$`,
 		`rule main = "a" {- -1 == 1}`,
 		"type P struct { N int }\nrule main P = \"a\" => P{N: - -1}",

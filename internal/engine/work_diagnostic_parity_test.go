@@ -87,7 +87,7 @@ rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`,
 
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
 
-rule expr = (expr "+" -- "a") #recover(skip="a?") / "a"`,
+rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"`,
 			inputs:        []string{"a", "a+a", "a?", "a?+a", "a+", ""},
 			wantRecovered: true,
 		},
@@ -108,7 +108,7 @@ rule expr Expr = operators {
     skip (" " "!") #recover(skip=" " "?")
     operand atom
     level {
-        prefix ("-" -- "z") #recover(skip="-?") => Post{X: $rhs, Text: $op}
+        prefix ("-" #cut "z") #recover(skip="-?") => Post{X: $rhs, Text: $op}
         postfix ("[" x:"é" #atomic "]") #recover(skip="[?]") => Post{X: $lhs, Text: $op}
     }
 }

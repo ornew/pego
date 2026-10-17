@@ -101,25 +101,25 @@ func TestOperatorsRuleRHSStatus(t *testing.T) {
 		{"later cut unknown", `rule e = operators {
     operand "a"
     level { infix left "!" }
-    level { infix left "*" -- "b" }
+    level { infix left "*" #cut "b" }
 }`, "!a*x", true, unknown, 0},
 		{"ineligible cut candidate unknown", `rule e = operators {
     operand "a"
-    level { infix left "!"; infix left "*" -- "b" }
+    level { infix left "!"; infix left "*" #cut "b" }
 }`, "!a*x", true, unknown, 0},
 		{"unsafe future tail partial", `rule e = operators {
     operand "a"
     level { infix left "!" }
-    level { infix left "*" -- "b" }
+    level { infix left "*" #cut "b" }
 }`, "!a", false, more, 0},
 		{"unsafe future tail final", `rule e = operators {
     operand "a"
     level { infix left "!" }
-    level { infix left "*" -- "b" }
+    level { infix left "*" #cut "b" }
 }`, "!a", true, matched, 2},
 		{"prefix cut unknown", `rule e = operators {
     operand "a"
-    level { prefix "~" --; infix left "!" }
+    level { prefix "~" #cut; infix left "!" }
 }`, "!~", true, unknown, 0},
 		{"operand predicate unknown", `rule e = operators {
     operand "a" {true}

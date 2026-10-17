@@ -48,7 +48,7 @@ func TestFormatMinusFragments(t *testing.T) {
 		want string
 	}{
 		{&Discard{Expr: &Discard{Expr: &Literal{Value: "a"}}}, `- -"a"`},
-		{&Discard{Expr: &Cut{}}, "- --"},
+		{&Discard{Expr: &Cut{}}, "-#cut"},
 	} {
 		if got := FormatExpr(tc.expr); got != tc.want {
 			t.Errorf("FormatExpr: got %q, want %q", got, tc.want)

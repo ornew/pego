@@ -31,7 +31,7 @@ rule e = operators {
 } => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
 		{"direct value-free rollback", `rule main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!") #repeat(1, 3) "é"? $$ / "z" (x:_) #repeat(2, ) $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" "é" @error(message="letter") #atomic "!" $$ / "e" "ab" @error(message="pair") $$
 `, []string{"aé!", "aé?", "aé@", "aé", "o", "oé!", "oé", "oé?", "ré!é!é", "ré!é", "ré", "z", "zé", "zéé", "zééé", "pé!", "pé?", "pé", "lé!", "lé?", "l?", "eab", "ea?", "e", ""}},
-		{"direct value-free fallback calls", `rule main = "m" &(cached "!") cached "!" $$ / "c" -- plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
+		{"direct value-free fallback calls", `rule main = "m" &(cached "!") cached "!" $$ / "c" #cut plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
 rule cached = "é" / "ab"
 rule plain = "é" / guarded
 rule guarded = {n == 2} "a"
@@ -122,7 +122,7 @@ rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
 		// Integers are 64-bit and wrap around; the operands depend on the input.
 		{"integer boundaries", integerBoundaryGrammar, []string{"a", "aa", ""}},
-		{"cut and lookahead", `rule main = ("a" -- "b" / "a" -- "c") rest
+		{"cut and lookahead", `rule main = ("a" #cut "b" / "a" #cut "c") rest
 rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
 		{"memo keyed by variables", `rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},

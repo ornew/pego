@@ -166,7 +166,7 @@ infix left _ // application    f x (empty operator part)
   parsed, the operator is not applied and the expression ends before the
   operator. For a prefix operator, the parser then tries the `operand` items at
   the same position instead. If the operator part passed a
-  [cut](parser-expressions.md#cut) (`--`), the whole Operators Rule fails
+  [cut](parser-expressions.md#cut) (`#cut`), the whole Operators Rule fails
   instead. If no prefix operator part matches and any candidate failed after
   passing a cut, the whole expression also fails instead of trying operands.
   Failed candidates do not veto another successfully matching operator part;
@@ -175,8 +175,8 @@ infix left _ // application    f x (empty operator part)
   or postfix part rejected for matching empty input contributes a cut failure
   when it passed a cut, just as a part that failed while matching does.
 
-For example, `prefix "-" -- "z"` with `operand "-x"` rejects `-x`: no prefix
-candidate matches, and the attempted prefix passed a cut. Removing `--` allows
+For example, `prefix "-" #cut "z"` with `operand "-x"` rejects `-x`: no prefix
+candidate matches, and the attempted prefix passed a cut. Removing `#cut` allows
 operand fallback. This rule applies to every engine backend and standalone
 Go/TypeScript parsers.
 

@@ -30,13 +30,13 @@ type WithContext terminal
 
 rule collision WithContext = "z"
 
-rule main Bag = {n := 1} x:word* -- => Bag{Items: $x, Count: len($x) + n}
+rule main Bag = {n := 1} x:word* #cut => Bag{Items: $x, Count: len($x) + n}
 
 rule word Word = "a" / "é"
 
-rule recovered Bag = x:word #recover(skip="!") -- => Bag{Items: list($x)}
+rule recovered Bag = x:word #recover(skip="!") #cut => Bag{Items: list($x)}
 
-rule bad Bag = "a" -- => Bag{Count: 1 / (len($1) - 1)}
+rule bad Bag = "a" #cut => Bag{Count: 1 / (len($1) - 1)}
 
 rule anynil any = t:word? => $t
 

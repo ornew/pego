@@ -17,10 +17,10 @@ func TestGeneratedTypedPoolRetention(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	g, err := syntax.Parse(`type A terminal
-rule main A = x:large x:small -- => $x
+rule main A = x:large x:small #cut => $x
 rule large A = [a]*
 rule small A = "b"
-rule repeated A = (x:"b") #repeat(2) --`)
+rule repeated A = (x:"b") #repeat(2) #cut`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -139,7 +139,7 @@ func randomGrammar(rng *rand.Rand) string {
 				parts[i] = expr(depth - 1)
 			}
 			if rng.IntN(8) == 0 {
-				parts[rng.IntN(n)] += " --"
+				parts[rng.IntN(n)] += " #cut"
 			}
 			return "(" + strings.Join(parts, " ") + ")"
 		case 2, 3, 4:

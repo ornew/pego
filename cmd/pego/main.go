@@ -35,6 +35,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/syntax"
 )
 
 const usage = `usage: pego <command> [flags] [arguments]
@@ -56,6 +57,12 @@ Commands:
       input is formatted. -w rewrites the files in place; -l lists the
       files whose formatting differs. -syntax prints a simplified syntax view
       and cannot be combined with -w or -l.
+
+  fix [-w] [-l] [<file.pego> ...]
+      Rewrite PEGO source written in earlier syntax to the current syntax,
+      changing only the rewritten tokens. Without files, standard input is
+      rewritten. -w rewrites the files in place; -l lists the files that
+      need rewriting.
 
   convert [-to pego|json] [-o <file>] <grammar>
       Convert a grammar between PEGO source and JSON. -to defaults to the
@@ -160,6 +167,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return compileCmd(args[1:])
 	case "fmt":
 		return fmtCmd(args[1:], stdin, stdout)
+	case "fix":
+		return fixCmd(args[1:], stdin, stdout)
 	case "convert":
 		return convertCmd(args[1:], stdout)
 	case "trace":
@@ -226,6 +235,65 @@ func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func fixCmd(args []string, stdin io.Reader, stdout io.Writer) error {
+	fs := flag.NewFlagSet("fix", flag.ContinueOnError)
+	write := fs.Bool("w", false, "write the result to the file instead of standard output")
+	list := fs.Bool("l", false, "list the files that need rewriting")
+	files, err := parseFlags(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		if *write {
+			return errors.New("fix: cannot use -w with standard input")
+		}
+		src, err := io.ReadAll(stdin)
+		if err != nil {
+			return err
+		}
+		return fixSource("<standard input>", src, false, *list, stdout)
+	}
+	var errs []error
+	for _, path := range files {
+		if filepath.Ext(path) != ".pego" {
+			errs = append(errs, fmt.Errorf("%s: fix rewrites only PEGO source files (.pego)", path))
+			continue
+		}
+		src, err := os.ReadFile(path)
+		if err == nil {
+			err = fixSource(path, src, *write, *list, stdout)
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func fixSource(name string, src []byte, write, list bool, stdout io.Writer) error {
+	out, err := syntax.Fix(string(src))
+	if err != nil {
+		return fileError(name, err)
+	}
+	changed := out != string(src)
+	if list && changed {
+		if _, err := fmt.Fprintln(stdout, name); err != nil {
+			return err
+		}
+	}
+	if write {
+		if !changed {
+			return nil
+		}
+		return writeFormattedFile(name, []byte(out))
+	}
+	if list {
+		return nil
+	}
+	_, err = io.WriteString(stdout, out)
+	return err
 }
 
 func formatFile(path string, write, list bool, stdout io.Writer) error {

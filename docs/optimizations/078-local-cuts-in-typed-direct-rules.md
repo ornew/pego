@@ -84,7 +84,7 @@ The benchmark grammar has two cut-bearing alternatives for each typed row:
 type Row struct { Key Match; Value Match }
 type Doc struct { Rows []Row }
 rule main Doc = rows:row+ $$ => Doc{Rows: $rows}
-rule row Row = "let" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}
+rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}
 ```
 
 `cutInput(1)` contains two rows; `cutInput(256)` contains 512. The generated

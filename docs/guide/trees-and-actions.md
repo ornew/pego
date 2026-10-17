@@ -115,7 +115,7 @@ syntax tree** (CST). The rules are short enough to memorize:
 | `a?` | The value of `a`, or `nil`; it is not a list (`a #repeat(0,1)` is) |
 | `label:a` | The value of `a` (and a field, see below) |
 | Rule call | The value of the called rule |
-| `-a`, `&a`, `!a`, `--`, anchors, predicates | No value: never a child of a `Seq` |
+| `-a`, `&a`, `!a`, `#cut`, anchors, predicates | No value: never a child of a `Seq` |
 
 Three consequences are worth knowing before you write any action.
 

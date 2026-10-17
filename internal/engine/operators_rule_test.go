@@ -136,7 +136,7 @@ func TestOperatorsRuleCut(t *testing.T) {
 	src := `rule main = e "+"?
 rule e = operators {
     operand [0-9]+ #atomic
-    level { infix left "+" -- }
+    level { infix left "+" #cut }
 }`
 	check(t, src,
 		// The operator part is a Seq, so the Operator's child is a Seq too.

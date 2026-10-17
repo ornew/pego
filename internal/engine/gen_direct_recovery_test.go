@@ -35,16 +35,16 @@ rule main Doc = x:("é" "!") #recover(skip="é?") @error(message="outer") #atomi
 rule main Doc = x:("é" "!") #recover(skip="é?" "z") #recover(skip="é??") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?z", "é??", "é?", "é", "", "é???"}},
 	{"typed/recovery_cut_scope", `type Doc struct { Text Match }
-rule main Doc = x:(("é" -- "!") #recover(skip="é" -- "?") "z" / "é?x") #atomic $$ => Doc{Text: $x}
+rule main Doc = x:(("é" #cut "!") #recover(skip="é" #cut "?") "z" / "é?x") #atomic $$ => Doc{Text: $x}
 `, []string{"é!z", "é?z", "é?x", "é!", "é?", "é", "", "é?zz"}},
 	{"typed/recovery_lookahead", `type Doc struct { Text Match }
-rule main Doc = &("é" -- "!") #recover(skip="é" -- "?") x:("é" "!") #recover(skip="é?") #atomic $$ => Doc{Text: $x}
+rule main Doc = &("é" #cut "!") #recover(skip="é" #cut "?") x:("é" "!") #recover(skip="é?") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?", "é", "", "é?x"}},
 	{"typed/recovery_negative_lookahead", `type Doc struct { Text Match }
-rule main Doc = !("é" -- "!") #recover(skip="é" -- "?") x:"x" #atomic $$ => Doc{Text: $x}
+rule main Doc = !("é" #cut "!") #recover(skip="é" #cut "?") x:"x" #atomic $$ => Doc{Text: $x}
 `, []string{"x", "é!", "é?", "é", "", "x?"}},
 	{"typed/recovery_optional_repetition", `type Doc struct { Text *Match }
-rule main Doc = x:("a" -- "!") #recover(skip="a?")? #atomic ("b" -- "!") #recover(skip="b?")* $$ => Doc{Text: $x}
+rule main Doc = x:("a" #cut "!") #recover(skip="a?")? #atomic ("b" #cut "!") #recover(skip="b?")* $$ => Doc{Text: $x}
 `, []string{"", "a!", "a?", "b!", "b?b!", "a?b?b!", "a", "b", "a?b", "a!x"}},
 	{"typed/recovery_dead_skip", `type Doc struct { N int }
 rule main Doc = {n := 0} _ #recover(skip="x" {n := 7}) $$ => Doc{N: n}
@@ -69,7 +69,7 @@ rule expr Expr = operators {
     skip (" " "!") #recover(skip=" " "?")
     operand atom
     level {
-        prefix ("-" -- "z") #recover(skip="-?") => Post{X: $rhs, Text: $op}
+        prefix ("-" #cut "z") #recover(skip="-?") => Post{X: $rhs, Text: $op}
         postfix ("[" x:"é" #atomic "]") #recover(skip="[?]") => Post{X: $lhs, Text: $op}
     }
 }
@@ -77,7 +77,7 @@ rule atom Atom = "a"
 `, []string{"a", "-za", "-?a", "a[é]", "a[?]", " !a", " ?a", "-a", "a[", "a[?", "-?", "", "a ?[?]"}},
 	{"typed/recovery_lr", `type Doc struct { Text Match }
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
-rule expr = (expr "+" -- "a") #recover(skip="a?") / "a"
+rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"
 `, []string{"a", "a+a", "a?", "a?+a", "a+", "a??", "", "b"}},
 }
 

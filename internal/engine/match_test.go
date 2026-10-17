@@ -143,22 +143,22 @@ rule word = [a-z]+ #atomic`,
 }
 
 func TestCut(t *testing.T) {
-	check(t, `rule main = "a" -- "b" / "a" -- "c"`,
+	check(t, `rule main = "a" #cut "b" / "a" #cut "c"`,
 		ok("ab", `(Seq "a" "b")@main`),
 		fails("ac", `1:2: syntax error: expected "b"`),
 	)
 	// A cut commits only the innermost choice.
-	check(t, `rule main = ("a" -- "b" / "x") / "a" "c"`,
+	check(t, `rule main = ("a" #cut "b" / "x") / "a" "c"`,
 		ok("ac", `(Seq "a" "c")@main`),
 	)
 	// A failure after passing a cut inside a repetition element fails the whole repetition.
-	check(t, `rule main = ("(" -- "x" ")")* "("`,
+	check(t, `rule main = ("(" #cut "x" ")")* "("`,
 		ok("(x)(x)", `error: 1:7: syntax error: expected "("`),
 		fails("(x)(", `1:5: syntax error: expected "x"`),
 	)
 	// A cut does not propagate outside the rule.
 	check(t, `rule main = a / "a" "c"
-rule a = "a" -- "b"`,
+rule a = "a" #cut "b"`,
 		ok("ac", `(Seq "a" "c")@main`),
 	)
 }

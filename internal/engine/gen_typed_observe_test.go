@@ -35,7 +35,7 @@ type N struct { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "general", grammar: `type W terminal
-rule main W = {x:=1} -- p:part {x==1} => $p
+rule main W = {x:=1} #cut p:part {x==1} => $p
 rule part W = "a"`, input: "a", general: true, checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "leftrec", grammar: `type W terminal
 rule main W = expr

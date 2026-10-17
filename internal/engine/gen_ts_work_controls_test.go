@@ -12,7 +12,7 @@ type Bag struct {
     Items []Word
 }
 
-rule main Bag = x:word* -- => Bag{Items: $x}
+rule main Bag = x:word* #cut => Bag{Items: $x}
 
 rule word Word = "a" / "é" / "😀" / "�"
 

@@ -168,7 +168,7 @@ func TestCompileContextOrdinaryParity(t *testing.T) {
 		`type P struct {}; rule main = "a" => P{}`,
 		`rule main = operators { operand [0-9]; level sum { infix left "+" } }`,
 		`rule main = "" / "a"`,
-		`rule main = ("a" -- "b") / ""`,
+		`rule main = ("a" #cut "b") / ""`,
 		`rule main = "a" / missing`,
 		`type P struct { X Match }; rule main = "a" => P{X: 1}`,
 	} {

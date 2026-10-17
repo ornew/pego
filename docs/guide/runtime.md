@@ -656,7 +656,7 @@ Formats PEGO source and **keeps comments**. Without `-w` it prints the result; `
 `-l` lists the files whose formatting differs (use it as a CI check). Without file arguments it formats standard input
 (`-w` is then an error). It accepts only `.pego` files; for JSON and compiled grammars it points you to `convert`.
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
-The whitespace prevents either expression from becoming the distinct `--` cut token.
+The whitespace keeps either expression from becoming `--`, a reserved token that is an error.
 
 With `-w`, a changed regular file is written completely to a temporary file in the target directory before replacement.
 Permission bits are preserved, read-only files are rejected, and the directory must allow creating and replacing files.
@@ -675,6 +675,25 @@ $ pego fmt -w messy.pego && cat messy.pego
 rule main =  ws "x"+ ws $$  // trailing comment
 rule ws =  [ \t\n]*
 $ pego fmt -l messy.pego     # nothing listed: already formatted
+```
+
+### `fix`
+
+```bash
+pego fix [-w] [-l] [<file.pego> ...]
+```
+
+Rewrites grammars written in an earlier version of the language to the current syntax. It changes only the tokens
+whose spelling changed, adding a space where the new spelling would run into a neighboring token, and keeps every other
+byte, so comments and layout survive; run `pego fmt` afterwards if you
+also want canonical formatting. The flags and standard-input behavior are those of `fmt`: without `-w` it prints the
+result, `-w` rewrites the files in place, and `-l` lists the files that need rewriting. Today it rewrites the old cut
+`--` to `#cut`; the parser rejects `--` with a message that points here. A `--` inside a string, a character class or
+a comment is left alone.
+
+```bash
+$ echo 'rule a = "a" -- "b" / "c"' | pego fix
+rule a = "a" #cut "b" / "c"
 ```
 
 ### `convert`

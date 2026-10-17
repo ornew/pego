@@ -35,7 +35,7 @@ rule n = {x == 1; true} "é"`, `rule main = {x := 1} {true} (n "!" / n "?") $$
 rule n = {x == 1} {true} "é"`, []string{"é!", "é?", "é", "a"}},
 		{"repetition", `rule main = {x := 0} ("a" {x := x + 1; true})* {x == 2; true} $$`, `rule main = {x := 0} ("a" {x := x + 1} {true})* {x == 2} {true} $$`, []string{"aa", "a", "aaa", ""}},
 		{"lookahead", `rule main = {x := 0} &("a" {x := 1; true}) {x == 0; true} "a" $$`, `rule main = {x := 0} &("a" {x := 1} {true}) {x == 0} {true} "a" $$`, []string{"a", "", "b"}},
-		{"cut", `rule main = "a" -- {x := 1; x == 1} "!" $$ / "a" "?" $$`, `rule main = "a" -- {x := 1} {x == 1} "!" $$ / "a" "?" $$`, []string{"a!", "a?", "a", ""}},
+		{"cut", `rule main = "a" #cut {x := 1; x == 1} "!" $$ / "a" "?" $$`, `rule main = "a" #cut {x := 1} {x == 1} "!" $$ / "a" "?" $$`, []string{"a!", "a?", "a", ""}},
 		{"recovery", `rule main = ("a" {x := 1; false} ";") #recover(skip="?") $$`, `rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?", "a;", ""}},
 	}
 }

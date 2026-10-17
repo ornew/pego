@@ -135,7 +135,7 @@ rule token = ";" #missing`)
 	if _, ok := n.Fields.Get("x"); ok {
 		t.Fatal("abandoned capture survived")
 	}
-	cut := compile(t, `rule main = (";" #missing -- "x" / "y") $$`)
+	cut := compile(t, `rule main = (";" #missing #cut "x" / "y") $$`)
 	if n, err := cut.ParseWith("main", "y", ParseOptions{MissingTokens: 2}); n != nil || err == nil {
 		t.Fatal("insertion changed cut scope", n, err)
 	}

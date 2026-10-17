@@ -7,14 +7,14 @@ rule main Expr = e:expr ws $$ => $e
 rule expr Expr = operators {
     skip ws
     operand number
-    operand "(" -- e:expr ws ")" => $e
+    operand "(" #cut e:expr ws ")" => $e
     operand "[" e:expr? ws "]" => Unary{Op: $1, X: $e}
     level { infix left o:("+" / "-") ws => Binary{Left: $lhs, Op: $o, Right: $rhs} }
     level { infix left "*" / "/" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { prefix "-" => Unary{Op: $op, X: $rhs} }
     level {
         postfix "!" => Post{X: $lhs, Op: $op, Args: list()}
-        postfix "{" -- a:(x:expr ws ",")* ws "}" => Post{X: $lhs, Op: $op, Args: map($a, (q) => $q.x)}
+        postfix "{" #cut a:(x:expr ws ",")* ws "}" => Post{X: $lhs, Op: $op, Args: map($a, (q) => $q.x)}
     }
     level { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }

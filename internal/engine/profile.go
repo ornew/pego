@@ -268,7 +268,7 @@ func (pr *Profile) Hints() []string {
 	}, hintRules); len(top) > 0 {
 		hints = append(hints, fmt.Sprintf("Failed after examining much input: %s. "+
 			"A call that fails late throws its work away, and what is tried next often matches the same input "+
-			"again. Check whether an alternative shares a long prefix with a later one, and whether a cut (--) "+
+			"again. Check whether an alternative shares a long prefix with a later one, and whether a cut (#cut) "+
 			"after the part that identifies an alternative can stop the parser from trying the others.",
 			list(top, func(r *RuleProfile) string {
 				return fmt.Sprintf("%s (%d positions from %s)", r.Rule, r.LongestFail, r.LongestFailAt)

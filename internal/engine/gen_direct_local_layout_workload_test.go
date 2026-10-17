@@ -44,7 +44,7 @@ rule body Doc = (
 `},
 	{"cuts", `type Doc struct { Items []Match; N int; Missing *Match }
 rule body Doc = (
-    _|_ ignored:"z" #atomic / items:(x:"é" #atomic -- {n := n + 1} -",")+
+    _|_ ignored:"z" #atomic / items:(x:"é" #atomic #cut {n := n + 1} -",")+
 ) => Doc{Items: map($items, (e) => $e.x), N: n, Missing: $ignored}
 `},
 }

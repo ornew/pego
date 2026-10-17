@@ -1154,39 +1154,39 @@ rule binaryExpression Expression = operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand unaryExpression
     level {
-        infix left &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/?|] -ws o:coalesceOrToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandAmpersandToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/|] -ws o:barToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/|] -ws o:barToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/\^] -ws o:caretToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/&] -ws o:ampersandToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/=!] -ws o:equalityToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
-        postfix &[a] "as" !idPart -- -ws t:typeNode => AsExpression{Expression: $lhs, Type: $t}
-        postfix &[s] "satisfies" !idPart -- -ws t:typeNode => SatisfiesExpression{Expression: $lhs, Type: $t}
+        infix left &[\n\r\u{2028}\u{2029}/<>i] -ws o:relationalToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        postfix &[a] "as" !idPart #cut -ws t:typeNode => AsExpression{Expression: $lhs, Type: $t}
+        postfix &[s] "satisfies" !idPart #cut -ws t:typeNode => SatisfiesExpression{Expression: $lhs, Type: $t}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/<>] -ws o:shiftToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/+\-] -ws o:additiveToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix left &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &[\n\r\u{2028}\u{2029}/*%] -ws o:multiplicativeToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
     level {
-        infix right &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken -- -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix right &[\n\r\u{2028}\u{2029}/*] -ws o:asteriskAsteriskToken #cut -ws => BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
     }
 }
 // Operator tokens, each not the start of a longer token (maximal munch).
@@ -1269,16 +1269,16 @@ rule leftHandSideExpression Expression = operators {
     operand importCallee
     operand importMetaProperty
     level {
-        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] -- -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws n:identifierName => PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
-        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" -- -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
-        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
+        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] #cut -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws n:identifierName => PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
+        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" #cut -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws "[" -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
+        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" #cut l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
         postfix &[!] "!" !"=" => NonNullExpression{Expression: $lhs}
         postfix &[\n\r\u{2028}\u{2029}/<] -ws t:typeArgumentsInExpression => ExpressionWithTypeArguments{Expression: $lhs, TypeArguments: $t}
-        postfix &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments => CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments => CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
+        postfix &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" #cut a:arguments => CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws (t:typeArgumentsInExpression -ws)? a:arguments => CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
     }
 }
 // The same without instantiation expressions, for heritage clauses, which take type arguments of their own.
@@ -1289,15 +1289,15 @@ rule heritageExpression Expression = operators {
     operand importCallee
     operand importMetaProperty
     level {
-        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] -- -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws n:identifierName => PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
-        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" -- -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
-        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
+        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] #cut -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws n:identifierName => PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
+        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" #cut -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws "[" -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
+        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" #cut l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
         postfix &[!] "!" !"=" => NonNullExpression{Expression: $lhs}
-        postfix &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments => CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
-        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments => CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
+        postfix &[\n\r\u{2028}\u{2029}/<(] -ws (t:typeArgumentsInExpression -ws)? &"(" #cut a:arguments => CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
+        postfix &[\n\r\u{2028}\u{2029}/?] -ws q:questionDotToken #cut -ws (t:typeArgumentsInExpression -ws)? a:arguments => CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
     }
 }
 // The target of new: member accesses, element accesses, tagged templates and non-null assertions, without
@@ -1307,9 +1307,9 @@ rule newTarget Expression = operators {
     operand primaryExpression
     operand superKeyword
     level {
-        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] -- -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" -- -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix &[\n\r\u{2028}\u{2029}/.] -ws "." ![0-9.] #cut -ws n:memberName => PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &[\n\r\u{2028}\u{2029}/\[] -ws {ctx / 8 % 2 == 0} "[" #cut -ws e:expressionAllowIn -ws "]" => ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix &[\n\r\u{2028}\u{2029}/<`] -ws (t:typeArgumentsInExpression -ws)? &"`" #cut l:taggedTemplate => TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
         postfix &[!] "!" !"=" => NonNullExpression{Expression: $lhs}
     }
 }

@@ -67,7 +67,7 @@ rule expr Doc = expr "+" "é" #atomic / "é" #atomic => Doc{Text: text($0)}
 `, []string{"é", "é+é+é", "é+", "é+é?", "", "a"}},
 	{"typed/LR_framed_cuts", `type Doc struct { Text Match }
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
-rule expr = expr "+" -- "a" / "a"
+rule expr = expr "+" #cut "a" / "a"
 `, []string{"a", "a+a+a", "a+", "a+a?", "", "b"}},
 	{"typed/LR_recovery", `type Doc struct { Text Match }
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}

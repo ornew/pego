@@ -184,7 +184,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Lookahead (`&`, `!`) |
 | Done | | Atomic (`#atomic`) |
 | Done | | Discard (`-`) |
-| Done | | Cut (`--`) |
+| Done | | Cut (`#cut`) |
 | Done | | Anchors (`^^`, `$$`, `^`, `$`) |
 | Done | | Top and bottom (`_`, `_\|_`) |
 | Done | | Captures (`label:a`) |

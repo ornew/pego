@@ -251,7 +251,7 @@ examined 35291 positions in 3.87ms (profiling included)
 What to look at:
 - Most time is spent in args (19%), ident (16%), ws (14%), not counting the rules they call.
 - Evaluated again where they had been evaluated before: ws (1200 of 5401 evaluations, up to 3 times at 3:26), ident (902 of 2103 evaluations, up to 3 times at 3:1). A memoized rule is usually evaluated at most twice at a position; a rule that is not is evaluated whenever its caller is retried there. Look for choices whose alternatives begin with the same calls, and factor the common part out.
-- Failed after examining much input: assign (31 positions from 2:1), update (26 positions from 3:1). A call that fails late throws its work away, and what is tried next often matches the same input again. Check whether an alternative shares a long prefix with a later one, and whether a cut (--) after the part that identifies an alternative can stop the parser from trying the others.
+- Failed after examining much input: assign (31 positions from 2:1), update (26 positions from 3:1). A call that fails late throws its work away, and what is tried next often matches the same input again. Check whether an alternative shares a long prefix with a later one, and whether a cut (#cut) after the part that identifies an alternative can stop the parser from trying the others.
 ```
 
 The hints point at the same problem from two sides. `ident` and `ws` call no other rule, so the engine does not memoize
@@ -325,7 +325,7 @@ How to use them:
 - **`wasted` is backtracking.** Failing is normal (every choice fails before it succeeds), and failing on the first
   character costs one position. A large `wasted`, or a hint about a call that "failed after examining much input",
   means a rule recognized much of a construct before deciding it was the wrong one. Factor the common prefix, reorder
-  the alternatives, or put a cut (`--`) after the part that identifies the alternative. `wasted` is inclusive: a failed
+  the alternatives, or put a cut (`#cut`) after the part that identifies the alternative. `wasted` is inclusive: a failed
   call counts what its nested calls examined, so look at the innermost of the rules flagged first.
 - **`memo` low and `evals` close to `calls`** is the normal state of a grammar without much backtracking. Many memo
   hits mean the memo is saving work, typically for rules shared by alternatives of a choice.

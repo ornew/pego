@@ -129,6 +129,7 @@ pego profile -g grammar.pego < input.txt         # cost per rule, with hints on 
 pego lint -g grammar.pego                        # likely mistakes: dead alternatives, unused captures, ...
 pego lsp                                         # language server for editors (errors, formatting, rename, ...)
 pego fmt -w grammar.pego                         # format in place, comments kept
+pego fix -w grammar.pego                         # rewrite older syntax to the current one
 pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types

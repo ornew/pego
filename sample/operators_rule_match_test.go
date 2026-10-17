@@ -21,7 +21,7 @@ func TestOperatorsRuleStopSelectionStatus(t *testing.T) {
 		{"part before RHS", `level { infix left "!" }; level { postfix "!" }`, "!", 1, false, true, failed},
 		{"empty postfix only with trivia", `level { postfix "" }`, " ", 0, false, true, failed},
 		{"empty postfix", `level { postfix ""; infix left "" }`, "a", 0, false, true, matched},
-		{"unsupported part", `level { postfix "!?" -- }; level { postfix "!" }`, "!?a", 1, false, true, unknown},
+		{"unsupported part", `level { postfix "!?" #cut }; level { postfix "!" }`, "!?a", 1, false, true, unknown},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			ast, err := pego.ParseGrammar(`rule main = e $$

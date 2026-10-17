@@ -48,7 +48,7 @@ rule package_stmt = (
     &source_remaining comments
     package_body &source_package_tail stmt_end
 )
-rule package_body = "package" -word_end -- ident
+rule package_body = "package" -word_end #cut ident
 rule source_package_tail = -";"? source_after_boundary
 rule def_stmt = (
     !(comments $$)
@@ -79,12 +79,12 @@ rule type_def_stmt = comments type_def_body stmt_end
 // The body starts at the keyword and ends before the statement separator.
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_def_body = (
-    "type" -word_end -- ident -ws
+    "type" -word_end #cut ident -ws
     type_spec
 )
 rule type_spec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec = (
-    "struct" -word_end -- "{" {ml := false} field_spec* comments
+    "struct" -word_end #cut "{" {ml := false} field_spec* comments
     -"}"
 )
 rule field_spec = !(comments "}") field
@@ -108,7 +108,7 @@ rule type_expr = operators {
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_def_stmt = (
-    comments "rule" -word_end -- ident -ws type_expr? -ws
+    comments "rule" -word_end #cut ident -ws type_expr? -ws
     -"=" -ws (ops_rule_expr / rule_expr) -ws whole_action? stmt_end
 )
 rule whole_action = "=>" -ws action
@@ -141,7 +141,7 @@ rule rule_group = (
 rule inline_action = rule_expr -ws "=>" -ws action
 rule rule_ref = ident !"("
 rule level_call = (
-    "level(" {ml := true} -ws -- ident -ws
+    "level(" {ml := true} -ws #cut ident -ws
     -"," -ws
     ident -ws
     -")"
@@ -153,7 +153,7 @@ rule begin_line = "^"
 rule end_input = "$$"
 rule end_line = "$" !(ident_start / digit)
 rule any = "."
-rule cut = "--"
+rule cut = "#cut" !ident_char !"("
 rule predicate = action_block
 rule repeat_args = (
     "(" {ml := true} -ws (repeat_range / repeat_count) -ws
@@ -189,20 +189,20 @@ rule signed_int = ("-" -ws)? digit+ #atomic
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr = (
-    "operators" !ident_char -ws &"{" -- "{" {ml := false} (-empty_stmts ops_stmt)* -empty_stmts
+    "operators" !ident_char -ws &"{" #cut "{" {ml := false} (-empty_stmts ops_stmt)* -empty_stmts
     comments -"}"
 )
 rule ops_stmt = (
     !(comments "}")
     (ops_skip_stmt / ops_operand_stmt / ops_level_stmt / _|_)
 )
-rule ops_skip_stmt = comments "skip" -word_end -- rule_expr item_end
+rule ops_skip_stmt = comments "skip" -word_end #cut rule_expr item_end
 rule ops_operand_stmt = (
-    comments "operand" -word_end -- rule_expr -ws
+    comments "operand" -word_end #cut rule_expr -ws
     whole_action? item_end
 )
 rule ops_level_stmt = (
-    comments "level" -word_end -- ident? -ws
+    comments "level" -word_end #cut ident? -ws
     -"{" (-empty_stmts ops_operator)*
     -empty_stmts comments -"}" item_end
 )
@@ -211,15 +211,15 @@ rule ops_operator = (
     (ops_prefix / ops_postfix / ops_infix / _|_)
 )
 rule ops_prefix = (
-    comments "prefix" -word_end -- rule_expr -ws
+    comments "prefix" -word_end #cut rule_expr -ws
     whole_action? item_end
 )
 rule ops_postfix = (
-    comments "postfix" -word_end -- rule_expr -ws
+    comments "postfix" -word_end #cut rule_expr -ws
     whole_action? item_end
 )
 rule ops_infix = (
-    comments "infix" -word_end --
+    comments "infix" -word_end #cut
     ("left" / "right" / "none")
     -word_end rule_expr -ws whole_action? item_end
 )
@@ -255,21 +255,21 @@ rule action_group = (
     -")"
 )
 rule call = (
-    var_name "(" {ml := true} -ws -- action_args? -ws
+    var_name "(" {ml := true} -ws #cut action_args? -ws
     -")"
 )
 rule action_args = action_expr (-ws "," -ws action_expr)* (-ws "," -ws)?
 rule list_constructor = (
-    "[]" -ws -- level(type_expr, prefix) -ws
+    "[]" -ws #cut level(type_expr, prefix) -ws
     -"{" {ml := true} -ws
     action_args? comments -"}"
 )
 rule terminal_constructor = (
-    var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") --
+    var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") #cut
     action_args comments -"}"
 )
 rule constructor = (
-    var_name -ws "{" {ml := true} -ws -- constructor_fields? comments
+    var_name -ws "{" {ml := true} -ws #cut constructor_fields? comments
     -"}"
 )
 rule constructor_fields = init_field (-ws "," -ws init_field)* (-ws "," -ws)?

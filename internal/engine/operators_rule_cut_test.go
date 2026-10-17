@@ -38,7 +38,7 @@ rule case20 Expr = "i" x:operatorsRulePartLocal => $x
 rule atom Atom = "~-x" / "-xy" / "¬é" / "-x" / "-z" / "-" / "a" / "é"
 rule committed Expr = operators {
     operand atom
-    level { prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule ordinary Expr = operators {
     operand atom
@@ -46,33 +46,33 @@ rule ordinary Expr = operators {
 }
 rule before Expr = operators {
     operand atom
-    level { prefix "-" "z" -- "t" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" "z" #cut "t" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule winnerFirst Expr = operators {
     operand atom
     level {
         prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
 rule failedFirst Expr = operators {
     operand atom
     level {
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
         prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
 rule longerWinner Expr = operators {
     operand atom
     level {
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
         prefix "-x" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
 rule shorterWinner Expr = operators {
     operand atom
     level {
-        prefix "--" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "--" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
         prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
@@ -81,37 +81,37 @@ rule ties Expr = operators {
     level {
         prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
         prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 2}
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 3}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 3}
     }
 }
 rule winnerCut Expr = operators {
     operand atom
     level {
-        prefix "-" -- => Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" #cut => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
 rule choiceLocal Expr = operators {
     operand atom
-    level { prefix ("-" -- "z" / "-") "q" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix ("-" #cut "z" / "-") "q" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule ruleLocal Expr = operators {
     operand atom
     level { prefix part => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-rule part = "-" -- "z"
+rule part = "-" #cut "z"
 rule unicode Expr = operators {
     operand atom
-    level { prefix "¬" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "¬" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule trivia Expr = operators {
     skip " "*
     operand atom
-    level { prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule emptyCut Expr = operators {
     operand atom
-    level { prefix _ -- => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix _ #cut => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 rule emptyOrdinary Expr = operators {
     operand atom
@@ -120,15 +120,15 @@ rule emptyOrdinary Expr = operators {
 rule nestedCut Expr = operators {
     operand atom
     level {
-        prefix "~" -- => Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "~" #cut => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
 rule nestedOrdinary Expr = operators {
     operand atom
     level {
         prefix "~" => Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
 rule recovered Expr = committed #recover(skip=.*)

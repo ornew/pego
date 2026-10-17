@@ -13,7 +13,7 @@ import (
 func TestParsePrefixRuleSemantics(t *testing.T) {
 	p, err := pego.CompileSource(`rule main = expr $$
 rule expr = expr "+" "a" / "a"
-rule cut = "a" -- "b" / "a" "c"
+rule cut = "a" #cut "b" / "a" "c"
 rule nilaction = missing:"z"? "a" => $missing
 rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 	if err != nil {

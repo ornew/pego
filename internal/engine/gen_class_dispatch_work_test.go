@@ -20,7 +20,7 @@ func TestGeneratedGoClassDispatchWork(t *testing.T) {
 		chars.WriteRune(rune(0x1000 + i*2))
 	}
 	source := `type Text terminal
-rule main Text = wide --
+rule main Text = wide #cut
 rule wide Text = [` + chars.String() + `]
 rule scan Text = ([` + chars.String() + `]+) #atomic
 rule negative Text = [^` + chars.String() + `]

@@ -308,7 +308,7 @@ rule x = "a"? / "b"?`, func(t *testing.T, in string) {
 		{"negative lookahead of an unmet empty minimum", `rule main = !_ #repeat(2) "b" $$`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
 		{"repetition elements read enclosing captures through variables", `rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, nil},
-		{"top, cut, attributes", `rule main = (stmt -- ";")* _ $$
+		{"top, cut, attributes", `rule main = (stmt #cut ";")* _ $$
 rule stmt = ("x" #atomic / "y" "z") @error(message="expected a statement") #recover(skip=[^;]+)`, nil},
 	}
 	for _, c := range cases {

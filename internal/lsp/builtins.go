@@ -61,6 +61,8 @@ var attributes = []builtin{
 var pragmas = []builtin{
 	{name: "atomic", signature: "#atomic", snippet: "atomic",
 		doc: "Matches the wrapped input as one Match node without building child values."},
+	{name: "cut", signature: "#cut", snippet: "cut",
+		doc: "Stands in place of an expression and commits the innermost enclosing choice of the rule to the current alternative."},
 	{name: "repeat", signature: "#repeat(min,max)", snippet: "repeat(${1:min},${2:max})",
 		doc: "Repeats the preceding expression. One count is exact; an omitted bound is zero or unbounded."},
 	{name: "missing", signature: "#missing", snippet: "missing",

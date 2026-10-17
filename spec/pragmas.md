@@ -1,7 +1,7 @@
 # Pragmas
 
 A `#` pragma changes the behavior or structure of the immediately preceding
-expression. Pragmas apply from left to right in written order. Parenthesize a
+expression, except `#cut`, which stands where an expression would. Pragmas apply from left to right in written order. Parenthesize a
 sequence when a pragma should apply to the complete sequence rather than its
 final item. Character classes in square brackets are primary Rule Expression forms, not pragmas.
 Diagnostic and metadata `@` attributes are defined separately in
@@ -23,6 +23,7 @@ The name is adjacent to `#`, and an argument list is adjacent to its name:
 | `#repeat(n,m)` | Repeats from `n` through `m` times |
 | `#stream` | Hands each element of a repetition to the caller as soon as it matches in a stream parse |
 | `#atomic` | Returns one text-only `Match` and suppresses construction of child nodes |
+| `#cut` | Stands in place of an expression and commits the enclosing choice; see [Cut](parser-expressions.md#cut). It takes no arguments: `#cut(` is an error |
 
 ## `#recover`
 

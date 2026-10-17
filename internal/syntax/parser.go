@@ -847,6 +847,8 @@ func (p *parser) startsPrimary() bool {
 		switch t.text {
 		case "(", "{", "&", "!", "-", "--", "^^", "^", "$$", "$", "_|_", ".":
 			return true
+		case "#":
+			return p.isCut()
 		}
 	}
 	return false
@@ -920,7 +922,7 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 			e = &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: 1, Max: -1}
 		case p.accept("?"):
 			e = &grammar.Optional{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e}
-		case p.is("#"):
+		case p.is("#") && !p.isCut():
 			e = p.pragma(e, start)
 		case p.is("@"):
 			a, ok := e.(*grammar.Attributed)
@@ -1046,6 +1048,16 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		p.errorf("unknown pragma #%s", name)
 		panic(bail{})
 	}
+}
+
+// isCut reports whether the current tokens are the cut #cut, which stands alone instead of
+// applying to the preceding expression like other pragmas.
+func (p *parser) isCut() bool {
+	if !p.is("#") {
+		return false
+	}
+	n := p.peek(1)
+	return n.kind == tIdent && n.text == "cut" && !n.spaceBefore
 }
 
 func (p *parser) repeatCount() int {
@@ -1205,9 +1217,19 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 				term = block.Statements[0]
 			}
 			return &grammar.Predicate{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Term: term, Breaks: block.Breaks, CloseBreak: block.CloseBreak, OneLine: block.OneLine}
+		case "#":
+			if p.isCut() {
+				p.next()
+				p.next()
+				if p.is("(") && !p.tok().spaceBefore {
+					p.errorf("#cut takes no arguments")
+					panic(bail{})
+				}
+				return &grammar.Cut{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
+			}
 		case "--":
-			p.next()
-			return &grammar.Cut{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
+			p.errorf("the cut is written #cut; run pego fix to rewrite --")
+			panic(bail{})
 		case "^^":
 			p.next()
 			return &grammar.BeginInput{SourceInfo: grammar.SourceInfo{Pos: t.pos}}

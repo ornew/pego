@@ -26,7 +26,7 @@ rule four = five
 rule five = "é" / "�" / "😀"
 rule cap = x:"é" {text($x) == "é"}
 rule assign = {n := 1} "é"
-rule cut = "é" -- "!"
+rule cut = "é" #cut "!"
 rule recovering = "é" #recover(skip="?")
 rule expression = operators {
     operand "é"

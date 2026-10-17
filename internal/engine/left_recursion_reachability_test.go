@@ -17,7 +17,7 @@ rule empty = alias
 rule alias = ""
 rule main = r2`, []string{"", "a", "\n", "b"}},
 	{"LR cut inside optional", `rule r1 = r2?
-rule r2 = (("a" / r1 / "\n") / ("x" -- "y")? / (r2 / $$)) #repeat(0, 1)
+rule r2 = (("a" / r1 / "\n") / ("x" #cut "y")? / (r2 / $$)) #repeat(0, 1)
 rule main = r2`, []string{"", "x", "xy", "\n"}},
 	{"left recursion in recovery skip", `rule main = a
 rule a = "x" #recover(skip=a) / "y"`, []string{"", "y", "x", "b"}},
@@ -25,14 +25,14 @@ rule a = "x" #recover(skip=a) / "y"`, []string{"", "y", "x", "b"}},
 rule r2 = (r1 / main / r2) #repeat(0, 1)
 rule main = empty #recover(skip=main)
 rule empty = ""`, []string{"", "a", "\n"}},
-	{"cut in recovery skip", `rule main = _|_ #recover(skip=-- "x")? / ""`, []string{"", "x", "b"}},
+	{"cut in recovery skip", `rule main = _|_ #recover(skip=#cut "x")? / ""`, []string{"", "x", "b"}},
 }
 
 func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
 	for _, prior := range []string{
-		`("x" -- "y")?`, `("x" -- "y")*`, `("x" -- "y" / _)`,
-		`(_|_ #recover(skip=(-- "x")))?`, `(_|_ #recover(skip=(-- "x")))*`,
-		`(_|_ #recover(skip=(-- "x")) / _)`, `!(_|_ #recover(skip="x"))`,
+		`("x" #cut "y")?`, `("x" #cut "y")*`, `("x" #cut "y" / _)`,
+		`(_|_ #recover(skip=(#cut "x")))?`, `(_|_ #recover(skip=(#cut "x")))*`,
+		`(_|_ #recover(skip=(#cut "x")) / _)`, `!(_|_ #recover(skip="x"))`,
 		`{false}`, `$$`, `r1`, `operatorsRule_value`, `level(operatorsRule_value, lv)`,
 	} {
 		t.Run(prior, func(t *testing.T) {
@@ -186,8 +186,8 @@ rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
 func TestLeftRecursionUnconditionalSuffixForms(t *testing.T) {
 	for _, prior := range []string{
 		`_`, `""`, `"x"?`, `"x"*`, `-"x"?`, `"x"* #atomic`, `x:"x"?`,
-		`&"x"?`, `!_|_`, `("x" -- "y")? / _`, `"x"? @error(message="x")`,
-		`empty`, `alias`, `r2 #repeat(0)`, `("x" -- "y") #repeat(0)`,
+		`&"x"?`, `!_|_`, `("x" #cut "y")? / _`, `"x"? @error(message="x")`,
+		`empty`, `alias`, `r2 #repeat(0)`, `("x" #cut "y") #repeat(0)`,
 	} {
 		t.Run(prior, func(t *testing.T) {
 			prefix := fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / (%s)", prior)

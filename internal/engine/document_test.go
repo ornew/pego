@@ -542,7 +542,7 @@ rule b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", 
 		// Bounds: a run that ends at its maximum, and a minimum met by reused elements alone.
 		{"bounds", `rule main = ([a-z]+ #atomic ";" / [a-z] #repeat(1, 20) #atomic "." / "\n")* $$`, strings.Repeat("abcdefghijklmnopqrstuvwxy;\n", 3) + strings.Repeat("abcdefghijklmnopqrst.\n", 3) + "\n", []string{"a", ";", ".", "\n", ""}},
 		// A cut in an element: an iteration that fails after it fails the repetition.
-		{"cut", `rule main = ("<" -- [a-z]+ #atomic ">")* [a-z<>]* #atomic $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
+		{"cut", `rule main = ("<" #cut [a-z]+ #atomic ">")* [a-z<>]* #atomic $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
 		// An element that calls a rule reading a variable defined before the repetition is not
 		// resumed: the edit changes the variable, not the input the elements examined.
 		{"variables", `rule main = h:hdr {k := len($h)} item* $$

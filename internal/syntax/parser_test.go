@@ -23,7 +23,7 @@ func TestParseExpr(t *testing.T) {
 		{`[0-9a-zA-Z_]`, `[0-9a-zA-Z_]`},
 		{`[\-(?)]`, `[\-(?)]`},
 		{`[^"\\]`, `[^"\\]`},
-		{`_ _|_ -- ^^ ^ $ $$ .`, `_ _|_ -- ^^ ^ $ $$ .`},
+		{`_ _|_ #cut ^^ ^ $ $$ .`, `_ _|_ #cut ^^ ^ $ $$ .`},
 		{`level(expr, assignment) expr (a)`, `level(expr, assignment) expr (a)`},
 		{`{len($s) > indent} {indent := len($s)}`, `{len($s) > indent} {indent := len($s)}`},
 		{`{a + b * c == 1 && !x || y}`, `{a + b * c == 1 && !x || y}`},
@@ -208,7 +208,7 @@ func TestEscapes(t *testing.T) {
 func TestExprPositions(t *testing.T) {
 	// Each prefix operator and atom records its own position; a postfix operator records where
 	// its operand begins (the parenthesis of a group).
-	e, err := ParseExpr("&a !b c #atomic -d _ _|_ -- ^^ ^ $ $$ . (x y)* z+ (w)? v #repeat(2)")
+	e, err := ParseExpr("&a !b c #atomic -d _ _|_ #cut ^^ ^ $ $$ . (x y)* z+ (w)? v #repeat(2)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +249,7 @@ func TestExprPositions(t *testing.T) {
 		}
 		got = append(got, fmt.Sprintf("%s@%d", grammar.FormatExpr(it), pos.Col))
 	}
-	want := "&a@1 !b@4 c #atomic@9 -d@17 _@20 _|_@22 --@26 ^^@29 ^@32 $@34 $$@36 .@39 (x y)*@41 z+@48 (w)?@51 v #repeat(2)@56"
+	want := "&a@1 !b@4 c #atomic@9 -d@17 _@20 _|_@22 #cut@26 ^^@31 ^@34 $@36 $$@38 .@41 (x y)*@43 z+@50 (w)?@53 v #repeat(2)@58"
 	if s := strings.Join(got, " "); s != want {
 		t.Errorf("got  %s\nwant %s", s, want)
 	}
