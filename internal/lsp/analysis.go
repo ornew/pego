@@ -471,6 +471,17 @@ func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl
 			control.poll()
 			a.walkTypeControlled(u, control)
 		}
+	case *grammar.TupleType:
+		for _, u := range t.Types {
+			control.poll()
+			a.walkTypeControlled(u, control)
+		}
+	case *grammar.TypeApp:
+		a.ref(kindType, t.Name, t.Diagnostic())
+		for _, u := range t.Args {
+			control.poll()
+			a.walkTypeControlled(u, control)
+		}
 	}
 }
 

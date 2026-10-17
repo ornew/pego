@@ -182,6 +182,24 @@ type IntersectionType struct {
 	Types      []TypeExpr `json:"types"`
 }
 
+// TupleType is a tuple type: () is the unit, (T,) has one element and (T, U) two. Its
+// parentheses keep their source layout like a TypeGroup's.
+type TupleType struct {
+	SourceInfo `json:"source,omitempty"`
+	Types      []TypeExpr `json:"types"`
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
+}
+
+// TypeApp applies a type to type arguments: Name[Args...], as in node[string].
+type TypeApp struct {
+	SourceInfo `json:"source,omitempty"`
+	Name       string     `json:"name"`
+	Args       []TypeExpr `json:"args"`
+}
+
 // TypeGroup preserves parentheses and source layout in a type expression.
 // It is transparent to type resolution.
 type TypeGroup struct {
@@ -198,6 +216,8 @@ func (*ListType) typeExpr()         {}
 func (*OptionalType) typeExpr()     {}
 func (*UnionType) typeExpr()        {}
 func (*IntersectionType) typeExpr() {}
+func (*TupleType) typeExpr()        {}
+func (*TypeApp) typeExpr()          {}
 func (*TypeGroup) typeExpr()        {}
 
 // --- Parser expressions ---

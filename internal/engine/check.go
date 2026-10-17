@@ -21,6 +21,9 @@ type checker struct {
 	prog    *Program
 	errs    *ErrorList
 	report  bool
+	// reportUnsupported reports type syntax that is not supported yet even while report is
+	// false: without type checking such types would silently accept every value.
+	reportUnsupported bool
 	// ruleTypes holds the type of each rule (declared, or being inferred).
 	ruleTypes map[string]ty
 	declared  map[string]bool
@@ -175,6 +178,20 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 			ts[i] = k.resolve(x)
 		}
 		return union(ts...)
+	case *grammar.TupleType:
+		// Record 060 types: reserved syntax until values carry them.
+		k.unsupported(t, t.Diagnostic(), "tuple types are not supported yet")
+		return tyAny
+	case *grammar.TypeApp:
+		if t.Name == "node" {
+			k.unsupported(t, t.Diagnostic(), "type arguments of node are not supported yet")
+		} else if k.defined(t.Name) {
+			k.resolveNamed(t.Name, t.Diagnostic()) // reports an alias that refers to itself
+			k.unsupported(t, t.Diagnostic(), "type %s takes no type arguments", t.Name)
+		} else {
+			k.unsupported(t, t.Diagnostic(), "undefined type %s", t.Name)
+		}
+		return tyAny
 	case *grammar.IntersectionType:
 		m := ty(tyTop) // the meet of no types
 		for _, x := range t.Types {
@@ -183,6 +200,31 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 		return m
 	}
 	return tyAny
+}
+
+// unsupported reports type syntax t that is not supported yet (reportUnsupported), once.
+func (k *checker) unsupported(t grammar.TypeExpr, pos grammar.Pos, format string, args ...any) {
+	if !k.report && !k.reportUnsupported || k.prog.unsupportedSeen[t] {
+		return
+	}
+	if k.prog.unsupportedSeen == nil {
+		k.prog.unsupportedSeen = map[grammar.TypeExpr]bool{}
+	}
+	k.prog.unsupportedSeen[t] = true
+	report := k.report
+	k.report = true
+	k.errorf(pos, format, args...)
+	k.report = report
+}
+
+// defined reports whether name is a built-in or declared type.
+func (k *checker) defined(name string) bool {
+	if _, ok := k.prog.types[name]; ok {
+		return true
+	}
+	r := &checker{prog: k.prog, resolving: map[string]bool{}, errs: &ErrorList{}, report: true}
+	r.resolveNamed(name, grammar.Pos{})
+	return len(*r.errs) == 0
 }
 
 // resolveLocation resolves the type of a location: a field, a rule, a list element or a cast.
@@ -196,11 +238,12 @@ func (k *checker) resolveLocation(t grammar.TypeExpr, pos grammar.Pos, what stri
 	return r
 }
 
-// checkBottomLocations reports the fields and rules of type _|_ when types are not checked
-// otherwise (Options.NoTypeCheck). No value fits them, while the run-time checks treat a type they
-// cannot describe as one every value fits.
+// checkBottomLocations reports the fields and rules of type _|_, and type syntax that is not
+// supported yet, when types are not checked otherwise (Options.NoTypeCheck). No value fits a
+// location of type _|_, while the run-time checks treat a type they cannot describe as one every
+// value fits.
 func checkBottomLocations(prog *Program, errs *ErrorList, control *compileControl) {
-	k := &checker{control: control, prog: prog, errs: errs, resolving: map[string]bool{}}
+	k := &checker{control: control, prog: prog, errs: errs, resolving: map[string]bool{}, reportUnsupported: true}
 	located := func(t grammar.TypeExpr, pos grammar.Pos, what string) {
 		k.report = false // other type errors stay unreported, as without this check
 		r := k.resolve(t)
@@ -210,10 +253,13 @@ func checkBottomLocations(prog *Program, errs *ErrorList, control *compileContro
 		}
 	}
 	for _, td := range control.types(prog.Grammar) {
-		if spec, ok := td.Spec.(*grammar.StructSpec); ok {
+		switch spec := td.Spec.(type) {
+		case *grammar.StructSpec:
 			for _, f := range spec.Fields {
 				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
 			}
+		case *grammar.AliasSpec:
+			k.resolve(spec.Type) // an alias is not a location, but may use unsupported syntax
 		}
 	}
 	for _, rd := range control.rules(prog.Grammar) {

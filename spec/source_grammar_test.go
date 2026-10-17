@@ -91,6 +91,7 @@ rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 rule cast = x:"x" => $x.([]Foo | *Word).len
 type Meet ~ []Foo & *Word | _ & _|_
+type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[Word]
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -134,6 +135,34 @@ type Meet ~ []Foo & *Word | _ & _|_
 		if meet.Type() != "UnionType" || l.Type() != "IntersectionType" || r.Type() != "IntersectionType" ||
 			sourceField(t, r, "L").Type() != "TypeRef" || sourceField(t, r, "R").Type() != "Bottom" {
 			t.Fatal("meet structure lost")
+		}
+		// One type without a comma is a group, and type arguments follow the name directly.
+		var alts []*pego.Node
+		for u := sourceField(t, sourceField(t, defs[10], "Spec"), "Type"); ; u = sourceField(t, u, "L") {
+			if u.Type() != "UnionType" {
+				alts = append([]*pego.Node{u}, alts...)
+				break
+			}
+			alts = append([]*pego.Node{sourceField(t, u, "R")}, alts...)
+		}
+		want := []struct {
+			typ   string
+			count int
+		}{{"TupleType", 0}, {"TypeGroup", -1}, {"TupleType", 1}, {"TupleType", 2}, {"ListType", -1}}
+		if len(alts) != len(want) {
+			t.Fatalf("tuple alternatives: got %d", len(alts))
+		}
+		for i, w := range want {
+			if alts[i].Type() != w.typ || w.count >= 0 && len(sourceField(t, alts[i], "Types").Children) != w.count {
+				t.Fatalf("tuple alternative %d: got %s", i, alts[i].Type())
+			}
+		}
+		app := sourceField(t, alts[3], "Types").Children[1]
+		if args := sourceField(t, app, "Args").Children; app.Type() != "TypeApp" || len(args) != 2 || args[1].Type() != "TupleType" {
+			t.Fatal("type application structure lost")
+		}
+		if sourceField(t, alts[4], "Type").Type() != "TypeApp" {
+			t.Fatal("[] must apply to a type application")
 		}
 	}
 }

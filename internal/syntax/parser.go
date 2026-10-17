@@ -557,7 +557,13 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		g := &grammar.TypeGroup{OpenBreak: &grammar.LineBreak{}}
 		p.cur = g.OpenBreak
 		g.BodyBreak = p.lineBreak()
+		if p.is(")") {
+			return p.tupleType(open, g, nil) // the unit ()
+		}
 		g.Type = p.typeExpr()
+		if p.is(",") {
+			return p.tupleType(open, g, g.Type)
+		}
 		g.CloseBreak = p.lineBreak()
 		g.OneLine = !p.multiline(open, p.i)
 		p.expect(")")
@@ -567,7 +573,36 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	}
 	name := p.ident()
+	if p.is("[") {
+		// The lexer makes "[" a bracket only directly after the name: T[U].
+		p.next()
+		a := &grammar.TypeApp{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
+		for {
+			a.Args = append(a.Args, p.typeExpr())
+			if !p.accept(",") || p.is("]") {
+				break
+			}
+		}
+		p.expect("]")
+		return a
+	}
 	return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
+}
+
+// tupleType finishes a tuple type whose "(" and first element, if any, were read as a group's.
+// A trailing comma is optional, and required after a single element.
+func (p *parser) tupleType(open int, g *grammar.TypeGroup, first grammar.TypeExpr) grammar.TypeExpr {
+	t := &grammar.TupleType{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}
+	if first != nil {
+		t.Types = append(t.Types, first)
+		for p.accept(",") && !p.is(")") {
+			t.Types = append(t.Types, p.typeExpr())
+		}
+	}
+	t.CloseBreak = p.lineBreak()
+	t.OneLine = !p.multiline(open, p.i)
+	p.expect(")")
+	return t
 }
 
 func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {

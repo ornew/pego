@@ -29,9 +29,11 @@ type TerminalSpec = {}
 type StructSpec = { Fields []FieldSpec; Comments []Comment }
 type FieldSpec ~ Field | Error
 type Field = { Name Ident; Type Type; Comments []Comment }
-type Type ~ TypeRef | TypeGroup | OptionalType | ListType | UnionType | IntersectionType | Bottom
+type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | OptionalType | ListType | UnionType | IntersectionType | Bottom
 type TypeRef = { Name Ident }
+type TypeApp = { Name Ident; Args []Type } // T[U]
 type TypeGroup = { Type Type }
+type TupleType = { Types []Type } // (), (T,), (T, U)
 type OptionalType = { Type Type }
 type ListType = { Type Type }
 type UnionType = { L Type; R Type }
@@ -202,6 +204,7 @@ rule type_alias_spec TypeAliasSpec = "~" -ws t:type_expr => TypeAliasSpec{Type: 
 rule type_expr Type = operators {
   skip ws
   operand bottom
+  operand name:ident args:type_args => TypeApp{Name: $name, Args: $args}
   operand name:ident => TypeRef{Name: $name}
   operand t:type_group => $t
   level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
@@ -212,8 +215,18 @@ rule type_expr Type = operators {
   }
 }
 
-// A rule of its own keeps ml from reaching the rest of the type.
-rule type_group TypeGroup = "(" {ml := true} -ws t:type_expr -ws ")" => TypeGroup{Type: $t}
+// The brackets of type arguments follow the name directly.
+rule type_args []Type = (
+  "[" {ml := true} -ws first:type_expr rest:(-ws "," -ws t:type_expr)* -ws ","? -ws "]"
+) => concat(list($first), map($rest, (x) => x.t))
+
+// A rule of its own keeps ml from reaching the rest of the type. Parentheses
+// around one type without a comma group it; any other parentheses form a tuple.
+rule type_group Type = type_paren / type_tuple
+rule type_paren TypeGroup = "(" {ml := true} -ws t:type_expr -ws ")" => TypeGroup{Type: $t}
+rule type_tuple TupleType = (
+  "(" {ml := true} -ws ts:(t:type_expr -ws "," -ws)* last:type_expr? -ws ")"
+) => TupleType{Types: concat(map($ts, (x) => x.t), filter(list($last), (x) => x != nil)).([]Type)}
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

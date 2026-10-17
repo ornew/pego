@@ -275,6 +275,14 @@ func validate(g *Grammar, control *validationControl) error {
 			for i := len(n.Types) - 1; i >= 0; i-- {
 				push(n.Types[i], "types", i, false)
 			}
+		case *TupleType:
+			for i := len(n.Types) - 1; i >= 0; i-- {
+				push(n.Types[i], "types", i, false)
+			}
+		case *TypeApp:
+			for i := len(n.Args) - 1; i >= 0; i-- {
+				push(n.Args[i], "args", i, false)
+			}
 		case *Seq:
 			for i := len(n.Items) - 1; i >= 0; i-- {
 				push(n.Items[i], "items", i, false)
@@ -444,6 +452,11 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 	case *TypeRef:
 		if n.Name == "_" || n.Name == "_|_" {
 			return "", "" // the top and bottom types
+		}
+		field, name = "name", n.Name
+	case *TypeApp:
+		if n.Name == "_" {
+			return "", "" // the top type, which takes no type arguments
 		}
 		field, name = "name", n.Name
 	case *Field:

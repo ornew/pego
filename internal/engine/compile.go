@@ -15,11 +15,14 @@ import (
 type Program struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
 	Grammar    *grammar.Grammar
-	rules      []*rule
-	descTable  []string  // expectation table (starting with fixedDescs)
-	twins      []*rule   // value-free twins (rule.twin); ids start at len(rules)
-	nseen      int       // number of rules with rule.seen set
-	typed      *typeInfo // types found by the type checker (nil if it did not run)
+	// unsupportedSeen holds the type syntax reported as not supported yet while compiling, so that
+	// an alias resolved from several places, by several checkers, is reported once.
+	unsupportedSeen map[grammar.TypeExpr]bool
+	rules           []*rule
+	descTable       []string  // expectation table (starting with fixedDescs)
+	twins           []*rule   // value-free twins (rule.twin); ids start at len(rules)
+	nseen           int       // number of rules with rule.seen set
+	typed           *typeInfo // types found by the type checker (nil if it did not run)
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool

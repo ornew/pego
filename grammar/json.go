@@ -28,7 +28,7 @@ func init() {
 	register(
 		(*TypeDef)(nil), (*RuleDef)(nil),
 		(*StructSpec)(nil), (*AliasSpec)(nil), (*TerminalSpec)(nil),
-		(*TypeRef)(nil), (*ListType)(nil), (*OptionalType)(nil), (*UnionType)(nil), (*IntersectionType)(nil), (*TypeGroup)(nil),
+		(*TypeRef)(nil), (*ListType)(nil), (*OptionalType)(nil), (*UnionType)(nil), (*IntersectionType)(nil), (*TupleType)(nil), (*TypeApp)(nil), (*TypeGroup)(nil),
 		(*Ref)(nil), (*Literal)(nil), (*CharClass)(nil), (*Any)(nil), (*Seq)(nil),
 		(*Choice)(nil), (*Group)(nil), (*InlineAction)(nil), (*Repeat)(nil), (*Optional)(nil), (*And)(nil), (*Not)(nil),
 		(*Atomic)(nil), (*Recovery)(nil), (*Stream)(nil), (*Discard)(nil), (*Capture)(nil), (*Cut)(nil), (*Top)(nil),

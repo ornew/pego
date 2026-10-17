@@ -66,8 +66,35 @@ func ungroupType(t grammar.TypeExpr, poll func()) grammar.TypeExpr {
 			v.Types = children
 			return &v
 		}
+	case *grammar.TupleType:
+		if children := ungroupTypes(t.Types, poll); children != nil {
+			v := *t
+			v.Types = children
+			return &v
+		}
+	case *grammar.TypeApp:
+		if children := ungroupTypes(t.Args, poll); children != nil {
+			v := *t
+			v.Args = children
+			return &v
+		}
 	}
 	return t
+}
+
+// ungroupTypes ungroups each of ts, returning a copy if any changed and nil otherwise.
+func ungroupTypes(ts []grammar.TypeExpr, poll func()) []grammar.TypeExpr {
+	var children []grammar.TypeExpr
+	for i, x := range ts {
+		child := ungroupType(x, poll)
+		if child != x {
+			if children == nil {
+				children = cloneGroupItems(ts, poll)
+			}
+			children[i] = child
+		}
+	}
+	return children
 }
 
 // UngroupTerm removes source-only grouping without changing its input.

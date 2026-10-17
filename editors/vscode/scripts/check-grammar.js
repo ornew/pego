@@ -82,6 +82,10 @@ const sample = [
   'rule cacc = xs:(y:a)+ => map($xs, (i) => i.$y)',
   'rule cast = x:a => $x.(Num | []Num).startPos',
   'type Top ~ _ | []_|_ & Num',
+  'type Tup = {',
+  '  F node[Num, (Num,)]',
+  '  G (Num, Pair)',
+  '}',
 ].join('\n');
 
 const expectations = [
@@ -170,6 +174,11 @@ const expectations = [
   ['_', 'support.type.builtin.pego', '~ _ '],
   ['_|_', 'support.type.builtin.pego', '[]_|_'],
   ['&', 'keyword.operator.meet.pego', '_ & Num'],
+  ['node', 'support.type.builtin.pego', 'F node['],
+  ['[', 'punctuation.bracket.pego', 'node[Num'],
+  ['Num', 'entity.name.type.pego', ', (Num,)'],
+  ['G', 'variable.other.property.pego', '  G ('],
+  ['Pair', 'entity.name.type.pego', 'Num, Pair'],
 ];
 
 async function main() {

@@ -138,6 +138,17 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			for _, t := range t.Types {
 				typ(t)
 			}
+		case *TupleType:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
+			for _, t := range t.Types {
+				typ(t)
+			}
+		case *TypeApp:
+			for _, t := range t.Args {
+				typ(t)
+			}
 		}
 	}
 	var expr func(e Expr)

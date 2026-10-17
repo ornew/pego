@@ -214,6 +214,18 @@ func (prog *Program) markMissingRules(control *compileControl) {
 					return true
 				}
 			}
+		case *grammar.TupleType:
+			for _, t := range t.Types {
+				if usesMissingType(t) {
+					return true
+				}
+			}
+		case *grammar.TypeApp:
+			for _, t := range t.Args {
+				if usesMissingType(t) {
+					return true
+				}
+			}
 		}
 		return false
 	}

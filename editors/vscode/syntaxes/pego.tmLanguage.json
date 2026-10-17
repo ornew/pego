@@ -146,6 +146,9 @@
           "include": "#type-parenthesized"
         },
         {
+          "include": "#type-arguments"
+        },
+        {
           "include": "#comment"
         },
         {
@@ -176,6 +179,10 @@
         {
           "match": "[()]",
           "name": "punctuation.parenthesis.pego"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.comma.pego"
         }
       ]
     },
@@ -542,6 +549,26 @@
       "patterns": [
         {
           "include": "#value"
+        }
+      ]
+    },
+    "type-arguments": {
+      "comment": "T[U, ...]: the bracket follows the name directly",
+      "begin": "(?<=[A-Za-z0-9_])\\[(?!\\])",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.bracket.pego"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.bracket.pego"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#type-expression"
         }
       ]
     },

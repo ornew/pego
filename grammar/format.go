@@ -675,6 +675,24 @@ func formatType(t TypeExpr, control *metadataControl) string {
 			}
 		}
 		return finishFormat(joinFormatParts(parts, " & ", control), control)
+	case *TupleType:
+		parts := make([]string, len(t.Types))
+		for i, x := range t.Types {
+			pollFormat(control)
+			parts[i] = formatType(x, control)
+		}
+		body := joinFormatParts(parts, ", ", control)
+		if len(parts) == 1 {
+			body += "," // (T) would be a group
+		}
+		return finishFormat(formatSourceGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine || t.OpenBreak == nil, control), control)
+	case *TypeApp:
+		parts := make([]string, len(t.Args))
+		for i, x := range t.Args {
+			pollFormat(control)
+			parts[i] = formatType(x, control)
+		}
+		return finishFormat(t.Name+"["+joinFormatParts(parts, ", ", control)+"]", control)
 	}
 	return finishFormat("?", control)
 }

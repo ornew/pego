@@ -97,6 +97,7 @@ rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
     operand bottom
+    operand ident type_args
     operand ident
     operand type_group
     level union { infix left "|" }
@@ -107,8 +108,14 @@ rule type_expr = operators {
     }
 }
 
-// A rule of its own keeps ml from reaching the rest of the type.
-rule type_group = "(" {ml := true} -ws type_expr -ws ")"
+// The brackets of type arguments follow the name directly.
+rule type_args = "[" {ml := true} -ws type_expr (-ws "," -ws type_expr)* -ws ","? -ws "]"
+
+// A rule of its own keeps ml from reaching the rest of the type. Parentheses
+// around one type without a comma group it; any other parentheses form a tuple.
+rule type_group = type_paren / type_tuple
+rule type_paren = "(" {ml := true} -ws type_expr -ws ")"
+rule type_tuple = "(" {ml := true} -ws (type_expr -ws "," -ws)* type_expr? -ws ")"
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

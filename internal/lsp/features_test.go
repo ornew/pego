@@ -684,3 +684,26 @@ func BenchmarkAnalyze(b *testing.B) {
 		})
 	}
 }
+
+// Names in type arguments and tuple types are references, although such grammars do not compile
+// yet.
+func TestReservedTypeReferences(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///reserved.pego"
+	d := c.open(uri, "type Num terminal\ntype A ~ node[Num] | (Num, A)\nrule main = \"a\"\n")
+	if len(d) == 0 || !strings.Contains(d[0].Message, "not supported yet") {
+		t.Fatalf("diagnostics %+v", d)
+	}
+	var locs []Location
+	p := at(uri, 0, 6)
+	p["context"] = map[string]any{"includeDeclaration": true}
+	c.requestInto("textDocument/references", p, &locs)
+	var got []Range
+	for _, l := range locs {
+		got = append(got, l.Range)
+	}
+	if want := []Range{rng(0, 5, 0, 8), rng(1, 14, 1, 17), rng(1, 22, 1, 25)}; !reflect.DeepEqual(got, want) {
+		t.Errorf("references of Num: %v", got)
+	}
+	c.exit()
+}

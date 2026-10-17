@@ -55,6 +55,20 @@ wrapper transparently, so grouping does not change type meaning. See
 for source metadata, JSON and formatter behavior. Outside such a
 group, a Type Expression follows the normal hard newline Definition Statement boundary.
 
+### Reserved Type Syntax
+
+Two forms of Type Expression are reserved for value types that are not
+supported yet. Grammars that use them parse, format and convert to JSON, but
+do not compile, also when types are otherwise not checked:
+
+- A tuple type is written in parentheses with commas: `()` is the unit type,
+  `(T,)` has one element and `(T, U)` two; a trailing comma is optional after
+  two or more elements. Parentheses around a single type without a comma group
+  it.
+- A type application `T[U, ...]` applies a type to type arguments, as in
+  `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
+  is reserved to take type arguments; any other type takes none.
+
 ### Top, Bottom and Meet
 
 `_` is the top type: every value is a `_`, and `_ | T` is `_`. A value of type
