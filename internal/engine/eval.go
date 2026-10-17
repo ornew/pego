@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -290,6 +291,14 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 		return int(n.End), nil
 	case "children":
 		return c.newList(n.Children), nil
+	}
+	if capture, ok := strings.CutPrefix(name, "$"); ok {
+		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
+		if _, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok {
+			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
+		}
+		v, _ := c.p.valueField(n.Fields, capture)
+		return v, nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)

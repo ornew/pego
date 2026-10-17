@@ -1,6 +1,10 @@
 package engine
 
-import "github.com/ornew/pego/grammar"
+import (
+	"strings"
+
+	"github.com/ornew/pego/grammar"
+)
 
 // Projected repetitions.
 //
@@ -235,7 +239,8 @@ func projField(t grammar.Term) (string, bool) {
 	if !ok || x.Name != l.Params[0] || m.Name == "startPos" || m.Name == "endPos" || m.Name == "children" {
 		return "", false
 	}
-	return m.Name, true
+	// e.$f and e.f read the same capture of an element.
+	return strings.TrimPrefix(m.Name, "$"), true
 }
 
 // directCapture returns the capture of name that e makes unconditionally: e itself, or an item of

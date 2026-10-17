@@ -1156,6 +1156,18 @@ func (c *tctx) member(x any, name string) any {
 	case "children":
 		return c.newList(n.tkids())
 	}
+	if len(name) > 1 && name[0] == '$' {
+		capture := name[1:]
+		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
+		v, ok := c.p.valueField(n, capture)
+		if n.tstruct() {
+			c.p.evalErrorf("%s has no capture %s", n.tname(), capture)
+		}
+		if !ok {
+			return nil
+		}
+		return tvalOrNil(v)
+	}
 	v, ok := c.p.valueField(n, name)
 	if !ok {
 		c.p.evalErrorf("%s has no field %s", n.tname(), name)

@@ -455,7 +455,8 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 	case *Assign:
 		field, name = "name", n.Name
 	case *Member:
-		field, name = "name", n.Name
+		// x.$y names the capture y.
+		field, name = "name", strings.TrimPrefix(n.Name, "$")
 	case *New:
 		field, name = "type", n.Type
 	case *TerminalConstructor:

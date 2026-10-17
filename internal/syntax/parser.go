@@ -1476,6 +1476,13 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 			p.sourceNode(x, sourceStart)
 			continue
 		}
+		if t := p.tok(); t.kind == tCapture && !p.boundary() {
+			// x.$y reads the capture y of the node x.
+			p.next()
+			x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: t.pos}, X: x, Name: "$" + t.text}
+			p.sourceNode(x, sourceStart)
+			continue
+		}
 		name := p.ident()
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
 		p.sourceNode(x, sourceStart)

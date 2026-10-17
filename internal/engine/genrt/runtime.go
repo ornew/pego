@@ -2186,6 +2186,14 @@ func (c *actx) member(x any, name string) any {
 	case "children":
 		return c.newList(n.Children)
 	}
+	if capture, ok := strings.CutPrefix(name, "$"); ok {
+		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
+		if _, ok := structFields[n.Type()]; ok {
+			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
+		}
+		v, _ := c.p.valueField(n.Fields, capture)
+		return v
+	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}

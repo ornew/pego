@@ -79,6 +79,7 @@ const sample = [
   'rule x² = y',
   'rule idx = xs:a+ => $xs[0][len($xs) - 1]',
   'rule pidx = xs:a+ {$xs[1] == nil} name [q-r]',
+  'rule cacc = xs:(y:a)+ => map($xs, (i) => i.$y)',
 ].join('\n');
 
 const expectations = [
@@ -160,6 +161,7 @@ const expectations = [
   ['len', 'support.function.builtin.pego', 'len($xs) - 1'],
   ['[', '!punctuation.definition.character-class.begin.pego', '[1]'],
   ['[', 'punctuation.definition.character-class.begin.pego', '[q-r]'],
+  ['$y', 'variable.parameter.capture.pego', 'i.$y'],
 ];
 
 async function main() {

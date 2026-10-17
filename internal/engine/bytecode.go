@@ -1,6 +1,9 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Module is a grammar compiled to bytecode. It is the only thing the VM runs.
 // The instruction set and its semantics are specified in spec/bytecode.md.
@@ -28,9 +31,19 @@ func (m *Module) hasDiagnosticLabels() bool {
 
 // hasIndexing reports whether the module indexes lists (EBIN with the operator []), which needs
 // instruction set version 10.
-func (m *Module) hasIndexing() bool {
+func (m *Module) hasIndexing() bool { return m.hasExpr(EBin, func(s string) bool { return s == "[]" }) }
+
+// hasCaptureAccess reports whether the module reads captures with x.$y (EMEMBER with a name
+// starting with $), which needs instruction set version 11.
+func (m *Module) hasCaptureAccess() bool {
+	return m.hasExpr(EMember, func(s string) bool { return strings.HasPrefix(s, "$") })
+}
+
+// hasExpr reports whether the module has an expression instruction op whose string operand A
+// satisfies is.
+func (m *Module) hasExpr(op Op, is func(string) bool) bool {
 	for _, in := range m.Exprs {
-		if in.Op == EBin && in.A >= 0 && int(in.A) < len(m.Strings) && m.Strings[in.A] == "[]" {
+		if in.Op == op && in.A >= 0 && int(in.A) < len(m.Strings) && is(m.Strings[in.A]) {
 			return true
 		}
 	}
@@ -69,6 +82,9 @@ func (m *Module) hasTypeChecks() bool {
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	if m.hasCaptureAccess() {
+		return 11
+	}
 	if m.hasIndexing() {
 		return 10
 	}

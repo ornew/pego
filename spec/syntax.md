@@ -251,6 +251,7 @@ rule action_ops = operators {
     // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
     // followed by a character class, which the reference parser rejects.
     level field_access {
+        postfix "." -ws capture_ref
         postfix "." -ws ident
         postfix "[" -ws action_expr -ws "]"
     }
@@ -417,7 +418,8 @@ and Predicate Actions bind in the order of the [operator
 table](actions.md#operators-and-functions):
 `||`, `&&`, comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, which do not chain),
 `+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`),
-indexing (`[i]`) and function calls bind tighter than the operators. A `[`
+capture access (`.$`), indexing (`[i]`) and function calls bind tighter than
+the operators. A `[`
 written directly after a name, a capture reference, `)` or `]` is an index
 bracket; elsewhere it begins a character class. Each Operators Rule defines
 precedence by the order of its `level` declarations; associativity and operator

@@ -101,11 +101,12 @@ type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction terminal
 type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
-  | BinaryOp | UnaryOp | FieldAccess | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
+  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
 )
 type BinaryOp = { Op string; L ActionExpr; R ActionExpr }
 type UnaryOp = { Op string; X ActionExpr }
 type FieldAccess = { X ActionExpr; Name Ident }
+type CaptureAccess = { X ActionExpr; Capture CaptureRef } // x.$y
 type Call = { X ActionExpr; Args []ActionExpr }
 type Constructor = { X ActionExpr; Inits []InitField; Comments []Comment }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
@@ -370,6 +371,7 @@ rule action_ops ActionExpr = operators {
   // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
   // followed by a character class, which the reference parser rejects.
   level field_access {
+    postfix "." -ws c:capture_ref => CaptureAccess{X: $lhs, Capture: $c}
     postfix "." -ws name:ident => FieldAccess{X: $lhs, Name: $name}
     postfix "[" -ws i:action_expr -ws "]" => BinaryOp{Op: "[]", L: $lhs, R: $i}
   }

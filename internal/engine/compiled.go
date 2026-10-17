@@ -37,8 +37,8 @@ const (
 	// version 5 ETERMINAL for terminals with supplied text, version 6
 	// the filter builtin appended to the ECALL table, version 8
 	// diagnostic-label mode for LABEL, version 9 ECHECK, and version 10 the EBIN operator []
-	// (indexing). Version 7 is reserved.
-	isaVersion = 10
+	// (indexing), and version 11 EMEMBER names starting with $ (capture access). Version 7 is reserved.
+	isaVersion = 11
 	maxDepth   = 10000
 )
 
@@ -725,6 +725,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if isa < 10 && m.hasIndexing() {
 		return nil, "", errors.New("invalid compiled grammar: indexing requires instruction set version 10")
+	}
+	if isa < 11 && m.hasCaptureAccess() {
+		return nil, "", errors.New("invalid compiled grammar: capture access requires instruction set version 11")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)

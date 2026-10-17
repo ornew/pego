@@ -188,6 +188,15 @@ The built-in fields `startPos`, `endPos` and `children` are available on every
 node. Positions use the parse's selected unit. `children` is the node's child
 list; it is empty for node kinds without children.
 
+`x.$y` reads capture `y` of node `x`, such as a repetition element:
+`map($items, (i) => i.$name)`. Every node type that `x` may have must capture
+`y`, and the result type is the join of their capture types; an unmatched
+capture reads as `nil`. A struct value has no captures, so `x.$y` on one is a
+compile-time error, or a runtime action error for a dynamically typed
+receiver. A captured sequence does not yet carry the captures inside it, so
+`$x.$y` for `x:(y:a b)` is rejected; write `$y`. On a capture record, `x.y`
+and `x.$y` read the same capture.
+
 ## Operators and Functions
 
 This section defines operators and the complete set of built-in functions
@@ -217,7 +226,7 @@ comparison result an operand of another comparison.
 | 5 | `*`, `/`, `%` | `int`, `int` | `int` |
 | 6 | Unary `-` | `int` | `int` |
 | 6 | Unary `!` | `bool` | `bool` |
-| 7 | `.` field access; `[i]` indexing; calls; parentheses | Node and field; list and `int`; built-in and declared arguments; any expression | Field or call result; list element; grouped expression type |
+| 7 | `.` field access; `.$` capture access; `[i]` indexing; calls; parentheses | Node and field; list and `int`; built-in and declared arguments; any expression | Field or call result; list element; grouped expression type |
 
 All comparison operators share one precedence level, and the parser accepts
 only one comparison operator at that level. Thus `a < b < c` is invalid;

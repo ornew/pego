@@ -2630,6 +2630,13 @@ class Actx {
         return this.newList(x.children);
     }
     const fields = structFields.get(x.type);
+    if (name.startsWith("$")) {
+      // x.$y reads a capture, which struct values do not have; an unmatched capture is null.
+      if (fields !== undefined) {
+        evalError(`${x.type} has no capture ${name.slice(1)}`);
+      }
+      return getFieldWork(x, name.slice(1), this.p.control);
+    }
     if (fields !== undefined && !fields.has(name)) {
       evalError(`${x.type} has no field ${name}`);
     }

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/ornew/pego/grammar"
@@ -901,6 +902,9 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 		k.errorf(m.Diagnostic(), "cannot access .%s of %s: the value may be nil", m.Name, x)
 		return tyAny
 	}
+	if name, ok := strings.CutPrefix(m.Name, "$"); ok {
+		return k.captureAccess(x, name, m)
+	}
 	var alts []ty
 	if u, ok := x.(unionTy); ok {
 		alts = u.alts
@@ -936,6 +940,33 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 	if len(found) < len(alts) {
 		// A field present in only some of the types is nil for the others.
 		return optional(union(found...))
+	}
+	return union(found...)
+}
+
+// captureAccess returns the type of x.$name: every node type of x must capture name, and the
+// type is the join of their capture types.
+func (k *checker) captureAccess(x ty, name string, m *grammar.Member) ty {
+	alts := []ty{x}
+	if u, ok := x.(unionTy); ok {
+		alts = u.alts
+	}
+	var found []ty
+	for _, a := range alts {
+		switch a := a.(type) {
+		case recordTy:
+			if ft, ok := a.fields[name]; ok {
+				found = append(found, ft)
+				continue
+			}
+		case basicTy:
+			if a == tyNode || a == tyAny {
+				found = append(found, tyAny)
+				continue
+			}
+		}
+		k.errorf(m.Diagnostic(), "%s has no capture %s", a, name)
+		return tyAny
 	}
 	return union(found...)
 }

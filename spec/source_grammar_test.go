@@ -88,6 +88,7 @@ rule empty = "x" => []Foo{}
 rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
 rule args = "x" => Word{"a", "b",}
 rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
+rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -116,6 +117,10 @@ rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 		index := sourceField(t, defs[6], "Action")
 		if index.Type() != "BinaryOp" || index.Field("Op") != "[]" || sourceField(t, index, "L").Type() != "BinaryOp" || sourceField(t, index, "R").Type() != "BinaryOp" {
 			t.Fatal("index structure lost")
+		}
+		lambda := sourceField(t, sourceField(t, defs[7], "Action"), "Args").Children[1]
+		if access := sourceField(t, lambda, "Body"); access.Type() != "CaptureAccess" || sourceField(t, access, "Capture").Type() != "CaptureRef" {
+			t.Fatal("capture access structure lost")
 		}
 	}
 }
