@@ -29,6 +29,9 @@ var documentSource string
 //go:embed genrt/stream.go
 var streamSource string
 
+//go:embed genrt/fieldcheck.go
+var fieldCheckSource string
+
 //go:embed genrt/trace.go
 var generatedTraceSource string
 
@@ -334,6 +337,14 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		out.WriteString(typed)
 		out.WriteString("\n")
 	}
+	if len(gen.fieldTypes) > 0 {
+		checks := strings.TrimPrefix(fieldCheckSource, "package genrt\n")
+		if !opts.Types {
+			checks = fieldCheckTypedRegion.ReplaceAllString(checks, "")
+		}
+		out.WriteString("\n// --- Constructed field checks ---\n")
+		out.WriteString(fieldCheckMarker.ReplaceAllString(checks, ""))
+	}
 	out.WriteString(gen.vars.String())
 	out.WriteString("\nfunc init() {\n")
 	out.WriteString(gen.init.String())
@@ -350,6 +361,86 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		return specializeOrdinaryMethods(src, gen.methods.String())
 	}
 	return src, nil
+}
+
+var fieldCheckTypedRegion = regexp.MustCompile(`(?ms)^// fieldcheck:typed:begin\n.*?^// fieldcheck:typed:end\n`)
+var fieldCheckMarker = regexp.MustCompile(`(?m)^// fieldcheck:typed:(begin|end)\n`)
+
+// checkedField wraps the code of a constructed field's value in its run-time check when the
+// value is not statically known to fit the field's declared type (Program.fieldCheckType).
+func (g *generator) checkedField(spec *grammar.StructSpec, typ string, fi *grammar.FieldInit, code string) string {
+	ft := g.prog.fieldCheckType(spec, fi)
+	if ft == nil {
+		return code
+	}
+	v := g.fieldTypeVar(fi, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
+	return fmt.Sprintf("c.checkField(%s, %s, %q, %q)", code, v, fi.Name, typ)
+}
+
+// resultCheck returns the call that checks the value v of rule r, or of its Operators Rule line key,
+// against the rule's declared type, or "" if the value needs no check (Program.resultCheckType).
+func (g *generator) resultCheck(r *rule, key any, v string) string {
+	if r.novalue {
+		return ""
+	}
+	ft := g.prog.resultCheckType(key, r.def)
+	if ft == nil {
+		return ""
+	}
+	t := g.fieldTypeVar(key, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
+	if g.table == "trules" {
+		return fmt.Sprintf("p.tcheckResult(%s, %s, %q)", v, t, r.name)
+	}
+	return fmt.Sprintf("p.checkResult(%s, %s, %q)", v, t, r.name)
+}
+
+// resultCheckFunc returns the function that checks the values of rule r, or of its Operators Rule
+// line key (resultCheck), or "" if they need no check.
+func (g *generator) resultCheckFunc(r *rule, key any) string {
+	check := g.resultCheck(r, key, "v")
+	if check == "" {
+		return ""
+	}
+	if g.table == "trules" {
+		return "func(p *tparser, v any) { " + check + " }"
+	}
+	return "func(p *parser, v *Node) { " + check + " }"
+}
+
+// fieldTypeVar returns the variable holding check type ft of key, declaring it with decl the
+// first time.
+func (g *generator) fieldTypeVar(key any, ft ty, decl func(v string, t *fieldType) string) string {
+	v, ok := g.fieldTypes[key]
+	if !ok {
+		if g.fieldTypes == nil {
+			g.fieldTypes = map[any]string{}
+		}
+		v = fmt.Sprintf("fieldType%d", len(g.fieldTypes)+1)
+		g.fieldTypes[key] = v
+		g.fieldTypeKeys = append(g.fieldTypeKeys, key)
+		g.vars.WriteString(decl(v, newFieldType(ft)))
+	}
+	return v
+}
+
+// goFieldType writes a field type as a generated fieldType value.
+func goFieldType(t *fieldType) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "&fieldType{kind: %q, text: %q", rune(t.kind), t.text)
+	if t.name != "" {
+		fmt.Fprintf(&b, ", name: %q", t.name)
+	}
+	if t.elem != nil {
+		b.WriteString(", elem: " + goFieldType(t.elem))
+	}
+	if len(t.alts) > 0 {
+		alts := make([]string, len(t.alts))
+		for i, a := range t.alts {
+			alts[i] = goFieldType(a)
+		}
+		b.WriteString(", alts: []*fieldType{" + strings.Join(alts, ", ") + "}")
+	}
+	return b.String() + "}"
 }
 
 var streamRegion = regexp.MustCompile(`(?ms)^[ \t]*// stream:begin\n.*?^[ \t]*// stream:end\n`)
@@ -445,6 +536,12 @@ type generator struct {
 	streamStart *rule
 	streamBody  bool
 	streamErr   error
+	// fieldTypes names the field type variable of each checked constructed field and result (by
+	// *grammar.FieldInit or checkInfo.results key), numbered separately so that checks do not
+	// rename other generated names (genrt/fieldcheck.go).
+	fieldTypes map[any]string
+	// fieldTypeKeys are the keys of fieldTypes in the order of their variables, for rollback.
+	fieldTypeKeys []any
 }
 
 type generatedMethod struct {
@@ -612,6 +709,9 @@ func (g *generator) rules() {
 			fmt.Fprintf(init, "\t%s[%d].action = func(c *%s) any { return %s }\n", g.table, r.id, g.ctxType(), g.term(r.action, scopes[r], nil))
 			g.proj = nil
 		}
+		if check := g.resultCheckFunc(r, r.def); check != "" {
+			fmt.Fprintf(init, "\t%s[%d].%s = %s\n", g.table, r.id, g.pick("check", "tcheck"), check)
+		}
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
@@ -701,6 +801,9 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 				fmt.Fprintf(m, "\t\tv = p.attachCaptures(v, trules[%d].scope, %s.vals, start, p.pos)\n", r.id, frame)
 			}
 			m.WriteString("\t\tif n := asTval(v); n != nil {\n\t\t\tn.tsetFresh(false)\n\t\t}\n")
+		}
+		if check := g.resultCheck(r, r.def, "v"); check != "" {
+			fmt.Fprintf(m, "\t\t%s\n", check)
 		}
 	}
 	plain := func(name string) {
@@ -1292,14 +1395,14 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	}
 	fmt.Fprintf(&b, "\t\toperands: []*%s{\n", g.pick("operatorsRuleLine", "toperatorsRuleLine"))
 	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "\t\t\t%s,\n", g.operatorsRuleLine(o.Expr, o.Action, false))
+		fmt.Fprintf(&b, "\t\t\t%s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, o))
 	}
 	b.WriteString("\t\t},\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("{id: %d, kind: %q, assoc: %q, level: %d, line: %s}", id, op.Kind, op.Assoc, i+1, g.operatorsRuleLine(op.Expr, op.Action, true))
+			s := fmt.Sprintf("{id: %d, kind: %q, assoc: %q, level: %d, line: %s}", id, op.Kind, op.Assoc, i+1, g.operatorsRuleLine(op.Expr, op.Action, true, op))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -1316,7 +1419,7 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	g.init.WriteString(b.String())
 }
 
-func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool) string {
+func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, key any) string {
 	s := newScope()
 	var locals []string
 	if operator {
@@ -1342,7 +1445,11 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
 		g.final = nil
 	}
-	return fmt.Sprintf("&%s{scope: %s, m: (*%s).%s, action: %s, isSeq: %v}", g.pick("operatorsRuleLine", "toperatorsRuleLine"), goStrings(s.names), g.recv(), m, act, isSeq)
+	check := ""
+	if f := g.resultCheckFunc(g.cur, key); f != "" {
+		check = ", check: " + f
+	}
+	return fmt.Sprintf("&%s{scope: %s, m: (*%s).%s, action: %s, isSeq: %v%s}", g.pick("operatorsRuleLine", "toperatorsRuleLine"), goStrings(s.names), g.recv(), m, act, isSeq, check)
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
@@ -1392,7 +1499,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			for _, given := range t.Fields {
 				v := g.name("f_")
 				vars[given.Name] = v
-				fmt.Fprintf(&b, "%s := %s; ", v, g.term(given.Value, s, locals))
+				fmt.Fprintf(&b, "%s := %s; ", v, g.checkedField(spec, name, given, g.term(given.Value, s, locals)))
 			}
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
 			for _, f := range spec.Fields {
@@ -1407,7 +1514,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		}
 		args := []string{strconv.Quote(name)}
 		for _, f := range t.Fields {
-			args = append(args, strconv.Quote(f.Name), g.term(f.Value, s, locals))
+			args = append(args, strconv.Quote(f.Name), g.checkedField(spec, name, f, g.term(f.Value, s, locals)))
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:

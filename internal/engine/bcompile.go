@@ -62,7 +62,11 @@ func (c *bcompiler) emit(op Op, a, b, cc int32) int {
 func (c *bcompiler) here() int32 { return int32(len(c.m.Code)) }
 
 func (c *bcompiler) eemit(op Op, a, b int32) int {
-	c.m.Exprs = append(c.m.Exprs, Instr{Op: op, A: a, B: b})
+	return c.eemit3(op, a, b, 0)
+}
+
+func (c *bcompiler) eemit3(op Op, a, b, cc int32) int {
+	c.m.Exprs = append(c.m.Exprs, Instr{Op: op, A: a, B: b, C: cc})
 	return len(c.m.Exprs) - 1
 }
 
@@ -118,7 +122,7 @@ func (c *bcompiler) compile() {
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TerminalType: -1, OperatorsRule: -1,
+		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TerminalType: -1, OperatorsRule: -1, Check: -1,
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
 		if r.terminalType != "" {
 			ri.TerminalType = int(c.str(r.terminalType))
@@ -144,6 +148,9 @@ func (c *bcompiler) compile() {
 		ri.Scope = c.strs2(s.names)
 		if r.action != nil {
 			ri.Action = c.expr(r.action, s, nil, true)
+		}
+		if t := c.prog.resultCheckType(r.def, r.def); t != nil && !r.novalue {
+			ri.Check = int(c.str(t.String()))
 		}
 	}
 }
@@ -394,7 +401,7 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 		c.emit(OpEnd, 0, 0, 0)
 	}
 	for _, o := range e.Operands {
-		pi.Operands = append(pi.Operands, c.line(o.Expr, o.Action, nil))
+		pi.Operands = append(pi.Operands, c.line(o.Expr, o.Action, nil, o))
 	}
 	id := 0
 	for i, l := range e.Levels {
@@ -418,7 +425,7 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 			}
 			// Locals of an operator action: 0 $lhs, 1 $rhs, 2 $op
 			locals = []string{"lhs", "rhs", "op"}
-			oi.Line = c.line(op.Expr, op.Action, locals)
+			oi.Line = c.line(op.Expr, op.Action, locals, op)
 			if oi.Kind == opPrefix {
 				pi.Prefix = append(pi.Prefix, oi)
 			} else {
@@ -430,15 +437,18 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 	return len(c.m.OperatorsRules) - 1
 }
 
-func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string) LineInfo {
+func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, key any) LineInfo {
 	s := newScope()
-	li := LineInfo{Entry: int(c.here()), Action: -1}
+	li := LineInfo{Entry: int(c.here()), Action: -1, Check: -1}
 	_, li.IsSeq = e.(*grammar.Seq)
 	c.value(e, s, !c.cur.novalue && !leanLine(action, locals))
 	c.emit(OpEnd, 0, 0, 0)
 	li.Scope = c.strs2(s.names)
 	if action != nil && !c.cur.novalue {
 		li.Action = c.expr(action, s, locals, locals == nil)
+	}
+	if t := c.prog.resultCheckType(key, c.cur.def); t != nil && !c.cur.novalue {
+		li.Check = int(c.str(t.String()))
 	}
 	return li
 }
@@ -544,10 +554,13 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		c.term(t.X, s, locals)
 		c.eemit(EMember, c.str(t.Name), 0)
 	case *grammar.New:
-		name, _ := c.prog.structType(t.Type)
+		name, spec := c.prog.structType(t.Type)
 		names := make([]string, len(t.Fields))
 		for i, f := range t.Fields {
 			c.term(f.Value, s, locals)
+			if ft := c.prog.fieldCheckType(spec, f); ft != nil {
+				c.eemit3(ECheck, c.str(ft.String()), c.str(f.Name), c.str(name))
+			}
 			names[i] = f.Name
 		}
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))

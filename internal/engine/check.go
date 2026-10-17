@@ -27,6 +27,8 @@ type checker struct {
 	rule      *grammar.RuleDef
 	// streams holds the element type of the #stream repetition of each rule that has one.
 	streams map[string]ty
+	// checks holds the values that need a run-time check (typeInfo.checks).
+	checks *checkInfo
 }
 
 func (k *checker) errorf(pos grammar.Pos, format string, args ...any) {
@@ -45,7 +47,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 }
 
 func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
-	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}, streams: map[string]ty{}}
+	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}, streams: map[string]ty{}, checks: &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}}
 
 	// Check references in type definitions.
 	k.report = true
@@ -99,7 +101,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 	// Keep the types for code generation (typedGo).
 	k.report = false
-	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams}
+	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams, checks: k.checks}
 	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {
@@ -121,6 +123,9 @@ type typeInfo struct {
 	fields  map[string][]typedField // the fields of each struct type, in declaration order
 	aliases map[string]ty           // the type each alias stands for
 	streams map[string]ty           // the element type of the #stream repetition of each rule with one
+	// checks holds the declared types that values must be checked against at run time: those
+	// not statically known to fit (Program.fieldCheckType, Program.resultCheckType).
+	checks *checkInfo
 }
 
 // RuleType returns the type of the rule name, declared or inferred, as written in a grammar (for
@@ -505,23 +510,36 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	if declared != nil {
 		if !assignable(t, declared) {
 			k.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
+		} else {
+			k.checkResult(rd, t, declared)
 		}
 		return declared
 	}
 	return t
 }
 
+// checkResult records that the value of type t that a rule or Operators Rule line (key) produces
+// needs a run-time check against declared, the rule's declared type, when t is not known to fit.
+func (k *checker) checkResult(key any, t, declared ty) {
+	if k.report && k.checks != nil && unknownListElement(t, declared) && newFieldType(declared) != nil {
+		k.checks.results[key] = declared
+	}
+}
+
 func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRule, declared ty) ty {
 	self := k.ruleTypes[rd.Name]
 	var ts []ty
+	var keys []any
 	if pr.Skip != nil {
 		k.expr(pr.Skip, &scopeCheck{caps: caps{}})
 	}
 	for _, o := range pr.Operands {
 		ts = append(ts, k.lineType(o.Expr, o.Action, nil, rd.Diagnostic()))
+		keys = append(keys, o)
 	}
 	for _, l := range pr.Levels {
 		for _, op := range l.Operators {
+			keys = append(keys, op)
 			if op.Action == nil {
 				ts = append(ts, tyOperator)
 				k.lineType(op.Expr, nil, nil, op.Diagnostic())
@@ -538,13 +556,18 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 		}
 	}
 	if declared != nil {
-		for _, t := range ts {
+		// Without an action, a rule of a terminal type converts its value, so its lines need no check.
+		n, isNamed := declared.(namedTy)
+		converts := rd.Action == nil && isNamed && n.kind == 't'
+		for i, t := range ts {
 			if !assignable(t, declared) {
 				if t == tyOperator {
 					k.errorf(rd.Diagnostic(), "operators of %s without an action produce Operator, which is not assignable to %s", rd.Name, declared)
 				} else {
 					k.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 				}
+			} else if !converts {
+				k.checkResult(keys[i], t, declared)
 			}
 		}
 		return declared
@@ -709,6 +732,10 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 				ft := k.resolve(f.Type)
 				if !assignable(vt, ft) {
 					k.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
+				} else if k.report && k.checks != nil && unknownListElement(vt, ft) && newFieldType(ft) != nil {
+					// Record only in the checking pass, where rule types are final. A field visited
+					// more than once (as in a lambda) keeps a check any visit needs.
+					k.checks.fields[fi] = ft
 				}
 			}
 		}
@@ -883,7 +910,10 @@ func (k *checker) elemType(fn string, t ty, pos grammar.Pos) ty {
 	case tyError, tyMissing:
 		// Recovery nodes have no children, so they behave as empty lists.
 		return tyNever
-	case tyAny, tyNil, tyNode:
+	case tyNil:
+		// Nil is an empty list.
+		return tyNever
+	case tyAny, tyNode:
 		return tyAny
 	case tyList, tySeq, tyOperator:
 		return optional(tyNode)

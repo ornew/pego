@@ -75,7 +75,7 @@ func (prog *Program) recognizer() (*Program, error) {
 		for i, r := range prog.rules {
 			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
 		}
-		prog.rec, prog.recErr = build(prog.Grammar, Options{recognize: true}, flags)
+		prog.rec, prog.recErr = build(prog.Grammar, Options{recognize: true, checks: prog.checks}, flags)
 		if prog.recErr == nil && prog.recognitionModule != nil {
 			prog.rec.moduleOnce.Do(func() { prog.rec.module = prog.recognitionModule })
 			prog.rec.recognitionStarts = prog.recognitionEntries

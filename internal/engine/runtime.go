@@ -763,7 +763,8 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 	return v, ok
 }
 
-// finish builds the rule's value from the value of the rule body.
+// finish builds the rule's value from the value of the rule body, and checks it against the
+// rule's declared type if needed. A value-free rule and a terminal conversion are never checked.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
@@ -775,7 +776,11 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		} else {
 			items = p.one(v)
 		}
-		return p.runAction(r, f, items, start, p.pos)
+		v = p.runAction(r, f, items, start, p.pos)
+		if r.resultCheck != nil {
+			p.checkResult(r.resultCheck, v, r.name)
+		}
+		return v
 	}
 	if r.terminalType != "" {
 		return p.newNode(Node{kind: r.kinds.term, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
@@ -783,14 +788,14 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
-	if v == nil {
-		return nil
-	}
-	if v.fresh {
+	if v != nil && v.fresh {
 		if v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
+	}
+	if r.resultCheck != nil {
+		p.checkResult(r.resultCheck, v, r.name)
 	}
 	return v
 }

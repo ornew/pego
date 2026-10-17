@@ -508,6 +508,8 @@ interface Rule {
   // vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
   // values at the call, since definitions inside the rule are undone when it returns.
   vars: string[];
+  // check checks the rule's value against its declared type (null if it needs no check).
+  check: ((p: Parser, v: Node | null) => void) | null;
 }
 
 function failBody(): R {
@@ -540,6 +542,7 @@ function mkRule(
     operatorsRule: null,
     novalue,
     vars,
+    check: null,
   };
 }
 
@@ -1781,8 +1784,17 @@ class Parser {
     throw new Fatal(new Error(`nesting too deep: more than ${this.maxDepth} rule calls`));
   }
 
-  // finish makes the rule's value from the value of its body.
+  // finish makes the rule's value from the value of its body, and checks it against the rule's
+  // declared type if needed.
   finish(r: Rule, f: Frame, v: Node | null, start: number): Node | null {
+    v = this.finishValue(r, f, v, start);
+    if (r.check !== null) {
+      r.check(this, v);
+    }
+    return v;
+  }
+
+  finishValue(r: Rule, f: Frame, v: Node | null, start: number): Node | null {
     if (r.novalue) {
       return null;
     }
@@ -2352,6 +2364,14 @@ class Parser {
     if (r.novalue) {
       return null;
     }
+    v = this.lineValue(r, l, f, v, start);
+    if (l.check !== null) {
+      l.check(this, v);
+    }
+    return v;
+  }
+
+  lineValue(r: Rule, l: OperatorsRuleLine, f: Frame, v: Node | null, start: number): Node | null {
     if (l.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
       if (l.isSeq && v !== null) {
@@ -2390,7 +2410,11 @@ class Parser {
     if (l.action !== null) {
       const op = new Node("Match", "", a.start, a.end, this.text(a.start, a.end), noNodes, noFields, false, true);
       const c = this.useCtx(a.frame, start, end, lhs, rhs, op);
-      return c.result(l.action, r.name);
+      const v = c.result(l.action, r.name);
+      if (l.check !== null) {
+        l.check(this, v);
+      }
+      return v;
     }
     let opv = a.v;
     if (l.scope.length > 0) {
@@ -2915,6 +2939,8 @@ interface OperatorsRuleLine {
   m: Matcher;
   action: Action | null;
   isSeq: boolean;
+  // check checks the line's value against the rule's declared type (null if it needs no check).
+  check: ((p: Parser, v: Node | null) => void) | null;
 }
 
 interface OperatorsRuleOp {

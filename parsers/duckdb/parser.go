@@ -329,6 +329,8 @@ type rule struct {
 	action       func(c *actx) any
 	bodyIsSeq    bool
 	terminalType string
+	// check checks the rule's value against its declared type (nil if it needs no check).
+	check func(p *parser, v *Node)
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
 	// could never be reused.
 	memo bool
@@ -1589,8 +1591,17 @@ func (p *parser) tooDeep() {
 	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.maxDepth)})
 }
 
-// finish makes the rule's value from the value of its body.
+// finish makes the rule's value from the value of its body, and checks it against the rule's
+// declared type if needed.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
+	v = p.finishValue(r, f, v, start)
+	if r.check != nil {
+		r.check(p, v)
+	}
+	return v
+}
+
+func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2353,6 +2364,7 @@ type operatorsRuleLine struct {
 	m      matcher
 	action func(*actx) any
 	isSeq  bool
+	check  func(p *parser, v *Node) // checks the line's value against the rule's declared type
 }
 
 type operatorsRuleOp struct {
@@ -2537,6 +2549,14 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 	if r.novalue {
 		return nil
 	}
+	v = p.lineValue(r, l, f, v, start)
+	if l.check != nil {
+		l.check(p, v)
+	}
+	return v
+}
+
+func (p *parser) lineValue(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if l.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		if l.isSeq && v != nil {
@@ -2575,7 +2595,11 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		op := p.newNode(Node{kind: kindMatch, Start: int32(a.start), End: int32(a.end), Text: p.text(a.start, a.end), terminal: true})
 		c := p.useCtx(actx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
 			op: op, lhs: nodeOrNil(lhs), rhs: nodeOrNil(rhs)})
-		return c.result(l.action, r.name)
+		v := c.result(l.action, r.name)
+		if l.check != nil {
+			l.check(p, v)
+		}
+		return v
 	}
 	opv := a.v
 	if len(l.scope) > 0 {
@@ -4379,6 +4403,8 @@ type trule struct {
 	body          func(p *tparser, min int) (any, bool)
 	action        func(c *tctx) any
 	operatorsRule *toperatorsRule
+	// tcheck checks the rule's value against its declared type (nil if it needs no check).
+	tcheck func(p *tparser, v any)
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
@@ -4986,8 +5012,17 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 	return v, ok
 }
 
-// finish makes the rule's value from the value of its body.
+// finish makes the rule's value from the value of its body, and checks it against the rule's
+// declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
+	v = p.finishValue(r, f, v, start)
+	if r.tcheck != nil {
+		r.tcheck(p, v)
+	}
+	return v
+}
+
+func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	if r.novalue {
 		return nil
 	}
@@ -5167,9 +5202,9 @@ func (p *tparser) useCtx(c tctx) *tctx {
 func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 	prev := c.p.where
 	c.p.where = where
-	v := action(c)
+	n = c.finish(action(c))
 	c.p.where = prev
-	return c.finish(v)
+	return n
 }
 
 // finish checks and finishes the value v of an action (see result): a struct the action made
@@ -5622,6 +5657,7 @@ type toperatorsRuleLine struct {
 	m      tmatcher
 	action func(*tctx) any
 	isSeq  bool
+	check  func(p *tparser, v any) // checks the line's value against the rule's declared type
 }
 
 type toperatorsRuleOp struct {
@@ -5797,6 +5833,14 @@ func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, 
 	if r.novalue {
 		return nil
 	}
+	v = p.lineValue(r, l, f, v, start)
+	if l.check != nil {
+		l.check(p, v)
+	}
+	return v
+}
+
+func (p *tparser) lineValue(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if l.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		n := asTval(v)
@@ -5834,7 +5878,11 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 		op := p.newMatch(a.start, a.end, p.text(a.start, a.end), false)
 		c := p.useCtx(tctx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
 			op: op, lhs: tvalOrNil(lhs), rhs: tvalOrNil(rhs)})
-		return c.result(l.action, r.name)
+		v := c.result(l.action, r.name)
+		if l.check != nil {
+			l.check(p, v)
+		}
+		return v
 	}
 	opv := a.v
 	if len(l.scope) > 0 {
@@ -1068729,8 +1068777,8 @@ func (p *tparser) i53() (any, bool) {
 		w = p.where
 		p.where = "op_generic"
 		v = func() any { return k4 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1068802,8 +1068850,8 @@ L8:
 	w = p.where
 	p.where = "op_generic"
 	v = func() any { c.p.stepWork(); return k4 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1072113,8 +1072161,8 @@ func (p *tparser) i66() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1072209,8 +1072257,8 @@ func (p *tparser) i66() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1072291,8 +1072339,8 @@ func (p *tparser) i67() (any, bool) {
 		w = p.where
 		p.where = "name_list_opt_comma"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1072346,8 +1072394,8 @@ L6:
 	w = p.where
 	p.where = "name_list_opt_comma"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1072465,8 +1072513,8 @@ func (p *tparser) i68() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1072561,8 +1072609,8 @@ func (p *tparser) i68() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1084614,8 +1084662,8 @@ func (p *tparser) i94() (any, bool) {
 		w = p.where
 		p.where = "plain_literal"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1084746,8 +1084794,8 @@ L15:
 	w = p.where
 	p.where = "plain_literal"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1084844,8 +1084892,8 @@ func (p *tparser) i95() (any, bool) {
 		w = p.where
 		p.where = "string_literal"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1084921,8 +1084969,8 @@ L5:
 	w = p.where
 	p.where = "string_literal"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1086898,8 +1086946,8 @@ func (p *tparser) i101() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1086994,8 +1087042,8 @@ func (p *tparser) i101() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1088490,8 +1088538,8 @@ func (p *tparser) i107() (any, bool) {
 		w = p.where
 		p.where = "func_expr"
 		v = func() any { return k4 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1088595,8 +1088643,8 @@ L8:
 	w = p.where
 	p.where = "func_expr"
 	v = func() any { c.p.stepWork(); return k4 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1088673,8 +1088721,8 @@ func (p *tparser) i108() (any, bool) {
 		w = p.where
 		p.where = "func_call_plain"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1088730,8 +1088778,8 @@ L5:
 	w = p.where
 	p.where = "func_call_plain"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1090100,8 +1090148,8 @@ func (p *tparser) i116() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1090216,8 +1090264,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1091392,8 +1091440,8 @@ func (p *tparser) i122() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1091476,8 +1091524,8 @@ func (p *tparser) i122() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1091944,8 +1091992,8 @@ func (p *tparser) i125() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1092040,8 +1092088,8 @@ func (p *tparser) i125() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1092122,8 +1092170,8 @@ func (p *tparser) i126() (any, bool) {
 		w = p.where
 		p.where = "expr_list_opt_comma"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1092177,8 +1092225,8 @@ L6:
 	w = p.where
 	p.where = "expr_list_opt_comma"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1094082,8 +1094130,8 @@ func (p *tparser) i136() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1094198,8 +1094246,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1094574,8 +1094622,8 @@ func (p *tparser) i138() (any, bool) {
 		w = p.where
 		p.where = "exclude_paren"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1094637,8 +1094685,8 @@ func (p *tparser) i138() (any, bool) {
 	w = p.where
 	p.where = "exclude_paren"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1094702,8 +1094750,8 @@ func (p *tparser) i139() (any, bool) {
 		w = p.where
 		p.where = "exclude_single"
 		v = func() any { return c.list(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1094745,8 +1094793,8 @@ func (p *tparser) i139() (any, bool) {
 	w = p.where
 	p.where = "exclude_single"
 	v = func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1095345,8 +1095393,8 @@ func (p *tparser) i142() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1095489,8 +1095537,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1095554,8 +1095602,8 @@ func (p *tparser) i143() (any, bool) {
 		w = p.where
 		p.where = "replace_single"
 		v = func() any { return c.list(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1095597,8 +1095645,8 @@ func (p *tparser) i143() (any, bool) {
 	w = p.where
 	p.where = "replace_single"
 	v = func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1096197,8 +1096245,8 @@ func (p *tparser) i146() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1096341,8 +1096389,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1096406,8 +1096454,8 @@ func (p *tparser) i147() (any, bool) {
 		w = p.where
 		p.where = "rename_single"
 		v = func() any { return c.list(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1096449,8 +1096497,8 @@ func (p *tparser) i147() (any, bool) {
 	w = p.where
 	p.where = "rename_single"
 	v = func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1096637,8 +1096685,8 @@ func (p *tparser) i148() (any, bool) {
 		w = p.where
 		p.where = "keyword_primary"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1096804,8 +1096852,8 @@ L22:
 	w = p.where
 	p.where = "keyword_primary"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1106723,8 +1106771,8 @@ func (p *tparser) i181() (any, bool) {
 		w = p.where
 		p.where = "trim_from"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1106766,8 +1106814,8 @@ func (p *tparser) i181() (any, bool) {
 	w = p.where
 	p.where = "trim_from"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1107944,8 +1107992,8 @@ func (p *tparser) i183() (any, bool) {
 				return tmk_TypedLit(c, true, f_2939, f_2942)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1108037,8 +1108085,8 @@ func (p *tparser) i183() (any, bool) {
 			return tmk_TypedLit(c, true, f_2939, f_2942)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1108375,8 +1108423,8 @@ func (p *tparser) i185() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1108471,8 +1108519,8 @@ func (p *tparser) i185() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1109343,8 +1109391,8 @@ func (p *tparser) i189() (any, bool) {
 		w = p.where
 		p.where = "filter_clause"
 		v = func() any { return k5 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1109424,8 +1109472,8 @@ L4:
 	w = p.where
 	p.where = "filter_clause"
 	v = func() any { c.p.stepWork(); return k5 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1110267,8 +1110315,8 @@ func (p *tparser) i192() (any, bool) {
 		w = p.where
 		p.where = "frame_clause"
 		v = func() any { return k4 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1110341,8 +1110389,8 @@ L8:
 	w = p.where
 	p.where = "frame_clause"
 	v = func() any { c.p.stepWork(); return k4 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1113607,8 +1113655,8 @@ func (p *tparser) i201() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1113716,8 +1113764,8 @@ func (p *tparser) i201() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1113828,8 +1113876,8 @@ func (p *tparser) i202() (any, bool) {
 		w = p.where
 		p.where = "typename"
 		v = func() any { return k3 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1113912,8 +1113960,8 @@ L5:
 	w = p.where
 	p.where = "typename"
 	v = func() any { c.p.stepWork(); return k3 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1115412,8 +1115460,8 @@ func (p *tparser) i209() (any, bool) {
 
 			return c.newList(c.listItems("map", func() any { return k1 }()))
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1115486,8 +1115534,8 @@ func (p *tparser) i209() (any, bool) {
 		c.p.stepWork()
 		return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1115584,8 +1115632,8 @@ func (p *tparser) i210() (any, bool) {
 				}()
 			}())
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1115660,8 +1115708,8 @@ func (p *tparser) i210() (any, bool) {
 			}()
 		}())
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1115701,8 +1115749,8 @@ func (p *tparser) s211() (any, bool) {
 
 			return c.list(func() any { return func() any { return tmk_ArrayDim(c, false, nil) }() }())
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1115742,8 +1115790,8 @@ func (p *tparser) s211() (any, bool) {
 		c.p.stepWork()
 		return c.list(func() any { c.p.stepWork(); return func() any { return tmk_ArrayDim(c, false, nil) }() }())
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1115839,8 +1115887,8 @@ func (p *tparser) i212() (any, bool) {
 		w = p.where
 		p.where = "type_mods"
 		v = func() any { return c.concat(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1115906,8 +1115954,8 @@ L6:
 	w = p.where
 	p.where = "type_mods"
 	v = func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1116333,8 +1116381,8 @@ func (p *tparser) i214() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1116429,8 +1116477,8 @@ func (p *tparser) i214() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1121308,8 +1121356,8 @@ func (p *tparser) i231() (any, bool) {
 		w = p.where
 		p.where = "typed_literal"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1121450,8 +1121498,8 @@ L17:
 	w = p.where
 	p.where = "typed_literal"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1121560,8 +1121608,8 @@ func (p *tparser) i232() (any, bool) {
 				return tmk_TypedLit(c, true, f_3006, f_3008)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1121648,8 +1121696,8 @@ L6:
 			return tmk_TypedLit(c, true, f_3006, f_3008)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1121889,8 +1121937,8 @@ func (p *tparser) i234() (any, bool) {
 				return tmk_TypedLit(c, true, f_3011, f_3013)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1121983,8 +1122031,8 @@ L3:
 			return tmk_TypedLit(c, true, f_3011, f_3013)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1129580,8 +1129628,8 @@ func (p *tparser) i259() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1129696,8 +1129744,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1130597,8 +1130645,8 @@ func (p *tparser) i264() (any, bool) {
 		w = p.where
 		p.where = "into_clause"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1130640,8 +1130688,8 @@ func (p *tparser) i264() (any, bool) {
 	w = p.where
 	p.where = "into_clause"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1132579,8 +1132627,8 @@ func (p *tparser) i273() (any, bool) {
 		w = p.where
 		p.where = "group_expr"
 		v = func() any { return k13 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1132678,8 +1132726,8 @@ L3:
 	w = p.where
 	p.where = "group_expr"
 	v = func() any { c.p.stepWork(); return k13 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1133504,8 +1133552,8 @@ func (p *tparser) i278() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1133620,8 +1133668,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1133747,8 +1133795,8 @@ func (p *tparser) i279() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1133851,8 +1133899,8 @@ func (p *tparser) i279() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1136037,8 +1136085,8 @@ func (p *tparser) i289() (any, bool) {
 		w = p.where
 		p.where = "bracketed_names"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1136092,8 +1136140,8 @@ func (p *tparser) i289() (any, bool) {
 	w = p.where
 	p.where = "bracketed_names"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1136224,8 +1136272,8 @@ func (p *tparser) i290() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1136340,8 +1136388,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1141457,8 +1141505,8 @@ func (p *tparser) i310() (any, bool) {
 		w = p.where
 		p.where = "fetch_signed"
 		v = func() any { return k10 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1141536,8 +1141584,8 @@ L3:
 	w = p.where
 	p.where = "fetch_signed"
 	v = func() any { c.p.stepWork(); return k10 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1142277,8 +1142325,8 @@ func (p *tparser) i314() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1142361,8 +1142409,8 @@ func (p *tparser) i314() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1143437,8 +1143485,8 @@ func (p *tparser) i318() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1143533,8 +1143581,8 @@ func (p *tparser) i318() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1143612,8 +1143660,8 @@ func (p *tparser) i319() (any, bool) {
 		w = p.where
 		p.where = "sample_clause"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1143663,8 +1143711,8 @@ func (p *tparser) i319() (any, bool) {
 	w = p.where
 	p.where = "sample_clause"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1143734,8 +1143782,8 @@ func (p *tparser) i320() (any, bool) {
 		w = p.where
 		p.where = "tablesample_clause"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1143777,8 +1143825,8 @@ func (p *tparser) i320() (any, bool) {
 	w = p.where
 	p.where = "tablesample_clause"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1145530,8 +1145578,8 @@ func (p *tparser) i327() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1145626,8 +1145674,8 @@ func (p *tparser) i327() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1145764,8 +1145812,8 @@ func (p *tparser) i328() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1145880,8 +1145928,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1147899,8 +1147947,8 @@ func (p *tparser) i331() (any, bool) {
 		w = p.where
 		p.where = "join_qual_on"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1147942,8 +1147990,8 @@ func (p *tparser) i331() (any, bool) {
 	w = p.where
 	p.where = "join_qual_on"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1148033,8 +1148081,8 @@ func (p *tparser) i332() (any, bool) {
 		w = p.where
 		p.where = "join_qual_using"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1148096,8 +1148144,8 @@ func (p *tparser) i332() (any, bool) {
 	w = p.where
 	p.where = "join_qual_using"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1148584,8 +1148632,8 @@ func (p *tparser) i335() (any, bool) {
 		w = p.where
 		p.where = "unpivot_single"
 		v = func() any { return c.list(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1148618,8 +1148666,8 @@ func (p *tparser) i335() (any, bool) {
 	w = p.where
 	p.where = "unpivot_single"
 	v = func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1148721,8 +1148769,8 @@ func (p *tparser) i336() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1148805,8 +1148853,8 @@ func (p *tparser) i336() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1149097,8 +1149145,8 @@ func (p *tparser) i338() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1149181,8 +1149229,8 @@ func (p *tparser) i338() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1149681,8 +1149729,8 @@ func (p *tparser) i341() (any, bool) {
 		w = p.where
 		p.where = "pivot_header_list"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1149736,8 +1149784,8 @@ func (p *tparser) i341() (any, bool) {
 	w = p.where
 	p.where = "pivot_header_list"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1149793,8 +1149841,8 @@ func (p *tparser) i342() (any, bool) {
 		w = p.where
 		p.where = "pivot_header_single"
 		v = func() any { return c.list(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1149827,8 +1149875,8 @@ func (p *tparser) i342() (any, bool) {
 	w = p.where
 	p.where = "pivot_header_single"
 	v = func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1149959,8 +1150007,8 @@ func (p *tparser) i343() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1150075,8 +1150123,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1150525,8 +1150573,8 @@ func (p *tparser) i345() (any, bool) {
 		w = p.where
 		p.where = "alias_prefix"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1150568,8 +1150616,8 @@ func (p *tparser) i345() (any, bool) {
 	w = p.where
 	p.where = "alias_prefix"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1157153,8 +1157201,8 @@ func (p *tparser) i366() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1157249,8 +1157297,8 @@ func (p *tparser) i366() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1157571,8 +1157619,8 @@ func (p *tparser) i368() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1157667,8 +1157715,8 @@ func (p *tparser) i368() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1158728,8 +1158776,8 @@ func (p *tparser) i370() (any, bool) {
 		w = p.where
 		p.where = "insert_columns"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1158783,8 +1158831,8 @@ func (p *tparser) i370() (any, bool) {
 	w = p.where
 	p.where = "insert_columns"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1158896,8 +1158944,8 @@ func (p *tparser) i371() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1158992,8 +1159040,8 @@ func (p *tparser) i371() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1160112,8 +1160160,8 @@ func (p *tparser) i375() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1160208,8 +1160256,8 @@ func (p *tparser) i375() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1160700,8 +1160748,8 @@ func (p *tparser) i377() (any, bool) {
 				return tmk_IndexElem(c, true, f_3225, f_3227, f_3228, f_3229, f_3230)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1160867,8 +1160915,8 @@ L29:
 			return tmk_IndexElem(c, true, f_3225, f_3227, f_3228, f_3229, f_3230)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1161699,8 +1161747,8 @@ func (p *tparser) i380() (any, bool) {
 		w = p.where
 		p.where = "opt_class"
 		v = func() any { return k13 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1161796,8 +1161844,8 @@ L3:
 	w = p.where
 	p.where = "opt_class"
 	v = func() any { c.p.stepWork(); return k13 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1161934,8 +1161982,8 @@ func (p *tparser) i381() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1162050,8 +1162098,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1167666,8 +1167714,8 @@ func (p *tparser) i399() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1167762,8 +1167810,8 @@ func (p *tparser) i399() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1170595,8 +1170643,8 @@ func (p *tparser) i409() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1170711,8 +1170759,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1171647,8 +1171695,8 @@ func (p *tparser) i413() (any, bool) {
 		w = p.where
 		p.where = "with_reloptions"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1171710,8 +1171758,8 @@ func (p *tparser) i413() (any, bool) {
 	w = p.where
 	p.where = "with_reloptions"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1171796,8 +1171844,8 @@ func (p *tparser) s414() (any, bool) {
 		w = p.where
 		p.where = "with_oids"
 		v = func() any { return c.list() }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1171883,8 +1171931,8 @@ L3:
 	w = p.where
 	p.where = "with_oids"
 	v = func() any { c.p.stepWork(); return c.list() }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1172481,8 +1172529,8 @@ func (p *tparser) i416() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1172577,8 +1172625,8 @@ func (p *tparser) i416() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1172923,8 +1172971,8 @@ func (p *tparser) i418() (any, bool) {
 				return tmk_Reloption(c, true, f_3306, nil, f_3308)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1173031,8 +1173079,8 @@ L10:
 			return tmk_Reloption(c, true, f_3306, nil, f_3308)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1174243,8 +1174291,8 @@ func (p *tparser) i423() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1174339,8 +1174387,8 @@ func (p *tparser) i423() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1174594,8 +1174642,8 @@ func (p *tparser) i425() (any, bool) {
 		w = p.where
 		p.where = "definition"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1174649,8 +1174697,8 @@ func (p *tparser) i425() (any, bool) {
 	w = p.where
 	p.where = "definition"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1174720,8 +1174768,8 @@ func (p *tparser) i426() (any, bool) {
 		w = p.where
 		p.where = "opt_definition"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1174763,8 +1174811,8 @@ func (p *tparser) i426() (any, bool) {
 	w = p.where
 	p.where = "opt_definition"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1177101,8 +1177149,8 @@ func (p *tparser) i436() (any, bool) {
 		w = p.where
 		p.where = "constraint_name"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1177144,8 +1177192,8 @@ func (p *tparser) i436() (any, bool) {
 	w = p.where
 	p.where = "constraint_name"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1180612,8 +1180660,8 @@ func (p *tparser) i451() (any, bool) {
 		w = p.where
 		p.where = "column_list_opt_comma"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1180667,8 +1180715,8 @@ L6:
 	w = p.where
 	p.where = "column_list_opt_comma"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1182466,8 +1182514,8 @@ func (p *tparser) i457() (any, bool) {
 
 			return c.newList(c.listItems("map", func() any { return k1 }()))
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	}
@@ -1182533,8 +1182581,8 @@ func (p *tparser) i457() (any, bool) {
 		c.p.stepWork()
 		return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 }
@@ -1188746,8 +1188794,8 @@ func (p *tparser) i475() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1188830,8 +1188878,8 @@ func (p *tparser) i475() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1191479,8 +1191527,8 @@ func (p *tparser) i484() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1191575,8 +1191623,8 @@ func (p *tparser) i484() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1192279,8 +1192327,8 @@ func (p *tparser) i487() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1192375,8 +1192423,8 @@ func (p *tparser) i487() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1192740,8 +1192788,8 @@ func (p *tparser) i490() (any, bool) {
 		w = p.where
 		p.where = "macro_table_one_end"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1192791,8 +1192839,8 @@ L5:
 	w = p.where
 	p.where = "macro_table_one_end"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1192885,8 +1192933,8 @@ func (p *tparser) i491() (any, bool) {
 				}()
 			}())
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1192958,8 +1193006,8 @@ func (p *tparser) i491() (any, bool) {
 			}()
 		}())
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1193071,8 +1193119,8 @@ func (p *tparser) i492() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1193167,8 +1193215,8 @@ func (p *tparser) i492() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1193427,8 +1193475,8 @@ func (p *tparser) i494() (any, bool) {
 		w = p.where
 		p.where = "param_list"
 		v = func() any { return c.concat(func() any { return k1 }()) }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1193494,8 +1193542,8 @@ L6:
 	w = p.where
 	p.where = "param_list"
 	v = func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1193626,8 +1193674,8 @@ func (p *tparser) i495() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1193742,8 +1193790,8 @@ L16:
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1194772,8 +1194820,8 @@ func (p *tparser) i498() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1194868,8 +1194916,8 @@ func (p *tparser) i498() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1196299,8 +1196347,8 @@ func (p *tparser) i503() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1196395,8 +1196443,8 @@ func (p *tparser) i503() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1196458,8 +1196506,8 @@ func (p *tparser) i504() (any, bool) {
 		w = p.where
 		p.where = "qualified_column"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1196492,8 +1196540,8 @@ func (p *tparser) i504() (any, bool) {
 	w = p.where
 	p.where = "qualified_column"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1199283,8 +1199331,8 @@ func (p *tparser) i513() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1199379,8 +1199427,8 @@ func (p *tparser) i513() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1202207,8 +1202255,8 @@ func (p *tparser) i526() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1202291,8 +1202339,8 @@ func (p *tparser) i526() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1202707,8 +1202755,8 @@ func (p *tparser) i528() (any, bool) {
 		w = p.where
 		p.where = "io_set"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1202750,8 +1202798,8 @@ func (p *tparser) i528() (any, bool) {
 	w = p.where
 	p.where = "io_set"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1205288,8 +1205336,8 @@ func (p *tparser) i541() (any, bool) {
 		w = p.where
 		p.where = "alter_generic_options"
 		v = func() any { return k1 }()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1205331,8 +1205379,8 @@ func (p *tparser) i541() (any, bool) {
 	w = p.where
 	p.where = "alter_generic_options"
 	v = func() any { c.p.stepWork(); return k1 }()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1205470,8 +1205518,8 @@ func (p *tparser) i542() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1205586,8 +1205634,8 @@ func (p *tparser) i542() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1208668,8 +1208716,8 @@ func (p *tparser) i553() (any, bool) {
 				return tmk_RenameStmt(c, true, f_3575, nil, f_3576, nil, nil, f_3578)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1208770,8 +1208818,8 @@ func (p *tparser) i553() (any, bool) {
 			return tmk_RenameStmt(c, true, f_3575, nil, f_3576, nil, nil, f_3578)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1211930,8 +1211978,8 @@ func (p *tparser) i562() (any, bool) {
 				return tmk_DropStmt(c, true, f_3605, f_3606, f_3607, f_3609, f_3610)
 			}()
 		}()
-		p.where = w
 		p.dropCreated(c.cbase)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1212134,8 +1212182,8 @@ L31:
 			return tmk_DropStmt(c, true, f_3605, f_3606, f_3607, f_3609, f_3610)
 		}()
 	}()
-	p.where = w
 	p.dropCreated(c.cbase)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1213243,8 +1213291,8 @@ func (p *tparser) i565() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1213339,8 +1213387,8 @@ func (p *tparser) i565() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1213480,8 +1213528,8 @@ func (p *tparser) i566() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1213604,8 +1213652,8 @@ func (p *tparser) i566() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1217061,8 +1217109,8 @@ func (p *tparser) i575() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1217177,8 +1217225,8 @@ func (p *tparser) i575() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1229405,8 +1229453,8 @@ func (p *tparser) i623() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1229501,8 +1229549,8 @@ func (p *tparser) i623() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1232725,8 +1232773,8 @@ func (p *tparser) i629() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1232821,8 +1232869,8 @@ func (p *tparser) i629() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1235577,8 +1235625,8 @@ func (p *tparser) i639() (any, bool) {
 				return c.endList(b)
 			}()
 		}()
-		p.where = w
 		v = c.finish(v)
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1235673,8 +1235721,8 @@ func (p *tparser) i639() (any, bool) {
 			return c.endList(b)
 		}()
 	}()
-	p.where = w
 	v = c.finish(v)
+	p.where = w
 	p.depth--
 	return v, true
 fail:

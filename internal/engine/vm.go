@@ -49,6 +49,10 @@ type vmProgram struct {
 	descs    []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
 	// runSites holds, at the index of each REPEAT that a Document can resume, how to resume it.
 	runSites []*vmRunSite
+	// fieldTypes holds the type of each ECHECK and result check, by the string index of its text
+	// (nil when the module has none); typeNames are the module's type names it resolves.
+	fieldTypes []*fieldType
+	typeNames  map[string]bool
 }
 
 // vmRunSite is a repetition that a Document can resume (resume.go): the REPEAT at ip, whose ITER
@@ -122,6 +126,11 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	for _, fl := range m.FieldLists {
 		vm.fields = append(vm.fields, vm.names(fl))
 	}
+	for _, in := range m.Exprs {
+		if in.Op == ECheck {
+			vm.checkType(int(in.A))
+		}
+	}
 	for i := range m.Rules {
 		ri := &m.Rules[i]
 		r := &rule{
@@ -134,6 +143,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		r.kinds = newRuleKinds(r.name, r.terminalType)
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
+		}
+		if ri.Check >= 0 && !r.novalue {
+			r.resultCheck = vm.checkType(ri.Check)
 		}
 		vm.rules = append(vm.rules, r)
 		if _, twin := vm.byName[r.name]; !twin { // value-free twins follow the original rules
@@ -211,7 +223,41 @@ func (vm *vmProgram) line(l *LineInfo, operator bool) *operatorsRuleLine {
 	if l.Action >= 0 {
 		pl.act = vm.evaluator(l.Action, operator)
 	}
+	if l.Check >= 0 {
+		pl.check = vm.checkType(l.Check)
+	}
 	return pl
+}
+
+// checkType returns the check type whose text is string i of the module.
+func (vm *vmProgram) checkType(i int) *fieldType {
+	if vm.fieldTypes == nil {
+		vm.fieldTypes, vm.typeNames = make([]*fieldType, len(vm.m.Strings)), moduleTypeNames(vm.m)
+	}
+	if vm.fieldTypes[i] == nil {
+		// Loading validated the text. A module built in memory with an invalid one gets a type
+		// that no value fits.
+		t, err := parseFieldType(vm.m.Strings[i], vm.typeNames)
+		if err != nil {
+			t = &fieldType{kind: ftUnion, text: vm.m.Strings[i]}
+		}
+		vm.fieldTypes[i] = t
+	}
+	return vm.fieldTypes[i]
+}
+
+// checkField runs ECHECK at ip on the value v, and returns v if it fits.
+//
+//go:noinline
+func (vm *vmProgram) checkField(p *parser, v any, ip int) (any, error) {
+	in := &vm.m.Exprs[ip]
+	if t := vm.fieldTypes[in.A]; t == nil || !p.fieldConforms(t, v) {
+		if t == nil {
+			t = &fieldType{text: vm.m.Strings[in.A]}
+		}
+		return nil, p.fieldTypeError(v, t, vm.m.Strings[in.B], vm.m.Strings[in.C])
+	}
+	return v, nil
 }
 
 func (vm *vmProgram) operatorsRule(pi *OperatorsRuleInfo) *operatorsRule {
@@ -1000,8 +1046,15 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
-		case ETerminal:
-			v, err := ctx.newTerminal(m.Strings[in.A], pop())
+		case ETerminal, ECheck:
+			// ECHECK shares the case: a case of its own slows down the whole loop.
+			var v any
+			var err error
+			if in.Op == ECheck {
+				v, err = vm.checkField(p, pop(), ip)
+			} else {
+				v, err = ctx.newTerminal(m.Strings[in.A], pop())
+			}
 			if err != nil {
 				return nil, err
 			}

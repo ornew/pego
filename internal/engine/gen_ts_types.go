@@ -38,6 +38,11 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	if g.observability {
 		used["WeakMap"], used["globalThis"] = true, true
 	}
+	if len(g.fieldTypes) > 0 {
+		for _, m := range tsDeclaration.FindAllStringSubmatch(g.fieldCheckSource(), -1) {
+			used[m[1]] = true
+		}
+	}
 	for name := range g.prog.types {
 		t.all = append(t.all, name)
 	}

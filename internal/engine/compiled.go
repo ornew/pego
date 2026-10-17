@@ -35,9 +35,9 @@ const (
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
 	// version 5 ETERMINAL for terminals with supplied text, version 6
-	// the filter builtin appended to the ECALL table, and version 8
-	// diagnostic-label mode for LABEL. Version 7 is reserved.
-	isaVersion = 8
+	// the filter builtin appended to the ECALL table, version 8
+	// diagnostic-label mode for LABEL, and version 9 ECHECK. Version 7 is reserved.
+	isaVersion = 9
 	maxDepth   = 10000
 )
 
@@ -209,7 +209,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.bool(withAST)
 	if withAST {
-		w.statements(prog, compiledVersion)
+		w.statements(prog, compiledVersion, m.instructionSetVersion() >= 9)
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
@@ -231,8 +231,10 @@ func (w *encoder) finish(out *bytes.Buffer) {
 }
 
 // statements writes the statements (type and rule definitions) and the static analysis results.
-// Version 1 does not record whether a rule has a value-free twin.
-func (w *encoder) statements(prog *Program, version int) {
+// Version 1 does not record whether a rule has a value-free twin. With checks (instruction set 9),
+// each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
+// checked constructed fields (ruleFieldInits) and of its checked results (ruleResults).
+func (w *encoder) statements(prog *Program, version int, checks bool) {
 	w.uint(len(prog.Grammar.Statements))
 	ri := 0
 	for _, st := range prog.Grammar.Statements {
@@ -255,6 +257,31 @@ func (w *encoder) statements(prog *Program, version int) {
 			}
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
+			if checks {
+				w.checks(prog, st)
+			}
+		}
+	}
+}
+
+// checks writes the run-time checks of the values of rule rd.
+func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
+	var fields, results []int
+	for i, f := range ruleFieldInits(rd) {
+		_, spec := prog.structType(f.new.Type)
+		if prog.fieldCheckType(spec, f.FieldInit) != nil {
+			fields = append(fields, i)
+		}
+	}
+	for i, key := range ruleResults(rd) {
+		if prog.resultCheckType(key, rd) != nil {
+			results = append(results, i)
+		}
+	}
+	for _, list := range [][]int{fields, results} {
+		w.uint(len(list))
+		for _, i := range list {
+			w.uint(i)
 		}
 	}
 }
@@ -638,7 +665,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	r.strings()
 	start := r.str()
 	pkg := r.str()
-	m := r.module()
+	m := r.module(isa)
 	if r.err != nil {
 		return nil, "", r.err
 	}
@@ -658,9 +685,11 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	var prog *Program
 	if r.bool() {
-		g, flags := r.statements(pkg, 2)
+		g, flags, checks := r.statements(pkg, 2, isa >= 9)
 		if r.err == nil {
-			p, err := build(g, opts, flags)
+			o := opts
+			o.checks = checks
+			p, err := build(g, o, flags)
 			if err != nil {
 				return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
 			}
@@ -685,6 +714,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if isa < 6 && m.instructionSetVersion() == 6 {
 		return nil, "", errors.New("invalid compiled grammar: filtering requires instruction set version 6")
 	}
+	if isa < 9 && m.instructionSetVersion() == 9 {
+		return nil, "", errors.New("invalid compiled grammar: type checks require instruction set version 9")
+	}
 	if prog == nil {
 		prog = moduleProgram(m)
 		prog.pkg = pkg
@@ -706,7 +738,7 @@ func (r *decoder) loadV1(opts Options) (*Program, string, error) {
 	r.strings()
 	pkg := r.str()
 	start := r.str()
-	g, flags := r.statements(pkg, 1)
+	g, flags, _ := r.statements(pkg, 1, false)
 	if r.err == nil && r.pos != len(r.data) {
 		r.fail("%d trailing bytes", len(r.data)-r.pos)
 	}
@@ -735,9 +767,13 @@ func (r *decoder) strings() {
 	}
 }
 
-func (r *decoder) statements(pkg string, version int) (*grammar.Grammar, []ruleFlags) {
+func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Grammar, []ruleFlags, *checkInfo) {
 	g := &grammar.Grammar{Package: pkg}
 	flags := []ruleFlags{}
+	var checks *checkInfo
+	if checked {
+		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}
+	}
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		switch k := r.byte(); k {
@@ -755,12 +791,46 @@ func (r *decoder) statements(pkg string, version int) (*grammar.Grammar, []ruleF
 			flags = append(flags, f)
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
+			if checked {
+				r.checks(rd, checks)
+			}
 			g.Statements = append(g.Statements, rd)
 		default:
 			r.fail("invalid statement kind %d", k)
 		}
 	}
-	return g, flags
+	if checks.empty() {
+		checks = nil
+	}
+	return g, flags, checks
+}
+
+// checks reads the run-time checks of the values of rule rd (see encoder.checks) into ci. Their
+// types are the declared ones, resolved when the program is built.
+func (r *decoder) checks(rd *grammar.RuleDef, ci *checkInfo) {
+	fields := ruleFieldInits(rd)
+	for _, i := range r.checkIndices(rd, len(fields)) {
+		ci.fields[fields[i].FieldInit] = nil
+	}
+	results := ruleResults(rd)
+	for _, i := range r.checkIndices(rd, len(results)) {
+		ci.results[results[i]] = nil
+	}
+}
+
+// checkIndices reads a count and that many increasing indices below n.
+func (r *decoder) checkIndices(rd *grammar.RuleDef, n int) []int {
+	count := r.count()
+	var list []int
+	for j := 0; j < count && r.err == nil; j++ {
+		i := r.uint()
+		if i >= n || len(list) > 0 && i <= list[len(list)-1] {
+			r.fail("invalid check %d of rule %s", i, rd.Name)
+			return nil
+		}
+		list = append(list, i)
+	}
+	return list
 }
 
 func (r *decoder) typeSpec() grammar.TypeSpec {

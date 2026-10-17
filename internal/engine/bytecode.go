@@ -26,8 +26,41 @@ func (m *Module) hasDiagnosticLabels() bool {
 	return false
 }
 
+// hasTypeChecks reports whether the module checks values against declared types at run time,
+// which needs instruction set version 9.
+func (m *Module) hasTypeChecks() bool {
+	for _, in := range m.Exprs {
+		if in.Op == ECheck {
+			return true
+		}
+	}
+	for _, r := range m.Rules {
+		if r.Check >= 0 {
+			return true
+		}
+	}
+	for _, p := range m.OperatorsRules {
+		for _, l := range p.Operands {
+			if l.Check >= 0 {
+				return true
+			}
+		}
+		for _, ops := range [][]OpInfo{p.Prefix, p.Led} {
+			for _, o := range ops {
+				if o.Line.Check >= 0 {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	if m.hasTypeChecks() {
+		return 9
+	}
 	if m.hasDiagnosticLabels() {
 		return 8
 	}
@@ -85,6 +118,9 @@ type RuleInfo struct {
 	// Vars are the variables the rule or its callees read (string table indices, sorted by name).
 	// The rule's memo entries are keyed by their values at the call.
 	Vars []int
+	// Check is the declared type (string table index of its text) the rule's value is checked
+	// against at run time, or -1 (instruction set 9).
+	Check int
 }
 
 // OperatorsRuleInfo is an Operators Rule expression table.
@@ -101,6 +137,9 @@ type LineInfo struct {
 	Scope  []int
 	Action int // start of the expression code (-1 if none)
 	IsSeq  bool
+	// Check is the declared type (string table index of its text) the line's value is checked
+	// against at run time, or -1 (instruction set 9).
+	Check int
 }
 
 // OpInfo is an Operators Rule operator.
@@ -291,6 +330,9 @@ const (
 	EListEnd
 	// ETERMINAL t: pop a string and build a terminal of declared type t (ISA 5).
 	ETerminal
+	// ECHECK t, f, s: fail unless the top value fits type t, the declared type of field f of
+	// struct s; the value stays (ISA 9).
+	ECheck
 )
 
 // Built-in function indices
@@ -321,7 +363,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ETerminal: "ETERMINAL",
+	ETerminal: "ETERMINAL", ECheck: "ECHECK",
 }
 
 func (o Op) String() string {

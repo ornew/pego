@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 	"math/rand"
 	"os"
@@ -89,7 +90,7 @@ func marshalV1(prog *Program, start string) []byte {
 	w := &encoder{strs: map[string]int{}}
 	w.str(prog.Grammar.Package)
 	w.str(start)
-	w.statements(prog, 1)
+	w.statements(prog, 1, false)
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(1)
@@ -139,7 +140,7 @@ func TestCompiledErrors(t *testing.T) {
 	version := append([]byte(nil), data...)
 	version[len(compiledMagic)] = 99
 	isa := append([]byte(nil), data...)
-	isa[len(compiledMagic)+1] = 9
+	isa[len(compiledMagic)+1] = isaVersion + 1
 	isa = resum(isa)
 	flipped := append([]byte(nil), data...)
 	flipped[20] ^= 0xff
@@ -151,7 +152,7 @@ func TestCompiledErrors(t *testing.T) {
 		{"not compiled", []byte("rule main = x"), "not a compiled PEGO grammar"},
 		{"too short", []byte(compiledMagic), "too short"},
 		{"version", version, "unsupported compiled grammar version 99"},
-		{"isa version", isa, "unsupported instruction set version 9"},
+		{"isa version", isa, fmt.Sprintf("unsupported instruction set version %d", isaVersion+1)},
 		{"checksum", flipped, "checksum mismatch"},
 		{"truncated", resum(data[:len(data)-10]), "invalid compiled grammar"},
 		{"trailing", resum(append(append([]byte(nil), data[:len(data)-4]...), 0, 0, 0, 0, 0)), "trailing bytes"},
@@ -167,8 +168,9 @@ func TestCompiledErrors(t *testing.T) {
 	}
 }
 
-// TestCompiledEarlierInstructionSet checks that a file of instruction set 1 (which version 2
-// only extends) still loads and runs, and that a file of a later version does not load.
+// TestCompiledEarlierInstructionSet checks that a file of instruction set 1 (which versions up to
+// 8 only extend) still loads and runs, and that a file of a later version does not load. Version 9
+// adds check records to the AST, so a file of an earlier version is not one of version 9.
 func TestCompiledEarlierInstructionSet(t *testing.T) {
 	src := `rule main = n:[0-9]+ #atomic => $n`
 	data, err := compile(t, src).MarshalBinary("main")
@@ -179,7 +181,7 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 		b = append([]byte(nil), b[:len(b)-4]...)
 		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	}
-	for _, isa := range []byte{1, isaVersion, isaVersion + 1} {
+	for _, isa := range []byte{1, 8, isaVersion + 1} {
 		d := append([]byte(nil), data...)
 		d[len(compiledMagic)+1] = isa
 		prog, _, err := LoadProgram(resum(d), Options{})

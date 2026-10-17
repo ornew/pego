@@ -50,6 +50,10 @@ have the following types.
 | `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments, which MUST be nodes or `nil` |
 | `concat(l1, l2, ...)` | `[]T`, where `T` is the union of the element types of the arguments |
 
+The list functions treat `nil` as an empty list, which contributes no element
+Type: `concat(nil, l)` has the Type of `concat(l)`, and `filter(nil, f)` is
+assignable to every list Type.
+
 For `[]T{...}`, the checker validates every element against the explicit element
 Type `T`. It reports non-assignable elements and elements whose Type is unknown,
 including unknown values nested in a typed list. An empty literal still has
@@ -60,6 +64,21 @@ Type, it must have exactly one argument, and that argument must be a string.
 The internal compiler option `NoTypeCheck` deliberately bypasses assignability
 checks. It does not add primitive-valued list storage or change the rules for
 checked compilation.
+
+A struct field value whose Type is unknown (`any`, a variable, or a list with
+elements of unknown Type) is not reported. The checker records the field, and
+the constructor checks the value against the declared field Type at run time;
+see [Values and Constructors](actions.md#values-and-constructors). A value whose
+Type is known and assignable needs no run-time check. Without type checking,
+every field not declared `any` is checked at run time.
+
+Likewise, a rule value whose Type is unknown, from an action, a called rule or
+an Operators Rule line, is not reported; the rule checks the value against its
+declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
+Without type checking, every rule value is checked against a declared Type other
+than `any`, except the terminal a rule with a terminal Type and no action
+produces, the lines of such a rule when it is an Operators Rule, and the
+`Operator` value of an operator line without an action.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and

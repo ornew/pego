@@ -71,7 +71,7 @@ func decodeRecognition(data []byte, main *Module) (*Module, []recognitionEntry, 
 		r.fail("unsupported recognition instruction set version %d", isa)
 	}
 	r.strings()
-	m := r.module()
+	m := r.module(isa)
 	n := r.count()
 	entries := make([]recognitionEntry, 0, n)
 	for i := 0; i < n && r.err == nil; i++ {

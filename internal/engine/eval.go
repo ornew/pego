@@ -166,12 +166,18 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		// the names in a buffer filled once no evaluation is pending; newStruct retains neither.
 		p := c.p
 		base := len(p.estack)
-		for _, fi := range t.Fields {
+		checks := p.prog.constructorChecks(t)
+		for i, fi := range t.Fields {
 			p.stepWork()
 			v, err := c.eval(fi.Value)
 			if err != nil {
 				p.estack = p.estack[:base]
 				return nil, err
+			}
+			if checks != nil && checks[i] != nil && !p.fieldConforms(checks[i], v) {
+				p.estack = p.estack[:base]
+				name, _ := p.prog.structType(t.Type)
+				return nil, p.fieldTypeError(v, checks[i], fi.Name, name)
 			}
 			p.estack = append(p.estack, v)
 		}

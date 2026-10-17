@@ -81,6 +81,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
 | Transient | The rule is not memoized in normal parses ([Rule calls](#rule-calls)) |
 | Variables | Names (string table indices, sorted) of the variables read by predicates in the rule or the rules it calls; memo entries are keyed by their values |
+| Check | The type the rule's value is checked against when the rule produces it, as a string-table index of the type text (written like the type of `ECHECK`), or -1 if the value is not checked (see [Types and Errors](actions.md#types-and-errors)). Present only in instruction set 9. A mismatch fails the parse with `cannot use <value type> as <type> in result of rule <name>`. |
 
 **Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`#atomic`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
 
@@ -94,7 +95,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | operand | A list of lines |
 | Prefix operators / infix and postfix operators | Lists of operators (index, kind, associativity, level, line) |
 
-A *line* has the start of its code in the match code (the code pushes one value and ends with `END`), a scope, an action (start in the expression code, or -1), and whether its body is a sequence.
+A *line* has the start of its code in the match code (the code pushes one value and ends with `END`), a scope, an action (start in the expression code, or -1), whether its body is a sequence, and, in instruction set 9, the type its value is checked against when the line produces it (as the rule table's check, with the rule's name in the error), or -1.
 
 Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity is encoded as 0 = left, 1 = right, 2 = none.
 
@@ -279,6 +280,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. *(Instruction set 2.)* |
 | 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. *(Instruction set 2.)* |
 | 124 | `ETERMINAL` | A type | Pop a string and construct a terminal of the declared type with that text and the enclosing action range. A non-string raises an evaluation error. The type is a string-table index naming a terminal in the type table. *(Instruction set 5.)* |
+| 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the type as written in the source after alias resolution (`*Ident`, `[]*(Ident \| Number)`, `int \| string`); B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. *(Instruction set 9.)* |
 
 Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`, `ETERMINAL`) are string-table indices.
 
@@ -306,13 +308,13 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, and 8 when diagnostic labels are used). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, and version 8 diagnostic-label mode for `LABEL`. Version 7 is reserved and rejected. |
+| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, 8 when diagnostic labels are used, and 9 when values are checked at run time). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, version 8 diagnostic-label mode for `LABEL`, and version 9 `ECHECK` (125) and the checks of the rule table and Operators Rule lines. Version 7 is reserved and rejected. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
 | Module | See below |
 | Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices match the main module. |
-| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
+| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin and, in instruction set 9, which of its constructed fields and values are checked at run time). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
 The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.
@@ -321,8 +323,8 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 2. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
 3. Type table: a list of (name, terminal, list of field names).
 4. Field-list table, then scope table: each a list of lists of string indices.
-5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables).
-6. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence); an operator is (index, kind, associativity, level, line).
+5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, and in instruction set 9 check).
+6. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, and in instruction set 9 check); an operator is (index, kind, associativity, level, line).
 7. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
 ### Load-Time Validation
@@ -335,6 +337,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility.
 - The `filter` built-in occupies appended slot 7 and requires instruction-set version 6. A module that uses it with a lower declared version is rejected; modules that do not use it retain their ordinary version selection.
+- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil`, `node` or `terminal`. The checks of rules and lines name type texts that parse the same way. They require instruction-set version 9; a module that uses them with a lower declared version is rejected.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

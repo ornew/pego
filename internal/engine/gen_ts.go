@@ -165,6 +165,9 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 		}
 		out.WriteString(typed)
 	}
+	if len(gen.fieldTypes) > 0 {
+		out.WriteString(gen.fieldCheckSource())
+	}
 	out.WriteString(gen.vars.String())
 	fmt.Fprintf(&out, "\ndescs = %s;\n", tsStrings(gen.descs))
 	fmt.Fprintf(&out, "printRuns = %q;\n\n", tsPrintRuns())
@@ -193,6 +196,129 @@ var tsPrintRuns = sync.OnceValue(func() string {
 	}
 	return b.String()
 })
+
+// fieldCheckSource returns the run-time type checks the parser uses, as genrt/fieldcheck.go
+// declares them: tsFieldCheckSource with checkField and checkResult if called.
+func (g *tsGen) fieldCheckSource() string {
+	src := tsFieldCheckSource
+	for _, f := range []string{"checkField", "checkResult"} {
+		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
+			src += tsCheckSources[f]
+		}
+	}
+	return src
+}
+
+// tsCheckSources are the check functions of fieldCheckSource, by name.
+var tsCheckSources = map[string]string{
+	"checkField": `
+// checkField returns v if it fits t, the type of field field of struct typ, and raises an
+// evaluation error otherwise.
+function checkField(c: Actx, v: Value, t: FieldType, field: string, typ: string): Value {
+  if (!fieldConforms(c.p, t, v)) return evalError(` + "`cannot use ${typeName(v)} as ${t.text} in field ${field} of ${typ}`" + `);
+  return v;
+}
+`,
+	"checkResult": `
+// checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
+// type.
+function checkResult(p: Parser, v: Node | null, t: FieldType, rule: string): void {
+  if (!fieldConforms(p, t, v)) throw new Fatal(new Error(` + "`cannot use ${typeName(v)} as ${t.text} in result of rule ${rule}`" + `));
+}
+`,
+}
+
+// tsFieldCheckSource declares the check types and fieldConforms, which checks constructed field
+// values and rule results, as genrt/fieldcheck.go does.
+const tsFieldCheckSource = `
+// --- Run-time type checks ---
+
+type FieldType = { kind: string; name: string; elem: FieldType | null; alts: readonly FieldType[]; text: string };
+
+// fieldConforms reports whether v is a value of type t, charging a step for each list element
+// it examines. Error nodes stand for any node type, and for an empty list.
+function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
+  switch (t.kind) {
+    case "i":
+      return typeof v === "number" || typeof v === "bigint";
+    case "s":
+      return typeof v === "string";
+    case "b":
+      return typeof v === "boolean";
+    case "z":
+      return v === null || v === undefined;
+    case "o":
+      return v === null || v === undefined || fieldConforms(p, t.elem!, v);
+    case "u":
+      for (const a of t.alts) {
+        if (fieldConforms(p, a, v)) return true;
+      }
+      return false;
+  }
+  if (!(v instanceof Node)) return false;
+  if (v.type === "Error") return true;
+  switch (t.kind) {
+    case "n":
+      return true;
+    case "t":
+      return v.terminal;
+    case "N":
+      return v.type === t.name;
+    case "l":
+      if (v.type !== "List") return false;
+      for (const k of v.children) {
+        p.stepWork();
+        if (!fieldConforms(p, t.elem!, k)) return false;
+      }
+      return true;
+  }
+  return false;
+}
+
+`
+
+// checkedTSField wraps the code of a constructed field's value in its run-time check when the
+// value is not statically known to fit the field's declared type (Program.fieldCheckType).
+func (g *tsGen) checkedTSField(spec *grammar.StructSpec, typ string, fi *grammar.FieldInit, code string) string {
+	ft := g.prog.fieldCheckType(spec, fi)
+	if ft == nil {
+		return code
+	}
+	v := g.fieldTypeVar(fi, ft, tsFieldTypeDecl)
+	return fmt.Sprintf("checkField(c, %s, %s, %s, %s)", code, v, tsString(fi.Name), tsString(typ))
+}
+
+// tsFieldTypeDecl declares the check type variable v.
+func tsFieldTypeDecl(v string, t *fieldType) string {
+	return fmt.Sprintf("const %s: FieldType = %s;\n", v, tsFieldType(t))
+}
+
+// tsResultCheck is resultCheckFunc for TypeScript: the function that checks the values of rule r,
+// or of its Operators Rule line key, or "" if they need no check.
+func (g *tsGen) tsResultCheck(r *rule, key any) string {
+	if r.novalue {
+		return ""
+	}
+	ft := g.prog.resultCheckType(key, r.def)
+	if ft == nil {
+		return ""
+	}
+	v := g.fieldTypeVar(key, ft, tsFieldTypeDecl)
+	return fmt.Sprintf("(p: Parser, v: Node | null): void => checkResult(p, v, %s, %s)", v, tsString(r.name))
+}
+
+// tsFieldType writes a field type as a generated FieldType value.
+func tsFieldType(t *fieldType) string {
+	elem := "null"
+	if t.elem != nil {
+		elem = tsFieldType(t.elem)
+	}
+	alts := make([]string, len(t.alts))
+	for i, a := range t.alts {
+		alts[i] = tsFieldType(a)
+	}
+	return fmt.Sprintf("{ kind: %s, name: %s, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.kind))), tsString(t.name), elem, strings.Join(alts, ", "), tsString(t.text))
+}
 
 // tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
 type tsGen struct {
@@ -420,6 +546,9 @@ func (g *tsGen) rules() {
 			g.proj = g.projections(r)
 			fmt.Fprintf(init, "%s.action = %s;\n", g.ruleVar(r), g.action(r.action, scopes[r], nil))
 			g.proj = nil
+		}
+		if check := g.tsResultCheck(r, r.def); check != "" {
+			fmt.Fprintf(init, "%s.check = %s;\n", g.ruleVar(r), check)
 		}
 	}
 	// The functions of plain rules that are called (all calls are generated by now).
@@ -776,14 +905,14 @@ func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	}
 	b.WriteString("  operands: [\n")
 	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "    %s,\n", g.operatorsRuleLine(o.Expr, o.Action, false))
+		fmt.Fprintf(&b, "    %s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, o))
 	}
 	b.WriteString("  ],\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true))
+			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true, op))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -799,7 +928,7 @@ func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	g.init.WriteString(b.String())
 }
 
-func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool) string {
+func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, key any) string {
 	s := newScope()
 	var locals []string
 	if operator {
@@ -817,7 +946,11 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 		}
 		act = g.action(action, s, locals)
 	}
-	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, isSeq: %v }", tsStrings(s.names), m, act, isSeq)
+	check := "null"
+	if f := g.tsResultCheck(g.cur, key); f != "" {
+		check = f
+	}
+	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, isSeq: %v, check: %s }", tsStrings(s.names), m, act, isSeq, check)
 }
 
 // tsInt returns the TypeScript value of the int v: a number when it is a safe integer, otherwise a
@@ -858,10 +991,10 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), tsString(t.Name))
 	case *grammar.New:
-		name, _ := g.prog.structType(t.Type)
+		name, spec := g.prog.structType(t.Type)
 		args := []string{tsString(name)}
 		for _, f := range t.Fields {
-			args = append(args, tsString(f.Name), g.term(f.Value, s, locals))
+			args = append(args, tsString(f.Name), g.checkedTSField(spec, name, f, g.term(f.Value, s, locals)))
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:

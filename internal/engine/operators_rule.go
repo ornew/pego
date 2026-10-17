@@ -21,6 +21,10 @@ type operatorsRuleLine struct {
 	act   evaluator // action (nil if none)
 	isSeq bool
 	entry int // start of the bytecode (bytecode backend only)
+	// key is the line's *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator, and check
+	// the declared type its value is checked against at run time (nil if none).
+	key   any
+	check *fieldType
 }
 
 type operatorsRuleOp struct {
@@ -46,7 +50,7 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 		if c.an != nil && contains(c.an.leftCalls(o.Expr, nil), r.name) {
 			c.errorf(e.Diagnostic(), "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.name, r.name)
 		}
-		pr.operands = append(pr.operands, c.operatorsRuleLine(o.Expr, o.Action, nil))
+		pr.operands = append(pr.operands, c.operatorsRuleLine(o.Expr, o.Action, nil, o))
 	}
 	id := 0
 	for i, l := range e.Levels {
@@ -66,7 +70,7 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 				c.errorf(op.Diagnostic(), "invalid operator kind %q", op.Kind)
 				continue
 			}
-			line := c.operatorsRuleLine(op.Expr, op.Action, locals)
+			line := c.operatorsRuleLine(op.Expr, op.Action, locals, op)
 			for _, name := range line.scope.names {
 				if name == "lhs" || name == "rhs" || name == "op" {
 					c.errorf(op.Diagnostic(), "capture name %s is reserved in operatorsRule operators", name)
@@ -112,10 +116,10 @@ func leanLine(action grammar.Term, locals []string) bool {
 	return !uses
 }
 
-func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string) *operatorsRuleLine {
+func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string, key any) *operatorsRuleLine {
 	s := newScope()
 	novalue := c.rule.novalue || leanLine(action, locals)
-	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue)}
+	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue), key: key}
 	_, l.isSeq = e.(*grammar.Seq)
 	if action != nil && !c.rule.novalue {
 		l.act = termEvaluator(action)
@@ -310,7 +314,8 @@ func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
 	return nil, false
 }
 
-// lineResult builds the value of an operand line.
+// lineResult builds the value of an operand line, and checks it against the rule's declared type
+// if needed.
 func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int, locals *local) *Node {
 	if r.novalue {
 		return nil
@@ -321,16 +326,20 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 			items = v.Children
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: f, items: items, start: start, end: p.pos, locals: locals, cbase: len(p.created)})
-		return p.actionResult(ctx, l.act, r.name)
-	}
-	if len(l.scope.names) > 0 {
-		v = p.attachCaptures(v, l.scope, f, start, p.pos)
-	}
-	if v != nil && v.fresh {
-		if v.kind.rule == "" {
-			v.kind = r.kinds.named(v.kind, r.name)
+		v = p.actionResult(ctx, l.act, r.name)
+	} else {
+		if len(l.scope.names) > 0 {
+			v = p.attachCaptures(v, l.scope, f, start, p.pos)
 		}
-		v.fresh = false
+		if v != nil && v.fresh {
+			if v.kind.rule == "" {
+				v.kind = r.kinds.named(v.kind, r.name)
+			}
+			v.fresh = false
+		}
+	}
+	if l.check != nil {
+		p.checkResult(l.check, v, r.name)
 	}
 	return v
 }
@@ -363,7 +372,11 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 			locals = &ls[2]
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: a.frame, start: start, end: end, locals: locals, cbase: len(p.created)})
-		return p.actionResult(ctx, l.act, r.name)
+		v := p.actionResult(ctx, l.act, r.name)
+		if l.check != nil {
+			p.checkResult(l.check, v, r.name)
+		}
+		return v
 	}
 	opv := a.v
 	if len(l.scope.names) > 0 {

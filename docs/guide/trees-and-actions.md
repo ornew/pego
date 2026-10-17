@@ -374,6 +374,13 @@ pego: field-type.pego:3:48: cannot use []Match as Match in field Key of Pair
 
 The fix is to make `key` a single token: `rule key =  [a-z]+ #atomic `, or give it a terminal type.
 
+When the checker cannot know a field value's type, for example a rule declared `any` or a variable, the constructor
+checks the value when it runs instead: a mismatch makes the action fail with the same message, prefixed by
+`action in <rule>:`, and makes a predicate fail. A rule's own value is treated the same way: when the checker cannot
+know that a rule produces its declared type, the rule checks its value when it produces it, and a mismatch such as
+`cannot use List as Expr in result of rule term` fails the parse. Values whose types the checker knows are never
+checked again, so giving the rules that feed constructors precise types avoids both kinds of check.
+
 A terminal type is a property of a rule *without* an action: the rule's value is the matched text. If the rule has an
 action, the action's value is the rule's value, and it must already be of that type:
 

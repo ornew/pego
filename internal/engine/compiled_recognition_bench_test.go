@@ -35,7 +35,7 @@ func marshalRecognitionV2(prog *Program, start string, omitAST bool) []byte {
 	withAST := prog.Grammar != nil && !omitAST
 	w.bool(withAST)
 	if withAST {
-		w.statements(prog, 2)
+		w.statements(prog, 2, false)
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)

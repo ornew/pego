@@ -1095,11 +1095,12 @@ type genSnapshot struct {
 	workClasses                    int
 	vars, methods                  string
 	n, descs, literals, methodKeys int
+	fieldTypes                     int
 }
 
 func (g *generator) snapshot() genSnapshot {
 	return genSnapshot{workClasses: len(g.workClassKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
-		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys)}
+		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
@@ -1129,6 +1130,11 @@ func (g *generator) rollback(s genSnapshot) {
 		delete(g.descIDs, x)
 	}
 	g.descs = g.descs[:s.descs]
+	for _, key := range g.fieldTypeKeys[s.fieldTypes:] {
+		delete(g.fieldTypes, key)
+	}
+	clear(g.fieldTypeKeys[s.fieldTypes:])
+	g.fieldTypeKeys = g.fieldTypeKeys[:s.fieldTypes]
 }
 
 // direct is a direct rule's compiled body: the declarations and statements of the method that
@@ -1184,6 +1190,14 @@ func (g *generator) directRule(r *rule) *direct {
 // finish writes what finish does for the rule r with the body's value body and the captures s,
 // leaving the rule's value in v. It reports whether the value uses start and the context c.
 func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
+	start, ctx = d.finishValue(r, s, body)
+	if check := d.g.resultCheck(r, r.def, "v"); check != "" && !d.bad {
+		d.line("%s", check)
+	}
+	return start, ctx
+}
+
+func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 	g := d.g
 	switch {
 	case r.novalue:
@@ -1215,7 +1229,6 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.line("%s = p.where", prevWhere)
 		d.line("p.where = %q", r.name)
 		d.line("v = %s", action)
-		d.line("p.where = %s", d.rd(prevWhere))
 		if _, isNew := r.action.(*grammar.New); isNew {
 			// A struct made with the rule's range (tmk_T with final): what result checks holds.
 			// Structs made inside it are dropped from created, as result does.
@@ -1231,6 +1244,8 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 		} else {
 			d.line("v = c.finish(v)")
 		}
+		// After finish, whose errors (a result that is not a node) also name the rule.
+		d.line("p.where = %s", d.rd(prevWhere))
 		return true, true
 	case r.terminalType != "":
 		d.line("v = trules[%d].term(p, start, p.pos, p.text(start, p.pos))", r.id)

@@ -146,9 +146,32 @@ A dynamically typed `any` argument uses the ordinary runtime string check.
 A mismatch aborts a Value Action; inside a Predicate Action it makes the
 predicate fail and permits the existing backtracking behavior.
 
+A struct field value whose Type the checker does not know, such as a variable,
+a result of type `any`, or a list with elements of unknown Type, is checked
+against the declared field Type when the constructor runs, after the value is
+evaluated:
+
+- `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
+- an optional Type `*T` admits `nil` and the values `T` admits;
+- a union admits the values any of its alternatives admits;
+- a struct, terminal or CST node Type admits only nodes of that Type, `node`
+  admits every node, and `terminal` every terminal;
+- `[]T` admits a `List` whose every element `T` admits;
+- `Error` and `Missing` nodes from error recovery stand for every node Type
+  and, as an empty list, for every list Type.
+
+A mismatch aborts a Value Action with an error such as
+`cannot use Match as Ident in field Name of Decl`; inside a Predicate Action it
+makes the predicate fail. Each examined list element counts as one execution step for
+[work limits](parsing.md#cancellation-and-work-limits). Fields declared `any` and values whose
+Type the checker proved assignable are not checked, so constructors in fully
+typed grammars cost nothing extra.
+
 `NoTypeCheck` deliberately skips assignability checks for typed-list elements
-and terminal arguments. It does not add runtime support for primitive-valued
-lists.
+and terminal arguments, and instead checks every struct field whose declared
+Type is not `any` at run time as described above, and every rule value as
+described in [Types and Errors](#types-and-errors). It does not add runtime
+support for primitive-valued lists.
 
 In the public source AST, parentheses around an action expression are retained
 as `TermGroup{Term}`. The group is semantically transparent: it affects
@@ -311,7 +334,20 @@ for the complete assignability rules and diagnostics.
 
 A Value Action result statically known not to be a node or `nil` is a
 compile-time error. A result whose type is not known until evaluation is also
-checked at runtime. A runtime error while evaluating a Value Action—such as
+checked at runtime.
+
+A rule value whose Type the checker does not know, such as an action result or
+a called rule's value of type `any`, is checked against the rule's declared Type
+when the rule produces it: after its action, or for a rule without an action,
+after its value is labeled. The value of each Operators Rule operand line, and
+of each operator line with an action, is checked when the line produces it.
+The check admits the values a field of that Type admits (see
+[Values and Constructors](#values-and-constructors)), with the same execution
+steps. A mismatch causes the parse to fail with an error such as
+`cannot use List as Expr in result of rule term`, including when the rule was
+called for a predicate's value. A rule declared with a terminal Type and without
+an action converts its value instead, and neither it nor, for an Operators
+Rule, its lines are checked. A runtime error while evaluating a Value Action—such as
 division by zero,
 undefined variable lookup, or access to a concrete node that lacks a field—
 causes the parse to fail. It is not a PEG syntax mismatch and is not backtracked
