@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -119,10 +120,13 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 // typeInfo holds the types found by the type checker, for code generation.
 type typeInfo struct {
-	rules   map[string]ty           // the type of each rule
-	fields  map[string][]typedField // the fields of each struct type, in declaration order
-	aliases map[string]ty           // the type each alias stands for
-	streams map[string]ty           // the element type of the #stream repetition of each rule with one
+	rules map[string]ty // the type of each rule
+	// values holds the type of each rule's value in the value model (Program.valueTypes).
+	values     map[string]ty
+	valuesOnce sync.Once
+	fields     map[string][]typedField // the fields of each struct type, in declaration order
+	aliases    map[string]ty           // the type each alias stands for
+	streams    map[string]ty           // the element type of the #stream repetition of each rule with one
 	// checks holds the declared types that values must be checked against at run time: those
 	// not statically known to fit (Program.fieldCheckType, Program.resultCheckType).
 	checks *checkInfo
