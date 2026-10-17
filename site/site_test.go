@@ -186,13 +186,14 @@ func TestBuild(t *testing.T) {
 	for _, m := range sections {
 		names = append(names, m[1])
 	}
-	if got, want := strings.Join(names, " "), "parse test fmt convert gen compile trace profile explain lint sample edit-fuzz lsp"; got != want {
+	if got, want := strings.Join(names, " "), "parse test fmt fix convert gen compile trace profile explain lint sample edit-fuzz lsp"; got != want {
 		t.Errorf("command sections = %s, want %s", got, want)
 	}
 	for cmd, flags := range map[string][]string{
 		"parse":   {"-g string", "-check", "-stream", "-f string"},
 		"test":    {"-f string", "-format string", "-backend string", "-equivalence", "-update"},
 		"fmt":     {"-w", "-l"},
+		"fix":     {"-w", "-l"},
 		"trace":   {"-g string", "-f string", "-max-depth int", "-rule value", "-failures", "-unit string", "-backend string"},
 		"profile": {"-sort string", "-n int", "-f string"},
 		"explain": {"-n int", "-s string"},
