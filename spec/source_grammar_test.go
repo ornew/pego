@@ -90,6 +90,7 @@ rule args = "x" => Word{"a", "b",}
 rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 rule cast = x:"x" => $x.([]Foo | *Word).len
+type Meet ~ []Foo & *Word | _ & _|_
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -126,6 +127,13 @@ rule cast = x:"x" => $x.([]Foo | *Word).len
 		member := sourceField(t, defs[8], "Action")
 		if cast := sourceField(t, member, "X"); member.Type() != "FieldAccess" || cast.Type() != "Cast" || sourceField(t, cast, "Type").Type() != "UnionType" {
 			t.Fatal("cast structure lost")
+		}
+		// & binds tighter than |; _ is a name and _|_ is one token.
+		meet := sourceField(t, sourceField(t, defs[9], "Spec"), "Type")
+		l, r := sourceField(t, meet, "L"), sourceField(t, meet, "R")
+		if meet.Type() != "UnionType" || l.Type() != "IntersectionType" || r.Type() != "IntersectionType" ||
+			sourceField(t, r, "L").Type() != "TypeRef" || sourceField(t, r, "R").Type() != "Bottom" {
+			t.Fatal("meet structure lost")
 		}
 	}
 }

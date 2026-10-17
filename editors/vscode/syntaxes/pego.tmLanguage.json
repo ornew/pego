@@ -149,6 +149,11 @@
           "include": "#comment"
         },
         {
+          "comment": "the bottom and top types",
+          "match": "_\\|_|\\b_(?![A-Za-z0-9_])",
+          "name": "support.type.builtin.pego"
+        },
+        {
           "match": "\\b(int|string|bool|node|terminal|Match|Seq|List|Operator|Error|Missing)\\b",
           "name": "support.type.builtin.pego"
         },
@@ -163,6 +168,10 @@
         {
           "match": "\\|",
           "name": "keyword.operator.union.pego"
+        },
+        {
+          "match": "&",
+          "name": "keyword.operator.meet.pego"
         },
         {
           "match": "[()]",

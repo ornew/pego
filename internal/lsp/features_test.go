@@ -484,7 +484,7 @@ func TestCompletion(t *testing.T) {
 	c.open(uri, src)
 	end := func(line int) int { return len([]rune(lines[line])) }
 	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num"}
-	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "bool", "int", "node", "string", "terminal"}
+	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "_", "_|_", "bool", "int", "node", "string", "terminal"}
 	sorted := func(xs ...[]string) []string {
 		var out []string
 		for _, x := range xs {

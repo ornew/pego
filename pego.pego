@@ -29,12 +29,13 @@ type TerminalSpec = {}
 type StructSpec = { Fields []FieldSpec; Comments []Comment }
 type FieldSpec ~ Field | Error
 type Field = { Name Ident; Type Type; Comments []Comment }
-type Type ~ TypeRef | TypeGroup | OptionalType | ListType | UnionType
+type Type ~ TypeRef | TypeGroup | OptionalType | ListType | UnionType | IntersectionType | Bottom
 type TypeRef = { Name Ident }
 type TypeGroup = { Type Type }
 type OptionalType = { Type Type }
 type ListType = { Type Type }
 type UnionType = { L Type; R Type }
+type IntersectionType = { L Type; R Type }
 
 type Comment ~ CommentGroup | InlineComment
 type CommentGroup = { Lines []Match }
@@ -200,9 +201,11 @@ rule terminal_spec TerminalSpec = "terminal" !ident_char => TerminalSpec{}
 rule type_alias_spec TypeAliasSpec = "~" -ws t:type_expr => TypeAliasSpec{Type: $t}
 rule type_expr Type = operators {
   skip ws
+  operand bottom
   operand name:ident => TypeRef{Name: $name}
   operand t:type_group => $t
   level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
+  level meet { infix left "&" => IntersectionType{L: $lhs, R: $rhs} }
   level prefix {
     prefix "[]" => ListType{Type: $rhs}
     prefix "*" => OptionalType{Type: $rhs}

@@ -323,7 +323,7 @@ func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
 		recovered     bool
 	}{
 		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", false},
-		"never": {`rule main = main`, "never", false},
+		"never": {`rule main = main`, "_|_", false},
 		"nil-rule-recovery": {`rule leaf = "a" => nil
 rule main = leaf #recover(skip=.+)`, "*Error", true},
 		"never-rule-recovery": {`rule leaf = leaf

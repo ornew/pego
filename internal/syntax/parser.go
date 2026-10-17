@@ -492,15 +492,35 @@ func (p *parser) typeExpr() (sourceResult grammar.TypeExpr) {
 		}
 	}()
 
-	t := p.typeTerm()
+	t := p.typeMeet()
 	if !p.is("|") {
 		return t
 	}
 	u := &grammar.UnionType{Types: []grammar.TypeExpr{t}}
 	for p.accept("|") {
-		u.Types = append(u.Types, p.typeTerm())
+		u.Types = append(u.Types, p.typeMeet())
 	}
 	return u
+}
+
+// typeMeet parses T & U, which binds tighter than |.
+func (p *parser) typeMeet() (sourceResult grammar.TypeExpr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
+	t := p.typeTerm()
+	if !p.is("&") {
+		return t
+	}
+	m := &grammar.IntersectionType{Types: []grammar.TypeExpr{t}}
+	for p.accept("&") {
+		m.Types = append(m.Types, p.typeTerm())
+	}
+	return m
 }
 
 // enter counts one more level of nesting and fails beyond maxNesting. The caller defers
@@ -542,6 +562,9 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		g.OneLine = !p.multiline(open, p.i)
 		p.expect(")")
 		return g
+	case p.is("_|_"):
+		t := p.next()
+		return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	}
 	name := p.ident()
 	return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}

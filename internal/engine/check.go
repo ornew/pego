@@ -67,7 +67,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.Name)
 				}
 				seen[f.Name] = true
-				k.resolve(f.Type)
+				k.resolveLocation(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
 			}
 		case *grammar.AliasSpec:
 			k.resolveNamed(td.Name, td.Diagnostic())
@@ -78,7 +78,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	for _, rd := range rules {
 		control.poll()
 		if rd.Type != nil {
-			t := k.resolve(rd.Type)
+			t := k.resolveLocation(rd.Type, rd.Diagnostic(), "rule "+rd.Name)
 			if !isNodeOrNil(t) {
 				k.errorf(rd.Diagnostic(), "rule %s must produce a node, but its type is %s", rd.Name, t)
 				t = tyAny
@@ -159,17 +159,68 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 	case *grammar.TypeRef:
 		return k.resolveNamed(t.Name, t.Diagnostic())
 	case *grammar.ListType:
-		return listTy{k.resolve(t.Elem)}
+		// A constructor applied to _|_ is _|_.
+		if e := k.resolve(t.Elem); e != tyNever {
+			return listTy{e}
+		}
+		return tyNever
 	case *grammar.OptionalType:
-		return optional(k.resolve(t.Elem))
+		if e := k.resolve(t.Elem); e != tyNever {
+			return optional(e)
+		}
+		return tyNever
 	case *grammar.UnionType:
 		ts := make([]ty, len(t.Types))
 		for i, x := range t.Types {
 			ts[i] = k.resolve(x)
 		}
 		return union(ts...)
+	case *grammar.IntersectionType:
+		m := ty(tyTop) // the meet of no types
+		for _, x := range t.Types {
+			m = meet(m, k.resolve(x))
+		}
+		return m
 	}
 	return tyAny
+}
+
+// resolveLocation resolves the type of a location: a field, a rule, a list element or a cast.
+// No value has the type _|_, so a location of that type is an error.
+func (k *checker) resolveLocation(t grammar.TypeExpr, pos grammar.Pos, what string) ty {
+	r := k.resolve(t)
+	if r == tyNever {
+		k.errorf(pos, "%s has type _|_, which has no values", what)
+		return tyAny
+	}
+	return r
+}
+
+// checkBottomLocations reports the fields and rules of type _|_ when types are not checked
+// otherwise (Options.NoTypeCheck). No value fits them, while the run-time checks treat a type they
+// cannot describe as one every value fits.
+func checkBottomLocations(prog *Program, errs *ErrorList, control *compileControl) {
+	k := &checker{control: control, prog: prog, errs: errs, resolving: map[string]bool{}}
+	located := func(t grammar.TypeExpr, pos grammar.Pos, what string) {
+		k.report = false // other type errors stay unreported, as without this check
+		r := k.resolve(t)
+		k.report = true
+		if r == tyNever {
+			k.errorf(pos, "%s has type _|_, which has no values", what)
+		}
+	}
+	for _, td := range control.types(prog.Grammar) {
+		if spec, ok := td.Spec.(*grammar.StructSpec); ok {
+			for _, f := range spec.Fields {
+				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
+			}
+		}
+	}
+	for _, rd := range control.rules(prog.Grammar) {
+		if rd.Type != nil {
+			located(rd.Type, rd.Diagnostic(), "rule "+rd.Name)
+		}
+	}
 }
 
 // concreteType resolves aliases and normalized singleton unions to their node type.
@@ -292,6 +343,10 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyTerminal
 	case "any":
 		return tyAny
+	case "_":
+		return tyTop
+	case "_|_":
+		return tyNever
 	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
 		return namedTy{name, 'c'}
 	}
@@ -737,6 +792,9 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			}
 			if f := fieldOf(st, fi.Name); f != nil {
 				ft := k.resolve(f.Type)
+				if ft == tyNever {
+					continue // reported with the declaration
+				}
 				if !assignable(vt, ft) {
 					k.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
 				} else if k.report && k.checks != nil && unknownListElement(vt, ft) && newFieldType(ft) != nil {
@@ -754,7 +812,9 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		return k.call(t, env)
 	case *grammar.ListConstructor:
 		elem := k.resolve(t.Elem)
-		if !nodeListElement(elem) {
+		if elem == tyNever {
+			k.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
+		} else if !nodeListElement(elem) {
 			k.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)
 		}
 		for _, item := range t.Items {
@@ -785,7 +845,7 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		k.errorf(grammar.Pos{}, "functions can only be passed to filter, foldl, foldr, or map")
 		return tyAny
 	case *grammar.Cast:
-		x, to := k.term(t.X, env), k.resolve(t.Type)
+		x, to := k.term(t.X, env), k.resolveLocation(t.Type, t.Diagnostic(), "the cast")
 		if !overlaps(x, to) {
 			k.errorf(t.Diagnostic(), "cannot cast %s to %s", x, to)
 		}

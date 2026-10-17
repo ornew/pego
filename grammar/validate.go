@@ -271,6 +271,10 @@ func validate(g *Grammar, control *validationControl) error {
 			for i := len(n.Types) - 1; i >= 0; i-- {
 				push(n.Types[i], "types", i, false)
 			}
+		case *IntersectionType:
+			for i := len(n.Types) - 1; i >= 0; i-- {
+				push(n.Types[i], "types", i, false)
+			}
 		case *Seq:
 			for i := len(n.Items) - 1; i >= 0; i-- {
 				push(n.Items[i], "items", i, false)
@@ -438,6 +442,9 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 	case *TypeDef:
 		field, name = "name", n.Name
 	case *TypeRef:
+		if n.Name == "_" || n.Name == "_|_" {
+			return "", "" // the top and bottom types
+		}
 		field, name = "name", n.Name
 	case *Field:
 		field, name = "name", n.Name

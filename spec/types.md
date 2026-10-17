@@ -19,6 +19,9 @@ offending construct.
 | `terminal` | Any terminal: a `Match` node or a node of a terminal type. |
 | `[]T` | A list of `T`. A list value is a node (a `List` node). |
 | `*T` | A `T` or `nil`. |
+| `T & U` | The values that are both a `T` and a `U` (see [Top, Bottom and Meet](#top-bottom-and-meet)). |
+| `_` | Every value: the top type. |
+| `_\|_` | No value: the bottom type. |
 | `T` | A user-defined type. |
 
 The value of a rule, and the result of an action, MUST be a node (or `nil`);
@@ -26,7 +29,8 @@ The value of a rule, and the result of an action, MUST be a node (or `nil`);
 and in [variables](predicates.md#variables).
 
 A Type Expression is written with the following syntax. `[]` and `*` apply to
-the type that follows, `|` forms a union (see below) and parentheses group.
+the type that follows, `&` forms a meet and binds tighter than `|`, which forms
+a union (see below), and parentheses group.
 
 ```pego
 type Example = {
@@ -51,6 +55,23 @@ wrapper transparently, so grouping does not change type meaning. See
 for source metadata, JSON and formatter behavior. Outside such a
 group, a Type Expression follows the normal hard newline Definition Statement boundary.
 
+### Top, Bottom and Meet
+
+`_` is the top type: every value is a `_`, and `_ | T` is `_`. A value of type
+`_` is assignable only to `_` and to `any`, whose values are checked where they
+reach a typed location; a [cast](actions.md#casts) such as `x.(T)` checks it at
+run time. `_|_` is the bottom type, which has no values:
+`_|_ | T` is `T`, and `[]_|_` and `*_|_` are `_|_`. A struct field, a rule, a
+list element or a cast whose type resolves to `_|_` is an error, also when
+types are otherwise not checked.
+
+`T & U` is the meet of `T` and `U`, the largest type assignable to both: the
+one assignable to the other, `[]V & []W` is `[](V & W)`, and for unions and
+optional types it is the union of the members assignable to a member of the
+other. A meet of unrelated types is `_|_`, so
+`(Match | int) & node` is `Match` while `int & string` is an error where a
+location has that type.
+
 ### Reserved Node Types
 
 The node types that Rule Expressions produce are predefined and can be used
@@ -69,7 +90,8 @@ as types.
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
-the built-in types (`int`, `string`, `bool`, `node`, `terminal`). The names of
+the built-in types (`int`, `string`, `bool`, `node`, `terminal`), and `_` and
+`_|_` name the top and bottom types. The names of
 the reserved node types (`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) MUST NOT
 be defined.
 Each type name MUST be defined at most once, and types and rules have separate
@@ -153,6 +175,7 @@ A value of type `V` is assignable to a location of type `T` (a struct field, the
 declared type of a rule, and so on) if any of the following holds:
 
 - `V` and `T` are the same type.
+- `T` is `_`, or `V` is `_|_`.
 - `V` is a union type and every member of `V` is assignable to `T`.
 - `T` is a union type and `V` is assignable to one of its members.
 - `T` is `*U`, and `V` is `nil`, or `V` is `*W` with `W` assignable to `U`, or
@@ -165,4 +188,5 @@ declared type of a rule, and so on) if any of the following holds:
 - `V` is `Error` (the node produced by error recovery) and `T` is a node type.
 
 A value of type `*T` is not assignable to a location of type `T`, and accessing
-a field of a value that may be `nil` is an error.
+a field of a value that may be `nil` is an error. A value of type `_` is
+assignable only to `_` and `any`.

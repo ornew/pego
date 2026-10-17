@@ -109,6 +109,7 @@ const (
 	kTerminal
 	kTypeDef
 	kRuleDef
+	kIntersection
 )
 
 type encoder struct {
@@ -330,6 +331,12 @@ func (w *encoder) typeExpr(t grammar.TypeExpr) {
 		w.typeExpr(t.Elem)
 	case *grammar.UnionType:
 		w.byte(kUnion)
+		w.uint(len(t.Types))
+		for _, x := range t.Types {
+			w.typeExpr(x)
+		}
+	case *grammar.IntersectionType:
+		w.byte(kIntersection)
 		w.uint(len(t.Types))
 		for _, x := range t.Types {
 			w.typeExpr(x)
@@ -892,6 +899,13 @@ func (r *decoder) typeExpr() grammar.TypeExpr {
 			u.Types = append(u.Types, r.typeExpr())
 		}
 		return u
+	case kIntersection:
+		m := &grammar.IntersectionType{}
+		n := r.count()
+		for i := 0; i < n && r.err == nil; i++ {
+			m.Types = append(m.Types, r.typeExpr())
+		}
+		return m
 	default:
 		r.fail("invalid type %d", k)
 		return &grammar.TypeRef{}

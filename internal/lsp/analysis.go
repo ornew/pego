@@ -466,6 +466,11 @@ func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl
 			control.poll()
 			a.walkTypeControlled(u, control)
 		}
+	case *grammar.IntersectionType:
+		for _, u := range t.Types {
+			control.poll()
+			a.walkTypeControlled(u, control)
+		}
 	}
 }
 

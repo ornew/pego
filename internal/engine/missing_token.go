@@ -208,6 +208,12 @@ func (prog *Program) markMissingRules(control *compileControl) {
 					return true
 				}
 			}
+		case *grammar.IntersectionType:
+			for _, t := range t.Types {
+				if usesMissingType(t) {
+					return true
+				}
+			}
 		}
 		return false
 	}

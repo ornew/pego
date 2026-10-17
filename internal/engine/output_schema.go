@@ -235,6 +235,11 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	return s, nil
 }
 func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
+	if hasMeetOrBottom(t) {
+		// Describe the type it resolves to: _|_ | Match is Match.
+		k := &checker{prog: p, resolving: map[string]bool{}}
+		return schemaInferred(k.resolve(t))
+	}
 	switch t := t.(type) {
 	case *grammar.TypeRef:
 		if _, ok := p.types[t.Name]; ok {
@@ -250,6 +255,8 @@ func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
 			return SchemaShape{Kind: "scalar", Scalar: t.Name}, nil
 		case "any", "node", "terminal":
 			return SchemaShape{Kind: t.Name}, nil
+		case "_":
+			return SchemaShape{Kind: "any"}, nil
 		}
 		return SchemaShape{}, fmt.Errorf("unresolved schema type reference %q", t.Name)
 	case *grammar.ListType:
@@ -274,16 +281,43 @@ func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
 	}
 	return SchemaShape{}, fmt.Errorf("unsupported schema type expression %T", t)
 }
+
+// hasMeetOrBottom reports whether t contains a meet or _|_, which have no syntax of their own in
+// schemas.
+func hasMeetOrBottom(t grammar.TypeExpr) bool {
+	switch t := t.(type) {
+	case *grammar.TypeRef:
+		return t.Name == "_|_"
+	case *grammar.IntersectionType:
+		return true
+	case *grammar.ListType:
+		return hasMeetOrBottom(t.Elem)
+	case *grammar.OptionalType:
+		return hasMeetOrBottom(t.Elem)
+	case *grammar.TypeGroup:
+		return hasMeetOrBottom(t.Type)
+	case *grammar.UnionType:
+		for _, x := range t.Types {
+			if hasMeetOrBottom(x) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func schemaInferred(t ty) (SchemaShape, error) {
 	switch t := t.(type) {
 	case basicTy:
 		switch t {
 		case tyNever:
-			return SchemaShape{}, fmt.Errorf("unresolved inferred schema type %q", t)
+			return SchemaShape{}, fmt.Errorf("type _|_ has no values")
 		case tyInt, tyString, tyBool:
 			return SchemaShape{Kind: "scalar", Scalar: string(t)}, nil
 		case tyAny, tyNil, tyNode, tyTerminal:
 			return SchemaShape{Kind: string(t)}, nil
+		case tyTop:
+			return SchemaShape{Kind: "any"}, nil
 		}
 		return SchemaShape{}, fmt.Errorf("unsupported inferred schema type %q", t)
 	case namedTy:

@@ -152,7 +152,7 @@ func (*TerminalSpec) typeSpec() {}
 // TypeExpr is a reference to a type.
 type TypeExpr interface{ typeExpr() }
 
-// TypeRef is a reference to a type by name.
+// TypeRef is a reference to a type by name. The top type is named _ and the bottom type _|_.
 type TypeRef struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string `json:"name"`
@@ -176,6 +176,12 @@ type UnionType struct {
 	Types      []TypeExpr `json:"types"`
 }
 
+// IntersectionType is the meet T & U of types: the type of the values in all of them.
+type IntersectionType struct {
+	SourceInfo `json:"source,omitempty"`
+	Types      []TypeExpr `json:"types"`
+}
+
 // TypeGroup preserves parentheses and source layout in a type expression.
 // It is transparent to type resolution.
 type TypeGroup struct {
@@ -187,11 +193,12 @@ type TypeGroup struct {
 	OneLine    bool       `json:"-"`
 }
 
-func (*TypeRef) typeExpr()      {}
-func (*ListType) typeExpr()     {}
-func (*OptionalType) typeExpr() {}
-func (*UnionType) typeExpr()    {}
-func (*TypeGroup) typeExpr()    {}
+func (*TypeRef) typeExpr()          {}
+func (*ListType) typeExpr()         {}
+func (*OptionalType) typeExpr()     {}
+func (*UnionType) typeExpr()        {}
+func (*IntersectionType) typeExpr() {}
+func (*TypeGroup) typeExpr()        {}
 
 // --- Parser expressions ---
 

@@ -96,9 +96,11 @@ rule terminal_spec = "terminal" !ident_char
 rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
+    operand bottom
     operand ident
     operand type_group
     level union { infix left "|" }
+    level meet { infix left "&" }
     level prefix {
         prefix "[]"
         prefix "*"

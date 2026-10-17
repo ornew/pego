@@ -954,7 +954,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Cast:
 		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
-		k.resolve(t.Type)
+		k.resolveLocation(t.Type, t.Diagnostic(), "the cast")
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Assign:
 		c.errorf(t.Diagnostic(), "assignment %s = ... is only allowed as a whole predicate", t.Name)

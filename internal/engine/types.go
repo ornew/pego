@@ -13,7 +13,7 @@ type basicTy string
 
 const (
 	tyAny      basicTy = "any"   // type not known statically (compatible with every type)
-	tyNever    basicTy = "never" // no value (the initial value for inference)
+	tyNever    basicTy = "_|_" // no value, and the initial value for inference
 	tyInt      basicTy = "int"
 	tyString   basicTy = "string"
 	tyBool     basicTy = "bool"
@@ -154,6 +154,11 @@ func union(ts ...ty) ty {
 			return tyAny
 		}
 	}
+	for _, a := range alts {
+		if a == tyTop {
+			return tyTop
+		}
+	}
 	// A union containing nil is collapsed into an optional type.
 	hasNil := false
 	var rest []ty
@@ -238,6 +243,40 @@ func overlaps(a, b ty) bool {
 	return false
 }
 
+// meet returns the greatest lower bound a & b: the type of the values of both a and b, or never if
+// they have none in common.
+func meet(a, b ty) ty {
+	switch {
+	case a == tyAny:
+		return b
+	case b == tyAny:
+		return a
+	case assignable(a, b):
+		return a
+	case assignable(b, a):
+		return b
+	}
+	if x, ok := a.(listTy); ok {
+		if y, ok := b.(listTy); ok {
+			if e := meet(x.elem, y.elem); e != tyNever {
+				return listTy{e}
+			}
+			return tyNever
+		}
+	}
+	var common []ty
+	for _, x := range alternatives(a) {
+		for _, y := range alternatives(b) {
+			if assignable(x, y) {
+				common = append(common, x)
+			} else if assignable(y, x) {
+				common = append(common, y)
+			}
+		}
+	}
+	return union(common...)
+}
+
 // alternatives returns the types whose values make up the values of t.
 func alternatives(t ty) []ty {
 	switch t := t.(type) {
@@ -255,8 +294,11 @@ func alternatives(t ty) []ty {
 
 // assignable reports whether a value of type s can be placed where type d is expected.
 func assignable(s, d ty) bool {
-	if s == tyAny || d == tyAny || s == tyNever {
+	if s == tyAny || d == tyAny || s == tyNever || d == tyTop {
 		return true
+	}
+	if s == tyTop {
+		return false
 	}
 	if s.String() == d.String() {
 		return true

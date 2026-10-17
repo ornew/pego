@@ -134,6 +134,10 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			for _, t := range t.Types {
 				typ(t)
 			}
+		case *IntersectionType:
+			for _, t := range t.Types {
+				typ(t)
+			}
 		}
 	}
 	var expr func(e Expr)

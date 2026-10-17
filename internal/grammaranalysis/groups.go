@@ -50,6 +50,22 @@ func ungroupType(t grammar.TypeExpr, poll func()) grammar.TypeExpr {
 			v.Types = children
 			return &v
 		}
+	case *grammar.IntersectionType:
+		var children []grammar.TypeExpr
+		for i, x := range t.Types {
+			child := ungroupType(x, poll)
+			if child != x {
+				if children == nil {
+					children = cloneGroupItems(t.Types, poll)
+				}
+				children[i] = child
+			}
+		}
+		if children != nil {
+			v := *t
+			v.Types = children
+			return &v
+		}
 	}
 	return t
 }

@@ -658,16 +658,31 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		parts := make([]string, len(t.Types))
 		for i, x := range t.Types {
 			pollFormat(control)
-			parts[i] = formatTypeTerm(x, control)
+			if _, ok := x.(*IntersectionType); ok {
+				parts[i] = formatType(x, control) // & binds tighter than |
+			} else {
+				parts[i] = formatTypeTerm(x, control)
+			}
 		}
 		return finishFormat(joinFormatParts(parts, " | ", control), control)
+	case *IntersectionType:
+		parts := make([]string, len(t.Types))
+		for i, x := range t.Types {
+			pollFormat(control)
+			parts[i] = formatType(x, control)
+			if _, ok := x.(*UnionType); ok {
+				parts[i] = "(" + parts[i] + ")"
+			}
+		}
+		return finishFormat(joinFormatParts(parts, " & ", control), control)
 	}
 	return finishFormat("?", control)
 }
 
 func formatTypeTerm(t TypeExpr, control *metadataControl) string {
 	pollFormat(control)
-	if _, ok := t.(*UnionType); ok {
+	switch t.(type) {
+	case *UnionType, *IntersectionType:
 		return "(" + formatType(t, control) + ")"
 	}
 	return formatType(t, control)

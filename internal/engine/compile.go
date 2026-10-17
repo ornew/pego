@@ -490,6 +490,10 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 			prog.checks = ci
 		}
 	case opts.NoTypeCheck && flags == nil:
+		checkBottomLocations(prog, &c.errs, control)
+		if len(c.errs) > 0 {
+			return nil, c.errs
+		}
 		prog.checks = &checkInfo{all: true}
 	}
 	prog.assignResultChecks()

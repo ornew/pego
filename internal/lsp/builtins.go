@@ -18,6 +18,8 @@ var builtinTypes = []builtin{
 	{name: "bool", doc: "A boolean."},
 	{name: "node", doc: "Any node."},
 	{name: "terminal", doc: "Any terminal: a `Match` node or a node of a terminal type."},
+	{name: "_", doc: "The top type: every value. A `_` value needs a cast `x.(T)` to be used as a `T`."},
+	{name: "_|_", doc: "The bottom type: no value. A location of this type is an error."},
 	{name: "Match", doc: "Reserved node type: terminals produced by literals, character classes, `.`, `a #atomic` and `_`."},
 	{name: "Seq", doc: "Reserved node type: values of sequences."},
 	{name: "List", doc: "Reserved node type: values of repetitions."},
