@@ -628,6 +628,10 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 		a.walkTermControlled(t.X, control)
 	case *grammar.VarRef:
 		a.mark(t.Diagnostic(), semVariable, 0)
+	case *grammar.CaptureRef:
+		if t.Param {
+			a.mark(t.Diagnostic(), semParameter, 0)
+		}
 	case *grammar.Assign:
 		a.vars[t.Name] = true
 		a.mark(t.Diagnostic(), semVariable, modDeclaration)

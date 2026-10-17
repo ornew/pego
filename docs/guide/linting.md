@@ -268,7 +268,7 @@ rule all = (x:item)* => nil // the list of the repetition is discarded
 
 The first is the most common: the captures inside the optional group belong to the rule itself, so the outer `v:` is
 not needed. A capture counts as read when the action or a predicate of its scope refers to it (a `map` or `foldl`
-parameter of the same name does not count), or, in a rule without an action, as a field of the rule's value.
+parameter, which is written without `$`, is not a capture), or, in a rule without an action, as a field of the rule's value.
 
 ### `duplicate-capture`
 

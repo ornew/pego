@@ -40,7 +40,7 @@ func TestGeneratedTypedLRActionWorkload(t *testing.T) {
 	}
 	testTypedLRWorkload(t, `type Doc = { Items []Match; N int }
 rule main Doc = e:expr $$ => $e
-rule expr Doc = previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
+rule expr Doc = previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => e.x), N: len($items)}
 `, typedLRActionWorkloadFixture, dir)
 }
 

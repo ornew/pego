@@ -200,7 +200,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 
 	case *grammar.Call:
 		if c.p.prog.projected[t] {
-			// map($x, (e) => $e.f) of a projected repetition: $x holds the values already.
+			// map($x, (e) => e.f) of a projected repetition: $x holds the values already.
 			x, err := c.eval(t.Args[0])
 			if err != nil {
 				return nil, err

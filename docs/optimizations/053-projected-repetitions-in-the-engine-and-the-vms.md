@@ -5,7 +5,7 @@
   a rule's value is never nil when it has a terminal type or its action makes a struct or returns such a capture,
   through `@error` and recursion. The closure backend records the projected `map` calls and its evaluator takes the
   list as it is; the VMs mark the repetition with `NEXT` mode 3 (push the field's slot) and compile the `map` with
-  `(e) => $e` in place of the projection, so they need no other new instruction.
+  `(e) => e` in place of the projection, so they need no other new instruction.
 - With projections in every backend, results produced with them could only be checked against a program without
   them: the corpus tests now compare every backend and the generated parsers with the engine compiled with
   `noProjections`, and fail if the conditions are loosened (a nil field, `$n`).

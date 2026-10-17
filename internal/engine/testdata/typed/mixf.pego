@@ -3,12 +3,12 @@ type Item = { N Name; Kids []Item; Tag *Match; Cnt int; Txt string; Ok bool }
 type Pair = { L Item; R Item }
 type Top ~ Item | Pair
 type Doc = { Tops []Top; Names []Name; Errs []*Error; Depth int }
-rule main Doc = {d := 0} ts:(t:top ";"?)* ns:(-"#" n:name)* $$ => Doc{Tops: map($ts, (x) => $x.t), Names: map($ns, (y) => $y.n), Errs: list(), Depth: len($ts)}
+rule main Doc = {d := 0} ts:(t:top ";"?)* ns:(-"#" n:name)* $$ => Doc{Tops: map($ts, (x) => x.t), Names: map($ns, (y) => y.n), Errs: list(), Depth: len($ts)}
 rule top Top = pair / item
 rule pair Pair = l:item "=" #cut r:item => Pair{L: $l, R: $r}
 rule item Item = item1 / item2 / bad
-rule item1 Item = &n:name nm:name tg:"!"? ks:("(" k:item ")")* {len($nm) < 4} => Item{N: $nm, Kids: map($ks, (z) => $z.k), Tag: $tg, Cnt: len($ks), Txt: text($nm) + "/" + text(list($nm, $tg, $ks)), Ok: $tg == nil}
-rule item2 Item = "<" xs:(x:item)+ ">" => Item{Kids: map($xs, (e) => $e.x), Txt: "grp"}
+rule item1 Item = &n:name nm:name tg:"!"? ks:("(" k:item ")")* {len($nm) < 4} => Item{N: $nm, Kids: map($ks, (z) => z.k), Tag: $tg, Cnt: len($ks), Txt: text($nm) + "/" + text(list($nm, $tg, $ks)), Ok: $tg == nil}
+rule item2 Item = "<" xs:(x:item)+ ">" => Item{Kids: map($xs, (e) => e.x), Txt: "grp"}
 rule bad Item = digits #recover(skip=[0-9]* [a-z])
 rule name Name = [a-c]+
 rule digits Item = d:[0-9]+ #atomic => Item{Txt: text($d), Cnt: len($d)}

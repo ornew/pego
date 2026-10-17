@@ -11,7 +11,7 @@ to a place where parsing can go on, and puts an `Error` node where the setting w
 type Setting = { Key Match; Value Match }
 type File = { Settings []Setting }
 
-rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => $x.s)}
+rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => x.s)}
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
 rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s

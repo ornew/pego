@@ -477,7 +477,7 @@ rule main SourceFile = ("\u{0}" {ctx := 64} / {ctx := 0}) ("\u{1}" {ctx := ctx +
 
 rule sourceFile SourceFile = (
     hashbang? -ws ss:(s:topLevelStatement -ws)* e:endOfFile
-) => SourceFile{Statements: map($ss, (x) => $x.s), EndOfFileToken: $e}
+) => SourceFile{Statements: map($ss, (x) => x.s), EndOfFileToken: $e}
 // When the top level is in the await context (a module, see main), the compiler reparses only the statements
 // that may contain await: not import and export declarations, enums and namespaces, which keep the script's
 // context (their await is an identifier).
@@ -526,7 +526,7 @@ rule declarationKeyword = (
 )
 
 // "=" after a block is an error (parseBlock): {a} = b is not a destructuring assignment.
-rule block Block = "{" -ws ss:(s:statement -ws)* "}" !(-ws "=" ![=>]) => Block{Statements: map($ss, (x) => $x.s)}
+rule block Block = "{" -ws ss:(s:statement -ws)* "}" !(-ws "=" ![=>]) => Block{Statements: map($ss, (x) => x.s)}
 rule emptyStatement EmptyStatement = ";"
 
 // var, let x, using x and await using x without modifiers (isLetDeclaration, isUsingDeclaration, ...)
@@ -603,14 +603,14 @@ rule switchStatement SwitchStatement = (
 ) => SwitchStatement{Expression: $e, CaseBlock: $b}
 rule caseBlock CaseBlock = (
     "{" -ws cs:(c:caseOrDefaultClause -ws)* "}"
-) => CaseBlock{Clauses: map($cs, (x) => $x.c)}
+) => CaseBlock{Clauses: map($cs, (x) => x.c)}
 rule caseOrDefaultClause CaseOrDefaultClause = caseClause / defaultClause
 rule caseClause CaseClause = (
     "case" !idPart -ws e:expressionAllowIn -ws ":" ss:(-ws s:clauseStatement)*
-) => CaseClause{Expression: $e, Statements: map($ss, (x) => $x.s)}
+) => CaseClause{Expression: $e, Statements: map($ss, (x) => x.s)}
 rule defaultClause DefaultClause = (
     "default" !idPart -ws ":" ss:(-ws s:clauseStatement)*
-) => DefaultClause{Statements: map($ss, (x) => $x.s)}
+) => DefaultClause{Statements: map($ss, (x) => x.s)}
 rule clauseStatement Statement = !(("case" / "default") !idPart) s:statement => $s
 
 rule tryStatement TryStatement = (
@@ -692,7 +692,7 @@ rule declarationListKeyword = (("var" / "let" / "const" / "using") !idPart / "aw
 rule variableDeclarations = (
     first:variableDeclaration rest:(-ws "," -ws d:variableDeclaration)*
     (-ws "," !(-ws ([{\[#] / bindingIdentifier)))?
-) => concat(list($first), map($rest, (r) => $r.d))
+) => concat(list($first), map($rest, (r) => r.d))
 // The definite assignment x! is not parsed in a for initializer (where `in` is disallowed).
 rule variableDeclaration VariableDeclaration = (
     (n:bindingIdentifier ({ctx / 4 % 2 == 0} -sp x:exclamationToken)? / n:bindingPattern) ty:typeAnnotation?
@@ -743,7 +743,7 @@ rule asyncModifierScan = (
 rule parameterList = "(" -ws ps:parameters? -ws ")" => concat($ps)
 rule parameters = (
     first:parameter rest:(-ws "," -ws p:parameter)* (-ws ",")?
-) => concat(list($first), map($rest, (r) => $r.p))
+) => concat(list($first), map($rest, (r) => r.p))
 rule parameter Parameter = thisParameter / regularParameter
 rule thisParameter Parameter = n:thisIdentifier t:typeAnnotation? => Parameter{Name: $n, Type: $t}
 rule thisIdentifier Identifier = "this" !idPart
@@ -768,7 +768,7 @@ rule className Identifier = !("implements" !idPart -ws idStart) i:bindingIdentif
 
 rule heritageClauses = (
     first:heritageClause rest:(-ws h:heritageClause)*
-) => concat(list($first), map($rest, (r) => $r.h))
+) => concat(list($first), map($rest, (r) => r.h))
 rule heritageClause HeritageClause = (
     t:(("extends" / "implements") !idPart) #atomic
     (&(-ws heritageElementStart) -ws l:heritageTypes / !(-ws heritageElementStart))
@@ -788,7 +788,7 @@ rule leftHandSideExpressionStart = (
 rule heritageTypes = (
     first:expressionWithTypeArguments rest:(-ws "," -ws e:expressionWithTypeArguments)*
     (-ws "," !(-ws heritageElementStart))?
-) => concat(list($first), map($rest, (r) => $r.e))
+) => concat(list($first), map($rest, (r) => r.e))
 // An element is a left-hand side expression and its type arguments; {} is an element only before
 // ",", "{", extends or implements (isValidHeritageClauseObjectLiteral).
 rule expressionWithTypeArguments ExpressionWithTypeArguments = (
@@ -797,7 +797,7 @@ rule expressionWithTypeArguments ExpressionWithTypeArguments = (
     e:heritageExpression (-ws t:typeArguments)?
 ) => ExpressionWithTypeArguments{Expression: $e, TypeArguments: concat($t)}
 
-rule classMembers = ms:(&(classMemberStart / ";") m:classElement -ws)* => map($ms, (x) => $x.m)
+rule classMembers = ms:(&(classMemberStart / ";") m:classElement -ws)* => map($ms, (x) => x.m)
 // isClassMemberStart: a decorator, a class member modifier (public, static, ...) after other modifiers, "*",
 // "[", or a name; a keyword (other than get and set) or a modifier taken for a name only before what can
 // follow a property or method name.
@@ -892,7 +892,7 @@ rule globalDeclaration ModuleDeclaration = (
     m:modifiers n:globalIdentifier (-ws mb:moduleBlock / eos)
 ) => ModuleDeclaration{Modifiers: $m, Name: $n, Body: $mb}
 rule globalIdentifier Identifier = "global" !idPart
-rule moduleBlock ModuleBlock = "{" -ws ss:(s:statement -ws)* "}" => ModuleBlock{Statements: map($ss, (x) => $x.s)}
+rule moduleBlock ModuleBlock = "{" -ws ss:(s:statement -ws)* "}" => ModuleBlock{Statements: map($ss, (x) => x.s)}
 
 // --- Imports ---
 // import x = require("m"), import type x = N.M
@@ -1014,11 +1014,11 @@ rule exportSpecifierPlain ExportSpecifier = (
 rule modifiers = (
     (&"@" d1:decoratorList)? m1:modifierList? ({len($m1) > 0} d2:decoratorList m2:modifierList?)?
 ) => concat($d1, $m1, $d2, $m2)
-rule decoratorList = ds:(d:decorator -ws)+ => map($ds, (x) => $x.d)
+rule decoratorList = ds:(d:decorator -ws)+ => map($ds, (x) => x.d)
 rule modifierList = (
     b:(&[acdeiopr] m:modifier -ws)* s:staticModifierList? a:(&[acdeiopr] m:modifier -ws)*
     {len($b) > 0 || len($s) > 0}
-) => concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+) => concat(map($b, (x) => x.m), $s, map($a, (x) => x.m))
 rule staticModifierList = &"s" m:staticModifier -ws => list($m)
 rule modifier Modifier = (
     "export" !idPart &(-ws exportModifierFollows)
@@ -1047,7 +1047,7 @@ rule classModifiers = (
 rule classModifierList = (
     b:(&[acdeiopr] m:classModifier -ws)* s:classStaticModifierList?
     a:(&[acdeiopr] m:classModifier -ws)* {len($b) > 0 || len($s) > 0}
-) => concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+) => concat(map($b, (x) => x.m), $s, map($a, (x) => x.m))
 rule classStaticModifierList = &"s" m:classStaticModifier -ws => list($m)
 rule classModifier Modifier = "const" !idPart &(sp canFollowModifier) / modifier
 rule classStaticModifier Modifier = "static" !idPart !(-ws "{") &(-ws canFollowModifier)
@@ -1057,7 +1057,7 @@ rule typeMemberModifiers = ms:modifierList? => concat($ms)
 rule typeParameterModifiers = (
     b:(&[acdeiopr] m:classModifier -ws)* s:staticModifierList?
     a:(&[acdeiopr] m:classModifier -ws)*
-) => concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+) => concat(map($b, (x) => x.m), $s, map($a, (x) => x.m))
 
 // A decorator is a left-hand side expression in the decorator context, where "[" is not an element access.
 rule decorator Decorator = (
@@ -1074,7 +1074,7 @@ rule expression Expression = {ctx := ctx - ctx / 8 % 4 * 8} e:commaExpression =>
 rule expressionAllowIn Expression = {ctx := ctx - ctx / 4 % 8 * 4} e:commaExpression => $e
 rule commaExpression Expression = (
     first:assignmentExpressionInner rest:(-ws o:commaToken -ws e:assignmentExpressionInner)*
-) => foldl($first, $rest, (acc, r) => BinaryExpression{Left: $acc, OperatorToken: $r.o, Right: $r.e})
+) => foldl($first, $rest, (acc, r) => BinaryExpression{Left: acc, OperatorToken: r.o, Right: r.e})
 // parseAssignmentExpressionOrHigher(allowReturnTypeInArrowFunction = true)
 rule assignmentExpression Expression = {ctx := ctx - ctx / 8 % 4 * 8} e:assignmentExpressionInner => $e
 rule assignmentExpressionAllowIn Expression = {ctx := ctx - ctx / 4 % 8 * 4} e:assignmentExpressionInner => $e
@@ -1105,7 +1105,7 @@ rule assignmentOperator Token = (
 rule conditionalOrBinaryExpression Expression = (
     c:binaryExpression
     rest:(-ws q:conditionalQuestionToken -ws t:conditionalWhenTrue -ws k:colonToken -ws f:conditionalWhenFalse)*
-) => foldl($c, $rest, (acc, r) => ConditionalExpression{Condition: $acc, QuestionToken: $r.q, WhenTrue: $r.t, ColonToken: $r.k, WhenFalse: $r.f})
+) => foldl($c, $rest, (acc, r) => ConditionalExpression{Condition: acc, QuestionToken: r.q, WhenTrue: r.t, ColonToken: r.k, WhenFalse: r.f})
 rule conditionalWhenTrue Expression = {ctx := ctx - ctx / 4 % 8 * 4 + 16} e:assignmentExpressionInner => $e
 rule conditionalWhenFalse Expression = e:assignmentExpressionInner => $e
 rule conditionalQuestionToken Token = "?" !"?" !("." ![0-9])
@@ -1246,7 +1246,7 @@ rule updateExpression Expression = &[+\-] e:prefixUpdateExpression / {ctx >= 64}
 rule postfixOrLeftHandSideExpression Expression = (
     e:leftHandSideExpression rest:(-sp o:("++" / "--") #atomic)*
     {len($rest) <= 1}
-) => foldl($e, $rest, (acc, r) => PostfixUnaryExpression{Operand: $acc, Operator: text($r.o)})
+) => foldl($e, $rest, (acc, r) => PostfixUnaryExpression{Operand: acc, Operator: text(r.o)})
 rule prefixUpdateExpression PrefixUnaryExpression = (
     o:("++" / "--") #atomic -ws e:leftHandSideExpression
 ) => PrefixUnaryExpression{Operator: text($o), Operand: $e}
@@ -1341,7 +1341,7 @@ rule expressionStart = (
 rule arguments = "(" -ws {ctx := ctx - ctx / 4 % 8 * 4} as:argumentList? -ws ")" => concat($as)
 rule argumentList = (
     first:argument rest:(-ws "," -ws a:argument)* (-ws ",")?
-) => concat(list($first), map($rest, (r) => $r.a))
+) => concat(list($first), map($rest, (r) => r.a))
 rule argument Expression = spreadElement / assignmentExpressionInner
 rule spreadElement SpreadElement = "..." -ws e:assignmentExpression => SpreadElement{Expression: $e}
 
@@ -1442,14 +1442,14 @@ rule newExpressionWithTarget NewExpression = (
 rule templateExpression TemplateExpression = (
     h:templateHead ss:templateSpans
 ) => TemplateExpression{Head: $h, TemplateSpans: $ss}
-rule templateSpans = ms:(-ws m:templateSpanMiddle)* -ws t:templateSpanTail => concat(map($ms, (x) => $x.m), list($t))
+rule templateSpans = ms:(-ws m:templateSpanMiddle)* -ws t:templateSpanTail => concat(map($ms, (x) => x.m), list($t))
 rule templateSpanMiddle TemplateSpan = e:expressionAllowIn -ws l:templateMiddle => TemplateSpan{Expression: $e, Literal: $l}
 rule templateSpanTail TemplateSpan = e:expressionAllowIn -ws l:templateTail => TemplateSpan{Expression: $e, Literal: $l}
 rule taggedTemplate TemplateLiteral = rawNoSubstitutionTemplateLiteral / rawTemplateExpression
 rule rawTemplateExpression TemplateExpression = (
     h:rawTemplateHead ss:rawTemplateSpans
 ) => TemplateExpression{Head: $h, TemplateSpans: $ss}
-rule rawTemplateSpans = ms:(-ws m:rawTemplateSpanMiddle)* -ws t:rawTemplateSpanTail => concat(map($ms, (x) => $x.m), list($t))
+rule rawTemplateSpans = ms:(-ws m:rawTemplateSpanMiddle)* -ws t:rawTemplateSpanTail => concat(map($ms, (x) => x.m), list($t))
 rule rawTemplateSpanMiddle TemplateSpan = (
     e:expressionAllowIn -ws l:rawTemplateMiddle
 ) => TemplateSpan{Expression: $e, Literal: $l}
@@ -1486,7 +1486,7 @@ rule jsxClosingFragment JsxClosingFragment = "</" -ws ">"
 rule jsxElementName JsxTagName = jsxNamespacedName / jsxMemberName
 rule jsxMemberName JsxTagName = (
     first:jsxTagNameStart rest:(-ws "." -ws n:identifierName)*
-) => foldl($first, $rest, (acc, r) => PropertyAccessExpression{Expression: $acc, Name: $r.n})
+) => foldl($first, $rest, (acc, r) => PropertyAccessExpression{Expression: acc, Name: r.n})
 rule jsxTagNameStart JsxTagNameStart = jsxThis / jsxIdentifier
 rule jsxThis ThisExpression = "this" !(idPart / "-")
 rule jsxIdentifier Identifier = "#"? idStart (idPart / "-")*
@@ -1532,7 +1532,7 @@ rule typeAllowConditional TypeNode = {ctx := ctx - ctx / 32 % 2 * 32} t:typeInne
 rule conditionalOrHigher TypeNode = (
     c:unionOrHigher
     rest:({ctx / 32 % 2 == 0} -sp "extends" !idPart -ws e:typeNoConditional -ws "?" -ws t:typeAllowConditional -ws ":" -ws f:typeAllowConditional)*
-) => foldl($c, $rest, (acc, r) => ConditionalType{CheckType: $acc, ExtendsType: $r.e, TrueType: $r.t, FalseType: $r.f})
+) => foldl($c, $rest, (acc, r) => ConditionalType{CheckType: acc, ExtendsType: r.e, TrueType: r.t, FalseType: r.f})
 rule typeOrTypePredicate TypeNode = typePredicate / typeNode
 rule typePredicate TypePredicate = (
     n:identifier -sp "is" !idPart -ws t:typeNode
@@ -1556,20 +1556,20 @@ rule unionOrHigher TypeNode = u:leadingUnionType / u:plainOrUnionType => $u
 rule leadingUnionType UnionType = (
     barToken -ws f:intersectionOrHigher r:(-ws barToken -ws t:intersectionOrHigher)*
     !(-ws barToken)
-) => UnionType{Types: concat(list($f), map($r, (x) => $x.t))}
+) => UnionType{Types: concat(list($f), map($r, (x) => x.t))}
 rule plainOrUnionType TypeNode = (
     f:intersectionOrHigher
     more:(ts:(-ws barToken -ws t:intersectionOrHigher)+)* !(-ws barToken)
-) => foldl($f, $more, (acc, m) => UnionType{Types: concat(list($acc), map($m.ts, (x) => $x.t))})
+) => foldl($f, $more, (acc, m) => UnionType{Types: concat(list(acc), map(m.ts, (x) => x.t))})
 rule intersectionOrHigher TypeNode = u:leadingIntersectionType / u:plainOrIntersectionType => $u
 rule leadingIntersectionType IntersectionType = (
     ampersandToken -ws f:typeOperatorOrHigher
     r:(-ws ampersandToken -ws t:typeOperatorOrHigher)* !(-ws ampersandToken)
-) => IntersectionType{Types: concat(list($f), map($r, (x) => $x.t))}
+) => IntersectionType{Types: concat(list($f), map($r, (x) => x.t))}
 rule plainOrIntersectionType TypeNode = (
     f:typeOperatorOrHigher
     more:(ts:(-ws ampersandToken -ws t:typeOperatorOrHigher)+)* !(-ws ampersandToken)
-) => foldl($f, $more, (acc, m) => IntersectionType{Types: concat(list($acc), map($m.ts, (x) => $x.t))})
+) => foldl($f, $more, (acc, m) => IntersectionType{Types: concat(list(acc), map(m.ts, (x) => x.t))})
 
 rule typeOperatorOrHigher TypeNode = (
     &(("keyof" / "unique" / "readonly" / "infer") !idPart) t:(typeOperator / inferType) / !(("keyof" / "unique" / "readonly" / "infer") !idPart) t:postfixTypeAllowConditional
@@ -1670,7 +1670,7 @@ rule templateLiteralType TemplateLiteralType = (
 ) => TemplateLiteralType{Head: $h, TemplateSpans: $ss}
 rule templateTypeSpans = (
     ms:(-ws m:templateTypeSpanMiddle)* -ws t:templateTypeSpanTail
-) => concat(map($ms, (x) => $x.m), list($t))
+) => concat(map($ms, (x) => x.m), list($t))
 rule templateTypeSpanMiddle TemplateLiteralTypeSpan = (
     t:typeNode -ws l:templateMiddle
 ) => TemplateLiteralTypeSpan{Type: $t, Literal: $l}
@@ -1692,16 +1692,16 @@ rule jsdocParameterName Identifier = ("this" / "new") !idPart
 
 rule entityName EntityName = (
     first:identifier rest:(-ws "." -ws n:identifier)*
-) => foldl($first, $rest, (acc, r) => QualifiedName{Left: $acc, Right: $r.n})
+) => foldl($first, $rest, (acc, r) => QualifiedName{Left: acc, Right: r.n})
 rule entityNameAllowReserved EntityName = (
     first:identifierNameOrPrivate rest:(-ws "." -ws n:identifierName)*
-) => foldl($first, $rest, (acc, r) => QualifiedName{Left: $acc, Right: $r.n})
+) => foldl($first, $rest, (acc, r) => QualifiedName{Left: acc, Right: r.n})
 
 rule typeArguments = "<" -ws ts:typeList? -ws ">" => concat($ts)
 // Each type starts as a type does (isListElement for TypeArguments): A<class> is an error.
 rule typeList = (
     &typeStart first:typeNode rest:(-ws "," -ws &typeStart t:typeNode)* (-ws ",")?
-) => concat(list($first), map($rest, (r) => $r.t))
+) => concat(list($first), map($rest, (r) => r.t))
 rule typeParameters = (
     "<" -ws ps:typeParameterList? -ws ">"
 ) => concat($ps)
@@ -1729,7 +1729,7 @@ rule optionalType OptionalType = t:postfixTypeNoQuestion -sp "?" &(-ws [,\]]) =>
 
 // --- Object types ---
 rule typeLiteral TypeLiteral = !mappedTypeStart m:objectTypeMembers => TypeLiteral{Members: $m}
-rule objectTypeMembers = "{" -ws ms:(&typeMemberStart m:typeMember -ws)* "}" => map($ms, (x) => $x.m)
+rule objectTypeMembers = "{" -ws ms:(&typeMemberStart m:typeMember -ws)* "}" => map($ms, (x) => x.m)
 // isTypeMemberStart: "(", "<", get, set, "[" after modifiers, or a name (or a modifier taken for one) before
 // "(", "<", "?", ":", "," or a statement terminator.
 rule typeMemberStart = (
@@ -1746,7 +1746,7 @@ rule mappedType MappedType = (
     &mappedTypeStart "{" -ws (rt:mappedReadonlyToken -ws)? "[" -ws p:mappedTypeParameter
     (-ws "as" !idPart -ws nt:typeNode)? -ws "]" (-ws qt:mappedQuestionToken)? t:typeAnnotation? eos -ws
     ms:(&typeMemberStart m:typeMember -ws)* "}"
-) => MappedType{ReadonlyToken: $rt, TypeParameter: $p, NameType: $nt, QuestionToken: $qt, Type: $t, Members: map($ms, (x) => $x.m)}
+) => MappedType{ReadonlyToken: $rt, TypeParameter: $p, NameType: $nt, QuestionToken: $qt, Type: $t, Members: map($ms, (x) => x.m)}
 rule mappedTypeParameter TypeParameter = (
     n:identifierNameOrPrivate -ws "in" !idPart -ws c:typeNode
 ) => TypeParameter{Name: $n, Constraint: $c}
@@ -1912,23 +1912,23 @@ rule ws = (&[ \t\n\r\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{2028}\u{20
 rule sp = (&[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] ([ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}]+ / "//" [^\n\r\u{2028}\u{2029}]* / "/*" (!"*/" [^\n\r\u{2028}\u{2029}])* "*/"))*
 
 // Comma-separated lists, with an optional trailing comma
-rule arrayBindingElementList = f:arrayBindingElement r:(-ws "," -ws e:arrayBindingElement)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule arrayElementList = f:arrayElement r:(-ws "," -ws e:arrayElement)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule bindingElementList = f:bindingElement r:(-ws "," -ws e:bindingElement)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule enumMemberList = f:enumMember r:(-ws "," -ws e:enumMember)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule exportSpecifierList = f:exportSpecifier r:(-ws "," -ws e:exportSpecifier)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule importAttributeList = f:importAttribute r:(-ws "," -ws e:importAttribute)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule importSpecifierList = f:importSpecifier r:(-ws "," -ws e:importSpecifier)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
-rule jsdocParameterList = f:jsdocParameter r:(-ws "," -ws p:jsdocParameter)* => concat(list($f), map($r, (x) => $x.p))
-rule jsxAttributeLikeList = f:jsxAttributeLike r:(-ws a:jsxAttributeLike)* => concat(list($f), map($r, (x) => $x.a))
+rule arrayBindingElementList = f:arrayBindingElement r:(-ws "," -ws e:arrayBindingElement)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule arrayElementList = f:arrayElement r:(-ws "," -ws e:arrayElement)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule bindingElementList = f:bindingElement r:(-ws "," -ws e:bindingElement)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule enumMemberList = f:enumMember r:(-ws "," -ws e:enumMember)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule exportSpecifierList = f:exportSpecifier r:(-ws "," -ws e:exportSpecifier)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule importAttributeList = f:importAttribute r:(-ws "," -ws e:importAttribute)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule importSpecifierList = f:importSpecifier r:(-ws "," -ws e:importSpecifier)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
+rule jsdocParameterList = f:jsdocParameter r:(-ws "," -ws p:jsdocParameter)* => concat(list($f), map($r, (x) => x.p))
+rule jsxAttributeLikeList = f:jsxAttributeLike r:(-ws a:jsxAttributeLike)* => concat(list($f), map($r, (x) => x.a))
 rule objectLiteralElementList = (
     &objectLiteralElementStart f:objectLiteralElement
     r:(-ws "," -ws &objectLiteralElementStart e:objectLiteralElement)* (-ws ",")?
-) => concat(list($f), map($r, (x) => $x.e))
-rule tupleElementList = &typeStart f:tupleElement r:(-ws "," -ws &typeStart e:tupleElement)* (-ws ",")? => concat(list($f), map($r, (x) => $x.e))
+) => concat(list($f), map($r, (x) => x.e))
+rule tupleElementList = &typeStart f:tupleElement r:(-ws "," -ws &typeStart e:tupleElement)* (-ws ",")? => concat(list($f), map($r, (x) => x.e))
 rule typeParameterList = (
     &typeParameterStart f:typeParameter r:(-ws "," -ws &typeParameterStart p:typeParameter)* (-ws ",")?
-) => concat(list($f), map($r, (x) => $x.p))
+) => concat(list($f), map($r, (x) => x.p))
 rule typeParameterStart = ("in" / "const") !idPart / identifier
 
 // Unicode ID_Start and ID_Continue beyond ASCII, as TypeScript's tables have them (unicodeESNextIdentifierStart

@@ -91,6 +91,8 @@ definitions in called rules are not visible to their callers. Reading a
 variable that is undefined at the action's position is a runtime action error.
 Variables are `int`, `string` or `bool`; definitions shadow rather than mutate
 an existing value. Scope and rollback are specified in [Variables](predicates.md#variables).
+Inside a lambda body, the lambda's parameters are variables too and are read
+the same way; see [Operators and Functions](#operators-and-functions).
 
 ```pego
 type Item = { Depth int; Name Match }
@@ -192,8 +194,12 @@ This section defines operators and the complete set of built-in functions
 available in Value and Predicate Actions. Function calls use positional
 arguments. Call arguments, struct field values and ordinary binary operands are
 evaluated left to right. Lambdas are permitted only as the function argument
-of `foldl`, `foldr`, `map` or `filter`; their parameters are referenced as
-`$name` in the lambda body.
+of `foldl`, `foldr`, `map` or `filter`. Their parameters are variables: the
+lambda body refers to a parameter by its bare name, and the name hides a
+parser variable of the same name inside the body. A name followed by `(` or
+`{` is still a function or a type, and `true`, `false` and `nil` cannot name a
+parameter. `$name` in a lambda body always refers to a capture, and naming a
+parameter there is an error that `pego fix` rewrites.
 
 ### Operator Precedence and Types
 
@@ -270,7 +276,7 @@ callback result type; the checker checks the callback against that widened
 type.
 
 ```pego
-foldl(0, $items, (sum, item) => $sum + $item.value)
+foldl(0, $items, (sum, item) => sum + item.value)
 ```
 
 #### foldr

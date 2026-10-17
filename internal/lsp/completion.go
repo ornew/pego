@@ -230,11 +230,19 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 		items = append(items, builtinFuncItems()...)
 		items = append(items, a.typeItemsControlled(true, control)...)
 		items = append(items, keywordItems(termKeywords)...)
+		// A parameter hides a variable of the same name.
+		params := a.paramItemsControlled(prev, control)
+		hidden := map[string]bool{}
+		for _, p := range params {
+			hidden[p.Label] = true
+		}
 		for _, v := range sortedKeysControlled(a.vars, control) {
 			control.poll()
-			items = append(items, CompletionItem{Label: v, Kind: completionKindVariable, Detail: "variable"})
+			if !hidden[v] {
+				items = append(items, CompletionItem{Label: v, Kind: completionKindVariable, Detail: "variable"})
+			}
 		}
-		return items
+		return append(items, params...)
 	}
 	if pt.Text == "infix" {
 		return keywordItems([]string{"left", "right", "none"})
@@ -394,8 +402,8 @@ func (a *analysis) inValueControlled(prev int, control *renderControl) bool {
 	return value
 }
 
-// captureItems returns the capture labels and lambda parameters of the definition that token i
-// is in, for completion after "$".
+// captureItems returns the capture labels of the definition that token i is in, for completion
+// after "$".
 func (a *analysis) captureItemsControlled(i int, control *renderControl) []CompletionItem {
 	control.poll()
 	items := []CompletionItem{}
@@ -417,17 +425,54 @@ func (a *analysis) captureItemsControlled(i int, control *renderControl) []Compl
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
 		control.poll()
 		t := a.toks[j]
-		switch {
-		case t.Kind == syntax.TokenIdent && a.isPunct(j+1, ":") && a.toks[j+1].start == t.end &&
-			!(a.isPunct(j-1, "{") && a.inValueControlled(j-1, control)) && !a.isPunct(j-1, ","):
+		if t.Kind == syntax.TokenIdent && a.isPunct(j+1, ":") && a.toks[j+1].start == t.end &&
+			!(a.isPunct(j-1, "{") && a.inValueControlled(j-1, control)) && !a.isPunct(j-1, ",") {
 			add(t.Text, "capture") // label:expr (not a constructor field T{...})
-		case a.isPunct(j, "=>") && a.isPunct(j-1, ")"):
-			// The parameters of a lambda: (a, b) =>.
-			for k := j - 2; k > first && !a.isPunct(k, "("); k -= 2 {
-				control.poll()
-				if a.toks[k].Kind == syntax.TokenIdent {
-					add(a.toks[k].Text, "parameter")
-				}
+		}
+	}
+	return items
+}
+
+// paramItems returns the parameters of the lambdas, (a, b) =>, whose bodies token i is in: a body
+// runs from its => to the "," or closing bracket of the brackets the lambda is in.
+func (a *analysis) paramItemsControlled(i int, control *renderControl) []CompletionItem {
+	control.poll()
+	items := []CompletionItem{}
+	first := i
+	for first >= 0 && !a.isDefKeyword(first) {
+		control.poll()
+		first--
+	}
+	seen := map[string]bool{}
+	for j := first + 1; j <= i && j < len(a.toks); j++ {
+		control.poll()
+		if !a.isPunct(j, "=>") || !a.isPunct(j-1, ")") || !a.inLambdaBody(j, i, control) {
+			continue
+		}
+		// The parameter list alternates names and commas, and a lambda is always a call argument,
+		// after "(" or ",": "x:(a b) =>" is a rule body and its action.
+		open := j - 2
+		var names []string
+		for ; open > first && a.toks[open].Kind == syntax.TokenIdent; open -= 2 {
+			control.poll()
+			names = append(names, a.toks[open].Text)
+			if !a.isPunct(open-1, ",") {
+				open--
+				break
+			}
+		}
+		if open == j-2 && a.isPunct(open, "(") {
+			names = nil // ()
+		} else if open <= first || !a.isPunct(open, "(") || len(names) == 0 {
+			continue
+		}
+		if !a.isPunct(open-1, "(") && !a.isPunct(open-1, ",") {
+			continue
+		}
+		for _, n := range names {
+			if control.isIdentifier(n) && !seen[n] {
+				seen[n] = true
+				items = append(items, CompletionItem{Label: n, Kind: completionKindVariable, Detail: "parameter"})
 			}
 		}
 	}
@@ -595,4 +640,24 @@ func sortedKeysControlled(m map[string]bool, control *renderControl) []string {
 	}
 	control.sortKeys(keys)
 	return keys
+}
+
+// inLambdaBody reports whether token i is in the body of the lambda whose => is token arrow.
+func (a *analysis) inLambdaBody(arrow, i int, control *renderControl) bool {
+	depth := 0
+	for k := arrow + 1; k < i && k < len(a.toks); k++ {
+		control.poll()
+		switch {
+		case a.isPunct(k, "("), a.isPunct(k, "["), a.isPunct(k, "{"):
+			depth++
+		case a.isPunct(k, ")"), a.isPunct(k, "]"), a.isPunct(k, "}"):
+			if depth == 0 {
+				return false
+			}
+			depth--
+		case a.isPunct(k, ",") && depth == 0:
+			return false
+		}
+	}
+	return true
 }

@@ -214,7 +214,7 @@ rule leaf Leaf = "x"
 
 func TestGeneratedTSTypedSharedDAG(t *testing.T) {
 	for name, body := range map[string]string{
-		"fold": `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: $acc, Right: $acc})`,
+		"fold": `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`,
 		"lr": `rule main Tree = branch / leaf
 rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`,
 	} {

@@ -16,11 +16,13 @@ import (
 //   - a struct type "type T struct {...}" becomes the definition "type T = {...}";
 //   - an alias "type T = U" becomes "type T ~ U";
 //   - a positional capture "$n" becomes a named capture: the element it refers to is labeled,
-//     reusing its name when it already has one, and "$0" becomes a list of the elements.
+//     reusing its name when it already has one, and "$0" becomes a list of the elements;
+//   - a lambda parameter "$x" is written "x".
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
-// is an error, and so is source with positional captures that does not parse.
+// is an error, and so is source with positional captures that does not parse. Lambda
+// parameters are rewritten only in source that parses.
 func Fix(src string) (string, error) {
 	errs := &errorList{}
 	toks := lex(src, errs)
@@ -28,10 +30,13 @@ func Fix(src string) (string, error) {
 		return "", errs.list
 	}
 	out := fixTokens(src, toks)
+	positional, captures := false, false
 	for _, t := range toks {
-		if t.kind == tIndex {
-			return fixPositional(out)
-		}
+		positional = positional || t.kind == tIndex
+		captures = captures || t.kind == tCapture
+	}
+	if positional || captures {
+		return fixParsed(out, positional)
 	}
 	return out, nil
 }

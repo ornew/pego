@@ -75,7 +75,7 @@ rule main Document = (
 ) => Document{Decl: $d, Prolog: concat($p1, $p2), Doctype: $dt, Root: $r, Epilog: $e}
 
 // [27] Misc ::= Comment | PI | S
-rule misc_list = ms:(-ws m:misc)* -ws => map($ms, (x) => $x.m)
+rule misc_list = ms:(-ws m:misc)* -ws => map($ms, (x) => x.m)
 rule misc Misc = comment / pi
 
 // [23] XMLDecl ::= '<?xml' VersionInfo EncodingDecl? SDDecl? S? '?>'
@@ -117,7 +117,7 @@ rule doctype Doctype = (
 // [29] markupdecl ::= elementdecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment.
 // In the internal subset, parameter-entity references occur only between declarations (WFC: PEs in
 // Internal Subset), so none of the declarations below accepts one.
-rule int_subset = ds:(-ws d:decl)* -ws => map($ds, (x) => $x.d)
+rule int_subset = ds:(-ws d:decl)* -ws => map($ds, (x) => x.d)
 rule decl Decl = element_decl / attlist_decl / entity_decl / notation_decl / pi / comment / pe_ref
 // [69] PEReference ::= '%' Name ';'
 rule pe_ref PERef = "%" name ";"
@@ -144,15 +144,15 @@ rule kw_any Keyword = "ANY"
 // [51] Mixed ::= '(' S? '#PCDATA' (S? '|' S? Name)* S? ')*' | '(' S? '#PCDATA' S? ')'
 rule mixed Mixed = (
     "(" ws "#PCDATA" ns:(-ws -"|" -ws n:name)* ws (")*" / ")" {len($ns) == 0})
-) => Mixed{Names: map($ns, (x) => $x.n)}
+) => Mixed{Names: map($ns, (x) => x.n)}
 // [47] children ::= (choice | seq) ('?' | '*' | '+')?, [48] cp ::= (Name | choice | seq) ('?' | '*' | '+')?
 // [49] choice ::= '(' S? cp ( S? '|' S? cp )+ S? ')', [50] seq ::= '(' S? cp ( S? ',' S? cp )* S? ')'
 rule choice Choice = (
     "(" ws f:cp rs:(-ws -"|" -ws c:cp)+ ws ")" o:occurrence?
-) => Choice{Items: concat(list($f), map($rs, (x) => $x.c)), Occur: $o}
+) => Choice{Items: concat(list($f), map($rs, (x) => x.c)), Occur: $o}
 rule sequence Sequence = (
     "(" ws f:cp rs:(-ws -"," -ws c:cp)* ws ")" o:occurrence?
-) => Sequence{Items: concat(list($f), map($rs, (x) => $x.c)), Occur: $o}
+) => Sequence{Items: concat(list($f), map($rs, (x) => x.c)), Occur: $o}
 rule cp Particle = name_particle / choice / sequence
 rule name_particle NameParticle = n:name o:occurrence? => NameParticle{Name: $n, Occur: $o}
 rule occurrence Occurrence = [*+?]
@@ -162,7 +162,7 @@ rule occurrence Occurrence = [*+?]
 // [60] DefaultDecl ::= '#REQUIRED' | '#IMPLIED' | (('#FIXED' S)? AttValue)
 rule attlist_decl AttlistDecl = (
     "<!ATTLIST" s n:name ds:(-s d:att_def)* ws ">"
-) => AttlistDecl{Name: $n, Defs: map($ds, (x) => $x.d)}
+) => AttlistDecl{Name: $n, Defs: map($ds, (x) => x.d)}
 rule att_def AttDef = (
     n:name s t:att_type s (k:kw_required / (k:kw_fixed s)? v:att_value)
 ) => AttDef{Name: $n, Type: $t, Default: $k, Value: $v}
@@ -174,11 +174,11 @@ rule kw_type Keyword = "CDATA" / "IDREFS" / "IDREF" / "ID" / "ENTITY" / "ENTITIE
 // [58] NotationType ::= 'NOTATION' S '(' S? Name (S? '|' S? Name)* S? ')'
 rule notation_type NotationType = (
     "NOTATION" s "(" ws f:name rs:(-ws -"|" -ws n:name)* ws ")"
-) => NotationType{Names: concat(list($f), map($rs, (x) => $x.n))}
+) => NotationType{Names: concat(list($f), map($rs, (x) => x.n))}
 // [59] Enumeration ::= '(' S? Nmtoken (S? '|' S? Nmtoken)* S? ')'
 rule enumeration Enumeration = (
     "(" ws f:nmtoken rs:(-ws -"|" -ws n:nmtoken)* ws ")"
-) => Enumeration{Values: concat(list($f), map($rs, (x) => $x.n))}
+) => Enumeration{Values: concat(list($f), map($rs, (x) => x.n))}
 
 // [70] EntityDecl ::= GEDecl | PEDecl
 // [71] GEDecl ::= '<!ENTITY' S Name S EntityDef S? '>', [73] EntityDef ::= EntityValue | (ExternalID NDataDecl?)
@@ -207,7 +207,7 @@ rule public_notation ExternalID = "PUBLIC" s p:pubid_literal (s l:system_literal
 // One rule for both forms, so that the start tag is not parsed twice.
 rule element Element = (
     "<" n:name as:(-s a:attribute)* ws ("/>" / ">" cs:content "</" e:name {text($e) == text($n)} @error(message="mismatched end tag") ws ">")
-) => Element{Name: $n, Attrs: map($as, (x) => $x.a), Content: concat($cs)}
+) => Element{Name: $n, Attrs: map($as, (x) => x.a), Content: concat($cs)}
 // [41] Attribute ::= Name Eq AttValue
 rule attribute Attribute = n:name eq v:att_value => Attribute{Name: $n, Value: $v}
 // [10] AttValue ::= '"' ([^<&"] | Reference)* '"' | "'" ([^<&'] | Reference)* "'"

@@ -1042,6 +1042,9 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 	case *NilLit:
 		return "nil"
 	case *CaptureRef:
+		if t.Param {
+			return t.Name
+		}
 		return "$" + t.Name
 	case *IndexRef:
 		return "$" + strconv.Itoa(t.Index)

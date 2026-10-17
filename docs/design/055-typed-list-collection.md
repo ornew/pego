@@ -75,7 +75,7 @@ empty list, following `map`; an empty input does not invoke the predicate.
 
 The result preserves input order, node identity and the input list's static
 element Type. A Boolean predicate alone cannot narrow that Type.
-For example, `filter($xs, (x) => $x != nil)` cannot establish `[]T` from
+For example, `filter($xs, (x) => x != nil)` cannot establish `[]T` from
 `[]*T`. Predicate Action errors follow the existing failure/backtracking
 contract; Value Action errors abort as they do today. Partial collection is
 scratch and is dropped on the existing failure path. Filtering does not add

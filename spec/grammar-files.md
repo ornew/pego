@@ -156,7 +156,7 @@ The names that a definition can use are constrained as follows:
 |:--|:--|
 | Rule | An [identifier](lexical.md#identifiers). Contextual words are allowed when the grammar expects a name. Rule names commonly begin with a lowercase ASCII letter. |
 | Type, field | An identifier that begins with an uppercase ASCII letter. Built-in and reserved type names MUST NOT be defined. See [Names](types.md#names). |
-| Capture label, variable, level, lambda parameter | An identifier. Captures and variables have their own scopes; see [Capture](parser-expressions.md#capture) and [Variables](predicates.md#variables). A level name MUST be unique within its Operators Rule declaration. |
+| Capture label, variable, level, lambda parameter | An identifier. Captures and variables have their own scopes; see [Capture](parser-expressions.md#capture) and [Variables](predicates.md#variables). Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
 
 ## Start Rule
 

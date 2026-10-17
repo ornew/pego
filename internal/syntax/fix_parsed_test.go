@@ -1,6 +1,7 @@
 package syntax_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestFixPositional(t *testing.T) {
 		{"rule main = \"a\" => list($0, $1)", "rule main = v1:\"a\" => list(list($v1), $v1)", []string{"a"}},
 		{"rule main = v1:\"a\" \"b\" => $2", "rule main = v1:\"a\" v2:\"b\" => $v2", []string{"ab"}},
 		{"rule main = b \"x\" b => list($1, $3)\nrule b = \"b\"", "rule main = b:b \"x\" v3:b => list($b, $v3)\nrule b = \"b\"", []string{"bxb"}},
-		{"rule main = (\"a\" \"b\")* => map($1, (x) => $x)", "rule main = v1:(\"a\" \"b\")* => map($v1, (x) => $x)", []string{"", "abab"}},
+		{"rule main = (\"a\" \"b\")* => map($1, (x) => $x)", "rule main = v1:(\"a\" \"b\")* => map($v1, (x) => x)", []string{"", "abab"}},
 		{"rule main = \"a\" #recover(skip=[^;]*) \";\" => $1", "rule main = v1:\"a\" #recover(skip=[^;]*) \";\" => $v1", []string{"a;", "z;"}},
 		{"rule main = (\"a\" \"b\") => $1", "rule main = (v1:\"a\" \"b\") => $v1", []string{"ab"}},
 		{"rule main = (\n    \"a\"\n    \"b\"\n) => $2", "rule main = (\n    \"a\"\n    v2:\"b\"\n) => $v2", []string{"ab"}},
@@ -103,5 +104,104 @@ func TestPositionalRejected(t *testing.T) {
 	}
 	if _, err := syntax.Fix(`rule main = ( => $1`); err == nil {
 		t.Fatal("Fix accepted positional captures in source that does not parse")
+	}
+}
+
+// Fix drops the $ of lambda parameters, and the results stay the same.
+func TestFixLambdaParams(t *testing.T) {
+	for _, tc := range []struct {
+		in, want string
+		inputs   []string
+	}{
+		{"rule main = xs:\"a\"* => map($xs, (x) => $x)", "rule main = xs:\"a\"* => map($xs, (x) => x)", []string{"", "aa"}},
+		{"rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list($acc, $e))", "rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list(acc, e))", []string{"a", "aaa"}},
+		{"rule main = x:\"b\" xs:\"a\"* => list($x, map($xs, (x) => $x))", "rule main = x:\"b\" xs:\"a\"* => list($x, map($xs, (x) => x))", []string{"baa"}},
+		{"rule main = xs:(i:\"a\")* => map($xs, (x) => map($xs, (y) => list($x, $y)))", "rule main = xs:(i:\"a\")* => map($xs, (x) => map($xs, (y) => list(x, y)))", []string{"aa"}},
+		{"rule main = xs:\"a\"* => map($xs, (x) => x)", "rule main = xs:\"a\"* => map($xs, (x) => x)", []string{"aa"}},
+		// A parameter named like a function: the call stays a call.
+		{"rule main = xs:\"a\"* => filter($xs, (text) => text($text) == \"a\")", "rule main = xs:\"a\"* => filter($xs, (text) => text(text) == \"a\")", []string{"aa"}},
+		// Positional captures and parameters in one lambda.
+		{"rule main = \"b\" xs:\"a\"* => map($2, (e) => list($1, $e))", "rule main = v1:\"b\" xs:\"a\"* => map($xs, (e) => list($v1, e))", []string{"baa"}},
+	} {
+		got, err := syntax.Fix(tc.in)
+		if err != nil {
+			t.Errorf("Fix(%q): %v", tc.in, err)
+			continue
+		}
+		if got != tc.want {
+			t.Errorf("Fix(%q)\ngot  %q\nwant %q", tc.in, got, tc.want)
+			continue
+		}
+		if again, err := syntax.Fix(got); err != nil || again != got {
+			t.Errorf("Fix is not idempotent on %q: %q %v", got, again, err)
+		}
+		before, err := syntax.ParseLegacy(tc.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		after, err := syntax.Parse(got)
+		if err != nil {
+			t.Fatalf("%q: %v", got, err)
+		}
+		pb, err := engine.Compile(before, engine.Options{})
+		if err != nil {
+			t.Fatalf("%q: %v", tc.in, err)
+		}
+		pa, err := engine.Compile(after, engine.Options{})
+		if err != nil {
+			t.Fatalf("%q: %v", got, err)
+		}
+		for _, input := range tc.inputs {
+			if b, a := run(pb, input), run(pa, input); b != a {
+				t.Errorf("%q on %q:\nbefore %s\nafter  %s", got, input, b, a)
+			}
+		}
+	}
+}
+
+// A lambda parameter written $x is rejected, and Fix refuses a lambda that mixes $x with a bare x,
+// which referred to a variable.
+func TestLambdaParamDollarRejected(t *testing.T) {
+	_, err := syntax.Parse(`rule main = xs:"a"* => map($xs, (x) => $x)`)
+	if err == nil || !strings.Contains(err.Error(), "1:40: lambda parameters are written without $: write x") {
+		t.Fatalf("got %v", err)
+	}
+	if _, err := syntax.Fix(`rule main = {x := 1} xs:"a"* => map($xs, (x) => list($x, x))`); err == nil || !strings.Contains(err.Error(), "variable x would refer to the lambda parameter x") {
+		t.Fatalf("mixed: %v", err)
+	}
+	if _, err := syntax.Parse(`rule main = xs:"a"* => map($xs, (nil) => nil)`); err == nil || !strings.Contains(err.Error(), "1:34: nil cannot name a lambda parameter") {
+		t.Fatalf("keyword parameter: %v", err)
+	}
+	if _, err := syntax.Fix(`rule main = xs:"a"* => map($xs, (nil) => $nil)`); err == nil || !strings.Contains(err.Error(), "the lambda parameter nil would be read as the literal nil") {
+		t.Fatalf("fix keyword parameter: %v", err)
+	}
+	// Source that does not parse keeps its other rewrites.
+	if got, err := syntax.Fix("rule main = \"a\" -- (\n(x) => $x"); err != nil || got != "rule main = \"a\" #cut (\n(x) => $x" {
+		t.Fatalf("unparsed: %q %v", got, err)
+	}
+}
+
+// A parameter is in scope in its lambda's body only, and an inner lambda's parameter hides an
+// outer one of the same name.
+func TestLambdaParamScope(t *testing.T) {
+	for _, tc := range []struct {
+		src    string
+		params int
+	}{
+		{`rule main = xs:"a"* => list(map($xs, (x) => x), x)`, 1},
+		{`rule main = xs:"a"* => map($xs, (x) => map($xs, (x) => x))`, 1},
+		{`rule main = xs:"a"* => map($xs, (x) => list(map($xs, (y) => list(x, y)), x, y))`, 3},
+	} {
+		g, err := syntax.Parse(tc.src)
+		if err != nil {
+			t.Fatalf("%q: %v", tc.src, err)
+		}
+		data, err := json.Marshal(g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n := strings.Count(string(data), `"param":true`); n != tc.params {
+			t.Errorf("%q: %d parameter references, want %d", tc.src, n, tc.params)
+		}
 	}
 }

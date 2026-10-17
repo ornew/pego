@@ -4,7 +4,7 @@ import "github.com/ornew/pego/grammar"
 
 // Projected repetitions.
 //
-// first:x rest:(-"," r:x)* -> concat(list($first), map($rest, (e) => $e.r)) is how lists are
+// first:x rest:(-"," r:x)* -> concat(list($first), map($rest, (e) => e.r)) is how lists are
 // written: the repetition builds a record (a Seq node with the field r) per element, only for the
 // action to take r out of each. When the action reads the capture only that way, every backend
 // compiles the repetition to gather the values of r directly, and the map call to take the list
@@ -12,7 +12,7 @@ import "github.com/ornew/pego/grammar"
 // action alone).
 
 // ruleProjections returns the captures of repetitions that the rule r's action reads only as
-// map($x, (e) => $e.f), mapped to the field f. The conditions:
+// map($x, (e) => e.f), mapped to the field f. The conditions:
 //   - the action uses no $n, which could reach the same list (it is an element of the body);
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
@@ -151,7 +151,7 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 	return proj
 }
 
-// projectedMap reports whether the call t is map($x, (e) => $e.f) for a projected capture x (proj
+// projectedMap reports whether the call t is map($x, (e) => e.f) for a projected capture x (proj
 // as from ruleProjections; locals are names bound by enclosing lambdas).
 func projectedMap(t *grammar.Call, proj map[string]string, local func(string) bool) (*grammar.CaptureRef, bool) {
 	if proj == nil || t.Func != "map" || len(t.Args) != 2 {
@@ -221,7 +221,7 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 	walk(t, map[string]bool{})
 }
 
-// projField reports whether the lambda is (e) => $e.f and returns f.
+// projField reports whether the lambda is (e) => e.f and returns f.
 func projField(t grammar.Term) (string, bool) {
 	l, ok := t.(*grammar.Lambda)
 	if !ok || len(l.Params) != 1 {

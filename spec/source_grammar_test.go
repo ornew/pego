@@ -122,7 +122,7 @@ package sample
 type Alias ~ (
  []A | *B
 )
-rule main = x:"a" #atomic @custom(, true, message="expected a") => map(list($x), (item) => Item{Value: $item})
+rule main = x:"a" #atomic @custom(, true, message="expected a") => map(list($x), (item) => Item{Value: item})
 rule grouped = ("a" => A{}) => ...
 rule expression = operators {
  skip " "*

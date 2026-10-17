@@ -486,7 +486,7 @@ func (c *bcompiler) projectRepeat(e *grammar.Repeat, field string) {
 	c.m.Scopes[sc] = c.strs2(elemScope.names)
 }
 
-// identity is the lambda (e) => $e, which takes the place of the projection in a map call of a
+// identity is the lambda (e) => e, which takes the place of the projection in a map call of a
 // projected repetition: the list holds the values already.
 var identity = &grammar.Lambda{Params: []string{"e"}, Body: &grammar.CaptureRef{Name: "e"}}
 

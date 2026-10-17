@@ -30,7 +30,7 @@ rule discardedMatch Match = "é"+ #atomic
 rule matches Match = discardedMatch y:"b" #atomic => $y
 rule recovery []Tree = (recoverItem #recover(skip=([^;]+ ";")))*
 rule recoverItem Token = "b;"
-rule fold Tree = first:token rest:token* => foldl($first, $rest, (acc, i) => Branch{Left: $acc, Right: $acc})
+rule fold Tree = first:token rest:token* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})
 rule lr Tree = branch / token
 rule branch Branch = prev:lr "b" => Branch{Left: $prev, Right: $prev}
 rule expr Expr = operators {

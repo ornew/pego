@@ -414,7 +414,7 @@ type Item = {
 rule main = {indent := 0} items:block blank* $$ => $items
 
 // Items at the current indentation.
-rule block = v1:(blank* i:item)+ => map($v1, (x) => $x.i)
+rule block = v1:(blank* i:item)+ => map($v1, (x) => x.i)
 
 // A line indented exactly at the current depth, followed by its children.
 rule item Item = s:spaces {len($s) == indent} text:line eol cs:children? => Item{Text: $text, Children: concat($cs)}
@@ -533,7 +533,7 @@ only below the rule that defines it, the flag turns off by itself when the brack
 ```pego
 // nl.pego
 // Statements end at a newline, except inside brackets, where a newline is whitespace.
-rule main = {nl := false} lines:(ws s:stmt ws "\n")* ws $$ => map($lines, (x) => $x.s)
+rule main = {nl := false} lines:(ws s:stmt ws "\n")* ws $$ => map($lines, (x) => x.s)
 
 rule stmt = name ws "=" ws expr
 rule expr = atom (ws "+" ws atom)*
@@ -582,16 +582,16 @@ type Line terminal
 type Heredoc = { Tag Word; Lines []Line }
 type Command = { Words []Word; Doc *Heredoc }
 
-rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => $x.c)
+rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => x.c)
 
-rule command Command = ws:(-sp w:word)+ -sp d:heredoc? eol => Command{Words: map($ws, (x) => $x.w), Doc: $d}
+rule command Command = ws:(-sp w:word)+ -sp d:heredoc? eol => Command{Words: map($ws, (x) => x.w), Doc: $d}
 
 // "<<TAG", the lines up to a line that is exactly TAG, and that closing line.
 // A capture of the rule body is not visible inside the repetition, so the tag is kept in a variable.
 rule heredoc Heredoc = (
     "<<" tag:word {delim := text($tag)} "\n"
     body:(l:line {text($l) != delim} "\n")* end:line {text($end) == delim} @error(message="unterminated here-document")
-) => Heredoc{Tag: $tag, Lines: map($body, (x) => $x.l)}
+) => Heredoc{Tag: $tag, Lines: map($body, (x) => x.l)}
 
 rule word Word = [a-zA-Z0-9_./\-]+
 rule line Line = [^\n]*

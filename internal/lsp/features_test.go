@@ -466,7 +466,7 @@ func TestCompletion(t *testing.T) {
 		"rule a = n ",               // 5: a rule name
 		"rule b = x:num @",          // 6: an attribute
 		"rule c = x:num y:num => $", // 7: a capture after $
-		"rule d = x:num => foldl($x, $x, (acc, e) => ",      // 8: a struct type after new
+		"rule d = x:num => foldl($x, $x, (acc, e) => ",      // 8: in a lambda body
 		"rule e = x:num => $x.",                             // 9: a member
 		"rule f = x:num {",                                  // 10: in a predicate
 		"rule g = operators { operand num; level { infix ",  // 11: an associativity
@@ -476,12 +476,14 @@ func TestCompletion(t *testing.T) {
 		"type ",                                             // 15: the name of a new type
 		"type S ",                                           // 16: after a type name
 		"rule k = operators { operand ",                     // 17: an operand of a operatorsRule expression
-		"rule l = xs:num* => foldl($xs, $xs, (acc, e) => $", // 18: a lambda parameter
+		"rule l = xs:num* => foldl($xs, $xs, (acc, e) => $", // 18: captures only, not parameters
+		"rule m = xs:num* => list(map($xs, (e) => e), ",     // 19: after a lambda's body
+		"rule n = x:(a b) => ",                              // 20: a rule action, not a lambda
 	}
 	src := strings.Join(lines, "\n")
 	c.open(uri, src)
 	end := func(line int) int { return len([]rune(lines[line])) }
-	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "num"}
+	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num"}
 	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "bool", "int", "node", "string", "terminal"}
 	sorted := func(xs ...[]string) []string {
 		var out []string
@@ -504,7 +506,7 @@ func TestCompletion(t *testing.T) {
 		{5, 8, sorted(rules, statementKeywords, bodyKeywords)},
 		{6, -1, []string{"diagnostic", "error"}},
 		{7, -1, []string{"x", "y"}},
-		{8, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
+		{8, -1, sorted([]string{"P", "Q", "R", "acc", "concat", "e", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{9, -1, sorted([]string{"A", "B", "children", "endPos", "startPos"})},
 		{10, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{11, -1, []string{"left", "none", "right"}},
@@ -514,7 +516,9 @@ func TestCompletion(t *testing.T) {
 		{15, -1, nil},
 		{16, -1, sorted(typeKeywords)},
 		{17, -1, sorted(rules, statementKeywords, operatorsRuleKeywords)},
-		{18, -1, []string{"acc", "e", "xs"}},
+		{18, -1, []string{"xs"}},
+		{19, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
+		{20, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 	} {
 		char := tc.char
 		if char < 0 {
@@ -585,7 +589,7 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///sem.pego"
-	src := "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}"
+	src := "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
 	c.open(uri, src)
 	var res struct {
 		Data []int `json:"data"`
@@ -620,6 +624,8 @@ func TestSemanticTokens(t *testing.T) {
 		"startPos property.defaultLibrary",
 		"rule keyword", "n function.declaration", "N type", "operators keyword", "operand keyword", "a function", "level keyword",
 		"infix keyword", "left keyword", `"+" string`, "rule keyword", "bind function.declaration", "v variable.declaration", "1 number",
+		"rule keyword", "lam function.declaration", "xs variable.declaration", "n function", "map function.defaultLibrary",
+		"$xs parameter", "e parameter",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got\n%q\nwant\n%q", got, want)

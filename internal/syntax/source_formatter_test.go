@@ -21,7 +21,7 @@ rule main = "x" => A{/* field */ X: 1}`,
 		`type Int terminal
 rule main = "x" => Int{/* terminal */ "0"}`,
 		`rule main = "x" => list(/* same */ 1, /* same */ 2)`,
-		`rule main = "x" => map(list(), /* lambda */ (x) => $x)`,
+		`rule main = "x" => map(list(), /* lambda */ (x) => x)`,
 		`rule main = "x" => int(/* unary */ -1)`,
 		`rule main = "x" => int(- /* operand */ 1)`,
 		`rule main = "x" => int(

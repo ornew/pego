@@ -43,7 +43,7 @@ rule expr Expr = operators {
     skip " "*
     operand atom
     level {
-        postfix "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => $e.x), N: len($items)}
+        postfix "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.x), N: len($items)}
     }
 }
 rule atom Atom = "a"

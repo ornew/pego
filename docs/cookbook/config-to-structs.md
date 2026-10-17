@@ -27,7 +27,7 @@ rule key Key = [a-z_]+
 rule int Int = "-"? [0-9]+
 rule str Str = "\"" ("\\" . / [^"\\\n])* "\""
 rule bool Bool = "true" / "false"
-rule array Array = "[" -ws vs:(v:value -ws -","? -ws)* "]" => Array{Items: map($vs, (x) => $x.v)}
+rule array Array = "[" -ws vs:(v:value -ws -","? -ws)* "]" => Array{Items: map($vs, (x) => x.v)}
 
 rule ws = (blank / comment)*
 rule blank = [ \t\r\n]+

@@ -17,7 +17,7 @@ rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs}
 // leaves the line break out (`!$$ r:record eol -> $r`) makes ParseAST about 7% slower.
 rule record Record = (
     !$$ first:field rest:(-"," f:field)* eol
-) => Record{Fields: concat(list($first), map($rest, (r) => $r.f))}
+) => Record{Fields: concat(list($first), map($rest, (r) => r.f))}
 
 // A quoted field, then an unquoted one: runs of ordinary characters separated by the rare ones ("" in
 // a quoted field, a CR that does not end the line in an unquoted one). Written inline rather than as

@@ -17,13 +17,13 @@ rule value Value = object / array / string / number / bool / null
 rule object Object = "{" ws ms:members? ws "}" => Object{Members: concat($ms)}
 rule members = (
     first:member rest:(-ws -"," -ws m:member)*
-) => concat(list($first), map($rest, (r) => $r.m))
+) => concat(list($first), map($rest, (r) => r.m))
 rule member Member = k:string ws ":" ws v:value => Member{Key: $k, Value: $v}
 
 rule array Array = "[" ws es:elements? ws "]" => Array{Elements: concat($es)}
 rule elements = (
     first:value rest:(-ws -"," -ws v:value)*
-) => concat(list($first), map($rest, (r) => $r.v))
+) => concat(list($first), map($rest, (r) => r.v))
 
 rule string = "\"" s:chars "\"" => $s
 // Runs of unescaped characters are matched by an inline class: calling a rule for each character

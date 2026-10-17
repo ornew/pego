@@ -92,6 +92,7 @@ const (
 	tAssign
 	tListConstructor
 	tTerminalConstructor
+	tParam // a reference to a lambda parameter, a CaptureRef with Param set
 )
 
 // Type and statement kinds
@@ -481,7 +482,11 @@ func (w *encoder) term(t grammar.Term) {
 	case *grammar.NilLit:
 		w.byte(tNil)
 	case *grammar.CaptureRef:
-		w.byte(tCapture)
+		if t.Param {
+			w.byte(tParam)
+		} else {
+			w.byte(tCapture)
+		}
 		w.str(t.Name)
 	case *grammar.IndexRef:
 		w.byte(tIndex)
@@ -1015,6 +1020,8 @@ func (r *decoder) term() grammar.Term {
 		return &grammar.NilLit{}
 	case tCapture:
 		return &grammar.CaptureRef{Name: r.str()}
+	case tParam:
+		return &grammar.CaptureRef{Name: r.str(), Param: true}
 	case tIndex:
 		return &grammar.IndexRef{Index: r.uint()}
 	case tVar:

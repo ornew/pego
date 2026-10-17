@@ -43,7 +43,7 @@ rule seed Doc = "a" => Doc{N: 0}
 `, []string{"a", "", "aa", "b"}},
 	{"typed/LR_projected_repeat", `type Doc = { Items []Match }
 rule main Doc = e:expr $$ => $e
-rule expr Doc = p:expr ";" items:(x:[a-z] #atomic -",") #repeat(1, 3) / items:(x:[a-z] #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => $e.x)}
+rule expr Doc = p:expr ";" items:(x:[a-z] #atomic -",") #repeat(1, 3) / items:(x:[a-z] #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => e.x)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a,b,c,d,", "a,;c,?", ""}},
 	{"typed/LR_element_frames", `type Doc = { N int }
 rule main Doc = e:expr $$ => $e

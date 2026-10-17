@@ -32,7 +32,7 @@ rule name = [a-z]+ #atomic
 func TestGeneratedNodeDirectFrameRoutes(t *testing.T) {
 	for _, src := range []string{
 		`type N = { Items []Match }
-rule main N = items:(x:[a-z] #atomic ",")+ $$ => N{Items: map($items, (e) => $e.x)}`,
+rule main N = items:(x:[a-z] #atomic ",")+ $$ => N{Items: map($items, (e) => e.x)}`,
 		`rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 	} {
 		g, err := syntax.Parse(src)

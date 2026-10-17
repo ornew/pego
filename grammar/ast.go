@@ -609,10 +609,12 @@ type NilLit struct {
 	SourceInfo `json:"source,omitempty"`
 }
 
-// CaptureRef is a reference $name to a capture or a lambda parameter.
+// CaptureRef is a reference $name to a capture, or name to a lambda parameter.
 type CaptureRef struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string `json:"name"`
+	// Param marks a reference to a lambda parameter, which is written without $.
+	Param bool `json:"param,omitempty"`
 	// Pragma distinguishes behavioral # directives from @ attributes.
 	Pragma bool `json:"pragma,omitempty"`
 }

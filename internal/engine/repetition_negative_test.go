@@ -48,7 +48,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 		{"ordinary", `rule main = "é"* $$`, OpRepeat},
 		{"class scan", `rule main = [é]* #atomic $$`, OpScan},
 		{"any scan", `rule main = .* #atomic $$`, OpScan},
-		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => $x.v)`, OpRepeat},
+		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => x.v)`, OpRepeat},
 	} {
 		for _, maximum := range negativeMaxima() {
 			t.Run(fmt.Sprintf("%s/%d", c.name, maximum), func(t *testing.T) {

@@ -3,6 +3,7 @@ package syntax
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
@@ -68,7 +69,7 @@ func Parse(src string) (*grammar.Grammar, error) {
 }
 
 // ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
-// positional captures. It serves Fix and tests of grammars that still reach the engine in
+// positional captures and lambda parameters written $x. It serves Fix and tests of grammars that still reach the engine in
 // that form through JSON.
 func ParseLegacy(src string) (*grammar.Grammar, error) {
 	errs := &errorList{}
@@ -106,8 +107,11 @@ type parser struct {
 	toks []token
 	i    int
 	errs *errorList
-	// legacy accepts the removed syntax that pego fix rewrites.
+	// legacy accepts the removed syntax that pego fix rewrites: positional captures and lambda
+	// parameters written $x.
 	legacy bool
+	// params holds the parameters of the lambdas whose bodies are being parsed, innermost last.
+	params []string
 	ctx    context.Context
 	work   uint
 	// cur is the line break most recently recorded. Comments that do not
@@ -1384,8 +1388,14 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	}
 	layout = p.takeTermLayout()
 	for range k + 2 {
+		if t := p.tok(); !p.legacy && t.kind == tIdent && (t.text == "true" || t.text == "false" || t.text == "nil") {
+			p.errs.addRange(t.pos, t.end, fmt.Sprintf("%s cannot name a lambda parameter", t.text))
+		}
 		p.next()
 	}
+	outer := len(p.params)
+	p.params = append(p.params, params...)
+	defer func() { p.params = p.params[:outer] }()
 	return &grammar.Lambda{Params: params, Body: p.term()}
 }
 
@@ -1480,6 +1490,9 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		return &grammar.StringLit{Value: t.text}
 	case tCapture:
 		p.next()
+		if !p.legacy && slices.Contains(p.params, t.text) {
+			p.errs.addRange(t.pos, t.end, fmt.Sprintf("lambda parameters are written without $: write %s; run pego fix to rewrite $%s", t.text, t.text))
+		}
 		return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tIndex:
 		p.next()
@@ -1510,6 +1523,10 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 				}
 			}
 			return call
+		}
+		if slices.Contains(p.params, t.text) {
+			// A name in a call or a constructor is a function or a type, never a parameter.
+			return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text, Param: true}
 		}
 		return &grammar.VarRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tPunct:

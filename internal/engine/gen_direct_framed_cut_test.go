@@ -34,7 +34,7 @@ func typedFramedCutCases(t *testing.T) []genCase {
 rule main Doc = e:expr $$ => $e
 rule expr Doc = (
     previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat(1, 3) / items:(x:[a-z] #atomic #cut -",") #repeat(1, 3)
-) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
+) => Doc{Items: map($items, (e) => e.x), N: len($items)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a", "a,b", "a,;c", "a,;c,d,?", ""}},
 		genCase{"typed/framed_cut_OperatorsRule_longest", `type Atom = { Text string }
 type Prefix = { X Expr; Tag int; Text Match }

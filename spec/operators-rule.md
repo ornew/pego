@@ -42,7 +42,7 @@ rule expr Expr = operators {
     }
 }
 
-rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => $r.x))
+rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => r.x))
 
 rule number Num = [0-9]+
 rule ident Ident = [a-z]+

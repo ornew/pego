@@ -54,8 +54,8 @@ rule e E = operators {
     operand v1:"1" => E{X: $v1}
     level { infix left "+" }
 }`, `operators of e without an action produce Operator, which is not assignable to E`},
-		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => $a)`, `foldl: expected a list, got Match`},
-		{`rule main = xs:"a"* => map($xs, (x) => len($x))`, `map: the function must produce a node, got int`},
+		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => a)`, `foldl: expected a list, got Match`},
+		{`rule main = xs:"a"* => map($xs, (x) => len(x))`, `map: the function must produce a node, got int`},
 		{`rule main = "a" => list(1)`, `list: elements must be nodes, got int`},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
@@ -73,11 +73,11 @@ func TestWellTyped(t *testing.T) {
 		`type Number terminal
 type Op = { Left Node; Op Match; Right Node }
 type Node ~ Op | Number
-rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Op: $i.op, Right: $i.r})
+rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
 rule num Number = [0-9]+`,
 		// The accumulator type is widened by inference
 		`type Op = { L node; R Match }
-rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: $acc, R: $i.r})
+rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
 		`type P = { X *Match; Y []Match; Z Seq }
@@ -88,8 +88,8 @@ rule pair = "(" ")"`,
 		`rule main = x:"a"? => $x`,
 		`rule main *Match = "a"?`,
 		`type C = { X Match; Next *C }
-rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: $x, Next: $acc})`,
-		`rule main = xs:p* => map($xs, (p) => $p.x)
+rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
+		`rule main = xs:p* => map($xs, (p) => p.x)
 rule p = x:"a"? #atomic ";"`,
 		// Inference for recursive rules
 		`rule list = "a" list / _
@@ -97,7 +97,7 @@ rule main = l:list => $l`,
 		// Predicates and variables
 		`rule main = {n := 0} s:" "* #atomic {len($s) > n && text($s) != "x"} "a"`,
 		// concat over a union of list types (foldl widens []never with []Match) and over a recovered Error
-		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat($acc, list($x))))
+		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat(acc, list(x))))
 rule item = "a" #atomic`,
 		`type S = { X Match }
 rule main = xs:stmts => concat($xs)
@@ -119,7 +119,7 @@ func TestInferenceOfGrowingTypes(t *testing.T) {
 rule r0 = ";"
 rule r1 = "a"
 rule r2 = r3 "é" / "a"
-rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1.children), (i) => concat(list($i), map($c1.children, (j) => list($i, $j))))`
+rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1.children), (i) => concat(list(i), map($c1.children, (j) => list(i, j))))`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

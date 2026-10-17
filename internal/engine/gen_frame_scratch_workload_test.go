@@ -15,7 +15,7 @@ const nodeFrameScratchGrammar = `type Tok terminal
 type Item = { T Tok }
 type Root = { Items []Item }
 type Bad = { N int }
-rule main = xs:(i:item)* $$ => Root{Items: map($xs, (x) => $x.i)}
+rule main = xs:(i:item)* $$ => Root{Items: map($xs, (x) => x.i)}
 rule item = t:tok {text($t) == "é" || text($t) == "�"} => Item{T: $t}
 rule tok Tok = "é" / "�"
 rule abort = x:"é"* #atomic => Bad{N: 10 / len($x)}

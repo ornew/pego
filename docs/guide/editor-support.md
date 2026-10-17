@@ -179,7 +179,8 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
   After an error, the parser skips to the next `rule`, `operators`, or `type`
 keyword, so one broken definition does not hide later Definition Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
-  lists the labels of the whole definition, whether or not they are in scope.
+  lists the labels of the whole definition, whether or not they are in scope; lambda parameters, which are written
+  without `$`, are offered with the other names inside the lambda's body.
 - Completion looks at the tokens before the cursor, not at a parse of the definition being written, so in unusual
   layouts it can offer a name that does not fit.
 

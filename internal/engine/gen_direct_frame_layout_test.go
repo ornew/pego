@@ -36,7 +36,7 @@ rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
     operand atom
     level {
-        postfix "[" items:((_|_ ignored:"z" #atomic / x:[a-z] #atomic) {len($x) == 1 && $ignored == nil} -",") #repeat(3) "]" => Doc{Items: map($items, (e) => $e.x), N: len($items)}
+        postfix "[" items:((_|_ ignored:"z" #atomic / x:[a-z] #atomic) {len($x) == 1 && $ignored == nil} -",") #repeat(3) "]" => Doc{Items: map($items, (e) => e.x), N: len($items)}
     }
 }
 rule atom Atom = "a"
@@ -44,7 +44,7 @@ rule atom Atom = "a"
 	{"typed/OperatorsRule_dead_projection", `type Doc = { Items []*Match }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = operators {
-    operand _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:[a-z] #atomic) {$unused == nil} -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x)}
+    operand _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:[a-z] #atomic) {$unused == nil} -",") #repeat(3) => Doc{Items: map($items, (e) => e.x)}
 }
 `, []string{"a,b,c,", "a,b,", "a,b,é,", "z", "", "a,b,c,?"}},
 	{"typed/OperatorsRule_dead_lookahead_capture", `type Doc = { Text *Match; Missing *Match }

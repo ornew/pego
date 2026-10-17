@@ -5,7 +5,7 @@
   (design record 012). Steps that mattered, on JSON (262 KB):
   - the runtime alone, with values as `any`: 9.8 ms, 22.4 k allocations (variadic struct constructors);
   - generated constructors `tmk_T`: 9.7 ms, 1.1 k allocations, 15 MB;
-  - projected repetitions (`map($rest, (r) => $r.f)`): 9.0 ms, 12 MB;
+  - projected repetitions (`map($rest, (r) => r.f)`): 9.0 ms, 12 MB;
   - frames reused when their rule returns: 7.6 MB (time within noise);
   - scratch memory pooled across parses: 2.4 MB (time within noise; the remaining cost is not allocation);
   - rule calls with methods of their own, direct actions, one recovery per parse for action errors and constructors

@@ -63,7 +63,7 @@ errors and memoization decisions are literally shared. The generator writes the 
   `terror`), so the public types have no unexported fields.
 - **Rule calls.** Each rule gets methods of its own for call, invoke and finish, which call the body and the action
   directly and finish the value as the rule's kind requires.
-- **Projections.** A repetition captured only to be taken apart by `map($rest, (r) => $r.f)` (the usual
+- **Projections.** A repetition captured only to be taken apart by `map($rest, (r) => r.f)` (the usual
   `first:x rest:(-"," r:x)*` list) gathers the values of `f` directly instead of a record per element (the
   conditions are in performance.md, change 52; generated `Parse` does the same).
 - **Scratch memory.** CST nodes, value lists, capture frames (freed when their rule returns), memo entries and the

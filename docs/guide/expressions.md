@@ -266,9 +266,9 @@ type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
-rule expr Expr = l:term rest:(ws op:("+" / "-") #atomic r:term)* => foldl($l, $rest, (acc, i) => Binary{Left: $acc, Op: $i.op, Right: $i.r})
+rule expr Expr = l:term rest:(ws op:("+" / "-") #atomic r:term)* => foldl($l, $rest, (acc, i) => Binary{Left: acc, Op: i.op, Right: i.r})
 
-rule term Expr = l:unary rest:(ws op:("*" / "/" / "%") #atomic r:unary)* => foldl($l, $rest, (acc, i) => Binary{Left: $acc, Op: $i.op, Right: $i.r})
+rule term Expr = l:unary rest:(ws op:("*" / "/" / "%") #atomic r:unary)* => foldl($l, $rest, (acc, i) => Binary{Left: acc, Op: i.op, Right: i.r})
 
 rule unary Expr = neg / power
 rule neg Expr = ws op:("-" / "+") #atomic x:unary => Unary{Op: $op, X: $x}
@@ -311,9 +311,9 @@ type E ~ Num | Bin
 rule main E = e:cmp ws $$ => $e
 
 // at most one comparison: "1 < 2 < 3" is a syntax error
-rule cmp E = l:add rest:(ws op:("<=" / ">=" / "<" / ">" / "==" / "!=") #atomic r:add) #repeat(0, 1) => foldl($l, $rest, (acc, i) => Bin{L: $acc, Op: $i.op, R: $i.r})
+rule cmp E = l:add rest:(ws op:("<=" / ">=" / "<" / ">" / "==" / "!=") #atomic r:add) #repeat(0, 1) => foldl($l, $rest, (acc, i) => Bin{L: acc, Op: i.op, R: i.r})
 
-rule add E = l:atom rest:(ws op:("+" / "-") #atomic r:atom)* => foldl($l, $rest, (acc, i) => Bin{L: $acc, Op: $i.op, R: $i.r})
+rule add E = l:atom rest:(ws op:("+" / "-") #atomic r:atom)* => foldl($l, $rest, (acc, i) => Bin{L: acc, Op: i.op, R: i.r})
 
 rule atom E = ws n:num => $n
 rule num Num = [0-9]+
@@ -381,7 +381,7 @@ rule expr Expr = operators {
     }
 }
 
-rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => $r.x))
+rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => r.x))
 
 rule number Num = [0-9]+
 rule ident Ident = [a-z]+
@@ -881,7 +881,7 @@ rule operation Expr = operators {
         postfix "." ws n:name => Member{X: $lhs, Name: $n}
     }
 }
-rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => $r.x))
+rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => r.x))
 ```
 
 (The grammar is abridged here; the types and the lexical rules are in the file.)

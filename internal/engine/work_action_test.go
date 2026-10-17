@@ -148,9 +148,9 @@ func TestWorkActionBatchRoutesAndPoolRetry(t *testing.T) {
 		name   string
 		action string
 	}{
-		{"map", `map($parts, (x) => $x)`},
-		{"foldl", `foldl(nil, $parts, (acc, x) => $acc)`},
-		{"foldr", `foldr(nil, $parts, (acc, x) => $acc)`},
+		{"map", `map($parts, (x) => x)`},
+		{"foldl", `foldl(nil, $parts, (acc, x) => acc)`},
+		{"foldr", `foldr(nil, $parts, (acc, x) => acc)`},
 		{"concat", `concat($parts)`},
 	}
 	for _, route := range routes {
@@ -183,7 +183,7 @@ rule items = [a-z] #atomic*`)
 }
 
 func TestWorkActionBatchCancellationStopsPublication(t *testing.T) {
-	prog := compile(t, `rule main = parts:items => map($parts, (x) => $x)
+	prog := compile(t, `rule main = parts:items => map($parts, (x) => x)
 
 rule items = [a-z] #atomic*`)
 	input := strings.Repeat("a", 1024)

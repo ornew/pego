@@ -45,7 +45,7 @@ rule l_yaml_stream Stream = (
     -l_document_prefix* first:l_any_document #repeat(0, 1)
     rest:(-(l_document_suffix+ l_document_prefix*)+ d:l_any_document / -l_document_prefix* d:l_explicit_document)*
     -(l_document_suffix / l_document_prefix)* $$
-) => Stream{Documents: concat($first, map($rest, (r) => $r.d))}
+) => Stream{Documents: concat($first, map($rest, (r) => r.d))}
 
 // [202] l-document-prefix ::= c-byte-order-mark? l-comment*, which must not match the empty string
 // here, where it is repeated.
@@ -101,7 +101,7 @@ rule ns_tag_prefix Word = "!" ns_uri_char* / ns_tag_char ns_uri_char*
 // Known names must satisfy their own syntax; longer unknown names remain reserved directives.
 rule ns_reserved_directive Directive = (
     !("YAML" !ns_char / "TAG" !ns_char) name:ns_directive_name ps:(-s_separate_in_line !"#" p:ns_directive_parameter)*
-) => Directive{Name: $name, Params: map($ps, (x) => $x.p)}
+) => Directive{Name: $name, Params: map($ps, (x) => x.p)}
 rule ns_directive_name Word = ns_char+
 rule ns_directive_parameter Word = ns_char+
 
@@ -187,7 +187,7 @@ rule seq_space = &(" "* #atomic "-" !ns_char) ({c == "block-out"} {n := n - 1} /
 // The lookahead reads the indentation n+m of the first entry.
 rule l_block_sequence = (
     &s:" "* #atomic {len($s) > n} {n := len($s)} es:(-s_indent e:c_l_block_seq_entry)+
-) => map($es, (x) => $x.e)
+) => map($es, (x) => x.e)
 // [184] c-l-block-seq-entry(n) ::= "-" <not followed by an ns-char> s-l+block-indented(n,block-in)
 rule c_l_block_seq_entry Value = "-" !ns_char {c := "block-in"} v:s_l_block_indented => $v
 // [185] s-l+block-indented(n,c) ::= ( s-indent(m) ( ns-l-compact-sequence(n+1+m) | ns-l-compact-mapping(n+1+m) ) )
@@ -197,16 +197,16 @@ rule compact_collection Value = s:" "* #atomic {n := n + 1 + len($s)} v:(ns_l_co
 // [186] ns-l-compact-sequence(n) ::= c-l-block-seq-entry(n) ( s-indent(n) c-l-block-seq-entry(n) )*
 rule ns_l_compact_sequence Sequence = (
     first:c_l_block_seq_entry rest:(-s_indent e:c_l_block_seq_entry)*
-) => Sequence{Items: concat(list($first), map($rest, (r) => $r.e))}
+) => Sequence{Items: concat(list($first), map($rest, (r) => r.e))}
 
 // [187] l+block-mapping(n) ::= ( s-indent(n+m) ns-l-block-map-entry(n+m) )+ for some m > 0
 rule l_block_mapping = (
     &s:" "* #atomic {len($s) > n} {n := len($s)} es:(-s_indent e:ns_l_block_map_entry)+
-) => map($es, (x) => $x.e)
+) => map($es, (x) => x.e)
 // [195] ns-l-compact-mapping(n) ::= ns-l-block-map-entry(n) ( s-indent(n) ns-l-block-map-entry(n) )*
 rule ns_l_compact_mapping Mapping = (
     first:ns_l_block_map_entry rest:(-s_indent e:ns_l_block_map_entry)*
-) => Mapping{Pairs: concat(list($first), map($rest, (r) => $r.e))}
+) => Mapping{Pairs: concat(list($first), map($rest, (r) => r.e))}
 // [188] ns-l-block-map-entry(n) ::= c-l-block-map-explicit-entry(n) | ns-l-block-map-implicit-entry(n)
 rule ns_l_block_map_entry Pair = c_l_block_map_explicit_entry / ns_l_block_map_implicit_entry
 // [189] c-l-block-map-explicit-entry(n) ::= c-l-block-map-explicit-key(n) ( l-block-map-explicit-value(n) | e-node )
@@ -313,7 +313,7 @@ rule c_flow_sequence Sequence = (
 rule ns_s_flow_seq_entries = (
     first:ns_flow_seq_entry -s_separate? rest:(-"," -s_separate? e:ns_flow_seq_entry -s_separate?)*
     -("," s_separate?)?
-) => concat(list($first), map($rest, (r) => $r.e))
+) => concat(list($first), map($rest, (r) => r.e))
 // [139] ns-flow-seq-entry(n,c) ::= ns-flow-pair(n,c) | ns-flow-node(n,c)
 rule ns_flow_seq_entry Value = ns_flow_pair / ns_flow_node
 
@@ -327,7 +327,7 @@ rule c_flow_mapping Mapping = (
 rule ns_s_flow_map_entries = (
     first:ns_flow_map_entry -s_separate? rest:(-"," -s_separate? e:ns_flow_map_entry -s_separate?)*
     -("," s_separate?)?
-) => concat(list($first), map($rest, (r) => $r.e))
+) => concat(list($first), map($rest, (r) => r.e))
 // [142] ns-flow-map-entry(n,c) ::= ( "?" s-separate(n,c) ns-flow-map-explicit-entry(n,c) ) | ns-flow-map-implicit-entry(n,c)
 rule ns_flow_map_entry Pair = flow_map_explicit / ns_flow_map_implicit_entry
 rule flow_map_explicit Pair = "?" s_separate e:ns_flow_map_explicit_entry => $e

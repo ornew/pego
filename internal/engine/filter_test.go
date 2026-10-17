@@ -13,16 +13,16 @@ import (
 )
 
 const filterIdentitySource = `type Out = { First Match; Kept []Match; Empty []Match }
-rule main = first:"a" second:"b" $$ => Out{First: $first, Kept: filter(list($first, $second, $first), (x) => text($x) == "a"), Empty: filter(nil, (x) => true)}`
+rule main = first:"a" second:"b" $$ => Out{First: $first, Kept: filter(list($first, $second, $first), (x) => text(x) == "a"), Empty: filter(nil, (x) => true)}`
 
 func filterCases() []genCase {
 	return []genCase{
 		{"identity and nil input", filterIdentitySource, []string{"ab", "a", "ac", ""}},
 		{"nil elements", `type Out = { Items []*Match }
-rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => $item == nil || text($item) == "é")}`, []string{"é", "a", ""}},
+rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => item == nil || text(item) == "é")}`, []string{"é", "a", ""}},
 		{"remove all", `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, []string{"é", "", "a"}},
-		{"keep order", `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => $item != nil)`, []string{"ab", "", "é"}},
-		{"nested lambda", `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list($item, nil), (inner) => $inner != nil)) == 1)`, []string{"a", "", "ab"}},
+		{"keep order", `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => item != nil)`, []string{"ab", "", "é"}},
+		{"nested lambda", `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list(item, nil), (inner) => inner != nil)) == 1)`, []string{"a", "", "ab"}},
 		{"predicate error rollback", `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, []string{"a?", "a!", "a", ""}},
 		{"value error", `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, []string{"a", "", "ab"}},
 		{"dynamic nonbool", `rule main = {value := 1} v1:"a" $$ => filter(list($v1), (item) => value)`, []string{"a", "", "ab"}},
@@ -80,7 +80,7 @@ func TestFilterTypeAndRuntimeValidation(t *testing.T) {
 		`rule main = "a" => filter(1, (x) => true)`,
 		`rule main = v1:"a" => filter(list($v1))`,
 		`type Out = { Items []Match }
-rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => $x != nil)}`,
+rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 	} {
 		g, err := syntax.Parse(source)
 		if err != nil {

@@ -49,10 +49,10 @@ rule first_trailing CommentText = (
 rule remaining CommentBoundary = scope_tail / next_boundary
 rule scope_tail CommentBoundary = (
   -space* xs:(c:comment -space*)* &scope_end
-) => CommentBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => $x.c), HasNext: false}
+) => CommentBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => x.c), HasNext: false}
 rule next_boundary CommentBoundary = (
   -space* detached:(c:detached_group -space*)* lead:(leading_group / empty_comment) -space* &next_token
-) => CommentBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => $x.c), HasNext: true}
+) => CommentBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => x.c), HasNext: true}
 rule empty_comment CommentText = _ => CommentText{Text: ""}
 rule detached_group CommentText = (
   c:line_group &line_flush / c:block_comment &block_flush
@@ -66,13 +66,13 @@ rule comment_start = "//" / "/*"
 rule comment CommentText = line_group / block_comment
 rule line_group CommentText = (
   first:line_comment rest:(-horizontal c:line_comment)*
-) => CommentText{Text: foldl($first.Text, $rest, (s, x) => $s + $x.c.Text)}
+) => CommentText{Text: foldl($first.Text, $rest, (s, x) => s + x.c.Text)}
 rule line_comment CommentText = "//" body:[^\r\n]* end:nl? => CommentText{Text: text($body) + text($end)}
 rule block_comment CommentText = (
   "/*" first:block_line rest:(line:nl -horizontal -block_star? body:block_line)* "*/"
-) => CommentText{Text: foldl($first.Text, $rest, (s, x) => $s + text($x.line) + $x.body.Text)}
+) => CommentText{Text: foldl($first.Text, $rest, (s, x) => s + text(x.line) + x.body.Text)}
 rule block_star = "*" !"/"
-rule block_line CommentText = xs:(c:block_piece)* => CommentText{Text: foldl("", $xs, (s, x) => $s + $x.c.Text)}
+rule block_line CommentText = xs:(c:block_piece)* => CommentText{Text: foldl("", $xs, (s, x) => s + x.c.Text)}
 rule block_piece CommentText = nested_piece / character_piece
 rule nested_piece CommentText = c:block_comment => CommentText{Text: "/*" + $c.Text + "*/"}
 rule character_piece CommentText = c:(!(nl / "*/" / "/*") .) #atomic => CommentText{Text: text($c)}

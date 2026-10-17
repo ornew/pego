@@ -36,7 +36,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
     Right int
 }
 
-rule main Box = x:"z"* => Box{Items: concat(map($x, (i) => $i), list(), $x), Left: foldl(0, $x, (a, i) => $a + 1), Right: foldr(0, $x, (a, i) => $a + 1)}
+rule main Box = x:"z"* => Box{Items: concat(map($x, (i) => i), list(), $x), Left: foldl(0, $x, (a, i) => a + 1), Right: foldr(0, $x, (a, i) => a + 1)}
 
 rule fast = x:"z"* => $x`
 		consumer := `import * as p from "./parser.ts";

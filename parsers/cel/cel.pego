@@ -63,8 +63,8 @@ rule expr Expr = operators {
 // 9223372036854775808 after two negations), where a literal with a sign, "-9223372036854775808", is not (see
 // primary), and why "-1.f()" is a call on the literal -1.
 rule unary Expr = member / not_unary / neg_unary
-rule not_unary Expr = ops:(o:"!" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: $i.o, X: $acc})
-rule neg_unary Expr = ops:(o:"-" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: $i.o, X: $acc})
+rule not_unary Expr = ops:(o:"!" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: i.o, X: acc})
+rule neg_unary Expr = ops:(o:"-" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: i.o, X: acc})
 
 // Member = Primary | Member "." SELECTOR ["(" [ExprList] ")"] | Member "[" Expr "]", with the optional forms ".?" and
 // "[?". A call is longer than the selection of its name, so it wins where both match. The optional marker is a
@@ -102,15 +102,15 @@ rule paren Paren = "(" ws e:expr ws ")" => Paren{X: $e}
 rule ident_only Ident = i:ident !(ws "(") => $i
 rule ident Ident = ("." ws)? name_global
 rule call Call = f:ident ws "(" ws as:args? ws ")" => Call{Target: nil, Func: $f, Args: concat($as)}
-rule args = first:expr rest:(-ws -"," -ws x:expr)* => concat(list($first), map($rest, (r) => $r.x))
+rule args = first:expr rest:(-ws -"," -ws x:expr)* => concat(list($first), map($rest, (r) => r.x))
 
 rule list ListLit = "[" ws es:elems? ws ","? ws "]" => ListLit{Elems: concat($es)}
-rule elems = first:elem rest:(-ws -"," -ws x:elem)* => concat(list($first), map($rest, (r) => $r.x))
+rule elems = first:elem rest:(-ws -"," -ws x:elem)* => concat(list($first), map($rest, (r) => r.x))
 rule elem Expr = optional / expr
 rule optional Optional = "?" ws x:expr => Optional{X: $x}
 
 rule map MapLit = "{" ws es:entries? ws ","? ws "}" => MapLit{Entries: concat($es)}
-rule entries = first:entry rest:(-ws -"," -ws x:entry)* => concat(list($first), map($rest, (r) => $r.x))
+rule entries = first:entry rest:(-ws -"," -ws x:entry)* => concat(list($first), map($rest, (r) => r.x))
 rule entry Entry = opt_entry / plain_entry
 rule opt_entry Entry = "?" ws k:expr ws ":" ws v:expr => Entry{Key: $k, Value: $v, Optional: true}
 rule plain_entry Entry = k:expr ws ":" ws v:expr => Entry{Key: $k, Value: $v, Optional: false}
@@ -123,7 +123,7 @@ rule message MessageLit = (
     t:type_name ws "{" ws fs:fields? ws ","? ws "}"
 ) => MessageLit{Type: $t, Fields: concat($fs)}
 rule type_name Ident = ("." ws)? name_plain (ws "." ws name_plain)*
-rule fields = first:field rest:(-ws -"," -ws x:field)* => concat(list($first), map($rest, (r) => $r.x))
+rule fields = first:field rest:(-ws -"," -ws x:field)* => concat(list($first), map($rest, (r) => r.x))
 rule field Field = opt_field / plain_field
 rule opt_field Field = "?" ws n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, Optional: true}
 rule plain_field Field = n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, Optional: false}

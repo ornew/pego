@@ -54,11 +54,11 @@ rule two = ("é" / _) #repeat(2) #stream
 rule unbounded = ("é" / _) #repeat(2, ) #stream
 rule atomic = ("é" / _) #repeat(2, ) #atomic
 rule discarded = -("é" / _) #repeat(2, )
-rule projected = xs:(f:("é" / _)) #repeat(2, ) => map($xs, (x) => $x.f)
+rule projected = xs:(f:("é" / _)) #repeat(2, ) => map($xs, (x) => x.f)
 rule fallback = ("é" / _) #repeat(3) / "é"`,
 			[]string{"z", "zé", "o", "oé", "oéé", "t", "té", "téé", "tééé", "u", "ué", "uéé", "uééé", "a", "aé", "aéé", "d", "dé", "déé", "p", "pé", "péé", "f", "fé", "féé", "fééé", ""}},
 		{"stream capture recognition", `type N = { T []Match }
-rule main = items:(x:"é" #atomic {text($x) == "é"}) #repeat(0, 2) #stream $$ => N{T: map($items, (i) => $i.x)}`,
+rule main = items:(x:"é" #atomic {text($x) == "é"}) #repeat(0, 2) #stream $$ => N{T: map($items, (i) => i.x)}`,
 			[]string{"", "é", "éé", "ééé", "a", "éa"}},
 		{"literal text predicate dispatch", `type R = { X *Match }
 rule main = w:[^!]+ #atomic {text($w) == "a" || "b" == text($w) || text($w) == "c" || text($w) == "é" || text($w) == "😀" || text($w) == "λ" || text($w) == "日本語" || text($w) == "long-literal"} $$ => R{X: $w}`,
@@ -112,11 +112,11 @@ rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
 type Node ~ Op | Match
 type Args = { Items []Match; N int; S string; B bool }
 rule main = e:expr ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
-rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Op: $i.op, Right: $i.r})
-rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
+rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
 		{"projected and indexed repetition", `type L = { Items []Match; Rest node; N int }
-rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $rest, N: len($rest)}
+rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => e.r)), Rest: $rest, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A = { N int }
 rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
@@ -407,10 +407,10 @@ const typedGrammar = `type Name terminal
 type Num terminal
 type Node ~ Call | Name | Num | Seq
 type Call = { Fn Name; Args []Node; Span Match; N int; Opt *Match; Rows [][]Num; Ok bool }
-rule main []Node = xs:item* $$ => concat(map($xs, (x) => $x))
+rule main []Node = xs:item* $$ => concat(map($xs, (x) => x))
 rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")
 rule call Call = f:name "(" a:args? ")" s:"!"? #atomic o:"?"? ";" => Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
-rule args = first:item rest:(-"," x:item)* => concat(list($first), map($rest, (r) => $r.x))
+rule args = first:item rest:(-"," x:item)* => concat(list($first), map($rest, (r) => r.x))
 rule grp = "[" n:num "]" ";"
 rule name Name = [a-z]+
 rule num Num = [0-9]+`

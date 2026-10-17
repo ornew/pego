@@ -22,7 +22,7 @@ func wideRepetitionCases() []genCase {
 			{"maximum", `"é" #repeat(0,%s) $$`},
 			{"class scan", `[é] #repeat(0,%s) #atomic $$`},
 			{"any scan", `. #repeat(0,%s) #atomic $$`},
-			{"projection", `xs:(v:"é") #repeat(0,%s) $$ => map($xs, (x) => $x.v)`},
+			{"projection", `xs:(v:"é") #repeat(0,%s) $$ => map($xs, (x) => x.v)`},
 		} {
 			cases = append(cases, genCase{"wide " + c.name + " " + bound, "rule main = " + fmt.Sprintf(c.body, bound), []string{"", "é", "éé", "x"}})
 		}

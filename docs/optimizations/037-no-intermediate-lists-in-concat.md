@@ -1,6 +1,6 @@
 # 37. No Intermediate Lists In `concat`
 
-- `concat(list($first), map($rest, (r) => $r.x))`, the usual way to build a list from a first element and the rest,
+- `concat(list($first), map($rest, (r) => r.x))`, the usual way to build a list from a first element and the rest,
   built two lists only for `concat` to copy their elements: about 19k list nodes per JSON parse. When an argument of
   `concat` is itself a call of `list`, `map` or `concat`, the closure backend now pushes that call's elements
   directly onto the stack `concat` collects on, and the code generator emits the same pushes. This is done only when

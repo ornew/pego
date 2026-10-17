@@ -198,7 +198,7 @@ rule main Module = (
 // The first statement must not be indented.
 rule first_stmts = (
     i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) == 0 && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == 0}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) == 0 && foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail) == 0}
     @error(message="unexpected indent")
     s:stmts (-ws -";")?
 ) => $s
@@ -212,10 +212,10 @@ rule module_end = (eol blank*)? [ \t\u{c}]* ("\\" newline !$$ [ \t\u{c}]*)* comm
 // block's indentation.
 rule stmts = (
     f:stmt r:(-ws -";" -ws s:simple_stmt / -stmt_sep s:stmt)*
-) => concat(list($f), map($r, (x) => $x.s))
+) => concat(list($f), map($r, (x) => x.s))
 rule stmt_sep = (
     (ws ";")? eol blank* i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
 )
 
 // The body of a compound statement, after its ':': simple statements on the same line, or an
@@ -223,19 +223,19 @@ rule stmt_sep = (
 rule block = -ws b:(indented_block / simple_stmts) => $b
 rule indented_block = (
     -eol -blank* i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304 && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304 && foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304}
     @error(message="expected an indented block")
     {ind / (4194304 * 4194304) < 99} @error(message="too many levels of indentation")
-    {ind := foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
+    {ind := foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
     s:stmts
 ) => $s
-rule simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* => concat(list($f), map($r, (x) => $x.s))
+rule simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* => concat(list($f), map($r, (x) => x.s))
 
 // The line end, blank lines and indentation before a clause that continues a compound statement
 // (elif, else, except, finally, case) or before the next decorator: the indentation of the block.
 rule clause_sep = (
     (ws ";")? eol blank* i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
 )
 
 // The indentation of a line: segments of spaces ended by a tab, then spaces. Only what follows the
@@ -287,7 +287,7 @@ rule assign_one Assign = (
 ) => Assign{Targets: list($t), Value: $v}
 rule assign_chain Assign = (
     ts:(t:star_targets -ws "=" !"=" -ws)+ v:annotated_rhs !(ws "=" !"=")
-) => Assign{Targets: map($ts, (x) => $x.t), Value: $v}
+) => Assign{Targets: map($ts, (x) => x.t), Value: $v}
 rule aug_assign AugAssign = (
     t:single_target -ws o:augassign_op -ws v:annotated_rhs
 ) => AugAssign{Target: $t, Op: $o, Value: $v}
@@ -301,13 +301,13 @@ rule return_stmt Return = kw_return (-ws e:star_expressions)? => Return{Value: $
 rule raise_stmt Raise = kw_raise (-ws e:expression (-ws kw_from -ws c:expression)?)? => Raise{Exc: $e, Cause: $c}
 rule global_stmt Global = (
     kw_global -ws f:identifier r:(-ws -"," -ws n:identifier)*
-) => Global{Names: concat(list($f), map($r, (x) => $x.n))}
+) => Global{Names: concat(list($f), map($r, (x) => x.n))}
 rule nonlocal_stmt Nonlocal = (
     kw_nonlocal -ws f:identifier r:(-ws -"," -ws n:identifier)*
-) => Nonlocal{Names: concat(list($f), map($r, (x) => $x.n))}
+) => Nonlocal{Names: concat(list($f), map($r, (x) => x.n))}
 rule del_stmt Delete = (
     kw_del -ws f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? &(ws (";" / "#" / newline / $$))
-) => Delete{Targets: concat(list($f), map($r, (x) => $x.t))}
+) => Delete{Targets: concat(list($f), map($r, (x) => x.t))}
 rule assert_stmt Assert = kw_assert -ws t:expression (-ws "," -ws m:expression)? => Assert{Test: $t, Msg: $m}
 rule yield_stmt ExprStmt = y:yield_expr => ExprStmt{Value: $y}
 rule type_alias TypeAlias = (
@@ -316,26 +316,26 @@ rule type_alias TypeAlias = (
 
 rule import_stmt Import = (
     kw_import -ws f:dotted_as_name r:(-ws -"," -ws a:dotted_as_name)*
-) => Import{Names: concat(list($f), map($r, (x) => $x.a))}
+) => Import{Names: concat(list($f), map($r, (x) => x.a))}
 rule dotted_as_name Alias = (
     d:dotted_name (-ws kw_as -ws a:ident)?
-) => Alias{Name: foldl(text($d.f), $d.r, (acc, x) => $acc + "." + text($x.n)), AsName: text($a)}
+) => Alias{Name: foldl(text($d.f), $d.r, (acc, x) => acc + "." + text(x.n)), AsName: text($a)}
 rule dotted_name = f:ident r:(-ws -"." -ws n:ident)*
 // `from` dots and an optional module (at least one of them), `import` and the names.
 rule from_stmt ImportFrom = (
     kw_from ds:(-ws d:("..." / "."))* m:from_module {len($ds) > 0 || $m.f != nil}
     -ws kw_import -ws ns:import_from_targets
-) => ImportFrom{Module: foldl(text($m.f), $m.r, (acc, x) => $acc + "." + text($x.n)), Names: $ns, Level: foldl(0, $ds, (acc, x) => $acc + len($x.d))}
+) => ImportFrom{Module: foldl(text($m.f), $m.r, (acc, x) => acc + "." + text(x.n)), Names: $ns, Level: foldl(0, $ds, (acc, x) => acc + len(x.d))}
 // Always a record (the empty match `_` makes it one), with the fields f and r when there is a module.
 rule from_module = _ (-ws f:ident r:(-ws -"." -ws n:ident)*)?
 rule import_from_targets = paren_import_names / plain_import_names / star_import
 rule paren_import_names = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:import_from_as_name
     r:(-ws -"," -ws a:import_from_as_name)* (-ws -",")? -ws ")"
-) => concat(list($f), map($r, (x) => $x.a))
+) => concat(list($f), map($r, (x) => x.a))
 rule plain_import_names = (
     f:import_from_as_name r:(-ws -"," -ws a:import_from_as_name)* !(ws ",")
-) => concat(list($f), map($r, (x) => $x.a))
+) => concat(list($f), map($r, (x) => x.a))
 rule star_import = a:star_alias => list($a)
 rule star_alias Alias = "*" => Alias{Name: "*"}
 rule import_from_as_name Alias = n:ident (-ws kw_as -ws a:ident)? => Alias{Name: text($n), AsName: text($a)}
@@ -377,8 +377,8 @@ rule with_items = paren_with_items / plain_with_items
 rule paren_with_items = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:with_item r:(-ws -"," -ws w:with_item)*
     (-ws -",")? -ws ")" &(ws ":")
-) => concat(list($f), map($r, (x) => $x.w))
-rule plain_with_items = f:with_item r:(-ws -"," -ws w:with_item)* => concat(list($f), map($r, (x) => $x.w))
+) => concat(list($f), map($r, (x) => x.w))
+rule plain_with_items = f:with_item r:(-ws -"," -ws w:with_item)* => concat(list($f), map($r, (x) => x.w))
 rule with_item WithItem = with_item_as / with_item_plain
 rule with_item_as WithItem = (
     e:expression -ws kw_as -ws t:star_target &(ws [,):])
@@ -392,7 +392,7 @@ rule try_stmt Stmt = (
     e:else_part? f:finally_part?
     {len($hs) == 0 || len($xs) == 0} {len($hs) + len($xs) > 0 || $f != nil && $e == nil}
     @error(message="expected 'except' or 'finally' block")
-) => foldl(Try{Body: $b, Handlers: map($hs, (x) => $x.h), OrElse: concat($e), FinalBody: concat($f)}, $xs, (acc, y) => TryStar{Body: $b, Handlers: map($xs, (x) => $x.h), OrElse: concat($e), FinalBody: concat($f)})
+) => foldl(Try{Body: $b, Handlers: map($hs, (x) => x.h), OrElse: concat($e), FinalBody: concat($f)}, $xs, (acc, y) => TryStar{Body: $b, Handlers: map($xs, (x) => x.h), OrElse: concat($e), FinalBody: concat($f)})
 rule finally_part = -clause_sep kw_finally -ws ":" b:block => $b
 rule except_handler ExceptHandler = except_as / except_plain / except_bare
 rule except_as ExceptHandler = (
@@ -411,10 +411,10 @@ rule except_star_plain ExceptHandler = (
 
 // Decorators are lines of their own, at the indentation of the definition. The span of a decorated
 // definition starts at its first decorator.
-rule decorators = ds:("@" -ws e:named_expression -dec_sep)* => map($ds, (x) => $x.e)
+rule decorators = ds:("@" -ws e:named_expression -dec_sep)* => map($ds, (x) => x.e)
 rule dec_sep = (
     eol blank* i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)}
 )
 
 rule funcdef FunctionDef = (
@@ -430,7 +430,7 @@ rule def_params Arguments = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws a:pa
 rule classdef Stmt = classdef_args / classdef_plain
 rule classdef_args ClassDef = (
     ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws c:call_args -ws ":" b:block
-) => ClassDef{Name: text($n), Bases: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k)), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
+) => ClassDef{Name: text($n), Bases: concat(map($c.pos, (x) => x.a), foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ks)), map($c.kw2, (x) => x.k)), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
 rule classdef_plain ClassDef = (
     ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws ":" b:block
 ) => ClassDef{Name: text($n), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
@@ -441,15 +441,15 @@ rule subject_expr Expr = subject_tuple / named_expression
 rule subject_tuple Tuple = (
     f:star_named_expression -ws "," r:(-ws x:star_named_expression -ws -",")*
     l:(-ws y:star_named_expression) #repeat(0, 1)
-) => Tuple{Elts: concat(list($f), map($r, (z) => $z.x), map($l, (z) => $z.y)), Ctx: "Load"}
+) => Tuple{Elts: concat(list($f), map($r, (z) => z.x), map($l, (z) => z.y)), Ctx: "Load"}
 rule case_blocks = (
     -ws -eol -blank* i:indentation
-    {foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304 && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304}
+    {foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304 && foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304}
     @error(message="expected an indented block")
     {ind / (4194304 * 4194304) < 99} @error(message="too many levels of indentation")
-    {ind := foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
+    {ind := foldl(0, $i.segs, (a, s) => (a + len(s.sp)) / 8 * 8 + 8) + len($i.tail) + 4194304 * (foldl(0, $i.segs, (a, s) => a + len(s.sp) + 1) + len($i.tail)) + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)}
     f:case_block r:(-clause_sep c:case_block)*
-) => concat(list($f), map($r, (x) => $x.c))
+) => concat(list($f), map($r, (x) => x.c))
 rule case_block MatchCase = (
     kw_case -ws p:patterns (-ws kw_if -ws g:named_expression)? -ws ":" b:block
 ) => MatchCase{Pattern: $p, Guard: $g, Body: $b}
@@ -461,14 +461,14 @@ rule case_block MatchCase = (
 rule patterns Pattern = open_sequence_pattern / pattern
 rule open_sequence_pattern MatchSequence = (
     s:open_seq_items
-) => MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => $x.p), map($s.l, (x) => $x.q))}
+) => MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => x.p), map($s.l, (x) => x.q))}
 // A sequence pattern without brackets: at least one comma.
 rule open_seq_items = f:maybe_star_pattern -ws "," r:(-ws p:maybe_star_pattern -ws -",")* l:(-ws q:maybe_star_pattern) #repeat(0, 1)
 rule pattern Pattern = as_pattern / or_pattern
 rule as_pattern MatchAs = p:or_pattern -ws kw_as -ws n:capture_name => MatchAs{Pattern: $p, Name: text($n)}
 rule or_pattern Pattern = (
     f:closed_pattern t:(rs:(-ws -"|" !"=" -ws p:closed_pattern)+) #repeat(0, 1)
-) => foldl($f, $t, (acc, x) => MatchOr{Patterns: concat(list($f), map($x.rs, (y) => $y.p))})
+) => foldl($f, $t, (acc, x) => MatchOr{Patterns: concat(list($f), map(x.rs, (y) => y.p))})
 rule closed_pattern Pattern = (
     literal_pattern / capture_pattern / wildcard_pattern / value_pattern
     / group_pattern / sequence_pattern / mapping_pattern / class_pattern
@@ -499,7 +499,7 @@ rule value_pattern MatchValue = a:attr !(ws ("." !".." / "(" / "=" !"=")) => Mat
 // A dotted name of at least two names. (The spans of the inner attributes cover only their value.)
 rule attr Expr = (
     f:name r:(-ws -"." !".." -ws n:ident)+
-) => foldl($f, $r, (acc, x) => Attribute{Value: $acc, Attr: text($x.n), Ctx: "Load"})
+) => foldl($f, $r, (acc, x) => Attribute{Value: acc, Attr: text(x.n), Ctx: "Load"})
 rule name_or_attr Expr = attr / name
 rule group_pattern Pattern = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws p:pattern -ws ")" => $p
 rule sequence_pattern MatchSequence = list_pattern / empty_tuple_pattern / tuple_pattern
@@ -509,10 +509,10 @@ rule list_pattern MatchSequence = (
 ) => MatchSequence{Patterns: concat($ps)}
 rule star_patterns = (
     f:maybe_star_pattern r:(-ws -"," -ws p:maybe_star_pattern)* (-ws -",")?
-) => concat(list($f), map($r, (x) => $x.p))
+) => concat(list($f), map($r, (x) => x.p))
 rule tuple_pattern MatchSequence = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws s:open_seq_items -ws ")"
-) => MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => $x.p), map($s.l, (x) => $x.q))}
+) => MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => x.p), map($s.l, (x) => x.q))}
 rule maybe_star_pattern Pattern = star_pattern / pattern
 rule star_pattern MatchStar = "*" -ws (n:capture_name / "_" !idcont) => MatchStar{Name: text($n)}
 
@@ -520,17 +520,17 @@ rule mapping_pattern MatchMapping = (
     "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws
     (ks:kv_patterns (-ws -"," -ws "**" -ws r:capture_name)? / "**" -ws r:capture_name)?
     (-ws -",")? -ws "}"
-) => MatchMapping{Keys: map($ks, (x) => $x.k), Patterns: map($ks, (x) => $x.v), Rest: text($r)}
-rule kv_patterns = f:key_value_pattern r:(-ws -"," -ws p:key_value_pattern)* => concat(list($f), map($r, (x) => $x.p))
+) => MatchMapping{Keys: map($ks, (x) => x.k), Patterns: map($ks, (x) => x.v), Rest: text($r)}
+rule kv_patterns = f:key_value_pattern r:(-ws -"," -ws p:key_value_pattern)* => concat(list($f), map($r, (x) => x.p))
 rule key_value_pattern = k:(literal_expr / attr) -ws ":" -ws v:pattern
 
 rule class_pattern MatchClass = (
     c:name_or_attr -ws "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws
     (ps:positional_patterns (-ws -"," -ws ks:keyword_patterns)? / ks:keyword_patterns)?
     (-ws -",")? -ws ")"
-) => MatchClass{Cls: $c, Patterns: concat($ps), KwdAttrs: map($ks, (x) => $x.n), KwdPatterns: map($ks, (x) => $x.v)}
-rule positional_patterns = f:pattern r:(-ws -"," -ws p:pattern)* => concat(list($f), map($r, (x) => $x.p))
-rule keyword_patterns = f:keyword_pattern r:(-ws -"," -ws p:keyword_pattern)* => concat(list($f), map($r, (x) => $x.p))
+) => MatchClass{Cls: $c, Patterns: concat($ps), KwdAttrs: map($ks, (x) => x.n), KwdPatterns: map($ks, (x) => x.v)}
+rule positional_patterns = f:pattern r:(-ws -"," -ws p:pattern)* => concat(list($f), map($r, (x) => x.p))
+rule keyword_patterns = f:keyword_pattern r:(-ws -"," -ws p:keyword_pattern)* => concat(list($f), map($r, (x) => x.p))
 rule keyword_pattern = n:identifier -ws "=" !"=" -ws v:pattern
 
 // ============================================================================
@@ -539,7 +539,7 @@ rule keyword_pattern = n:identifier -ws "=" !"=" -ws v:pattern
 
 rule type_params = (
     "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:type_param r:(-ws -"," -ws p:type_param)* (-ws -",")? -ws "]"
-) => concat(list($f), map($r, (x) => $x.p))
+) => concat(list($f), map($r, (x) => x.p))
 rule type_param TypeParam = type_var / type_var_tuple / param_spec
 rule type_var TypeVar = (
     n:ident (-ws ":" -ws b:expression)? (-ws "=" !"=" -ws d:expression)?
@@ -564,7 +564,7 @@ rule params Arguments = (
     {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
     {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
     @error(message="parameter without a default follows parameter with a default")
-) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => $y.p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => $y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => $y.p)), VarArg: $st.va, KwOnlyArgs: map($st.ko, (x) => $x.p), KwDefaults: map($st.ko, (x) => $x.d), KwArg: $st.kw, Defaults: concat(map($g1wd, (y) => $y.d), map($g2wd, (y) => $y.d))}
+) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => y.p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => y.p)), VarArg: $st.va, KwOnlyArgs: map($st.ko, (x) => x.p), KwDefaults: map($st.ko, (x) => x.d), KwArg: $st.kw, Defaults: concat(map($g1wd, (y) => y.d), map($g2wd, (y) => y.d))}
 rule param_nd Arg = p:param -pend => $p
 rule param_wd = p:param -ws "=" !"=" -ws d:expression -pend
 rule slash = s:"/" -pend
@@ -588,10 +588,10 @@ rule pend = -ws ("," -ws / &")")
 // Comma-separated expressions make a Tuple; one expression without a comma is returned as is.
 rule expressions Expr = (
     f:expression t:(rs:(-ws -"," -ws x:expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.rs, (z) => z.x)), Ctx: "Load"})
 rule star_expressions Expr = (
     f:star_expression t:(rs:(-ws -"," -ws x:star_expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.rs, (z) => z.x)), Ctx: "Load"})
 rule star_expression Expr = starred_bitor / expression
 rule star_named_expression Expr = starred_bitor / named_expression
 rule starred_bitor Starred = "*" ![*=] -ws v:bitwise_or => Starred{Value: $v, Ctx: "Load"}
@@ -602,7 +602,7 @@ rule walrus NamedExpr = n:store_name -ws ":=" -ws v:expression => NamedExpr{Targ
 rule expression Expr = conditional / lambdef
 rule conditional Expr = (
     d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else -ws o:expression) #repeat(0, 1)
-) => foldl($d, $t, (acc, x) => IfExp{Test: $x.c, Body: $d, OrElse: $x.o})
+) => foldl($d, $t, (acc, x) => IfExp{Test: x.c, Body: $d, OrElse: x.o})
 // A lambda may not be at the top level of a replacement field, where its ':' starts the format spec.
 rule lambdef Lambda = (
     kw_lambda {lv % 2 == 0} @error(message="f-string: lambda expressions are not allowed without parentheses")
@@ -614,7 +614,7 @@ rule lambda_params Arguments = (
     {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
     {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
     @error(message="parameter without a default follows parameter with a default")
-) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => $y.p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => $y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => $y.p)), VarArg: $st.va, KwOnlyArgs: map($st.ko, (x) => $x.p), KwDefaults: map($st.ko, (x) => $x.d), KwArg: $st.kw, Defaults: concat(map($g1wd, (y) => $y.d), map($g2wd, (y) => $y.d))}
+) => Arguments{PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => y.p))), Args: concat(foldl(concat($g1nd, map($g1wd, (y) => y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => y.p)), VarArg: $st.va, KwOnlyArgs: map($st.ko, (x) => x.p), KwDefaults: map($st.ko, (x) => x.d), KwArg: $st.kw, Defaults: concat(map($g1wd, (y) => y.d), map($g2wd, (y) => y.d))}
 rule lparam_nd Arg = p:lparam -lpend => $p
 rule lparam_wd = p:lparam -ws "=" !"=" -ws d:expression -lpend
 rule lslash = s:"/" -lpend
@@ -634,10 +634,10 @@ rule yield_plain Yield = kw_yield (-ws v:star_expressions)? => Yield{Value: $v}
 // operator.
 rule disjunction Expr = (
     f:conjunction t:(-ws o:or_op -ws c:conjunction rs:(-ws -or_op -ws x:conjunction)*) #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => BoolOp{Op: $y.o, Values: concat(list($f), list($y.c), map($y.rs, (z) => $z.x))})
+) => foldl($f, $t, (acc, y) => BoolOp{Op: y.o, Values: concat(list($f), list(y.c), map(y.rs, (z) => z.x))})
 rule conjunction Expr = (
     f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*) #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => BoolOp{Op: $y.o, Values: concat(list($f), list($y.c), map($y.rs, (z) => $z.x))})
+) => foldl($f, $t, (acc, y) => BoolOp{Op: y.o, Values: concat(list($f), list(y.c), map(y.rs, (z) => z.x))})
 rule or_op Op = "or" !idcont
 rule and_op Op = "and" !idcont
 rule inversion Expr = not_expr / comparison
@@ -647,7 +647,7 @@ rule not_op Op = "not" !idcont
 // Chained comparisons are one Compare, as in Python.
 rule comparison Expr = (
     f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+) #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => Compare{Left: $f, Ops: map($y.rs, (z) => $z.o), Comparators: map($y.rs, (z) => $z.x)})
+) => foldl($f, $t, (acc, y) => Compare{Left: $f, Ops: map(y.rs, (z) => z.o), Comparators: map(y.rs, (z) => z.x)})
 rule comp_op Op = (
     "==" / "!=" / "<>" / "<=" / ">=" / "<" ![<=>] / ">" ![>=]
     / "not" !idcont ws "in" !idcont / "in" !idcont / "is" !idcont ws "not" !idcont / "is" !idcont
@@ -690,7 +690,7 @@ rule primary_chain Expr = operators {
     level {
         postfix "." !".." -ws n:ident => Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
         postfix g:genexp => Call{Func: $lhs, Args: list($g)}
-        postfix c:call_args => Call{Func: $lhs, Args: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k))}
+        postfix c:call_args => Call{Func: $lhs, Args: concat(map($c.pos, (x) => x.a), foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ks)), map($c.kw2, (x) => x.k))}
         postfix s:subscript => Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
     }
 }
@@ -722,10 +722,10 @@ rule subscript = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws s:slices -ws "]
 rule slices Expr = star_first_slices / plain_slices
 rule star_first_slices Tuple = (
     f:starred_expression rs:(-ws -"," -ws x:slice_or_star)* (-ws -",")?
-) => Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.x)), Ctx: "Load"}
 rule plain_slices Expr = (
     f:slice t:(rs:(-ws -"," -ws x:slice_or_star)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.rs, (z) => z.x)), Ctx: "Load"})
 rule slice_or_star Expr = slice / starred_expression
 rule slice Expr = slice_colon / named_expression
 rule slice_colon Slice = (
@@ -733,11 +733,11 @@ rule slice_colon Slice = (
 ) => Slice{Lower: $l, Upper: $u, Step: $s}
 
 // --- Comprehensions ---
-rule for_if_clauses = f:for_if_clause r:(-ws c:for_if_clause)* => concat(list($f), map($r, (x) => $x.c))
+rule for_if_clauses = f:for_if_clause r:(-ws c:for_if_clause)* => concat(list($f), map($r, (x) => x.c))
 rule for_if_clause Comprehension = (
     a:(kw_async -ws)? kw_for -ws t:star_targets -ws kw_in -ws i:disjunction
     ifs:(-ws kw_if -ws c:disjunction)*
-) => Comprehension{Target: $t, Iter: $i, Ifs: map($ifs, (x) => $x.c), IsAsync: $a != nil}
+) => Comprehension{Target: $t, Iter: $i, Ifs: map($ifs, (x) => x.c), IsAsync: $a != nil}
 
 // --- Atoms ---
 rule atom Expr = strings / name / number / constant_kw / paren / list_display / braces / ellipsis
@@ -752,14 +752,14 @@ rule yield_group Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws y:yield_
 rule star_first_tuple Tuple = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:starred_bitor
     rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")? -ws ")" {len($rs) > 0 || $c != nil}
-) => Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.x)), Ctx: "Load"}
 // The first element is parsed once; what follows it decides the node.
 rule paren_named Expr = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws e:named_expression
     t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
     g:(-ws cs:for_if_clauses) #repeat(0, 1)
     -ws ")" {len($t) + len($g) <= 1}
-) => foldl(foldl($e, $t, (acc, y) => Tuple{Elts: concat(list($e), map($y.rs, (z) => $z.x)), Ctx: "Load"}), $g, (acc, y) => GeneratorExp{Elt: $e, Generators: $y.cs})
+) => foldl(foldl($e, $t, (acc, y) => Tuple{Elts: concat(list($e), map(y.rs, (z) => z.x)), Ctx: "Load"}), $g, (acc, y) => GeneratorExp{Elt: $e, Generators: y.cs})
 
 // [], [x, *y], [x for x in y]
 rule list_display Expr = empty_list / list_items
@@ -769,7 +769,7 @@ rule list_items Expr = (
     rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")?
     g:(-ws cs:for_if_clauses) #repeat(0, 1)
     -ws "]" {len($g) == 0 || $s == nil && len($rs) == 0 && $c == nil}
-) => foldl(ListExpr{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}, $g, (acc, y) => ListComp{Elt: $f, Generators: $y.cs})
+) => foldl(ListExpr{Elts: concat(list($f), map($rs, (y) => y.x)), Ctx: "Load"}, $g, (acc, y) => ListComp{Elt: $f, Generators: y.cs})
 
 // {}, {k: v, **d}, {k: v for ...}, {x, *y}, {x for ...}
 rule braces Expr = empty_dict / dict_unpack_first / set_star_first / brace_items
@@ -777,11 +777,11 @@ rule empty_dict Dict = "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "}" => Di
 rule dict_unpack_first Dict = (
     "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "**" -ws f:bitwise_or
     rs:(-ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))* (-ws -",")? -ws "}"
-) => Dict{Keys: concat(list(nil), map($rs, (y) => $y.k)), Values: concat(list($f), map($rs, (y) => $y.v))}
+) => Dict{Keys: concat(list(nil), map($rs, (y) => y.k)), Values: concat(list($f), map($rs, (y) => y.v))}
 rule set_star_first Set = (
     "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:starred_bitor
     rs:(-ws -"," -ws x:star_named_expression)* (-ws -",")? -ws "}"
-) => Set{Elts: concat(list($f), map($rs, (y) => $y.x))}
+) => Set{Elts: concat(list($f), map($rs, (y) => y.x))}
 // The first element is parsed once. A ':' after it makes the display a dict (whose key may not be
 // an assignment expression), and comprehension clauses after it (and its value) a comprehension.
 rule brace_items Expr = (
@@ -793,7 +793,7 @@ rule brace_items Expr = (
     sr:({!isdict} -ws -"," -ws x:star_named_expression)*
     c:(-ws ",")?
     -ws "}" {len($g) == 0 || len($dr) + len($sr) == 0 && $c == nil}
-) => foldl(foldl(Set{Elts: concat(list($f), map($sr, (y) => $y.x))}, $kv, (acc, x) => Dict{Keys: concat(list($f), map($dr, (y) => $y.k)), Values: concat(list($x.v), map($dr, (y) => $y.v))}), $g, (acc, y) => foldl(SetComp{Elt: $f, Generators: $y.cs}, $kv, (acc2, x) => DictComp{Key: $f, Value: $x.v, Generators: $y.cs}))
+) => foldl(foldl(Set{Elts: concat(list($f), map($sr, (y) => y.x))}, $kv, (acc, x) => Dict{Keys: concat(list($f), map($dr, (y) => y.k)), Values: concat(list(x.v), map($dr, (y) => y.v))}), $g, (acc, y) => foldl(SetComp{Elt: $f, Generators: y.cs}, $kv, (acc2, x) => DictComp{Key: $f, Value: x.v, Generators: y.cs}))
 
 // ============================================================================
 // Assignment targets
@@ -801,7 +801,7 @@ rule brace_items Expr = (
 
 rule star_targets Expr = (
     f:star_target t:(rs:(-ws -"," -ws x:star_target)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
-) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Store"})
+) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.rs, (z) => z.x)), Ctx: "Store"})
 rule star_target Expr = starred_target / target_with_star_atom
 rule starred_target Starred = "*" ![*=] -ws !"*" t:star_target => Starred{Value: $t, Ctx: "Store"}
 rule target_with_star_atom Expr = attr_target / subscript_target / star_atom
@@ -817,12 +817,12 @@ rule empty_tuple_target Tuple = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws 
 rule star_tuple_target Tuple = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:star_target
     rs:(-ws -"," -ws x:star_target)* c:(-ws ",")? -ws ")" {len($rs) > 0 || $c != nil}
-) => Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
+) => Tuple{Elts: concat(list($f), map($rs, (y) => y.x)), Ctx: "Store"}
 rule empty_list_target ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "]" => ListExpr{Ctx: "Store"}
 rule star_list_target ListExpr = (
     "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:star_target
     rs:(-ws -"," -ws x:star_target)* (-ws -",")? -ws "]"
-) => ListExpr{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
+) => ListExpr{Elts: concat(list($f), map($rs, (y) => y.x)), Ctx: "Store"}
 rule single_target Expr = single_subscript_attribute_target / store_name / paren_single_target
 rule single_subscript_attribute_target Expr = attr_target / subscript_target
 rule paren_single_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws t:single_target -ws ")" => $t
@@ -835,7 +835,7 @@ rule t_primary Expr = operators {
     level {
         postfix "." !".." -ws n:ident &(ws t_lookahead) => Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
         postfix g:genexp &(ws t_lookahead) => Call{Func: $lhs, Args: list($g)}
-        postfix c:call_args &(ws t_lookahead) => Call{Func: $lhs, Args: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k))}
+        postfix c:call_args &(ws t_lookahead) => Call{Func: $lhs, Args: concat(map($c.pos, (x) => x.a), foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ss))), Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat(acc, x.ks)), map($c.kw2, (x) => x.k))}
         postfix s:subscript &(ws t_lookahead) => Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
     }
 }
@@ -852,7 +852,7 @@ rule del_name Name = n:ident => Name{Id: text($n), Ctx: "Del"}
 rule paren_del_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws t:del_target -ws ")" => $t
 rule del_tuple Tuple = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ts:del_targets? -ws ")" => Tuple{Elts: concat($ts), Ctx: "Del"}
 rule del_list ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws ts:del_targets? -ws "]" => ListExpr{Elts: concat($ts), Ctx: "Del"}
-rule del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? => concat(list($f), map($r, (x) => $x.t))
+rule del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? => concat(list($f), map($r, (x) => x.t))
 
 // ============================================================================
 // Strings
@@ -867,13 +867,13 @@ rule plain_strings Constant = str_lit (ws str_lit)* !(ws string_start)
 rule bytes_strings Constant = bytes_lit (ws bytes_lit)* !(ws string_start)
 rule fjoined JoinedStr = (
     f:fjoin_item r:(-ws p:fjoin_item)* !(ws string_start)
-) => JoinedStr{Values: foldl($f, $r, (acc, x) => concat($acc, $x.p))}
+) => JoinedStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.p))}
 rule fjoin_item = fstring / str_part
 rule str_part = c:str_constant => list($c)
 rule str_constant Constant = str_lit
 rule tstrings TemplateStr = (
     f:tstring r:(-ws p:tstring)* !(ws string_start)
-) => TemplateStr{Values: foldl($f, $r, (acc, x) => concat($acc, $x.p))}
+) => TemplateStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.p))}
 
 rule str_lit = [uU] str_body / [rR] raw_str_body / str_body
 rule bytes_lit = ([bB] [rR] / [rR] [bB]) raw_bytes_body / [bB] bytes_body

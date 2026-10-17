@@ -3,18 +3,26 @@ package syntax
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
 )
 
-// fixPositional rewrites the positional captures of rule, operand and inline actions to named
-// captures. An element referred to by $n is labeled unless it already has a label; a rule call
-// is labeled with the rule's name when that name is free, and anything else with v1, v2, ....
-// $0 becomes list($a, $b, ...) of every element with a value.
-func fixPositional(src string) (string, error) {
+// fixParsed rewrites the parts of src that need the grammar parsed: positional captures and
+// lambda parameters written $x. If src does not parse, it is an error when positional captures
+// need rewriting, and otherwise src is returned unchanged.
+//
+// The positional captures of rule, operand and inline actions become named captures. An element
+// referred to by $n is labeled unless it already has a label; a rule call is labeled with the
+// rule's name when that name is free, and anything else with v1, v2, .... $0 becomes
+// list($a, $b, ...) of every element with a value.
+func fixParsed(src string, positional bool) (string, error) {
 	g, err := ParseLegacy(src)
 	if err != nil {
+		if !positional {
+			return src, nil
+		}
 		return "", fmt.Errorf("positional captures cannot be rewritten until the grammar parses: %w", err)
 	}
 	o := newFixOffsets(src)
@@ -72,6 +80,11 @@ func fixPositional(src string) (string, error) {
 			return "", err
 		}
 	}
+	params, err := paramEdits(o, g)
+	if err != nil {
+		return "", err
+	}
+	edits = append(edits, params...)
 	if len(edits) == 0 {
 		return src, nil
 	}
@@ -216,4 +229,46 @@ func inspectAST(v any, f func(any)) {
 		}
 	}
 	walk(reflect.ValueOf(v))
+}
+
+// paramEdits returns the edits that drop the $ of references to lambda parameters. In a lambda
+// written with $x, a bare name x referred to a variable; it would refer to the parameter once
+// rewritten, so it is an error.
+func paramEdits(o *fixOffsets, g *grammar.Grammar) ([]fixEdit, error) {
+	var edits []fixEdit
+	var err error
+	seen := map[*grammar.CaptureRef]bool{}
+	inspectAST(g, func(n any) {
+		l, ok := n.(*grammar.Lambda)
+		if !ok || err != nil {
+			return
+		}
+		for _, p := range l.Params {
+			if p == "true" || p == "false" || p == "nil" {
+				err = fmt.Errorf("%d:%d: the lambda parameter %s would be read as the literal %s; rename the parameter", l.Pos.Line, l.Pos.Col, p, p)
+				return
+			}
+		}
+		var old, bare *grammar.CaptureRef
+		inspectAST(l.Body, func(n any) {
+			r, ok := n.(*grammar.CaptureRef)
+			if !ok || !slices.Contains(l.Params, r.Name) {
+				return
+			}
+			if r.Param {
+				bare = r
+				return
+			}
+			old = r
+			if !seen[r] {
+				seen[r] = true
+				start := o.at(r.Pos)
+				edits = append(edits, fixEdit{start, start + 1, ""})
+			}
+		})
+		if old != nil && bare != nil {
+			err = fmt.Errorf("%d:%d: variable %s would refer to the lambda parameter %s; rename the parameter", bare.Pos.Line, bare.Pos.Col, bare.Name, bare.Name)
+		}
+	})
+	return edits, err
 }

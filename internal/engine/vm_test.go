@@ -195,9 +195,9 @@ func TestConcurrentParses(t *testing.T) {
 	prog := compile(t, `type Pair = { Key Match; Value Node }
 type Op = { L Node; R Node }
 type Node ~ Op | Match
-rule main = ps:pair* => concat(map($ps, (p) => $p), list())
+rule main = ps:pair* => concat(map($ps, (p) => p), list())
 rule pair Pair = k:[a-z]+ #atomic "=" v:expr ";" {text($k) != "bad"} => Pair{Key: $k, Value: $v}
-rule expr Node = l:[0-9]+ #atomic rest:("+" r:[0-9]+ #atomic)* => foldl($l, $rest, (acc, x) => Op{L: $acc, R: $x.r})`)
+rule expr Node = l:[0-9]+ #atomic rest:("+" r:[0-9]+ #atomic)* => foldl($l, $rest, (acc, x) => Op{L: acc, R: x.r})`)
 	inputs := []string{"a=1;b=2+3;", "x=1+2+3;y=4;z=5;", "a=1;bad=2;", "q=12+"}
 	want := map[string]string{}
 	for _, in := range inputs {
