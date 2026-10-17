@@ -40,7 +40,6 @@ have the following types.
 | `true`, `false`, a comparison, `&&`, `\|\|`, `!` | `bool` |
 | `nil` | `nil`, assignable to any optional type |
 | `$label` | The type of the capture (see above) |
-| `$n` | The type of the `n`-th item of the rule body |
 | `T{Field: value, ...}` | Struct Type `T` |
 | `T{stringValue}` | Terminal Type `T`; exactly one string-valued argument is required |
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
@@ -125,7 +124,7 @@ The type checker reports the following errors:
   declared with a terminal type and without an action always produces a
   terminal of that type);
 - a rule or an action whose value is not a node;
-- `$n` out of range, and a field access on a value that may be `nil`;
+- a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an
   invalid type;
 - a predicate that defines a variable with a value other than `int`, `string`

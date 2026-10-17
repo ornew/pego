@@ -14,31 +14,54 @@ import (
 //
 //   - the cut "--" becomes "#cut";
 //   - a struct type "type T struct {...}" becomes the definition "type T = {...}";
-//   - an alias "type T = U" becomes "type T ~ U".
+//   - an alias "type T = U" becomes "type T ~ U";
+//   - a positional capture "$n" becomes a named capture: the element it refers to is labeled,
+//     reusing its name when it already has one, and "$0" becomes a list of the elements.
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
-// is an error.
+// is an error, and so is source with positional captures that does not parse.
 func Fix(src string) (string, error) {
 	errs := &errorList{}
 	toks := lex(src, errs)
 	if len(errs.list) > 0 {
 		return "", errs.list
 	}
+	out := fixTokens(src, toks)
+	for _, t := range toks {
+		if t.kind == tIndex {
+			return fixPositional(out)
+		}
+	}
+	return out, nil
+}
+
+// fixOffsets maps lexer positions in src to byte offsets.
+type fixOffsets struct {
 	// The lexer counts columns in code points, with each invalid byte as one; offsets maps a
 	// code point index to its byte offset, with a final entry for the end of src.
+	offsets []int
+	lines   []int
+}
+
+func newFixOffsets(src string) *fixOffsets {
 	var offsets []int
 	for i := range src {
 		offsets = append(offsets, i)
 	}
-	offsets = append(offsets, len(src))
-	lines := lineStarts(src)
-	index := func(p grammar.Pos) int { return lines[p.Line-1] + p.Col - 1 }
+	return &fixOffsets{append(offsets, len(src)), lineStarts(src)}
+}
+
+func (o *fixOffsets) at(p grammar.Pos) int { return o.offsets[o.lines[p.Line-1]+p.Col-1] }
+
+// fixTokens applies the rewrites that need only the tokens.
+func fixTokens(src string, toks []token) string {
+	o := newFixOffsets(src)
 	var edits []fixEdit
 	// replace rewrites token t to text, keeping it a separate word so that it neither runs into
 	// a neighboring token nor, for the cut, takes a following "(" as its arguments.
 	replace := func(t token, text string) {
-		start, end := offsets[index(t.pos)], offsets[index(t.end)]
+		start, end := o.at(t.pos), o.at(t.end)
 		if r, _ := utf8.DecodeLastRuneInString(src[:start]); start > 0 && !unicode.IsSpace(r) {
 			text = " " + text
 		}
@@ -76,9 +99,9 @@ func Fix(src string) (string, error) {
 		}
 	}
 	if len(edits) == 0 {
-		return src, nil
+		return src
 	}
-	return applyFixEdits(src, edits), nil
+	return applyFixEdits(src, edits)
 }
 
 type fixEdit struct {
@@ -87,7 +110,7 @@ type fixEdit struct {
 }
 
 func applyFixEdits(src string, edits []fixEdit) string {
-	sort.Slice(edits, func(i, j int) bool { return edits[i].start < edits[j].start })
+	sort.SliceStable(edits, func(i, j int) bool { return edits[i].start < edits[j].start })
 	var b strings.Builder
 	last := 0
 	for _, e := range edits {

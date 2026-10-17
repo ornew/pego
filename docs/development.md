@@ -198,7 +198,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Not implemented | | Multiple-statement Predicate Actions and braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
 | Not implemented | | Inline actions (`(expression => term)` parse/format/AST only; compilation rejects them) |
 | Done | | Predicate variables (`{x}`, `{x := 1}`) |
-| Done | | Capture references (`$label`, `$1`) |
+| Done | | Capture references (`$label`) |
 | Done | | Built-in functions (`foldl`, `len`, `text`, and others) |
 | Done | | Struct constructors (`Type{Field: value}`), typed node-list constructors (`[]Type{...}`), and positional terminal constructors (`Type{"text"}`) |
 | Done | Advanced | Left recursion |

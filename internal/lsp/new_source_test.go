@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewSourceServices(t *testing.T) {
-	src := "type N terminal\n/* A number\nwith a name. */\nrule main = digit @error(message=\"number\") => $1\nrule expr N = operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = [0-9]+ #atomic\n"
+	src := "type N terminal\n/* A number\nwith a name. */\nrule main = v1:digit @error(message=\"number\") => $v1\nrule expr N = operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = [0-9]+ #atomic\n"
 	a := analyze(src)
 	if len(a.diags) != 0 {
 		t.Fatalf("diagnostics: %+v", a.diags)
@@ -75,7 +75,7 @@ func TestNewSourceAttributeAndCommentContexts(t *testing.T) {
 	}
 	src := `type N = { X Match }
 rule digit = [0-9]
-rule expr N = operators { operand digit => N{X:$1} }`
+rule expr N = operators { operand digit:digit => N{X:$digit} }`
 
 	a := analyze(src)
 	if len(a.diags) != 0 {
@@ -138,7 +138,7 @@ func TestReservedNamesExcludedFromCompletion(t *testing.T) {
 		`rule _private = "x"; rule main = `,
 		`type _Hidden = {}; rule main = "x" => `,
 		`rule main = _private:"x" => $`,
-		`rule main = "x" => map($1, (_private) => $`,
+		`rule main = xs:"x"* => map($xs, (_private) => $`,
 	} {
 		a := analyze(src)
 		for _, item := range a.complete(len(src)) {

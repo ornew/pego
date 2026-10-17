@@ -21,7 +21,7 @@ func TestExpressionSourceRoundTrip(t *testing.T) {
 		`rule main = (a => A{}) / (b => B{}) => C{}`,
 		`rule main = (a => A{}) => C{}`,
 		`rule main = (a => ...)`,
-		`rule main = a => foldl($1, 0, (acc, item) => acc + item)`,
+		`rule main = a:a => foldl($a, 0, (acc, item) => acc + item)`,
 	} {
 		t.Run(src, func(t *testing.T) {
 			g, err := syntax.Parse(src)
@@ -130,7 +130,7 @@ func TestExpressionSourceHeaderComments(t *testing.T) {
 /*after body*/
 /*before action*/
 /*argument*/
-rule main = "a" "b" {x := 1} => N{Value: len($1)} /*after action*/`
+rule main = v1:"a" "b" {x := 1} => N{Value: len($v1)} /*after action*/`
 	g, err := syntax.Parse(valid)
 	if err != nil {
 		t.Fatal(err)

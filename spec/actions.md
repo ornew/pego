@@ -74,18 +74,11 @@ a line break inside a braced action block is local to the block.
 
 ## Capture References
 
-| Syntax | Refers to |
-|:--|:--|
-| `$label` | A named capture visible to the action's expression scope |
-| `$0` | A list of values of the rule body's valued elements |
-| `$n` | The 1-based valued element in the rule body's sequence |
-
-For a whole-rule Value Action, positional references describe the rule body. If
-the body is not a sequence, `$1` is its value and `$0` is a singleton list
-containing that value (or an empty list if the body has no value). `$n` counts
-only elements with values. An index beyond the available values is a type
-error. Capture references use ASCII decimal digits, may have leading zeroes,
-and must fit the implementation's `int`.
+`$label` refers to a named capture visible to the action's expression scope.
+Captures are referred to by name only: an element is labeled (`label:expr`) to
+be used in an action. A `$` followed by a digit, the positional reference of
+earlier versions, is a syntax error; `pego fix` labels the element it referred
+to and rewrites the reference.
 
 Captures are visible only in their enclosing grammar-expression scope. A
 capture that did not match has value `nil`.
@@ -117,7 +110,7 @@ values implicitly.
 
 ```pego
 type NameNode = { Name string }
-rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
+rule name NameNode = v1:[a-z]+ => NameNode{Name: text($v1)}
 
 rule twoNames []NameNode = a:name "," b:name => []NameNode{$a, $b}
 rule noNames []NameNode = "" => []NameNode{}
@@ -328,8 +321,7 @@ checker combines the element types of all list arguments.
 
 Action expressions are type-checked when a grammar is compiled. The checker
 reports invalid operators and function arguments, unknown or undeclared
-fields, non-assignable constructor fields and rule results, disallowed `$n`
-references, and accesses that may dereference `nil`. See [Type Checking](type-checking.md)
+fields, non-assignable constructor fields and rule results, and accesses that may dereference `nil`. See [Type Checking](type-checking.md)
 for the complete assignability rules and diagnostics.
 
 A Value Action result statically known not to be a node or `nil` is a

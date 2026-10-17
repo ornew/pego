@@ -22,10 +22,10 @@ func TestInvalidSourceDecimalReferences(t *testing.T) {
 
 func TestDecimalReferenceValues(t *testing.T) {
 	for _, tc := range []struct{ source, want string }{
-		{`rule main = "a" "b" => $0`, `["a" "b"]`},
-		{`rule main = "a" "b" => $0`, `["a" "b"]`},
-		{`rule main = "a" "b" => $1`, `"a"`},
-		{`rule main = "a" "b" => $2`, `"b"`},
+		{`rule main = v1:"a" v2:"b" => list($v1, $v2)`, `["a" "b"]`},
+		{`rule main = v1:"a" v2:"b" => list($v1, $v2)`, `["a" "b"]`},
+		{`rule main = v1:"a" "b" => $v1`, `"a"`},
+		{`rule main = "a" v2:"b" => $v2`, `"b"`},
 	} {
 		p, err := pego.CompileSource(tc.source, "main")
 		if err != nil {

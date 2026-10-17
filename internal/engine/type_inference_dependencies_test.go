@@ -240,7 +240,7 @@ func TestInferenceCanonicalTypes(t *testing.T) {
 }
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
-	src := "type Holder = { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0 => Holder{Value: $1}", 1)
+	src := "type Holder = { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

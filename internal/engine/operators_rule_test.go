@@ -240,10 +240,6 @@ func TestOperatorsRuleCompileErrors(t *testing.T) {
 }`, `capture name lhs is reserved in operatorsRule operators`},
 		{`rule e = operators {
     operand "1"
-    level { infix left "+" => $1 }
-}`, `$1 cannot be used in operatorsRule operator actions`},
-		{`rule e = operators {
-    operand "1"
     level { prefix "-" => $lhs }
 }`, `undefined capture $lhs`},
 		{`rule e = operators {

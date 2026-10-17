@@ -595,26 +595,26 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 pego: raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Num
 ```
 
-### `$n` And Operators
+### Captures And Operators
 
-Operator actions cannot use `$1`, `$2`, ...; use the captures in the operator part or `$lhs`, `$rhs`, `$op`. Operand
-actions can use `$n`:
+Operator actions refer to their operands as `$lhs`, `$rhs` and `$op`, and to the captures in the operator part. Operand
+actions use the captures of their line:
 
 ```pego
-// operand-n.pego
+// operand-captures.pego
 type Num terminal
 type Paren = { X E }
 type E ~ Num | Paren
 
 rule e E = operators {
     operand num
-    operand "(" e ")" => Paren{X: $2}
+    operand "(" e:e ")" => Paren{X: $e}
 }
 rule num Num = [0-9]+
 ```
 
 ```bash
-pego parse -g operand-n.pego -s e -f sexpr -i '((1))'
+pego parse -g operand-captures.pego -s e -f sexpr -i '((1))'
 ```
 
 ```text

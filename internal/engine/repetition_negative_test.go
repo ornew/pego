@@ -332,7 +332,7 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 	if strconv.IntSize < 64 {
 		maximum = -2
 	}
-	g := grammarWithNegativeMaximum(t, `rule main []Match = "é"* $$ => $1`, maximum)
+	g := grammarWithNegativeMaximum(t, `rule main []Match = v1:"é"* $$ => $v1`, maximum)
 	p, err := Compile(g, Options{})
 	if err != nil {
 		t.Fatal(err)

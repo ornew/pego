@@ -687,13 +687,21 @@ Rewrites grammars written in an earlier version of the language to the current s
 whose spelling changed, adding a space where the new spelling would run into a neighboring token, and keeps every other
 byte, so comments and layout survive; run `pego fmt` afterwards if you
 also want canonical formatting. The flags and standard-input behavior are those of `fmt`: without `-w` it prints the
-result, `-w` rewrites the files in place, and `-l` lists the files that need rewriting. Today it rewrites the old cut
-`--` to `#cut`; the parser rejects `--` with a message that points here. A `--` inside a string, a character class or
-a comment is left alone.
+result, `-w` rewrites the files in place, and `-l` lists the files that need rewriting. It rewrites:
+
+- the old cut `--` to `#cut`;
+- the struct declaration `type T struct {...}` to `type T = {...}`, and the alias `type T = U` to `type T ~ U`;
+- positional captures `$1`, `$2`, ... to named ones, labeling the element each refers to (with the name of the rule it
+  calls when that name is free, and `v1`, `v2`, ... otherwise), and `$0` to a `list(...)` of the labeled elements.
+
+The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
+comments is left alone. The positional rewrite needs a grammar that otherwise parses, so fix syntax errors first.
 
 ```bash
 $ echo 'rule a = "a" -- "b" / "c"' | pego fix
 rule a = "a" #cut "b" / "c"
+$ echo 'rule pair = key ":" key => list($1, $3)' | pego fix
+rule pair = key:key ":" v3:key => list($key, $v3)
 ```
 
 ### `convert`

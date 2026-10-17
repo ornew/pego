@@ -62,7 +62,7 @@ type Expr ~ Atom | Doc
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
     operand atom
-    operand "[" "é" #atomic "]" => Doc{Text: $1, Items: list($1)}
+    operand v1:"[" "é" #atomic "]" => Doc{Text: $v1, Items: list($v1)}
     level { postfix "(" x:"x" #atomic ")" => Doc{Text: $x, Items: list($op)} }
 }
 rule atom Atom = "a"

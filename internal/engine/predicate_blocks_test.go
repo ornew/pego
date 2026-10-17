@@ -25,7 +25,7 @@ func predicateBlockCases() []predicateBlockCase {
 		{"nullable block repetition", `rule main = {n := 0} ({n := n + 1; true})* {n == 1} $$`, `rule main = {n := 0} ({n := n + 1} {true})* {n == 1} $$`, []string{"", "a"}},
 		{"assignments", `rule main = {x := 1; y := x + 1; y == 2} "é" $$`, `rule main = {x := 1} {y := x + 1} {y == 2} "é" $$`, []string{"é", "", "a", "éé"}},
 		{"capture", `rule main = c:"é" {s := text($c); s == "é"} $$ => $c`, `rule main = c:"é" {s := text($c)} {s == "é"} $$ => $c`, []string{"é", "a", "", "éx"}},
-		{"positional values", `rule main = "a" {x := 1; x == 1} "b" $$ => list($1, $2)`, `rule main = "a" {x := 1} {x == 1} "b" $$ => list($1, $2)`, []string{"ab", "a", "ac", ""}},
+		{"positional values", `rule main = v1:"a" {x := 1; x == 1} v2:"b" $$ => list($v1, $v2)`, `rule main = v1:"a" {x := 1} {x == 1} v2:"b" $$ => list($v1, $v2)`, []string{"ab", "a", "ac", ""}},
 		{"choice rollback", `rule main = {x := 0} ("a" {x := 1; x == 1} "!" / "a" {x == 0; true} "?") $$`, `rule main = {x := 0} ("a" {x := 1} {x == 1} "!" / "a" {x == 0} {true} "?") $$`, []string{"a!", "a?", "a", "b"}},
 		{"optional rollback", `rule main = {x := 0} ("a" {x := 1; false})? {x == 0; true} "a" $$`, `rule main = {x := 0} ("a" {x := 1} {false})? {x == 0} {true} "a" $$`, []string{"a", "", "aa"}},
 		{"predicate failure", `rule main = "a" {1 / 0; true} "b" $$`, `rule main = "a" {1 / 0} {true} "b" $$`, []string{"ab", "a", ""}},
@@ -132,7 +132,8 @@ func TestPredicateBlocksStatementValidation(t *testing.T) {
 		`rule main = {true; $1 == nil} "a"`,
 		`rule main = {true; text($missing) == "a"} "a"`,
 	} {
-		g, err := syntax.Parse(source)
+		// ParseLegacy reads $1, which still reaches the checker from JSON grammars.
+		g, err := syntax.ParseLegacy(source)
 		if err != nil {
 			t.Fatal(err)
 		}

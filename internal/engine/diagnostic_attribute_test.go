@@ -111,7 +111,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if _, _, err := LoadProgram(reserved, Options{}); err == nil || !strings.Contains(err.Error(), "unsupported instruction set version 7") {
 		t.Errorf("reserved ISA accepted: %v", err)
 	}
-	combined := compile(t, `rule main = "a" @diagnostic(name="letter") $$ => filter(list($1), (item) => true)`)
+	combined := compile(t, `rule main = v1:"a" @diagnostic(name="letter") $$ => filter(list($v1), (item) => true)`)
 	data, err := combined.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

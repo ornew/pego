@@ -12,7 +12,7 @@ func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 	const message = "whole-rule actions are not supported for Operators Rules"
 	for _, action := range []string{"nil", "$1", "Unknown{}", "(nil)", "($1)", "(Unknown{})"} {
 		t.Run(action, func(t *testing.T) {
-			g, err := syntax.Parse("rule main = operators {\n    operand \"a\"\n} => " + action)
+			g, err := syntax.ParseLegacy("rule main = operators {\n    operand \"a\"\n} => " + action)
 			if err != nil {
 				t.Fatal(err)
 			}

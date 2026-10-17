@@ -16,7 +16,7 @@ import (
 const constructorGrammar = `type Int terminal
 type Alias ~ Int
 type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
-rule main Values = "😀" => Values{Items: []Int{Int{"0"}, Alias{text($1)}}, Nested: [][]Int{[]Int{}, []Int{Int{"1"}}}, Maybe: []*Int{nil, Int{"2"}}, Default: Int{"0"}, Empty: []Int{}}
+rule main Values = v1:"😀" => Values{Items: []Int{Int{"0"}, Alias{text($v1)}}, Nested: [][]Int{[]Int{}, []Int{Int{"1"}}}, Maybe: []*Int{nil, Int{"2"}}, Default: Int{"0"}, Empty: []Int{}}
 `
 
 func TestTypedNodeConstructors(t *testing.T) {
@@ -223,7 +223,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 			t.Fatal("invalid terminal type accepted")
 		}
 	}
-	for _, source := range []string{`rule main = "x"`, `rule main = "x" => []Match{$1}`} {
+	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []Match{$v1}`} {
 		p := compile(t, source)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 		if err != nil || data[len(compiledMagic)+1] != 3 {

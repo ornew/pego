@@ -102,7 +102,7 @@ declaration order.
 
 An action (`=>`) applies to the whole `operand` item. To give different
 alternatives different actions, write them as separate `operand` items.
-An `operand` action can use captures and positional references (`$n`).
+An `operand` action can use the captures of its line.
 
 An `operand` MUST NOT call its own rule at its start, since that would be left
 recursion. Write constructs that take an expression on their left as `infix` or
@@ -220,7 +220,7 @@ An operator Value Action can refer to the following names.
 
 Captures inside the operator part (such as `then:expr`) can be referred to as
 well. `lhs`, `rhs` and `op` MUST NOT be used as capture names in operator
-parts. Positional references (`$n`) MUST NOT be used in operator actions.
+parts.
 
 The node created by an operator action covers the operator expression: from the
 start of the left operand (or of the prefix operator) to the end of the right

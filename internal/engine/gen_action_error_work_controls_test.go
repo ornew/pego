@@ -21,13 +21,13 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		recognize                  bool
 	}{
 		{"prefix", rule, `type A = { N int }
- rule ` + rule + ` A = "a" #cut => A{N:1 / (len($1)-1)}`, "action in " + rule + ": division by zero", false},
+ rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", false},
 		{"predicate", "main", `type Word terminal
  rule main Word = (({` + variable + `} leaf) / leaf) #cut
  rule leaf Word = "a"`, "", true},
 		{"captured", "main", `type A = { N int }
  rule main A = x:` + rule + ` {text($x) == "a"} $$ #cut => $x
- rule ` + rule + ` A = "a" #cut => A{N:1 / (len($1)-1)}`, "action in " + rule + ": division by zero", true},
+ rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true},
 	}
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module actionerrorfixture\n\ngo 1.27.1\n"), 0644); err != nil {

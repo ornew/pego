@@ -415,7 +415,7 @@ an action to one alternative or group; give each alternative its own rule:
 
 ```pego
 // inline-action.pego
-rule bad =  "a" ("b" => $1)
+rule bad =  "a" (b:"b" => $b)
 ```
 
 ```bash
@@ -423,46 +423,15 @@ pego parse -g inline-action.pego -s bad -i 'ab'
 ```
 
 ```text
-pego: inline-action.pego:2:20: expected ')', found '=>'
+pego: inline-action.pego:2:24: inline actions are not implemented
 ```
 
 ### 5.1 Referring to Captures
 
-| Syntax | Refers to |
-|:--|:--|
-| `$label` | The value captured with `label:` in this rule |
-| `$n` | The `n`-th (1-based) element of the rule body that has a value |
-| `$0` | A list of the values of all elements that have a value |
-
-Prefer `$label`. `$n` counts only elements that have a value, so adding a discard or a lookahead does not shift the
-numbers, but inserting a valued element does, and a rule that uses `$n` must build the full `Seq` of its body (see
-[Performance](#10-performance-guidelines)). The rule below is the same as the one in section 4.1 but written with
-positions:
-
-```pego
-// positional.pego
-type Name terminal
-type Number terminal
-type Value ~ Name | Number
-type Assign = { Name Name; Value Value }
-
-rule assign Assign = name -ws -"=" -ws value -";" => Assign{Name: $1, Value: $2}
-rule value Value = number / name
-rule name Name = [a-z]+
-rule number Number = [0-9]+
-rule ws = " "*
-rule both = name "," name => $0
-```
-
-```bash
-pego parse -g positional.pego -s assign -f sexpr -i 'ab = cd;'
-pego parse -g positional.pego -s both -f sexpr -i 'ab,cd'
-```
-
-```text
-(Assign Name=Name"ab"@name Value=Name"cd"@name)
-[Name"ab"@name "," Name"cd"@name]
-```
+`$label` refers to the value captured with `label:` in this rule. Only labeled elements can be used in an action:
+label each element the action needs, as `name:name` and `value:value` in the rule of section 4.1. Grammars written for
+earlier versions may refer to elements by position (`$1`, `$0`); these are rejected, and `pego fix` rewrites them by
+labeling the elements they refer to.
 
 Captures are visible only in the rule that made them, not in the rules it calls or that call it. A reference to an
 undefined capture is a compile-time error (`undefined capture $z`).
@@ -501,7 +470,7 @@ Type; an empty typed list is still a non-nil `List`.
 
 ```pego
 type NameNode = { Name string }
-rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
+rule name NameNode = v1:[a-z]+ => NameNode{Name: text($v1)}
 rule names []NameNode = a:name "," b:name => []NameNode{$a, $b}
 rule emptyNames []NameNode = "" => []NameNode{}
 ```
@@ -955,8 +924,6 @@ PEGO builds values only where something can observe them. To reduce allocations,
    automatically, because a captured value exposes its full CST.
 2. **Use terminal types or `(...) #atomic` for tokens.** Their bodies are matched without building values: an identifier is
    one node instead of one node per character.
-3. **Write actions with captures rather than `$n`.** A rule whose action does not use `$n` is matched without building
-   the `Seq` of its body.
 
 How much do they matter? Parsing one 140 KB list of 20,000 identifiers separated by `" ,  "` with the default backend
 allocated, measured around a single `Parse` call with `runtime.MemStats`:
@@ -984,9 +951,8 @@ values and runs no actions.
 | `T has no field F` | A typo, or the struct does not declare the field |
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; the CST of a sequence is a `Seq`, so a struct type needs an action |
-| `inline actions are not implemented` | The compiler recognized an inline action such as `(part => build($1))`, but inline action execution is not implemented |
+| `inline actions are not implemented` | The compiler recognized an inline action such as `(p:part => build($p))`, but inline action execution is not implemented |
 | Nondefault rule-level Value Action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
 | `capture k inside #atomic, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
-| `$n is out of range: the rule has N elements with a value` | `$n` counts only elements with a value |
 | `syntax error: expected ..., end of input` after a complete-looking input | The start rule must consume all the input. Consume trailing whitespace and comments explicitly |

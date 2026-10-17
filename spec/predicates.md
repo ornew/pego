@@ -10,8 +10,7 @@ The form `{ e }` evaluates a Predicate Action without consuming input or
 producing a value. A single Predicate Action keeps existing semantics: it
 fails if the result is `false` or evaluation is an error, and otherwise
 succeeds. It may refer to variables and named captures visible at its
-position. Positional action references `$n` and `$0` are not available inside
-predicates. Square brackets remain character classes; braces are predicates
+position. Square brackets remain character classes; braces are predicates
 only where a primary form of a Rule Expression is expected.
 
 ```pego
@@ -87,9 +86,8 @@ definitions made inside it are undone when it returns.
 
 Predicate Actions support the same operators and built-in functions
 as [Value Actions](actions.md), including `len` and `text`. Values created by node
-constructors during predicate evaluation are discarded. Positional references
-`$n` and `$0` are forbidden in predicates; named captures made earlier in the
-same expression scope remain available. Within a repetition element, only
+constructors during predicate evaluation are discarded. Named captures made
+earlier in the same expression scope are available. Within a repetition element, only
 captures from that iteration are visible, not captures from the enclosing
 rule body. Bind an outside value to a variable before the repetition when it
 must be compared with each element.

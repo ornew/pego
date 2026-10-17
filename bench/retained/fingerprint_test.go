@@ -11,7 +11,7 @@ import (
 )
 
 func TestFingerprintTerminalFlag(t *testing.T) {
-	p, err := pego.CompileSource("rule main = \"x\" => $1\n", "main")
+	p, err := pego.CompileSource("rule main = v1:\"x\" => $v1\n", "main")
 	if err != nil {
 		t.Fatal(err)
 	}

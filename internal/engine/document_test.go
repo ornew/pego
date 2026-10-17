@@ -355,7 +355,7 @@ rule gap = " "* #atomic`, "ab cd  e ", []string{"a", "b", " ", "ab ", "", "zz"}}
 		{`rule main = items:(item / junk)* tail:"" #atomic $$
 rule junk = [^;]* #atomic ";"
 rule item = k:key ":" v:val? ";" kids:(-"," c:[0-9]* #atomic)*
-rule key = [a-z]* #atomic => $0
+rule key = v1:[a-z]* #atomic => list($v1)
 rule val = e:[0-9]* #atomic => $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
 		// Empty results with captures made in a lookahead: non-empty nodes, and empty nodes at
 		// other positions, inside empty ones.

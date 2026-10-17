@@ -63,7 +63,7 @@ rule expr Doc = p:expr "x" x:"" #atomic / x:"a" #atomic / _|_ ignored:"b" #atomi
 `, []string{"a", "axx", "b", "", "a?"}},
 	{"typed/LR_positional_action", `type Doc = { Text string }
 rule main Doc = e:expr $$ => $e
-rule expr Doc = expr "+" "é" #atomic / "é" #atomic => Doc{Text: text($0)}
+rule expr Doc = v1:(expr "+" "é" #atomic / "é" #atomic) => Doc{Text: text(list($v1))}
 `, []string{"é", "é+é+é", "é+", "é+é?", "", "a"}},
 	{"typed/LR_framed_cuts", `type Doc = { Text Match }
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}

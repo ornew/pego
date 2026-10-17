@@ -20,12 +20,12 @@ func filterCases() []genCase {
 		{"identity and nil input", filterIdentitySource, []string{"ab", "a", "ac", ""}},
 		{"nil elements", `type Out = { Items []*Match }
 rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => $item == nil || text($item) == "é")}`, []string{"é", "a", ""}},
-		{"remove all", `rule main = "é" $$ => filter(list($1), (item) => false)`, []string{"é", "", "a"}},
+		{"remove all", `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, []string{"é", "", "a"}},
 		{"keep order", `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => $item != nil)`, []string{"ab", "", "é"}},
-		{"nested lambda", `rule main = "a" $$ => filter(list($1), (item) => len(filter(list($item, nil), (inner) => $inner != nil)) == 1)`, []string{"a", "", "ab"}},
+		{"nested lambda", `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list($item, nil), (inner) => $inner != nil)) == 1)`, []string{"a", "", "ab"}},
 		{"predicate error rollback", `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, []string{"a?", "a!", "a", ""}},
-		{"value error", `rule main = "a" $$ => filter(list($1), (item) => 1 / 0 == 0)`, []string{"a", "", "ab"}},
-		{"dynamic nonbool", `rule main = {value := 1} "a" $$ => filter(list($1), (item) => value)`, []string{"a", "", "ab"}},
+		{"value error", `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, []string{"a", "", "ab"}},
+		{"dynamic nonbool", `rule main = {value := 1} v1:"a" $$ => filter(list($v1), (item) => value)`, []string{"a", "", "ab"}},
 		{"dynamic nonbool predicate", `rule main = {value := 1} a:"a" ({len(filter(list($a), (item) => value)) == 1} "!" / "?") $$`, []string{"a?", "a!", "a", ""}},
 	}
 }
@@ -74,13 +74,13 @@ func TestFilterAcrossBackends(t *testing.T) {
 
 func TestFilterTypeAndRuntimeValidation(t *testing.T) {
 	for _, source := range []string{
-		`rule main = "a" => filter(list($1), (x) => 1)`,
-		`rule main = "a" => filter(list($1), (x, y) => true)`,
-		`rule main = "a" => filter(list($1), true)`,
+		`rule main = v1:"a" => filter(list($v1), (x) => 1)`,
+		`rule main = v1:"a" => filter(list($v1), (x, y) => true)`,
+		`rule main = v1:"a" => filter(list($v1), true)`,
 		`rule main = "a" => filter(1, (x) => true)`,
-		`rule main = "a" => filter(list($1))`,
+		`rule main = v1:"a" => filter(list($v1))`,
 		`type Out = { Items []Match }
-rule main = "a" => Out{Items: filter(list($1, nil), (x) => $x != nil)}`,
+rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => $x != nil)}`,
 	} {
 		g, err := syntax.Parse(source)
 		if err != nil {
@@ -91,8 +91,8 @@ rule main = "a" => Out{Items: filter(list($1, nil), (x) => $x != nil)}`,
 		}
 	}
 	for _, source := range []string{
-		`rule main = "a" => filter(list($1), (x) => 1)`,
-		`rule main = "a" => filter(list($1), (x) => nil)`,
+		`rule main = v1:"a" => filter(list($v1), (x) => 1)`,
+		`rule main = v1:"a" => filter(list($v1), (x) => nil)`,
 	} {
 		program := compile(t, source, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

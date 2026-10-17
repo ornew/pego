@@ -116,7 +116,7 @@ rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, 
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
 		{"projected and indexed repetition", `type L = { Items []Match; Rest node; N int }
-rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $2, N: len($rest)}
+rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $rest, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A = { N int }
 rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},

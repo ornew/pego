@@ -34,8 +34,7 @@ evaluation is an error, and succeeds otherwise**. It consumes no input and has n
 computed instead of matched.
 
 The expression uses the same language as a [Value Action](../../spec/actions.md): operators, `len`, `text`, and so on. It can
-read the captures `$label` made **earlier in the same rule** (positional references such as `$1` are not allowed in
-predicates). Three consequences are worth remembering.
+read the captures `$label` made **earlier in the same rule**. Three consequences are worth remembering.
 
 **Only `false` is false.** A predicate that evaluates to the integer `0` succeeds. Always write the comparison:
 
@@ -415,7 +414,7 @@ type Item = {
 rule main = {indent := 0} items:block blank* $$ => $items
 
 // Items at the current indentation.
-rule block = (blank* i:item)+ => map($1, (x) => $x.i)
+rule block = v1:(blank* i:item)+ => map($v1, (x) => $x.i)
 
 // A line indented exactly at the current depth, followed by its children.
 rule item Item = s:spaces {len($s) == indent} text:line eol cs:children? => Item{Text: $text, Children: concat($cs)}

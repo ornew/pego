@@ -11,7 +11,7 @@ attributes such as `@error("expected a token")` before a `rule` declaration
 are not part of the selected syntax.
 
 ```pego
-rule token Token = part name @error("expected a token") => build($1)
+rule token Token = part:part name @error("expected a token") => build($part)
 ```
 
 To annotate a complete sequence, group it before the postfix attribute. The

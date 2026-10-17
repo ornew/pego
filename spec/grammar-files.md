@@ -174,7 +174,7 @@ the line and column of the construct it concerns in the grammar source (see
 |:--|:--|:--|
 | Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammar Syntax](syntax.md) |
 | Definition and reference errors | A name defined twice, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
-| Type errors | A field that the struct does not declare, a value that is not assignable to the declared type, `$n` out of range | [Type Checking](type-checking.md#checked-errors) |
+| Type errors | A field that the struct does not declare, a value that is not assignable to the declared type | [Type Checking](type-checking.md#checked-errors) |
 
 The reference implementation reports all lexical and syntax errors of a file
 (at most 100), then, if there are none, all definition and reference errors,

@@ -19,7 +19,7 @@ rule expr Num = operators {
     operand number
     level additive { infix left "+" => $lhs }
 }
-rule inferred = number => $1
+rule inferred = number:number => $number
 `
 	g, err := Parse(src)
 	if err != nil {

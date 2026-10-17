@@ -890,7 +890,7 @@ type If = { Test Name; Body []Stmt }
 type Stmt ~ Assign | If
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
-rule stmts = (blank* s:stmt)+ => map($1, (x) => $x.s)
+rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => $x.s)
 
 // The indentation is outside the recovery: a line that is not at this block's indentation ends the block.
 rule stmt = indentation s:(if_stmt / assign) #recover(skip=skip_line) => $s

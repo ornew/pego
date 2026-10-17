@@ -88,7 +88,7 @@ func TestStructDeclarationCompletionPreservesConstructors(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 	const uri = "file:///constructor-completion.pego"
-	source := "type Box = { Name Match; Count int }\nrule main = \"a\" => Box{Name: $1, |}"
+	source := "type Box = { Name Match; Count int }\nrule main = a:\"a\" => Box{Name: $a, |}"
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)
 	c.open(uri, source)

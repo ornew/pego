@@ -12,13 +12,13 @@ func TestSourceGroupsExecutableParity(t *testing.T) {
 type Alias ~ (Number)
 type Value = { Number (Alias); Items ([]Alias); Flag (bool) }
 rule main (Value) = {count := (1 + (2 * 3))} {((count == 7) && true)} n:number => (Value{Number: ($n), Items: (map(list($n), (item) => ($item))), Flag: (count == 7)})
-rule number (Alias) = [0-9]+ => (Number{Text: (text($1))})
+rule number (Alias) = v1:[0-9]+ => (Number{Text: (text($v1))})
 `
 	const plain = `type Number = { Text string }
 type Alias ~ Number
 type Value = { Number Alias; Items []Alias; Flag bool }
 rule main Value = {count := 1 + 2 * 3} {count == 7 && true} n:number => Value{Number: $n, Items: map(list($n), (item) => $item), Flag: count == 7}
-rule number Alias = [0-9]+ => Number{Text: text($1)}
+rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 `
 	g, err := syntax.Parse(grouped)
 	if err != nil {

@@ -29,10 +29,10 @@ rule d D = "d" => D{}
 
 rule r = b / c d
 
-rule root A = "a" r "e" => A{Children: $2}
+rule root A = "a" r:r "e" => A{Children: $r}
 ```
 
-With the current implementation, `$2` in the `root` rule's action would be a `ChoiceNode`. The desired outcome is for `$2` to be a flat list of nodes: `[B{}]` if the `b` branch is taken, or `[C{}, D{}]` if the `c d` branch is taken. This proposal will make that the default behavior.
+With the current implementation, `$r` in the `root` rule's action would be a `ChoiceNode`. The desired outcome is for `$r` to be a flat list of nodes: `[B{}]` if the `b` branch is taken, or `[C{}, D{}]` if the `c d` branch is taken. This proposal will make that the default behavior.
 
 ## Proposed Design
 

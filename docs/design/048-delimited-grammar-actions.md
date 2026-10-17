@@ -19,8 +19,8 @@ type Main = { Value Expr }
 
 rule number Number = [0-9]+
 rule word Word = [a-z]+
-rule item Expr = (number => $1) / (word => $1)
-rule main Main = item => Main{Value: $1}
+rule item Expr = (n:number => $n) / (w:word => $w)
+rule main Main = item:item => Main{Value: $item}
 ```
 
 The existing whole-rule action remains `=> term` after the complete ordinary
@@ -36,12 +36,12 @@ An inline action wraps the preceding expression inside its parentheses. For a
 sequence such as `(a b => A) c`, `A` receives the values matched by `a` and
 `b`, and the outer sequence continues with the inline action result followed
 by the value from `c`. The action boundary closes earlier named captures; a
-later inline action sees the preceding result as a positional value. The
+later inline action sees the preceding result as an element it can label. The
 boundary introduces no hidden rule, variable scope, cut, memo, or left
 recursion boundary.
 
-For a non-sequence ordered choice, the selected branch's value is `$1`; `$0`
-is a singleton list containing that value. Choice selects a branch by PEG
+For a non-sequence ordered choice, a label on the whole choice names the
+selected branch's value. Choice selects a branch by PEG
 matching before its required action runs. An action failure is fatal and does
 not retry another branch or enter recovery. Failed wrapped expressions do not
 run their actions. Existing value-needed analysis may omit an action whose

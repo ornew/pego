@@ -416,8 +416,16 @@
       }
     },
     "capture-reference": {
-      "match": "\\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9]+)",
-      "name": "variable.parameter.capture.pego"
+      "patterns": [
+        {
+          "match": "\\$[A-Za-z_][A-Za-z0-9_]*",
+          "name": "variable.parameter.capture.pego"
+        },
+        {
+          "match": "\\$[0-9]+",
+          "name": "invalid.deprecated.positional-capture.pego"
+        }
+      ]
     },
     "member": {
       "match": "(\\.)([A-Za-z_][A-Za-z0-9_]*)",

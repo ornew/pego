@@ -281,7 +281,7 @@ rule int = digit+ #atomic
 rule true = "true" !ident_char
 rule false = "false" !ident_char
 rule nil = "nil" !ident_char
-rule capture_ref = "$" (ident / digit+) #atomic
+rule capture_ref = "$" ident #atomic
 rule var_name = ident
 rule var_ref = ident !"("
 

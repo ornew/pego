@@ -85,7 +85,7 @@ func TestSourceGrammarNodeConstructors(t *testing.T) {
 type Word terminal
 rule word = "x" => Word{"0"}
 rule empty = "x" => []Foo{}
-rule nested = "x" => [][]Foo{[]Foo{Foo{A: $1}},}
+rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
 rule args = "x" => Word{"a", "b",}
 `
 	if _, err := pego.ParseGrammar(src); err != nil {

@@ -6513,13 +6513,12 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 var scope2 = []string{"i"}
 var lit6 = []rune(" ")
 var lit9 = []rune("\n")
-var scope16 = []string{}
-var scope21 = []string{"i"}
+var scope15 = []string{}
 
 func init() {
 	rules = []*rule{
 		{id: 0, name: "main", scope: []string{"items"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 1, name: "block", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
+		{id: 1, name: "block", scope: []string{"v1"}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
 		{id: 2, name: "item", scope: []string{"s", "text", "cs"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
 		{id: 3, name: "children", scope: []string{"s", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
 		{id: 4, name: "spaces", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -6539,9 +6538,7 @@ func init() {
 	rules[1].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.mapList(func() any { c.p.stepWork(); return c.item(1) }(), func(l_14 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_14 }(), "i") }()
-			})
+			return c.newList(c.listItems("map", func() any { c.p.stepWork(); return c.cap(0) }()))
 		}()
 	}
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e4() }
@@ -6575,12 +6572,12 @@ func init() {
 		r.kinds = newRuleKinds(r.name, r.terminalType)
 	}
 	recNseen = 1
-	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e15() }
-	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e17() }
-	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e18() }
-	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e19() }
+	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e14() }
+	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e16() }
+	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e17() }
+	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e18() }
 	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e7() }
-	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e20() }
+	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e19() }
 	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e13() }
 	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e12() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\" \"", "[^\\n]", "\"\\n\"", "[ \\t]"}
@@ -6714,63 +6711,46 @@ func (p *parser) e3() (*Node, bool) {
 			x5  int
 			x6  mark
 			x8  int
-			x9  []*Node
-			x10 int
-			x11 int
-			x12 int
-			x13 mark
+			x9  mark
 			ok  bool
-			v15 *Node
-			v16 *Node
-			v17 *Node
-			v18 *Node
-			v19 *Node
-			v20 *Node
+			v11 *Node
+			v12 *Node
 		)
-		_ = x12
+		_ = x8
 
 		x1, x2 = p.pos, len(p.kidStack)
+		x3 = p.newFrame(len(scope2))
 		x5 = 0
 		for {
+			clear(x3.vals)
 			x6 = p.mark()
 			x4 = p.frame
-			x3 = p.newFrame(len(scope2))
 			p.frame = x3
 
-			x8 = p.pos
-			x9 = p.nodes(2)[:0]
-
-			x10, x11 = p.pos, len(p.kidStack)
-			x12 = 0
+			x8 = 0
 			for {
-				x13 = p.mark()
+				x9 = p.mark()
 
-				if v15, ok = p.r7(); !ok {
-					goto L14_ordinary
+				if _, ok = p.r8(); !ok {
+					goto L10_ordinary
 				}
-				x12++
-				p.kidStack = append(p.kidStack, v15)
-				if p.pos == x13.pos {
+				x8++
+				if p.pos == x9.pos {
 					break
 				}
 				continue
-			L14_ordinary:
-				p.reset(x13)
+			L10_ordinary:
+				p.reset(x9)
 				break
 			}
-			v16 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
-			x9 = append(x9, v16)
 
-			if v17, ok = p.call(rules[2], 0); !ok {
+			if v11, ok = p.call(rules[2], 0); !ok {
 				goto L7_ordinary
 			}
-			p.setCaptureOrdinary(0, v17)
-			x9 = append(x9, v17)
-			v18 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+			p.setCaptureOrdinary(0, v11)
 			p.frame = x4
-			v19 = p.attachCaptures(v18, scope2, x3, x6.pos, p.pos)
 			x5++
-			p.kidStack = append(p.kidStack, v19)
+			p.kidStack = append(p.kidStack, x3.vals[0])
 			if p.pos == x6.pos {
 				break
 			}
@@ -6784,8 +6764,9 @@ func (p *parser) e3() (*Node, bool) {
 			p.dropKids(x2)
 			goto fail_ordinary
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
-		return v20, true
+		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+		p.setCaptureOrdinary(0, v12)
+		return nil, true
 	fail_ordinary:
 		return nil, false
 	}
@@ -6799,64 +6780,48 @@ func (p *parser) e3() (*Node, bool) {
 		x5  int
 		x6  mark
 		x8  int
-		x9  []*Node
-		x10 int
-		x11 int
-		x12 int
-		x13 mark
+		x9  mark
 		ok  bool
-		v15 *Node
-		v16 *Node
-		v17 *Node
-		v18 *Node
-		v19 *Node
-		v20 *Node
+		v11 *Node
+		v12 *Node
 	)
-	_ = x12
+	_ = x8
 	p.stepWork()
 	x1, x2 = p.pos, len(p.kidStack)
+	x3 = p.newFrame(len(scope2))
 	x5 = 0
 	for {
+		clear(x3.vals)
 		x6 = p.mark()
 		x4 = p.frame
-		x3 = p.newFrame(len(scope2))
 		p.frame = x3
 		p.stepWork()
-		x8 = p.pos
-		x9 = p.nodes(2)[:0]
 		p.stepWork()
-		x10, x11 = p.pos, len(p.kidStack)
-		x12 = 0
+		x8 = 0
 		for {
-			x13 = p.mark()
+			x9 = p.mark()
 			p.stepWork()
-			if v15, ok = p.r7(); !ok {
-				goto L14
+			if _, ok = p.r8(); !ok {
+				goto L10
 			}
-			x12++
-			p.kidStack = append(p.kidStack, v15)
-			if p.pos == x13.pos {
+			x8++
+			if p.pos == x9.pos {
 				break
 			}
 			continue
-		L14:
-			p.reset(x13)
+		L10:
+			p.reset(x9)
 			break
 		}
-		v16 = p.newNode(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
-		x9 = append(x9, v16)
 		p.stepWork()
 		p.stepWork()
-		if v17, ok = p.call(rules[2], 0); !ok {
+		if v11, ok = p.call(rules[2], 0); !ok {
 			goto L7
 		}
-		p.setCapture(0, v17)
-		x9 = append(x9, v17)
-		v18 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		p.setCapture(0, v11)
 		p.frame = x4
-		v19 = p.attachCaptures(v18, scope2, x3, x6.pos, p.pos)
 		x5++
-		p.kidStack = append(p.kidStack, v19)
+		p.kidStack = append(p.kidStack, x3.vals[0])
 		if p.pos == x6.pos {
 			break
 		}
@@ -6870,8 +6835,9 @@ func (p *parser) e3() (*Node, bool) {
 		p.dropKids(x2)
 		goto fail
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
-	return v20, true
+	v12 = p.newNode(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+	p.setCapture(0, v12)
+	return nil, true
 fail:
 	return nil, false
 }
@@ -8091,7 +8057,7 @@ fail:
 }
 
 // main (Node body inlined)
-func (p *parser) e15() (*Node, bool) {
+func (p *parser) e14() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -8180,7 +8146,7 @@ fail:
 }
 
 // block (Node body inlined)
-func (p *parser) e17() (*Node, bool) {
+func (p *parser) e16() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -8198,7 +8164,7 @@ func (p *parser) e17() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope16))
+			x1 = p.newFrame(len(scope15))
 			p.frame = x1
 
 			x6 = 0
@@ -8252,11 +8218,12 @@ func (p *parser) e17() (*Node, bool) {
 	)
 	_ = x6
 	p.stepWork()
+	p.stepWork()
 	x3 = 0
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope16))
+		x1 = p.newFrame(len(scope15))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -8301,7 +8268,7 @@ fail:
 }
 
 // item (Node body inlined)
-func (p *parser) e18() (*Node, bool) {
+func (p *parser) e17() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -8394,7 +8361,7 @@ fail:
 }
 
 // children (Node body inlined)
-func (p *parser) e19() (*Node, bool) {
+func (p *parser) e18() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -8533,7 +8500,7 @@ fail:
 }
 
 // line (value-free body inlined)
-func (p *parser) e20() (*Node, bool) {
+func (p *parser) e19() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -8613,7 +8580,7 @@ func (p *parser) q0() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e15()
+		v, ok := p.e14()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -8635,7 +8602,7 @@ func (p *parser) q0() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e15()
+	v, ok := p.e14()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -9171,241 +9138,25 @@ func (p *tparser) u1() (any, bool) {
 		if !p.firstCall(rules[1]) {
 			return p.callMemo(trules[1], (*tparser).i1)
 		}
-		return p.v1()
+		start, rec := p.pos, len(p.recovered)
+		v, ok := p.i1()
+		if !ok {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		return v, ok
 	}
 
 	if !p.firstCall(rules[1]) {
 		return p.callMemo(trules[1], (*tparser).i1)
 	}
-	return p.v1()
-}
-
-// block, called as by invokePlain (body inlined)
-func (p *tparser) v1() (any, bool) {
-	if p.control == nil {
-
-		var (
-			start int
-			v     any
-			c     *tctx
-			rec   int
-			x1    int
-			x2    int
-			x3    int
-			x4    int
-			x5    int
-			k6    any
-			x8    int
-			x9    []any
-			x10   int
-			x11   int
-			x12   int
-			x13   int
-			x14   int
-			ok    bool
-			v16   any
-			v17   any
-			v18   any
-			v19   any
-			v20   any
-			v21   any
-			w     string
-		)
-		start, rec = p.pos, len(p.recovered)
-		p.depth++
-		if p.depth > p.maxDepth {
-			p.tooDeep()
-		}
-		_, _ = x3, x12
-
-		x1, x2 = p.pos, len(p.kidStack)
-		x3 = 0
-		for {
-			x4, x5 = p.pos, len(p.recovered)
-
-			k6 = nil
-
-			x8 = p.pos
-			x9 = p.newVals(2)[:0]
-
-			x10, x11 = p.pos, len(p.kidStack)
-			x12 = 0
-			for {
-				x13, x14 = p.pos, len(p.recovered)
-
-				if v16, ok = p.s7(); !ok {
-					goto L15_ordinary
-				}
-				x12++
-				p.pushKid(v16)
-				if p.pos == x13 {
-					break
-				}
-				continue
-			L15_ordinary:
-				p.pos = x13
-				p.recovered = p.recovered[:x14]
-				break
-			}
-			v17 = p.newNodeOrdinary("List", x10, p.pos, p.kids(x11))
-			x9 = append(x9, v17)
-
-			if v18, ok = p.u2(); !ok {
-				goto L7_ordinary
-			}
-			k6 = v18
-			x9 = append(x9, v18)
-			v19 = p.newNodeOrdinary("Seq", x8, p.pos, x9)
-			v20 = p.attachCaptures(v19, scope21, []any{k6}, x4, p.pos)
-			x3++
-			p.pushKid(v20)
-			if p.pos == x4 {
-				break
-			}
-			continue
-		L7_ordinary:
-			p.pos = x4
-			p.recovered = p.recovered[:x5]
-			break
-		}
-		if x3 < 1 {
-			p.dropKids(x2)
-			goto fail_ordinary
-		}
-		v21 = p.newNodeOrdinary("List", x1, p.pos, p.kids(x2))
-		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
-		c.one[0] = v21
-		c.items = c.one[:]
-		w = p.where
-		p.where = "block"
-		v = func() any {
-
-			return c.mapList(func() any { return c.item(1) }(), func(l_22 any) any {
-				return func() any { return c.member(func() any { return l_22 }(), "i") }()
-			})
-		}()
-		v = c.finish(v)
-		p.where = w
-		p.depth--
-		return v, true
-	fail_ordinary:
-		p.depth--
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i1()
+	if !ok {
 		p.pos = start
 		p.recovered = p.recovered[:rec]
-		return nil, false
 	}
-
-	p.stepWork()
-	var (
-		start int
-		v     any
-		c     *tctx
-		rec   int
-		x1    int
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		x9    []any
-		x10   int
-		x11   int
-		x12   int
-		x13   int
-		x14   int
-		ok    bool
-		v16   any
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		w     string
-	)
-	start, rec = p.pos, len(p.recovered)
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.tooDeep()
-	}
-	_, _ = x3, x12
-	p.stepWork()
-	x1, x2 = p.pos, len(p.kidStack)
-	x3 = 0
-	for {
-		x4, x5 = p.pos, len(p.recovered)
-		p.stepWork()
-		k6 = nil
-		p.stepWork()
-		x8 = p.pos
-		x9 = p.newVals(2)[:0]
-		p.stepWork()
-		x10, x11 = p.pos, len(p.kidStack)
-		x12 = 0
-		for {
-			x13, x14 = p.pos, len(p.recovered)
-			p.stepWork()
-			if v16, ok = p.s7(); !ok {
-				goto L15
-			}
-			x12++
-			p.pushKid(v16)
-			if p.pos == x13 {
-				break
-			}
-			continue
-		L15:
-			p.pos = x13
-			p.recovered = p.recovered[:x14]
-			break
-		}
-		v17 = p.newNode("List", x10, p.pos, p.kids(x11))
-		x9 = append(x9, v17)
-		p.stepWork()
-		p.stepWork()
-		if v18, ok = p.u2(); !ok {
-			goto L7
-		}
-		k6 = v18
-		x9 = append(x9, v18)
-		v19 = p.newNode("Seq", x8, p.pos, x9)
-		v20 = p.attachCaptures(v19, scope21, []any{k6}, x4, p.pos)
-		x3++
-		p.pushKid(v20)
-		if p.pos == x4 {
-			break
-		}
-		continue
-	L7:
-		p.pos = x4
-		p.recovered = p.recovered[:x5]
-		break
-	}
-	if x3 < 1 {
-		p.dropKids(x2)
-		goto fail
-	}
-	v21 = p.newNode("List", x1, p.pos, p.kids(x2))
-	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
-	c.one[0] = v21
-	c.items = c.one[:]
-	w = p.where
-	p.where = "block"
-	v = func() any {
-		c.p.stepWork()
-		return c.mapList(func() any { c.p.stepWork(); return c.item(1) }(), func(l_22 any) any {
-			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_22 }(), "i") }()
-		})
-	}()
-	v = c.finish(v)
-	p.where = w
-	p.depth--
-	return v, true
-fail:
-	p.depth--
-	p.pos = start
-	p.recovered = p.recovered[:rec]
-	return nil, false
+	return v, ok
 }
 
 // block, invoked as by invoke (body inlined)
@@ -9416,26 +9167,19 @@ func (p *tparser) i1() (any, bool) {
 			start int
 			v     any
 			c     *tctx
-			x1    int
+			k1    any
 			x2    int
 			x3    int
 			x4    int
 			x5    int
-			k6    any
-			x8    int
-			x9    []any
+			x6    int
+			k7    any
+			x9    int
 			x10   int
 			x11   int
-			x12   int
-			x13   int
-			x14   int
 			ok    bool
-			v16   any
-			v17   any
-			v18   any
-			v19   any
-			v20   any
-			v21   any
+			v13   any
+			v14   any
 			w     string
 		)
 		start = p.pos
@@ -9443,73 +9187,59 @@ func (p *tparser) i1() (any, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_, _ = x3, x12
+		_, _ = x4, x9
 
-		x1, x2 = p.pos, len(p.kidStack)
-		x3 = 0
+		x2, x3, x4 = p.pos, len(p.kidStack), 0
 		for {
-			x4, x5 = p.pos, len(p.recovered)
+			x5, x6 = p.pos, len(p.recovered)
 
-			k6 = nil
+			k7 = nil
 
-			x8 = p.pos
-			x9 = p.newVals(2)[:0]
-
-			x10, x11 = p.pos, len(p.kidStack)
-			x12 = 0
+			x9 = 0
 			for {
-				x13, x14 = p.pos, len(p.recovered)
+				x10, x11 = p.pos, len(p.recovered)
 
-				if v16, ok = p.s7(); !ok {
-					goto L15_ordinary
+				if _, ok = p.s8(); !ok {
+					goto L12_ordinary
 				}
-				x12++
-				p.pushKid(v16)
-				if p.pos == x13 {
+				x9++
+				if p.pos == x10 {
 					break
 				}
 				continue
-			L15_ordinary:
-				p.pos = x13
-				p.recovered = p.recovered[:x14]
+			L12_ordinary:
+				p.pos = x10
+				p.recovered = p.recovered[:x11]
 				break
 			}
-			v17 = p.newNodeOrdinary("List", x10, p.pos, p.kids(x11))
-			x9 = append(x9, v17)
 
-			if v18, ok = p.u2(); !ok {
-				goto L7_ordinary
+			if v13, ok = p.u2(); !ok {
+				goto L8_ordinary
 			}
-			k6 = v18
-			x9 = append(x9, v18)
-			v19 = p.newNodeOrdinary("Seq", x8, p.pos, x9)
-			v20 = p.attachCaptures(v19, scope21, []any{k6}, x4, p.pos)
-			x3++
-			p.pushKid(v20)
-			if p.pos == x4 {
+			k7 = v13
+			x4++
+			p.pushKid(k7)
+			if p.pos == x5 {
 				break
 			}
 			continue
-		L7_ordinary:
-			p.pos = x4
-			p.recovered = p.recovered[:x5]
+		L8_ordinary:
+			p.pos = x5
+			p.recovered = p.recovered[:x6]
 			break
 		}
-		if x3 < 1 {
-			p.dropKids(x2)
+		if x4 < 1 {
+			p.dropKids(x3)
 			goto fail_ordinary
 		}
-		v21 = p.newNodeOrdinary("List", x1, p.pos, p.kids(x2))
+		v14 = p.newNodeOrdinary("List", x2, p.pos, p.kids(x3))
+		k1 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
-		c.one[0] = v21
-		c.items = c.one[:]
 		w = p.where
 		p.where = "block"
 		v = func() any {
 
-			return c.mapList(func() any { return c.item(1) }(), func(l_22 any) any {
-				return func() any { return c.member(func() any { return l_22 }(), "i") }()
-			})
+			return c.newList(c.listItems("map", func() any { return k1 }()))
 		}()
 		v = c.finish(v)
 		p.where = w
@@ -9525,26 +9255,19 @@ func (p *tparser) i1() (any, bool) {
 		start int
 		v     any
 		c     *tctx
-		x1    int
+		k1    any
 		x2    int
 		x3    int
 		x4    int
 		x5    int
-		k6    any
-		x8    int
-		x9    []any
+		x6    int
+		k7    any
+		x9    int
 		x10   int
 		x11   int
-		x12   int
-		x13   int
-		x14   int
 		ok    bool
-		v16   any
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
+		v13   any
+		v14   any
 		w     string
 	)
 	start = p.pos
@@ -9552,74 +9275,61 @@ func (p *tparser) i1() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_, _ = x3, x12
+	_, _ = x4, x9
 	p.stepWork()
-	x1, x2 = p.pos, len(p.kidStack)
-	x3 = 0
+	x2, x3, x4 = p.pos, len(p.kidStack), 0
 	for {
-		x4, x5 = p.pos, len(p.recovered)
+		x5, x6 = p.pos, len(p.recovered)
 		p.stepWork()
-		k6 = nil
+		k7 = nil
 		p.stepWork()
-		x8 = p.pos
-		x9 = p.newVals(2)[:0]
 		p.stepWork()
-		x10, x11 = p.pos, len(p.kidStack)
-		x12 = 0
+		x9 = 0
 		for {
-			x13, x14 = p.pos, len(p.recovered)
+			x10, x11 = p.pos, len(p.recovered)
 			p.stepWork()
-			if v16, ok = p.s7(); !ok {
-				goto L15
+			if _, ok = p.s8(); !ok {
+				goto L12
 			}
-			x12++
-			p.pushKid(v16)
-			if p.pos == x13 {
+			x9++
+			if p.pos == x10 {
 				break
 			}
 			continue
-		L15:
-			p.pos = x13
-			p.recovered = p.recovered[:x14]
+		L12:
+			p.pos = x10
+			p.recovered = p.recovered[:x11]
 			break
 		}
-		v17 = p.newNode("List", x10, p.pos, p.kids(x11))
-		x9 = append(x9, v17)
 		p.stepWork()
 		p.stepWork()
-		if v18, ok = p.u2(); !ok {
-			goto L7
+		if v13, ok = p.u2(); !ok {
+			goto L8
 		}
-		k6 = v18
-		x9 = append(x9, v18)
-		v19 = p.newNode("Seq", x8, p.pos, x9)
-		v20 = p.attachCaptures(v19, scope21, []any{k6}, x4, p.pos)
-		x3++
-		p.pushKid(v20)
-		if p.pos == x4 {
+		k7 = v13
+		x4++
+		p.pushKid(k7)
+		if p.pos == x5 {
 			break
 		}
 		continue
-	L7:
-		p.pos = x4
-		p.recovered = p.recovered[:x5]
+	L8:
+		p.pos = x5
+		p.recovered = p.recovered[:x6]
 		break
 	}
-	if x3 < 1 {
-		p.dropKids(x2)
+	if x4 < 1 {
+		p.dropKids(x3)
 		goto fail
 	}
-	v21 = p.newNode("List", x1, p.pos, p.kids(x2))
+	v14 = p.newNode("List", x2, p.pos, p.kids(x3))
+	k1 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
-	c.one[0] = v21
-	c.items = c.one[:]
 	w = p.where
 	p.where = "block"
 	v = func() any {
 		c.p.stepWork()
-		return c.mapList(func() any { c.p.stepWork(); return c.item(1) }(), func(l_22 any) any {
-			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_22 }(), "i") }()
-		})
+		return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 	}()
 	v = c.finish(v)
 	p.where = w
@@ -9719,9 +9429,9 @@ func (p *tparser) i2() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_23 := func() any { return k3 }()
-				f_24 := func() any { return c.concat(func() any { return k5 }()) }()
-				return tmk_Item(c, true, f_23, f_24)
+				f_20 := func() any { return k3 }()
+				f_21 := func() any { return c.concat(func() any { return k5 }()) }()
+				return tmk_Item(c, true, f_20, f_21)
 			}()
 		}()
 		p.where = w
@@ -9801,9 +9511,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_23 := func() any { c.p.stepWork(); return k3 }()
-			f_24 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_Item(c, true, f_23, f_24)
+			f_20 := func() any { c.p.stepWork(); return k3 }()
+			f_21 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_Item(c, true, f_20, f_21)
 		}()
 	}()
 	p.where = w

@@ -18,7 +18,7 @@ rule bad = "z"
 rule recovered = ("a" ";") #recover(skip=[^;]* ";")
 rule recoverySuffix = "a" ";" #recover(skip=[^;]* ";")
 type A = { N int }
-rule fatal = "a" => A{N: 1 / (len($1) - 1)}`, "main")
+rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

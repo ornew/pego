@@ -194,7 +194,7 @@ func TestUnusedCapture(t *testing.T) {
 		{name: "discarded repetition", src: `rule main = (x:"a")* => nil`, want: []string{"1:14 warning unused-capture"},
 			msg: "the value of the repetition it is in is discarded"},
 		{name: "captured repetition", src: `rule main = r:(x:"a")* => $r`},
-		{name: "repetition read with $n", src: `rule main = (x:"a")* => $1`},
+		{name: "repetition read with $n", src: `rule main = v1:(x:"a")* => $v1`},
 		{name: "repetition element read by its predicate", src: `rule main = (x:"a" {len($x) > 0})* => nil`},
 		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => $x.x)`,
 			want: []string{"1:24 warning unused-capture"}},

@@ -21,7 +21,7 @@ func TestGeneratedTSDepthOptions(t *testing.T) {
 	}
 	fixtures := []genCase{
 		{"ordinary", `rule main = trigger n
-rule trigger = _ => $0
+rule trigger = v1:_ => list($v1)
 rule n = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?"}},
 		{"left", `rule main = n
 rule n = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "((é))", "?"}},

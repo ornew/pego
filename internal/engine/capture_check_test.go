@@ -18,7 +18,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 		{"recursive", captureCheckSource(64, "recursive"), "any", ""},
 		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, "Seq{k: Match, x: Match}", ""},
 		{"optional scope", `rule main = (x:"a" x:"b")? $$`, "Seq{x: *Match}", ""},
-		{"repetition scope", `rule main = (x:"a" x:"b")* $$ => $1`, "[]Seq{x: Match}", ""},
+		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, "[]Seq{x: Match}", ""},
 		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "Seq{x: nil}", ""},
 		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "Match", ""},
 		{"incompatible action", "type R = { X Match }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},

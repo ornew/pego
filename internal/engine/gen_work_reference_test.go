@@ -36,7 +36,7 @@ rule word Word = "a" / "é"
 
 rule recovered Bag = x:word #recover(skip="!") #cut => Bag{Items: list($x)}
 
-rule bad Bag = "a" #cut => Bag{Count: 1 / (len($1) - 1)}
+rule bad Bag = v1:"a" #cut => Bag{Count: 1 / (len($v1) - 1)}
 
 rule anynil any = t:word? => $t
 

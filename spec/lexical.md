@@ -126,13 +126,11 @@ full native integer range in generic attribute arguments.
 
 ### Capture References
 
-`$` immediately followed by an identifier or ASCII decimal digits forms a
-capture reference (`$label`, `$1`) in actions and predicates. `$` followed by
-any other character is the end-of-line anchor; `$$` is the end-of-input anchor.
-A positional index uses the same digit and implementation-`int` range as an
-integer literal. Leading zeroes are allowed, and `$0` selects all valued
-captures. Non-ASCII digits and overflowing indices are errors, not alternate
-indices or anchors.
+`$` immediately followed by an identifier forms a capture reference (`$label`)
+in actions and predicates. `$` followed by ASCII decimal digits is a removed
+positional reference (`$1`): it is still a token, so that `$1` is never read as
+an anchor followed by a number, but the parser rejects it. `$` followed by any
+other character is the end-of-line anchor; `$$` is the end-of-input anchor.
 
 ### Punctuation
 

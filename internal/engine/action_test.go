@@ -36,7 +36,7 @@ type R = { X *Match }`,
 
 func TestActions(t *testing.T) {
 	check(t, `type KV = { Key Match; Op Match; Value Match }
-rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $1, Op: $op, Value: $3}`,
+rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $k, Op: $op, Value: $v}`,
 		ok("abc=12", `(KV Key="abc" Op="=" Value="12")`),
 	)
 	check(t, `rule main = "(" e:inner ")" => $e
@@ -44,7 +44,7 @@ rule inner = [a-z]+ #atomic`,
 		ok("(ab)", `"ab"@inner`),
 	)
 	check(t, `type Pair = { All node; N int; S string; B bool }
-rule main = "a" "b" => Pair{All: $0, N: 1 + 2 * 3, S: "x" + text($2), B: !false && 1 < 2}`,
+rule main = v1:"a" v2:"b" => Pair{All: list($v1, $v2), N: 1 + 2 * 3, S: "x" + text($v2), B: !false && 1 < 2}`,
 		ok("ab", "(Pair All=[\"a\" \"b\"] B=true N=7 S=`xb`)"),
 	)
 }
@@ -211,9 +211,9 @@ type A terminal`, `type A is already defined`},
 		{`rule main = "a" => $x`, `1:20: undefined capture $x`},
 		{`rule main = "a" => Nope{}`, `Nope is not a struct type`},
 		{`type A = { X Match }
-rule main = "a" => A{Y: $1}`, `A has no field Y`},
+rule main = v1:"a" => A{Y: $v1}`, `A has no field Y`},
 		{`type A = { X Match }
-rule main = "a" => A{X: $1, X: $1}`, `duplicate field X`},
+rule main = v1:"a" => A{X: $v1, X: $v1}`, `duplicate field X`},
 		{`rule main = "a" => nope(1)`, `unknown function nope`},
 		{`rule main = "a" => len(1, 2)`, `len takes 1 arguments, got 2`},
 		{`rule main = (x:"a") #atomic`, `capture x inside #atomic, -, or ! has no effect`},
@@ -235,7 +235,7 @@ rule x = "a"`, `rule x has no Operators Rule levels`},
 
 func TestRuntimeErrors(t *testing.T) {
 	prog := compile(t, `type A = { N int }
-rule main = "a" => A{N: 1 / (len($1) - 1)}`)
+rule main = v1:"a" => A{N: 1 / (len($v1) - 1)}`)
 	_, err := prog.Parse("main", "a")
 	if err == nil || !strings.Contains(err.Error(), "action in main: division by zero") {
 		t.Errorf("got %v", err)

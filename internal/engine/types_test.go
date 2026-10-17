@@ -19,7 +19,7 @@ type Alias ~ P
 rule main = "a" => Alias{X: 1}`, `cannot use int as Match in field X of Alias`},
 		{`type P = { X Match }
 type Alias ~ P
-rule main = "a" => Alias{Y: $1}`, `Alias has no field Y`},
+rule main = v1:"a" => Alias{Y: $v1}`, `Alias has no field Y`},
 		{`type P = {}
 type Q = {}
 type Alias ~ P | Q
@@ -43,21 +43,18 @@ rule main = x:"a"? => P{X: $x}`, `cannot use *Match as Match in field X of P`},
 rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of P`},
 		{`rule main = x:("a" y:"b")? => $x.y`, `cannot access .y of *Seq: the value may be nil`},
 		{`rule main = xs:(k:"a")* => $xs.k`, `[]Seq{k: Match} has no field k`},
-		{`rule main = "a" "b" => $3`, `$3 is out of range: the rule has 2 elements with a value`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
 		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
-		{`rule main = {x := $1} "a"
-rule b = "b"`, `1:19: $1 cannot be used in predicates`},
 		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
 		{`type Op = { X Match }
 rule main Op = "a"`, `rule main produces Match, which is not assignable to Op`},
 		{`type E = { X Match }
 rule e E = operators {
-    operand "1" => E{X: $1}
+    operand v1:"1" => E{X: $v1}
     level { infix left "+" }
 }`, `operators of e without an action produce Operator, which is not assignable to E`},
-		{`rule main = "a" => foldl($1, $1, (a, b) => $a)`, `foldl: expected a list, got Match`},
+		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => $a)`, `foldl: expected a list, got Match`},
 		{`rule main = xs:"a"* => map($xs, (x) => len($x))`, `map: the function must produce a node, got int`},
 		{`rule main = "a" => list(1)`, `list: elements must be nodes, got int`},
 	} {

@@ -355,7 +355,7 @@ func TestHover(t *testing.T) {
 	}
 
 	// Built-in and undefined names; a grammar with errors has no inferred types.
-	c.open("file:///hover2.pego", "type T = { M Match }\nrule a = x\nrule b T = \"b\" => T{M: $1}")
+	c.open("file:///hover2.pego", "type T = { M Match }\nrule a = x\nrule b T = v1:\"b\" => T{M: $v1}")
 	for _, tc := range []struct {
 		line, char int
 		want       string
@@ -458,25 +458,25 @@ func TestCompletion(t *testing.T) {
 	uri := "file:///comp.pego"
 	// Each line is a context; the cursor is at the end of the line unless noted.
 	lines := []string{
-		"type Num terminal",                                // 0
-		"type P = { A Num; B Num }",                   // 1
-		"type Q = { A Num; ",                          // 2: a field name
-		"type R = { A Nu",                             // 3: a field type
-		"rule num ",                                        // 4: the type of a rule
-		"rule a = n ",                                      // 5: a rule name
-		"rule b = x:num @",                                 // 6: an attribute
-		"rule c = x:num y:num => $",                        // 7: a capture after $
-		"rule d = x:num => foldl($x, $x, (acc, e) => ",     // 8: a struct type after new
-		"rule e = x:num => $x.",                            // 9: a member
-		"rule f = x:num {",                                 // 10: in a predicate
-		"rule g = operators { operand num; level { infix ", // 11: an associativity
-		"rule h = \"// not a comment",                      // 12: in a string
-		"// rule i =",                                      // 13: in a comment
-		"rule j = x:num => $x",                             // 14: typing a capture name
-		"type ",                                            // 15: the name of a new type
-		"type S ",                                          // 16: after a type name
-		"rule k = operators { operand ",                    // 17: an operand of a operatorsRule expression
-		"rule l = num => foldl($1, $1, (acc, e) => $",      // 18: a lambda parameter
+		"type Num terminal",         // 0
+		"type P = { A Num; B Num }", // 1
+		"type Q = { A Num; ",        // 2: a field name
+		"type R = { A Nu",           // 3: a field type
+		"rule num ",                 // 4: the type of a rule
+		"rule a = n ",               // 5: a rule name
+		"rule b = x:num @",          // 6: an attribute
+		"rule c = x:num y:num => $", // 7: a capture after $
+		"rule d = x:num => foldl($x, $x, (acc, e) => ",      // 8: a struct type after new
+		"rule e = x:num => $x.",                             // 9: a member
+		"rule f = x:num {",                                  // 10: in a predicate
+		"rule g = operators { operand num; level { infix ",  // 11: an associativity
+		"rule h = \"// not a comment",                       // 12: in a string
+		"// rule i =",                                       // 13: in a comment
+		"rule j = x:num => $x",                              // 14: typing a capture name
+		"type ",                                             // 15: the name of a new type
+		"type S ",                                           // 16: after a type name
+		"rule k = operators { operand ",                     // 17: an operand of a operatorsRule expression
+		"rule l = xs:num* => foldl($xs, $xs, (acc, e) => $", // 18: a lambda parameter
 	}
 	src := strings.Join(lines, "\n")
 	c.open(uri, src)
@@ -514,7 +514,7 @@ func TestCompletion(t *testing.T) {
 		{15, -1, nil},
 		{16, -1, sorted(typeKeywords)},
 		{17, -1, sorted(rules, statementKeywords, operatorsRuleKeywords)},
-		{18, -1, []string{"acc", "e"}},
+		{18, -1, []string{"acc", "e", "xs"}},
 	} {
 		char := tc.char
 		if char < 0 {

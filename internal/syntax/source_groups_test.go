@@ -14,9 +14,9 @@ type Alias ~ (
  // type documentation
  (Number) // type tail
 )
-rule main (Alias) = "x" => (
+rule main (Alias) = v1:"x" => (
  // action documentation
- (Number{Text: $0}) // action tail
+ (Number{Text: list($v1)}) // action tail
 )
 `
 	g, err := Parse(src)
@@ -30,7 +30,7 @@ rule main (Alias) = "x" => (
 	if innerType.LeadingComments != " type documentation\n" || innerType.TrailingComments != " type tail\n" || innerAction.LeadingComments != " action documentation\n" || innerAction.TrailingComments != " action tail\n" {
 		t.Fatalf("group ownership: %+v %+v", innerType.SourceInfo, innerAction.SourceInfo)
 	}
-	if typ.Pos != (grammar.Pos{Line: 2, Col: 14}) || typ.End != (grammar.Pos{Line: 5, Col: 2}) || action.Pos != (grammar.Pos{Line: 6, Col: 28}) || action.End != (grammar.Pos{Line: 9, Col: 2}) {
+	if typ.Pos != (grammar.Pos{Line: 2, Col: 14}) || typ.End != (grammar.Pos{Line: 5, Col: 2}) || action.Pos != (grammar.Pos{Line: 6, Col: 31}) || action.End != (grammar.Pos{Line: 9, Col: 2}) {
 		t.Fatalf("group spans: %+v %+v", typ.SourceInfo, action.SourceInfo)
 	}
 	if len(g.AllComments()) != 4 {

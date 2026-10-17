@@ -67,6 +67,19 @@ func Parse(src string) (*grammar.Grammar, error) {
 	return g, nil
 }
 
+// ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
+// positional captures. It serves Fix and tests of grammars that still reach the engine in
+// that form through JSON.
+func ParseLegacy(src string) (*grammar.Grammar, error) {
+	errs := &errorList{}
+	p := &parser{toks: lex(src, errs), errs: errs, legacy: true}
+	g := p.file()
+	if len(errs.list) > 0 {
+		return nil, errs.list
+	}
+	return g, nil
+}
+
 // ParseExpr parses a single parser expression. It is intended for tests.
 func ParseExpr(src string) (expr grammar.Expr, err error) {
 	errs := &errorList{}
@@ -93,8 +106,10 @@ type parser struct {
 	toks []token
 	i    int
 	errs *errorList
-	ctx  context.Context
-	work uint
+	// legacy accepts the removed syntax that pego fix rewrites.
+	legacy bool
+	ctx    context.Context
+	work   uint
 	// cur is the line break most recently recorded. Comments that do not
 	// precede a recorded line break are added to it, because the formatter
 	// writes the tokens they follow on the line after it.
@@ -1468,6 +1483,9 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tIndex:
 		p.next()
+		if !p.legacy {
+			p.errs.addRange(t.pos, t.end, fmt.Sprintf("positional captures are removed: label the element (x:...) and write $x; run pego fix to rewrite $%d", t.num))
+		}
 		return &grammar.IndexRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Index: t.num}
 	case tIdent:
 		switch t.text {

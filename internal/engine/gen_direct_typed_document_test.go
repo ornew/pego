@@ -68,7 +68,7 @@ rule atom Token = [aé😀]`, []string{"a", "é", "😀", "", "aa"}},
 rule main *Token = token?
 rule token Token = "é"`, []string{"", "é", "a"}},
 		{`type Text = { S string }
-rule main Text = [aé😀]* #atomic => Text{S: text($1)}`, []string{"", "aé😀", "b", "\xff"}},
+rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé😀", "b", "\xff"}},
 	} {
 		pkg := fmt.Sprintf("case%d", i)
 		g, err := syntax.Parse(c.grammar)

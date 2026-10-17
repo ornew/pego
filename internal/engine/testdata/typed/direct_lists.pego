@@ -8,7 +8,7 @@ type Tab = { Rows []Row; Sum int; Neg int; Label string; Pairs []KV; One KV }
 rule main Tab = (
     rows:(cells:(c:name -","?)* (m:"!")? ";")* ps:(p:kv -" "?)* -pair o:one t:("#" [a-z]*)? #atomic $$
 ) => Tab{Rows: map($rows, (r) => Row{Cells: map($r.cells, (x) => $x.c), Mark: $r.m, N: len($r.cells), Txt: text($r), Pos: $r.startPos, End: $r.endPos, Ok: len($r.cells) > 1 && !(len($r.cells) > 3) || false}), Sum: foldl(0, $rows, (acc, r) => $acc + len($r.cells)), Neg: -len($rows), Label: text($t) + "!", Pairs: map($ps, (e) => $e.p), One: $o}
-rule kv KV = name "=" name => KV{K: $1, V: $3, All: text($0) + "/" + text($2)}
-rule one KV = pair => KV{K: $1.k, V: $1.v, Div: 10 / (len($1.k) - 1)}
+rule kv KV = name:name v2:"=" v3:name => KV{K: $name, V: $v3, All: text(list($name, $v2, $v3)) + "/" + text($v2)}
+rule one KV = pair:pair => KV{K: $pair.k, V: $pair.v, Div: 10 / (len($pair.k) - 1)}
 rule pair = "@" k:name ":" v:name
 rule name Name = [a-z]+

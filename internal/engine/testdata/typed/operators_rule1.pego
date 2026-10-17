@@ -8,7 +8,7 @@ rule expr Expr = operators {
     skip ws
     operand number
     operand "(" #cut e:expr ws ")" => $e
-    operand "[" e:expr? ws "]" => Unary{Op: $1, X: $e}
+    operand v1:"[" e:expr? ws "]" => Unary{Op: $v1, X: $e}
     level { infix left o:("+" / "-") ws => Binary{Left: $lhs, Op: $o, Right: $rhs} }
     level { infix left "*" / "/" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { prefix "-" => Unary{Op: $op, X: $rhs} }
