@@ -67,8 +67,7 @@ types are otherwise not checked.
 
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
 one assignable to the other, `[]V & []W` is `[](V & W)`, and for unions and
-optional types it is the union of the members assignable to a member of the
-other. A meet of unrelated types is `_|_`, so
+optional types it is the union of the meets of their members. A meet of unrelated types is `_|_`, so
 `(Match | int) & node` is `Match` while `int & string` is an error where a
 location has that type.
 

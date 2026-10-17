@@ -150,7 +150,7 @@ func (c *bcompiler) compile() {
 			ri.Action = c.expr(r.action, s, nil, true)
 		}
 		if t := c.prog.resultCheckType(r.def, r.def); t != nil && !r.novalue {
-			ri.Check = int(c.str(t.String()))
+			ri.Check = int(c.str(newFieldType(t).text))
 		}
 	}
 }
@@ -448,7 +448,7 @@ func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, k
 		li.Action = c.expr(action, s, locals, locals == nil)
 	}
 	if t := c.prog.resultCheckType(key, c.cur.def); t != nil && !c.cur.novalue {
-		li.Check = int(c.str(t.String()))
+		li.Check = int(c.str(newFieldType(t).text))
 	}
 	return li
 }
@@ -559,7 +559,7 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		for i, f := range t.Fields {
 			c.term(f.Value, s, locals)
 			if ft := c.prog.fieldCheckType(spec, f); ft != nil {
-				c.eemit3(ECheck, c.str(ft.String()), c.str(f.Name), c.str(name))
+				c.eemit3(ECheck, c.str(newFieldType(ft).text), c.str(f.Name), c.str(name))
 			}
 			names[i] = f.Name
 		}

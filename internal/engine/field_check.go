@@ -32,6 +32,7 @@ const (
 
 // newFieldType converts a resolved declared type. It returns nil for any, which every value fits.
 func newFieldType(t ty) *fieldType {
+	t = checkedType(t)
 	var f *fieldType
 	switch t := t.(type) {
 	case basicTy:
@@ -56,7 +57,7 @@ func newFieldType(t ty) *fieldType {
 	case listTy:
 		e := newFieldType(t.elem)
 		if e == nil {
-			return nil // a declared []any cannot exist: list elements are nodes
+			return nil // unreachable: checkedType constrains list elements
 		}
 		f = &fieldType{kind: ftList, elem: e}
 	case optTy:
@@ -79,6 +80,28 @@ func newFieldType(t ty) *fieldType {
 	}
 	f.text = t.String()
 	return f
+}
+
+// checkedType replaces the lists of unconstrained elements in t with List. List elements are
+// nodes or nil, so a value of type []_ or []any only has to be a list, which takes one step to
+// check whatever its length.
+func checkedType(t ty) ty {
+	switch t := t.(type) {
+	case listTy:
+		if newFieldType(t.elem) == nil {
+			return tyList
+		}
+		return listTy{checkedType(t.elem)}
+	case optTy:
+		return optTy{checkedType(t.elem)}
+	case unionTy:
+		alts := make([]ty, len(t.alts))
+		for i, a := range t.alts {
+			alts[i] = checkedType(a)
+		}
+		return unionTy{alts}
+	}
+	return t
 }
 
 // parseFieldType reads the text of a type as ty.String writes it, resolving names against the

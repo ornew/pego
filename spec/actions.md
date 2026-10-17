@@ -151,20 +151,21 @@ evaluated:
 - a union admits the values any of its alternatives admits;
 - a struct, terminal or CST node Type admits only nodes of that Type, `node`
   admits every node, and `terminal` every terminal;
-- `[]T` admits a `List` whose every element `T` admits;
+- `[]T` admits a `List` whose every element `T` admits; list elements are
+  nodes or `nil`, so `[]_` and `[]any` admit every `List`;
 - `Error` and `Missing` nodes from error recovery stand for every node Type
   and, as an empty list, for every list Type.
 
 A mismatch aborts a Value Action with an error such as
 `cannot use Match as Ident in field Name of Decl`; inside a Predicate Action it
 makes the predicate fail. Each examined list element counts as one execution step for
-[work limits](parsing.md#cancellation-and-work-limits). Fields declared `any` and values whose
+[work limits](parsing.md#cancellation-and-work-limits). Fields declared `_` or `any` and values whose
 Type the checker proved assignable are not checked, so constructors in fully
 typed grammars cost nothing extra.
 
 `NoTypeCheck` deliberately skips assignability checks for typed-list elements
 and terminal arguments, and instead checks every struct field whose declared
-Type is not `any` at run time as described above, and every rule value as
+Type is not `_` or `any` at run time as described above, and every rule value as
 described in [Types and Errors](#types-and-errors). It does not add runtime
 support for primitive-valued lists.
 

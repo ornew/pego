@@ -21,6 +21,8 @@ func topBottomCases() []genCase {
 		{"top cast", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, []string{"1", "a"}},
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
 		{"meet field", "type T = { A (Num | int) & node }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
+		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "1a"}},
+		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "a"}},
 		{"meet list", "type T = { A []Num & []node }\nrule main = xs:n+ $$ => T{A: $xs}\n" + topBottomRules, []string{"1", ""}},
 	}
 }
@@ -55,6 +57,7 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type T = { A int & string }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A Match & []Match }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A []Match & []int }\nrule main = \"a\"", "field A of T has type _|_"},
+		{"type T = { A *[]Match & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		// A meet is the type assignable to both: here Match, which an int is not.
 		{"type T = { A (Match | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as Match"},
 	} {
@@ -75,6 +78,8 @@ func TestTopBottomTypes(t *testing.T) {
 		// Meets look inside lists: []Seq is assignable to both.
 		"type T = { A [](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x}",
 		"type T = { A *Match & *Seq }\nrule main = \"a\" => T{A: nil}",
+		"type T = { A *[](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x}",
+		"type T = { A ([]Match | int) & []node }\nrule main = x:\"a\"* => T{A: $x}",
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {
@@ -86,6 +91,46 @@ func TestTopBottomTypes(t *testing.T) {
 	}
 }
 
+// A list of _ or any is checked as a List: its elements are always nodes or nil.
+func TestTopBottomListCheck(t *testing.T) {
+	for _, tc := range []struct{ field, want string }{
+		{"[]_", "List"},
+		{"[]any", "List"},
+		{"*[]_ | int", "*(List | int)"},
+	} {
+		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F}\nrule ok = x:\"a\"* => T{A: U{F: $x}.F}\nrule rule []_ = x:\"a\"* => U{F: $x}.F\nrule bad []_ = x:\"a\" => U{F: $x}.F"
+		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+			program := compile(t, src, opts)
+			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			loaded, _, err := LoadProgram(data, Options{})
+			if err != nil {
+				t.Fatalf("%s: %v", tc.field, err)
+			}
+			for _, p := range []*Program{program, loaded} {
+				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+					if p == loaded && backend == Closure {
+						continue // a module without the AST runs on the VM
+					}
+					if _, err := p.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use string as "+tc.want+" in field A of T") {
+						t.Fatalf("%s %s: %v", tc.field, backend, err)
+					}
+					for _, start := range []string{"ok", "rule"} {
+						if _, err := p.ParseWith(start, "aa", ParseOptions{Backend: backend}); err != nil {
+							t.Fatalf("%s %s %s: %v", tc.field, start, backend, err)
+						}
+					}
+					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use Match as List in result of rule bad") {
+						t.Fatalf("%s bad %s: %v", tc.field, backend, err)
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestTopBottomReportedOnce(t *testing.T) {
 	g, err := syntax.Parse("type T = { A int & string }\nrule main = x:\"a\" => T{A: $x}")
 	if err != nil {
@@ -93,6 +138,13 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	}
 	_, err = Compile(g, Options{})
 	if err == nil || strings.Count(err.Error(), "_|_") != 1 || strings.Contains(err.Error(), "never") {
+		t.Fatalf("got %v, want one _|_ error", err)
+	}
+	g, err = syntax.Parse("rule main = x:\"a\" => [](int & string){$x}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Compile(g, Options{}); err == nil || strings.Count(err.Error(), "_|_") != 1 {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
 	// An empty meet (only an AST can hold one) is _.
@@ -115,6 +167,8 @@ func TestTopBottomWithoutTypeCheck(t *testing.T) {
 		{"type T = { A _|_ }\nrule main = x:\"a\" => T{A: $x}", "field A of T has type _|_"},
 		{"type T = { A int & string }\nrule main = x:\"a\" => T{A: $x}", "field A of T has type _|_"},
 		{"type B ~ _|_\nrule main B = \"a\"", "rule main has type _|_"},
+		{"rule main = x:\"a\" => []_|_{$x}", "the list element has type _|_"},
+		{"rule main = x:\"a\" => [](int & string){$x}", "the list element has type _|_"},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {

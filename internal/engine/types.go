@@ -12,7 +12,7 @@ type ty interface{ String() string }
 type basicTy string
 
 const (
-	tyAny      basicTy = "any"   // type not known statically (compatible with every type)
+	tyAny      basicTy = "any" // type not known statically (compatible with every type)
 	tyNever    basicTy = "_|_" // no value, and the initial value for inference
 	tyInt      basicTy = "int"
 	tyString   basicTy = "string"
@@ -264,14 +264,14 @@ func meet(a, b ty) ty {
 			return tyNever
 		}
 	}
+	xs, ys := alternatives(a), alternatives(b)
+	if len(xs) == 1 && len(ys) == 1 {
+		return tyNever // unrelated, and neither is a union or optional to split
+	}
 	var common []ty
-	for _, x := range alternatives(a) {
-		for _, y := range alternatives(b) {
-			if assignable(x, y) {
-				common = append(common, x)
-			} else if assignable(y, x) {
-				common = append(common, y)
-			}
+	for _, x := range xs {
+		for _, y := range ys {
+			common = append(common, meet(x, y))
 		}
 	}
 	return union(common...)
