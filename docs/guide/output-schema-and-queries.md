@@ -95,16 +95,30 @@ apply to nested field-value patterns; `nil` can also match a nil child.
 Here `list` means an explicit `[]any` field value. An ordinary parser repetition
 or typed list field is a `Node` with type `List`, so match it with `Type: "List"`
 and, if useful, `Category: "node"`. Export includes the reserved `cst/List`
-identity whenever a reachable schema shape is a list, including empty lists.
+identity whenever a reachable schema shape is a list, including empty lists,
+and every reserved CST identity whenever a reachable shape is a generic node, a
+terminal or dynamic `any`. It includes `Error` when the grammar uses `#recover`
+and `Missing` when it uses `#missing`.
 `Fields` require named values; `Children` are an ordered prefix, so extra
 children and fields are allowed.
 `Capture` binds the value at that pattern. Patterns are copied at compilation.
-Supplying a schema rejects known impossible type, rule, field, and some scalar
-category constraints. For a directly declared optional scalar field such as
-`Value *string`, compilation permits `string` and `nil` categories and rejects
-other known categories; it follows aliases that resolve to scalar or optional
-scalar shapes. Union and nested schema compatibility are not checked yet. A nil
-schema defers these checks to evaluation. Runtime values are always checked
+Supplying a schema rejects patterns that no value the schema describes can
+match: unknown type and rule names, fields a type does not have, and categories
+or types a value cannot have. Nested patterns are checked against the shape of
+the field or child they apply to. A union or optional shape accepts a pattern
+that matches any one of its alternatives, so with `Value *(Int | Pair)`, a
+`Value` pattern of type `Int`, of type `Pair` with `Pair` fields, or of category
+`nil` compiles, while one of type `Box` or of category `string` does not. A
+pattern applied to a value of unknown shape, such as `any`, a generic node or
+the query root, is checked only for its own type's fields. Error recovery and
+missing-token insertion can put `Error` and `Missing` nodes in place of any node
+or list, so patterns of those types, with their `message` (and, for `Missing`,
+`expected`) string fields, compile wherever the schema includes them. A schema
+exported before it included these types for every recovering grammar may lack
+them; export it again to query recovery nodes. For a directly
+declared optional scalar field such as `Value *string`, compilation permits
+`string` and `nil` categories and rejects other known categories. A nil schema
+defers these checks to evaluation. Runtime values are always checked
 because callers can mutate a `Node` after parsing. This API uses programmatic
 patterns; it has no text query language or text predicates yet.
 

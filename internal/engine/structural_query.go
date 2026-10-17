@@ -58,6 +58,11 @@ func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*Struct
 	if err != nil {
 		return nil, err
 	}
+	if schema != nil {
+		if err := checkQueryShapes(&copy, schema); err != nil {
+			return nil, err
+		}
+	}
 	return &StructuralQuery{pattern: copy}, nil
 }
 func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern, error) {
@@ -88,6 +93,9 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 				if t.Name == p.Type && t.Origin != "inferred" {
 					found = true
 					for _, f := range p.Fields {
+						if t.Origin == "cst" && recoveryHasField(t.Name, f.Name) {
+							continue
+						}
 						if !schemaMayHaveField(t.Shape, f.Name, s, map[string]bool{}) {
 							return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
 						}
@@ -145,6 +153,15 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 	}
 	return p, nil
 }
+func recoveryHasField(typ, name string) bool {
+	for _, f := range recoveryFields(typ) {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func schemaMayHaveField(shape SchemaShape, name string, s *OutputSchema, active map[string]bool) bool {
 	return schemaMayHaveFieldAt(&shape, name, s, active, make(map[*SchemaShape]bool))
 }

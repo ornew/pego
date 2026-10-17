@@ -174,17 +174,20 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 		if shape.Kind == "list" {
 			collect(SchemaShape{Kind: "ref", Ref: "cst/" + TypeList})
 		}
-		// A generic node child can be any reserved CST kind. Keeping those
-		// identities in the export lets schema-checked queries name a Match
-		// below a Seq even when no capture or rule refers to Match directly.
-		if shape.Kind == "node" {
+		// A generic node child, and a dynamic or terminal value, can be a node
+		// of any reserved CST kind. Keeping those identities in the export lets
+		// schema-checked queries name a Match below a Seq even when no capture
+		// or rule refers to Match directly.
+		if shape.Kind == "node" || shape.Kind == "any" || shape.Kind == "terminal" {
 			for _, name := range reservedTypes {
 				collect(SchemaShape{Kind: "ref", Ref: "cst/" + name})
 			}
 		}
 		if shape.Ref != "" && !wanted[shape.Ref] {
 			wanted[shape.Ref] = true
-			if t, ok := all[shape.Ref]; ok {
+			// The nodes of a terminal type have that type, unlike a terminal
+			// value, so its terminal shape adds no reserved identities.
+			if t, ok := all[shape.Ref]; ok && t.Shape.Kind != "terminal" {
 				collect(t.Shape)
 			}
 		}
@@ -203,6 +206,17 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	}
 	for _, r := range s.Rules {
 		collect(r.Result)
+	}
+	// Error recovery and missing-token insertion can put their nodes where any node or list is
+	// expected.
+	for _, rd := range p.Grammar.Rules() {
+		if directHasRecovery(rd.Expr) {
+			collect(SchemaShape{Kind: "ref", Ref: "cst/" + TypeError})
+			break
+		}
+	}
+	if p.hasMissing {
+		collect(SchemaShape{Kind: "ref", Ref: "cst/" + TypeMissing})
 	}
 	if allRules {
 		for id := range all {

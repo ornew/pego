@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding; broader query type checking remains incomplete.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and union shapes.
 
 ## Motivation
 
@@ -109,8 +109,9 @@ checks, and semantic schema diff are implemented. The accepted v1 validation
 contract requires canonical `Start`/rule-result relationships and reserved CST
 shapes, exact-case JSON fields with recursive duplicate-key rejection, and
 complete validation of both diff operands. Structural-query compilation
-validates a supplied schema before using it. Remaining work includes broader
-query type checking and additional schema consumers as described in
+validates a supplied schema before using it and checks nested and union
+patterns against it. Remaining work includes additional schema consumers as
+described in
 [design 040](040-structural-queries-and-highlighting.md).
 
 ## Alternatives Considered
@@ -214,8 +215,7 @@ repository.
 
 The Go v1 API uses a start-reachable default with an explicit all-rules option.
 Cross-grammar schema identity remains absent until canonicalization is defined;
-compatibility classification for diffs and broader query type checking remain
-open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
+compatibility classification for diffs remains open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
 
@@ -238,7 +238,9 @@ rule-shape identity and declared provenance. Named recursive references remain
 references. Scalar, optional, list, union, dynamic `any`, terminal, and CST/capture
 categories are explicit. Ordinary CST children are conservatively described as
 ordered optional node lists; their exact positional alternatives are not inferred.
-A generic node child retains all reserved CST identities in the reachable export,
+A grammar with `#recover` or `#missing` exports `Error` or `Missing`, whose
+nodes can replace any node or list. A generic node child, a terminal or a
+dynamic `any` value retains all reserved CST identities in the reachable export,
 so a schema-checked query can name an uncaptured `Match` below a `Seq`.
 
 The envelope decoder rejects unsupported formats and versions, unknown fields,
@@ -254,5 +256,5 @@ slices are equivalent for reserved-shape validation. Shared acyclic inline
 shapes are visited once; named-reference cycles are allowed. The same full
 validation applies to in-memory schemas and both operands of semantic diff;
 envelope metadata is not itself reported as a diff. Persisting schemas in
-compiled files remains unimplemented. Compatibility classification, broader
-query type checking, and broader backend/typed-output validation remain open.
+compiled files remains unimplemented. Compatibility classification and broader backend/typed-output validation
+remain open.
