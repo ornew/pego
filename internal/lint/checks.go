@@ -771,6 +771,8 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 		captureRefsControlled(t.R, params, refs, control)
 	case *grammar.Unary:
 		captureRefsControlled(t.X, params, refs, control)
+	case *grammar.Cast:
+		captureRefsControlled(t.X, params, refs, control)
 	case *grammar.Assign:
 		captureRefsControlled(t.Value, params, refs, control)
 	}

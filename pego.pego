@@ -101,12 +101,13 @@ type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction terminal
 type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
-  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
+  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
 )
 type BinaryOp = { Op string; L ActionExpr; R ActionExpr }
 type UnaryOp = { Op string; X ActionExpr }
 type FieldAccess = { X ActionExpr; Name Ident }
 type CaptureAccess = { X ActionExpr; Capture CaptureRef } // x.$y
+type Cast = { X ActionExpr; Type Type } // x.(T)
 type Call = { X ActionExpr; Args []ActionExpr }
 type Constructor = { X ActionExpr; Inits []InitField; Comments []Comment }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
@@ -372,10 +373,13 @@ rule action_ops ActionExpr = operators {
   // followed by a character class, which the reference parser rejects.
   level field_access {
     postfix "." -ws c:capture_ref => CaptureAccess{X: $lhs, Capture: $c}
+    postfix "." -ws t:cast_type => Cast{X: $lhs, Type: $t}
     postfix "." -ws name:ident => FieldAccess{X: $lhs, Name: $name}
     postfix "[" -ws i:action_expr -ws "]" => BinaryOp{Op: "[]", L: $lhs, R: $i}
   }
 }
+// A rule of its own keeps ml from reaching the rest of the action.
+rule cast_type Type = "(" {ml := true} -ws t:type_expr -ws ")" => $t
 rule lambda Lambda = (
   "(" {ml := true} -ws names:lambda_params? -ws ")" -ws "=>" -ws x:action_expr
 ) => Lambda{Params: concat($names), Body: $x}

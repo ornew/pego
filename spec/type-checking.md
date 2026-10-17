@@ -44,6 +44,9 @@ have the following types.
 | `T{stringValue}` | Terminal Type `T`; exactly one string-valued argument is required |
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
+| `x.$y` | The join of the types of capture `y` of the node types `x` may have |
+| `x[i]` | The element type of the list `x`; `i` MUST be an `int` |
+| `x.(T)` | `T`; the type of `x` or one of its alternatives MUST be assignable to `T` or one of its alternatives, or the other way around |
 | `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
 | `map(l, f)` | `[]T`, where `T` is the type of `f`'s result, which MUST be a node or `nil` |
 | `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments, which MUST be nodes or `nil` |

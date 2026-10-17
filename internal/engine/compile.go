@@ -25,7 +25,8 @@ type Program struct {
 	noProjections bool
 	byName        map[string]*rule
 	types         map[string]grammar.TypeSpec
-	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks).
+	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
+	// and the types of casts (castType).
 	fieldTypes sync.Map
 	// checks holds the values checked at run time against their declared types (nil if none).
 	// Programs built from this one (the recognizer, the metered program) and loaded programs

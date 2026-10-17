@@ -395,6 +395,9 @@ func validate(g *Grammar, control *validationControl) error {
 			push(n.L, "l", -1, false)
 		case *Unary:
 			push(n.X, "x", -1, false)
+		case *Cast:
+			push(n.Type, "type", -1, false)
+			push(n.X, "x", -1, false)
 		case *Assign:
 			push(n.Value, "value", -1, false)
 		default:

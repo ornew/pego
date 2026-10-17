@@ -197,6 +197,20 @@ receiver. A captured sequence does not yet carry the captures inside it, so
 `$x.$y` for `x:(y:a b)` is rejected; write `$y`. On a capture record, `x.y`
 and `x.$y` read the same capture.
 
+## Casts
+
+`x.(T)` is the value of `x`, asserted to be of Type `T`: its static type is
+`T`, and it chains with field access, as in `$x.(Number).Value`. `T` is any
+Type, written as in a declaration; a union is written in the parentheses
+directly, as in `$x.(Number | String)`. A value that is not a `T` raises the
+runtime action error `cannot cast <value type> to <T>`, checked as a field of
+Type `T` checks a dynamically typed value (see
+[Values and Constructors](#values-and-constructors)), with the same execution
+steps. A cast is a compile-time error unless the static type of `x` or one of
+its alternatives is assignable to `T` or one of its alternatives, or the other
+way around, so `$x.(int)` on a capture is rejected while `$x.(Number)` on a
+`node` value is accepted.
+
 ## Operators and Functions
 
 This section defines operators and the complete set of built-in functions
@@ -226,7 +240,7 @@ comparison result an operand of another comparison.
 | 5 | `*`, `/`, `%` | `int`, `int` | `int` |
 | 6 | Unary `-` | `int` | `int` |
 | 6 | Unary `!` | `bool` | `bool` |
-| 7 | `.` field access; `.$` capture access; `[i]` indexing; calls; parentheses | Node and field; list and `int`; built-in and declared arguments; any expression | Field or call result; list element; grouped expression type |
+| 7 | `.` field access; `.$` capture access; `.(T)` cast; `[i]` indexing; calls; parentheses | Node and field; any value and a Type; list and `int`; built-in and declared arguments; any expression | Field or call result; `T`; list element; grouped expression type |
 
 All comparison operators share one precedence level, and the parser accepts
 only one comparison operator at that level. Thus `a < b < c` is invalid;

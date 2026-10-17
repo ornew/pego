@@ -223,6 +223,36 @@ func isNodeOrNil(t ty) bool {
 	return t == tyNil || isNode(t)
 }
 
+// overlaps reports whether some value has both type a and type b, so a cast between them may hold.
+func overlaps(a, b ty) bool {
+	if assignable(a, b) || assignable(b, a) {
+		return true
+	}
+	for _, x := range alternatives(a) {
+		for _, y := range alternatives(b) {
+			if assignable(x, y) || assignable(y, x) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// alternatives returns the types whose values make up the values of t.
+func alternatives(t ty) []ty {
+	switch t := t.(type) {
+	case unionTy:
+		var alts []ty
+		for _, a := range t.alts {
+			alts = append(alts, alternatives(a)...)
+		}
+		return alts
+	case optTy:
+		return append(alternatives(t.elem), tyNil)
+	}
+	return []ty{t}
+}
+
 // assignable reports whether a value of type s can be placed where type d is expected.
 func assignable(s, d ty) bool {
 	if s == tyAny || d == tyAny || s == tyNever {

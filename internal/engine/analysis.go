@@ -485,6 +485,8 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 		walkTerm(t.R, f)
 	case *grammar.Unary:
 		walkTerm(t.X, f)
+	case *grammar.Cast:
+		walkTerm(t.X, f)
 	case *grammar.Assign:
 		walkTerm(t.Value, f)
 	}

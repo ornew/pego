@@ -196,6 +196,8 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return "=="
 	case ENew:
 		return fmt.Sprintf("%s fields=%s", m.Strings[a], names(m.FieldLists[bb]))
+	case ECast:
+		return strconv.Quote(m.Strings[a])
 	case ECheck:
 		return fmt.Sprintf("%s field=%s of=%s", strconv.Quote(m.Strings[a]), m.Strings[bb], m.Strings[c])
 	case EFunc:

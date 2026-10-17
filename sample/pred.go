@@ -109,6 +109,9 @@ func (g *gen) eval(t grammar.Term) (v pval, err bool) {
 		return unknownVal, true
 	case *grammar.Call:
 		return g.call(t)
+	case *grammar.Cast:
+		// A cast that holds keeps its value.
+		return g.eval(t.X)
 	case *grammar.Unary:
 		x, err := g.eval(t.X)
 		if err || x.kind == pUnknown {

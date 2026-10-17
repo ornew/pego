@@ -83,9 +83,9 @@ type lexer struct {
 	errs      *errorList
 
 	// State of the white space and comments before the next token.
-	ntoks       int // tokens read so far
+	ntoks int // tokens read so far
 	// prev is the previous token, which decides whether a "[" directly after it is a bracket.
-	prev token
+	prev        token
 	newlines    int // line breaks since the previous token or comment
 	lineComment *grammar.Comment
 	comments    []*grammar.Comment

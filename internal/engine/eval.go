@@ -253,6 +253,16 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		}
 		return c.p.valueUnary(t.Op, x)
 
+	case *grammar.Cast:
+		x, err := c.eval(t.X)
+		if err != nil {
+			return nil, err
+		}
+		if ft := c.p.prog.castType(t); ft != nil && !c.p.fieldConforms(ft, x) {
+			return nil, c.p.castError(x, ft)
+		}
+		return x, nil
+
 	case *grammar.Binary:
 		return c.binary(t)
 
@@ -941,6 +951,10 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		c.checkTerm(t.L, s, locals)
 		c.checkTerm(t.R, s, locals)
 	case *grammar.Unary:
+		c.checkTerm(t.X, s, locals)
+	case *grammar.Cast:
+		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		k.resolve(t.Type)
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Assign:
 		c.errorf(t.Diagnostic(), "assignment %s = ... is only allowed as a whole predicate", t.Name)

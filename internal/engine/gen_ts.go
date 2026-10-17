@@ -198,10 +198,10 @@ var tsPrintRuns = sync.OnceValue(func() string {
 })
 
 // fieldCheckSource returns the run-time type checks the parser uses, as genrt/fieldcheck.go
-// declares them: tsFieldCheckSource with checkField and checkResult if called.
+// declares them: tsFieldCheckSource with checkField, castValue and checkResult if called.
 func (g *tsGen) fieldCheckSource() string {
 	src := tsFieldCheckSource
-	for _, f := range []string{"checkField", "checkResult"} {
+	for _, f := range []string{"checkField", "castValue", "checkResult"} {
 		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
 			src += tsCheckSources[f]
 		}
@@ -216,6 +216,13 @@ var tsCheckSources = map[string]string{
 // evaluation error otherwise.
 function checkField(c: Actx, v: Value, t: FieldType, field: string, typ: string): Value {
   if (!fieldConforms(c.p, t, v)) return evalError(` + "`cannot use ${typeName(v)} as ${t.text} in field ${field} of ${typ}`" + `);
+  return v;
+}
+`,
+	"castValue": `
+// castValue returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
+function castValue(c: Actx, v: Value, t: FieldType): Value {
+  if (!fieldConforms(c.p, t, v)) return evalError(` + "`cannot cast ${typeName(v)} to ${t.text}`" + `);
   return v;
 }
 `,
@@ -505,6 +512,8 @@ func tsUsesCtx(t grammar.Term, locals map[string]string) bool {
 		return tsUsesCtx(t.L, locals) || tsUsesCtx(t.R, locals)
 	case *grammar.Unary:
 		return tsUsesCtx(t.X, locals)
+	case *grammar.Cast:
+		return true // castValue raises its error through the context
 	}
 	return true // IndexRef, VarRef, Member, New
 }
@@ -1053,6 +1062,13 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 		return fmt.Sprintf("c.binary(%s, %s, %s)", tsString(t.Op), l, r)
 	case *grammar.Unary:
 		return fmt.Sprintf("rtUnary(%s, %s)", tsString(t.Op), g.term(t.X, s, locals))
+	case *grammar.Cast:
+		x := g.term(t.X, s, locals)
+		ft := g.prog.resolveCheck(t.Type)
+		if ft == nil {
+			return x
+		}
+		return fmt.Sprintf("castValue(c, %s, %s)", x, g.fieldTypeVar(t, ft, tsFieldTypeDecl))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
 }

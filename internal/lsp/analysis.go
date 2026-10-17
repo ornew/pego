@@ -626,6 +626,9 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 		a.walkTermControlled(t.R, control)
 	case *grammar.Unary:
 		a.walkTermControlled(t.X, control)
+	case *grammar.Cast:
+		a.walkTermControlled(t.X, control)
+		a.walkTypeControlled(t.Type, control)
 	case *grammar.VarRef:
 		a.mark(t.Diagnostic(), semVariable, 0)
 	case *grammar.CaptureRef:

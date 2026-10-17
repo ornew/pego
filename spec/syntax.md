@@ -252,10 +252,13 @@ rule action_ops = operators {
     // followed by a character class, which the reference parser rejects.
     level field_access {
         postfix "." -ws capture_ref
+        postfix "." -ws cast_type
         postfix "." -ws ident
         postfix "[" -ws action_expr -ws "]"
     }
 }
+// A rule of its own keeps ml from reaching the rest of the action.
+rule cast_type = "(" {ml := true} -ws type_expr -ws ")"
 rule lambda = "(" {ml := true} -ws lambda_params? -ws ")" -ws "=>" -ws action_expr
 rule lambda_params = ident (-ws "," -ws ident)*
 rule action_group = (

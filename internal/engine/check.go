@@ -682,6 +682,8 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 		return t.Diagnostic()
 	case *grammar.Unary:
 		return t.Diagnostic()
+	case *grammar.Cast:
+		return t.Diagnostic()
 	case *grammar.Assign:
 		return t.Diagnostic()
 	case *grammar.Block:
@@ -782,6 +784,12 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 	case *grammar.Lambda:
 		k.errorf(grammar.Pos{}, "functions can only be passed to filter, foldl, foldr, or map")
 		return tyAny
+	case *grammar.Cast:
+		x, to := k.term(t.X, env), k.resolve(t.Type)
+		if !overlaps(x, to) {
+			k.errorf(t.Diagnostic(), "cannot cast %s to %s", x, to)
+		}
+		return to
 	case *grammar.Unary:
 		x := k.term(t.X, env)
 		want := tyInt

@@ -39,6 +39,10 @@ func (m *Module) hasCaptureAccess() bool {
 	return m.hasExpr(EMember, func(s string) bool { return strings.HasPrefix(s, "$") })
 }
 
+// hasCasts reports whether the module casts values with x.(T) (ECAST), which needs instruction set
+// version 12.
+func (m *Module) hasCasts() bool { return m.hasExpr(ECast, func(string) bool { return true }) }
+
 // hasExpr reports whether the module has an expression instruction op whose string operand A
 // satisfies is.
 func (m *Module) hasExpr(op Op, is func(string) bool) bool {
@@ -82,6 +86,9 @@ func (m *Module) hasTypeChecks() bool {
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	if m.hasCasts() {
+		return 12
+	}
 	if m.hasCaptureAccess() {
 		return 11
 	}
@@ -363,6 +370,9 @@ const (
 	// ECHECK t, f, s: fail unless the top value fits type t, the declared type of field f of
 	// struct s; the value stays (ISA 9).
 	ECheck
+	// ECAST t: fail unless the top value fits type t, the type of a cast x.(T); the value stays
+	// (ISA 12).
+	ECast
 )
 
 // Built-in function indices
@@ -393,7 +403,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ETerminal: "ETERMINAL", ECheck: "ECHECK",
+	ETerminal: "ETERMINAL", ECheck: "ECHECK", ECast: "ECAST",
 }
 
 func (o Op) String() string {

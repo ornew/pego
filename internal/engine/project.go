@@ -138,6 +138,8 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 			use(t.R, shadow)
 		case *grammar.Unary:
 			use(t.X, shadow)
+		case *grammar.Cast:
+			use(t.X, shadow)
 		}
 	}
 	use(r.action, map[string]bool{})
@@ -219,6 +221,8 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 			walk(t.L, shadow)
 			walk(t.R, shadow)
 		case *grammar.Unary:
+			walk(t.X, shadow)
+		case *grammar.Cast:
 			walk(t.X, shadow)
 		}
 	}

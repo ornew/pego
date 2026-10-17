@@ -89,6 +89,7 @@ rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
 rule args = "x" => Word{"a", "b",}
 rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
+rule cast = x:"x" => $x.([]Foo | *Word).len
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -121,6 +122,10 @@ rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 		lambda := sourceField(t, sourceField(t, defs[7], "Action"), "Args").Children[1]
 		if access := sourceField(t, lambda, "Body"); access.Type() != "CaptureAccess" || sourceField(t, access, "Capture").Type() != "CaptureRef" {
 			t.Fatal("capture access structure lost")
+		}
+		member := sourceField(t, defs[8], "Action")
+		if cast := sourceField(t, member, "X"); member.Type() != "FieldAccess" || cast.Type() != "Cast" || sourceField(t, cast, "Type").Type() != "UnionType" {
+			t.Fatal("cast structure lost")
 		}
 	}
 }

@@ -127,7 +127,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		vm.fields = append(vm.fields, vm.names(fl))
 	}
 	for _, in := range m.Exprs {
-		if in.Op == ECheck {
+		if in.Op == ECheck || in.Op == ECast {
 			vm.checkType(int(in.A))
 		}
 	}
@@ -244,6 +244,20 @@ func (vm *vmProgram) checkType(i int) *fieldType {
 		vm.fieldTypes[i] = t
 	}
 	return vm.fieldTypes[i]
+}
+
+// cast runs ECAST at ip on the value v, and returns v if it fits.
+//
+//go:noinline
+func (vm *vmProgram) cast(p *parser, v any, ip int) (any, error) {
+	in := &vm.m.Exprs[ip]
+	if t := vm.fieldTypes[in.A]; t == nil || !p.fieldConforms(t, v) {
+		if t == nil {
+			t = &fieldType{text: vm.m.Strings[in.A]}
+		}
+		return nil, p.castError(v, t)
+	}
+	return v, nil
 }
 
 // checkField runs ECHECK at ip on the value v, and returns v if it fits.
@@ -1046,12 +1060,14 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
-		case ETerminal, ECheck:
-			// ECHECK shares the case: a case of its own slows down the whole loop.
+		case ETerminal, ECheck, ECast:
+			// ECHECK and ECAST share the case: a case of its own slows down the whole loop.
 			var v any
 			var err error
 			if in.Op == ECheck {
 				v, err = vm.checkField(p, pop(), ip)
+			} else if in.Op == ECast {
+				v, err = vm.cast(p, pop(), ip)
 			} else {
 				v, err = ctx.newTerminal(m.Strings[in.A], pop())
 			}

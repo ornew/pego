@@ -1476,6 +1476,15 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 			p.sourceNode(x, sourceStart)
 			continue
 		}
+		if t := p.tok(); t.text == "(" && t.kind == tPunct && !p.boundary() {
+			// x.(T) asserts that x is a T.
+			p.next()
+			typ := p.typeExpr()
+			p.expect(")")
+			x = &grammar.Cast{SourceInfo: grammar.SourceInfo{Pos: t.pos}, X: x, Type: typ}
+			p.sourceNode(x, sourceStart)
+			continue
+		}
 		if t := p.tok(); t.kind == tCapture && !p.boundary() {
 			// x.$y reads the capture y of the node x.
 			p.next()

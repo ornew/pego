@@ -37,8 +37,9 @@ const (
 	// version 5 ETERMINAL for terminals with supplied text, version 6
 	// the filter builtin appended to the ECALL table, version 8
 	// diagnostic-label mode for LABEL, version 9 ECHECK, and version 10 the EBIN operator []
-	// (indexing), and version 11 EMEMBER names starting with $ (capture access). Version 7 is reserved.
-	isaVersion = 11
+	// (indexing), version 11 EMEMBER names starting with $ (capture access), and version 12
+	// ECAST. Version 7 is reserved.
+	isaVersion = 12
 	maxDepth   = 10000
 )
 
@@ -94,6 +95,7 @@ const (
 	tListConstructor
 	tTerminalConstructor
 	tParam // a reference to a lambda parameter, a CaptureRef with Param set
+	tCast
 )
 
 // Type and statement kinds
@@ -535,6 +537,10 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tUnary)
 		w.str(t.Op)
 		w.term(t.X)
+	case *grammar.Cast:
+		w.byte(tCast)
+		w.term(t.X)
+		w.typeExpr(t.Type)
 	case *grammar.Assign:
 		w.byte(tAssign)
 		w.str(t.Name)
@@ -728,6 +734,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if isa < 11 && m.hasCaptureAccess() {
 		return nil, "", errors.New("invalid compiled grammar: capture access requires instruction set version 11")
+	}
+	if isa < 12 && m.hasCasts() {
+		return nil, "", errors.New("invalid compiled grammar: casts require instruction set version 12")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)
@@ -1066,6 +1075,9 @@ func (r *decoder) term() grammar.Term {
 	case tAssign:
 		name := r.str()
 		return &grammar.Assign{Name: name, Value: r.term()}
+	case tCast:
+		x := r.term()
+		return &grammar.Cast{X: x, Type: r.typeExpr()}
 	default:
 		r.fail("invalid term kind %d", k)
 		return &grammar.NilLit{}

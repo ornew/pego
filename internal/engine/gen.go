@@ -536,7 +536,7 @@ type generator struct {
 	streamStart *rule
 	streamBody  bool
 	streamErr   error
-	// fieldTypes names the field type variable of each checked constructed field and result (by
+	// fieldTypes names the field type variable of each checked constructed field, result and cast (by
 	// *grammar.FieldInit or checkInfo.results key), numbered separately so that checks do not
 	// rename other generated names (genrt/fieldcheck.go).
 	fieldTypes map[any]string
@@ -1597,6 +1597,14 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			return fmt.Sprintf("c.binary(%q, %s, %s)", t.Op, l, r)
 		}
 		return fmt.Sprintf("%sBinary(%q, %s, %s)", g.rt(), t.Op, l, r)
+	case *grammar.Cast:
+		x := g.term(t.X, s, locals)
+		ft := g.prog.resolveCheck(t.Type)
+		if ft == nil {
+			return x
+		}
+		v := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
+		return fmt.Sprintf("c.cast(%s, %s)", x, v)
 	case *grammar.Unary:
 		if g.goWorkControls {
 			return fmt.Sprintf("c.unary(%q, %s)", t.Op, g.term(t.X, s, locals))

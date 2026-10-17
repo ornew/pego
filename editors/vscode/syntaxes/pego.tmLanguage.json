@@ -557,6 +557,9 @@
           "include": "#value-constructor"
         },
         {
+          "include": "#value-cast"
+        },
+        {
           "include": "#value-parenthesized"
         },
         {
@@ -576,6 +579,21 @@
         },
         {
           "include": "#operator"
+        }
+      ]
+    },
+    "value-cast": {
+      "comment": "x.(T), a cast to a type",
+      "begin": "(\\.)[ \\t]*(\\()",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.accessor.pego"
+        }
+      },
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#type-expression"
         }
       ]
     },

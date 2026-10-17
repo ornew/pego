@@ -135,6 +135,13 @@ func ungroupTerm(t grammar.Term, poll func()) grammar.Term {
 			v.L, v.R = l, r
 			return &v
 		}
+	case *grammar.Cast:
+		child, typ := ungroupTerm(t.X, poll), ungroupType(t.Type, poll)
+		if child != t.X || typ != t.Type {
+			v := *t
+			v.X, v.Type = child, typ
+			return &v
+		}
 	case *grammar.Unary:
 		child := ungroupTerm(t.X, poll)
 		if child != t.X {

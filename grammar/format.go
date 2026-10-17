@@ -1110,6 +1110,13 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 		return s
 	case *Unary:
 		return joinMinusTokens(t.Op, formatTerm(t.X, 6, control))
+	case *Cast:
+		x := formatTerm(t.X, 7, control)
+		if _, ok := t.X.(*IntLit); ok {
+			// 1.(int) would read as a number.
+			x = "(" + x + ")"
+		}
+		return x + ".(" + formatType(t.Type, control) + ")"
 	case *Assign:
 		return t.Name + " := " + formatTerm(t.Value, 0, control)
 	}

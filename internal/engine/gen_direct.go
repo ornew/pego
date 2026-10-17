@@ -1043,6 +1043,8 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 		f(t.R)
 	case *grammar.Unary:
 		f(t.X)
+	case *grammar.Cast:
+		f(t.X)
 	case *grammar.Assign:
 		f(t.Value)
 	}

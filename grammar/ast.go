@@ -697,6 +697,13 @@ type Unary struct {
 	X          Term   `json:"x"`
 }
 
+// Cast is a type assertion x.(Type): its value is x, which must be a Type.
+type Cast struct {
+	SourceInfo `json:"source,omitempty"`
+	X          Term     `json:"x"`
+	Type       TypeExpr `json:"type"`
+}
+
 // Assign defines a variable in a predicate action: name := value.
 type Assign struct {
 	SourceInfo `json:"source,omitempty"`
@@ -733,4 +740,5 @@ func (*Call) term()                {}
 func (*Lambda) term()              {}
 func (*Binary) term()              {}
 func (*Unary) term()               {}
+func (*Cast) term()                {}
 func (*Assign) term()              {}

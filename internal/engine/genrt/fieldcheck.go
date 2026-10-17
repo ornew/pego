@@ -19,6 +19,14 @@ func (c *actx) checkField(v any, t *fieldType, field, typ string) any {
 	return v
 }
 
+// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
+func (c *actx) cast(v any, t *fieldType) any {
+	if !c.p.fieldConforms(t, v) {
+		c.p.evalErrorf("cannot cast %s to %s", typeName(v), t.text)
+	}
+	return v
+}
+
 // checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
 // type.
 func (p *parser) checkResult(v *Node, t *fieldType, rule string) {
@@ -97,6 +105,14 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 func (c *tctx) checkField(v any, t *fieldType, field, typ string) any {
 	if !tfieldConforms(c.p.parser, t, v) {
 		c.p.evalErrorf("cannot use %s as %s in field %s of %s", ttypeName(v), t.text, field, typ)
+	}
+	return v
+}
+
+// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
+func (c *tctx) cast(v any, t *fieldType) any {
+	if !tfieldConforms(c.p.parser, t, v) {
+		c.p.evalErrorf("cannot cast %s to %s", ttypeName(v), t.text)
 	}
 	return v
 }

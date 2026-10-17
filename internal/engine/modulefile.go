@@ -439,6 +439,9 @@ func validateModule(m *Module) error {
 			str(int(x.B))
 			str(int(x.C))
 			checkType(int(x.A), fmt.Sprintf("at %d", ip))
+		case ECast:
+			str(int(x.A))
+			checkType(int(x.A), fmt.Sprintf("at %d", ip))
 		case ETerminal:
 			str(int(x.A))
 			terminal := false

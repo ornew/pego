@@ -109,6 +109,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			term(t.R)
 		case *Unary:
 			term(t.X)
+		case *Cast:
+			term(t.X)
+			typ(t.Type)
 		case *Assign:
 			term(t.Value)
 		case *Member:

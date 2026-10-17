@@ -632,5 +632,10 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Unary:
 		c.term(t.X, s, locals)
 		c.eemit(EUnary, c.str(t.Op), 0)
+	case *grammar.Cast:
+		c.term(t.X, s, locals)
+		if ft := c.prog.castType(t); ft != nil {
+			c.eemit(ECast, c.str(ft.text), 0)
+		}
 	}
 }

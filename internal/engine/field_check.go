@@ -470,6 +470,24 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	return false
 }
 
+// castType returns the type cast t checks its value against, or nil if every value fits it.
+func (prog *Program) castType(t *grammar.Cast) *fieldType {
+	if v, ok := prog.fieldTypes.Load(t); ok {
+		return v.(*fieldType)
+	}
+	var ft *fieldType
+	if r := prog.resolveCheck(t.Type); r != nil {
+		ft = newFieldType(r)
+	}
+	v, _ := prog.fieldTypes.LoadOrStore(t, ft)
+	return v.(*fieldType)
+}
+
+// castError reports a cast value that is not of the type it is cast to.
+func (p *parser) castError(v any, t *fieldType) error {
+	return p.actionError("cannot cast ", typeName(v), " to ", t.text)
+}
+
 // fieldTypeError reports a constructed field value that does not fit its declared type.
 func (p *parser) fieldTypeError(v any, t *fieldType, field, typ string) error {
 	return p.actionError("cannot use ", typeName(v), " as ", t.text, " in field ", field, " of ", typ)
