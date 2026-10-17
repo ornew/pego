@@ -201,13 +201,16 @@ rule type_alias_spec TypeAliasSpec = "~" -ws t:type_expr => TypeAliasSpec{Type: 
 rule type_expr Type = operators {
   skip ws
   operand name:ident => TypeRef{Name: $name}
-  operand "(" {ml := true} -ws t:type_expr -ws ")" => TypeGroup{Type: $t}
+  operand t:type_group => $t
   level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
   level prefix {
     prefix "[]" => ListType{Type: $rhs}
     prefix "*" => OptionalType{Type: $rhs}
   }
 }
+
+// A rule of its own keeps ml from reaching the rest of the type.
+rule type_group TypeGroup = "(" {ml := true} -ws t:type_expr -ws ")" => TypeGroup{Type: $t}
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

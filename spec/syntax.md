@@ -97,13 +97,16 @@ rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
     operand ident
-    operand "(" {ml := true} -ws type_expr -ws ")"
+    operand type_group
     level union { infix left "|" }
     level prefix {
         prefix "[]"
         prefix "*"
     }
 }
+
+// A rule of its own keeps ml from reaching the rest of the type.
+rule type_group = "(" {ml := true} -ws type_expr -ws ")"
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

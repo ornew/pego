@@ -405,6 +405,8 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		`rule main = "x" # atomic`, `rule main = "x" #/* c */atomic`,
 		`rule main = "x" # recover(skip=";")`, `rule main = "x" #recover (skip=";")`,
 		`rule main = "x" #repeat /* c */(2)`, `rule main = "x" #repeat (2)`,
+		// A group's multiline mode ends at its closing parenthesis.
+		"type A ~ (B)\n  | C", "rule a = x:\"a\" => $x.(Match)\n  == $x",
 	} {
 		if _, err := pego.ParseGrammar(src); err == nil {
 			t.Fatalf("reference accepted %q", src)
