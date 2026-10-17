@@ -871,7 +871,8 @@ func (p *parser) startsPrimary() bool {
 		return true
 	case tPunct:
 		switch t.text {
-		case "(", "{", "&", "!", "-", "--", "^^", "^", "$$", "$", "_|_", ".":
+		case "(", "{", "&", "!", "-", "--", "^^", "^", "$$", "$", "_|_", ".", "[":
+			// "[" is a character class written without a space before it, an error.
 			return true
 		case "#":
 			return p.isCut()
@@ -1274,6 +1275,9 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 		case ".":
 			p.next()
 			return &grammar.Any{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
+		case "[":
+			p.errorf("a character class directly after a name, a capture, ')' or ']' is read as an index; write a space before it")
+			panic(bail{})
 		}
 	}
 	p.errorf("expected an expression, found %s", t)
@@ -1463,8 +1467,15 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 		return &grammar.Unary{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Op: t.text, X: p.unary()}
 	}
 	x := p.termPrimary()
-	for !p.boundary() && p.is(".") {
-		p.next()
+	for !p.boundary() && (p.is(".") || p.is("[")) {
+		if t := p.next(); t.text == "[" {
+			// The lexer reads "[" as a bracket only directly after the indexed value.
+			i := p.term()
+			p.expect("]")
+			x = &grammar.Binary{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Op: "[]", L: x, R: i}
+			p.sourceNode(x, sourceStart)
+			continue
+		}
 		name := p.ident()
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
 		p.sourceNode(x, sourceStart)

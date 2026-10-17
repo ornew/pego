@@ -246,7 +246,14 @@ rule action_ops = operators {
     level addition { infix left "+" / "-" !("-" / ">") }
     level multiplication { infix left "*" / "/" / "%" }
     level unary { prefix "-" !"-" / "!" !"=" }
-    level field_access { postfix "." -ws ident }
+    // x[i] indexes a list. The reference parser takes "[" as an index only directly after a name,
+    // a capture, ")" or "]", and reads it as a character class elsewhere. This grammar is looser
+    // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
+    // followed by a character class, which the reference parser rejects.
+    level field_access {
+        postfix "." -ws ident
+        postfix "[" -ws action_expr -ws "]"
+    }
 }
 rule lambda = "(" {ml := true} -ws lambda_params? -ws ")" -ws "=>" -ws action_expr
 rule lambda_params = ident (-ws "," -ws ident)*
@@ -409,8 +416,10 @@ table](parser-expressions.md#precedence). Action Expressions in Value Actions
 and Predicate Actions bind in the order of the [operator
 table](actions.md#operators-and-functions):
 `||`, `&&`, comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, which do not chain),
-`+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`) and
-function calls bind tighter than the operators. Each Operators Rule defines
+`+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`),
+indexing (`[i]`) and function calls bind tighter than the operators. A `[`
+written directly after a name, a capture reference, `)` or `]` is an index
+bracket; elsewhere it begins a character class. Each Operators Rule defines
 precedence by the order of its `level` declarations; associativity and operator
 order come from entries within each level. The Operators Rule represents
 adjacency with an empty infix operator and gives postfix modifiers tighter

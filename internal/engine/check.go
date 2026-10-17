@@ -799,6 +799,16 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		}
 		both := func(want ty) bool { return assignable(l, want) && assignable(r, want) }
 		switch t.Op {
+		case "[]":
+			if !assignable(r, tyInt) {
+				k.errorf(t.Diagnostic(), "index must be int, got %s", r)
+			}
+			e, ok := elemType(l)
+			if !ok {
+				k.errorf(t.Diagnostic(), "cannot index %s", l)
+				return tyAny
+			}
+			return e
 		case "==", "!=":
 			return tyBool
 		case "&&", "||":
@@ -832,6 +842,43 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		return tyAny
 	}
 	return tyAny
+}
+
+// elemType returns the type of the elements of the lists of type t. A nil list has no elements,
+// so an optional list is indexed like a list and nil adds no element type.
+func elemType(t ty) (ty, bool) {
+	switch t := t.(type) {
+	case listTy:
+		return t.elem, true
+	case optTy:
+		return elemType(t.elem)
+	case namedTy:
+		if t == tyList {
+			return tyNode, true
+		}
+	case basicTy:
+		if t == tyNode {
+			// A node's elements are its children.
+			return tyNode, true
+		}
+		if t == tyAny || t == tyNever {
+			return t, true
+		}
+		if t == tyNil {
+			return tyNever, true
+		}
+	case unionTy:
+		var elems []ty
+		for _, a := range t.alts {
+			e, ok := elemType(a)
+			if !ok {
+				return nil, false
+			}
+			elems = append(elems, e)
+		}
+		return union(elems...), true
+	}
+	return nil, false
 }
 
 func (k *checker) member(x ty, m *grammar.Member) ty {

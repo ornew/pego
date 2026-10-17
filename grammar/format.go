@@ -1087,6 +1087,15 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 		}
 		return s
 	case *Binary:
+		if t.Op == "[]" {
+			l := formatTerm(t.L, 7, control)
+			switch t.L.(type) {
+			case *IntLit, *StringLit, *IndexRef, *New, *ListConstructor, *TerminalConstructor, *Lambda:
+				// "[" is an index only directly after a name, a capture, ")" or "]".
+				l = "(" + l + ")"
+			}
+			return l + "[" + formatTerm(t.R, 0, control) + "]"
+		}
 		p := termPrec[t.Op]
 		// Operators are left-associative, so the right operand is
 		// parenthesized even at the same precedence.

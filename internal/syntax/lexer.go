@@ -84,6 +84,8 @@ type lexer struct {
 
 	// State of the white space and comments before the next token.
 	ntoks       int // tokens read so far
+	// prev is the previous token, which decides whether a "[" directly after it is a bracket.
+	prev token
 	newlines    int // line breaks since the previous token or comment
 	lineComment *grammar.Comment
 	comments    []*grammar.Comment
@@ -268,12 +270,26 @@ func lexContext(ctx context.Context, src string, errs *errorList) (toks []token,
 			t.source = collectCommentsWithCheck(previous, t, cs, l.cancelCheck())
 		}
 		toks = append(toks, t)
+		l.prev = t
 		if t.kind == tEOF {
 			l.checkCancel()
 			return toks, nil
 		}
 		previous = t.end
 	}
+}
+
+// bracketAfter reports whether a "[" directly after the previous token is a bracket rather than a
+// character class: after a name, a capture, ")" or "]". A character class after one of those
+// is written with a space before it.
+func (l *lexer) bracketAfter() bool {
+	switch t := l.prev; t.kind {
+	case tIdent, tCapture:
+		return true
+	case tPunct:
+		return t.text == ")" || t.text == "]"
+	}
+	return false
 }
 
 func isIdentStart(r rune) bool { return r == '_' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' }
@@ -302,6 +318,10 @@ func (l *lexer) next() token {
 		l.advance()
 		l.advance()
 		t.kind, t.text = tPunct, "_|_"
+	case r == '[' && l.peekAt(1) != ']' && !space && l.bracketAfter():
+		// x[i], $x[i], f(x)[i] and x[i][j] index; T[U] applies a type.
+		l.advance()
+		t.kind, t.text = tPunct, "["
 	case r == '[' && l.peekAt(1) != ']':
 		t.kind, t.cc = tCharClass, l.charClass()
 		t.cc.Pos = t.pos

@@ -365,7 +365,14 @@ rule action_ops ActionExpr = operators {
   level addition { infix left "+" / "-" !("-" / ">") => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level multiplication { infix left "*" / "/" / "%" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level unary { prefix "-" !"-" / "!" !"=" => UnaryOp{Op: text($op), X: $rhs} }
-  level field_access { postfix "." -ws name:ident => FieldAccess{X: $lhs, Name: $name} }
+  // x[i] indexes a list. The reference parser takes "[" as an index only directly after a name,
+  // a capture, ")" or "]", and reads it as a character class elsewhere. This grammar is looser
+  // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
+  // followed by a character class, which the reference parser rejects.
+  level field_access {
+    postfix "." -ws name:ident => FieldAccess{X: $lhs, Name: $name}
+    postfix "[" -ws i:action_expr -ws "]" => BinaryOp{Op: "[]", L: $lhs, R: $i}
+  }
 }
 rule lambda Lambda = (
   "(" {ml := true} -ws names:lambda_params? -ws ")" -ws "=>" -ws x:action_expr

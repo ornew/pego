@@ -26,6 +26,17 @@ func (m *Module) hasDiagnosticLabels() bool {
 	return false
 }
 
+// hasIndexing reports whether the module indexes lists (EBIN with the operator []), which needs
+// instruction set version 10.
+func (m *Module) hasIndexing() bool {
+	for _, in := range m.Exprs {
+		if in.Op == EBin && in.A >= 0 && int(in.A) < len(m.Strings) && m.Strings[in.A] == "[]" {
+			return true
+		}
+	}
+	return false
+}
+
 // hasTypeChecks reports whether the module checks values against declared types at run time,
 // which needs instruction set version 9.
 func (m *Module) hasTypeChecks() bool {
@@ -58,6 +69,9 @@ func (m *Module) hasTypeChecks() bool {
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	if m.hasIndexing() {
+		return 10
+	}
 	if m.hasTypeChecks() {
 		return 9
 	}

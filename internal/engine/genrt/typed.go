@@ -1221,6 +1221,9 @@ func trtBinary(op string, l, r any) any {
 		return trtEqual(l, r)
 	case "!=":
 		return !trtEqual(l, r)
+	case "[]":
+		items := tlistItems("[]", l)
+		return items[rtIndex(nil, r, len(items), ttypeName)]
 	}
 	switch l := l.(type) {
 	case int:
@@ -1789,6 +1792,9 @@ func trtBinaryWork(p *parser, op string, l, r any) any {
 		return trtEqual(l, r)
 	case "!=":
 		return !trtEqual(l, r)
+	case "[]":
+		items := tlistItemsWork(p, "[]", l)
+		return items[rtIndex(p, r, len(items), ttypeName)]
 	}
 	switch l := l.(type) {
 	case int:

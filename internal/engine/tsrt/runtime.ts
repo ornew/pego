@@ -2861,6 +2861,16 @@ function rtBinary(op: string, l: Value, r: Value): Value {
       return l === r;
     case "!=":
       return l !== r;
+    case "[]": {
+      const items = listItems("[]", l);
+      if (!isInt(r)) {
+        return evalError(`index must be int, got ${typeName(r)}`);
+      }
+      if (r < 0 || r >= items.length) {
+        return evalError(`index ${r} out of range for a list of ${items.length} elements`);
+      }
+      return items[Number(r)] ?? null;
+    }
   }
   if (isInt(l) && isInt(r)) {
     const small = typeof l === "number" && typeof r === "number";

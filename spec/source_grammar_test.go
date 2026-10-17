@@ -87,6 +87,7 @@ rule word = "x" => Word{"0"}
 rule empty = "x" => []Foo{}
 rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
 rule args = "x" => Word{"a", "b",}
+rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -111,6 +112,10 @@ rule args = "x" => Word{"a", "b",}
 		}
 		if args := sourceField(t, sourceField(t, defs[5], "Action"), "Args"); len(args.Children) != 2 {
 			t.Fatal("invalid terminal arity must remain parseable")
+		}
+		index := sourceField(t, defs[6], "Action")
+		if index.Type() != "BinaryOp" || index.Field("Op") != "[]" || sourceField(t, index, "L").Type() != "BinaryOp" || sourceField(t, index, "R").Type() != "BinaryOp" {
+			t.Fatal("index structure lost")
 		}
 	}
 }

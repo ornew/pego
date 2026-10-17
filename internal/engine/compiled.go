@@ -36,8 +36,9 @@ const (
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
 	// version 5 ETERMINAL for terminals with supplied text, version 6
 	// the filter builtin appended to the ECALL table, version 8
-	// diagnostic-label mode for LABEL, and version 9 ECHECK. Version 7 is reserved.
-	isaVersion = 9
+	// diagnostic-label mode for LABEL, version 9 ECHECK, and version 10 the EBIN operator []
+	// (indexing). Version 7 is reserved.
+	isaVersion = 10
 	maxDepth   = 10000
 )
 
@@ -719,8 +720,11 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if isa < 6 && m.instructionSetVersion() == 6 {
 		return nil, "", errors.New("invalid compiled grammar: filtering requires instruction set version 6")
 	}
-	if isa < 9 && m.instructionSetVersion() == 9 {
+	if isa < 9 && m.hasTypeChecks() {
 		return nil, "", errors.New("invalid compiled grammar: type checks require instruction set version 9")
+	}
+	if isa < 10 && m.hasIndexing() {
+		return nil, "", errors.New("invalid compiled grammar: indexing requires instruction set version 10")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)

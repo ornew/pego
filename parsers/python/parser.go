@@ -1857,6 +1857,18 @@ type evalError struct{ msg string }
 
 func evalErrorf(format string, args ...any) { panic(evalError{fmt.Sprintf(format, args...)}) }
 
+// rtIndex returns the index i of a list of n elements, failing the action if i is not an int in
+// range; typeName names the type of i.
+func rtIndex(p *parser, i any, n int, typeName func(any) string) int {
+	k, ok := i.(int)
+	if !ok {
+		p.evalErrorf("index must be int, got %s", typeName(i))
+	} else if k < 0 || k >= n {
+		p.evalErrorf("index %d out of range for a list of %d elements", k, n)
+	}
+	return k
+}
+
 // actx is the context of evaluating an action or a predicate.
 type actx struct {
 	p            *parser
@@ -2154,6 +2166,9 @@ func rtBinary(op string, l, r any) any {
 		return rtEqual(l, r)
 	case "!=":
 		return !rtEqual(l, r)
+	case "[]":
+		items := listItems("[]", l)
+		return nodeOrNil(items[rtIndex(nil, r, len(items), typeName)])
 	}
 	switch l := l.(type) {
 	case int:
@@ -2652,6 +2667,9 @@ func rtBinaryWork(p *parser, op string, l, r any) any {
 		return rtEqual(l, r)
 	case "!=":
 		return !rtEqual(l, r)
+	case "[]":
+		items := listItemsWork(p, "[]", l)
+		return nodeOrNil(items[rtIndex(p, r, len(items), typeName)])
 	}
 	switch l := l.(type) {
 	case int:
@@ -5464,6 +5482,9 @@ func trtBinary(op string, l, r any) any {
 		return trtEqual(l, r)
 	case "!=":
 		return !trtEqual(l, r)
+	case "[]":
+		items := tlistItems("[]", l)
+		return items[rtIndex(nil, r, len(items), ttypeName)]
 	}
 	switch l := l.(type) {
 	case int:
@@ -6032,6 +6053,9 @@ func trtBinaryWork(p *parser, op string, l, r any) any {
 		return trtEqual(l, r)
 	case "!=":
 		return !trtEqual(l, r)
+	case "[]":
+		items := tlistItemsWork(p, "[]", l)
+		return items[rtIndex(p, r, len(items), ttypeName)]
 	}
 	switch l := l.(type) {
 	case int:

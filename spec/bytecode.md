@@ -266,7 +266,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
 | 108 | `EMEMBER` | A name | Pop a value and push its field. `startPos`, `endPos` and `children` are built in. A field not declared by the struct type is an error; a declared field that is absent yields nil. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
-| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. |
+| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top *(instruction set 10)*. |
 | 111 | `EUNARY` | A operator | Pop a value and push the result of the operation. |
 | 112, 113 | `EAND` / `EOR` | A target | It is an error if the top value is not a boolean. `EAND` on false, and `EOR` on true, leave the value and jump to A. Otherwise pop the value and continue. |
 | 114 | `EBOOLCHK` | A operator | It is an error if the top value is not a boolean. |
@@ -308,7 +308,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, 8 when diagnostic labels are used, and 9 when values are checked at run time). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, version 8 diagnostic-label mode for `LABEL`, and version 9 `ECHECK` (125) and the checks of the rule table and Operators Rule lines. Version 7 is reserved and rejected. |
+| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, 8 when diagnostic labels are used, 9 when values are checked at run time, and 10 when lists are indexed). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, version 8 diagnostic-label mode for `LABEL`, version 9 `ECHECK` (125) and the checks of the rule table and Operators Rule lines, and version 10 the `EBIN` operator `[]`. Version 7 is reserved and rejected. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -338,6 +338,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility.
 - The `filter` built-in occupies appended slot 7 and requires instruction-set version 6. A module that uses it with a lower declared version is rejected; modules that do not use it retain their ordinary version selection.
 - `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil`, `node` or `terminal`. The checks of rules and lines name type texts that parse the same way. They require instruction-set version 9; a module that uses them with a lower declared version is rejected.
+- `EBIN` with the operator `[]` requires instruction-set version 10; a module that uses it with a lower declared version is rejected.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

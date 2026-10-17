@@ -681,7 +681,7 @@ type Lambda struct {
 	Body       Term     `json:"body"`
 }
 
-// Binary is a binary operation l op r.
+// Binary is a binary operation l op r. The operator "[]" is indexing, l[r].
 type Binary struct {
 	SourceInfo `json:"source,omitempty"`
 	Op         string `json:"op"`

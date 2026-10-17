@@ -77,6 +77,8 @@ const sample = [
   'type U ~ (A',
   '    | B) // the other',
   'rule x² = y',
+  'rule idx = xs:a+ => $xs[0][len($xs) - 1]',
+  'rule pidx = xs:a+ {$xs[1] == nil} name [q-r]',
 ].join('\n');
 
 const expectations = [
@@ -154,6 +156,10 @@ const expectations = [
   ['B', 'entity.name.type.pego', '| B'],
   ['// the other', 'comment.line.double-slash.pego'],
   ['²', '!entity.name.function.pego', 'rule x²'],
+  ['[', '!punctuation.definition.character-class.begin.pego', '[0]'],
+  ['len', 'support.function.builtin.pego', 'len($xs) - 1'],
+  ['[', '!punctuation.definition.character-class.begin.pego', '[1]'],
+  ['[', 'punctuation.definition.character-class.begin.pego', '[q-r]'],
 ];
 
 async function main() {

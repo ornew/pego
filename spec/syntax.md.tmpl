@@ -71,8 +71,10 @@ table](parser-expressions.md#precedence). Action Expressions in Value Actions
 and Predicate Actions bind in the order of the [operator
 table](actions.md#operators-and-functions):
 `||`, `&&`, comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, which do not chain),
-`+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`) and
-function calls bind tighter than the operators. Each Operators Rule defines
+`+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`),
+indexing (`[i]`) and function calls bind tighter than the operators. A `[`
+written directly after a name, a capture reference, `)` or `]` is an index
+bracket; elsewhere it begins a character class. Each Operators Rule defines
 precedence by the order of its `level` declarations; associativity and operator
 order come from entries within each level. The Operators Rule represents
 adjacency with an empty infix operator and gives postfix modifiers tighter

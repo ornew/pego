@@ -217,7 +217,7 @@ comparison result an operand of another comparison.
 | 5 | `*`, `/`, `%` | `int`, `int` | `int` |
 | 6 | Unary `-` | `int` | `int` |
 | 6 | Unary `!` | `bool` | `bool` |
-| 7 | `.` field access; calls; parentheses | Node and field; built-in and declared arguments; any expression | Field or call result; grouped expression type |
+| 7 | `.` field access; `[i]` indexing; calls; parentheses | Node and field; list and `int`; built-in and declared arguments; any expression | Field or call result; list element; grouped expression type |
 
 All comparison operators share one precedence level, and the parser accepts
 only one comparison operator at that level. Thus `a < b < c` is invalid;
@@ -228,6 +228,14 @@ operators. Division truncates toward zero; remainder has the dividend's sign.
 Dividing or taking a remainder by zero is a runtime action error. `&&` and `||`
 evaluate their left operand first and short-circuit when it determines the
 result, so the right operand may not be evaluated.
+
+`xs[i]` is the element of the list `xs` at the zero-based index `i`, an
+`int`; its static type is the list's element type, and a `nil` list has no
+elements. An index outside the list is a runtime action error, as is a
+dynamically typed index that is not an `int`. The `[` follows the indexed
+value directly: `$xs[0]`, `f(x)[0]` and `xs[0][1]` index, while in a Rule
+Expression `name [a-z]` with a space is a name and a character class, and
+`name[a-z]` is an error.
 
 `==` and `!=` compare integers, strings and booleans by value, `nil` with
 `nil`, and nodes by identity. Values of different types compare unequal;

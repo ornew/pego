@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -440,6 +441,8 @@ func binaryOp(op string, l, r any) (any, error) {
 
 func (p *parser) binaryOperation(op string, l, r any) (any, error) {
 	switch op {
+	case "[]":
+		return p.index(l, r)
 	case "==":
 		return equal(l, r), nil
 	case "!=":
@@ -722,6 +725,22 @@ func (c *evalCtx) pushConcatArg(t grammar.Term) error {
 		return err
 	}
 	return c.pushElems("concat", []any{v})
+}
+
+// index returns element i of the list l.
+func (p *parser) index(l, i any) (any, error) {
+	items, err := p.valueListItems("[]", l)
+	if err != nil {
+		return nil, err
+	}
+	n, ok := i.(int)
+	if !ok {
+		return nil, p.actionError("index must be int, got ", typeName(i))
+	}
+	if n < 0 || n >= len(items) {
+		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for a list of ", strconv.Itoa(len(items)), " elements")
+	}
+	return nodeOrNil(items[n]), nil
 }
 
 func listItems(fn string, v any) ([]*Node, error) {
