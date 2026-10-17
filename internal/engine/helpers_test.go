@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -92,6 +93,10 @@ func fails(input, want string) parseCase {
 }
 
 func TestMain(m *testing.M) {
+	// Tests build generated programs in fresh temporary directories. Without -trimpath their
+	// build cache entries depend on the directory and are never reused, so every run would add
+	// tens of gigabytes of builds to the cache. Commands that set GOFLAGS add it themselves.
+	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath"))
 	m.Run()
 }
 

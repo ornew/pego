@@ -76,7 +76,7 @@ rule token Token = "a;" @error(message="want token")`)
 	}
 	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated diagnostic ownership: %v\n%s", err, out)
 	}
