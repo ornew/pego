@@ -24,6 +24,9 @@ type checker struct {
 	// reportUnsupported reports type syntax that is not supported yet even while report is
 	// false: without type checking such types would silently accept every value.
 	reportUnsupported bool
+	// sawUnsupported records that a resolved type used syntax that is not supported yet, whether
+	// or not it was reported here, so that checks of the type are not reported on top.
+	sawUnsupported bool
 	// ruleTypes holds the type of each rule (declared, or being inferred).
 	ruleTypes map[string]ty
 	declared  map[string]bool
@@ -182,6 +185,9 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 		// Record 060 types: reserved syntax until values carry them.
 		k.unsupported(t, t.Diagnostic(), "tuple types are not supported yet")
 		return tyAny
+	case *grammar.StructType:
+		k.unsupported(t, t.Diagnostic(), "unnamed struct types are not supported yet; define one with type T = {...}")
+		return tyAny
 	case *grammar.TypeApp:
 		if t.Name == "node" {
 			k.unsupported(t, t.Diagnostic(), "type arguments of node are not supported yet")
@@ -204,6 +210,7 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 
 // unsupported reports type syntax t that is not supported yet (reportUnsupported), once.
 func (k *checker) unsupported(t grammar.TypeExpr, pos grammar.Pos, format string, args ...any) {
+	k.sawUnsupported = true
 	if !k.report && !k.reportUnsupported || k.prog.unsupportedSeen[t] {
 		return
 	}
@@ -857,8 +864,14 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 	case *grammar.Call:
 		return k.call(t, env)
 	case *grammar.ListConstructor:
+		reported, saw := len(*k.errs), k.sawUnsupported
+		k.sawUnsupported = false
 		elem := k.resolve(t.Elem)
-		if elem == tyNever {
+		invalid := len(*k.errs) > reported || k.sawUnsupported
+		k.sawUnsupported = saw || k.sawUnsupported
+		if invalid {
+			// The element type is in error already.
+		} else if elem == tyNever {
 			k.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
 		} else if !nodeListElement(elem) {
 			k.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)

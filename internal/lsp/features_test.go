@@ -685,12 +685,12 @@ func BenchmarkAnalyze(b *testing.B) {
 	}
 }
 
-// Names in type arguments and tuple types are references, although such grammars do not compile
+// Names in type arguments, tuple types and unnamed struct types are references, although such grammars do not compile
 // yet.
 func TestReservedTypeReferences(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///reserved.pego"
-	d := c.open(uri, "type Num terminal\ntype A ~ node[Num] | (Num, A)\nrule main = \"a\"\n")
+	d := c.open(uri, "type Num terminal\ntype A ~ node[Num] | (Num, A) | { F Num }\nrule main = \"a\"\n")
 	if len(d) == 0 || !strings.Contains(d[0].Message, "not supported yet") {
 		t.Fatalf("diagnostics %+v", d)
 	}
@@ -702,7 +702,7 @@ func TestReservedTypeReferences(t *testing.T) {
 	for _, l := range locs {
 		got = append(got, l.Range)
 	}
-	if want := []Range{rng(0, 5, 0, 8), rng(1, 14, 1, 17), rng(1, 22, 1, 25)}; !reflect.DeepEqual(got, want) {
+	if want := []Range{rng(0, 5, 0, 8), rng(1, 14, 1, 17), rng(1, 22, 1, 25), rng(1, 36, 1, 39)}; !reflect.DeepEqual(got, want) {
 		t.Errorf("references of Num: %v", got)
 	}
 	c.exit()

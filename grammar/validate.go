@@ -257,6 +257,10 @@ func validate(g *Grammar, control *validationControl) error {
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)
 			}
+		case *StructType:
+			for i := len(n.Fields) - 1; i >= 0; i-- {
+				push(n.Fields[i], "fields", i, false)
+			}
 		case *Field:
 			push(n.Type, "type", -1, false)
 		case *AliasSpec:

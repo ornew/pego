@@ -436,36 +436,10 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		panic(bail{})
 	case p.is("=") && p.peek(1).kind == tPunct && p.peek(1).text == "{":
 		p.next()
-		open := p.i
-		p.expect("{")
 		p.header = false
 		p.layout, p.layoutDepth = false, 0
 		st := &grammar.StructSpec{}
-		for {
-			fb := p.lineBreak()
-			if p.is("}") {
-				st.CloseBreak = fb
-				break
-			}
-			if p.tok().kind == tEOF {
-				p.errorf("unterminated struct")
-				panic(bail{})
-			}
-			restore := p.statement()
-			fieldStart := p.i
-			fname := p.ident()
-			field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, Type: p.typeExpr(), Break: fb}
-			p.source(field, fieldStart)
-			st.Fields = append(st.Fields, field)
-			restore()
-			if !p.accept(";") && !p.is("}") && !p.tok().lineBefore {
-				p.errorf("expected a semicolon or newline between struct fields")
-				panic(bail{})
-			}
-			p.sourceTrailing(field.Source())
-		}
-		st.OneLine = !p.multiline(open, p.i)
-		p.expect("}")
+		st.Fields, st.CloseBreak, st.OneLine = p.structFields()
 		td.Spec = st
 	case p.accept("terminal"):
 		p.header = false
@@ -568,6 +542,14 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		g.OneLine = !p.multiline(open, p.i)
 		p.expect(")")
 		return g
+	case p.is("{"):
+		// An unnamed struct type. Its fields are statements of their own, as in a definition.
+		outer, header := p.cur, p.header
+		defer func() { p.cur, p.header = outer, header }()
+		p.header = false
+		s := &grammar.StructType{}
+		s.Fields, s.CloseBreak, s.OneLine = p.structFields()
+		return s
 	case p.is("_|_"):
 		t := p.next()
 		return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
@@ -587,6 +569,38 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		return a
 	}
 	return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
+}
+
+// structFields parses the braces and fields of a struct type: { A T; B U }.
+func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.LineBreak, oneLine bool) {
+	open := p.i
+	p.expect("{")
+	for {
+		fb := p.lineBreak()
+		if p.is("}") {
+			closeBreak = fb
+			break
+		}
+		if p.tok().kind == tEOF {
+			p.errorf("unterminated struct")
+			panic(bail{})
+		}
+		restore := p.statement()
+		fieldStart := p.i
+		fname := p.ident()
+		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, Type: p.typeExpr(), Break: fb}
+		p.source(field, fieldStart)
+		fields = append(fields, field)
+		restore()
+		if !p.accept(";") && !p.is("}") && !p.tok().lineBefore {
+			p.errorf("expected a semicolon or newline between struct fields")
+			panic(bail{})
+		}
+		p.sourceTrailing(field.Source())
+	}
+	oneLine = !p.multiline(open, p.i)
+	p.expect("}")
+	return fields, closeBreak, oneLine
 }
 
 // tupleType finishes a tuple type whose "(" and first element, if any, were read as a group's.

@@ -203,19 +203,32 @@ func (p *printer) typeDef(t *TypeDef) {
 func (p *printer) structSpec(s *StructSpec, indent string) {
 	pollFormat(p.control)
 	p.write("= ")
-	empty := noComments(s.CloseBreak)
-	for _, f := range s.Fields {
+	p.structBody(s.Fields, s.CloseBreak, s.OneLine, indent)
+}
+
+// structBody writes the braces and fields of a struct type.
+func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine bool, indent string) {
+	empty := noComments(closeBreak)
+	for _, f := range fields {
 		pollFormat(p.control)
 		empty = empty && noComments(f.Break)
 	}
-	if empty && (len(s.Fields) == 0 || s.OneLine) {
-		parts := make([]string, len(s.Fields))
-		for i, f := range s.Fields {
+	if empty && (len(fields) == 0 || oneLine) {
+		parts := make([]string, len(fields))
+		for i, f := range fields {
 			pollFormat(p.control)
 			parts[i] = f.Name + " " + formatType(f.Type, p.control)
+			if hasFormatNewline(parts[i], p.control) {
+				// A field type over several lines breaks the struct too.
+				p.structBody(fields, closeBreak, false, indent)
+				return
+			}
+		}
+		for _, f := range fields {
+			pollFormat(p.control)
 			p.inline(f.Break)
 		}
-		p.inline(s.CloseBreak)
+		p.inline(closeBreak)
 		if len(parts) == 0 {
 			p.write("{}")
 		} else {
@@ -224,14 +237,15 @@ func (p *printer) structSpec(s *StructSpec, indent string) {
 		return
 	}
 	p.openBlock()
-	for _, f := range s.Fields {
+	for _, f := range fields {
 		pollFormat(p.control)
 		p.lineBreak(f.Break, indent+indentUnit, false)
 		p.cur.field = true
 		p.cur.name = f.Name
-		p.write(formatType(f.Type, p.control))
+		// A type over several lines continues at the field's indentation.
+		p.write(indentTypeLines(formatType(f.Type, p.control), indent+indentUnit, p.control))
 	}
-	p.closeBlock(s.CloseBreak, indent)
+	p.closeBlock(closeBreak, indent)
 }
 
 func (p *printer) ruleDef(r *RuleDef) {
@@ -647,7 +661,10 @@ func formatType(t TypeExpr, control *metadataControl) string {
 	pollFormat(control)
 	switch t := t.(type) {
 	case *TypeGroup:
-		return finishFormat(formatSourceGroup(formatType(t.Type, control), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, control), control)
+		body := formatType(t.Type, control)
+		// A body that the formatter breaks into lines, such as a struct type with a comment, breaks
+		// the group too.
+		return finishFormat(formatTypeGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine && !hasFormatNewline(body, control), control), control)
 	case *TypeRef:
 		return finishFormat(t.Name, control)
 	case *ListType:
@@ -685,7 +702,21 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		if len(parts) == 1 {
 			body += "," // (T) would be a group
 		}
-		return finishFormat(formatSourceGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine || t.OpenBreak == nil, control), control)
+		oneLine := (t.OneLine || t.OpenBreak == nil) && !hasFormatNewline(body, control)
+		return finishFormat(formatTypeGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, oneLine, control), control)
+	case *StructType:
+		p := &printer{control: control}
+		// Without source layout, as from JSON, the type stays on one line. A comment after a field
+		// has no place on that line inside an expression, so it takes the block layout.
+		oneLine := t.OneLine || t.CloseBreak == nil
+		for _, f := range t.Fields {
+			pollFormat(control)
+			oneLine = oneLine && (f.Break == nil || f.Break.Trailing == nil)
+		}
+		oneLine = oneLine && (t.CloseBreak == nil || t.CloseBreak.Trailing == nil)
+		p.structBody(t.Fields, t.CloseBreak, oneLine, "")
+		p.flush()
+		return finishFormat(strings.TrimSuffix(p.String(), "\n"), control)
 	case *TypeApp:
 		parts := make([]string, len(t.Args))
 		for i, x := range t.Args {
@@ -708,6 +739,19 @@ func formatTypeTerm(t TypeExpr, control *metadataControl) string {
 
 // formatSourceGroup keeps explicit delimiters and their boundary trivia.
 func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool, control *metadataControl) string {
+	return formatSourceGroupIndented(body, open, first, close, oneLine, func(s, indent string) string {
+		return replaceFormatNewlines(s, "\n", "\n"+indent, control)
+	}, control)
+}
+
+// formatTypeGroup is formatSourceGroup for a type, whose block comments keep their lines.
+func formatTypeGroup(body string, open, first, close *LineBreak, oneLine bool, control *metadataControl) string {
+	return formatSourceGroupIndented(body, open, first, close, oneLine, func(s, indent string) string {
+		return indentTypeLines(s, indent, control)
+	}, control)
+}
+
+func formatSourceGroupIndented(body string, open, first, close *LineBreak, oneLine bool, indentLines func(s, indent string) string, control *metadataControl) string {
 	pollFormat(control)
 	if oneLine {
 		leading, ok1 := groupInlineComments(open, true, control)
@@ -725,13 +769,53 @@ func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool,
 	p.start = true
 	p.comments(open, indentUnit, false)
 	p.lineBreak(first, indentUnit, false)
-	p.write(replaceFormatNewlines(body, "\n", "\n"+indentUnit, control))
+	p.write(indentLines(body, indentUnit))
 	p.comments(close, indentUnit, true)
 	p.newLine("")
 	p.write(")")
 	p.inline(close)
 	p.flush()
 	return strings.TrimSuffix(p.String(), "\n")
+}
+
+// indentTypeLines indents the lines of a formatted type that follow its first one, except the
+// lines inside block comments, which keep their text. Formatted types hold no strings, so
+// comments are the only text that can contain a comment delimiter.
+func indentTypeLines(s, indent string, control *metadataControl) string {
+	if !hasFormatNewline(s, control) {
+		return s
+	}
+	var out strings.Builder
+	depth, line := 0, false // block comment nesting; in a line comment
+	for i := 0; i < len(s); i++ {
+		if i%4096 == 0 {
+			pollFormat(control)
+		}
+		switch {
+		case s[i] == '\n':
+			line = false
+			out.WriteByte('\n')
+			if depth == 0 {
+				out.WriteString(indent)
+			}
+			continue
+		case line:
+		case strings.HasPrefix(s[i:], "//") && depth == 0:
+			line = true
+		case strings.HasPrefix(s[i:], "/*"):
+			depth++
+			out.WriteString("/*")
+			i++
+			continue
+		case strings.HasPrefix(s[i:], "*/") && depth > 0:
+			depth--
+			out.WriteString("*/")
+			i++
+			continue
+		}
+		out.WriteByte(s[i])
+	}
+	return out.String()
 }
 
 func groupInlineComments(b *LineBreak, trailing bool, control *metadataControl) (string, bool) {

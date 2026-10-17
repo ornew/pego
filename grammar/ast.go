@@ -200,6 +200,16 @@ type TypeApp struct {
 	Args       []TypeExpr `json:"args"`
 }
 
+// StructType is an unnamed struct type written in a type expression: { A T; B U }. Its braces
+// keep their source layout like a struct definition's.
+type StructType struct {
+	SourceInfo `json:"source,omitempty"`
+	Fields     []*Field `json:"fields"`
+
+	OneLine    bool       `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+}
+
 // TypeGroup preserves parentheses and source layout in a type expression.
 // It is transparent to type resolution.
 type TypeGroup struct {
@@ -218,6 +228,7 @@ func (*UnionType) typeExpr()        {}
 func (*IntersectionType) typeExpr() {}
 func (*TupleType) typeExpr()        {}
 func (*TypeApp) typeExpr()          {}
+func (*StructType) typeExpr()       {}
 func (*TypeGroup) typeExpr()        {}
 
 // --- Parser expressions ---

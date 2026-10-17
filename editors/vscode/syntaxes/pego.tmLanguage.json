@@ -132,8 +132,8 @@
       ]
     },
     "field": {
-      "comment": "The name of a struct field: the first identifier on a line, or after { or ,",
-      "match": "(?:^|(?<=[{,]))\\s*([A-Za-z_][A-Za-z0-9_]*)",
+      "comment": "The name of a struct field: the first identifier on a line, or after {, ; or ,",
+      "match": "(?:^|(?<=[{,;]))\\s*([A-Za-z_][A-Za-z0-9_]*)",
       "captures": {
         "1": {
           "name": "variable.other.property.pego"
@@ -147,6 +147,9 @@
         },
         {
           "include": "#type-arguments"
+        },
+        {
+          "include": "#type-struct"
         },
         {
           "include": "#comment"
@@ -549,6 +552,32 @@
       "patterns": [
         {
           "include": "#value"
+        }
+      ]
+    },
+    "type-struct": {
+      "comment": "an unnamed struct type: { A T; B U }",
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.begin.pego"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.end.pego"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#field"
+        },
+        {
+          "include": "#type-expression"
         }
       ]
     },

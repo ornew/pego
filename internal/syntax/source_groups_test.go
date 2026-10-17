@@ -115,3 +115,56 @@ func TestInlineGroupCommentOwnership(t *testing.T) {
 		})
 	}
 }
+
+// A field type over several lines continues at the field's indentation.
+func TestMultilineFieldTypeIndentation(t *testing.T) {
+	src := "type T = {\n  F (\n    int\n    | string\n  )\n  G int\n}\n"
+	want := "type T = {\n    F (\n        int | string\n    )\n    G int\n}\n"
+	g, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := grammar.Format(g); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+	g, err = Parse(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := grammar.Format(g); got != want {
+		t.Fatalf("not idempotent:\n%s", got)
+	}
+}
+
+// Formatting types is idempotent when block comments span lines inside nested type groups and
+// struct types, and when a comment breaks an unnamed struct type written on one line.
+func TestTypeFormattingIdempotence(t *testing.T) {
+	for _, src := range []string{
+		"type T = {\n  F (\n    /* a\n  b */\n    int\n  )\n}\n",
+		"type T = {\n  F {\n    /* a\nb */\n    A Match\n  }\n}\n",
+		"type A ~ ((\n  /* a\n  b */\n  int\n))\n",
+		"type A ~ (\n  // x /* y\n  (\n    int\n  )\n)\n",
+		"type A ~ { A Match /* c */ }\n",
+		"rule main { A Match /* c */ } = \"a\"\n",
+		"type T = { F { A Match /* c */ } }\n",
+		"rule main = x:\"a\" => []{ A Match /* c */ }{}\n",
+		"type A ~ ({ A Match /* c */ })\n",
+		"type A ~ ({ A Match /* c */ },)\n",
+		"rule main = x:\"a\" => $x.({ A Match /* c */ })\n",
+		"type A ~ node[{ A Match /* c */ }]\n",
+		"type T = { F ({ A Match /* c */ }); G int }\n",
+	} {
+		g, err := Parse(src)
+		if err != nil {
+			t.Fatalf("%q: %v", src, err)
+		}
+		once := grammar.Format(g)
+		g, err = Parse(once)
+		if err != nil {
+			t.Fatalf("%q: formatted source does not parse: %v\n%s", src, err, once)
+		}
+		if twice := grammar.Format(g); twice != once || !strings.Contains(once, "/*") {
+			t.Errorf("%q: not idempotent or comment lost:\n%s\nthen\n%s", src, once, twice)
+		}
+	}
+}

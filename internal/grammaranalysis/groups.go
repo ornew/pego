@@ -78,6 +78,24 @@ func ungroupType(t grammar.TypeExpr, poll func()) grammar.TypeExpr {
 			v.Args = children
 			return &v
 		}
+	case *grammar.StructType:
+		var fields []*grammar.Field
+		for i, f := range t.Fields {
+			child := ungroupType(f.Type, poll)
+			if child != f.Type {
+				if fields == nil {
+					fields = cloneGroupItems(t.Fields, poll)
+				}
+				v := *f
+				v.Type = child
+				fields[i] = &v
+			}
+		}
+		if fields != nil {
+			v := *t
+			v.Fields = fields
+			return &v
+		}
 	}
 	return t
 }

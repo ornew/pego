@@ -92,6 +92,7 @@ rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 rule cast = x:"x" => $x.([]Foo | *Word).len
 type Meet ~ []Foo & *Word | _ & _|_
 type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[Word]
+type Unnamed ~ {} | []{ A Foo; B { C Word } }
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -163,6 +164,15 @@ type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[W
 		}
 		if sourceField(t, alts[4], "Type").Type() != "TypeApp" {
 			t.Fatal("[] must apply to a type application")
+		}
+		unnamed := sourceField(t, sourceField(t, defs[11], "Spec"), "Type")
+		empty, list := sourceField(t, unnamed, "L"), sourceField(t, unnamed, "R")
+		if empty.Type() != "StructType" || len(sourceField(t, empty, "Fields").Children) != 0 || list.Type() != "ListType" {
+			t.Fatal("unnamed struct structure lost")
+		}
+		fields := sourceField(t, sourceField(t, list, "Type"), "Fields").Children
+		if len(fields) != 2 || sourceField(t, fields[1], "Type").Type() != "StructType" {
+			t.Fatal("unnamed struct fields lost")
 		}
 	}
 }

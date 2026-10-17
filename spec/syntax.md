@@ -100,6 +100,7 @@ rule type_expr = operators {
     operand ident type_args
     operand ident
     operand type_group
+    operand struct_type
     level union { infix left "|" }
     level meet { infix left "&" }
     level prefix {
@@ -107,6 +108,12 @@ rule type_expr = operators {
         prefix "*"
     }
 }
+
+// An unnamed struct type has the fields of a struct definition.
+rule struct_type = (
+    "{" {ml := false} field_spec* comments
+    -"}"
+)
 
 // The brackets of type arguments follow the name directly.
 rule type_args = "[" {ml := true} -ws type_expr (-ws "," -ws type_expr)* -ws ","? -ws "]"

@@ -29,11 +29,12 @@ type TerminalSpec = {}
 type StructSpec = { Fields []FieldSpec; Comments []Comment }
 type FieldSpec ~ Field | Error
 type Field = { Name Ident; Type Type; Comments []Comment }
-type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | OptionalType | ListType | UnionType | IntersectionType | Bottom
+type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | StructType | OptionalType | ListType | UnionType | IntersectionType | Bottom
 type TypeRef = { Name Ident }
 type TypeApp = { Name Ident; Args []Type } // T[U]
 type TypeGroup = { Type Type }
 type TupleType = { Types []Type } // (), (T,), (T, U)
+type StructType = { Fields []FieldSpec; Comments []Comment } // { A T; B U }
 type OptionalType = { Type Type }
 type ListType = { Type Type }
 type UnionType = { L Type; R Type }
@@ -207,6 +208,7 @@ rule type_expr Type = operators {
   operand name:ident args:type_args => TypeApp{Name: $name, Args: $args}
   operand name:ident => TypeRef{Name: $name}
   operand t:type_group => $t
+  operand t:struct_type => $t
   level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
   level meet { infix left "&" => IntersectionType{L: $lhs, R: $rhs} }
   level prefix {
@@ -214,6 +216,12 @@ rule type_expr Type = operators {
     prefix "*" => OptionalType{Type: $rhs}
   }
 }
+
+// An unnamed struct type has the fields of a struct definition.
+rule struct_type StructType = (
+  "{" {ml := false} fields:(f:field_spec)* cs:comments
+  -("}" @error(message="expected closing brace for struct"))
+) => StructType{Fields: map($fields, (x) => x.f), Comments: $cs}
 
 // The brackets of type arguments follow the name directly.
 rule type_args []Type = (

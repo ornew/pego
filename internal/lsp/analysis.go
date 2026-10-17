@@ -482,6 +482,12 @@ func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl
 			control.poll()
 			a.walkTypeControlled(u, control)
 		}
+	case *grammar.StructType:
+		for _, f := range t.Fields {
+			control.poll()
+			a.mark(f.Diagnostic(), semProperty, modDeclaration)
+			a.walkTypeControlled(f.Type, control)
+		}
 	}
 }
 

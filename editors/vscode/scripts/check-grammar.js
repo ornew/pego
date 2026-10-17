@@ -85,6 +85,8 @@ const sample = [
   'type Tup = {',
   '  F node[Num, (Num,)]',
   '  G (Num, Pair)',
+  '  H { Inner Num; Other []{ Deep Num } }',
+  '  I Num',
   '}',
 ].join('\n');
 
@@ -179,6 +181,11 @@ const expectations = [
   ['Num', 'entity.name.type.pego', ', (Num,)'],
   ['G', 'variable.other.property.pego', '  G ('],
   ['Pair', 'entity.name.type.pego', 'Num, Pair'],
+  ['Inner', 'variable.other.property.pego', '{ Inner Num'],
+  ['Num', 'entity.name.type.pego', 'Inner Num;'],
+  ['Other', 'variable.other.property.pego', '; Other'],
+  ['Deep', 'variable.other.property.pego', '{ Deep'],
+  ['I', 'variable.other.property.pego', '  I Num'],
 ];
 
 async function main() {

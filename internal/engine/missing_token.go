@@ -226,6 +226,12 @@ func (prog *Program) markMissingRules(control *compileControl) {
 					return true
 				}
 			}
+		case *grammar.StructType:
+			for _, f := range t.Fields {
+				if usesMissingType(f.Type) {
+					return true
+				}
+			}
 		}
 		return false
 	}

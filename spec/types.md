@@ -57,7 +57,7 @@ group, a Type Expression follows the normal hard newline Definition Statement bo
 
 ### Reserved Type Syntax
 
-Two forms of Type Expression are reserved for value types that are not
+Three forms of Type Expression are reserved for value types that are not
 supported yet. Grammars that use them parse, format and convert to JSON, but
 do not compile, also when types are otherwise not checked:
 
@@ -68,6 +68,9 @@ do not compile, also when types are otherwise not checked:
 - A type application `T[U, ...]` applies a type to type arguments, as in
   `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
   is reserved to take type arguments; any other type takes none.
+- An unnamed struct type is written with the braces and fields of a struct
+  definition, as in `type T ~ { Key Match; Value Match }` or a field of type
+  `{ Line int }`. `type T = {...}` remains the way to define a struct type.
 
 ### Top, Bottom and Meet
 

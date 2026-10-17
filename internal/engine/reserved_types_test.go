@@ -97,3 +97,60 @@ func TestReservedTypeSyntax(t *testing.T) {
 		}
 	}
 }
+
+// Unnamed struct types are reserved syntax too, formatted like struct definitions.
+func TestReservedUnnamedStructType(t *testing.T) {
+	src := "type A ~ {} | { X int; Y *A } | []{\n  // the name\n  Name string\n  Inner { V int }\n}\ntype T = {\n  F {}\n  G (int, { H int })\n}\nrule main = \"a\""
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "type A ~ {} | { X int; Y *A } | []{\n    // the name\n    Name  string\n    Inner { V int }\n}\ntype T = {\n    F {}\n    G (int, { H int })\n}\nrule main = \"a\"\n"
+	formatted := grammar.Format(g)
+	if formatted != want {
+		t.Fatalf("formatted:\n%s\nwant\n%s", formatted, want)
+	}
+	again, err := syntax.Parse(formatted)
+	if err != nil || grammar.Format(again) != formatted {
+		t.Fatalf("formatting is not idempotent: %v", err)
+	}
+	u := g.Types()[0].Spec.(*grammar.AliasSpec).Type.(*grammar.UnionType)
+	if s, ok := u.Types[1].(*grammar.StructType); !ok || len(s.Fields) != 2 || s.Fields[1].Name != "Y" {
+		t.Fatalf("struct type %#v", u.Types[1])
+	}
+	data, err := grammar.MarshalJSON(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := grammar.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := grammar.Format(back); !strings.HasPrefix(got, "type A ~ {} | { X int; Y *A } | []{ Name string; Inner { V int } }\n") {
+		t.Fatalf("JSON round trip:\n%s", got)
+	}
+
+	for _, tc := range []struct{ src, pos string }{
+		{"type A ~ { X int }\nrule main = \"a\"", "1:10"},
+		{"type T = { F { G int } }\nrule main = \"a\"", "1:14"},
+		{"rule main {} = \"a\"", "1:11"},
+		{"rule main = x:\"a\" => $x.({ Y Match })", "1:26"},
+		{"rule main = \"a\" => []{ A Match }{}", "1:22"},
+		// A list constructor of an unsupported type adds no error of its own, also where the
+		// type was reported elsewhere.
+		{"type A ~ { A Match }\nrule main = x:\"a\" => []A{$x}\nrule b = x:\"a\" => []A{$x}", "1:10"},
+		{"type A ~ { A Match }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
+	} {
+		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+			g, err := syntax.Parse(tc.src)
+			if err != nil {
+				t.Fatalf("%q: %v", tc.src, err)
+			}
+			_, err = Compile(g, opts)
+			want := tc.pos + ": unnamed struct types are not supported yet"
+			if err == nil || !strings.Contains(err.Error(), want) || strings.Count(err.Error(), "\n") > 0 {
+				t.Errorf("%q (NoTypeCheck %v): got %v, want only %q", tc.src, opts.NoTypeCheck, err, want)
+			}
+		}
+	}
+}

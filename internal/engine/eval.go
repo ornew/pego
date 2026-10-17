@@ -918,8 +918,11 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		}
 	case *grammar.ListConstructor:
 		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		reported := len(c.errs)
 		elem := k.resolve(t.Elem)
-		if elem == tyNever {
+		if len(c.errs) > reported || k.sawUnsupported {
+			// The element type is in error already.
+		} else if elem == tyNever {
 			c.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
 		} else if !nodeListElement(elem) {
 			c.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)

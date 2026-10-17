@@ -149,6 +149,12 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			for _, t := range t.Args {
 				typ(t)
 			}
+		case *StructType:
+			add(t.CloseBreak)
+			for _, f := range t.Fields {
+				add(f.Break)
+				typ(f.Type)
+			}
 		}
 	}
 	var expr func(e Expr)
