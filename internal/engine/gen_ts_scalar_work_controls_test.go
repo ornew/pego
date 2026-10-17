@@ -14,7 +14,7 @@ func TestGeneratedTSWorkControlScalarStrings(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			src := `type Box struct { Ok bool; N int; S string }
+			src := `type Box = { Ok bool; N int; S string }
  rule main Box = x:item {$x.Ok} => $x
  rule item Box = "z" => ` + tt.action + `
 rule fast = "z"`
@@ -43,7 +43,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
 		})
 	}
 	t.Run("source-text", func(t *testing.T) {
-		src := `type Box struct {
+		src := `type Box = {
     Ok bool
     N  int
     S  string
@@ -73,7 +73,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", Types: true, Recognize: true}, "")
 	})
 	t.Run("unicode-and-byte-order", func(t *testing.T) {
-		src := `type Box struct {
+		src := `type Box = {
     Ok    bool
     Order bool
     N     int

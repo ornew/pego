@@ -1,8 +1,8 @@
 type Name terminal
-type Item struct { N Name; Kids []Item; Tag *Match; Cnt int; Txt string; Ok bool }
-type Pair struct { L Item; R Item }
-type Top = Item | Pair
-type Doc struct { Tops []Top; Names []Name; Errs []*Error; Depth int }
+type Item = { N Name; Kids []Item; Tag *Match; Cnt int; Txt string; Ok bool }
+type Pair = { L Item; R Item }
+type Top ~ Item | Pair
+type Doc = { Tops []Top; Names []Name; Errs []*Error; Depth int }
 rule main Doc = {d := 0} ts:(t:top ";"?)* ns:(-"#" n:name)* $$ => Doc{Tops: map($ts, (x) => $x.t), Names: map($ns, (y) => $y.n), Errs: list(), Depth: len($ts)}
 rule top Top = pair / item
 rule pair Pair = l:item "=" #cut r:item => Pair{L: $l, R: $r}

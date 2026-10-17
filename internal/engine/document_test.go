@@ -11,7 +11,7 @@ import (
 
 // incrementalGrammar is a grammar with left recursion, an Operators Rule expression, line starts (which
 // examine the preceding character), captures, and position-dependent actions.
-const incrementalGrammar = `type Pos struct { At int; Name Match }
+const incrementalGrammar = `type Pos = { At int; Name Match }
 rule main = (line / blank)* $$
 rule blank = "\n"
 rule line = ^ (assign / list / pos) "\n"
@@ -346,7 +346,7 @@ func TestDocumentMovesReusedTrees(t *testing.T) {
 		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\nrule junk = [^\\n]* #atomic \"\\n\"",
 			"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n",
 			[]string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " ", ""}},
-		{`type W struct { Pre Match; Word Match; Post Match; Gap Match }
+		{`type W = { Pre Match; Word Match; Post Match; Gap Match }
 rule main = (sep w:word sep)* $$
 rule sep = none none
 rule none = "" #atomic
@@ -359,7 +359,7 @@ rule key = [a-z]* #atomic => $0
 rule val = e:[0-9]* #atomic => $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
 		// Empty results with captures made in a lookahead: non-empty nodes, and empty nodes at
 		// other positions, inside empty ones.
-		{`type S struct { K Match }
+		{`type S = { K Match }
 rule main = (item / junk)* $$
 rule item = p:peek q:peek2 r:peek3 w:[a-z]+ #atomic ";"
 rule peek = &k:[a-z]+ #atomic
@@ -440,7 +440,7 @@ rule key = [a-z]+ #atomic
 rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, true},
 		{"inline", `rule main = ([a-z]+ #atomic " = " ([0-9]+ #atomic / "[" ([0-9]+ #atomic ",")* "]") ";\n" / "\n")* $$`, true},
 		// Positions in the values of the elements: they are not moved past an edit.
-		{"positional", `type P struct { At int }
+		{"positional", `type P = { At int }
 rule main = stmt* $$
 rule stmt = assign / "\n"
 rule assign = k:key " = " v:val ";\n" => P{At: $k.startPos}

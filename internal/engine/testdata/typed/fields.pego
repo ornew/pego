@@ -1,6 +1,6 @@
-type Item struct { Name Match }
-type Box struct { Items []Item; N int; S string; B bool; F Item }
-type Out struct { Box Box; Start int; End int; Text string; Same bool; NNil bool; SNil bool; BNil bool; FNil bool; FText string }
+type Item = { Name Match }
+type Box = { Items []Item; N int; S string; B bool; F Item }
+type Out = { Box Box; Start int; End int; Text string; Same bool; NNil bool; SNil bool; BNil bool; FNil bool; FText string }
 rule main Out = b:box => Out{Box: $b, Start: $b.Items.startPos, End: $b.Items.endPos, Text: text($b.Items), Same: $b.Items == $b.Items, NNil: $b.N == nil, SNil: $b.S == nil, BNil: $b.B == nil, FNil: $b.F == nil, FText: text($b.F)}
 rule box Box = "(" xs:item* ")" f:fitem => Box{Items: $xs, F: $f}
 rule item Item = " "* i:item2 => $i

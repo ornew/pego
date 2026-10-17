@@ -21,7 +21,7 @@ it costs and saves, how files stay compatible between releases, and when to use 
 The examples use the grammar `pairs.pego` of the [runtime guide](runtime.md):
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

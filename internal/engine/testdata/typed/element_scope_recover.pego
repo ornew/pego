@@ -1,6 +1,6 @@
 // A repetition element whose predicate reads a capture made inside & has a scope of its own on
 // every backend: the capture must not land in the frame of the rule's caller (r1 has no captures
 // of its own and is called as a plain rule).
-type R struct { S string }
+type R = { S string }
 rule main R = x:"a" r1 "b" => R{S: text($x)}
 rule r1 = (&(y:. {len($y) > 0}))* #recover(skip=";")

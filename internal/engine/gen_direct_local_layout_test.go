@@ -12,62 +12,62 @@ import (
 )
 
 var typedLocalLayoutCases = []genCase{
-	{"typed/local_dead_before_live", `type Doc struct { Text *Match; Missing *Match }
+	{"typed/local_dead_before_live", `type Doc = { Text *Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = _|_ ignored:"z" #atomic / x:"é" #atomic => Doc{Text: $x, Missing: $ignored}
 `, []string{"é", "z", "", "é?"}},
-	{"typed/local_dead_after_live", `type Doc struct { Text *Match; Missing *Match }
+	{"typed/local_dead_after_live", `type Doc = { Text *Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = x:"é" #atomic / _|_ ignored:"z" #atomic => Doc{Text: $x, Missing: $ignored}
 `, []string{"é", "z", "", "é?"}},
-	{"typed/local_infallible", `type Doc struct { Missing *Match }
+	{"typed/local_infallible", `type Doc = { Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = _ / ignored:"z" #atomic => Doc{Missing: $ignored}
 `, []string{"", "z", "é"}},
-	{"typed/local_dead_predicate", `type Doc struct { Text Match }
+	{"typed/local_dead_predicate", `type Doc = { Text Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (_|_ ignored:"z" #atomic / _) {$ignored == nil} x:"é" #atomic => Doc{Text: $x}
 `, []string{"é", "z", "", "é?"}},
-	{"typed/local_element_predicates", `type Doc struct { Items []*Match; Missing *Match }
+	{"typed/local_element_predicates", `type Doc = { Items []*Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) {$unused == nil && len($x) == 1} -",") #repeat(1, 3)
 ) => Doc{Items: map($items, (e) => $e.x), Missing: $ignored}
 `, []string{"é,", "é,é,é,", "é,é,", "é,z,", "é,é,é,é,", "z", "", "é"}},
-	{"typed/local_element_dead_predicate", `type Doc struct { Items []Match }
+	{"typed/local_element_dead_predicate", `type Doc = { Items []Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = items:((_|_ unused:"z" #atomic / _) {$unused == nil} x:"é" #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => $e.x)}
 `, []string{"é,", "é,é,é,", "é,é,", "é,z,", "é,é,é,é,", "", "é"}},
-	{"typed/local_element_unused_projection", `type Doc struct { Items []*Match; Missing *Match }
+	{"typed/local_element_unused_projection", `type Doc = { Items []*Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) -",") #repeat(1, 3)
 ) => Doc{Items: map($items, (e) => $e.unused), Missing: $ignored}
 `, []string{"é,", "é,é,é,", "é,é,", "z", "", "é"}},
-	{"typed/local_owned_element_reset", `type Item struct { Text *Match; Missing *Match }
-type Doc struct { Items []Item; Missing *Match }
+	{"typed/local_owned_element_reset", `type Item = { Text *Match; Missing *Match }
+type Doc = { Items []Item; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic / "a") {$unused == nil} -",") #repeat(1, 3)
 ) => Doc{Items: map($items, (e) => Item{Text: $e.x, Missing: $e.unused}), Missing: $ignored}
 `, []string{"é,a,é,", "a,é,a,", "a,", "é,", "é,é,é,é,", "é,z,", "", "é"}},
-	{"typed/local_optional_cut", `type Doc struct { Text *Match; Missing *Match; N int }
+	{"typed/local_optional_cut", `type Doc = { Text *Match; Missing *Match; N int }
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / (x:"é" #atomic #cut {n := n + 1} "!")? "x"
 ) => Doc{Text: $x, Missing: $ignored, N: n}
 `, []string{"x", "é!x", "é?x", "éx", "é!", "é", "", "é!xx"}},
-	{"typed/local_choice_cut", `type Doc struct { Text *Match; Missing *Match; N int }
+	{"typed/local_choice_cut", `type Doc = { Text *Match; Missing *Match; N int }
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / x:"é" #atomic #cut {n := n + 1} "!" / x:"é" #atomic "?"
 ) => Doc{Text: $x, Missing: $ignored, N: n}
 `, []string{"é!", "é?", "é", "z", "", "é!!"}},
-	{"typed/local_lookahead", `type Doc struct { Text Match; Missing *Match }
+	{"typed/local_lookahead", `type Doc = { Text Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = &(_|_ ignored:"z" #atomic / x:"é" #atomic) x:"é" #atomic => Doc{Text: $x, Missing: $ignored}
 `, []string{"é", "z", "", "é?"}},
-	{"typed/local_error", `type Doc struct { Text *Match; Missing *Match }
+	{"typed/local_error", `type Doc = { Text *Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / (x:"é" #atomic "!") @error(message="bang")

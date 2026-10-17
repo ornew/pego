@@ -20,6 +20,15 @@ func TestFix(t *testing.T) {
 		{`rule a = "--" [-] - -b`, `rule a = "--" [-] - -b`},
 		{`rule a = "é" -- "b"`, `rule a = "é" #cut "b"`},
 		{"rule a = \"x\"\r\nrule b = \"a\" -- \"b\"", "rule a = \"x\"\r\nrule b = \"a\" #cut \"b\""},
+		{"type P struct { A int; B string }", "type P = { A int; B string }"},
+		{"type P struct{}", "type P = {}"},
+		{"type P struct {\n    A int // a\n}", "type P = {\n    A int // a\n}"},
+		{"type U = P | Q\ntype V = (\n    P\n    | Q\n)\ntype P = {}\ntype Q terminal", "type U ~ P | Q\ntype V ~ (\n    P\n    | Q\n)\ntype P = {}\ntype Q terminal"},
+		{"type L =[]P\ntype P = {}", "type L ~ []P\ntype P = {}"},
+		{"type P = { A int }\ntype U ~ P", "type P = { A int }\ntype U ~ P"},
+		{"rule struct_x = \"struct\" // type A struct", "rule struct_x = \"struct\" // type A struct"},
+		{"type K terminal\ntype P = {\n  type K\n  struct K\n}", "type K terminal\ntype P = {\n  type K\n  struct K\n}"},
+		{"type K terminal\ntype P struct { type K; struct K }", "type K terminal\ntype P = { type K; struct K }"},
 		{`rule a = "a"`, `rule a = "a"`},
 	} {
 		got, err := Fix(tc.in)

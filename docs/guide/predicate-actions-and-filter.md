@@ -34,7 +34,7 @@ after `=>`.
 ## Filtering a Node List
 
 ```pego
-type Result struct { Items []*Match }
+type Result = { Items []*Match }
 
 rule main = word:[a-z]+ #atomic $$ => Result{
     Items: filter(list($word, nil, $word), (item) => $item != nil)

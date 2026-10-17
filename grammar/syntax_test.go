@@ -13,7 +13,7 @@ func TestFormatSyntax(t *testing.T) {
 	const src = `// grammar documentation
 package sample
 
-type Node struct { Text Match }
+type Node = { Text Match }
 rule main Node = {count:=0} x:(("a" => Node{Text: $1}) #repeat(2, 3) #atomic @error(message="a") #recover(skip=";")) #stream => Node{Text: $x}
 rule expr Node = operators {
  skip " "*
@@ -75,7 +75,7 @@ func TestFormatSyntaxNormalizedPragmas(t *testing.T) {
 }
 
 func TestFormatSyntaxValueDependentPredicate(t *testing.T) {
-	g, err := pego.ParseGrammar(`type T struct { N int }
+	g, err := pego.ParseGrammar(`type T = { N int }
 rule main = x:value {$x.N == 1}
 rule value T = "x" => T{N: 1}`)
 	if err != nil {

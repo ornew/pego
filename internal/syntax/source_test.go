@@ -119,7 +119,7 @@ func TestSourceCommentOwners(t *testing.T) {
 }
 
 func TestSourceDeclarationChildren(t *testing.T) {
-	const input = `type A struct {
+	const input = `type A = {
  // field
  X string; // field tail
 }

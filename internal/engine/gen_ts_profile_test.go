@@ -39,7 +39,7 @@ func TestGeneratedTSProfile(t *testing.T) {
 		{"memo", "type W terminal\nrule main W = &part &part &part part\nrule part W = letter\nrule letter W = \"a\"", "a", `check(s.memoHits>0,"memo counters");`},
 		{"leftrec", "type W terminal\nrule main W = expr\nrule expr W = expr \"a\" / \"a\"", "aaa", `check(s.evals>s.calls-s.memoHits,"growth counters");`},
 		{"repeat", "type W terminal\nrule main W = (&part \"x\" / &part) p:part => $p\nrule part W = [a-z]", "b", `check(s.rules.some(r=>r.repeats>0),"repeated position evaluations");`},
-		{"operators", "type W terminal\ntype B struct { Left Expr; Right Expr }\ntype Expr = W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = [0-9]+", "1+2*3", ``},
+		{"operators", "type W terminal\ntype B = { Left Expr; Right Expr }\ntype Expr ~ W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = [0-9]+", "1+2*3", ``},
 		{"recover", "type W terminal\nrule main W = (first / second) #recover(skip=\"!\")\nrule first W = \"a\"\nrule second W = \"b\"", "!", `check(s.skipped===2,"recovery skips");`},
 		{"unicode", "type W terminal\nrule main W = part part\nrule part W = \"é\"", "éé", `check(s.rules.find(r=>r.rule==="main")!.consumed===(unit===p.Bytes?4:2),"position units");`},
 		{"nilvalue", "type W terminal\nrule main *W = part => nil\nrule part W = \"a\"", "a", ``},

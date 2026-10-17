@@ -1,4 +1,4 @@
 // The capture of one iteration does not survive into the next: each iteration of an element whose
 // predicate reads a capture has a fresh scope.
-type R struct { S string }
+type R = { S string }
 rule main R = x:((&y:"a")? {len($y) == 1} .)* "b" => R{S: text($x)}

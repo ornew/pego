@@ -80,7 +80,7 @@ var bodyKeywords = []string{"operators"}
 
 var operatorsRuleKeywords = []string{"skip", "operand", "level", "prefix", "postfix", "infix"}
 
-var typeKeywords = []string{"struct", "terminal"}
+var typeKeywords = []string{"terminal"}
 
 var termKeywords = []string{"true", "false", "nil"}
 

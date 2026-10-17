@@ -23,17 +23,17 @@ func TestOutputSchemaListQueries(t *testing.T) {
 		{"repetition", `rule main = "x"*`, "x", list(QueryPattern{Type: TypeMatch, Capture: "value"})},
 		{"empty repetition", `rule main = "x"*`, "", QueryPattern{Type: TypeList, Capture: "value"}},
 		{"typed field", `type Token terminal
-type Holder struct { Values []Token }
+type Holder = { Values []Token }
 rule main = "x" => Holder{Values: []Token{Token{"one"}}}`, "x", holder(list(token))},
 		{"empty typed field", `type Token terminal
-type Holder struct { Values []Token }
+type Holder = { Values []Token }
 rule main = "x" => Holder{Values: []Token{}}`, "x", holder(QueryPattern{Type: TypeList, Capture: "value"})},
 		{"aliased field", `type Token terminal
-type Tokens = []Token
-type Holder struct { Values Tokens }
+type Tokens ~ []Token
+type Holder = { Values Tokens }
 rule main = "x" => Holder{Values: []Token{Token{"one"}}}`, "x", holder(list(token))},
 		{"nested typed field", `type Token terminal
-type Holder struct { Values [][]Token }
+type Holder = { Values [][]Token }
 rule main = "x" => Holder{Values: [][]Token{[]Token{Token{"one"}}}}`, "x", holder(list(list(token)))},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -6233,7 +6233,7 @@ type Stream struct {
 	Documents []*Document
 }
 
-// Value is the union type Value = Mapping | Sequence | Scalar | Alias. Error (left by #recover) also implements it.
+// Value is the union type Value ~ Mapping | Sequence | Scalar | Alias. Error (left by #recover) also implements it.
 type Value interface{ isValue() }
 
 func (*Alias) isValue()    {}

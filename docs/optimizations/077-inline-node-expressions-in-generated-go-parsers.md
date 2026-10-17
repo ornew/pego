@@ -47,8 +47,8 @@
   Use this fixture:
 
   ```pego
-  type Pair struct { Left Match; Right Match }
-  type Doc struct { Items []Pair }
+  type Pair = { Left Match; Right Match }
+  type Doc = { Items []Pair }
   rule main Doc =  items:row+ $$ => Doc{Items: $items}
   rule row =  p:pair "!" ";" / p:pair "?" ";" => $p
   rule pair Pair =  left:[a-z] #atomic "-" right:number => Pair{Left: $left, Right: $right}

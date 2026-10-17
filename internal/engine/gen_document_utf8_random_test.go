@@ -32,7 +32,7 @@ func TestGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 		"rule main = x $$\nrule x = .",
 		"rule main = (euro / other)* $$\nrule euro = [€😀]\nrule other = .",
 		`type Char terminal
-type Result struct { Wide []Char; Other []Char }
+type Result = { Wide []Char; Other []Char }
 rule main Result = w:wide* o:other* $$ => Result{Wide: $w, Other: $o}
 rule wide Char = [€😀é]
 rule other Char = .`,

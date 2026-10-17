@@ -165,12 +165,12 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 
 func TestCompileContextOrdinaryParity(t *testing.T) {
 	for _, src := range []string{
-		`type P struct {}; rule main = "a" => P{}`,
+		`type P = {}; rule main = "a" => P{}`,
 		`rule main = operators { operand [0-9]; level sum { infix left "+" } }`,
 		`rule main = "" / "a"`,
 		`rule main = ("a" #cut "b") / ""`,
 		`rule main = "a" / missing`,
-		`type P struct { X Match }; rule main = "a" => P{X: 1}`,
+		`type P = { X Match }; rule main = "a" => P{X: 1}`,
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {

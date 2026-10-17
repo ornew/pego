@@ -144,7 +144,7 @@ func TestGeneratedGoRecoveryMessageWork(t *testing.T) {
 		t.Skip("builds generated long recovery-message consumers")
 	}
 	message := strings.Repeat("details λ; ", 512)
-	g, err := syntax.Parse(fmt.Sprintf(`type Doc struct { Text Match }
+	g, err := syntax.Parse(fmt.Sprintf(`type Doc = { Text Match }
  rule main Doc = x:(("z" @error(message=%q)) #recover(skip="!")) => Doc{Text: $x}`, message))
 	if err != nil {
 		t.Fatal(err)

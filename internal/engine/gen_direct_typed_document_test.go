@@ -43,15 +43,15 @@ rule token Token = "a;" @error(message="expected token")`, []string{"a;", "?;", 
 		{`type Token terminal
 rule main Token = "a" !.`, []string{"a", "ab", ""}},
 		{`type Token terminal
-type Count struct { N int }
+type Count = { N int }
 rule main Count = {x := 0} token* => Count{N: x}
 rule token Token = {x < 2} "a" {x := x+1}`, []string{"", "a", "aa", "aaa"}},
 		{`type Token terminal
 rule main Token = main "+" atom / atom
 rule atom Token = [aé😀]`, []string{"a", "a+a", "é+a+😀", "a+", "+a"}},
 		{`type Atom terminal
-type Sum struct { L Expr; R Expr }
-type Expr = Atom | Sum
+type Sum = { L Expr; R Expr }
+type Expr ~ Atom | Sum
 rule main Expr = operators {
  operand atom
  operand "(" x:main ")" => $x
@@ -67,7 +67,7 @@ rule atom Token = [aé😀]`, []string{"a", "é", "😀", "", "aa"}},
 		{`type Token terminal
 rule main *Token = token?
 rule token Token = "é"`, []string{"", "é", "a"}},
-		{`type Text struct { S string }
+		{`type Text = { S string }
 rule main Text = [aé😀]* #atomic => Text{S: text($1)}`, []string{"", "aé😀", "b", "\xff"}},
 	} {
 		pkg := fmt.Sprintf("case%d", i)

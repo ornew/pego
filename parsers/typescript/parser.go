@@ -7345,100 +7345,100 @@ type YieldExpression struct {
 	Expression    Expression
 }
 
-// ModuleExportName is the alias type ModuleExportName = Identifier | StringLiteral.
+// ModuleExportName is the alias type ModuleExportName ~ Identifier | StringLiteral.
 type ModuleExportName = ImportAttributeName
 
-// ModuleName is the alias type ModuleName = Identifier | StringLiteral.
+// ModuleName is the alias type ModuleName ~ Identifier | StringLiteral.
 type ModuleName = ImportAttributeName
 
-// ArrayBindingElement is the union type ArrayBindingElement = BindingElement | OmittedExpression. Error (left by #recover) also implements it.
+// ArrayBindingElement is the union type ArrayBindingElement ~ BindingElement | OmittedExpression. Error (left by #recover) also implements it.
 type ArrayBindingElement interface{ isArrayBindingElement() }
 
-// BindingName is the union type BindingName = Identifier | ObjectBindingPattern | ArrayBindingPattern. Error (left by #recover) also implements it.
+// BindingName is the union type BindingName ~ Identifier | ObjectBindingPattern | ArrayBindingPattern. Error (left by #recover) also implements it.
 type BindingName interface{ isBindingName() }
 
-// CaseOrDefaultClause is the union type CaseOrDefaultClause = CaseClause | DefaultClause. Error (left by #recover) also implements it.
+// CaseOrDefaultClause is the union type CaseOrDefaultClause ~ CaseClause | DefaultClause. Error (left by #recover) also implements it.
 type CaseOrDefaultClause interface{ isCaseOrDefaultClause() }
 
-// ClassElement is the union type ClassElement = PropertyDeclaration | MethodDeclaration | Constructor | SemicolonClassElement | GetAccessor | SetAccessor | IndexSignature | ClassStaticBlockDeclaration. Error (left by #recover) also implements it.
+// ClassElement is the union type ClassElement ~ PropertyDeclaration | MethodDeclaration | Constructor | SemicolonClassElement | GetAccessor | SetAccessor | IndexSignature | ClassStaticBlockDeclaration. Error (left by #recover) also implements it.
 type ClassElement interface{ isClassElement() }
 
-// ConciseBody is the union type ConciseBody = Block | Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
+// ConciseBody is the union type ConciseBody ~ Block | Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
 type ConciseBody interface{ isConciseBody() }
 
-// EntityName is the union type EntityName = Identifier | QualifiedName. Error (left by #recover) also implements it.
+// EntityName is the union type EntityName ~ Identifier | QualifiedName. Error (left by #recover) also implements it.
 type EntityName interface{ isEntityName() }
 
-// Expression is the union type Expression = Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
+// Expression is the union type Expression ~ Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
 type Expression interface{ isExpression() }
 
-// ForInitializer is the union type ForInitializer = VariableDeclarationList | Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
+// ForInitializer is the union type ForInitializer ~ VariableDeclarationList | Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
 type ForInitializer interface{ isForInitializer() }
 
-// ImportAttributeName is the union type ImportAttributeName = Identifier | StringLiteral. Error (left by #recover) also implements it.
+// ImportAttributeName is the union type ImportAttributeName ~ Identifier | StringLiteral. Error (left by #recover) also implements it.
 type ImportAttributeName interface{ isImportAttributeName() }
 
-// JsxAttributeLike is the union type JsxAttributeLike = JsxAttribute | JsxSpreadAttribute. Error (left by #recover) also implements it.
+// JsxAttributeLike is the union type JsxAttributeLike ~ JsxAttribute | JsxSpreadAttribute. Error (left by #recover) also implements it.
 type JsxAttributeLike interface{ isJsxAttributeLike() }
 
-// JsxAttributeName is the union type JsxAttributeName = Identifier | JsxNamespacedName. Error (left by #recover) also implements it.
+// JsxAttributeName is the union type JsxAttributeName ~ Identifier | JsxNamespacedName. Error (left by #recover) also implements it.
 type JsxAttributeName interface{ isJsxAttributeName() }
 
-// JsxAttributeValue is the union type JsxAttributeValue = StringLiteral | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
+// JsxAttributeValue is the union type JsxAttributeValue ~ StringLiteral | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
 type JsxAttributeValue interface{ isJsxAttributeValue() }
 
-// JsxChild is the union type JsxChild = JsxText | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
+// JsxChild is the union type JsxChild ~ JsxText | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment. Error (left by #recover) also implements it.
 type JsxChild interface{ isJsxChild() }
 
-// JsxTagName is the union type JsxTagName = Identifier | ThisExpression | JsxNamespacedName | PropertyAccessExpression. Error (left by #recover) also implements it.
+// JsxTagName is the union type JsxTagName ~ Identifier | ThisExpression | JsxNamespacedName | PropertyAccessExpression. Error (left by #recover) also implements it.
 type JsxTagName interface{ isJsxTagName() }
 
-// JsxTagNameStart is the union type JsxTagNameStart = Identifier | ThisExpression. Error (left by #recover) also implements it.
+// JsxTagNameStart is the union type JsxTagNameStart ~ Identifier | ThisExpression. Error (left by #recover) also implements it.
 type JsxTagNameStart interface{ isJsxTagNameStart() }
 
-// LiteralTypeLiteral is the union type LiteralTypeLiteral = StringLiteral | NumericLiteral | BigIntLiteral | BooleanLiteral | NullLiteral | PrefixUnaryExpression | NoSubstitutionTemplateLiteral. Error (left by #recover) also implements it.
+// LiteralTypeLiteral is the union type LiteralTypeLiteral ~ StringLiteral | NumericLiteral | BigIntLiteral | BooleanLiteral | NullLiteral | PrefixUnaryExpression | NoSubstitutionTemplateLiteral. Error (left by #recover) also implements it.
 type LiteralTypeLiteral interface{ isLiteralTypeLiteral() }
 
-// MemberName is the union type MemberName = Identifier | PrivateIdentifier. Error (left by #recover) also implements it.
+// MemberName is the union type MemberName ~ Identifier | PrivateIdentifier. Error (left by #recover) also implements it.
 type MemberName interface{ isMemberName() }
 
-// ModifierLike is the union type ModifierLike = Modifier | Decorator. Error (left by #recover) also implements it.
+// ModifierLike is the union type ModifierLike ~ Modifier | Decorator. Error (left by #recover) also implements it.
 type ModifierLike interface{ isModifierLike() }
 
-// ModuleBody is the union type ModuleBody = ModuleBlock | ModuleDeclaration. Error (left by #recover) also implements it.
+// ModuleBody is the union type ModuleBody ~ ModuleBlock | ModuleDeclaration. Error (left by #recover) also implements it.
 type ModuleBody interface{ isModuleBody() }
 
-// ModuleReference is the union type ModuleReference = Identifier | QualifiedName | ExternalModuleReference. Error (left by #recover) also implements it.
+// ModuleReference is the union type ModuleReference ~ Identifier | QualifiedName | ExternalModuleReference. Error (left by #recover) also implements it.
 type ModuleReference interface{ isModuleReference() }
 
-// NamedExportBindings is the union type NamedExportBindings = NamedExports | NamespaceExport. Error (left by #recover) also implements it.
+// NamedExportBindings is the union type NamedExportBindings ~ NamedExports | NamespaceExport. Error (left by #recover) also implements it.
 type NamedExportBindings interface{ isNamedExportBindings() }
 
-// NamedImportBindings is the union type NamedImportBindings = NamespaceImport | NamedImports. Error (left by #recover) also implements it.
+// NamedImportBindings is the union type NamedImportBindings ~ NamespaceImport | NamedImports. Error (left by #recover) also implements it.
 type NamedImportBindings interface{ isNamedImportBindings() }
 
-// ObjectLiteralElement is the union type ObjectLiteralElement = PropertyAssignment | ShorthandPropertyAssignment | SpreadAssignment | MethodDeclaration | GetAccessor | SetAccessor. Error (left by #recover) also implements it.
+// ObjectLiteralElement is the union type ObjectLiteralElement ~ PropertyAssignment | ShorthandPropertyAssignment | SpreadAssignment | MethodDeclaration | GetAccessor | SetAccessor. Error (left by #recover) also implements it.
 type ObjectLiteralElement interface{ isObjectLiteralElement() }
 
-// PropertyName is the union type PropertyName = Identifier | StringLiteral | NumericLiteral | BigIntLiteral | ComputedPropertyName | PrivateIdentifier | NoSubstitutionTemplateLiteral. Error (left by #recover) also implements it.
+// PropertyName is the union type PropertyName ~ Identifier | StringLiteral | NumericLiteral | BigIntLiteral | ComputedPropertyName | PrivateIdentifier | NoSubstitutionTemplateLiteral. Error (left by #recover) also implements it.
 type PropertyName interface{ isPropertyName() }
 
-// Statement is the union type Statement = Block | EmptyStatement | VariableStatement | ExpressionStatement | IfStatement | DoStatement | WhileStatement | ForStatement | ForInStatement | ForOfStatement | ContinueStatement | BreakStatement | ReturnStatement | WithStatement | SwitchStatement | LabeledStatement | ThrowStatement | TryStatement | DebuggerStatement | FunctionDeclaration | ClassDeclaration | InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration | ModuleDeclaration | ImportEqualsDeclaration | ImportDeclaration | ExportAssignment | ExportDeclaration | NamespaceExportDeclaration. Error (left by #recover) also implements it.
+// Statement is the union type Statement ~ Block | EmptyStatement | VariableStatement | ExpressionStatement | IfStatement | DoStatement | WhileStatement | ForStatement | ForInStatement | ForOfStatement | ContinueStatement | BreakStatement | ReturnStatement | WithStatement | SwitchStatement | LabeledStatement | ThrowStatement | TryStatement | DebuggerStatement | FunctionDeclaration | ClassDeclaration | InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration | ModuleDeclaration | ImportEqualsDeclaration | ImportDeclaration | ExportAssignment | ExportDeclaration | NamespaceExportDeclaration. Error (left by #recover) also implements it.
 type Statement interface{ isStatement() }
 
-// TemplateLiteral is the union type TemplateLiteral = NoSubstitutionTemplateLiteral | TemplateExpression. Error (left by #recover) also implements it.
+// TemplateLiteral is the union type TemplateLiteral ~ NoSubstitutionTemplateLiteral | TemplateExpression. Error (left by #recover) also implements it.
 type TemplateLiteral interface{ isTemplateLiteral() }
 
-// TemplateMiddleOrTail is the union type TemplateMiddleOrTail = TemplateMiddle | TemplateTail. Error (left by #recover) also implements it.
+// TemplateMiddleOrTail is the union type TemplateMiddleOrTail ~ TemplateMiddle | TemplateTail. Error (left by #recover) also implements it.
 type TemplateMiddleOrTail interface{ isTemplateMiddleOrTail() }
 
-// TypeElement is the union type TypeElement = CallSignature | ConstructSignature | PropertySignature | MethodSignature | IndexSignature | GetAccessor | SetAccessor. Error (left by #recover) also implements it.
+// TypeElement is the union type TypeElement ~ CallSignature | ConstructSignature | PropertySignature | MethodSignature | IndexSignature | GetAccessor | SetAccessor. Error (left by #recover) also implements it.
 type TypeElement interface{ isTypeElement() }
 
-// TypeNode is the union type TypeNode = KeywordTypeNode | ThisTypeNode | TypePredicate | TypeReference | FunctionType | ConstructorType | TypeQuery | TypeLiteral | ArrayType | TupleType | OptionalType | RestType | UnionType | IntersectionType | ConditionalType | InferType | ParenthesizedType | TypeOperator | IndexedAccessType | MappedType | LiteralType | NamedTupleMember | TemplateLiteralType | ImportType | JSDocAllType | JSDocUnknownType | JSDocNullableType | JSDocNonNullableType | JSDocFunctionType. Error (left by #recover) also implements it.
+// TypeNode is the union type TypeNode ~ KeywordTypeNode | ThisTypeNode | TypePredicate | TypeReference | FunctionType | ConstructorType | TypeQuery | TypeLiteral | ArrayType | TupleType | OptionalType | RestType | UnionType | IntersectionType | ConditionalType | InferType | ParenthesizedType | TypeOperator | IndexedAccessType | MappedType | LiteralType | NamedTupleMember | TemplateLiteralType | ImportType | JSDocAllType | JSDocUnknownType | JSDocNullableType | JSDocNonNullableType | JSDocFunctionType. Error (left by #recover) also implements it.
 type TypeNode interface{ isTypeNode() }
 
-// TypePredicateParameterName is the union type TypePredicateParameterName = Identifier | ThisTypeNode. Error (left by #recover) also implements it.
+// TypePredicateParameterName is the union type TypePredicateParameterName ~ Identifier | ThisTypeNode. Error (left by #recover) also implements it.
 type TypePredicateParameterName interface{ isTypePredicateParameterName() }
 
 func (*ArrayBindingPattern) isBindingName()                  {}

@@ -7,8 +7,8 @@
 // one at a time with the engine thanks to #stream (pego parse -stream); generated parsers ignore it.
 package csv
 
-type File struct { Records []Record }
-type Record struct { Fields []Field }
+type File = { Records []Record }
+type Record = { Fields []Field }
 type Field terminal // the raw field: a quoted field keeps its quotes and doubled ""
 
 rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs}

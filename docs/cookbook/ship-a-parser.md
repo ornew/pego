@@ -12,7 +12,7 @@ The grammar reads versions such as `1.2.3` and `1.2.3-rc.1`:
 // version.pego
 type Num terminal
 type Ident terminal
-type Version struct { Major Num; Minor Num; Patch Num; Pre *Ident }
+type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
 
 rule main Version = v:version $$ => $v
 

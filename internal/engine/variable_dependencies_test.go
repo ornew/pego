@@ -58,7 +58,7 @@ func ruleVariablesDFS(rules []*grammar.RuleDef) map[string][]string {
 
 func variableChain(n int, reverse, reads bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\nrule main = {x := 7} r0\n")
+	src.WriteString("type V = { N int }\nrule main = {x := 7} r0\n")
 	for j := range n {
 		i := j
 		if reverse {
@@ -79,7 +79,7 @@ func variableChain(n int, reverse, reads bool) string {
 
 func variableGraph(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
+	src.WriteString("type V = { N int }\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
 	for i := range n {
 		if cyclic {
 			fmt.Fprintf(&src, "rule r%d node = \"a\" r%d / leaf\n", i, (i+1)%n)
@@ -94,7 +94,7 @@ func variableGraph(n int, cyclic bool) string {
 
 func variableManyReads(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\nrule main = r0\n")
+	src.WriteString("type V = { N int }\nrule main = r0\n")
 	for i := range n {
 		if cyclic {
 			fmt.Fprintf(&src, "rule r%d node = \"a\" r%d / \"b\" => V{N: v%d}\n", i, (i+1)%n, i)

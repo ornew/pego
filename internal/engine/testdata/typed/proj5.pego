@@ -1,4 +1,4 @@
-type B struct { N int }
-type Out struct { A []Match }
+type B = { N int }
+type Out = { A []Match }
 rule main Out = -bad? xs:(n:"x" #atomic bad)* => Out{A: map($xs, (e) => $e.n)}
 rule bad B = "!" => B{N: nope}

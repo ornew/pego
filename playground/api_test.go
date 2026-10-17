@@ -20,7 +20,7 @@ func call[T any](t *testing.T, method string, req any) T {
 	return v
 }
 
-const pairs = `type Pair struct { Key Match; Value Match }
+const pairs = `type Pair = { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -44,7 +44,7 @@ func TestCompileInfo(t *testing.T) {
 	if c.Rules[1].Type != "Pair" || c.Rules[1].Line != 4 || c.Rules[1].Col != 1 {
 		t.Errorf("pair = %+v", c.Rules[1])
 	}
-	if len(c.Types) != 1 || c.Types[0].Kind != "struct" || c.Types[0].Spec != "struct { Key Match, Value Match }" {
+	if len(c.Types) != 1 || c.Types[0].Kind != "struct" || c.Types[0].Spec != "{ Key Match; Value Match }" {
 		t.Errorf("types = %+v", c.Types)
 	}
 	if c.Start != "main" {
@@ -235,7 +235,7 @@ rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 		t.Errorf("recognize with recovery: %+v", r)
 	}
 	// A runtime error is not a match.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T struct { D int }\nrule main T = \"a\" => T{D: depth}", Input: "a"})
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T = { D int }\nrule main T = \"a\" => T{D: depth}", Input: "a"})
 	if r.Matched || r.Error == "" {
 		t.Errorf("runtime error: %+v", r)
 	}

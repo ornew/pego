@@ -103,8 +103,9 @@ normalized executable form rather than those grouping nodes.
 
 ### Type Definition Statements
 
-A Type Definition Statement (`type`) defines a node type: a struct type, a union
-or alias of types, or a terminal type. The forms and their meaning are defined
+A Type Definition Statement (`type`) declares a type name: it defines a struct
+type (`type T = {...}`) or a terminal type (`type T terminal`), or declares an
+alias of a type or union (`type T ~ U`). The forms and their meaning are defined
 in the [Type System](types.md#type-definitions).
 
 ### Rule Definition Statements

@@ -8,9 +8,9 @@ import (
 )
 
 func TestTypedConstructorsParseAndFormat(t *testing.T) {
-	const src = `type Foo struct { Name string; Children []Foo }
+	const src = `type Foo = { Name string; Children []Foo }
 type Int terminal
-type Pair struct { Left []Foo; Right []Foo }
+type Pair = { Left []Foo; Right []Foo }
 rule empty = "x" => []Foo{}
 rule nested = "x" => [][]Foo{[]Foo{Foo{}}}
 rule pointers = "x" => []*Foo{nil}
@@ -75,7 +75,7 @@ rule grouped = "x" => (
 
 	formatted := grammar.Format(g)
 	for _, want := range []string{
-		"type Pair struct { Left []Foo; Right []Foo }",
+		"type Pair = { Left []Foo; Right []Foo }",
 		"Pair{Left: []Foo{Foo{}}, Right: []Foo{Foo{}}}",
 		"Int{\"a\", \"b\"}",
 		"rule grouped = \"x\" => (\n",

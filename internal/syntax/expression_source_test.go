@@ -13,7 +13,7 @@ func TestExpressionSourceRoundTrip(t *testing.T) {
 	for _, src := range []string{
 		`rule main = [0-9]+ {x := 1} {x < 10} => ...`,
 		`rule main = [^a-zA-Z\)\#]`,
-		`package demo; rule main = "a"; type A struct { X A; Y A }; rule next = "b"`,
+		`package demo; rule main = "a"; type A = { X A; Y A }; rule next = "b"`,
 		"rule main = (\n    \"a\"\n    / \"b\"\n)\nrule next = \"c\"",
 		`rule main = operators { skip " "*; operand num; level { infix left "+" => ...; postfix "!" }; level power { infix right "^" } }`,
 		"rule main = operators {\n    operand \"a\"\n} => ...",
@@ -60,7 +60,7 @@ func TestExpressionSourceBoundaries(t *testing.T) {
 		"rule a = \"(\"\n\"x\"",
 		"rule a = \"{\"\n\"x\"",
 		"rule a = (\"(\" )\n\"x\"",
-		`type A struct { X A Y A }`,
+		`type A = { X A Y A }`,
 		"rule a = operators { operand \"a\" }\n=> ...",
 		"rule a = operators { operand \"a\" } =>\n...",
 		`rule a = a => A{} => B{}`,
@@ -123,7 +123,7 @@ func TestExpressionSourceHeaderComments(t *testing.T) {
 			t.Fatalf("expected positioned semantic rejection, got %v", err)
 		}
 	}
-	valid := `type N struct { Value int }
+	valid := `type N = { Value int }
 /*before body*/
 /*inside*/
 /*predicate*/

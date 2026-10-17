@@ -6164,7 +6164,7 @@ type Unary struct {
 	X  Expr
 }
 
-// Expr is the union type Expr = Number | Binary | Unary. Error (left by #recover) also implements it.
+// Expr is the union type Expr ~ Number | Binary | Unary. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
 func (*Binary) isExpr() {}

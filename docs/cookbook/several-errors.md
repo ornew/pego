@@ -8,8 +8,8 @@ to a place where parsing can go on, and puts an `Error` node where the setting w
 
 ```pego
 // settings.pego
-type Setting struct { Key Match; Value Match }
-type File struct { Settings []Setting }
+type Setting = { Key Match; Value Match }
+type File = { Settings []Setting }
 
 rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => $x.s)}
 

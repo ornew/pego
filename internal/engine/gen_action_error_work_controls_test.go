@@ -20,12 +20,12 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		name, start, grammar, want string
 		recognize                  bool
 	}{
-		{"prefix", rule, `type A struct { N int }
+		{"prefix", rule, `type A = { N int }
  rule ` + rule + ` A = "a" #cut => A{N:1 / (len($1)-1)}`, "action in " + rule + ": division by zero", false},
 		{"predicate", "main", `type Word terminal
  rule main Word = (({` + variable + `} leaf) / leaf) #cut
  rule leaf Word = "a"`, "", true},
-		{"captured", "main", `type A struct { N int }
+		{"captured", "main", `type A = { N int }
  rule main A = x:` + rule + ` {text($x) == "a"} $$ #cut => $x
  rule ` + rule + ` A = "a" #cut => A{N:1 / (len($1)-1)}`, "action in " + rule + ": division by zero", true},
 	}

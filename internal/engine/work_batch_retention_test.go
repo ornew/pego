@@ -32,7 +32,7 @@ func batchRetentionJSON(t *testing.T, n *Node) []byte {
 }
 
 func TestWorkBatchTraceEventDetachesParserOnSuccessAndSyntaxFailure(t *testing.T) {
-	prog := compile(t, `type Entry struct {
+	prog := compile(t, `type Entry = {
     Key   string
     Value Match
     Count int

@@ -12,7 +12,7 @@ import (
 )
 
 func TestPublicOutputSchema(t *testing.T) {
-	p, err := pego.CompileSource(`type Item struct { Value string }
+	p, err := pego.CompileSource(`type Item = { Value string }
 rule main = item
 rule item = x:"a" => Item{Value: text($x)}
 rule unused = "z"`, "main")
@@ -151,7 +151,7 @@ func TestPublicSchemaQueryMatchesUncapturedCSTChild(t *testing.T) {
 }
 
 func TestPublicQueryOptionalScalarFieldValidation(t *testing.T) {
-	p, err := pego.CompileSource(`type Item struct { Value *string }
+	p, err := pego.CompileSource(`type Item = { Value *string }
 rule main = "a" => Item{Value: nil}`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -201,9 +201,9 @@ rule main = "a" => Item{Value: nil}`, "main")
 }
 
 func TestPublicQueryScalarAliasFieldValidation(t *testing.T) {
-	p, err := pego.CompileSource(`type Label = string
-type DisplayLabel = Label
-type Item struct { Value DisplayLabel }
+	p, err := pego.CompileSource(`type Label ~ string
+type DisplayLabel ~ Label
+type Item = { Value DisplayLabel }
 rule main = x:"a" => Item{Value: text($x)}`, "main")
 	if err != nil {
 		t.Fatal(err)

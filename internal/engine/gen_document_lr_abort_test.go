@@ -39,8 +39,8 @@ rule x = x "+" t / t
 rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 		// Typed rules reach typed Documents' own rule calls.
 		{`type A terminal
-type S struct { L E; R A }
-type E = S | A
+type S = { L E; R A }
+type E ~ S | A
 rule main E = v:x $$ => $v
 rule x E = sum / a
 rule sum S = l:y "+" r:a => S{L: $l, R: $r}

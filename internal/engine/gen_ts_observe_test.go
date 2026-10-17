@@ -36,7 +36,7 @@ rule main W = &part &part &part p:part => $p
 rule part W = letter
 rule letter = "a"`, "a", `check(events.some(e=>e.memo&&e.evals===0),"memo hit");`},
 		{"framed", `type W terminal
-type N struct { Value W }
+type N = { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = "a"`, "a", `check(count("part","enter")===1,"framed calls");`},
 		{"predicate", `type W terminal
@@ -53,8 +53,8 @@ rule second W = "b"`, "b", `check(count("first","enter")===0&&count("first","ski
 rule main W = part #recover(skip="!")
 rule part W = "a"`, "!", `check(count("part","enter")===1,"recovery calls");`},
 		{"operators", `type W terminal
-type B struct { Left Expr; Right Expr }
-type Expr = W | B
+type B = { Left Expr; Right Expr }
+type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
 rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
 rule num W = [0-9]+`, "1+2*3", `check(events.some(e=>e.rule==="expr"&&e.kind==="enter"&&e.level>0),"named level");`},
@@ -68,7 +68,7 @@ rule part W = "a"`, "a", `check(count("part","enter")===1,"nil value call");`},
 rule main W = part
 rule part W = "input, o.unit, o.maxDepth, control)"`, "input, o.unit, o.maxDepth, control)", `check(count("part","enter")===1,"runtime-like literal remains unchanged");`},
 		{"collision", `type TraceKind terminal
-type TraceEvent struct { Value Observation }
+type TraceEvent = { Value Observation }
 type Observation terminal
 type ObservationCall terminal
 type TraceFailure terminal

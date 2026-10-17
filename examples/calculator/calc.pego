@@ -3,18 +3,18 @@ package calc
 
 type Number terminal
 
-type Binary struct {
+type Binary = {
     Left  Expr
     Op    Match
     Right Expr
 }
 
-type Unary struct {
+type Unary = {
     Op Match
     X  Expr
 }
 
-type Expr = Number | Binary | Unary
+type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 

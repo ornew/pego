@@ -21,8 +21,8 @@ the same everywhere.
 ```pego
 // calc.pego
 type Num terminal
-type Bin struct { Left Expr; Op Match; Right Expr }
-type Expr = Bin | Num
+type Bin = { Left Expr; Op Match; Right Expr }
+type Expr ~ Bin | Num
 
 rule main Expr = operators {
     skip " "*

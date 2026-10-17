@@ -10,7 +10,7 @@ import (
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
-	grammar, err := syntax.Parse(`type Result struct { Text string }
+	grammar, err := syntax.Parse(`type Result = { Text string }
 rule main Result = (leaf / [a-z]) => Result{Text: "ok"}
 rule leaf = "a"
 `)
@@ -48,7 +48,7 @@ func TestGeneratedRuntimeWritesStringPartsWithoutConcatenation(t *testing.T) {
 func TestGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
 	cases := []genCase{{
 		name: "typed/direct_action_error_context_and_reuse",
-		src: `type Result struct { N int }
+		src: `type Result = { N int }
 rule main Result = child
 rule child Result = x:"a"? => Result{N: 1 / len($x)}
 `,

@@ -6371,25 +6371,25 @@ type UnaryExpr struct {
 	X  Expr
 }
 
-// Clause is the union type Clause = ForClause | IfClause | LetClause | TryClause. Error (left by #recover) also implements it.
+// Clause is the union type Clause ~ ForClause | IfClause | LetClause | TryClause. Error (left by #recover) also implements it.
 type Clause interface{ isClause() }
 
-// Decl is the union type Decl = Package | Attribute | ImportDecl | Field | EmbedDecl | LetClause | Ellipsis | Comprehension. Error (left by #recover) also implements it.
+// Decl is the union type Decl ~ Package | Attribute | ImportDecl | Field | EmbedDecl | LetClause | Ellipsis | Comprehension. Error (left by #recover) also implements it.
 type Decl interface{ isDecl() }
 
-// Expr is the union type Expr = Ident | Int | Float | String | Bool | Null | Bottom | Interpolation | StructLit | ListLit | ParenExpr | SelectorExpr | IndexExpr | SliceExpr | CallExpr | UnaryExpr | BinaryExpr | PostfixExpr | Alias | Ellipsis | Comprehension. Error (left by #recover) also implements it.
+// Expr is the union type Expr ~ Ident | Int | Float | String | Bool | Null | Bottom | Interpolation | StructLit | ListLit | ParenExpr | SelectorExpr | IndexExpr | SliceExpr | CallExpr | UnaryExpr | BinaryExpr | PostfixExpr | Alias | Ellipsis | Comprehension. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// Label is the union type Label = Ident | String | Interpolation | Bool | Null | ParenExpr | ListLit | Alias. Error (left by #recover) also implements it.
+// Label is the union type Label ~ Ident | String | Interpolation | Bool | Null | ParenExpr | ListLit | Alias. Error (left by #recover) also implements it.
 type Label interface{ isLabel() }
 
-// Number is the union type Number = Int | Float. Error (left by #recover) also implements it.
+// Number is the union type Number ~ Int | Float. Error (left by #recover) also implements it.
 type Number interface{ isNumber() }
 
-// Selector is the union type Selector = Ident | String. Error (left by #recover) also implements it.
+// Selector is the union type Selector ~ Ident | String. Error (left by #recover) also implements it.
 type Selector interface{ isSelector() }
 
-// StrLit is the union type StrLit = String | Interpolation. Error (left by #recover) also implements it.
+// StrLit is the union type StrLit ~ String | Interpolation. Error (left by #recover) also implements it.
 type StrLit interface{ isStrLit() }
 
 func (*Alias) isExpr()           {}

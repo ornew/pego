@@ -321,7 +321,7 @@ func (a *analysis) collectControlled(control *renderControl) {
 			if i, ok := a.tokenIndex(s.Diagnostic()); ok {
 				name := a.significantTokenControlled(i+1, control)
 				spec := a.significantTokenControlled(name+1, control)
-				if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") {
+				if a.isIdent(spec, "terminal") {
 					a.markToken(spec, semKeyword, 0)
 				}
 			}

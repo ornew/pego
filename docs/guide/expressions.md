@@ -29,18 +29,18 @@ package calc
 
 type Number terminal
 
-type Binary struct {
+type Binary = {
     Left  Expr
     Op    Match
     Right Expr
 }
 
-type Unary struct {
+type Unary = {
     Op Match
     X  Expr
 }
 
-type Expr = Number | Binary | Unary
+type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -122,18 +122,18 @@ package calc
 
 type Number terminal
 
-type Binary struct {
+type Binary = {
     Left  Expr
     Op    Match
     Right Expr
 }
 
-type Unary struct {
+type Unary = {
     Op Match
     X  Expr
 }
 
-type Expr = Number | Binary | Unary
+type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -260,9 +260,9 @@ the next level, followed by any number of operator-operand pairs, and `foldl` bu
 ```pego
 // chain.pego
 type Number terminal
-type Binary struct { Left Expr; Op Match; Right Expr }
-type Unary struct { Op Match; X Expr }
-type Expr = Number | Binary | Unary
+type Binary = { Left Expr; Op Match; Right Expr }
+type Unary = { Op Match; X Expr }
+type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -305,8 +305,8 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 ```pego
 // chain-cmp.pego
 type Num terminal
-type Bin struct { L E; Op Match; R E }
-type E = Num | Bin
+type Bin = { L E; Op Match; R E }
+type E ~ Num | Bin
 
 rule main E = e:cmp ws $$ => $e
 
@@ -350,15 +350,15 @@ The grammar below is the one from the specification: it has every kind of operat
 // js.pego
 type Num terminal
 type Ident terminal
-type Comma struct { L Expr; R Expr }
-type Assign struct { L Expr; R Expr }
-type Cond struct { Cond Expr; Then Expr; Else Expr }
-type Bin struct { L Expr; Op Match; R Expr }
-type Unary struct { Op Match; X Expr }
-type Call struct { Fn Expr; Args []Expr }
-type Index struct { X Expr; Index Expr }
-type Member struct { X Expr; Name Ident }
-type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
+type Comma = { L Expr; R Expr }
+type Assign = { L Expr; R Expr }
+type Cond = { Cond Expr; Then Expr; Else Expr }
+type Bin = { L Expr; Op Match; R Expr }
+type Unary = { Op Match; X Expr }
+type Call = { Fn Expr; Args []Expr }
+type Index = { X Expr; Index Expr }
+type Member = { X Expr; Name Ident }
+type Expr ~ Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
     skip ws
@@ -451,10 +451,10 @@ level, so you choose how tightly it binds:
 // apply.pego
 type Id terminal
 type Num terminal
-type Bin struct { L E; Op Match; R E }
-type App struct { Fn E; Arg E }
-type Neg struct { X E }
-type E = Id | Num | Bin | App | Neg
+type Bin = { L E; Op Match; R E }
+type App = { Fn E; Arg E }
+type Neg = { X E }
+type E ~ Id | Num | Bin | App | Neg
 
 rule e E = operators {
     skip ws
@@ -494,9 +494,9 @@ in a tighter level if you want `-(3!)`.
 ```pego
 // same-level.pego
 type Num terminal
-type Neg struct { X E }
-type Fact struct { X E }
-type E = Num | Neg | Fact
+type Neg = { X E }
+type Fact = { X E }
+type E ~ Num | Neg | Fact
 
 rule same E = operators {
     operand num
@@ -603,8 +603,8 @@ actions can use `$n`:
 ```pego
 // operand-n.pego
 type Num terminal
-type Paren struct { X E }
-type E = Num | Paren
+type Paren = { X E }
+type E ~ Num | Paren
 
 rule e E = operators {
     operand num
@@ -697,8 +697,8 @@ consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 // skip.pego
 type Num terminal
 type Id terminal
-type Cond struct { C E; T E; F E }
-type E = Num | Id | Cond
+type Cond = { C E; T E; F E }
+type E ~ Num | Id | Cond
 
 rule loose E = operators {
     skip ws
@@ -743,10 +743,10 @@ syntactically possible:
 ```pego
 // munch.pego
 type Num terminal
-type Bin struct { L E; Op Match; R E }
-type Un struct { Op Match; X E }
-type Post struct { X E; Op Match }
-type E = Num | Bin | Un | Post
+type Bin = { L E; Op Match; R E }
+type Un = { Op Match; X E }
+type Post = { X E; Op Match }
+type E ~ Num | Bin | Un | Post
 
 rule main E = e:e $$ => $e
 
@@ -781,9 +781,9 @@ operator part with a negative lookahead, and exclude the keywords from identifie
 ```pego
 // words.pego
 type Id terminal
-type Bin struct { L E; Op Match; R E }
-type Not struct { X E }
-type E = Id | Bin | Not
+type Bin = { L E; Op Match; R E }
+type Not = { X E }
+type E ~ Id | Bin | Not
 
 rule e E = operators {
     skip ws
@@ -816,8 +816,8 @@ quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 ```pego
 // cut.pego
 type Num terminal
-type Bin struct { L E; Op Match; R E }
-type E = Num | Bin
+type Bin = { L E; Op Match; R E }
+type E ~ Num | Bin
 
 rule plain E = operators {
     skip ws

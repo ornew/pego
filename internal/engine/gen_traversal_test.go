@@ -103,7 +103,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	var source strings.Builder
 	names := []string{"WalkTree", "WalkAction", "WalkContinue", "WalkSkip", "WalkStop", "WalkVisit", "WalkEdge", "WalkEdgeKind", "WalkRoot", "WalkChild", "WalkField", "WalkListElement", "CycleError", "Cursor"}
 	for _, name := range names {
-		fmt.Fprintf(&source, "type %s struct { Value int }\n", name)
+		fmt.Fprintf(&source, "type %s = { Value int }\n", name)
 	}
 	source.WriteString("rule main = \"é\"\n")
 	grammar, err := syntax.Parse(source.String())

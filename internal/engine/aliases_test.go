@@ -8,30 +8,30 @@ var aliasCases = []genCase{
 	{"terminal singleton union", `type Num terminal
 rule main Num | Num = "é"+ $$`, []string{"éé", "", "x"}},
 	{"alias terminal", `type Num terminal
-type Alias = Num
-type Deep = Alias
+type Alias ~ Num
+type Deep ~ Alias
 rule main Deep = "é"+ $$`, []string{"éé", "", "x"}},
 	{"alias terminals in structs", `type Num terminal
-type Alias = Num
-type Deep = Alias
-type Box struct { Value Num }
+type Alias ~ Num
+type Deep ~ Alias
+type Box = { Value Num }
 rule main Box = v:num $$ => Box{Value: $v}
 rule num Deep = "é"+`, []string{"éé", "", "x"}},
 	{"alias constructors", `type Num terminal
-type NumAlias = Num
-type P struct { Value Num; N int }
-type Alias = P
-type Deep = Alias
+type NumAlias ~ Num
+type P = { Value Num; N int }
+type Alias ~ P
+type Deep ~ Alias
 rule main Deep = v:num $$ => Deep{Value: $v, N: 7}
 rule num NumAlias = "é"+`, []string{"éé", "", "x"}},
 	{"alias singleton unions", `type Num terminal
-type Alias = Num | Num
-type P struct { Value Alias }
-type Deep = P | P
+type Alias ~ Num | Num
+type P = { Value Alias }
+type Deep ~ P | P
 rule main Deep = v:num $$ => Deep{Value: $v}
 rule num Alias = "é"+`, []string{"éé", "", "x"}},
 	{"alias terminal action", `type Num terminal
-type Alias = Num
+type Alias ~ Num
 rule main Alias = v:num $$ => $v
 rule num Num = "é"+`, []string{"éé", "", "x"}},
 }

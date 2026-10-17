@@ -11,7 +11,7 @@ func TestDocumentAbortedParse(t *testing.T) {
 		name, src, text, fixed, errorText string
 		depth                             int
 	}{
-		{"action", `type N struct { X int }
+		{"action", `type N = { X int }
 rule main = x "a" $$
 rule x N = t:(x "a" / "a") #atomic => N{X: 1 / (2 - len($t))}`, "aa", "aaa", "division by zero", DefaultMaxDepth},
 		{"depth", `rule main = x $$

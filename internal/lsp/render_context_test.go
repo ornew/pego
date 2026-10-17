@@ -14,7 +14,7 @@ import (
 
 func renderFixture(fields int) string {
 	var source strings.Builder
-	source.WriteString("// __A type__ with `fields`.\ntype T struct {\n")
+	source.WriteString("// __A type__ with `fields`.\ntype T = {\n")
 	for i := range fields {
 		fmt.Fprintf(&source, " F%d Match\n", i)
 	}

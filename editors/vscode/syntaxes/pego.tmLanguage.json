@@ -55,8 +55,8 @@
     "type-definition": {
       "patterns": [
         {
-          "comment": "type Name struct { Field Type, ... }",
-          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]+(struct)[ \\t]*(\\{)",
+          "comment": "type Name = { Field Type; ... }",
+          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=)[ \\t]*(\\{)",
           "beginCaptures": {
             "1": {
               "name": "storage.type.pego"
@@ -65,7 +65,7 @@
               "name": "entity.name.type.pego"
             },
             "3": {
-              "name": "storage.type.struct.pego"
+              "name": "keyword.operator.assignment.pego"
             },
             "4": {
               "name": "punctuation.definition.block.begin.pego"
@@ -94,8 +94,8 @@
           ]
         },
         {
-          "comment": "A type alias; only its own parenthesized type permits continuation.",
-          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=)",
+          "comment": "type Name ~ Type, an alias; only its own parenthesized type permits continuation.",
+          "begin": "(?:^|(?<=;))[ \\t]*(type)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)[ \\t]*(~)",
           "beginCaptures": {
             "1": {
               "name": "storage.type.pego"
@@ -104,7 +104,7 @@
               "name": "entity.name.type.pego"
             },
             "3": {
-              "name": "keyword.operator.assignment.pego"
+              "name": "keyword.operator.alias.pego"
             }
           },
           "patterns": [
@@ -116,7 +116,7 @@
         },
         {
           "comment": "type Name terminal, and a type definition being written",
-          "match": "(?:^|(?<=;))[ \\t]*(type)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*)(?:[ \\t]+(terminal|struct)\\b)?)?",
+          "match": "(?:^|(?<=;))[ \\t]*(type)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*)(?:[ \\t]+(terminal)\\b)?)?",
           "captures": {
             "1": {
               "name": "storage.type.pego"

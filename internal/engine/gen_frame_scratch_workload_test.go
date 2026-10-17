@@ -12,9 +12,9 @@ import (
 )
 
 const nodeFrameScratchGrammar = `type Tok terminal
-type Item struct { T Tok }
-type Root struct { Items []Item }
-type Bad struct { N int }
+type Item = { T Tok }
+type Root = { Items []Item }
+type Bad = { N int }
 rule main = xs:(i:item)* $$ => Root{Items: map($xs, (x) => $x.i)}
 rule item = t:tok {text($t) == "é" || text($t) == "�"} => Item{T: $t}
 rule tok Tok = "é" / "�"

@@ -96,8 +96,8 @@ func TestFormatMinusBoundaries(t *testing.T) {
 		`rule main = (- #cut "a" "b" / "a" "c") $$`,
 		`rule main = xs:(x:- -"a")* $$`,
 		`rule main = "a" {- -1 == 1}`,
-		"type P struct { N int }\nrule main P = \"a\" => P{N: - -1}",
-		"type P struct { N int }\nrule main P = \"a\" => P{N: - - -1}",
+		"type P = { N int }\nrule main P = \"a\" => P{N: - -1}",
+		"type P = { N int }\nrule main P = \"a\" => P{N: - - -1}",
 	} {
 		t.Run(src, func(t *testing.T) { checkFormat(t, src) })
 	}
@@ -155,7 +155,7 @@ rule a = "a"
 		},
 		{
 			name: "struct fields",
-			in: `type Op struct { // op
+			in: `type Op = { // op
     // the left operand
 
     Left  Node   // left
@@ -164,10 +164,10 @@ rule a = "a"
 
     // end
 }
-type P struct { X A; Y B } // pair
-type E struct {}
+type P = { X A; Y B } // pair
+type E = {}
 `,
-			want: `type Op struct { // op
+			want: `type Op = { // op
     // the left operand
 
     Left  Node   // left
@@ -176,8 +176,8 @@ type E struct {}
 
     // end
 }
-type P struct { X A; Y B } // pair
-type E struct {}
+type P = { X A; Y B } // pair
+type E = {}
 `,
 		},
 		{
@@ -273,8 +273,8 @@ rule b = p / q // two
 		},
 		{
 			name: "blank line ends field alignment",
-			in:   "type T struct {\n    A X\n\n    Long Y\n    B    Z\n}\n",
-			want: "type T struct {\n    A X\n\n    Long Y\n    B    Z\n}\n",
+			in:   "type T = {\n    A X\n\n    Long Y\n    B    Z\n}\n",
+			want: "type T = {\n    A X\n\n    Long Y\n    B    Z\n}\n",
 		},
 		{
 			name: "operatorsRule body on its own line",
@@ -407,7 +407,7 @@ func TestFormatWithoutLayout(t *testing.T) {
 	if out2 := format(t, out); out2 != out {
 		t.Errorf("not stable:\n%s\n---\n%s", out, out2)
 	}
-	if !strings.Contains(out, "type Op struct {\n    Left  Node\n    Op    OpType\n    Right Node\n}\n\ntype Node") {
+	if !strings.Contains(out, "type Op = {\n    Left  Node\n    Op    OpType\n    Right Node\n}\n\ntype Node") {
 		t.Errorf("got:\n%s", out)
 	}
 }

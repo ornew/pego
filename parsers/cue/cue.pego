@@ -21,20 +21,20 @@
 package cue
 
 // --- Declarations ---
-type File struct { Decls []Decl }
-type Package struct { Name Ident }
-type ImportDecl struct { Lparen *Match; Specs []ImportSpec }
-type ImportSpec struct { Name *Ident; Path String }
-type Field struct { Label Label; Alias *PostfixAlias; Constraint *Match; Value Expr; Attrs []Attribute }
-type PostfixAlias struct { Label *Ident; Field Ident }
-type EmbedDecl struct { Expr Expr; Alias *PostfixAlias } // Alias is read and dropped by cue/parser
-type LetClause struct { Ident Ident; Expr Expr }
-type Ellipsis struct { Type *Expr }
-type Comprehension struct { Clauses []Clause; Value StructLit; Fallback *FallbackClause }
-type ForClause struct { Key *Ident; Value Ident; Source Expr }
-type IfClause struct { Condition Expr }
-type TryClause struct { Ident *Ident; Expr *Expr }
-type FallbackClause struct { Body StructLit }
+type File = { Decls []Decl }
+type Package = { Name Ident }
+type ImportDecl = { Lparen *Match; Specs []ImportSpec }
+type ImportSpec = { Name *Ident; Path String }
+type Field = { Label Label; Alias *PostfixAlias; Constraint *Match; Value Expr; Attrs []Attribute }
+type PostfixAlias = { Label *Ident; Field Ident }
+type EmbedDecl = { Expr Expr; Alias *PostfixAlias } // Alias is read and dropped by cue/parser
+type LetClause = { Ident Ident; Expr Expr }
+type Ellipsis = { Type *Expr }
+type Comprehension = { Clauses []Clause; Value StructLit; Fallback *FallbackClause }
+type ForClause = { Key *Ident; Value Ident; Source Expr }
+type IfClause = { Condition Expr }
+type TryClause = { Ident *Ident; Expr *Expr }
+type FallbackClause = { Body StructLit }
 
 // --- Expressions ---
 type Ident terminal // an identifier, or a keyword used as one
@@ -45,26 +45,26 @@ type Bool terminal
 type Null terminal
 type Bottom terminal                      // _|_
 type Attribute terminal                   // @name(...)
-type Interpolation struct { Elts []Expr } // String fragments and the expressions between them
-type StructLit struct { Elts []Decl }
-type ListLit struct { Elts []Expr }
-type ParenExpr struct { X Expr }
-type SelectorExpr struct { X Expr; Sel Selector }
-type IndexExpr struct { X Expr; Index Expr; Rbrack Match }
-type SliceExpr struct { X Expr; Low *Expr; High *Expr }
-type CallExpr struct { Fun Expr; Args []Expr }
-type UnaryExpr struct { Op Match; X Expr }
-type BinaryExpr struct { X Expr; Op Match; Y Expr }
-type PostfixExpr struct { X Expr; Op Match }
-type Alias struct { Ident Ident; Expr Expr }
+type Interpolation = { Elts []Expr } // String fragments and the expressions between them
+type StructLit = { Elts []Decl }
+type ListLit = { Elts []Expr }
+type ParenExpr = { X Expr }
+type SelectorExpr = { X Expr; Sel Selector }
+type IndexExpr = { X Expr; Index Expr; Rbrack Match }
+type SliceExpr = { X Expr; Low *Expr; High *Expr }
+type CallExpr = { Fun Expr; Args []Expr }
+type UnaryExpr = { Op Match; X Expr }
+type BinaryExpr = { X Expr; Op Match; Y Expr }
+type PostfixExpr = { X Expr; Op Match }
+type Alias = { Ident Ident; Expr Expr }
 
-type StrLit = String | Interpolation
-type Number = Int | Float
-type Selector = Ident | String
-type Label = Ident | String | Interpolation | Bool | Null | ParenExpr | ListLit | Alias
-type Decl = Package | Attribute | ImportDecl | Field | EmbedDecl | LetClause | Ellipsis | Comprehension
-type Clause = ForClause | IfClause | LetClause | TryClause
-type Expr = Ident | Int | Float | String | Bool | Null | Bottom | Interpolation | StructLit | ListLit | ParenExpr | SelectorExpr | IndexExpr | SliceExpr | CallExpr | UnaryExpr | BinaryExpr | PostfixExpr | Alias | Ellipsis | Comprehension
+type StrLit ~ String | Interpolation
+type Number ~ Int | Float
+type Selector ~ Ident | String
+type Label ~ Ident | String | Interpolation | Bool | Null | ParenExpr | ListLit | Alias
+type Decl ~ Package | Attribute | ImportDecl | Field | EmbedDecl | LetClause | Ellipsis | Comprehension
+type Clause ~ ForClause | IfClause | LetClause | TryClause
+type Expr ~ Ident | Int | Float | String | Bool | Null | Bottom | Interpolation | StructLit | ListLit | ParenExpr | SelectorExpr | IndexExpr | SliceExpr | CallExpr | UnaryExpr | BinaryExpr | PostfixExpr | Alias | Ellipsis | Comprehension
 
 // ===================================================================
 // Source file

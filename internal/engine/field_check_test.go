@@ -48,10 +48,10 @@ var fieldCheckFields = map[string]string{
 // rejected value makes the predicate fail, so the rule no matches instead.
 func fieldCheckGrammar(typ string) string {
 	return `type Int terminal
-type Alias = Int
-type Box struct { Value Int }
-type S struct { F ` + typ + ` }
-type Result = S | Int
+type Alias ~ Int
+type Box = { Value Int }
+type S = { F ` + typ + ` }
+type Result ~ S | Int
 rule main Result = nodeCase / nodePred / scalarCase / scalarPred / no
 rule nodeCase = v:val "." => S{F: $v}
 rule nodePred = v:val {S{F: $v} != nil} "!" => Int{"yes"}
@@ -178,7 +178,7 @@ func TestConstructedFieldChecks(t *testing.T) {
 // a run-time check, which needs instruction set 9.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
 	src := `type Int terminal
-type S struct { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
+type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
 rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l)}
 rule item Int = "i" => Int{"i"}
 rule val any = "v"
@@ -200,7 +200,7 @@ rule val any = "v"
 		t.Fatalf("disassembly:\n%s", d)
 	}
 	plain := compile(t, `type Int terminal
-type S struct { Static Int }
+type S = { Static Int }
 rule main = a:item => S{Static: $a}
 rule item Int = "i" => Int{"i"}
 `)
@@ -212,7 +212,7 @@ rule item Int = "i" => Int{"i"}
 	}
 	// The recognizer, built without type checking, checks the same fields as its program.
 	pred := compile(t, `type Int terminal
-type S struct { Static Int; Dynamic Int }
+type S = { Static Int; Dynamic Int }
 rule main = a:item d:val {S{Static: $a, Dynamic: $d} != nil}
 rule item Int = "i" => Int{"i"}
 rule val any = "v"

@@ -99,7 +99,7 @@ func semanticResponseSources(tb testing.TB) []semanticSourceCase {
 		{"dense128", semanticDenseSource(128)},
 		{"incomplete-operators64", semanticOperatorsSource(64)},
 		{"no-rule-associativity", "infix /* one */ /* two */ left"},
-		{"attributes-actions", "type Foo struct { Value Match }\nrule main = {x := 1} a:[a-z]+ @error(message=\"letter\") => Foo{Value: $a}"},
+		{"attributes-actions", "type Foo = { Value Match }\nrule main = {x := 1} a:[a-z]+ @error(message=\"letter\") => Foo{Value: $a}"},
 	}...)
 }
 

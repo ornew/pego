@@ -8,7 +8,7 @@ predicates.
 
 ```pego
 // nested.pego
-type Entry struct {
+type Entry = {
     Key      Match
     Value    *Match
     Children []Entry

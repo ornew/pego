@@ -10,7 +10,7 @@ import (
 
 func inferredChain(depth int, reverse bool, mainType string) string {
 	var src strings.Builder
-	src.WriteString("type P struct {}\n")
+	src.WriteString("type P = {}\n")
 	annotation := ""
 	if mainType != "" {
 		annotation = " " + strings.TrimPrefix(mainType, ":")
@@ -90,7 +90,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 }
 
 func TestInferenceOperatorsRuleImplicitDependencies(t *testing.T) {
-	p := compile(t, `type P struct {}
+	p := compile(t, `type P = {}
 rule main = expression
 rule expression = operators {
     operand "a"
@@ -111,7 +111,7 @@ func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 		if reverse {
 			rules[0], rules[1] = rules[1], rules[0]
 		}
-		p := compile(t, "type P struct {}\nrule main = constant\n"+strings.Join(rules, "\n"))
+		p := compile(t, "type P = {}\nrule main = constant\n"+strings.Join(rules, "\n"))
 		for _, name := range []string{"main", "constant"} {
 			if got, _ := p.RuleType(name); got != "P" {
 				t.Errorf("%s type = %s; want P", name, got)
@@ -240,7 +240,7 @@ func TestInferenceCanonicalTypes(t *testing.T) {
 }
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
-	src := "type Holder struct { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0 => Holder{Value: $1}", 1)
+	src := "type Holder = { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0 => Holder{Value: $1}", 1)
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

@@ -1,14 +1,14 @@
 // JSON (RFC 8259), parsed into a typed AST.
 package json
 
-type Object struct { Members []Member }
-type Member struct { Key String; Value Value }
-type Array struct { Elements []Value }
+type Object = { Members []Member }
+type Member = { Key String; Value Value }
+type Array = { Elements []Value }
 type String terminal // the raw string without quotes, escapes included
 type Number terminal
 type Bool terminal
 type Null terminal
-type Value = Object | Array | String | Number | Bool | Null
+type Value ~ Object | Array | String | Number | Bool | Null
 
 rule main Value = ws v:value ws $$ => $v
 

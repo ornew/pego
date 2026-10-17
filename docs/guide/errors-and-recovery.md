@@ -201,13 +201,13 @@ package toy
 
 type Name terminal
 type Num terminal
-type Let struct { Name Name; Value Expr }
-type Print struct { Value Expr }
-type Block struct { Body []Stmt }
-type Sum struct { Left Expr; Right Expr }
-type Expr = Name | Num | Sum
-type Stmt = Let | Print | Block
-type Program struct { Body []Stmt }
+type Let = { Name Name; Value Expr }
+type Print = { Value Expr }
+type Block = { Body []Stmt }
+type Sum = { Left Expr; Right Expr }
+type Expr ~ Name | Num | Sum
+type Stmt ~ Let | Print | Block
+type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => $x.s)
@@ -751,12 +751,12 @@ package toy
 
 type Name terminal
 type Num terminal
-type Let struct { Name Name; Value Expr }
-type Print struct { Value Expr }
-type Block struct { Body []Stmt }
-type Expr = Name | Num
-type Stmt = Let | Print | Block
-type Program struct { Body []Stmt }
+type Let = { Name Name; Value Expr }
+type Print = { Value Expr }
+type Block = { Body []Stmt }
+type Expr ~ Name | Num
+type Stmt ~ Let | Print | Block
+type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => $x.s)
@@ -885,9 +885,9 @@ package blocks
 
 type Name terminal
 type Num terminal
-type Assign struct { Name Name; Value Num }
-type If struct { Test Name; Body []Stmt }
-type Stmt = Assign | If
+type Assign = { Name Name; Value Num }
+type If = { Test Name; Body []Stmt }
+type Stmt ~ Assign | If
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
 rule stmts = (blank* s:stmt)+ => map($1, (x) => $x.s)
@@ -945,7 +945,7 @@ and let `skip` stop in front of the separator and the closing bracket, so that n
 package nums
 
 type Num terminal
-type Numbers struct { Items []Num }
+type Numbers = { Items []Num }
 
 rule main Numbers = ws l:list ws $$ => $l
 

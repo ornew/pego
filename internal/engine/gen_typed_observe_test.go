@@ -31,7 +31,7 @@ rule main W = &part &part &part p:part => $p
 rule part W = letter
 rule letter = "a"`, input: "a", checks: `hits:=0;for _,e:=range events {if e.Memo {hits++}};if hits==0 {t.Fatal("missing memo",events)}`},
 		{name: "framed", grammar: `type W terminal
-type N struct { Value W }
+type N = { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "general", grammar: `type W terminal
@@ -48,8 +48,8 @@ rule second W = "b"`, input: "b", checks: `if count("first",TraceEnter)!=0 || co
 rule main W = part #recover(skip="!")
 rule part W = "a"`, input: "!", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "operators", grammar: `type W terminal
-type B struct { Left Expr; Right Expr }
-type Expr = W | B
+type B = { Left Expr; Right Expr }
+type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
 rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
 rule num W = [0-9]+`, input: "1+2*3", checks: `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing level",events)}`},
@@ -58,7 +58,7 @@ rule main W = part
 rule part W = "a"
 rule cst = part ";"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "field", grammar: `type W terminal
-type N struct { Value W }
+type N = { Value W }
 rule main W = n:box => $n.Value
 rule box N = p:part => N{Value:$p}
 rule part W = "a"`, input: "a", fallback: true, checks: `if count("box",TraceEnter)!=1 {t.Fatal(events)}`},
@@ -69,7 +69,7 @@ rule part W = "é"`, input: "éé", checks: `last:=events[len(events)-1];end:=2;
 rule main *W = part => nil
 rule part W = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "collision", grammar: `type TraceKind terminal
-type TraceEvent struct { Value WithTrace }
+type TraceEvent = { Value WithTrace }
 type TraceEnter terminal
 type TraceExit terminal
 type TraceSkipped terminal

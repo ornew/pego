@@ -26,7 +26,7 @@ All examples on this page use one small grammar, `pairs.pego`, that reads `key=v
 semicolons:
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

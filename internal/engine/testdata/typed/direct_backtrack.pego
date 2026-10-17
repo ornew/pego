@@ -4,8 +4,8 @@
 // first-character tests of alternatives after one that read further characters; a plain rule that
 // assigns a variable (bump) restores the environment when it returns.
 type Name terminal
-type A struct { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P *Name; Last *Name; Mode int; Sign *Match }
-type L struct { Items []A }
+type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P *Name; Last *Name; Mode int; Sign *Match }
+type L = { Items []A }
 rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => $e.a)}
 rule alt A = (
     (x:name "+" y:name "!" / x:name "+" z:name)

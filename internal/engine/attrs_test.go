@@ -112,7 +112,7 @@ func TestRecoverWithoutValue(t *testing.T) {
 func TestRecoverTyping(t *testing.T) {
 	// The value of a recovered expression may be an Error, but an Error can be placed where any
 	// node type is expected.
-	compile(t, `type Stmt struct { Name Match }
+	compile(t, `type Stmt = { Name Match }
 rule main = ss:stmt* $$ => $ss
 rule stmt Stmt = s:good #recover(skip=[^;]+ ";") => $s
 rule good Stmt = n:[a-z]+ #atomic ";" => Stmt{Name: $n}

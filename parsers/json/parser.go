@@ -6185,7 +6185,7 @@ type Object struct {
 	Members []*Member
 }
 
-// Value is the union type Value = Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
+// Value is the union type Value ~ Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
 type Value interface{ isValue() }
 
 func (*Array) isValue()  {}

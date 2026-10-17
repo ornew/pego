@@ -32,17 +32,17 @@ const typedLocalLayoutWorkloadTypes = `rule main Doc = {n := 0} e:body $$ => $e
 `
 
 var typedLocalLayoutWorkloads = []struct{ name, src string }{
-	{"ordinary", `type Doc struct { Items []Match; N int; Missing *Match }
+	{"ordinary", `type Doc = { Items []Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:(x:"é" #atomic -",")+
 ) => Doc{Items: map($items, (e) => $e.x), N: len($items), Missing: $ignored}
 `},
-	{"element", `type Doc struct { Items []*Match; N int; Missing *Match }
+	{"element", `type Doc = { Items []*Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) {$unused == nil && len($x) > 0} -",")+
 ) => Doc{Items: map($items, (e) => $e.x), N: len($items), Missing: $ignored}
 `},
-	{"cuts", `type Doc struct { Items []Match; N int; Missing *Match }
+	{"cuts", `type Doc = { Items []Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:(x:"é" #atomic #cut {n := n + 1} -",")+
 ) => Doc{Items: map($items, (e) => $e.x), N: n, Missing: $ignored}

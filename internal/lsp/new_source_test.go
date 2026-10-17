@@ -73,7 +73,7 @@ func TestNewSourceAttributeAndCommentContexts(t *testing.T) {
 			t.Fatalf("missing recovery rule completion: %+v", a.complete(off))
 		}
 	}
-	src := `type N struct { X Match }
+	src := `type N = { X Match }
 rule digit = [0-9]
 rule expr N = operators { operand digit => N{X:$1} }`
 
@@ -87,7 +87,7 @@ rule expr N = operators { operand digit => N{X:$1} }`
 	}
 	off := strings.Index(src, "N{X:")
 	text, _, _, ok := a.hoverAt(off)
-	if !ok || !strings.Contains(text, "type N struct") {
+	if !ok || !strings.Contains(text, "type N =") {
 		t.Fatalf("constructor hover: %s", text)
 	}
 	prefix := src[:strings.Index(src, "operand digit")] + "operand "
@@ -104,7 +104,7 @@ rule expr N = operators { operand digit => N{X:$1} }`
 }
 
 func TestNewSourceFirstCaptureCompletion(t *testing.T) {
-	src := "type N struct { F Match }\nrule main = x:\"a\" => N{F: $x}"
+	src := "type N = { F Match }\nrule main = x:\"a\" => N{F: $x}"
 	a := analyze(src)
 	off := strings.Index(src, "$x") + 1
 	var labels []string
@@ -136,7 +136,7 @@ func TestRecoverPragmaCompletion(t *testing.T) {
 func TestReservedNamesExcludedFromCompletion(t *testing.T) {
 	for _, src := range []string{
 		`rule _private = "x"; rule main = `,
-		`type _Hidden struct {}; rule main = "x" => `,
+		`type _Hidden = {}; rule main = "x" => `,
 		`rule main = _private:"x" => $`,
 		`rule main = "x" => map($1, (_private) => $`,
 	} {

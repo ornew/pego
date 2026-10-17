@@ -14,8 +14,8 @@ import (
 )
 
 const constructorGrammar = `type Int terminal
-type Alias = Int
-type Values struct { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
+type Alias ~ Int
+type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
 rule main Values = "😀" => Values{Items: []Int{Int{"0"}, Alias{text($1)}}, Nested: [][]Int{[]Int{}, []Int{Int{"1"}}}, Maybe: []*Int{nil, Int{"2"}}, Default: Int{"0"}, Empty: []Int{}}
 `
 
@@ -83,12 +83,12 @@ func constructorCases() []genCase {
 	return []genCase{
 		{"typed node constructors", constructorGrammar, []string{"😀", "", "x"}},
 		{"terminal constructor root", `type Int terminal
-type Alias = Int
+type Alias ~ Int
 rule main Alias = "é" => Alias{"0"}`, []string{"é", "", "e"}},
 		{"typed list root", `type T terminal
 rule main []T = "x" => []T{T{"0"}}`, []string{"x", "", "xx"}},
 		{"typed nullable union list", `type T terminal
-type R struct { Values []*(T | Match) }
+type R = { Values []*(T | Match) }
 rule main R = x:"é" => R{Values: []*(T | Match){nil, T{"0"}, $x}}`, []string{"é", "", "x"}},
 		{"terminal constructor value error", `type Int terminal
 rule main = {value := 1} "x" => Int{value}`, []string{"x", ""}},
@@ -147,7 +147,7 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 	} {
 		t.Run(tc.action, func(t *testing.T) {
 			g, err := syntax.Parse(`type Int terminal
-type Other struct {}
+type Other = {}
 rule main = {x := 1} "x" => ` + tc.action)
 			if err != nil {
 				t.Fatal(err)
@@ -233,7 +233,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 }
 
 func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
-	const header = "type Int terminal\ntype Other struct {}\nrule main = \"x\" => "
+	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
 	for _, action := range []string{`[]int{}`, `[][]string{}`, `Int{}`, `Int{"a", "b"}`, `Other{"a"}`} {
 		g, err := syntax.Parse(header + action)
 		if err != nil {

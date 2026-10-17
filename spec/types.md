@@ -29,7 +29,7 @@ A Type Expression is written with the following syntax. `[]` and `*` apply to
 the type that follows, `|` forms a union (see below) and parentheses group.
 
 ```pego
-type Example struct {
+type Example = {
     Items  []Item       // a list
     Maybe  *Item        // an Item or nil
     Either Item | Other // a union
@@ -37,7 +37,7 @@ type Example struct {
     Count  int
 }
 
-type LongUnion = (
+type LongUnion ~ (
     Item
     | Other
 )
@@ -77,20 +77,30 @@ namespaces (see [Names](grammar-files.md#names)).
 
 ## Type Definitions
 
-The `type` keyword defines a type.
+The `type` keyword declares a type name in one of three forms:
+
+| Form | Declares |
+|:--|:--|
+| `type T = {...}` | a type definition: a new struct type `T` |
+| `type T ~ U` | an alias: another name for the type `U`, which creates no type |
+| `type T terminal` | a new terminal type `T` |
+
+Only struct types can be defined with `=`: `type T = U` with any other
+right-hand side is an error, and an alias is written `type T ~ U`.
 
 ### Struct Types
 
-A struct type is a node type with named fields. Fields are separated by newlines
+A struct type is a node type with named fields. `type T = {...}` defines it.
+Fields are separated by newlines
 or semicolons. Field names MUST be unique within a struct. Constructor fields
 and function arguments remain comma-separated.
 
 ```pego
-type MyNode struct {
+type MyNode = {
     Field1 SomeType
     Field2 AnotherType
 }
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 ```
 
 A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
@@ -105,12 +115,12 @@ use commas.
 
 ### Type Aliases and Union Types
 
-`type T = U` defines `T` as another name for the type `U`. With `|`, the
+`type T ~ U` declares `T` as another name for the type `U`. With `|`, the
 right-hand side is a union type, whose values are the values of any of its
 members, much like an interface type in Go.
 
 ```pego
-type Node = Expression | Statement | Declaration
+type Node ~ Expression | Statement | Declaration
 ```
 
 A type alias MUST NOT refer to itself, directly or indirectly. Unions are

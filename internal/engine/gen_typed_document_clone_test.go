@@ -18,9 +18,9 @@ func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
 type Document terminal
 type ParseStats terminal
 type Span terminal
-type Link struct { Label *string; Next *Link }
-type Alt = Token | Link
-type Box struct { First Token; Again Token; Items []Token; AgainItems []Token; Optional []*Token; Nested [][]Token; Empty []Token; NilList []Token; Choice Alt; Link *Link }
+type Link = { Label *string; Next *Link }
+type Alt ~ Token | Link
+type Box = { First Token; Again Token; Items []Token; AgainItems []Token; Optional []*Token; Nested [][]Token; Empty []Token; NilList []Token; Choice Alt; Link *Link }
 rule main = x:token => Box{First: $x, Again: $x, Items: []Token{$x, $x}, Optional: []*Token{nil, $x}, Nested: [][]Token{[]Token{$x}}, Choice: $x}
 rule token Token = "x"`)
 	if err != nil {

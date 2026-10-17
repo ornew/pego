@@ -18,10 +18,10 @@ The primary goal is to eliminate intermediate `ChoiceNode`s from the final AST b
 
 Consider the following PEGO grammar:
 ```pego
-type A struct { Children []Node }
-type B struct {}
-type C struct {}
-type D struct {}
+type A = { Children []Node }
+type B = {}
+type C = {}
+type D = {}
 
 rule b B = "b" => B{}
 rule c C = "c" => C{}

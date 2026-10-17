@@ -73,14 +73,14 @@ const calc = `package calc
 type Number terminal
 type OpType terminal
 
-type Op struct {
+type Op = {
     Left  Node
     Op    OpType
     Right Node
 }
 
-type Node = Op | Number
-type Pair struct { Items []*Node; Name string }
+type Node ~ Op | Number
+type Pair = { Items []*Node; Name string }
 
 rule expr Node = (
     l:term rest:(op:term_binary_op r:term)*
@@ -162,7 +162,10 @@ func TestParseErrors(t *testing.T) {
 		{`rule a = [z-a]`, `1:10: invalid range 'z'-'a'`},
 		{`foo`, `1:1: expected 'rule' or 'type', found 'foo'`},
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
-		{`type A struct { X }`, `1:19: expected identifier, found '}'`},
+		{`type A = { X }`, `1:14: expected identifier, found '}'`},
+		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run pego fix to rewrite type A struct`},
+		{`type A = B`, `1:8: only struct types can be defined with =; write type A ~ <type> for an alias (pego fix rewrites type A = <type>)`},
+		{`type A B`, `1:8: expected '=', '~', or 'terminal', found 'B'`},
 		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},
 		{`rule a = x => A{X 1}`, `1:19: expected ',', found 1`},
 		{"rule a = %\nrule b = c", `1:10: expected an expression, found '%'`},

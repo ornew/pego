@@ -9,7 +9,7 @@ import (
 )
 
 func TestDocumentChangesPublicOptIn(t *testing.T) {
-	p, err := pego.CompileSource(`type Entry struct { Name string }
+	p, err := pego.CompileSource(`type Entry = { Name string }
 rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 	if err != nil {
 		t.Fatal(err)

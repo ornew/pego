@@ -50,9 +50,9 @@ func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
 	}
 	sequence := strings.Join(captures, " ")
 	src := `type Word terminal
- type Op struct { Token Match }
- type Box struct { Token Match; Rhs Expr }
- type Expr = Word | Box
+ type Op = { Token Match }
+ type Box = { Token Match; Rhs Expr }
+ type Expr ~ Word | Box
  rule main Expr = operators {
   operand word
   level { prefix ` + sequence + ` => Box{Token:$c0,Rhs:$rhs} }
@@ -156,12 +156,12 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ` + string(inputs) +
 func TestGeneratedTSWorkControlOperatorsRuleRecoveredTransfer(t *testing.T) {
 	src := `type Word terminal
 
-type Box struct {
+type Box = {
     Token Match
     Rhs   Expr
 }
 
-type Expr = Word | Box
+type Expr ~ Word | Box
 
 rule main Expr = operators {
     operand word

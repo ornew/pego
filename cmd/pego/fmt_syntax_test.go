@@ -10,7 +10,7 @@ import (
 )
 
 func TestFmtSyntax(t *testing.T) {
-	const src = `type T struct {}
+	const src = `type T = {}
 rule main T = "x" #atomic @error(message="x") => T{}`
 	g, err := pego.ParseGrammar(src)
 	if err != nil {

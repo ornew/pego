@@ -11,15 +11,15 @@ recorded in [design 005](../docs/design/005-operators-rule.md).
 ```pego
 type Num terminal
 type Ident terminal
-type Comma struct { L Expr; R Expr }
-type Assign struct { L Expr; R Expr }
-type Cond struct { Cond Expr; Then Expr; Else Expr }
-type Bin struct { L Expr; Op Match; R Expr }
-type Unary struct { Op Match; X Expr }
-type Call struct { Fn Expr; Args []Expr }
-type Index struct { X Expr; Index Expr }
-type Member struct { X Expr; Name Ident }
-type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
+type Comma = { L Expr; R Expr }
+type Assign = { L Expr; R Expr }
+type Cond = { Cond Expr; Then Expr; Else Expr }
+type Bin = { L Expr; Op Match; R Expr }
+type Unary = { Op Match; X Expr }
+type Call = { Fn Expr; Args []Expr }
+type Index = { X Expr; Index Expr }
+type Member = { X Expr; Name Ident }
+type Expr ~ Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
     skip ws

@@ -12,9 +12,9 @@ import (
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
-	g, err := syntax.Parse(`type Item struct { Value string; Next *Item; Count int; Flag bool; Values []Match }
+	g, err := syntax.Parse(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []Match }
 type Unused terminal
-type Either = Item | Match
+type Either ~ Item | Match
 rule main = item
 rule item = x:"a" => Item{Value: text($x), Next: nil, Count: 0, Flag: false, Values: list($x)}
 rule unused = "z"`)
@@ -197,8 +197,8 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 }
 
 func TestOutputSchemaAnyAndValueFreeRepeat(t *testing.T) {
-	g, err := syntax.Parse(`type Open = any
-type Bag struct { Values []any }
+	g, err := syntax.Parse(`type Open ~ any
+type Bag = { Values []any }
 rule main = (-"a")*`)
 	if err != nil {
 		t.Fatal(err)

@@ -412,7 +412,11 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 	td := &grammar.TypeDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
 	specStart := p.i
 	switch {
-	case p.accept("struct"):
+	case p.is("struct"):
+		p.errorf("a struct type is defined as type %s = {...}; run pego fix to rewrite type %s struct", name.text, name.text)
+		panic(bail{})
+	case p.is("=") && p.peek(1).kind == tPunct && p.peek(1).text == "{":
+		p.next()
 		open := p.i
 		p.expect("{")
 		p.header = false
@@ -447,11 +451,14 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 	case p.accept("terminal"):
 		p.header = false
 		td.Spec = &grammar.TerminalSpec{}
-	case p.accept("="):
+	case p.is("="):
+		p.errorf("only struct types can be defined with =; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
+		panic(bail{})
+	case p.accept("~"):
 		p.header = false
 		td.Spec = &grammar.AliasSpec{Type: p.typeExpr()}
 	default:
-		p.errorf("expected 'struct', 'terminal', or '=', found %s", p.tok())
+		p.errorf("expected '=', '~', or 'terminal', found %s", p.tok())
 		panic(bail{})
 	}
 	p.sourceNode(td.Spec, specStart)

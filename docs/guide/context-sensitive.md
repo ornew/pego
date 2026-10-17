@@ -356,8 +356,8 @@ package tags
 
 type Name terminal
 type Chars terminal
-type Element struct { Name Name; Children []Content }
-type Content = Element | Chars
+type Element = { Name Name; Children []Content }
+type Content ~ Element | Chars
 
 rule main Element = e:element $$ => $e
 
@@ -407,7 +407,7 @@ pego: 1:12: syntax error: expected "<", "</", [^<]
 // outline.pego
 package outline
 
-type Item struct {
+type Item = {
     Text     Match
     Children []Item
 }
@@ -580,8 +580,8 @@ package doc
 
 type Word terminal
 type Line terminal
-type Heredoc struct { Tag Word; Lines []Line }
-type Command struct { Words []Word; Doc *Heredoc }
+type Heredoc = { Tag Word; Lines []Line }
+type Command = { Words []Word; Doc *Heredoc }
 
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => $x.c)
 

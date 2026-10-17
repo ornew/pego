@@ -14,7 +14,7 @@ func TestSnapshotPositionOverlaysAcrossEdits(t *testing.T) {
 	for _, src := range []string{
 		`rule main = -[ ]* item* $$
 rule item = [a-z]`,
-		`type Item struct { At int; Text string }
+		`type Item = { At int; Text string }
 rule main = -[ ]* item* $$
 rule item = x:[a-z] => Item{At: $x.startPos, Text: text($x)}`,
 	} {

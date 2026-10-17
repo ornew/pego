@@ -503,7 +503,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 		b.WriteString("}\n\n")
 	}
 	for _, name := range t.typeAliases {
-		fmt.Fprintf(b, "// %s is the alias type %s = %s.\n", t.names[name], name, t.info.aliases[name])
+		fmt.Fprintf(b, "// %s is the alias type %s ~ %s.\n", t.names[name], name, t.info.aliases[name])
 		fmt.Fprintf(b, "type %s = %s\n\n", t.names[name], t.goType(t.info.aliases[name]))
 	}
 	// Unions: an interface with a marker method that each member (and Error) implements.
@@ -511,7 +511,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(unionTy)
 		goName := t.names[name]
-		fmt.Fprintf(b, "// %s is the union type %s = %s. Error (left by #recover) also implements it.\n", goName, name, u)
+		fmt.Fprintf(b, "// %s is the union type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
 		fmt.Fprintf(b, "type %s interface{ is%s() }\n\n", goName, goName)
 		members := map[string]bool{"Error": true}
 		for _, a := range u.alts {

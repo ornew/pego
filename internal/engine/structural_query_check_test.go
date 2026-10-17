@@ -10,8 +10,8 @@ import (
 
 const queryShapeGrammar = `type Int terminal
 type Name terminal
-type Pair struct { Key Name; Value *(Int | Name | Pair); Items []Int }
-type Box struct { Inner *Pair }
+type Pair = { Key Name; Value *(Int | Name | Pair); Items []Int }
+type Box = { Inner *Pair }
 rule main = b:box $$ => $b
 rule box Box = "[" p:pair? "]" => Box{Inner: $p}
 rule pair Pair = k:name "=" v:value i:int* => Pair{Key: $k, Value: $v, Items: $i}
@@ -136,15 +136,15 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 // queryRecoveryCases put Error and Missing nodes where declared types expect other nodes.
 var queryRecoveryCases = []genCase{
 	{"query recovery in terminal field", `type Num terminal
-type P struct { V Num; W Num }
+type P = { V Num; W Num }
 rule main = "(" v:(num #recover(skip=[^),]+)) "," w:num ")" $$ => P{V: $v, W: $w}
 rule num Num = [0-9]`, []string{"(1,2)", "(x,2)", "(1,y)"}},
 	{"query recovery in list field", `type Num terminal
-type P struct { L []Num }
+type P = { L []Num }
 rule main = "(" l:(nums #recover(skip=[^)]+)) ")" $$ => P{L: $l}
 rule nums []Num = (num #recover(skip=[a-z]))+
 rule num Num = [0-9]`, []string{"(12)", "(x)", "(1a2)"}},
-	{"query missing token", `type P struct { S Match }
+	{"query missing token", `type P = { S Match }
 rule main = "(" s:semi ")" $$ => P{S: $s}
 rule semi = ";" #missing`, []string{"(;)", "()"}},
 }
@@ -190,9 +190,9 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 // TestStructuralQueryErrorSize checks that the reason a deeply nested pattern over unions matches
 // nothing stays small.
 func TestStructuralQueryErrorSize(t *testing.T) {
-	src := "type Num terminal\ntype E = A | B | C | D | Num\n"
+	src := "type Num terminal\ntype E ~ A | B | C | D | Num\n"
 	for _, n := range []string{"A", "B", "C", "D"} {
-		src += "type " + n + " struct { X E }\n"
+		src += "type " + n + " = { X E }\n"
 	}
 	src += "rule main E = e\nrule e E = n:[0-9] => Num{text($n)}\n"
 	s, err := compile(t, src).OutputSchemaPrototype("main", true)

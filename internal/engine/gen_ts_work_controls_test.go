@@ -8,7 +8,7 @@ import (
 func TestGeneratedTSWorkControlFoundation(t *testing.T) {
 	src := `type Word terminal
 
-type Bag struct {
+type Bag = {
     Items []Word
 }
 

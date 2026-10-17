@@ -9,13 +9,13 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const nilActionStream = `type V struct { N int }
+const nilActionStream = `type V = { N int }
 rule main = item* #stream $$
 rule item = "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)`
 
 var actionLifecycleCases = []genCase{
 	{"nil allocating action", nilActionStream, []string{"", "a", "aaa", "ab"}},
-	{"nil OperatorsRule action", `type V struct { N int }
+	{"nil OperatorsRule action", `type V = { N int }
 rule main = e $$
 rule e = operators {
     operand "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)

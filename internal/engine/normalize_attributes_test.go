@@ -15,8 +15,8 @@ func TestNormalizationCopyOnChangeParity(t *testing.T) {
 		`rule main = ("a" #repeat(1, 3) #atomic @error("as")) "b" $$`,
 		`rule main = ("a" #atomic ";") #recover(skip=([^;]+ ";")) $$`,
 		`rule main = "a"* #stream $$`,
-		`type Number struct { Text (string) }
-type Alias = (Number)
+		`type Number = { Text (string) }
+type Alias ~ (Number)
 rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (text($n))})`,
 		`rule main = operators {
     skip " "*

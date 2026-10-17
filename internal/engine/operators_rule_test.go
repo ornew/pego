@@ -57,12 +57,12 @@ func TestOperatorsRulePositions(t *testing.T) {
 }
 
 const ast = `type Num terminal
-type Bin struct { L Expr; Op Match; R Expr }
-type Neg struct { X Expr }
-type Cond struct { C Expr; T Expr; F Expr }
-type Call struct { Fn Expr; Args []Expr }
-type Index struct { X Expr; I Expr }
-type Expr = Num | Bin | Neg | Cond | Call | Index | Match
+type Bin = { L Expr; Op Match; R Expr }
+type Neg = { X Expr }
+type Cond = { C Expr; T Expr; F Expr }
+type Call = { Fn Expr; Args []Expr }
+type Index = { X Expr; I Expr }
+type Expr ~ Num | Bin | Neg | Cond | Call | Index | Match
 
 rule main = x:e $$ => $x
 rule num Num = [0-9]+
@@ -118,8 +118,8 @@ func TestOperatorsRulePositionsWithActions(t *testing.T) {
 }
 
 func TestOperatorsRuleJuxtaposition(t *testing.T) {
-	check(t, `type App struct { F Expr; X Expr }
-type Expr = App | Match
+	check(t, `type App = { F Expr; X Expr }
+type Expr ~ App | Match
 rule main = x:e $$ => $x
 rule e Expr = operators {
     skip " "*
@@ -178,10 +178,10 @@ rule e = operators {
 }
 
 const restrictedPrefix = `type Atom terminal
-type Prefix struct { Op Match; X Expr }
-type Binary struct { L Expr; Op Match; R Expr }
-type Postfix struct { X Expr; Op Match }
-type Expr = Atom | Prefix | Binary | Postfix
+type Prefix = { Op Match; X Expr }
+type Binary = { L Expr; Op Match; R Expr }
+type Postfix = { X Expr; Op Match }
+type Expr ~ Atom | Prefix | Binary | Postfix
 
 rule main = x:level(e, mul) $$ => $x
 rule atom Atom = "é" / "x" / "y" / "z"

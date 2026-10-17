@@ -43,7 +43,7 @@ func TestTokenizeSkipsInvalidCharacters(t *testing.T) {
 }
 
 func TestParsePartial(t *testing.T) {
-	src := "rule a = b\nrule broken = (\nrule b = \"x\"\ntype T struct { A }\ntype U terminal\n"
+	src := "rule a = b\nrule broken = (\nrule b = \"x\"\ntype T = { A }\ntype U terminal\n"
 	g, errs := ParsePartial(src)
 	if len(errs) != 2 {
 		t.Fatalf("errors: %v", errs)
@@ -92,7 +92,7 @@ func TestUnicodeIdentifiersAreRejected(t *testing.T) {
 		`package 名前; rule main = "x"`,
 		`rule 名前 = "x"`,
 		`type Café terminal`,
-		`type T struct { 名前 Match }`,
+		`type T = { 名前 Match }`,
 		`rule main = 名前`,
 		`rule main = 名:"x"`,
 		`rule main = {名前 := 1}`,
@@ -120,7 +120,7 @@ func TestUnicodeIdentifiersAreRejected(t *testing.T) {
 // start no token without recursing per character (which overflowed the stack), and reports the
 // run as one error.
 func TestLongRunsOfInvalidCharacters(t *testing.T) {
-	junk := strings.Repeat("`~😀", 1<<19) // 2M characters
+	junk := strings.Repeat("`'😀", 1<<19) // 2M characters
 	src := "rule a = \"x\"\n" + junk + "\nrule b = \"y\""
 	g, errs := ParsePartial(src)
 	if len(errs) != 1 || errs[0].Pos != (grammar.Pos{Line: 2, Col: 1}) || !strings.HasPrefix(errs[0].Msg, "unexpected characters") {
@@ -157,7 +157,7 @@ func TestDeepNesting(t *testing.T) {
 		"rule a = b {" + strings.Repeat("!", n) + "x",
 		"rule a = b => foldl(" + strings.Repeat("(x) => foldl(", n),
 		"rule a " + strings.Repeat("[]", n) + "T = b",
-		"type T = " + strings.Repeat("(*", n) + "U",
+		"type T ~ " + strings.Repeat("(*", n) + "U",
 	} {
 		_, errs := ParsePartial(src + "\nrule ok = \"x\"")
 		found := false
@@ -185,7 +185,7 @@ func TestErrorEnd(t *testing.T) {
 		{`rule a = "😀\q"`, 1, 12, 14, `unknown escape sequence \q`},
 		{`rule a = [a\9]`, 1, 12, 14, `unknown escape sequence \9`},
 		{`rule a = "\u{zz}"`, 1, 11, 17, `invalid unicode escape \uzz`},
-		{"rule a = \"x\" `~` b", 1, 14, 17, "unexpected characters \"`~`\""},
+		{"rule a = \"x\" `'` b", 1, 14, 17, "unexpected characters \"`'`\""},
 	} {
 		_, errs := ParsePartial(tc.src)
 		if len(errs) != 1 {

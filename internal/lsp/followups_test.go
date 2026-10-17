@@ -55,8 +55,8 @@ func TestCompletionCurrentContextsProtocol(t *testing.T) {
 		source       string
 		want, absent []string
 	}{
-		{"type Box struct { Text string; Count int }\nrule main = \"a\" => Box{|}", []string{"Text", "Count"}, []string{"len", "rule"}},
-		{"type Box struct { Text string; Count int }\nrule main = \"a\" => Box{Text: \"a\", |}", []string{"Count"}, []string{"Text", "len"}},
+		{"type Box = { Text string; Count int }\nrule main = \"a\" => Box{|}", []string{"Text", "Count"}, []string{"len", "rule"}},
+		{"type Box = { Text string; Count int }\nrule main = \"a\" => Box{Text: \"a\", |}", []string{"Count"}, []string{"Text", "len"}},
 		{"rule main = \"a\" #recover(|)", []string{"skip"}, []string{"len", "main"}},
 		{"rule main = \"a\" #recover(skip=|)", []string{"main"}, []string{"len", "skip"}},
 		{"rule expr = operators {\n operand [0-9]\n level sum { infix left \"+\" }\n level product { infix left \"*\" }\n}\nrule main = level(expr, |)", []string{"sum", "product"}, []string{"expr", "len", "rule"}},

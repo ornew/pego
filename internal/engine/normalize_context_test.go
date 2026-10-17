@@ -88,8 +88,8 @@ func TestNormalizationContextParity(t *testing.T) {
 		`rule main = ("a" #repeat(1, 3) #atomic @error("as")) "b" $$`,
 		`rule main = ("a" #atomic ";") #recover(skip=([^;]+ ";")) $$`,
 		`rule main = {x := (1); (x == 1)} "a"`,
-		`type T struct { Text (string) }
-type Alias = (T)
+		`type T = { Text (string) }
+type Alias ~ (T)
 rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 		`rule main = operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" } }`,
 		`rule main = "a" @error(, "bad")`,

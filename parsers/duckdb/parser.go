@@ -7604,25 +7604,25 @@ type With struct {
 	CTEs      []*CTE
 }
 
-// Expr is the union type Expr = Number | StringLit | BitLit | BoolLit | NullLit | Param | Paren | ColumnRef | DefaultExpr | PositionalRef | Star | ColumnsExpr | UnpackExpr | Binary | Unary | PostfixOp | Not | IsExpr | DistinctFrom | IsOf | Between | In | Like | AnyAll | AtTimeZone | Collate | Cast | Case | Row | ListLit | ArrayLit | StructLit | MapLit | ListComp | Lambda | Subquery | Exists | ArraySubquery | Grouping | TypedLit | IntervalLit | NamedArg | FuncCall | SpecialCall | Indirection | GroupingSet. Error (left by #recover) also implements it.
+// Expr is the union type Expr ~ Number | StringLit | BitLit | BoolLit | NullLit | Param | Paren | ColumnRef | DefaultExpr | PositionalRef | Star | ColumnsExpr | UnpackExpr | Binary | Unary | PostfixOp | Not | IsExpr | DistinctFrom | IsOf | Between | In | Like | AnyAll | AtTimeZone | Collate | Cast | Case | Row | ListLit | ArrayLit | StructLit | MapLit | ListComp | Lambda | Subquery | Exists | ArraySubquery | Grouping | TypedLit | IntervalLit | NamedArg | FuncCall | SpecialCall | Indirection | GroupingSet. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// ParenContent is the union type ParenContent = Select | ParenQuery | ShowStmt. Error (left by #recover) also implements it.
+// ParenContent is the union type ParenContent ~ Select | ParenQuery | ShowStmt. Error (left by #recover) also implements it.
 type ParenContent interface{ isParenContent() }
 
-// QueryBody is the union type QueryBody = SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery. Error (left by #recover) also implements it.
+// QueryBody is the union type QueryBody ~ SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery. Error (left by #recover) also implements it.
 type QueryBody interface{ isQueryBody() }
 
-// Statement is the union type Statement = Select | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt | CreateTableStmt | CreateTableAsStmt | CreateViewStmt | CreateIndexStmt | CreateSchemaStmt | CreateSequenceStmt | CreateTypeStmt | CreateMacroStmt | CreateSecretStmt | AlterTableStmt | AlterSequenceStmt | AlterDatabaseStmt | AlterObjectSchemaStmt | RenameStmt | DropStmt | DropSecretStmt | CopyStmt | CopyDatabaseStmt | ExportStmt | ImportStmt | AttachStmt | DetachStmt | UseStmt | LoadStmt | PragmaStmt | SetStmt | ResetStmt | ShowStmt | ExplainStmt | PrepareStmt | ExecuteStmt | DeallocateStmt | TransactionStmt | VacuumStmt | AnalyzeStmt | CheckpointStmt | CallStmt | CommentStmt | UpdateExtensionsStmt. Error (left by #recover) also implements it.
+// Statement is the union type Statement ~ Select | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt | CreateTableStmt | CreateTableAsStmt | CreateViewStmt | CreateIndexStmt | CreateSchemaStmt | CreateSequenceStmt | CreateTypeStmt | CreateMacroStmt | CreateSecretStmt | AlterTableStmt | AlterSequenceStmt | AlterDatabaseStmt | AlterObjectSchemaStmt | RenameStmt | DropStmt | DropSecretStmt | CopyStmt | CopyDatabaseStmt | ExportStmt | ImportStmt | AttachStmt | DetachStmt | UseStmt | LoadStmt | PragmaStmt | SetStmt | ResetStmt | ShowStmt | ExplainStmt | PrepareStmt | ExecuteStmt | DeallocateStmt | TransactionStmt | VacuumStmt | AnalyzeStmt | CheckpointStmt | CallStmt | CommentStmt | UpdateExtensionsStmt. Error (left by #recover) also implements it.
 type Statement interface{ isStatement() }
 
-// Step is the union type Step = FieldStep | IndexStep | SliceStep. Error (left by #recover) also implements it.
+// Step is the union type Step ~ FieldStep | IndexStep | SliceStep. Error (left by #recover) also implements it.
 type Step interface{ isStep() }
 
-// TableElement is the union type TableElement = ColumnDef | TableConstraint | TableLike. Error (left by #recover) also implements it.
+// TableElement is the union type TableElement ~ ColumnDef | TableConstraint | TableLike. Error (left by #recover) also implements it.
 type TableElement interface{ isTableElement() }
 
-// TableRef is the union type TableRef = BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef. Error (left by #recover) also implements it.
+// TableRef is the union type TableRef ~ BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef. Error (left by #recover) also implements it.
 type TableRef interface{ isTableRef() }
 
 func (*AlterDatabaseStmt) isStatement()     {}

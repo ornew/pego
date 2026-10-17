@@ -17,7 +17,7 @@ func TestGeneratedGoGraphWork(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Leaf terminal
 
-type Bag struct {
+type Bag = {
     Items  []Leaf
     Nested [][]Leaf
 }

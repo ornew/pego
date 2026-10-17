@@ -251,8 +251,8 @@ This is the idiom of the calculator example.
 
 ### 4.1 Structs, Unions and Terminal Types
 
-A **struct type** is a node type with named fields; an action builds its nodes with struct constructors such as `T{Field: value}`. A **union**
-(`type T = A | B`) is the type of a value that is one of several types, much like a Go interface. A **terminal type** (`type T terminal`)
+A **struct type** (`type T = {...}`) is a node type with named fields; an action builds its nodes with struct constructors such as `T{Field: value}`. A **union**
+(`type T ~ A | B`, an alias of a union) is the type of a value that is one of several types, much like a Go interface. A **terminal type** (`type T terminal`)
 is a node type for tokens: a rule declared with it produces a terminal of that type holding the matched text,
 whatever its body looks like.
 
@@ -260,8 +260,8 @@ whatever its body looks like.
 // assign-ast.pego
 type Name terminal
 type Number terminal
-type Value = Name | Number
-type Assign struct {
+type Value ~ Name | Number
+type Assign = {
     Name  Name
     Value Value
 }
@@ -290,8 +290,8 @@ uppercase letter; rule names are in a separate namespace, so `rule name Name = .
 `Operator`, `Error` and `Missing` are predefined node types, and `int`, `string`, `bool`, `node` and `terminal` are built in (a
 rule's value must be a node, but struct fields and action expressions may also hold `int`, `string` and `bool`).
 
-Aliases preserve the underlying type: with `type Token = Name`, a rule declared
-as `Token` produces a `Name` terminal. With `type Binding = Assign`,
+Aliases preserve the underlying type: with `type Token ~ Name`, a rule declared
+as `Token` produces a `Name` terminal. With `type Binding ~ Assign`,
 `Binding{...}` produces an `Assign` node. Chained aliases and unions reduced
 to one member follow the same rule; an alias does not create a distinct node
 type.
@@ -305,14 +305,14 @@ a value that may be `nil` cannot go into a plain `T` field.
 // decls.pego
 type Ident terminal
 type Num terminal
-type Lit = Ident | Num
+type Lit ~ Ident | Num
 
-type Decl struct {
+type Decl = {
     Name  Ident
     Value *Lit // optional: nil when there is no initializer
 }
 
-type Program struct { Decls []Decl }
+type Program = { Decls []Decl }
 
 rule main Program = ds:decls $$ => Program{Decls: $ds}
 rule decls = ds:(-ws d:decl)* -ws => map($ds, (x) => $x.d)
@@ -358,7 +358,7 @@ type shows up in the error messages, for example when a field expects a `Match` 
 
 ```pego
 // field-type.pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
 rule key = [a-z]+
 rule value = [0-9]+ #atomic
@@ -443,8 +443,8 @@ positions:
 // positional.pego
 type Name terminal
 type Number terminal
-type Value = Name | Number
-type Assign struct { Name Name; Value Value }
+type Value ~ Name | Number
+type Assign = { Name Name; Value Value }
 
 rule assign Assign = name -ws -"=" -ws value -";" => Assign{Name: $1, Value: $2}
 rule value Value = number / name
@@ -476,7 +476,7 @@ mismatches are compile-time errors:
 // field-errors.pego
 type Name terminal
 type Number terminal
-type Assign struct { Name Name; Value Number }
+type Assign = { Name Name; Value Number }
 
 rule a Assign = k:name "=" v:name => Assign{Name: $k, Value: $v}
 rule b Assign = k:name "=" v:number => Assign{Name: $k, Valu: $v}
@@ -500,7 +500,7 @@ including items in nested lists. Nil is accepted only for an optional element
 Type; an empty typed list is still a non-nil `List`.
 
 ```pego
-type NameNode struct { Name string }
+type NameNode = { Name string }
 rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
 rule names []NameNode = a:name "," b:name => []NameNode{$a, $b}
 rule emptyNames []NameNode = "" => []NameNode{}
@@ -529,7 +529,7 @@ Struct fields can hold integers, strings and booleans too, which is how you atta
 
 ```pego
 // derived.pego
-type Word struct {
+type Word = {
     Text   string
     Length int
     Long   bool
@@ -572,7 +572,7 @@ fails and a surrounding value action aborts the parse.
 
 ```pego
 // builtins.pego
-type Call struct {
+type Call = {
     Name  string
     Arity int
     Raw   string
@@ -596,8 +596,8 @@ pair the key with every item:
 ```pego
 // outer-capture.pego
 type Ident terminal
-type Pair struct { A Ident; B Ident }
-type Pairs struct { Items []Pair }
+type Pair = { A Ident; B Ident }
+type Pairs = { Items []Pair }
 
 rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: $r.x})}
 rule ident Ident = [a-z]+
@@ -683,12 +683,12 @@ import (
 
 const src = `type Num terminal
 type Op terminal
-type Bin struct {
+type Bin = {
     Left  Expr
     Op    Op
     Right Expr
 }
-type Expr = Num | Bin
+type Expr ~ Num | Bin
 
 rule sum Expr =  first:num rest:(-ws op:op -ws n:num)*
     => foldl($first, $rest, (acc, i) => Bin{Left: $acc, Op: $i.op, Right: $i.n})
@@ -764,12 +764,12 @@ A repetition gives a flat list; a fold turns it into the nested tree. Capture th
 // sum.pego
 type Num terminal
 type Op terminal
-type Bin struct {
+type Bin = {
     Left  Expr
     Op    Op
     Right Expr
 }
-type Expr = Num | Bin
+type Expr ~ Num | Bin
 
 rule main Expr = e:sum $$ => $e
 rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: $acc, Op: $i.op, Right: $i.n})
@@ -789,7 +789,7 @@ Num"7"@num
 ```
 
 Notes: the accumulator starts as a `Num` and becomes a `Bin`, so its type is widened to the union of both, and the
-declared `Expr = Num | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
+declared `Expr ~ Num | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
 initial value unchanged, which is why `7` stays a bare `Num`. For several precedence levels you would write one such
 rule per level; for that case also look at [Operators Rule](expressions.md).
 
@@ -802,12 +802,12 @@ from the right, starting with the last operand:
 // pow.pego
 type Num terminal
 type Op terminal
-type Bin struct {
+type Bin = {
     Left  Expr
     Op    Op
     Right Expr
 }
-type Expr = Num | Bin
+type Expr ~ Num | Bin
 
 rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: $i.l, Op: $i.op, Right: $acc})
 rule num Num = [0-9]+
@@ -836,11 +836,11 @@ for the rule type and the field:
 ```pego
 // path.pego
 type Ident terminal
-type Member struct {
+type Member = {
     X    Path
     Name Ident
 }
-type Path = Ident | Member
+type Path ~ Ident | Member
 
 rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: $acc, Name: $i.n})
 rule ident Ident = [a-z]+
@@ -863,7 +863,7 @@ joins them. A list that is optional (`args?`) works with `concat` too, because a
 ```pego
 // args.pego
 type Ident terminal
-type Call struct {
+type Call = {
     Fn   Ident
     Args []Ident
 }
@@ -893,7 +893,7 @@ pego parse -g args.pego -s args_cst -f sexpr -i 'a, b, c'
 ```pego
 // args-optional.pego
 type Ident terminal
-type Call struct { Fn Ident; Args []Ident }
+type Call = { Fn Ident; Args []Ident }
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
 rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => $r.x))
 rule ident Ident = [a-z]+
@@ -922,11 +922,11 @@ contain the data. Four habits get you there:
 // config.pego
 type Ident terminal
 type Value terminal
-type Entry struct {
+type Entry = {
     Key   Ident
     Value Value
 }
-type Config struct { Entries []Entry }
+type Config = { Entries []Entry }
 
 rule main Config = es:entries ws $$ => Config{Entries: $es}
 rule entries = es:(-ws e:entry)* => map($es, (x) => $x.e)

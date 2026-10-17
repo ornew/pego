@@ -29,14 +29,14 @@ func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 	})
 }
 
-const typedFrameLayoutLRWorkload = `type Doc struct { Items []Match; N int; Missing *Match }
+const typedFrameLayoutLRWorkload = `type Doc = { Items []Match; N int; Missing *Match }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = _|_ ignored:"z" #atomic / previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x), N: len($items), Missing: $ignored}
 `
 
 const typedFrameLayoutOperatorsRuleWorkload = `type Atom terminal
-type Post struct { X Expr; Items []Match; N int; Missing *Match }
-type Expr = Atom | Post
+type Post = { X Expr; Items []Match; N int; Missing *Match }
+type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
     skip " "*

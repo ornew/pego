@@ -119,7 +119,7 @@ type StructSpec struct {
 	SourceInfo `json:"source,omitempty"`
 	Fields     []*Field `json:"fields"`
 
-	// OneLine writes the struct on one line ("struct { A T; B U }").
+	// OneLine writes the struct on one line ("= { A T; B U }").
 	OneLine bool `json:"-"`
 	// CloseBreak holds the comments before the closing brace.
 	CloseBreak *LineBreak `json:"-"`
@@ -134,7 +134,7 @@ type Field struct {
 	Break *LineBreak `json:"-"`
 }
 
-// AliasSpec is a type alias, including an alias of a union type.
+// AliasSpec is a type alias (type Name ~ Type), including an alias of a union type.
 type AliasSpec struct {
 	SourceInfo `json:"source,omitempty"`
 	Type       TypeExpr `json:"type"`

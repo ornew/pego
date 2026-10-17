@@ -84,7 +84,7 @@ rule type_def_body = (
 )
 rule type_spec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec = (
-    "struct" -word_end #cut "{" {ml := false} field_spec* comments
+    "=" -ws "{" #cut {ml := false} field_spec* comments
     -"}"
 )
 rule field_spec = !(comments "}") field
@@ -93,7 +93,7 @@ rule field = (
     type_expr field_end
 )
 rule terminal_spec = "terminal" !ident_char
-rule type_alias_spec = "=" -ws type_expr
+rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
     operand ident

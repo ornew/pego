@@ -6520,16 +6520,16 @@ type ValueSpec struct {
 	Values []Expr
 }
 
-// Decl is the union type Decl = GenDecl | FuncDecl. Error (left by #recover) also implements it.
+// Decl is the union type Decl ~ GenDecl | FuncDecl. Error (left by #recover) also implements it.
 type Decl interface{ isDecl() }
 
-// Expr is the union type Expr = Ident | IntLit | FloatLit | ImagLit | CharLit | StringLit | Ellipsis | CompositeLit | FuncLit | ParenExpr | SelectorExpr | IndexExpr | IndexListExpr | SliceExpr | TypeAssertExpr | CallExpr | StarExpr | UnaryExpr | BinaryExpr | KeyValueExpr | ArrayType | StructType | FuncType | InterfaceType | MapType | ChanType. Error (left by #recover) also implements it.
+// Expr is the union type Expr ~ Ident | IntLit | FloatLit | ImagLit | CharLit | StringLit | Ellipsis | CompositeLit | FuncLit | ParenExpr | SelectorExpr | IndexExpr | IndexListExpr | SliceExpr | TypeAssertExpr | CallExpr | StarExpr | UnaryExpr | BinaryExpr | KeyValueExpr | ArrayType | StructType | FuncType | InterfaceType | MapType | ChanType. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// Spec is the union type Spec = ImportSpec | ValueSpec | TypeSpec. Error (left by #recover) also implements it.
+// Spec is the union type Spec ~ ImportSpec | ValueSpec | TypeSpec. Error (left by #recover) also implements it.
 type Spec interface{ isSpec() }
 
-// Stmt is the union type Stmt = DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | CaseClause | SwitchStmt | TypeSwitchStmt | CommClause | SelectStmt | ForStmt | RangeStmt. Error (left by #recover) also implements it.
+// Stmt is the union type Stmt ~ DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | CaseClause | SwitchStmt | TypeSwitchStmt | CommClause | SelectStmt | ForStmt | RangeStmt. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
 func (*ArrayType) isExpr()      {}

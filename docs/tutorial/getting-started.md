@@ -274,7 +274,7 @@ An **action** builds the value of a rule yourself. It is written after `=>` insi
 declared with `type`. This is the grammar from the README (`kv.pego`, final version):
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
@@ -390,14 +390,14 @@ type Key terminal
 type Number terminal
 type String terminal
 type Bool terminal
-type Value = Number | String | Bool
+type Value ~ Number | String | Bool
 
-type Entry struct {
+type Entry = {
     Key   Key
     Value Value
 }
 
-type Config struct {
+type Config = {
     Entries []Entry
 }
 
@@ -431,9 +431,9 @@ What is new:
 - `type Key terminal` declares a **terminal type**: a node type for leaves of the tree. A rule declared with a terminal
   type (`rule key Key = [a-z_]+`) produces a single terminal of that type holding the matched text, so there is no
   need for `#atomic`. The text of a `String` includes its quotes, since it is the text the rule matched.
-- `type Value = Number | String | Bool` is a **union type**: a value of any one of the members, much like a Go
-  interface. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
-- `type Entry struct { ... }` declares a **struct type**; fields are separated by newlines or semicolons. Field types can be
+- `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
+  interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
+- `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be
   lists (`[]Entry`), optional values (`*T`), or unions.
 - `rule name [Type] = expression` states the optional type of a rule. You can omit it and PEGO infers the type from the body, but
   declaring the types of the rules that build your tree documents them and keeps mistakes close to where they happen.
@@ -534,8 +534,8 @@ per level. PEGO offers two tools, **Operators Rule** and **left recursion**. Sta
 
 ```pego
 type Number terminal
-type Binary struct { Left Expr; Op Match; Right Expr }
-type Expr = Number | Binary
+type Binary = { Left Expr; Op Match; Right Expr }
+type Expr ~ Number | Binary
 
 rule main Expr = e:expr $$ => $e
 
@@ -579,9 +579,9 @@ of the `level` blocks is the precedence table, from loosest to tightest:
 
 ```pego
 type Number terminal
-type Binary struct { Left Expr; Op Match; Right Expr }
-type Unary struct { Op Match; X Expr }
-type Expr = Number | Binary | Unary
+type Binary = { Left Expr; Op Match; Right Expr }
+type Unary = { Op Match; X Expr }
+type Expr ~ Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -631,8 +631,8 @@ rule per level, each defined in terms of the next tighter one:
 
 ```pego
 type Number terminal
-type Binary struct { Left Expr; Op Match; Right Expr }
-type Expr = Number | Binary
+type Binary = { Left Expr; Op Match; Right Expr }
+type Expr ~ Number | Binary
 
 rule main Expr = ws e:expr ws $$ => $e
 
@@ -733,7 +733,7 @@ pego: config.pego: start rule nosuch is not defined
 rewrites them in place. For a grammar written in a hurry:
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 // a key=value pair
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
@@ -744,7 +744,7 @@ pego fmt messy.pego        # prints the formatted source
 ```
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 // a key=value pair
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```

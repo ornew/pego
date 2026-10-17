@@ -282,9 +282,9 @@ func describeType(t *grammar.TypeDef) typeInfo {
 		for i, f := range s.Fields {
 			fields[i] = f.Name + " " + grammar.FormatType(f.Type)
 		}
-		ti.Spec = "struct { " + strings.Join(fields, ", ") + " }"
+		ti.Spec = "{ " + strings.Join(fields, "; ") + " }"
 		if len(fields) == 0 {
-			ti.Spec = "struct {}"
+			ti.Spec = "{}"
 		}
 	case *grammar.AliasSpec:
 		ti.Kind = "alias"

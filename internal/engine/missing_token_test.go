@@ -285,8 +285,8 @@ func TestMissingTokensValidationAndRepresentations(t *testing.T) {
 rule main = "a"`); !strings.Contains(message, "type Missing is reserved") {
 		t.Fatal(message)
 	}
-	const source = `type Item = Match | Missing
-type Root struct { Token Item }
+	const source = `type Item ~ Match | Missing
+type Root = { Token Item }
 rule main Root = x:(";" #missing) => Root{Token: $x}`
 	prog := compile(t, source)
 	n, _ := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 1}, 1)
@@ -427,7 +427,7 @@ rule inner = ";" #missing`)
 	}
 	// Explicitly inserting a value does not change how a successful plain
 	// parse runs its unrelated action, while recognition may skip that action.
-	actions := compile(t, `type R struct { N int }
+	actions := compile(t, `type R = { N int }
 rule main = ";" #missing => R{N: 1/0}`)
 	if n, err := actions.ParseWith("main", "", ParseOptions{MissingTokens: 2}); n != nil || err == nil {
 		t.Fatal("ordinary action was skipped", n, err)
@@ -494,7 +494,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 }
 
 func TestMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
-	prog := compile(t, `type Item = Missing
+	prog := compile(t, `type Item ~ Missing
 rule main = "a"`)
 	if n, err := prog.Parse("main", "a"); n == nil || err != nil {
 		t.Fatal(n, err)

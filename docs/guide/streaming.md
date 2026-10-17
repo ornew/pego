@@ -48,7 +48,7 @@ function one element at a time, and forgotten.
 ```pego
 package kv
 
-type Pair struct { Key Key; Value Value }
+type Pair = { Key Key; Value Value }
 type Key terminal
 type Value terminal
 
@@ -83,7 +83,7 @@ import (
 
 const grammar = `package kv
 
-type Pair struct { Key Key, Value Value }
+type Pair = { Key Key; Value Value }
 type Key terminal
 type Value terminal
 
@@ -496,7 +496,7 @@ import (
 var grammars = map[string]string{
 	"cst": `rule main =  item* #stream $$
 rule item =  ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" `,
-	"action": `type Pair struct { Key Key, Value Value }
+	"action": `type Pair = { Key Key; Value Value }
 type Key terminal
 type Value terminal
 rule main =  item* #stream $$
@@ -683,9 +683,9 @@ import (
 
 const grammar = `package kv
 
-type Header struct { Version Version }
+type Header = { Version Version }
 type Version terminal
-type Pair struct { Key Key, Value Value }
+type Pair = { Key Key; Value Value }
 type Key terminal
 type Value terminal
 

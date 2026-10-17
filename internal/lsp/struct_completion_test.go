@@ -10,15 +10,15 @@ func TestStructDeclarationCompletionProtocol(t *testing.T) {
 		name, source string
 		fieldName    bool
 	}{
-		{"empty", "type Box struct {|}", true},
-		{"semicolon", "type Box struct { Old Match; |}", true},
-		{"partial-name", "type Box struct { Na|}", true},
-		{"partial-name-after-semicolon", "type Box struct { Old Match; Na|}", true},
-		{"block-comment", "type Box struct { /* field documentation */ |}", true},
-		{"field-type", "type Box struct { Name |}", false},
-		{"partial-field-type", "type Box struct { Name Ma|}", false},
-		{"grouped-field-type", "type Box struct { Name (\n Ma|) }", false},
-		{"alias", "type Box = Ma|", false},
+		{"empty", "type Box = {|}", true},
+		{"semicolon", "type Box = { Old Match; |}", true},
+		{"partial-name", "type Box = { Na|}", true},
+		{"partial-name-after-semicolon", "type Box = { Old Match; Na|}", true},
+		{"block-comment", "type Box = { /* field documentation */ |}", true},
+		{"field-type", "type Box = { Name |}", false},
+		{"partial-field-type", "type Box = { Name Ma|}", false},
+		{"grouped-field-type", "type Box = { Name (\n Ma|) }", false},
+		{"alias", "type Box ~ Ma|", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assertStructCompletion(t, tc.source, tc.fieldName, true)
@@ -26,13 +26,13 @@ func TestStructDeclarationCompletionProtocol(t *testing.T) {
 	}
 	for _, newline := range []string{"\n", "\r\n", "\r"} {
 		t.Run("newline-"+strings.ReplaceAll(newline, "\r", "CR"), func(t *testing.T) {
-			assertStructCompletion(t, "type Box struct { Old Match"+newline+"|}", true, true)
-			assertStructCompletion(t, "type Box struct { Old Match"+newline+"Na|}", true, true)
-			assertStructCompletion(t, "type Box struct {"+newline+"// field documentation"+newline+"|}", true, true)
+			assertStructCompletion(t, "type Box = { Old Match"+newline+"|}", true, true)
+			assertStructCompletion(t, "type Box = { Old Match"+newline+"Na|}", true, true)
+			assertStructCompletion(t, "type Box = {"+newline+"// field documentation"+newline+"|}", true, true)
 		})
 	}
 	t.Run("without-snippets", func(t *testing.T) {
-		assertStructCompletion(t, "type Box struct {|}", true, false)
+		assertStructCompletion(t, "type Box = {|}", true, false)
 	})
 }
 
@@ -88,7 +88,7 @@ func TestStructDeclarationCompletionPreservesConstructors(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 	const uri = "file:///constructor-completion.pego"
-	source := "type Box struct { Name Match; Count int }\nrule main = \"a\" => Box{Name: $1, |}"
+	source := "type Box = { Name Match; Count int }\nrule main = \"a\" => Box{Name: $1, |}"
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)
 	c.open(uri, source)

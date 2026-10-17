@@ -56,7 +56,7 @@ func (a *analysis) contextualItemsControlled(prev, off int, control *renderContr
 		}
 		return nil, false
 	}
-	if a.isIdent(name, "struct") {
+	if a.isPunct(name, "=") {
 		typeName := a.previousSignificantTokenControlled(name-1, control)
 		keyword := a.previousSignificantTokenControlled(typeName-1, control)
 		if typeName >= 0 && a.toks[typeName].Kind == syntax.TokenIdent && a.isIdent(keyword, "type") && a.isDefKeyword(keyword) {

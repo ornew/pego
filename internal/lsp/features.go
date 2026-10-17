@@ -238,7 +238,7 @@ func typeSymbolKindControlled(td *grammar.TypeDef, control *renderControl) (int,
 	case *grammar.TerminalSpec:
 		return symbolKindString, "terminal"
 	case *grammar.AliasSpec:
-		return symbolKindInterface, "= " + control.formatType(spec.Type)
+		return symbolKindInterface, "~ " + control.formatType(spec.Type)
 	}
 	return symbolKindClass, ""
 }

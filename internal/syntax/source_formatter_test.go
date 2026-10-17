@@ -12,9 +12,9 @@ import (
 func TestFormatInteriorCommentOwners(t *testing.T) {
 	for _, src := range []string{
 		`rule main = "x" => int(/* argument */ "1")`,
-		`type A struct { X int }
+		`type A = { X int }
 rule main = "x" => A{X: /* value */ 1}`,
-		`type A struct { X int }
+		`type A = { X int }
 rule main = "x" => A{/* field */ X: 1}`,
 		`rule main = "x" => 1 + /* right */ 2`,
 		`rule main = {x := /* assignment */ 1} "x"`,

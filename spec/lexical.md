@@ -153,7 +153,7 @@ _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 | `=>` | Whole-rule or Operators Rule action in those Definition Statement positions; lambda arrow inside an action |
 | `:=` | Predicate variable definition |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `+`, `-`, `*`, `/`, `%` | Action and predicate operators |
-| `=`, `|`, `[]`, `*` | Type definitions and type forms (`type A = B | C`, `[]T`, `*T`) |
+| `=`, `~`, `|`, `[]`, `*` | Type definitions, aliases and type forms (`type A = {...}`, `type A ~ B | C`, `[]T`, `*T`) |
 | `.` | Action field access |
 | `@` | Postfix expression attribute |
 | `#` | Behavioral pragma |

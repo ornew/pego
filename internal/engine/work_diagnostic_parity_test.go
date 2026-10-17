@@ -38,7 +38,7 @@ rule wide = ("é" "0" / "é" "1") #atomic`,
 		},
 		{
 			name: "recovery succeeds",
-			grammar: `type Doc struct {
+			grammar: `type Doc = {
     Text *Match
     N    int
 }
@@ -51,7 +51,7 @@ rule item Doc = v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} 
 		},
 		{
 			name: "recovery skip fails",
-			grammar: `type Doc struct {
+			grammar: `type Doc = {
     Text Match
     N    int
 }
@@ -81,7 +81,7 @@ rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`,
 		},
 		{
 			name: "left recursive recovery",
-			grammar: `type Doc struct {
+			grammar: `type Doc = {
     Text Match
 }
 
@@ -95,12 +95,12 @@ rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"`,
 			name: "OperatorsRule operator recovery",
 			grammar: `type Atom terminal
 
-type Post struct {
+type Post = {
     X    Expr
     Text Match
 }
 
-type Expr = Atom | Post
+type Expr ~ Atom | Post
 
 rule main Expr = e:expr $$ => $e
 

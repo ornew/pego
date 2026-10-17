@@ -6734,19 +6734,19 @@ type YieldFrom struct {
 	Value Expr
 }
 
-// Expr is the union type Expr = BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set | ListComp | SetComp | DictComp | GeneratorExp | Await | Yield | YieldFrom | Compare | Call | FormattedValue | Interpolation | JoinedStr | TemplateStr | Constant | Attribute | Subscript | Starred | Name | ListExpr | Tuple | Slice. Error (left by #recover) also implements it.
+// Expr is the union type Expr ~ BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set | ListComp | SetComp | DictComp | GeneratorExp | Await | Yield | YieldFrom | Compare | Call | FormattedValue | Interpolation | JoinedStr | TemplateStr | Constant | Attribute | Subscript | Starred | Name | ListExpr | Tuple | Slice. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// Pattern is the union type Pattern = MatchValue | MatchSingleton | MatchSequence | MatchMapping | MatchClass | MatchStar | MatchAs | MatchOr. Error (left by #recover) also implements it.
+// Pattern is the union type Pattern ~ MatchValue | MatchSingleton | MatchSequence | MatchMapping | MatchClass | MatchStar | MatchAs | MatchOr. Error (left by #recover) also implements it.
 type Pattern interface{ isPattern() }
 
-// Stmt is the union type Stmt = FunctionDef | AsyncFunctionDef | ClassDef | Return | Delete | Assign | TypeAlias | AugAssign | AnnAssign | For | AsyncFor | While | If | With | AsyncWith | MatchStmt | Raise | Try | TryStar | Assert | Import | ImportFrom | Global | Nonlocal | ExprStmt | Pass | Break | Continue. Error (left by #recover) also implements it.
+// Stmt is the union type Stmt ~ FunctionDef | AsyncFunctionDef | ClassDef | Return | Delete | Assign | TypeAlias | AugAssign | AnnAssign | For | AsyncFor | While | If | With | AsyncWith | MatchStmt | Raise | Try | TryStar | Assert | Import | ImportFrom | Global | Nonlocal | ExprStmt | Pass | Break | Continue. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
-// StrPart is the union type StrPart = Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation. Error (left by #recover) also implements it.
+// StrPart is the union type StrPart ~ Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation. Error (left by #recover) also implements it.
 type StrPart interface{ isStrPart() }
 
-// TypeParam is the union type TypeParam = TypeVar | ParamSpec | TypeVarTuple. Error (left by #recover) also implements it.
+// TypeParam is the union type TypeParam ~ TypeVar | ParamSpec | TypeVarTuple. Error (left by #recover) also implements it.
 type TypeParam interface{ isTypeParam() }
 
 func (*AnnAssign) isStmt()           {}

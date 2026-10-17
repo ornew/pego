@@ -22,7 +22,7 @@ func TestWorkActionErrorPublicParityAndInterruption(t *testing.T) {
 		{
 			name:  "long final rule prefix",
 			start: longRule,
-			grammar: `type A struct { N int }
+			grammar: `type A = { N int }
 rule ` + longRule + ` = "a" => A{N: 1 / (len($1) - 1)}`,
 			input:     "a",
 			wantError: "action in " + longRule + ": division by zero",
@@ -45,7 +45,7 @@ rule fallback = "a"`,
 		{
 			name:  "recognition evaluates captured action needed by predicate",
 			start: "main",
-			grammar: `type A struct { N int }
+			grammar: `type A = { N int }
 rule main = x:` + longRule + ` {text($x) == "a"} $$
 rule ` + longRule + ` = "a" => A{N: 1 / (len($1) - 1)}`,
 			input:         "a",

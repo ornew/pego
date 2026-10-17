@@ -42,7 +42,7 @@ the other side would have built.
 The grammar, `pairs.pego`, is the one of the Go guide:
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

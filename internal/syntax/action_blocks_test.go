@@ -76,9 +76,9 @@ func TestStatementNewlines(t *testing.T) {
 
 func TestGroupedMultilineTypeExpressions(t *testing.T) {
 	for _, src := range []string{
-		"type Alias = A | B",
-		"type Alias = (\n A\n | B\n)",
-		"type Holder struct {\n Value (\n  A\n  | B\n )\n}",
+		"type Alias ~ A | B",
+		"type Alias ~ (\n A\n | B\n)",
+		"type Holder = {\n Value (\n  A\n  | B\n )\n}",
 		"rule main (\n A\n | B\n) = \"x\"",
 	} {
 		g, err := Parse(src)
@@ -92,8 +92,8 @@ func TestGroupedMultilineTypeExpressions(t *testing.T) {
 		}
 	}
 	for _, src := range []string{
-		"type Alias = A\n | B",
-		"type Holder struct {\n Value A\n | B\n}",
+		"type Alias ~ A\n | B",
+		"type Holder = {\n Value A\n | B\n}",
 		"rule main A\n | B = \"x\"",
 	} {
 		if _, err := Parse(src); err == nil {

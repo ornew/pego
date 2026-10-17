@@ -81,7 +81,7 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 
 func TestSourceGrammarNodeConstructors(t *testing.T) {
 	p, _ := sourceGrammar(t)
-	const src = `type Foo struct { A Match; B []Foo }
+	const src = `type Foo = { A Match; B []Foo }
 type Word terminal
 rule word = "x" => Word{"0"}
 rule empty = "x" => []Foo{}
@@ -119,7 +119,7 @@ const sourceTreeFixture = `// leading one
 // leading two
 package sample
 /* type documentation /* nested */ continues */
-type Alias = (
+type Alias ~ (
  []A | *B
 )
 rule main = x:"a" #atomic @custom(, true, message="expected a") => map(list($x), (item) => Item{Value: $item})
@@ -216,12 +216,12 @@ func TestSourceGrammarRecovery(t *testing.T) {
 	}{
 		{"declaration", "rule broken =\nrule after = \"ok\"", "expected rule expression", 2},
 		{"header", "rule = \"bad\"; rule after = \"ok\"", "expected rule name", 2},
-		{"field", "type T struct {\n Broken\n Good Match\n}\nrule after = \"ok\"", "expected field type", 2},
+		{"field", "type T = {\n Broken\n Good Match\n}\nrule after = \"ok\"", "expected field type", 2},
 		{"operand", "rule expression = operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
 		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
 		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected assignment value", 2},
-		{"literal delimiter", "type T struct { Bad = \"}\", Good Match }\nrule after = \"ok\"", "expected field type", 2},
-		{"comment delimiter", "type T struct { Bad = /* } */ 1; Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"literal delimiter", "type T = { Bad = \"}\", Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"comment delimiter", "type T = { Bad = /* } */ 1; Good Match }\nrule after = \"ok\"", "expected field type", 2},
 		{"action delimiter", "rule predicate = { bad = \"}\"; true }\nrule after = \"ok\"", "expected semicolon", 2},
 		{"broken multiline group", "rule broken = (\nrule after = \"ok\"\n)", "expected rule expression", 3},
 		{"end of file", "rule broken =", "expected rule expression", 1},
@@ -289,7 +289,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 	for _, input := range []string{
 		src, sourceTreeFixture,
 		`/* inside and 😀 */ rule main = (/* inside */ "//not a comment") => Node{Value: "/*not a comment*/"}`,
-		"type T struct { Bad = \"}\", Good Match }\nrule after = \"ok\"",
+		"type T = { Bad = \"}\", Good Match }\nrule after = \"ok\"",
 		"rule broken =\nrule after = \"ok\"",
 		"package\nrule after = \"ok\"",
 	} {

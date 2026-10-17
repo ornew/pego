@@ -16,8 +16,8 @@ type String terminal
 type Punct terminal
 type Space terminal
 type Unknown terminal
-type Token = Comment | Keyword | Ident | Number | String | Punct | Space | Unknown
-type Tokens struct { Items []Token }
+type Token ~ Comment | Keyword | Ident | Number | String | Punct | Space | Unknown
+type Tokens = { Items []Token }
 
 // Every character belongs to a token, so tokenizing never fails, however broken the input is.
 rule main Tokens = ts:token* $$ => Tokens{Items: $ts}

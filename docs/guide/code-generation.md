@@ -45,7 +45,7 @@ change what your code sees. The test suite checks this for every grammar in `exa
 A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [runtime guide](runtime.md):
 
 ```pego
-type Pair struct { Key Match; Value Match }
+type Pair = { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -409,12 +409,12 @@ How grammar types map to Go:
 | terminal type `T` | `*T`: `Span` and `Text` |
 | `Match` | `*Match`: `Span` and `Text` |
 | `Error` (left by `#recover`) | `*Error`: `Span`, `Text` and `Message` |
-| union `U = A \| B` of node types | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*Node` if a member is a CST type) |
+| union `U ~ A \| B` of node types | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*Node` if a member is a CST type) |
 | `[]T` | a slice; an empty list is an empty slice, not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | `Seq`, `List`, `Operator` and records | `*Node`, as from `Parse` |
 | `node`, `terminal`, `any`, unions with basic members | `any`, holding the converted value |
-| alias `Alias = T` | a Go alias to the value type of `T`; for example, `Alias = Word` becomes `type Alias = *Word` |
+| alias `Alias ~ T` | a Go alias to the value type of `T`; for example, `Alias ~ Word` becomes `type Alias = *Word` |
 
 Details:
 

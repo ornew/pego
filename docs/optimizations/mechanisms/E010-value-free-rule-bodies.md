@@ -13,7 +13,7 @@ Streaming bodies keep their general route. Captures still build the values their
 actions need.
 
 ```pego
-type B struct { B Match }
+type B = { B Match }
 rule ws = [ ]+
 rule b = [a-z]
 rule a = ws b:b ws => B{B: $b}

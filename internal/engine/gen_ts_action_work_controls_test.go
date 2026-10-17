@@ -8,7 +8,7 @@ import (
 func TestGeneratedTSWorkControlActions(t *testing.T) {
 	t.Run("comparison-and-predicate", func(t *testing.T) {
 		key := strings.Repeat("a", 1600)
-		src := `type Box struct { Flag bool }
+		src := `type Box = { Flag bool }
  rule main Box = x:item {$x.Flag} => $x
  rule fast = "z"
  rule item Box = x:"z" => Box{Flag:("` + key + `"=="` + key + `") && (true || (1/(len($x)-1)>0))}`
@@ -30,7 +30,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
 		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", Types: true, Recognize: true}, "")
 	})
 	t.Run("lists-and-folds", func(t *testing.T) {
-		src := `type Box struct {
+		src := `type Box = {
     Items []Match
     Left  int
     Right int

@@ -14,24 +14,24 @@ import (
 
 const aliasExportsGrammar = `type Word terminal
 type Other terminal
-type Alias = Word
-type Chain = Alias
-type Single = Word | Word
-type U = Word | Other
-type V = Word | Other | Word
-type W = V
-type MaybeUnion = *U
-type Words = []Alias
-type Count = int
-type Maybe = *int
-type Mixed = Word | int
-type Anything = any
-type CST = Seq
-type Box struct { Item Chain; Items Words; Choice V; N Count }
-type BoxAlias = Box
-type Node = Word
-type Node_ = Other
-type Span = int
+type Alias ~ Word
+type Chain ~ Alias
+type Single ~ Word | Word
+type U ~ Word | Other
+type V ~ Word | Other | Word
+type W ~ V
+type MaybeUnion ~ *U
+type Words ~ []Alias
+type Count ~ int
+type Maybe ~ *int
+type Mixed ~ Word | int
+type Anything ~ any
+type CST ~ Seq
+type Box = { Item Chain; Items Words; Choice V; N Count }
+type BoxAlias ~ Box
+type Node ~ Word
+type Node_ ~ Other
+type Span ~ int
 rule main Alias = "a"`
 
 // Compile a separate consumer: compiling the generated package alone does not

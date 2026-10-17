@@ -7,7 +7,7 @@
 //   vegetables
 package outline
 
-type Item struct {
+type Item = {
     Text     Match
     Children []Item
 }

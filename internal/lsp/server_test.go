@@ -164,7 +164,7 @@ func TestInputEndsBeforeExit(t *testing.T) {
 }
 
 func TestClientCapabilities(t *testing.T) {
-	src := "type P struct { A Match }\nrule a = x:\"a\" => len($x)"
+	src := "type P = { A Match }\nrule a = x:\"a\" => len($x)"
 	completion := func(c *testClient) CompletionItem {
 		t.Helper()
 		var list completionList
@@ -214,8 +214,8 @@ func TestClientCapabilities(t *testing.T) {
 	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.pego"), &flat)
 	uri := "file:///caps.pego"
 	want := []symbolInformation{
-		{Name: "P", Kind: symbolKindStruct, Location: Location{URI: uri, Range: rng(0, 0, 0, 25)}},
-		{Name: "A", Kind: symbolKindField, Location: Location{URI: uri, Range: rng(0, 16, 0, 23)}, ContainerName: "P"},
+		{Name: "P", Kind: symbolKindStruct, Location: Location{URI: uri, Range: rng(0, 0, 0, 20)}},
+		{Name: "A", Kind: symbolKindField, Location: Location{URI: uri, Range: rng(0, 11, 0, 18)}, ContainerName: "P"},
 		{Name: "a", Kind: symbolKindFunction, Location: Location{URI: uri, Range: rng(1, 0, 1, 25)}},
 	}
 	if !reflect.DeepEqual(flat, want) {

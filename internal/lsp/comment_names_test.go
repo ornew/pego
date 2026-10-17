@@ -8,7 +8,7 @@ import (
 )
 
 func commentedNamesSource(typeGap, defGap, newGap, typeName, ruleName string) string {
-	return fmt.Sprintf("// Box documentation.\ntype%s%s struct {Text string}\nrule%s%s = \"a\"\nrule%s main %s = %s => (%s%s{Text:\"a\"})\n",
+	return fmt.Sprintf("// Box documentation.\ntype%s%s = {Text string}\nrule%s%s = \"a\"\nrule%s main %s = %s => (%s%s{Text:\"a\"})\n",
 		typeGap, typeName, defGap, ruleName, defGap, typeName, ruleName, newGap, typeName)
 }
 
@@ -40,10 +40,10 @@ func TestNamesAcrossComments(t *testing.T) {
 				}
 				return idx.rangeOf(i, i+len(name))
 			}
-			boxDef := rangeAt("Box struct", "Box")
+			boxDef := rangeAt("Box = {", "Box")
 			helperDef := rangeAt("helper =", "helper")
 			mainDef := rangeAt("main", "main")
-			boxAnnotation := rangeAt("Box =", "Box")
+			boxAnnotation := rangeAt("Box = helper", "Box")
 			boxNew := rangeAt("Box{", "Box")
 			helperRef := rangeAt("helper =>", "helper")
 			var syms []DocumentSymbol
@@ -61,7 +61,7 @@ func TestNamesAcrossComments(t *testing.T) {
 				r, def Range
 				text   string
 			}{
-				{boxDef, boxDef, "type Box struct"}, {boxNew, boxDef, "type Box struct"},
+				{boxDef, boxDef, "type Box ="}, {boxNew, boxDef, "type Box ="},
 				{helperDef, helperDef, "rule helper"}, {helperRef, helperDef, "rule helper"},
 				{mainDef, mainDef, "rule main Box"},
 			} {
@@ -74,7 +74,7 @@ func TestNamesAcrossComments(t *testing.T) {
 				if !strings.Contains(text, point.text) || r == nil || *r != point.r {
 					t.Errorf("hover at %+v: %q %v", point.r, text, r)
 				}
-				if point.text == "type Box struct" && !strings.Contains(text, "Box documentation.") {
+				if point.text == "type Box =" && !strings.Contains(text, "Box documentation.") {
 					t.Errorf("lost documentation: %q", text)
 				}
 			}
@@ -146,7 +146,7 @@ func TestCommentNameAtEOF(t *testing.T) {
 func BenchmarkAnalyzeCommentedNames(b *testing.B) {
 	for _, gap := range []struct{ name, text string }{{"plain", " "}, {"comments", "# name\n// second\n"}} {
 		var src strings.Builder
-		src.WriteString("type" + gap.text + "Box struct {Text string}\n")
+		src.WriteString("type" + gap.text + "Box = {Text string}\n")
 		for i := 0; i < 128; i++ {
 			fmt.Fprintf(&src, "rule%s r%d%sBox { \"a\" => %sBox{Text:\"a\"} }\n", gap.text, i, gap.text, gap.text)
 		}

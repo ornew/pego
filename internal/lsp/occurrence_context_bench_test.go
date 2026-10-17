@@ -99,12 +99,12 @@ func occurrenceResponseCorpus() []occurrenceResponseCase {
 		add("rename/type/"+name, a, "rename", 0, 6, true, name)
 	}
 	for _, method := range []string{"prepareRename", "rename"} {
-		add(method+"/builtin", analyze("type T struct { M Match }\nrule a = \"a\"\n"), method, 0, 19, true, "Renamed")
+		add(method+"/builtin", analyze("type T = { M Match }\nrule a = \"a\"\n"), method, 0, 14, true, "Renamed")
 		add(method+"/undefined", analyze("rule a = missing\n"), method, 0, 10, true, "renamed")
 		add(method+"/syntax-error", analyze("rule a = b }\nrule b = ("), method, 0, 5, true, "renamed")
 	}
 	add("rename/used-undefined-rule", analyze("rule atom = missing\n"), "rename", 0, 6, true, "missing")
-	add("rename/used-undefined-type", analyze("type T = Missing\nrule a = \"a\"\n"), "rename", 0, 6, true, "Missing")
+	add("rename/used-undefined-type", analyze("type T ~ Missing\nrule a = \"a\"\n"), "rename", 0, 6, true, "Missing")
 	for _, method := range []string{"references", "documentHighlight", "prepareRename", "rename"} {
 		cases = append(cases, occurrenceResponseCase{method + "/missing-params", a, &incoming{Method: "textDocument/" + method}})
 		msg := occurrenceMessage(method, Position{}, true, "renamed")

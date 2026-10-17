@@ -32,7 +32,7 @@ not implemented. PEGO has no rule-initialization action block.
 ```
 
 ```pego
-type KV struct { Key Match; Op Match; Value Match }
+type KV = { Key Match; Op Match; Value Match }
 rule key_value KV = (k:[a-z]+ op:"=" v:[0-9]+) => KV{Key: $k, Op: $op, Value: $v}
 ```
 
@@ -100,7 +100,7 @@ Variables are `int`, `string` or `bool`; definitions shadow rather than mutate
 an existing value. Scope and rollback are specified in [Variables](predicates.md#variables).
 
 ```pego
-type Item struct { Depth int; Name Match }
+type Item = { Depth int; Name Match }
 rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 ```
 
@@ -116,7 +116,7 @@ must be a string-valued Action Expression. These forms never stringify or filter
 values implicitly.
 
 ```pego
-type NameNode struct { Name string }
+type NameNode = { Name string }
 rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
 
 rule twoNames []NameNode = a:name "," b:name => []NameNode{$a, $b}

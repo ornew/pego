@@ -14,12 +14,12 @@ var outputSchemaExportJSONSink []byte
 
 func BenchmarkOutputSchemaExport(b *testing.B) {
 	cases := []struct{ name, source string }{
-		{"Scalar", `type Holder struct { Value string }; rule main = "x" => Holder{Value: "x"}`},
+		{"Scalar", `type Holder = { Value string }; rule main = "x" => Holder{Value: "x"}`},
 		{"Repetition", `rule main = "x"*`},
 	}
 	for _, count := range []int{1, 128} {
 		var source strings.Builder
-		source.WriteString("type Token terminal; type Holder struct { ")
+		source.WriteString("type Token terminal; type Holder = { ")
 		for i := range count {
 			fmt.Fprintf(&source, "F%03d []Token; ", i)
 		}

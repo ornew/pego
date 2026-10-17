@@ -103,7 +103,7 @@ rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x"
 	// runtime switches to bigint beyond the safe integers), negative division, -0, strings
 	// compared and measured by code points or UTF-8 bytes (JavaScript strings are UTF-16), and
 	// variables holding big ints as memo keys.
-	cases = append(cases, genCase{"ints and strings", `type R struct { A int; B int; C int; D int; E int; F int; G bool; H bool; I int; J string; K int; L bool; M int }
+	cases = append(cases, genCase{"ints and strings", `type R = { A int; B int; C int; D int; E int; F int; G bool; H bool; I int; J string; K int; L bool; M int }
 rule main = x:[a-z]* #atomic ","? y:[^!]* #atomic {big := 9007199254740992 + len($x)} z:big? => R{A: 9223372036854775807 + len($x), B: -9223372036854775807 - 1 - len($x), C: 4611686018427387904 * (len($x) + 1), D: -7 / 2 * len($x), E: -7 % 2 + 0 * -1, F: (9007199254740993 + len($y)) / 3, G: text($y) < "😀", H: "！" < "😀", I: len($y), J: text($y) + "!", K: -(9223372036854775807 - len($x) + 1), L: big == 9007199254740992 + len($x), M: len($z)}
 rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
 	// Variants of the short inputs: every prefix, and the input without each byte. They fail in many

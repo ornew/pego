@@ -219,7 +219,7 @@ func TestGeneratedGoConversionWork(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Leaf terminal
 
-type Branch struct {
+type Branch = {
     Leaves []Leaf
 }
 
@@ -306,21 +306,21 @@ func TestGeneratedGoWorkControlNameCollisions(t *testing.T) {
 
 type WorkLimits_ terminal
 
-type WorkLimitError struct {
+type WorkLimitError = {
     Value WorkLimits
 }
 
-type WorkLimitKind = WorkLimits
+type WorkLimitKind ~ WorkLimits
 
-type WithContext = WorkLimits
+type WithContext ~ WorkLimits
 
-type WithWorkLimits = WorkLimits
+type WithWorkLimits ~ WorkLimits
 
-type ErrWorkLimit = WorkLimits
+type ErrWorkLimit ~ WorkLimits
 
-type InputWorkLimit = WorkLimits
+type InputWorkLimit ~ WorkLimits
 
-type StepWorkLimit = WorkLimits
+type StepWorkLimit ~ WorkLimits
 
 rule main WorkLimits = "é"`)
 	if err != nil {
@@ -387,7 +387,7 @@ func TestGeneratedGoNilWorkPublication(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Word terminal
 
-type Maybe = *Word
+type Maybe ~ *Word
 
 rule main Maybe = x:letter? => $x
 
@@ -530,7 +530,7 @@ func TestGeneratedGoConfiguredNilOrdinaryErrors(t *testing.T) {
 		t.Skip("builds configured nil error consumers")
 	}
 	for _, tc := range []struct{ name, source, input, option string }{
-		{"action", `type A struct { N int }
+		{"action", `type A = { N int }
 rule main any = "x" => A{N: 1 / 0}`, "x", "WithMaxDepth(100000)"},
 		{"depth", `rule main any = recurse
 rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},

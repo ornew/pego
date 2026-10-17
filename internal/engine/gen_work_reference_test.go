@@ -21,7 +21,7 @@ func TestGeneratedGoWorkLayoutReference(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Word terminal
 
-type Bag struct {
+type Bag = {
     Items []Word
     Count int
 }

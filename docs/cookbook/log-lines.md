@@ -20,7 +20,7 @@ type Path terminal
 type Status terminal
 type Millis terminal
 
-type Line struct {
+type Line = {
     Time    Time
     Level   Level
     Service Service
@@ -29,7 +29,7 @@ type Line struct {
     Status  Status
     Millis  Millis
 }
-type Log struct { Lines []Line }
+type Log = { Lines []Line }
 
 rule main Log = ls:line* $$ => Log{Lines: $ls}
 

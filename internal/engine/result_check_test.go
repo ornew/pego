@@ -22,10 +22,10 @@ import (
 // parsers use the typed runtime when rt is representable.
 func resultCheckGrammar(typ, rt string) string {
 	return `type Int terminal
-type Alias = Int
-type Box struct { Value Int }
-type S struct { F ` + typ + ` }
-type W struct { V ` + rt + ` }
+type Alias ~ Int
+type Box = { Value Int }
+type S = { F ` + typ + ` }
+type W = { V ` + rt + ` }
 rule main W = ma / mb / mc / md / me / mp / mq
 rule ma W = &(. ".") v:rA "." => W{V: $v}
 rule mb W = &(. ",") v:rB "," => W{V: $v}
@@ -245,8 +245,8 @@ func TestRuleResultChecks(t *testing.T) {
 // and generated parsers keep the decisions.
 func TestRuleResultChecksAreSelective(t *testing.T) {
 	src := `type Int terminal
-type S struct { F Int }
-type O struct { X Int }
+type S = { F Int }
+type O = { X Int }
 rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
 rule static Int = "s" => Int{"s"}
 rule dynamic Int = v:val => $v
@@ -324,7 +324,7 @@ rule val any = "v" => Int{"v"}
 // "@<value>@" the rule rr, whose recovery expression keeps it from a direct typed body. Input
 // "%<value>%" constructs W in a rule with a recovery expression, which compiling copies.
 const operatorResultCheckGrammar = `type Int terminal
-type W struct { V []Int }
+type W = { V []Int }
 rule main W = ml / mr / mf / me
 rule mf W = "%" v:val ("%" #recover(skip="%")) => W{V: $v}
 rule mr W = "@" v:rr => W{V: $v}
@@ -404,7 +404,7 @@ func TestOperatorResultChecks(t *testing.T) {
 // converts its value to the terminal like any such rule, so its dynamically typed lines are not
 // checked.
 const terminalOperatorsRuleGrammar = `type Int terminal
-type S struct { F Int }
+type S = { F Int }
 rule main = v:e => S{F: $v}
 rule e Int = operators {
     operand v:val => $v
@@ -482,7 +482,7 @@ func TestGeneratedRuleResultChecks(t *testing.T) {
 func TestGeneratedCheckTypeName(t *testing.T) {
 	src := `type Int terminal
 type FieldType terminal
-type S struct { F Int }
+type S = { F Int }
 rule main = v:val f:ft => S{F: $v}
 rule ft FieldType = "f" => FieldType{"f"}
 rule val any = "v" => Int{"v"}

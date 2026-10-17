@@ -14,8 +14,8 @@ runtime or backend support.
 ```pego
 type Number terminal
 type Word terminal
-type Expr = Number | Word
-type Main struct { Value Expr }
+type Expr ~ Number | Word
+type Main = { Value Expr }
 
 rule number Number = [0-9]+
 rule word Word = [a-z]+

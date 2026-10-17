@@ -31,10 +31,10 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	g, err := syntax.Parse(`type Token terminal
-type Pair struct { Text string; Left Token; Right Token }
-type Values struct { Items []Token }
-type LargeValues struct { Items []Pair }
-type SmallValues struct { Items []Pair }
+type Pair = { Text string; Left Token; Right Token }
+type Values = { Items []Token }
+type LargeValues = { Items []Pair }
+type SmallValues = { Items []Pair }
 rule main = leaf
 rule leaf Token = x:discarded x:small => $x
 rule match Match = discardedMatch y:"b" #atomic => $y

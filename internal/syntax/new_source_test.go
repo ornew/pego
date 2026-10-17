@@ -10,7 +10,7 @@ import (
 func TestExpressionRuleSource(t *testing.T) {
 	src := `package example
 type Num terminal
-type Box struct { Value Num }
+type Box = { Value Num }
 rule main Box = (
     (n:number {x := len($n)} {x > 0}) @error(message="expected a box")
 ) => Box{Value: $n}

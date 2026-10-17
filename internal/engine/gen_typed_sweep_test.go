@@ -14,13 +14,13 @@ import (
 
 const typedSweepClosedGrammar = `
 type Token terminal
-type ScalarOwner struct { Active bool; Count int; Text string; Child *Token; Next *string }
-type Pair struct { Left Token; Right Token; M Match; Label string }
-type Box struct { Items []Pair; Nested [][]Token; S []string; N []int; B []bool; Opt *string; PI *int; PB *bool }
-type Tree = Branch | Token
-type Branch struct { Left Tree; Right Tree }
-type Expr = Bin | Token
-type Bin struct { Left Expr; Right Expr; Op Match }
+type ScalarOwner = { Active bool; Count int; Text string; Child *Token; Next *string }
+type Pair = { Left Token; Right Token; M Match; Label string }
+type Box = { Items []Pair; Nested [][]Token; S []string; N []int; B []bool; Opt *string; PI *int; PB *bool }
+type Tree ~ Branch | Token
+type Branch = { Left Tree; Right Tree }
+type Expr ~ Bin | Token
+type Bin = { Left Expr; Right Expr; Op Match }
 rule main Box = discarded x:token => Box{Items: []Pair{Pair{Left: $x, Right: $x, Label: "b"}}, Nested: [][]Token{[]Token{$x}}, Opt: "b", PI: 7, PB: true}
 rule discarded Token = "é"+
 rule token Token = "b"
@@ -46,9 +46,9 @@ rule nilValue = "n" => nil
 
 const typedSweepOpenGrammar = `
 type Token terminal
-type Choice = Token | Match
-type Mixed = Token | Match | int
-type Record struct { A any; Raw Seq; Items []Choice; M Mixed; O *string }
+type Choice ~ Token | Match
+type Mixed ~ Token | Match | int
+type Record = { A any; Raw Seq; Items []Choice; M Mixed; O *string }
 rule main Record = x:"b" #atomic raw:("?" "?") => Record{A: $x, Raw: $raw, Items: []Choice{$x}, M: $x, O: "b"}
 rule token Token = "b"
 rule recovery Record = x:(token #recover(skip=([^;]+ ";"))) => Record{A: $x, M: $x, Items: []Choice{$x}}
@@ -61,9 +61,9 @@ type ParseRuleAST terminal
 type WithMaxDepth terminal
 type ParseOption terminal
 type Span terminal
-type Tokens = []ParseAST
-type Matrix = []Tokens
-type AliasBox struct { Items Tokens; Nested Matrix }
+type Tokens ~ []ParseAST
+type Matrix ~ []Tokens
+type AliasBox = { Items Tokens; Nested Matrix }
 rule main AliasBox = x:token => AliasBox{Items: []ParseAST{$x}, Nested: [][]ParseAST{[]ParseAST{$x}}}
 rule token ParseAST = "b"
 rule cascade ParseAST_ = "c"

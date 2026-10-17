@@ -1,32 +1,32 @@
 // A small programming language. Statements are PEG rules and expressions a Operators Rule, nested in each other.
 package mini
 
-type Program struct { Body []Stmt }
+type Program = { Body []Stmt }
 
 // --- Statements ---
-type Let struct { Name Ident; Value Expr }
-type Assign struct { Target Expr; Value Expr }
-type If struct { Cond Expr; Then Block; Else *(If | Block) }
-type While struct { Cond Expr; Body Block }
-type Return struct { Value *Expr }
-type Func struct { Name Ident; Params []Ident; Body Block }
-type ExprStmt struct { X Expr }
-type Block struct { Body []Stmt }
-type Stmt = Let | Assign | If | While | Return | Func | ExprStmt | Block
+type Let = { Name Ident; Value Expr }
+type Assign = { Target Expr; Value Expr }
+type If = { Cond Expr; Then Block; Else *(If | Block) }
+type While = { Cond Expr; Body Block }
+type Return = { Value *Expr }
+type Func = { Name Ident; Params []Ident; Body Block }
+type ExprStmt = { X Expr }
+type Block = { Body []Stmt }
+type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block
 
 // --- Expressions ---
 type Ident terminal
 type Number terminal
 type String terminal
 type Bool terminal
-type Binary struct { Left Expr; Op Match; Right Expr }
-type Unary struct { Op Match; X Expr }
-type Call struct { Fn Expr; Args []Expr }
-type Index struct { X Expr; Index Expr }
-type Member struct { X Expr; Name Ident }
-type Cond struct { Cond Expr; Then Expr; Else Expr }
-type ArrayLit struct { Elems []Expr }
-type Expr = Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit
+type Binary = { Left Expr; Op Match; Right Expr }
+type Unary = { Op Match; X Expr }
+type Call = { Fn Expr; Args []Expr }
+type Index = { X Expr; Index Expr }
+type Member = { X Expr; Name Ident }
+type Cond = { Cond Expr; Then Expr; Else Expr }
+type ArrayLit = { Elems []Expr }
+type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 

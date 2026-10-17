@@ -90,19 +90,19 @@ function stable(x: unknown): string { return JSON.stringify(x, (_key, v: unknown
 
 func TestGeneratedTSTypedConsumers(t *testing.T) {
 	src := `type Word terminal
-type W = Word
-type Words = []Word
-type Optional = *Word
-type Integer = int
-type Text = string
-type Flag = bool
-type MaybeInteger = *int
-type Choice = Word | Match
-type ChoiceAgain = Match | Word
-type Mixed = Word | int
-type Open = any
-type Raw = Seq
-type R struct { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
+type W ~ Word
+type Words ~ []Word
+type Optional ~ *Word
+type Integer ~ int
+type Text ~ string
+type Flag ~ bool
+type MaybeInteger ~ *int
+type Choice ~ Word | Match
+type ChoiceAgain ~ Match | Word
+type Mixed ~ Word | int
+type Open ~ any
+type Raw ~ Seq
+type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
 rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs, OpenItems: $xs, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = [a-zあ-ん😀]+`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
@@ -164,9 +164,9 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
 	src := `type Word terminal
-type U = Word | Match
-type Mixed = Word | int
-type R struct { Specific Word; U U; M Mixed; A any; Items []Word; OpenItems []any }
+type U ~ Word | Match
+type Mixed ~ Word | int
+type R = { Specific Word; U U; M Mixed; A any; Items []Word; OpenItems []any }
 rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs, OpenItems: $xs}
 rule word Word = [a-z]+ ";"`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
@@ -189,7 +189,7 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
-	src := `type R struct { Text string; Token Match; A int; B int; C int; D int; E int; F int; G int; O *int }
+	src := `type R = { Text string; Token Match; A int; B int; C int; D int; E int; F int; G int; O *int }
 rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, B: 9007199254740992, C: -9007199254740992, D: 9223372036854775807 + 1, E: -7 % 2, F: -7 / 2, G: 9223372036854775807}`
 	consumer := `import {parse, parseAST, Bytes, CodePoints, Node} from "./parser.ts";
 ` + tsTypedAssert + `
@@ -207,8 +207,8 @@ check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decod
 }
 
 const tsTypedDAGTypes = `type Leaf terminal
-type Tree = Branch | Leaf
-type Branch struct { Left Tree; Right Tree }
+type Tree ~ Branch | Leaf
+type Branch = { Left Tree; Right Tree }
 rule leaf Leaf = "x"
 `
 
@@ -250,7 +250,7 @@ func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
 		"any":  `rule main any = "" => nil`,
 		"node": `rule main *node = "" => nil`,
 		"union": `type T terminal
-type U = T | Match
+type U ~ T | Match
 rule main *U = "" => nil`,
 		"list": `rule main *[]Match = "" => nil`,
 	} {
@@ -259,7 +259,7 @@ rule main *U = "" => nil`,
 `+tsTypedAssert+`const r = parseAST(""); check(r.error === null && r.value === null && parse("").error === null, "nil success"); check(stable(r.value) === "null", "nil transport");`, GenOptions{}, "")
 		})
 	}
-	runTypedTSFixture(t, `type T struct { X Match }
+	runTypedTSFixture(t, `type T = { X Match }
 rule main T = x:n #atomic => T{X: $x}
 rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
 `+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.text === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
@@ -280,12 +280,12 @@ func TestGeneratedTSTypedWorkloads(t *testing.T) {
 	cases := []struct {
 		name, src, small, large string
 	}{
-		{"fields", `type Item struct { Key Match; Value Match; N int; S string; B bool }
+		{"fields", `type Item = { Key Match; Value Match; N int; S string; B bool }
 rule main []Item = item*
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
 		{"capture-free", `rule main = [a-zé😀]* #atomic`, "a", strings.Repeat("é😀a", 8000)},
-		{"recovery", `type Good struct { Token Match }
-type Item = Good | Match
+		{"recovery", `type Good = { Token Match }
+type Item ~ Good | Match
 rule main []Item = item #recover(skip=[^;]+ ";")*
 rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings.Repeat("é😀;1;", 2000)},
 	}

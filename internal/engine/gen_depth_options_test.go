@@ -87,7 +87,7 @@ rule one Word = two
 rule two Word = three
 rule three Word = four
 rule four Word = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
-		{"action", `type Word struct { N int }
+		{"action", `type Word = { N int }
 rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, []string{"", "a", "aa", "?"}},
 		{"recovery", `type Word terminal
 rule main Word = n
@@ -207,8 +207,8 @@ func TestGeneratedDepthNameCollisions(t *testing.T) {
 	}
 	src := `type ParseOption terminal
 type ParseOption_ terminal
-type WithUnit = ParseOption
-type WithMaxDepth struct { Item WithUnit }
+type WithUnit ~ ParseOption
+type WithMaxDepth = { Item WithUnit }
 rule main WithUnit = "é"`
 	g, err := syntax.Parse(src)
 	if err != nil {

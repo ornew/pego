@@ -33,7 +33,7 @@ func TestIncompletePackageClause(t *testing.T) {
 // diagnostics is limited.
 func TestHostileInput(t *testing.T) {
 	c := newInitialized(t)
-	junk := "rule a = \"x\"\n" + strings.Repeat("`~😀", 1<<19)
+	junk := "rule a = \"x\"\n" + strings.Repeat("`'😀", 1<<19)
 	if d := c.open("file:///junk.pego", junk); len(d) != 1 || !strings.HasPrefix(d[0].Message, "unexpected characters") {
 		t.Errorf("junk: %d diagnostics, the first %+v", len(d), d[:min(len(d), 1)])
 	}
@@ -88,7 +88,7 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 func TestRenameToUndefinedName(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///undefined.pego"
-	c.open(uri, "rule a = b c\nrule b = \"x\"\ntype T struct { F U }\nrule d T = \"d\"")
+	c.open(uri, "rule a = b c\nrule b = \"x\"\ntype T = { F U }\nrule d T = \"d\"")
 	for _, tc := range []struct {
 		line, char int
 		name, want string

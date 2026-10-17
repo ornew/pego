@@ -202,6 +202,8 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 		switch {
 		case prev == st+1:
 			return keywordItems(typeKeywords)
+		case prev == st+2 && pt.Text == "=":
+			return items // only a struct body follows; aliases are written with ~
 		case pt.Text == "{" || pt.Text == ";":
 			return items // a field name
 		}
@@ -461,7 +463,10 @@ func (a *analysis) declarationsControlled(kind symKind, control *renderControl) 
 		}
 		d := declared{name: n.Text}
 		spec := a.significantTokenControlled(next+1, control)
-		if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") || a.isPunct(spec, "=") {
+		switch {
+		case a.isPunct(spec, "=") && a.isPunct(a.significantTokenControlled(spec+1, control), "{"):
+			d.spec = "struct"
+		case a.isIdent(spec, "terminal") || a.isPunct(spec, "~"):
 			d.spec = a.toks[spec].Text
 		}
 		seen[d.name] = true

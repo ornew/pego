@@ -17,12 +17,12 @@ func TestGeneratedActionTracking(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	for _, c := range []struct{ name, src, input string }{
-		{"nil", `type V struct { N int }
-type Root struct { Items []*V }
+		{"nil", `type V = { N int }
+type Root = { Items []*V }
 rule main = items:item* $$ => Root{Items: $items}
 rule item = "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)`, "aaaa"},
-		{"nested constructor", `type Inner struct { N int }
-type Outer struct { Inner Inner }
+		{"nested constructor", `type Inner = { N int }
+type Outer = { Inner Inner }
 rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 	} {
 		t.Run(c.name, func(t *testing.T) {

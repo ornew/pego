@@ -18,7 +18,7 @@ func TestGeneratedTSWorkControlFields(t *testing.T) {
 		values[i] = names[i] + ":1"
 		captures[i] = "capture" + strings.Repeat("a", 200) + fmt.Sprintf("%02d", i) + `:"z"`
 	}
-	src := `type Box struct { ` + strings.Join(declarations, ";") + ` }
+	src := `type Box = { ` + strings.Join(declarations, ";") + ` }
  rule main Box = x:item {$x.` + names[width-1] + ` == 1} => $x
  rule item Box = "z" => Box{` + strings.Join(values, ",") + `}
  rule fast = "z"`

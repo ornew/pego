@@ -11,49 +11,49 @@ type Nil terminal
 type CaptureRef terminal
 type VarRef terminal
 
-type File struct { Package *PackageStmt; Defs []Def; Comments []Comment; TrailingComments []Comment; Text string }
-type PackageStmt = Package | Error
-type Package struct { Name Ident; Comments []Comment; Source SourceMetadata }
-type PackageBody struct { Name Ident }
+type File = { Package *PackageStmt; Defs []Def; Comments []Comment; TrailingComments []Comment; Text string }
+type PackageStmt ~ Package | Error
+type Package = { Name Ident; Comments []Comment; Source SourceMetadata }
+type PackageBody = { Name Ident }
 // Ownership is constructed at syntax boundaries; the adapter only converts spans.
-type SourceSpan = PackageBody | TypeDefBody
-type SourceMetadata struct { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment }
-type SourceComment struct { Text string }
-type SourceBoundary struct { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
-type Def = TypeDef | RuleDef | Error
-type TypeDef struct { Name Ident; Spec TypeSpec; Comments []Comment; SourceSpan TypeDefBody }
-type TypeDefBody struct { Name Ident; Spec TypeSpec }
-type TypeSpec = TypeAliasSpec | TerminalSpec | StructSpec
-type TypeAliasSpec struct { Type Type }
-type TerminalSpec struct {}
-type StructSpec struct { Fields []FieldSpec; Comments []Comment }
-type FieldSpec = Field | Error
-type Field struct { Name Ident; Type Type; Comments []Comment }
-type Type = TypeRef | TypeGroup | OptionalType | ListType | UnionType
-type TypeRef struct { Name Ident }
-type TypeGroup struct { Type Type }
-type OptionalType struct { Type Type }
-type ListType struct { Type Type }
-type UnionType struct { L Type; R Type }
+type SourceSpan ~ PackageBody | TypeDefBody
+type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment }
+type SourceComment = { Text string }
+type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
+type Def ~ TypeDef | RuleDef | Error
+type TypeDef = { Name Ident; Spec TypeSpec; Comments []Comment; SourceSpan TypeDefBody }
+type TypeDefBody = { Name Ident; Spec TypeSpec }
+type TypeSpec ~ TypeAliasSpec | TerminalSpec | StructSpec
+type TypeAliasSpec = { Type Type }
+type TerminalSpec = {}
+type StructSpec = { Fields []FieldSpec; Comments []Comment }
+type FieldSpec ~ Field | Error
+type Field = { Name Ident; Type Type; Comments []Comment }
+type Type ~ TypeRef | TypeGroup | OptionalType | ListType | UnionType
+type TypeRef = { Name Ident }
+type TypeGroup = { Type Type }
+type OptionalType = { Type Type }
+type ListType = { Type Type }
+type UnionType = { L Type; R Type }
 
-type Comment = CommentGroup | InlineComment
-type CommentGroup struct { Lines []Match }
-type InlineComment struct { Start Match; Body Match; End Match }
-type RuleDef struct { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment }
-type RuleExpr = (
+type Comment ~ CommentGroup | InlineComment
+type CommentGroup = { Lines []Match }
+type InlineComment = { Start Match; Body Match; End Match }
+type RuleDef = { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment }
+type RuleExpr ~ (
   RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice
   | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput
   | Any | Cut | String | CharClass | Optional | ZeroOrMore | OneOrMore
   | Repeat | Capture | Predicate | Atomic | Stream | MissingPragma | Recover | Attributed | OperatorsRule
 )
-type RuleRef struct { Name Ident }
-type LevelCall struct { Rule Ident; Level Ident }
-type RuleGroup struct { Expr RuleExpr }
-type InlineAction struct { Expr RuleExpr; Action Action }
-type Sequence struct { L RuleExpr; R RuleExpr }
-type Choice struct { L RuleExpr; R RuleExpr }
-type Discard struct { X RuleExpr }
-type Lookahead struct { Op string; X RuleExpr }
+type RuleRef = { Name Ident }
+type LevelCall = { Rule Ident; Level Ident }
+type RuleGroup = { Expr RuleExpr }
+type InlineAction = { Expr RuleExpr; Action Action }
+type Sequence = { L RuleExpr; R RuleExpr }
+type Choice = { L RuleExpr; R RuleExpr }
+type Discard = { X RuleExpr }
+type Lookahead = { Op string; X RuleExpr }
 type Top terminal
 type Bottom terminal
 type BeginLine terminal
@@ -62,57 +62,57 @@ type EndLine terminal
 type EndInput terminal
 type Any terminal
 type Cut terminal
-type CharClass struct { Not bool; Items []CharClassItem }
-type CharClassItem = Char | CharRng
+type CharClass = { Not bool; Items []CharClassItem }
+type CharClassItem ~ Char | CharRng
 type Char terminal
-type CharRng struct { Start Char; End Char }
-type Optional struct { X RuleExpr }
-type ZeroOrMore struct { X RuleExpr }
-type OneOrMore struct { X RuleExpr }
-type Repeat struct { X RuleExpr; Min *Int; Max *Int; Range bool }
-type Capture struct { Name Ident; Expr RuleExpr }
-type Predicate struct { Actions []ActionStmt; Comments []Comment }
-type Atomic struct { X RuleExpr }
-type Stream struct { X RuleExpr }
-type MissingPragma struct { X RuleExpr }
-type Recover struct { X RuleExpr; Skip RuleExpr }
-type Attributed struct { X RuleExpr; Attr Attr }
-type Attr struct { Name Ident; Args []*AttrValue; KwArgs []AttrNamed }
-type AttrValue = Int | String | True | False | Nil | RuleExpr
+type CharRng = { Start Char; End Char }
+type Optional = { X RuleExpr }
+type ZeroOrMore = { X RuleExpr }
+type OneOrMore = { X RuleExpr }
+type Repeat = { X RuleExpr; Min *Int; Max *Int; Range bool }
+type Capture = { Name Ident; Expr RuleExpr }
+type Predicate = { Actions []ActionStmt; Comments []Comment }
+type Atomic = { X RuleExpr }
+type Stream = { X RuleExpr }
+type MissingPragma = { X RuleExpr }
+type Recover = { X RuleExpr; Skip RuleExpr }
+type Attributed = { X RuleExpr; Attr Attr }
+type Attr = { Name Ident; Args []*AttrValue; KwArgs []AttrNamed }
+type AttrValue ~ Int | String | True | False | Nil | RuleExpr
 // Slots keep an omitted positional argument distinct from the end of a list.
-type AttrSlot struct { Value *AttrValue }
-type AttrNamed struct { Name Ident; Value AttrValue }
-type AttrArgs struct { Args []*AttrValue; KwArgs []AttrNamed }
+type AttrSlot = { Value *AttrValue }
+type AttrNamed = { Name Ident; Value AttrValue }
+type AttrArgs = { Args []*AttrValue; KwArgs []AttrNamed }
 
-type OperatorsRule struct { Items []OperatorsStmt; Comments []Comment }
-type OperatorsStmt = OperatorsSkip | OperatorsOperand | OperatorsLevel | Error
-type OperatorsSkip struct { Expr RuleExpr; Comments []Comment }
-type OperatorsOperand struct { Expr RuleExpr; Action *Action; Comments []Comment }
-type OperatorsLevel struct { Name *Ident; Operators []OpsOperator; Comments []Comment }
-type OpsOperator = Prefix | Postfix | Infix | Error
-type Prefix struct { Expr RuleExpr; Action *Action; Comments []Comment }
-type Postfix struct { Expr RuleExpr; Action *Action; Comments []Comment }
-type Infix struct { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment }
+type OperatorsRule = { Items []OperatorsStmt; Comments []Comment }
+type OperatorsStmt ~ OperatorsSkip | OperatorsOperand | OperatorsLevel | Error
+type OperatorsSkip = { Expr RuleExpr; Comments []Comment }
+type OperatorsOperand = { Expr RuleExpr; Action *Action; Comments []Comment }
+type OperatorsLevel = { Name *Ident; Operators []OpsOperator; Comments []Comment }
+type OpsOperator ~ Prefix | Postfix | Infix | Error
+type Prefix = { Expr RuleExpr; Action *Action; Comments []Comment }
+type Postfix = { Expr RuleExpr; Action *Action; Comments []Comment }
+type Infix = { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment }
 
-type Action = ActionExpr | ActionBlock | DefaultAction
-type ActionStmt = ActionAssign | ActionExpr | Error
-type ActionAssign struct { Name Ident; Expr ActionExpr }
-type ActionBlock struct { Actions []ActionStmt; Comments []Comment }
+type Action ~ ActionExpr | ActionBlock | DefaultAction
+type ActionStmt ~ ActionAssign | ActionExpr | Error
+type ActionAssign = { Name Ident; Expr ActionExpr }
+type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction terminal
-type ActionExpr = (
+type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
   | BinaryOp | UnaryOp | FieldAccess | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
 )
-type BinaryOp struct { Op string; L ActionExpr; R ActionExpr }
-type UnaryOp struct { Op string; X ActionExpr }
-type FieldAccess struct { X ActionExpr; Name Ident }
-type Call struct { X ActionExpr; Args []ActionExpr }
-type Constructor struct { X ActionExpr; Inits []InitField; Comments []Comment }
-type ListConstructor struct { Elem Type; Items []ActionExpr; Comments []Comment }
-type TerminalConstructor struct { Type VarRef; Args []ActionExpr; Comments []Comment }
-type InitField struct { Name Ident; Val ActionExpr; Comments []Comment }
-type ActionGroup struct { Expr ActionExpr }
-type Lambda struct { Params []Ident; Body ActionExpr }
+type BinaryOp = { Op string; L ActionExpr; R ActionExpr }
+type UnaryOp = { Op string; X ActionExpr }
+type FieldAccess = { X ActionExpr; Name Ident }
+type Call = { X ActionExpr; Args []ActionExpr }
+type Constructor = { X ActionExpr; Inits []InitField; Comments []Comment }
+type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
+type TerminalConstructor = { Type VarRef; Args []ActionExpr; Comments []Comment }
+type InitField = { Name Ident; Val ActionExpr; Comments []Comment }
+type ActionGroup = { Expr ActionExpr }
+type Lambda = { Params []Ident; Body ActionExpr }
 
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
@@ -182,11 +182,11 @@ rule type_def_stmt TypeDef = (
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_def_body TypeDefBody = (
   "type" -word_end #cut name:(ident @error(message="expected type name")) -ws
-  spec:(type_spec @error(message="expected struct, terminal, or type alias"))
+  spec:(type_spec @error(message="expected '= {', '~' or terminal"))
 ) => TypeDefBody{Name: $name, Spec: $spec}
 rule type_spec TypeSpec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec StructSpec = (
-  "struct" -word_end #cut "{" {ml := false} fields:(f:field_spec)* cs:comments
+  "=" -ws "{" #cut {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
 ) => StructSpec{Fields: map($fields, (x) => $x.f), Comments: $cs}
 rule field_spec FieldSpec = !(comments "}") f:(field #recover(skip=field_sync)) => $f
@@ -195,7 +195,7 @@ rule field Field = (
   t:(type_expr @error(message="expected field type")) tc:field_end
 ) => Field{Name: $name, Type: $t, Comments: concat($cs, $tc)}
 rule terminal_spec TerminalSpec = "terminal" !ident_char => TerminalSpec{}
-rule type_alias_spec TypeAliasSpec = "=" -ws t:type_expr => TypeAliasSpec{Type: $t}
+rule type_alias_spec TypeAliasSpec = "~" -ws t:type_expr => TypeAliasSpec{Type: $t}
 rule type_expr Type = operators {
   skip ws
   operand name:ident => TypeRef{Name: $name}
@@ -261,7 +261,7 @@ rule predicate Predicate = b:action_block => Predicate{Actions: $b.Actions, Comm
 
 // Postfix pragmas have dedicated payloads. Metadata attributes retain ordered
 // positional slots and named arguments, including explicit and omitted nils.
-type RepeatBounds struct { Min *Int; Max *Int; Range bool }
+type RepeatBounds = { Min *Int; Max *Int; Range bool }
 rule repeat_args RepeatBounds = (
   "(" {ml := true} -ws b:(repeat_range / repeat_count) -ws
   -(")" @error(message="expected closing parenthesis for #repeat"))

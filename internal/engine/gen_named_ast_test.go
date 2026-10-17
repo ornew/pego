@@ -12,16 +12,16 @@ import (
 )
 
 const namedASTGrammar = `type T terminal
-type S struct { T T }
-type U = S | T
-type Alias = T
-type Mixed = S | Seq
-type Number = int
-type Values struct { N Number; Text string; Flag bool }
-type Recovery struct { T T }
-type Items = []S
-type ParseRuleAST struct { T T }
-type ParseRuleAST_ = ParseRuleAST
+type S = { T T }
+type U ~ S | T
+type Alias ~ T
+type Mixed ~ S | Seq
+type Number ~ int
+type Values = { N Number; Text string; Flag bool }
+type Recovery = { T T }
+type Items ~ []S
+type ParseRuleAST = { T T }
+type ParseRuleAST_ ~ ParseRuleAST
 rule main = t:term => ParseRuleAST{T: $t}
 rule term T = "é"
 rule aliased Alias = "é"
@@ -54,7 +54,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 		force              bool
 	}{
 		{"direct", "", "main", false}, {"conversion", "", "main", true},
-		{"global-field", "type Unrelated struct { Value node }\n", "main", false},
+		{"global-field", "type Unrelated = { Value node }\n", "main", false},
 		{"field-read", "rule fieldRead = s:structure => $s.T\n", "main", false},
 		{"mixed-start", "", "cst", false},
 	} {
@@ -275,9 +275,9 @@ func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
 		t.Skip("builds generated nil-result consumers")
 	}
 	g, err := syntax.Parse(`type T terminal
-type S struct { T T }
-type U = S | T
-type MaybeU = *U
+type S = { T T }
+type U ~ S | T
+type MaybeU ~ *U
 rule term T = "é"
 rule nilAny any = t:term? => $t
 rule nilNode *node = t:term? => $t

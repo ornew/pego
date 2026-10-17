@@ -13,8 +13,8 @@ import (
 )
 
 const typedFilterIdentityGrammar = `type Word terminal
-type Alias = Word
-type Result struct { First *Alias; Items []Alias; Optional []*Alias; Empty []Alias; NilInput []Alias }
+type Alias ~ Word
+type Result = { First *Alias; Items []Alias; Optional []*Alias; Empty []Alias; NilInput []Alias }
 rule main Result = w:word $$ => Result{
     First: $w,
     Items: filter(list($w, $w), (item) => true),

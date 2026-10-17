@@ -194,7 +194,7 @@ func (p *printer) typeDef(t *TypeDef) {
 	case *StructSpec:
 		p.structSpec(spec, "")
 	case *AliasSpec:
-		p.write("= " + formatType(spec.Type, p.control))
+		p.write("~ " + formatType(spec.Type, p.control))
 	case *TerminalSpec:
 		p.write("terminal")
 	}
@@ -202,7 +202,7 @@ func (p *printer) typeDef(t *TypeDef) {
 
 func (p *printer) structSpec(s *StructSpec, indent string) {
 	pollFormat(p.control)
-	p.write("struct ")
+	p.write("= ")
 	empty := noComments(s.CloseBreak)
 	for _, f := range s.Fields {
 		pollFormat(p.control)

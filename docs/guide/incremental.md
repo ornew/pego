@@ -424,7 +424,7 @@ rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
-	{"startPos in an action", `type At struct { Pos int, Text Match }
+	{"startPos in an action", `type At = { Pos int; Text Match }
 rule main =  (line / blank)* $$
 rule line =  name " = " n:num "\n"
 rule name =  [a-z_]+ #atomic
@@ -813,7 +813,7 @@ import (
 
 const grammar = `package settings
 
-type Setting struct { Key Key, Value Value }
+type Setting = { Key Key; Value Value }
 type Key terminal
 type Value terminal
 

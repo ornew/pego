@@ -12,26 +12,26 @@ func TestGeneratedTSWorkControlBindings(t *testing.T) {
 		name, src, baseline string
 		isolated            bool
 	}{
-		{"head-equal", `type Box struct { S string }
+		{"head-equal", `type Box = { S string }
  rule main Box = {v := "` + key + `"} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `"} "z"`, "fast", false},
-		{"head-different", `type Box struct { S string }
+		{"head-different", `type Box = { S string }
  rule main Box = {v := "` + key + `x"} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `x"} "z"`, "fast", false},
-		{"nonhead-equal", `type Box struct { S string }
+		{"nonhead-equal", `type Box = { S string }
  rule main Box = {v := "` + key + `"} {other := true} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `"} {other := true} "z"`, "fast", false},
-		{"nonhead-different", `type Box struct { S string }
+		{"nonhead-different", `type Box = { S string }
  rule main Box = {v := "` + key + `x"} {other := true} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `x"} {other := true} "z"`, "fast", false},
 		{"identifier-hashing", `rule main = {` + longName + ` := 1} "z"
  rule fast = "z"`, "fast", false},
-		{"identifier-lookup", `type Box struct { N int }
+		{"identifier-lookup", `type Box = { N int }
  rule main Box = {` + longName + ` := 1} {` + longName + ` == 1} "z" => Box{N:` + longName + `}
  rule fast = {` + longName + ` := 1} "z"`, "fast", false},
 		// The first helper call skips memoization, and silent memo entries cannot
 		// serve the normal call. Both routes therefore perform six lookups.
-		{"environment-snapshot", `type Box struct { N int }
+		{"environment-snapshot", `type Box = { N int }
  rule main Box = {` + longName + ` := 1} &helper &helper x:helper => $x
  rule helper Box = {` + longName + ` == 1} letter => Box{N:` + longName + `}
  rule inline Box = {` + longName + ` := 1} ` + strings.Repeat("{"+longName+" == 1} ", 5) + `letter => Box{N:` + longName + `}
@@ -67,7 +67,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
 	}
 
 	t.Run("scope-and-rollback", func(t *testing.T) {
-		src := `type Box struct {
+		src := `type Box = {
     N int
 }
 

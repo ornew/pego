@@ -45,7 +45,7 @@ func TestDiagnostics(t *testing.T) {
 			[]Diagnostic{{Range: rng(2, 5, 2, 6), Message: "rule a is already defined"}},
 		},
 		{
-			"type error", "type P struct { X Match }\nrule main = \"a\" => P{X: 1}",
+			"type error", "type P = { X Match }\nrule main = \"a\" => P{X: 1}",
 			[]Diagnostic{{Range: rng(1, 21, 1, 22), Message: "cannot use int as Match in field X of P"}},
 		},
 		{
@@ -183,11 +183,11 @@ func TestFormatting(t *testing.T) {
 // "😀" takes two.
 const navSrc = `// A number.
 type Num terminal
-type Pair struct {
+type Pair = {
     Left  Num // the left
     Right *Num
 }
-type Any = Pair | Num // anything
+type Any ~ Pair | Num // anything
 
 rule num Num = [0-9]+ #atomic
 
@@ -280,7 +280,7 @@ func TestDocumentSymbols(t *testing.T) {
 		{"Pair", "struct", symbolKindStruct, rng(2, 0, 5, 1), rng(2, 5, 2, 9), 2},
 		{"  Left", "Num", symbolKindField, rng(3, 4, 3, 13), rng(3, 4, 3, 8), 0},
 		{"  Right", "*Num", symbolKindField, rng(4, 4, 4, 14), rng(4, 4, 4, 9), 0},
-		{"Any", "= Pair | Num", symbolKindInterface, rng(6, 0, 6, 21), rng(6, 5, 6, 8), 0},
+		{"Any", "~ Pair | Num", symbolKindInterface, rng(6, 0, 6, 21), rng(6, 5, 6, 8), 0},
 		{"num", "Num", symbolKindFunction, rng(8, 0, 8, 29), rng(8, 5, 8, 8), 0},
 		{"pair", "Pair", symbolKindFunction, rng(12, 0, 12, 58), rng(12, 5, 12, 9), 0},
 		{"main", "Seq", symbolKindFunction, rng(13, 0, 13, 27), rng(13, 5, 13, 9), 0},
@@ -329,8 +329,8 @@ func TestHover(t *testing.T) {
 		{13, 5, "```pego\nrule main Seq\n```\n\n*Inferred type.*", rng(13, 5, 13, 9)},
 		{14, 5, "```pego\nrule lst []Num\n```\n\n*Inferred type.*", rng(14, 5, 14, 8)},
 		{1, 6, "```pego\ntype Num terminal\n```\n\nA number.", rng(1, 5, 1, 8)},
-		{12, 34, "```pego\ntype Pair struct {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
-		{6, 6, "```pego\ntype Any = Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
+		{12, 34, "```pego\ntype Pair = {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
+		{6, 6, "```pego\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
 		{14, 22, "```pego\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(14, 20, 14, 23)},
 		{14, 33, "```pego\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(14, 32, 14, 37)},
 		{15, 19, "```pego\nstartPos int\n```\n" + findBuiltin(builtinMembers, "startPos").doc, rng(15, 18, 15, 26)},
@@ -355,12 +355,12 @@ func TestHover(t *testing.T) {
 	}
 
 	// Built-in and undefined names; a grammar with errors has no inferred types.
-	c.open("file:///hover2.pego", "type T struct { M Match }\nrule a = x\nrule b T = \"b\" => T{M: $1}")
+	c.open("file:///hover2.pego", "type T = { M Match }\nrule a = x\nrule b T = \"b\" => T{M: $1}")
 	for _, tc := range []struct {
 		line, char int
 		want       string
 	}{
-		{0, 19, "```pego\ntype Match\n```\n" + findBuiltin(builtinTypes, "Match").doc},
+		{0, 14, "```pego\ntype Match\n```\n" + findBuiltin(builtinTypes, "Match").doc},
 		{1, 9, "```pego\nrule x\n```\nUndefined rule."},
 		{1, 5, "```pego\nrule a\n```\n\n*The type is inferred when the grammar has no errors.*"},
 		{2, 5, "```pego\nrule b T\n```"},
@@ -427,8 +427,8 @@ func TestRename(t *testing.T) {
 		}
 	}
 	// Built-in and undefined names cannot be renamed, nor anything while there are syntax errors.
-	c.open("file:///r2.pego", "type T struct { M Match }\nrule a = x")
-	if e := c.requestError("textDocument/prepareRename", at("file:///r2.pego", 0, 19)); e.Message != "cannot rename the built-in type Match" {
+	c.open("file:///r2.pego", "type T = { M Match }\nrule a = x")
+	if e := c.requestError("textDocument/prepareRename", at("file:///r2.pego", 0, 14)); e.Message != "cannot rename the built-in type Match" {
 		t.Errorf("built-in type: %+v", e)
 	}
 	if e := c.requestError("textDocument/prepareRename", at("file:///r2.pego", 1, 9)); e.Message != "rule x is not defined" {
@@ -459,9 +459,9 @@ func TestCompletion(t *testing.T) {
 	// Each line is a context; the cursor is at the end of the line unless noted.
 	lines := []string{
 		"type Num terminal",                                // 0
-		"type P struct { A Num; B Num }",                   // 1
-		"type Q struct { A Num; ",                          // 2: a field name
-		"type R struct { A Nu",                             // 3: a field type
+		"type P = { A Num; B Num }",                   // 1
+		"type Q = { A Num; ",                          // 2: a field name
+		"type R = { A Nu",                             // 3: a field type
 		"rule num ",                                        // 4: the type of a rule
 		"rule a = n ",                                      // 5: a rule name
 		"rule b = x:num @",                                 // 6: an attribute
@@ -523,6 +523,11 @@ func TestCompletion(t *testing.T) {
 		if got := completionLabels(c, uri, tc.line, char); !reflect.DeepEqual(got, tc.want) && !(len(got) == 0 && len(tc.want) == 0) {
 			t.Errorf("line %d (%q) at %d:\ngot  %q\nwant %q", tc.line, lines[tc.line], char, got, tc.want)
 		}
+	}
+	// After "type T =" only a struct body can follow, so no type names are offered.
+	c.open("file:///define.pego", "type P = {}\ntype T = ")
+	if got := completionLabels(c, "file:///define.pego", 1, 9); len(got) != 0 {
+		t.Errorf("after type T =: %q", got)
 	}
 	// At the start of an empty file.
 	c.open("file:///empty.pego", "")

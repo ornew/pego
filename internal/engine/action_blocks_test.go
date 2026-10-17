@@ -25,7 +25,7 @@ func TestActionBlocksUnsupported(t *testing.T) {
 			}
 		}
 	}
-	for _, src := range []string{`rule a = {x:=1} {x<10} "x"`, "type A struct {}\nrule a = \"x\" => A{}", `rule a = "x" => ...`} {
+	for _, src := range []string{`rule a = {x:=1} {x<10} "x"`, "type A = {}\nrule a = \"x\" => A{}", `rule a = "x" => ...`} {
 		g, err := syntax.Parse(src)
 		if err != nil {
 			t.Fatal(err)

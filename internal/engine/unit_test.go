@@ -45,7 +45,7 @@ func TestInvalidUTF8(t *testing.T) {
 }
 
 func TestLenInUnits(t *testing.T) {
-	prog := compile(t, `type N struct { N int }
+	prog := compile(t, `type N = { N int }
 rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 	for unit, want := range map[Unit]int{CodePoints: 4, Bytes: 12} {
 		n, err := prog.ParseWith("main", "日本", ParseOptions{Unit: unit})

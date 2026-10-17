@@ -43,14 +43,14 @@ package calc
 type Number terminal // a terminal type: the value is the matched text
 type OpType terminal
 
-type Op struct {
+type Op = {
     Left  Node   // left operand
     Op    OpType // operator
     Right Node   // right operand
 }
 
 // Node is either an Op or a Number.
-type Node = Op | Number
+type Node ~ Op | Number
 
 // --- Rules ---
 

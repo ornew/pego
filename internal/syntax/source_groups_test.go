@@ -10,7 +10,7 @@ import (
 
 func TestSourceGroups(t *testing.T) {
 	const src = `type Number terminal
-type Alias = (
+type Alias ~ (
  // type documentation
  (Number) // type tail
 )
@@ -67,11 +67,11 @@ rule main (Alias) = "x" => (
 
 func TestGroupOpeningComments(t *testing.T) {
 	for _, src := range []string{
-		"type Alias = ( // opening\n string\n)",
-		"type Alias = ( /* opening */ string)",
+		"type Alias ~ ( // opening\n string\n)",
+		"type Alias ~ ( /* opening */ string)",
 		"rule main = \"x\" => ( // opening\n 1\n)",
 		"rule main = \"x\" => ( /* opening */ 1)",
-		"type A struct {\n X (\n // field type\n string\n )\n}",
+		"type A = {\n X (\n // field type\n string\n )\n}",
 		"rule main = \"x\" => ((\n // inner\n 1\n))",
 	} {
 		t.Run(src, func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGroupOpeningComments(t *testing.T) {
 }
 
 func TestInlineGroupCommentOwnership(t *testing.T) {
-	for _, src := range []string{"type T = (/*doc*/ A)", "rule main = \"x\" => ( /*doc*/ x)", "type T = (/*first*/ /*second*/ A)", "type T = (A /*tail*/)", "rule main = \"x\" => (x /*tail*/)", "type T = (/*first*/ A /*tail*/)"} {
+	for _, src := range []string{"type T ~ (/*doc*/ A)", "rule main = \"x\" => ( /*doc*/ x)", "type T ~ (/*first*/ /*second*/ A)", "type T ~ (A /*tail*/)", "rule main = \"x\" => (x /*tail*/)", "type T ~ (/*first*/ A /*tail*/)"} {
 		t.Run(src, func(t *testing.T) {
 			g, err := Parse(src)
 			if err != nil {

@@ -85,18 +85,18 @@ type JSDocAllType terminal
 type JSDocUnknownType terminal
 
 // --- Names ---
-type QualifiedName struct { Left EntityName; Right Identifier }
-type ComputedPropertyName struct { Expression Expression }
+type QualifiedName = { Left EntityName; Right Identifier }
+type ComputedPropertyName = { Expression Expression }
 
 // --- Signature elements ---
-type TypeParameter struct {
+type TypeParameter = {
     Modifiers  []ModifierLike
     Name       Identifier
     Constraint *TypeNode
     Default    *TypeNode
     Expression *Expression // a constraint that is an expression (extends +1), which the checker reports
 }
-type Parameter struct {
+type Parameter = {
     Modifiers      []ModifierLike
     DotDotDotToken *Token
     Name           *BindingName
@@ -104,17 +104,17 @@ type Parameter struct {
     Type           *TypeNode
     Initializer    *Expression
 }
-type Decorator struct { Expression Expression }
+type Decorator = { Expression Expression }
 
 // --- Type members ---
-type PropertySignature struct {
+type PropertySignature = {
     Modifiers     []ModifierLike
     Name          PropertyName
     QuestionToken *Token
     Type          *TypeNode
     Initializer   *Expression
 }
-type MethodSignature struct {
+type MethodSignature = {
     Modifiers      []ModifierLike
     Name           PropertyName
     QuestionToken  *Token
@@ -122,12 +122,12 @@ type MethodSignature struct {
     Parameters     []Parameter
     Type           *TypeNode
 }
-type CallSignature struct { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
-type ConstructSignature struct { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
-type IndexSignature struct { Modifiers []ModifierLike; Parameters []Parameter; Type *TypeNode }
+type CallSignature = { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
+type ConstructSignature = { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
+type IndexSignature = { Modifiers []ModifierLike; Parameters []Parameter; Type *TypeNode }
 
 // --- Class members ---
-type PropertyDeclaration struct {
+type PropertyDeclaration = {
     Modifiers        []ModifierLike
     Name             PropertyName
     QuestionToken    *Token
@@ -135,7 +135,7 @@ type PropertyDeclaration struct {
     Type             *TypeNode
     Initializer      *Expression
 }
-type MethodDeclaration struct {
+type MethodDeclaration = {
     Modifiers        []ModifierLike
     AsteriskToken    *Token
     Name             PropertyName
@@ -146,15 +146,15 @@ type MethodDeclaration struct {
     Type             *TypeNode
     Body             *Block
 }
-type ClassStaticBlockDeclaration struct { Modifiers []ModifierLike; Body Block }
-type Constructor struct {
+type ClassStaticBlockDeclaration = { Modifiers []ModifierLike; Body Block }
+type Constructor = {
     Modifiers      []ModifierLike
     TypeParameters []TypeParameter
     Parameters     []Parameter
     Type           *TypeNode
     Body           *Block
 }
-type GetAccessor struct {
+type GetAccessor = {
     Modifiers      []ModifierLike
     Name           PropertyName
     TypeParameters []TypeParameter
@@ -162,7 +162,7 @@ type GetAccessor struct {
     Type           *TypeNode
     Body           *Block
 }
-type SetAccessor struct {
+type SetAccessor = {
     Modifiers      []ModifierLike
     Name           PropertyName
     TypeParameters []TypeParameter
@@ -172,29 +172,29 @@ type SetAccessor struct {
 }
 
 // --- Types ---
-type TypePredicate struct { AssertsModifier *Token; ParameterName TypePredicateParameterName; Type *TypeNode }
-type TypeReference struct { TypeName EntityName; TypeArguments []TypeNode }
-type FunctionType struct { TypeParameters []TypeParameter; Parameters []Parameter; Type TypeNode }
-type ConstructorType struct {
+type TypePredicate = { AssertsModifier *Token; ParameterName TypePredicateParameterName; Type *TypeNode }
+type TypeReference = { TypeName EntityName; TypeArguments []TypeNode }
+type FunctionType = { TypeParameters []TypeParameter; Parameters []Parameter; Type TypeNode }
+type ConstructorType = {
     Modifiers      []ModifierLike
     TypeParameters []TypeParameter
     Parameters     []Parameter
     Type           TypeNode
 }
-type TypeQuery struct { ExprName EntityName; TypeArguments []TypeNode }
-type TypeLiteral struct { Members []TypeElement }
-type ArrayType struct { ElementType TypeNode }
-type TupleType struct { Elements []TypeNode }
-type OptionalType struct { Type TypeNode }
-type RestType struct { Type TypeNode }
-type UnionType struct { Types []TypeNode }
-type IntersectionType struct { Types []TypeNode }
-type ConditionalType struct { CheckType TypeNode; ExtendsType TypeNode; TrueType TypeNode; FalseType TypeNode }
-type InferType struct { TypeParameter TypeParameter }
-type ParenthesizedType struct { Type TypeNode }
-type TypeOperator struct { Operator string; Type TypeNode } // Operator is keyof, unique or readonly
-type IndexedAccessType struct { ObjectType TypeNode; IndexType TypeNode }
-type MappedType struct {
+type TypeQuery = { ExprName EntityName; TypeArguments []TypeNode }
+type TypeLiteral = { Members []TypeElement }
+type ArrayType = { ElementType TypeNode }
+type TupleType = { Elements []TypeNode }
+type OptionalType = { Type TypeNode }
+type RestType = { Type TypeNode }
+type UnionType = { Types []TypeNode }
+type IntersectionType = { Types []TypeNode }
+type ConditionalType = { CheckType TypeNode; ExtendsType TypeNode; TrueType TypeNode; FalseType TypeNode }
+type InferType = { TypeParameter TypeParameter }
+type ParenthesizedType = { Type TypeNode }
+type TypeOperator = { Operator string; Type TypeNode } // Operator is keyof, unique or readonly
+type IndexedAccessType = { ObjectType TypeNode; IndexType TypeNode }
+type MappedType = {
     ReadonlyToken *Token
     TypeParameter TypeParameter
     NameType      *TypeNode
@@ -202,25 +202,25 @@ type MappedType struct {
     Type          *TypeNode
     Members       []TypeElement
 }
-type LiteralType struct { Literal LiteralTypeLiteral }
-type NamedTupleMember struct { DotDotDotToken *Token; Name Identifier; QuestionToken *Token; Type TypeNode }
-type TemplateLiteralType struct { Head TemplateHead; TemplateSpans []TemplateLiteralTypeSpan }
-type TemplateLiteralTypeSpan struct { Type TypeNode; Literal TemplateMiddleOrTail }
-type ImportType struct {
+type LiteralType = { Literal LiteralTypeLiteral }
+type NamedTupleMember = { DotDotDotToken *Token; Name Identifier; QuestionToken *Token; Type TypeNode }
+type TemplateLiteralType = { Head TemplateHead; TemplateSpans []TemplateLiteralTypeSpan }
+type TemplateLiteralTypeSpan = { Type TypeNode; Literal TemplateMiddleOrTail }
+type ImportType = {
     Argument      TypeNode
     Attributes    *ImportAttributes
     Qualifier     *EntityName
     TypeArguments []TypeNode
     IsTypeOf      bool
 }
-type JSDocNullableType struct { Type TypeNode; Postfix bool }
-type JSDocNonNullableType struct { Type TypeNode; Postfix bool }
-type JSDocFunctionType struct { Parameters []Parameter; Type *TypeNode }
+type JSDocNullableType = { Type TypeNode; Postfix bool }
+type JSDocNonNullableType = { Type TypeNode; Postfix bool }
+type JSDocFunctionType = { Parameters []Parameter; Type *TypeNode }
 
 // --- Binding patterns ---
-type ObjectBindingPattern struct { Elements []BindingElement }
-type ArrayBindingPattern struct { Elements []ArrayBindingElement }
-type BindingElement struct {
+type ObjectBindingPattern = { Elements []BindingElement }
+type ArrayBindingPattern = { Elements []ArrayBindingElement }
+type BindingElement = {
     DotDotDotToken *Token
     PropertyName   *PropertyName
     Name           BindingName
@@ -228,16 +228,16 @@ type BindingElement struct {
 }
 
 // --- Expressions ---
-type ArrayLiteralExpression struct { Elements []Expression }
-type ObjectLiteralExpression struct { Properties []ObjectLiteralElement }
-type PropertyAssignment struct {
+type ArrayLiteralExpression = { Elements []Expression }
+type ObjectLiteralExpression = { Properties []ObjectLiteralElement }
+type PropertyAssignment = {
     Modifiers        []ModifierLike
     Name             PropertyName
     QuestionToken    *Token
     ExclamationToken *Token
     Initializer      Expression
 }
-type ShorthandPropertyAssignment struct {
+type ShorthandPropertyAssignment = {
     Modifiers                   []ModifierLike
     Name                        Identifier
     QuestionToken               *Token
@@ -245,25 +245,25 @@ type ShorthandPropertyAssignment struct {
     EqualsToken                 *Token
     ObjectAssignmentInitializer *Expression
 }
-type SpreadAssignment struct { Expression Expression }
-type PropertyAccessExpression struct { Expression Expression; QuestionDotToken *Token; Name MemberName }
-type ElementAccessExpression struct { Expression Expression; QuestionDotToken *Token; ArgumentExpression Expression }
-type CallExpression struct {
+type SpreadAssignment = { Expression Expression }
+type PropertyAccessExpression = { Expression Expression; QuestionDotToken *Token; Name MemberName }
+type ElementAccessExpression = { Expression Expression; QuestionDotToken *Token; ArgumentExpression Expression }
+type CallExpression = {
     Expression       Expression
     QuestionDotToken *Token
     TypeArguments    []TypeNode
     Arguments        []Expression
 }
-type NewExpression struct { Expression Expression; TypeArguments []TypeNode; Arguments *[]Expression } // Arguments is nil without parentheses
-type TaggedTemplateExpression struct {
+type NewExpression = { Expression Expression; TypeArguments []TypeNode; Arguments *[]Expression } // Arguments is nil without parentheses
+type TaggedTemplateExpression = {
     Tag              Expression
     QuestionDotToken *Token
     TypeArguments    []TypeNode
     Template         TemplateLiteral
 }
-type TypeAssertionExpression struct { Type TypeNode; Expression Expression }
-type ParenthesizedExpression struct { Expression Expression }
-type FunctionExpression struct {
+type TypeAssertionExpression = { Type TypeNode; Expression Expression }
+type ParenthesizedExpression = { Expression Expression }
+type FunctionExpression = {
     Modifiers      []ModifierLike
     AsteriskToken  *Token
     Name           *Identifier
@@ -272,7 +272,7 @@ type FunctionExpression struct {
     Type           *TypeNode
     Body           Block
 }
-type ArrowFunction struct {
+type ArrowFunction = {
     Modifiers              []ModifierLike
     TypeParameters         []TypeParameter
     Parameters             []Parameter
@@ -280,96 +280,96 @@ type ArrowFunction struct {
     EqualsGreaterThanToken Token
     Body                   ConciseBody
 }
-type DeleteExpression struct { Expression Expression }
-type TypeOfExpression struct { Expression Expression }
-type VoidExpression struct { Expression Expression }
-type AwaitExpression struct { Expression Expression }
-type PrefixUnaryExpression struct { Operator string; Operand Expression }
-type PostfixUnaryExpression struct { Operand Expression; Operator string }
-type BinaryExpression struct { Left Expression; OperatorToken Token; Right Expression }
-type ConditionalExpression struct {
+type DeleteExpression = { Expression Expression }
+type TypeOfExpression = { Expression Expression }
+type VoidExpression = { Expression Expression }
+type AwaitExpression = { Expression Expression }
+type PrefixUnaryExpression = { Operator string; Operand Expression }
+type PostfixUnaryExpression = { Operand Expression; Operator string }
+type BinaryExpression = { Left Expression; OperatorToken Token; Right Expression }
+type ConditionalExpression = {
     Condition     Expression
     QuestionToken Token
     WhenTrue      Expression
     ColonToken    Token
     WhenFalse     Expression
 }
-type TemplateExpression struct { Head TemplateHead; TemplateSpans []TemplateSpan }
-type TemplateSpan struct { Expression Expression; Literal TemplateMiddleOrTail }
-type YieldExpression struct { AsteriskToken *Token; Expression *Expression }
-type SpreadElement struct { Expression Expression }
-type ClassExpression struct {
+type TemplateExpression = { Head TemplateHead; TemplateSpans []TemplateSpan }
+type TemplateSpan = { Expression Expression; Literal TemplateMiddleOrTail }
+type YieldExpression = { AsteriskToken *Token; Expression *Expression }
+type SpreadElement = { Expression Expression }
+type ClassExpression = {
     Modifiers       []ModifierLike
     Name            *Identifier
     TypeParameters  []TypeParameter
     HeritageClauses []HeritageClause
     Members         []ClassElement
 }
-type ExpressionWithTypeArguments struct { Expression Expression; TypeArguments []TypeNode }
-type AsExpression struct { Expression Expression; Type TypeNode }
-type SatisfiesExpression struct { Expression Expression; Type TypeNode }
-type NonNullExpression struct { Expression Expression }
-type MetaProperty struct { KeywordToken string; Name Identifier } // KeywordToken is new or import
+type ExpressionWithTypeArguments = { Expression Expression; TypeArguments []TypeNode }
+type AsExpression = { Expression Expression; Type TypeNode }
+type SatisfiesExpression = { Expression Expression; Type TypeNode }
+type NonNullExpression = { Expression Expression }
+type MetaProperty = { KeywordToken string; Name Identifier } // KeywordToken is new or import
 
 // --- JSX ---
-type JsxElement struct { OpeningElement JsxOpeningElement; Children []JsxChild; ClosingElement JsxClosingElement }
-type JsxSelfClosingElement struct { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
-type JsxOpeningElement struct { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
-type JsxClosingElement struct { TagName JsxTagName }
-type JsxFragment struct {
+type JsxElement = { OpeningElement JsxOpeningElement; Children []JsxChild; ClosingElement JsxClosingElement }
+type JsxSelfClosingElement = { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
+type JsxOpeningElement = { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
+type JsxClosingElement = { TagName JsxTagName }
+type JsxFragment = {
     OpeningFragment JsxOpeningFragment
     Children        []JsxChild
     ClosingFragment JsxClosingFragment
 }
-type JsxAttributes struct { Properties []JsxAttributeLike }
-type JsxAttribute struct { Name JsxAttributeName; Initializer *JsxAttributeValue }
-type JsxSpreadAttribute struct { Expression Expression }
-type JsxExpression struct { DotDotDotToken *Token; Expression *Expression }
-type JsxNamespacedName struct { Namespace Identifier; Name Identifier }
+type JsxAttributes = { Properties []JsxAttributeLike }
+type JsxAttribute = { Name JsxAttributeName; Initializer *JsxAttributeValue }
+type JsxSpreadAttribute = { Expression Expression }
+type JsxExpression = { DotDotDotToken *Token; Expression *Expression }
+type JsxNamespacedName = { Namespace Identifier; Name Identifier }
 
 // --- Statements ---
-type SourceFile struct { Statements []Statement; EndOfFileToken EndOfFileToken }
-type Block struct { Statements []Statement }
-type VariableStatement struct { Modifiers []ModifierLike; DeclarationList VariableDeclarationList }
-type VariableDeclarationList struct { Keyword string; Declarations []VariableDeclaration } // var, let, const, using or await using
-type VariableDeclaration struct {
+type SourceFile = { Statements []Statement; EndOfFileToken EndOfFileToken }
+type Block = { Statements []Statement }
+type VariableStatement = { Modifiers []ModifierLike; DeclarationList VariableDeclarationList }
+type VariableDeclarationList = { Keyword string; Declarations []VariableDeclaration } // var, let, const, using or await using
+type VariableDeclaration = {
     Name             BindingName
     ExclamationToken *Token
     Type             *TypeNode
     Initializer      *Expression
 }
-type ExpressionStatement struct { Expression Expression }
-type IfStatement struct { Expression Expression; ThenStatement Statement; ElseStatement *Statement }
-type DoStatement struct { Statement Statement; Expression Expression }
-type WhileStatement struct { Expression Expression; Statement Statement }
-type ForStatement struct {
+type ExpressionStatement = { Expression Expression }
+type IfStatement = { Expression Expression; ThenStatement Statement; ElseStatement *Statement }
+type DoStatement = { Statement Statement; Expression Expression }
+type WhileStatement = { Expression Expression; Statement Statement }
+type ForStatement = {
     Initializer *ForInitializer
     Condition   *Expression
     Incrementor *Expression
     Statement   Statement
 }
-type ForInStatement struct { Initializer ForInitializer; Expression Expression; Statement Statement }
-type ForOfStatement struct {
+type ForInStatement = { Initializer ForInitializer; Expression Expression; Statement Statement }
+type ForOfStatement = {
     AwaitModifier *Token
     Initializer   ForInitializer
     Expression    Expression
     Statement     Statement
 }
-type ContinueStatement struct { Label *Identifier }
-type BreakStatement struct { Label *Identifier }
-type ReturnStatement struct { Expression *Expression }
-type WithStatement struct { Expression Expression; Statement Statement }
-type SwitchStatement struct { Expression Expression; CaseBlock CaseBlock }
-type CaseBlock struct { Clauses []CaseOrDefaultClause }
-type CaseClause struct { Expression Expression; Statements []Statement }
-type DefaultClause struct { Statements []Statement }
-type LabeledStatement struct { Label Identifier; Statement Statement }
-type ThrowStatement struct { Expression Expression }
-type TryStatement struct { TryBlock Block; CatchClause *CatchClause; FinallyBlock *Block }
-type CatchClause struct { VariableDeclaration *VariableDeclaration; Block Block }
+type ContinueStatement = { Label *Identifier }
+type BreakStatement = { Label *Identifier }
+type ReturnStatement = { Expression *Expression }
+type WithStatement = { Expression Expression; Statement Statement }
+type SwitchStatement = { Expression Expression; CaseBlock CaseBlock }
+type CaseBlock = { Clauses []CaseOrDefaultClause }
+type CaseClause = { Expression Expression; Statements []Statement }
+type DefaultClause = { Statements []Statement }
+type LabeledStatement = { Label Identifier; Statement Statement }
+type ThrowStatement = { Expression Expression }
+type TryStatement = { TryBlock Block; CatchClause *CatchClause; FinallyBlock *Block }
+type CatchClause = { VariableDeclaration *VariableDeclaration; Block Block }
 
 // --- Declarations ---
-type FunctionDeclaration struct {
+type FunctionDeclaration = {
     Modifiers      []ModifierLike
     AsteriskToken  *Token
     Name           *Identifier
@@ -378,96 +378,96 @@ type FunctionDeclaration struct {
     Type           *TypeNode
     Body           *Block
 }
-type ClassDeclaration struct {
+type ClassDeclaration = {
     Modifiers       []ModifierLike
     Name            *Identifier
     TypeParameters  []TypeParameter
     HeritageClauses []HeritageClause
     Members         []ClassElement
 }
-type HeritageClause struct { Token string; Types []ExpressionWithTypeArguments } // Token is extends or implements
-type InterfaceDeclaration struct {
+type HeritageClause = { Token string; Types []ExpressionWithTypeArguments } // Token is extends or implements
+type InterfaceDeclaration = {
     Modifiers       []ModifierLike
     Name            Identifier
     TypeParameters  []TypeParameter
     HeritageClauses []HeritageClause
     Members         []TypeElement
 }
-type TypeAliasDeclaration struct {
+type TypeAliasDeclaration = {
     Modifiers      []ModifierLike
     Name           Identifier
     TypeParameters []TypeParameter
     Type           TypeNode
 }
-type EnumDeclaration struct { Modifiers []ModifierLike; Name Identifier; Members []EnumMember }
-type EnumMember struct { Name PropertyName; Initializer *Expression }
-type ModuleDeclaration struct { Modifiers []ModifierLike; Name ModuleName; Body *ModuleBody }
-type ModuleBlock struct { Statements []Statement }
-type NamespaceExportDeclaration struct { Modifiers []ModifierLike; Name Identifier }
-type ImportEqualsDeclaration struct {
+type EnumDeclaration = { Modifiers []ModifierLike; Name Identifier; Members []EnumMember }
+type EnumMember = { Name PropertyName; Initializer *Expression }
+type ModuleDeclaration = { Modifiers []ModifierLike; Name ModuleName; Body *ModuleBody }
+type ModuleBlock = { Statements []Statement }
+type NamespaceExportDeclaration = { Modifiers []ModifierLike; Name Identifier }
+type ImportEqualsDeclaration = {
     Modifiers       []ModifierLike
     Name            Identifier
     ModuleReference ModuleReference
     IsTypeOnly      bool
 }
-type ExternalModuleReference struct { Expression Expression }
-type ImportDeclaration struct {
+type ExternalModuleReference = { Expression Expression }
+type ImportDeclaration = {
     Modifiers       []ModifierLike
     ImportClause    *ImportClause
     ModuleSpecifier Expression
     Attributes      *ImportAttributes
 }
-type ImportClause struct { Name *Identifier; NamedBindings *NamedImportBindings; PhaseModifier string } // PhaseModifier is type, defer or empty
-type NamespaceImport struct { Name Identifier }
-type NamedImports struct { Elements []ImportSpecifier }
-type ImportSpecifier struct { PropertyName *ModuleExportName; Name Identifier; IsTypeOnly bool }
-type ImportAttributes struct { Elements []ImportAttribute; Token string } // Token is with or assert
-type ImportAttribute struct { Name ImportAttributeName; Value Expression }
-type ExportAssignment struct { Modifiers []ModifierLike; Expression Expression; IsExportEquals bool }
-type ExportDeclaration struct {
+type ImportClause = { Name *Identifier; NamedBindings *NamedImportBindings; PhaseModifier string } // PhaseModifier is type, defer or empty
+type NamespaceImport = { Name Identifier }
+type NamedImports = { Elements []ImportSpecifier }
+type ImportSpecifier = { PropertyName *ModuleExportName; Name Identifier; IsTypeOnly bool }
+type ImportAttributes = { Elements []ImportAttribute; Token string } // Token is with or assert
+type ImportAttribute = { Name ImportAttributeName; Value Expression }
+type ExportAssignment = { Modifiers []ModifierLike; Expression Expression; IsExportEquals bool }
+type ExportDeclaration = {
     Modifiers       []ModifierLike
     ExportClause    *NamedExportBindings
     ModuleSpecifier *Expression
     Attributes      *ImportAttributes
     IsTypeOnly      bool
 }
-type NamedExports struct { Elements []ExportSpecifier }
-type NamespaceExport struct { Name ModuleExportName }
-type ExportSpecifier struct { PropertyName *ModuleExportName; Name ModuleExportName; IsTypeOnly bool }
+type NamedExports = { Elements []ExportSpecifier }
+type NamespaceExport = { Name ModuleExportName }
+type ExportSpecifier = { PropertyName *ModuleExportName; Name ModuleExportName; IsTypeOnly bool }
 
 // --- Unions ---
-type EntityName = Identifier | QualifiedName
-type PropertyName = Identifier | StringLiteral | NumericLiteral | BigIntLiteral | ComputedPropertyName | PrivateIdentifier | NoSubstitutionTemplateLiteral
-type MemberName = Identifier | PrivateIdentifier
-type BindingName = Identifier | ObjectBindingPattern | ArrayBindingPattern
-type ArrayBindingElement = BindingElement | OmittedExpression
-type ModifierLike = Modifier | Decorator
-type TypePredicateParameterName = Identifier | ThisTypeNode
-type LiteralTypeLiteral = StringLiteral | NumericLiteral | BigIntLiteral | BooleanLiteral | NullLiteral | PrefixUnaryExpression | NoSubstitutionTemplateLiteral
-type TemplateMiddleOrTail = TemplateMiddle | TemplateTail
-type TemplateLiteral = NoSubstitutionTemplateLiteral | TemplateExpression
-type TypeNode = KeywordTypeNode | ThisTypeNode | TypePredicate | TypeReference | FunctionType | ConstructorType | TypeQuery | TypeLiteral | ArrayType | TupleType | OptionalType | RestType | UnionType | IntersectionType | ConditionalType | InferType | ParenthesizedType | TypeOperator | IndexedAccessType | MappedType | LiteralType | NamedTupleMember | TemplateLiteralType | ImportType | JSDocAllType | JSDocUnknownType | JSDocNullableType | JSDocNonNullableType | JSDocFunctionType
-type TypeElement = CallSignature | ConstructSignature | PropertySignature | MethodSignature | IndexSignature | GetAccessor | SetAccessor
-type ClassElement = PropertyDeclaration | MethodDeclaration | Constructor | SemicolonClassElement | GetAccessor | SetAccessor | IndexSignature | ClassStaticBlockDeclaration
-type ObjectLiteralElement = PropertyAssignment | ShorthandPropertyAssignment | SpreadAssignment | MethodDeclaration | GetAccessor | SetAccessor
-type Expression = Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment
-type ConciseBody = Block | Expression
-type Statement = Block | EmptyStatement | VariableStatement | ExpressionStatement | IfStatement | DoStatement | WhileStatement | ForStatement | ForInStatement | ForOfStatement | ContinueStatement | BreakStatement | ReturnStatement | WithStatement | SwitchStatement | LabeledStatement | ThrowStatement | TryStatement | DebuggerStatement | FunctionDeclaration | ClassDeclaration | InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration | ModuleDeclaration | ImportEqualsDeclaration | ImportDeclaration | ExportAssignment | ExportDeclaration | NamespaceExportDeclaration
-type ForInitializer = VariableDeclarationList | Expression
-type CaseOrDefaultClause = CaseClause | DefaultClause
-type ModuleName = Identifier | StringLiteral
-type ModuleBody = ModuleBlock | ModuleDeclaration
-type ModuleReference = Identifier | QualifiedName | ExternalModuleReference
-type NamedImportBindings = NamespaceImport | NamedImports
-type NamedExportBindings = NamedExports | NamespaceExport
-type ModuleExportName = Identifier | StringLiteral
-type ImportAttributeName = Identifier | StringLiteral
-type JsxChild = JsxText | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
-type JsxAttributeLike = JsxAttribute | JsxSpreadAttribute
-type JsxAttributeName = Identifier | JsxNamespacedName
-type JsxAttributeValue = StringLiteral | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
-type JsxTagName = Identifier | ThisExpression | JsxNamespacedName | PropertyAccessExpression
-type JsxTagNameStart = Identifier | ThisExpression
+type EntityName ~ Identifier | QualifiedName
+type PropertyName ~ Identifier | StringLiteral | NumericLiteral | BigIntLiteral | ComputedPropertyName | PrivateIdentifier | NoSubstitutionTemplateLiteral
+type MemberName ~ Identifier | PrivateIdentifier
+type BindingName ~ Identifier | ObjectBindingPattern | ArrayBindingPattern
+type ArrayBindingElement ~ BindingElement | OmittedExpression
+type ModifierLike ~ Modifier | Decorator
+type TypePredicateParameterName ~ Identifier | ThisTypeNode
+type LiteralTypeLiteral ~ StringLiteral | NumericLiteral | BigIntLiteral | BooleanLiteral | NullLiteral | PrefixUnaryExpression | NoSubstitutionTemplateLiteral
+type TemplateMiddleOrTail ~ TemplateMiddle | TemplateTail
+type TemplateLiteral ~ NoSubstitutionTemplateLiteral | TemplateExpression
+type TypeNode ~ KeywordTypeNode | ThisTypeNode | TypePredicate | TypeReference | FunctionType | ConstructorType | TypeQuery | TypeLiteral | ArrayType | TupleType | OptionalType | RestType | UnionType | IntersectionType | ConditionalType | InferType | ParenthesizedType | TypeOperator | IndexedAccessType | MappedType | LiteralType | NamedTupleMember | TemplateLiteralType | ImportType | JSDocAllType | JSDocUnknownType | JSDocNullableType | JSDocNonNullableType | JSDocFunctionType
+type TypeElement ~ CallSignature | ConstructSignature | PropertySignature | MethodSignature | IndexSignature | GetAccessor | SetAccessor
+type ClassElement ~ PropertyDeclaration | MethodDeclaration | Constructor | SemicolonClassElement | GetAccessor | SetAccessor | IndexSignature | ClassStaticBlockDeclaration
+type ObjectLiteralElement ~ PropertyAssignment | ShorthandPropertyAssignment | SpreadAssignment | MethodDeclaration | GetAccessor | SetAccessor
+type Expression ~ Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement | JsxSelfClosingElement | JsxFragment
+type ConciseBody ~ Block | Expression
+type Statement ~ Block | EmptyStatement | VariableStatement | ExpressionStatement | IfStatement | DoStatement | WhileStatement | ForStatement | ForInStatement | ForOfStatement | ContinueStatement | BreakStatement | ReturnStatement | WithStatement | SwitchStatement | LabeledStatement | ThrowStatement | TryStatement | DebuggerStatement | FunctionDeclaration | ClassDeclaration | InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration | ModuleDeclaration | ImportEqualsDeclaration | ImportDeclaration | ExportAssignment | ExportDeclaration | NamespaceExportDeclaration
+type ForInitializer ~ VariableDeclarationList | Expression
+type CaseOrDefaultClause ~ CaseClause | DefaultClause
+type ModuleName ~ Identifier | StringLiteral
+type ModuleBody ~ ModuleBlock | ModuleDeclaration
+type ModuleReference ~ Identifier | QualifiedName | ExternalModuleReference
+type NamedImportBindings ~ NamespaceImport | NamedImports
+type NamedExportBindings ~ NamedExports | NamespaceExport
+type ModuleExportName ~ Identifier | StringLiteral
+type ImportAttributeName ~ Identifier | StringLiteral
+type JsxChild ~ JsxText | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
+type JsxAttributeLike ~ JsxAttribute | JsxSpreadAttribute
+type JsxAttributeName ~ Identifier | JsxNamespacedName
+type JsxAttributeValue ~ StringLiteral | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
+type JsxTagName ~ Identifier | ThisExpression | JsxNamespacedName | PropertyAccessExpression
+type JsxTagNameStart ~ Identifier | ThisExpression
 
 // ===================================================================
 // Source files
