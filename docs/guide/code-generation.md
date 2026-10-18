@@ -265,27 +265,20 @@ measurements in design 043 for conditions and limits.
 
 ## What Is Supported
 
-The generator supports the language features listed below except for entry points that need runtime machinery it
-does not emit. For example, `#missing` currently works only with Closure whole-input parsing and recognition; the
-generator rejects grammars that use it. See the [pragma specification](../../spec/pragmas.md).
+The generator supports the whole grammar language: Rule Expressions, Operators Rules, left recursion, Predicates,
+variables, actions, types, built-in functions, `@error` and `#recover`. What differs from the engine is the runtime
+machinery, which the generated code only has when you ask for it:
 
-| Feature | Engine | Generated |
-|:--|:--|:--|
-| All Rule Expressions, captures, atomic and discarded expressions | Yes | Yes |
-| Operators Rule Definition Statements, left recursion (direct and indirect) | Yes | Yes |
-| Predicates and variables, lookahead, cut | Yes | Yes |
-| Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes | Yes |
-| `@error` and `#recover`, `SyntaxErrors` | Yes | Yes |
-| `#missing` | Closure whole-input parsing and recognition only | **No**: generated parsers reject grammars containing `#missing`; see the [specification](../../spec/pragmas.md) |
-| Position units (code points, bytes) | `WithUnit` | `WithUnit` |
-| Another start rule | `WithStart` | `ParseRule` |
-| `#stream` and `ParseStream` | Yes | Go Node `ParseStream` with `-stream`, and typed `ParseStreamAST` with `-types` as well; without it, `#stream` is an ordinary repetition. TypeScript streams are deferred |
-| `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds direct typed `Document.ParseAST` for eligible grammars, with Node conversion fallback otherwise. TypeScript is deferred |
-| `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
-| `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
-| Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | TypeScript: `signal`, `maxInputWork` and `maxSteps` options |
-| Choice of backend | Yes | (it is a backend of its own) |
-| `Parser.Grammar()`, saving, loading | Yes | No: the grammar is gone at run time |
+- `-stream`, `-document` and `-recognize` add `ParseStream`, `Document` and `Recognize` (and `-types` their typed
+  forms). Without `-stream`, `#stream` is an ordinary repetition. TypeScript has neither streams nor documents.
+- `ParseRule` replaces `WithStart` for another start rule, and `WithUnit` and `WithMaxDepth` work as in the engine;
+  `-max-depth` sets the generated default.
+- There is no choice of backend, because the generated code is a backend of its own, and no `Parser.Grammar()`, saving
+  or loading, because the grammar is gone at run time.
+- `#missing` works only in the engine's Closure backend for whole-input parsing and recognition, and the generator
+  rejects grammars that use it.
+
+The [specification](../../spec/generated-parsers.md#compatibility-and-support) has the complete table.
 
 Notes:
 
