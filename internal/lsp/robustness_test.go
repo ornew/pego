@@ -73,7 +73,7 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "rule", "type"}
 	for i, want := range [][]string{
 		nil, nil, nil, nil, rules,
-		{"x"}, {"children", "endPos", "startPos"}, {"x"}, nil,
+		{"x"}, {"End", "Start", "Value"}, {"x"}, nil,
 	} {
 		got := completionLabels(c, uri, i, len(lines[i]))
 		if strings.Join(got, " ") != strings.Join(want, " ") {

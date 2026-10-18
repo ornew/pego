@@ -91,7 +91,7 @@ func semanticResponseSources(tb testing.TB) []semanticSourceCase {
 	return append(semanticRepresentativeSources(tb), []semanticSourceCase{
 		{"empty", ""},
 		{"punctuation", "() {} => ... / !"},
-		{"mixed", "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n operand a\n level { infix left \"+\" }\n}\nrule bind = {v := 1}"},
+		{"mixed", "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n operand a\n level { infix left \"+\" }\n}\nrule bind = {v := 1}"},
 		{"comment-lf", "/*😀\n\nsecond\n*/\nrule main = \"x\""},
 		{"comment-crlf", "/*😀\r\n\r\nsecond\r\n*/\r\nrule main = \"x\""},
 		{"comment-cr", "/*😀\r\rsecond\r*/\rrule main = \"x\""},

@@ -18,6 +18,7 @@ var builtinTypes = []builtin{
 	{name: "bool", doc: "A boolean."},
 	{name: "node", doc: "Any node."},
 	{name: "terminal", doc: "Any terminal: a `Match` node or a node of a terminal type."},
+	{name: "error", doc: "The value of error recovery: an error recovered by `#recover`, or a token inserted by `#missing`."},
 	{name: "_", doc: "The top type: every value. A `_` value needs a cast `x.(T)` to be used as a `T`."},
 	{name: "_|_", doc: "The bottom type: no value. A location of this type is an error."},
 	{name: "Match", doc: "Reserved node type: terminals produced by literals, character classes, `.`, `a #atomic` and `_`."},
@@ -48,9 +49,9 @@ var builtinFuncs = []builtin{
 }
 
 var builtinMembers = []builtin{
-	{name: "startPos", signature: "startPos int", doc: "The start position of the node in the position unit."},
-	{name: "endPos", signature: "endPos int", doc: "The end position of the node (exclusive)."},
-	{name: "children", signature: "children []*node", doc: "The children of a `Seq`, `List` or `Operator` node; empty for other nodes."},
+	{name: "Start", signature: "Start int", doc: "The start position of the node in the position unit."},
+	{name: "End", signature: "End int", doc: "The end position of the node (exclusive)."},
+	{name: "Value", signature: "Value T", doc: "The value of the node: for a terminal, the text it matched; for a sequence, the tuple of its elements; for a repetition, the list of its elements."},
 }
 
 var attributes = []builtin{

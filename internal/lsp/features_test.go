@@ -314,7 +314,7 @@ func hoverText(c *testClient, uri string, line, char int) (string, *Range) {
 func TestHover(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///hover.pego"
-	src := navSrc + "\nrule lst = xs:num* {len($xs) > 0} @error(message=\"e\") => $xs\nrule s = x:num {$x.startPos > 0}"
+	src := navSrc + "\nrule lst = xs:num* {len($xs) > 0} @error(message=\"e\") => $xs\nrule s = x:num {$x.Start > 0}"
 	if d := c.open(uri, src); len(d) != 0 {
 		t.Fatalf("diagnostics %+v", d)
 	}
@@ -333,7 +333,7 @@ func TestHover(t *testing.T) {
 		{6, 6, "```pego\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
 		{14, 22, "```pego\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(14, 20, 14, 23)},
 		{14, 33, "```pego\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(14, 32, 14, 37)},
-		{15, 19, "```pego\nstartPos int\n```\n" + findBuiltin(builtinMembers, "startPos").doc, rng(15, 18, 15, 26)},
+		{15, 19, "```pego\nStart int\n```\n" + findBuiltin(builtinMembers, "Start").doc, rng(15, 18, 15, 23)},
 	} {
 		if tc.line == 14 && strings.Contains(tc.want, "@error") {
 			line := strings.Split(src, "\n")[14]
@@ -342,8 +342,8 @@ func TestHover(t *testing.T) {
 		}
 		if tc.line == 15 {
 			line := strings.Split(src, "\n")[15]
-			col := strings.Index(line, "startPos")
-			tc.char, tc.r = col+1, rng(15, col, 15, col+len("startPos"))
+			col := strings.Index(line, "Start")
+			tc.char, tc.r = col+1, rng(15, col, 15, col+len("Start"))
 		}
 		got, r := hoverText(c, uri, tc.line, tc.char)
 		if got != tc.want || r == nil || *r != tc.r {
@@ -486,7 +486,7 @@ func TestCompletion(t *testing.T) {
 	c.open(uri, src)
 	end := func(line int) int { return len([]rune(lines[line])) }
 	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num", "o", "p"}
-	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "_", "_|_", "bool", "int", "node", "string", "terminal"}
+	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "_", "_|_", "bool", "error", "int", "node", "string", "terminal"}
 	sorted := func(xs ...[]string) []string {
 		var out []string
 		for _, x := range xs {
@@ -509,7 +509,7 @@ func TestCompletion(t *testing.T) {
 		{6, -1, []string{"diagnostic", "error"}},
 		{7, -1, []string{"x", "y"}},
 		{8, -1, sorted([]string{"P", "Q", "R", "acc", "concat", "e", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
-		{9, -1, sorted([]string{"A", "B", "children", "endPos", "startPos"})},
+		{9, -1, sorted([]string{"A", "B", "End", "Start", "Value"})},
 		{10, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{11, -1, []string{"left", "none", "right"}},
 		{12, -1, nil},
@@ -521,7 +521,7 @@ func TestCompletion(t *testing.T) {
 		{18, -1, []string{"xs"}},
 		{19, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{20, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
-		{21, -1, sorted([]string{"$v", "A", "B", "children", "endPos", "startPos"})},
+		{21, -1, sorted([]string{"$v", "A", "B", "End", "Start", "Value"})},
 		{22, -1, []string{"v", "xs"}},
 	} {
 		char := tc.char
@@ -572,7 +572,7 @@ func TestCaptureMemberCompletion(t *testing.T) {
 		`rule plain = k:name => $k.`,                                           // 4: a rule without captures
 	}
 	c.open(uri, strings.Join(lines, "\n"))
-	builtins := []string{"children", "endPos", "startPos"}
+	builtins := []string{"End", "Start", "Value"}
 	for _, tc := range []struct {
 		line int
 		want []string
@@ -622,7 +622,7 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///sem.pego"
-	src := "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
+	src := "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
 	c.open(uri, src)
 	var res struct {
 		Data []int `json:"data"`
@@ -654,7 +654,7 @@ func TestSemanticTokens(t *testing.T) {
 		"type keyword", "N type.declaration", "terminal keyword", "// c comment",
 		"rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
 		"stream decorator", "P type", "F property", "len function.defaultLibrary", "$x parameter",
-		"startPos property.defaultLibrary",
+		"Start property.defaultLibrary",
 		"rule keyword", "n function.declaration", "N type", "operators keyword", "operand keyword", "a function", "level keyword",
 		"infix keyword", "left keyword", `"+" string`, "rule keyword", "bind function.declaration", "v variable.declaration", "1 number",
 		"rule keyword", "lam function.declaration", "xs variable.declaration", "n function", "map function.defaultLibrary",
