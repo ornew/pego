@@ -252,6 +252,14 @@ and every guide. Saved bytecode and schema formats need new versions.
   their capture types, and differing indexes are selected at run time from the
   matched alternative. An optional receiver is a type error, as for field
   access.
+- **Cycles through actions are least fixed points.** A rule type stays a
+  reference until an action reads into it, so recursion without actions needs
+  no iteration. When actions of rules that refer to each other read into each
+  other's values, the rules of that strongly connected component start from
+  `_|_` and are computed again from the previous round's values until none
+  changes; reading into `_|_` is not an error. The result and the errors do
+  not depend on the order of the rules. Values that still change after a fixed
+  number of rounds become unknown, as the value of a predicate variable is.
 - **Valueless bodies produce the unit node.** `rule stub = _`, and an
   action-free rule whose sequence has no valued element, produce `node[()]`.
 - **Typos in the source.** `a?` has type `*A`, not `[]A`, and the tuple example

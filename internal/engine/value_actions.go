@@ -332,8 +332,11 @@ func (v *valueInference) index(x, i ty, t *grammar.Binary) ty {
 			}
 			return true
 		case basicTy:
-			if a == tyAny {
+			switch a {
+			case tyAny:
 				out = append(out, tyAny)
+				return true
+			case tyBottom:
 				return true
 			}
 		}
@@ -362,8 +365,8 @@ func ungroupTerm(t grammar.Term) grammar.Term {
 // the others, as for struct fields in the current model; .$y needs every argument to capture y.
 func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	x = v.expand(x)
-	if x == tyAny {
-		return tyAny
+	if x == tyAny || x == tyBottom {
+		return x
 	}
 	switch m.Name {
 	case "Source":
@@ -430,6 +433,9 @@ func (v *valueInference) captureAccess(x ty, name string, m *grammar.Member) ty 
 	for _, a := range v.alts(x) {
 		if a == tyAny {
 			return tyAny
+		}
+		if a == tyBottom {
+			continue
 		}
 		n, ok := a.(nodeTy)
 		i := -1
@@ -509,7 +515,7 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 			case nodeTy, listTy, tupleTy:
 				continue
 			}
-			if x != tyString && x != tyNil && x != tyAny {
+			if x != tyString && x != tyNil && x != tyAny && x != tyBottom {
 				v.errorf(t.Diagnostic(), "len: invalid argument %s", a)
 				break
 			}

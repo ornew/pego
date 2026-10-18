@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"sort"
 	"strconv"
@@ -157,19 +158,20 @@ type valueElem struct {
 }
 
 // valueInference computes value types. Rules are computed on demand, so that the type of a rule
-// referred to from an action is known when the action is checked.
+// referred to from an action is known when the action is checked. The rules of a cycle of
+// references are computed together as the least fixed point of their values.
 type valueInference struct {
 	prog    *Program
 	control *compileControl
 	rules   map[string]*grammar.RuleDef
 	out     map[string]ty
-	// computing holds the depth of each rule being computed, and low the least depth of such a
-	// rule that the value of the rule being computed depends on.
-	computing map[string]int
-	low       int
-	// provisional holds the values of rules that depend on a rule being computed, which sees
-	// itself as not known; they hold until that rule is computed.
-	provisional map[string]provisionalValue
+	// cycle maps each rule that refers to itself, directly or through other rules, to the rules
+	// of its cycle by name, and approx holds the values of the rules of the cycles being
+	// computed.
+	cycle  map[string][]string
+	approx map[string]ty
+	// computing holds the rules outside cycles that are being computed.
+	computing map[string]bool
 	// errs holds the errors of actions in the value model. They are not reported yet: the
 	// grammars are written for the current model, which the backends still implement. errs holds
 	// the errors of the rule being computed, and final those of computed rules.
@@ -200,11 +202,12 @@ func (p *Program) valueErrors() ErrorList {
 
 // valueTypes returns the value type of each rule, and the errors of the actions.
 func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) {
-	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, computing: map[string]int{}, provisional: map[string]provisionalValue{}}
+	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}}
 	rules := p.Grammar.Rules()
 	for _, rd := range rules {
 		v.rules[rd.Name] = rd
 	}
+	v.cycle = ruleCycles(rules, v.rules)
 	for _, rd := range rules {
 		control.poll()
 		v.ruleValue(rd.Name)
@@ -212,59 +215,132 @@ func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) 
 	return v.out, v.final
 }
 
-type provisionalValue struct {
-	t   ty
-	low int
+// ruleCycles returns the strongly connected components of the references between rules that
+// have a cycle, for each of their rules. The value of a rule can only depend on the rules it
+// refers to, directly or through other rules, since a rule type comes from a reference.
+func ruleCycles(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef) map[string][]string {
+	refs := map[string][]string{}
+	for _, rd := range rules {
+		walkExpr(rd.Expr, func(e grammar.Expr) {
+			if r, ok := e.(*grammar.Ref); ok && byName[r.Name] != nil {
+				refs[rd.Name] = append(refs[rd.Name], r.Name)
+			}
+		})
+	}
+	// Tarjan's algorithm.
+	index, low := map[string]int{}, map[string]int{}
+	onStack := map[string]bool{}
+	var stack []string
+	out := map[string][]string{}
+	var visit func(n string)
+	visit = func(n string) {
+		index[n], low[n] = len(index), len(index)
+		stack = append(stack, n)
+		onStack[n] = true
+		self := false
+		for _, m := range refs[n] {
+			self = self || m == n
+			if _, ok := index[m]; !ok {
+				visit(m)
+				low[n] = min(low[n], low[m])
+			} else if onStack[m] {
+				low[n] = min(low[n], index[m])
+			}
+		}
+		if low[n] != index[n] {
+			return
+		}
+		i := len(stack) - 1
+		for stack[i] != n {
+			i--
+		}
+		scc := slices.Clone(stack[i:])
+		stack = stack[:i]
+		for _, m := range scc {
+			onStack[m] = false
+		}
+		if len(scc) == 1 && !self {
+			return
+		}
+		slices.Sort(scc)
+		for _, m := range scc {
+			out[m] = scc
+		}
+	}
+	for _, rd := range rules {
+		if _, ok := index[rd.Name]; !ok {
+			visit(rd.Name)
+		}
+	}
+	return out
 }
 
-// ruleValue returns the value type of the rule name. A rule whose action depends on its own value,
-// directly or through other rules, sees that value as not known. The values of the other rules of
-// such a cycle are computed again for each rule of the cycle, so that the result does not depend
-// on the order of the rules; their errors are reported only where they are computed for good.
+// maxCycleRounds bounds the rounds of a cycle; the values that still change after it are not
+// known.
+const maxCycleRounds = 8
+
+// ruleValue returns the value type of the rule name.
 func (v *valueInference) ruleValue(name string) ty {
 	if t, ok := v.out[name]; ok {
 		return t
 	}
-	if d, ok := v.computing[name]; ok {
-		v.low = min(v.low, d)
-		return tyAny
-	}
-	if p, ok := v.provisional[name]; ok {
-		v.low = min(v.low, p.low)
-		return p.t
-	}
-	rd := v.rules[name]
-	if rd == nil {
-		return tyAny
-	}
-	d := len(v.computing)
-	v.computing[name] = d
-	low, rule, quiet, errs := v.low, v.rule, v.quiet, v.errs
-	v.low, v.rule, v.quiet, v.errs = d, rd, false, nil
-	t := v.ruleDef(rd)
-	mine, depends := v.errs, v.low
-	v.low, v.rule, v.quiet, v.errs = min(low, depends), rule, quiet, errs
-	delete(v.computing, name)
-	if depends < d {
-		// The value depends on a rule being computed: hold it until that rule is computed. The
-		// values held that depend on this rule now depend on that one, since this rule's depth
-		// is reused by the next rule computed.
-		for n, p := range v.provisional {
-			if p.low >= d {
-				v.provisional[n] = provisionalValue{p.t, depends}
-			}
-		}
-		v.provisional[name] = provisionalValue{t, depends}
+	if t, ok := v.approx[name]; ok {
 		return t
 	}
-	for n, p := range v.provisional {
-		if p.low >= d {
-			delete(v.provisional, n)
+	rd := v.rules[name]
+	if rd == nil || v.computing[name] {
+		return tyAny
+	}
+	rule, quiet, errs := v.rule, v.quiet, v.errs
+	defer func() { v.rule, v.quiet, v.errs = rule, quiet, errs }()
+	v.quiet = false
+	cycle := v.cycle[name]
+	if cycle == nil {
+		v.computing[name] = true
+		v.rule, v.errs = rd, nil
+		t := v.ruleDef(rd)
+		delete(v.computing, name)
+		v.final = append(v.final, v.errs...)
+		v.out[name] = t
+		return t
+	}
+	// The rules of the cycle start with no value, _|_, and each round computes every rule from
+	// the values of the previous round, so that the result does not depend on the order of the
+	// rules. The errors are those of the last round, which sees the final values.
+	for _, m := range cycle {
+		v.approx[m] = tyBottom
+	}
+	var mine ErrorList
+	for round := 0; ; round++ {
+		next := make(map[string]ty, len(cycle))
+		mine = nil
+		for _, m := range cycle {
+			v.rule, v.errs = v.rules[m], nil
+			next[m] = vunion(v.approx[m], v.ruleDef(v.rules[m]))
+			mine = append(mine, v.errs...)
+		}
+		changed := false
+		for _, m := range cycle {
+			if !reflect.DeepEqual(next[m], v.approx[m]) {
+				changed = true
+				if round >= maxCycleRounds {
+					next[m] = tyAny
+				}
+			}
+		}
+		if !changed || round > maxCycleRounds {
+			break
+		}
+		for _, m := range cycle {
+			v.approx[m] = next[m]
 		}
 	}
+	for _, m := range cycle {
+		v.out[m] = v.approx[m]
+		delete(v.approx, m)
+	}
 	v.final = append(v.final, mine...)
-	v.out[name] = t
-	return t
+	return v.out[name]
 }
 
 func (v *valueInference) ruleDef(rd *grammar.RuleDef) ty {

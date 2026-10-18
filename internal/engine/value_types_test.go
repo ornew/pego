@@ -201,7 +201,11 @@ func TestValueActionTypes(t *testing.T) {
 		// nil joins as an optional type, and a value not known yet absorbs a union.
 		{`rule a = _ => list(nil)`, "a", `[]nil`},
 		{`rule a = x:"x" => list($x, nil, $x)`, "a", `[]*node[string]`},
-		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "a", `[]any`},
+		{`rule a = x:"x" {n := 1} => list($x, n)`, "a", `[]any`},
+		// The rules of a cycle through actions are the least fixed point of their values.
+		{"rule a = x:\"x\" y:b? => concat(list($x), $y)\nrule b = z:a => $z", "a", `[]node[string]`},
+		// A rule type is not expanded unless an action reads into it.
+		{"rule a = x:\"x\" y:b? => list($x, $y)\nrule b = z:a => $z", "a", `[]*(node[string] | b)`},
 		// Rule references stay symbolic, so a recursive rule needs no expansion.
 		{`rule a = x:("(" a ")")? => $x`, "a", `*node[(node[string], a, node[string])]`},
 	} {
@@ -252,6 +256,7 @@ func TestValueActionErrors(t *testing.T) {
 		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
 		{`rule a = &(y:"y") x:"x" => $y`, "$y has no element in the value of its scope: captures in lookaheads and discards have no value"},
 		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},
+		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "[]node[string] | []any has no field Value"},
 	} {
 		_, errs := valueTypesOf(t, tc.src)
 		found := false
@@ -264,7 +269,8 @@ func TestValueActionErrors(t *testing.T) {
 	}
 }
 
-// The rules of a cycle of four rules through actions have the same types in every order.
+// The rules of a cycle of four rules through actions have the same types and errors in every
+// order.
 func TestValueActionCycleOrder(t *testing.T) {
 	rules := []string{
 		"rule r = x:a y:c \"q\" => len($x) + len($y)",
@@ -276,8 +282,15 @@ func TestValueActionCycleOrder(t *testing.T) {
 	var permute func(k int)
 	permute = func(k int) {
 		if k == len(rules) {
-			types, _ := valueTypesOf(t, strings.Join(rules, "\n"))
-			got := fmt.Sprintf("r=%s a=%s b=%s c=%s", types["r"], types["a"], types["b"], types["c"])
+			types, errs := valueTypesOf(t, strings.Join(rules, "\n"))
+			if len(errs) == 0 {
+				t.Fatal("no errors: len of an int is an error")
+			}
+			var msgs []string
+			for _, e := range errs {
+				msgs = append(msgs, e.Msg)
+			}
+			got := fmt.Sprintf("r=%s a=%s b=%s c=%s %v", types["r"], types["a"], types["b"], types["c"], msgs)
 			if want == "" {
 				want = got
 			} else if got != want {
@@ -292,6 +305,17 @@ func TestValueActionCycleOrder(t *testing.T) {
 		}
 	}
 	permute(0)
+}
+
+// A cycle whose values grow in every round ends with values not known.
+func TestValueActionCycleWidens(t *testing.T) {
+	types, errs := valueTypesOf(t, `rule a = x:"x" y:a? => list(concat(list($x), $y))`)
+	if len(errs) > 0 {
+		t.Errorf("errors %v", errs)
+	}
+	if got := types["a"].String(); !strings.Contains(got, "any") {
+		t.Errorf("got %s", got)
+	}
 }
 
 // Errors in rules computed on demand are kept, also from a lambda typed more than once, and the
