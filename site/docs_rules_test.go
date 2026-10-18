@@ -7,31 +7,41 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
 )
 
-// Documentation kinds. Links may only point in the directions of allowedLinks:
-// the specification is self-contained, guides rest on the specification,
-// recipes on guides and the specification, and tutorials may link anywhere.
+// Documentation kinds. Links may only point in the directions of linkAllowed: the
+// specification is self-contained, guides rest on the specification, the design
+// records and the performance documents, recipes on guides and the specification,
+// and tutorials may link anywhere.
 const (
 	kindSpec     = "specification"
 	kindGuide    = "guide"
 	kindCookbook = "cookbook"
 	kindTutorial = "tutorial"
-	kindProject  = "project document" // everything else under docs/, and README.md
-	kindOther    = "other"            // source files, parsers, examples, external links
+	kindDesign   = "design record"
+	kindOptim    = "optimization record"
+	kindPerf     = "performance document" // docs/performance.md and docs/benchmarks.md
+	kindProject  = "project document"     // everything else under docs/, and README.md
+	kindOther    = "other"                // source files, parsers, examples, external links
 )
 
+// externalAllowlist names the hosts that the specification may link to: the
+// publications of the standards that it cites.
+var externalAllowlist = []string{"www.rfc-editor.org", "rfc-editor.org"}
+
 var (
-	refLinkRe    = regexp.MustCompile(`^\s{0,3}\[[^\]]+\]:\s*(<[^>]*>|\S+)`)
+	refLinkRe    = regexp.MustCompile(`(?m)^\s{0,3}\[[^\]]+\]:\s*(<[^>]*>|\S+)`)
 	autolinkRe   = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9+.-]*:[^<>\s]+)>`)
-	htmlHrefRe   = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')`)
-	fenceOpenRe  = regexp.MustCompile("^\\s{0,3}(`{3,}|~{3,})")
-	githubBlobRe = regexp.MustCompile(`^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
-	siteURLRe    = regexp.MustCompile(`^https?://pego\.ornew\.net(/[^?#]*)?`)
+	htmlHrefRe   = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
+	fenceOpenRe  = regexp.MustCompile("^\\s*(`{3,}|~{3,})")
+	githubBlobRe = regexp.MustCompile(`(?i)^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
+	siteURLRe    = regexp.MustCompile(`(?i)^https?://pego\.ornew\.net(/[^?#]*)?`)
+	urlSchemeRe     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 )
 
 // under reports whether rel is dir or lies below it.
@@ -52,6 +62,12 @@ func docKind(rel string) string {
 		return kindCookbook
 	case under(rel, "docs/tutorial"):
 		return kindTutorial
+	case under(rel, "docs/design"):
+		return kindDesign
+	case under(rel, "docs/optimizations"):
+		return kindOptim
+	case rel == "docs/performance.md", rel == "docs/benchmarks.md":
+		return kindPerf
 	case under(rel, "docs"), rel == "README.md":
 		return kindProject
 	}
@@ -71,6 +87,23 @@ func linkAllowed(from, to string) bool {
 	return true
 }
 
+// isExternal reports whether dest names a resource outside the repository: it has a URL
+// scheme in any letter case, or it is a protocol-relative URL.
+func isExternal(dest string) bool {
+	dest = strings.TrimPrefix(dest, "<")
+	return urlSchemeRe.MatchString(dest) || strings.HasPrefix(dest, "//")
+}
+
+// externalAllowed reports whether the specification may link to the external dest.
+func externalAllowed(dest string) bool {
+	dest = strings.TrimSuffix(strings.TrimPrefix(dest, "<"), ">")
+	u, err := url.Parse(dest)
+	if err != nil || (!strings.EqualFold(u.Scheme, "https") && !strings.EqualFold(u.Scheme, "http")) {
+		return false
+	}
+	return slices.Contains(externalAllowlist, strings.ToLower(u.Hostname()))
+}
+
 // linkTarget resolves a link destination found in the file at rel to a repository
 // path. It returns false for links that do not point into the repository. A link to a
 // page of the published site resolves to the path of that page without an extension.
@@ -83,7 +116,7 @@ func linkTarget(rel, dest string) (string, bool) {
 		if dest == "" || dest == "/" {
 			dest = "/README.md"
 		}
-	} else if strings.Contains(dest, "://") || strings.HasPrefix(dest, "mailto:") || strings.HasPrefix(dest, "#") {
+	} else if isExternal(dest) || strings.HasPrefix(dest, "#") {
 		return "", false
 	}
 	target, _, _ := strings.Cut(dest, "#")
@@ -104,7 +137,10 @@ func linkTarget(rel, dest string) (string, bool) {
 }
 
 // maskCode returns the lines of a Markdown file with fenced code blocks emptied and
-// inline code spans removed, so that only the text that can contain links remains.
+// inline code spans removed, so that only the text that can contain links remains. A
+// fence may be indented, as it is inside a list item. A code span may continue over
+// the lines of one paragraph, and the lines it covers stay in place, so line numbers
+// are preserved.
 func maskCode(lines []string) []string {
 	out := make([]string, len(lines))
 	var fence string
@@ -120,13 +156,26 @@ func maskCode(lines []string) []string {
 			fence = m[1]
 			continue
 		}
-		out[i] = stripInlineCode(text)
+		out[i] = text
+	}
+	for i := 0; i < len(out); {
+		if strings.TrimSpace(out[i]) == "" {
+			i++
+			continue
+		}
+		j := i
+		for j < len(out) && strings.TrimSpace(out[j]) != "" {
+			j++
+		}
+		copy(out[i:j], strings.Split(stripInlineCode(strings.Join(out[i:j], "\n")), "\n"))
+		i = j
 	}
 	return out
 }
 
 // stripInlineCode removes code spans: a run of n backticks up to the next run of
-// exactly n backticks. An unmatched run is ordinary text.
+// exactly n backticks. An unmatched run is ordinary text. The line breaks inside a
+// removed span are kept.
 func stripInlineCode(text string) string {
 	var b strings.Builder
 	for i := 0; i < len(text); {
@@ -160,16 +209,24 @@ func stripInlineCode(text string) string {
 			i += n
 			continue
 		}
+		b.WriteString(strings.Repeat("\n", strings.Count(text[i:end], "\n")))
 		i = end
 	}
 	return b.String()
 }
 
-// inlineDestinations returns the destinations of the inline links "](dest)" in text. A
-// destination is either enclosed in angle brackets or ends at white space or at the
-// parenthesis that closes the link, and may contain balanced parentheses.
-func inlineDestinations(text string) []string {
-	var dests []string
+// destAt is a link destination and the offset at which it starts.
+type destAt struct {
+	dest string
+	off  int
+}
+
+// inlineDestinations returns the destinations of the inline links "](dest)" in text. White
+// space, including line breaks, may surround the destination. A destination is either
+// enclosed in angle brackets or ends at white space or at the parenthesis that closes
+// the link, and may contain balanced parentheses.
+func inlineDestinations(text string) []destAt {
+	var dests []destAt
 	for from := 0; ; {
 		i := strings.Index(text[from:], "](")
 		if i < 0 {
@@ -177,9 +234,12 @@ func inlineDestinations(text string) []string {
 		}
 		j := from + i + 2
 		from = j
+		for j < len(text) && strings.ContainsRune(" \t\r\n", rune(text[j])) {
+			j++
+		}
 		if j < len(text) && text[j] == '<' {
 			if k := strings.IndexByte(text[j:], '>'); k > 0 {
-				dests = append(dests, text[j+1:j+k])
+				dests = append(dests, destAt{text[j+1 : j+k], j + 1})
 			}
 			continue
 		}
@@ -187,7 +247,7 @@ func inlineDestinations(text string) []string {
 		k := j
 		for ; k < len(text); k++ {
 			c := text[k]
-			if c == ' ' || c == '\t' || (c == ')' && depth == 0) {
+			if c == ' ' || c == '\t' || c == '\r' || c == '\n' || (c == ')' && depth == 0) {
 				break
 			}
 			if c == '(' {
@@ -197,23 +257,29 @@ func inlineDestinations(text string) []string {
 			}
 		}
 		if k > j {
-			dests = append(dests, text[j:k])
+			dests = append(dests, destAt{text[j:k], j})
 		}
 	}
 }
 
-// documentDestinations returns the link destinations of one line of masked Markdown.
-func documentDestinations(text string) []string {
+// documentDestinations returns the link destinations of masked Markdown, which is the
+// lines of a document joined by line breaks.
+func documentDestinations(text string) []destAt {
 	dests := inlineDestinations(text)
-	for _, m := range autolinkRe.FindAllStringSubmatch(text, -1) {
-		dests = append(dests, m[1])
+	for _, m := range autolinkRe.FindAllStringSubmatchIndex(text, -1) {
+		dests = append(dests, destAt{text[m[2]:m[3]], m[2]})
 	}
-	for _, m := range htmlHrefRe.FindAllStringSubmatch(text, -1) {
-		dests = append(dests, m[1]+m[2])
+	for _, m := range htmlHrefRe.FindAllStringSubmatchIndex(text, -1) {
+		for g := 1; g <= 3; g++ {
+			if m[2*g] >= 0 {
+				dests = append(dests, destAt{text[m[2*g]:m[2*g+1]], m[2*g]})
+			}
+		}
 	}
-	if m := refLinkRe.FindStringSubmatch(text); m != nil {
-		dests = append(dests, m[1])
+	for _, m := range refLinkRe.FindAllStringSubmatchIndex(text, -1) {
+		dests = append(dests, destAt{text[m[2]:m[3]], m[2]})
 	}
+	sort.SliceStable(dests, func(i, j int) bool { return dests[i].off < dests[j].off })
 	return dests
 }
 
@@ -236,15 +302,18 @@ func docLinkViolations(t *testing.T, repo string) []string {
 			if err != nil {
 				return err
 			}
-			for i, text := range maskCode(strings.Split(string(data), "\n")) {
-				for _, dest := range documentDestinations(text) {
-					rp, ok := linkTarget(rel, dest)
-					if !ok {
-						continue
+			doc := strings.Join(maskCode(strings.Split(string(data), "\n")), "\n")
+			for _, d := range documentDestinations(doc) {
+				line := strconv.Itoa(strings.Count(doc[:d.off], "\n") + 1)
+				rp, ok := linkTarget(rel, d.dest)
+				if !ok {
+					if from == kindSpec && isExternal(d.dest) && !externalAllowed(d.dest) {
+						problems = append(problems, rel+":"+line+": specification page links to external URL "+d.dest)
 					}
-					if to := docKind(rp); !linkAllowed(from, to) {
-						problems = append(problems, rel+":"+strconv.Itoa(i+1)+": "+from+" page links to "+to+" "+dest)
-					}
+					continue
+				}
+				if to := docKind(rp); !linkAllowed(from, to) {
+					problems = append(problems, rel+":"+line+": "+from+" page links to "+to+" "+d.dest)
 				}
 			}
 			return nil
@@ -279,6 +348,9 @@ func TestLinkAllowed(t *testing.T) {
 		{kindSpec, kindOther, false},
 		{kindGuide, kindSpec, true},
 		{kindGuide, kindGuide, true},
+		{kindGuide, kindDesign, true},
+		{kindGuide, kindOptim, true},
+		{kindGuide, kindPerf, true},
 		{kindGuide, kindProject, true},
 		{kindGuide, kindCookbook, false},
 		{kindGuide, kindTutorial, false},
@@ -312,6 +384,19 @@ func TestLinkAllowed(t *testing.T) {
 	if _, ok := linkTarget("spec/a.md", "https://www.rfc-editor.org/rfc/rfc2119"); ok {
 		t.Error("external link resolved to a repository path")
 	}
+	for _, dest := range []string{"HTTPS://example.com/x", "Mailto:a@b.c", "//example.com/x", "<https://example.com>"} {
+		if !isExternal(dest) || externalAllowed(dest) {
+			t.Errorf("%q: external = %v, allowed = %v, want true, false", dest, isExternal(dest), externalAllowed(dest))
+		}
+	}
+	for _, dest := range []string{"https://www.rfc-editor.org/rfc/rfc2119", "HTTPS://RFC-EDITOR.ORG/rfc/rfc8174"} {
+		if !isExternal(dest) || !externalAllowed(dest) {
+			t.Errorf("%q: want external and allowed", dest)
+		}
+	}
+	if _, ok := linkTarget("spec/a.md", "HTTPS://GITHUB.COM/ornew/pego/blob/main/pego.go"); !ok {
+		t.Error("an upper-case GitHub URL did not resolve to a repository path")
+	}
 }
 
 func TestDirectoryAndSiteLinkKinds(t *testing.T) {
@@ -321,6 +406,10 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 		{"docs/guide", kindGuide},
 		{"docs/guide/a.md", kindGuide},
 		{"docs/tutorials-old.md", kindProject},
+		{"docs/design/001-a.md", kindDesign},
+		{"docs/optimizations/001-a.md", kindOptim},
+		{"docs/performance.md", kindPerf},
+		{"docs/benchmarks.md", kindPerf},
 		{"spec", kindSpec},
 		{"spec/types", kindSpec},
 		{"spec/syntax.md", kindSpec},
@@ -346,9 +435,11 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 
 func TestDocumentDestinations(t *testing.T) {
 	lines := []string{
-		"[a](x.md) and [b](<y z.md>) and [c](f(1).md \"title\")",
-		"see <https://pego.ornew.net/docs/guide/> and <a href=\"../tutorial/x.md\">t</a>",
+		"[a](x.md) and [b](<y z.md>) and [c](f(1).md \"title\") and [d]( spaced.md )",
+		"see <https://pego.ornew.net/docs/guide/> and <a href=\"../tutorial/x.md\">t</a> and <a href=bare.md>u</a>",
 		"inline `[no](bad.md)` and ``[no](bad2.md) with ` inside`` then [yes](ok.md)",
+		"a stray ` backtick before [kept](stray.md) in a paragraph",
+		"",
 		"```go",
 		"[no](fence.md)",
 		"````",
@@ -358,13 +449,30 @@ func TestDocumentDestinations(t *testing.T) {
 		"[no](tilde.md)",
 		"~~~",
 		"[ref]: <r s.md>",
+		"",
+		"[multi](",
+		"    next-line.md",
+		")",
+		"",
+		"1. an item",
+		"",
+		"    ```text",
+		"    [no](indented-fence.md)",
+		"    ```",
+		"",
+		"a span `over",
+		"[no](two-lines.md)` and [yes](end.md)",
 	}
+	doc := strings.Join(maskCode(lines), "\n")
 	var got []string
-	for _, text := range maskCode(lines) {
-		got = append(got, documentDestinations(text)...)
+	for _, d := range documentDestinations(doc) {
+		got = append(got, d.dest)
 	}
-	want := []string{"x.md", "y z.md", "f(1).md", "https://pego.ornew.net/docs/guide/", "../tutorial/x.md", "ok.md", "after.md", "<r s.md>"}
+	want := []string{"x.md", "y z.md", "f(1).md", "spaced.md", "https://pego.ornew.net/docs/guide/", "../tutorial/x.md", "bare.md", "ok.md", "stray.md", "after.md", "<r s.md>", "next-line.md", "end.md"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("destinations = %q, want %q", got, want)
+	}
+	if n := strings.Count(doc, "\n"); n != len(lines)-1 {
+		t.Errorf("masking changed the number of lines: %d, want %d", n+1, len(lines))
 	}
 }

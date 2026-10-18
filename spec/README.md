@@ -12,7 +12,8 @@ input with them, and the contracts of the runtimes that execute them. Some sourc
 forms are accepted into the source AST for formatting but are rejected by
 compilation; the syntax chapter identifies these forms and does not imply that
 they execute. The specification is self-contained: every chapter links only to
-other chapters of the specification.
+other chapters of the specification, apart from the publications of the
+standards that it cites (RFC 2119, for the key words of the conventions).
 
 > Behavior described as supported in this specification is implemented. Some
 > source forms may be parsed and formatted while compilation or execution remains
