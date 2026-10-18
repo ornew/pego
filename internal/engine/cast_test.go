@@ -103,12 +103,12 @@ func TestCastErrors(t *testing.T) {
 }
 
 func TestCastSyntax(t *testing.T) {
-	g, err := syntax.Parse("type Foo = { A Match }\ntype Word terminal\nrule main = x:\"a\" => $x.( []Foo | *Word ).startPos\nrule one = \"a\" => (1).(int)")
+	g, err := syntax.Parse("type Foo = { A Match }\ntype Word terminal\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
 	if err != nil {
 		t.Fatal(err)
 	}
 	formatted := grammar.Format(g)
-	for _, want := range []string{"$x.([]Foo | *Word).startPos", "(1).(int)"} {
+	for _, want := range []string{"$x.([]Foo | *Word).Start", "(1).(int)"} {
 		if !strings.Contains(formatted, want) {
 			t.Fatalf("formatted lacks %q:\n%s", want, formatted)
 		}

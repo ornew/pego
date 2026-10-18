@@ -11,9 +11,13 @@ import (
 type nodeJSONFrame struct {
 	value  any
 	fields Fields
+	caps   []captureLocation
 	index  int
 	phase  uint8
 	slice  nodeJSONSliceID
+	// closeSide reports that the value of a capture beside the tuple was written and its object
+	// needs closing.
+	closeSide bool
 }
 
 const (
@@ -23,7 +27,22 @@ const (
 	nodeJSONFields
 	nodeJSONExit
 	nodeJSONSliceItems
+	nodeJSONCaptures
 )
+
+// writeJSONRange writes prefix and the members start and end of n.
+func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
+	if err := out.raw(prefix); err != nil {
+		return err
+	}
+	if err := out.number(n.Start); err != nil {
+		return err
+	}
+	if err := out.raw(`,"end":`); err != nil {
+		return err
+	}
+	return out.number(n.End)
+}
 
 type nodeJSONSliceID struct {
 	ptr uintptr
@@ -114,45 +133,54 @@ func writeJSONValue(w io.Writer, value any) error {
 					break
 				}
 				activeNodes[value] = struct{}{}
-				if err = out.raw(`{"type":`); err != nil {
-					break
-				}
-				if err = out.encoded(value.Type()); err != nil {
-					break
-				}
-				if value.Rule() != "" {
-					if err = out.raw(`,"rule":`); err != nil {
+				switch shape := value.shape(); shape {
+				case shapeBox:
+					// The box stands for its value.
+					delete(activeNodes, value)
+					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
+				case shapeString, shapeTuple, shapeList:
+					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					if err = out.encoded(value.Rule()); err != nil {
+					if err = out.raw(`,"value":`); err != nil {
 						break
 					}
-				}
-				if err = out.raw(`,"start":`); err != nil {
-					break
-				}
-				if err = out.number(value.Start); err != nil {
-					break
-				}
-				if err = out.raw(`,"end":`); err != nil {
-					break
-				}
-				if err = out.number(value.End); err != nil {
-					break
-				}
-				if value.Text != "" {
-					if err = out.raw(`,"text":`); err != nil {
+					if shape == shapeString {
+						err = out.encoded(value.Text)
+						frame.phase = nodeJSONFieldsStart
 						break
 					}
-					if err = out.encoded(value.Text); err != nil {
+					err = out.raw("[")
+					frame.phase = nodeJSONChildren
+				case shapeError:
+					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
+					msg, _ := value.Fields.Get("message")
+					if err = out.raw(`,"error":`); err == nil {
+						err = out.encoded(msg)
+					}
+					if expected, ok := value.Fields.Get("expected"); ok && err == nil {
+						if err = out.raw(`,"expected":`); err == nil {
+							err = out.encoded(expected)
+						}
+					}
+					frame.phase = nodeJSONExit
+				case shapeTupleValue, shapeListValue:
+					err = out.raw("[")
+					frame.phase = nodeJSONSliceItems
+				default: // a struct
+					if err = out.raw(`{"type":`); err == nil {
+						err = out.encoded(value.Type())
+					}
+					if err == nil {
+						err = out.raw(`,"fields":{`)
+					}
+					frame.fields = value.Fields.sorted()
+					frame.index = 0
+					frame.phase = nodeJSONFields
 				}
-				frame.phase = nodeJSONChildren
-				if len(value.Children) != 0 {
-					err = out.raw(`,"children":[`)
-				}
-			case nodeJSONChildren:
+			case nodeJSONChildren, nodeJSONSliceItems:
 				if frame.index < len(value.Children) {
 					if frame.index != 0 {
 						if err = out.raw(","); err != nil {
@@ -162,22 +190,70 @@ func writeJSONValue(w io.Writer, value any) error {
 					child := value.Children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
-				} else {
-					if len(value.Children) != 0 {
-						if err = out.raw("]"); err != nil {
-							break
-						}
-					}
-					frame.phase = nodeJSONFieldsStart
+					break
 				}
+				if err = out.raw("]"); err != nil {
+					break
+				}
+				if frame.phase == nodeJSONSliceItems {
+					delete(activeNodes, value)
+					stack = stack[:len(stack)-1]
+					break
+				}
+				frame.phase = nodeJSONFieldsStart
 			case nodeJSONFieldsStart:
-				if len(value.Fields) != 0 {
-					frame.fields = value.Fields.sorted()
-					frame.index = 0
-					frame.phase = nodeJSONFields
-					err = out.raw(`,"fields":{`)
-				} else {
+				// Source information: the rule, and where the captures are.
+				if r := value.Rule(); r != "" {
+					if err = out.raw(`,"rule":`); err != nil {
+						break
+					}
+					if err = out.encoded(r); err != nil {
+						break
+					}
+				}
+				frame.phase = nodeJSONExit
+				if !value.labeled || len(value.Fields) == 0 {
+					break
+				}
+				frame.caps = captureLocations(value)
+				frame.index = 0
+				frame.phase = nodeJSONCaptures
+				err = out.raw(`,"captures":{`)
+			case nodeJSONCaptures:
+				if frame.closeSide {
+					frame.closeSide = false
+					if err = out.raw("}"); err != nil {
+						break
+					}
+				}
+				if frame.index == len(frame.caps) {
+					err = out.raw("}")
 					frame.phase = nodeJSONExit
+					break
+				}
+				c := frame.caps[frame.index]
+				if frame.index != 0 {
+					if err = out.raw(","); err != nil {
+						break
+					}
+				}
+				frame.index++
+				if err = out.encoded(c.name); err != nil {
+					break
+				}
+				if c.side {
+					if err = out.raw(`:{"value":`); err != nil {
+						break
+					}
+					frame.closeSide = true
+					stack = append(stack, nodeJSONFrame{value: c.value})
+					break
+				}
+				if err = out.raw(`:{"path":`); err == nil {
+					err = out.encoded(c.path)
+				}
+				if err == nil {
+					err = out.raw("}")
 				}
 			case nodeJSONFields:
 				if frame.index < len(frame.fields) {

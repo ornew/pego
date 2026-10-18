@@ -22,6 +22,8 @@ func compile(t *testing.T, src string, opts ...Options) *Program {
 	if len(opts) > 0 {
 		o = opts[0]
 	}
+	// Tests read rule names and capture labels in the results.
+	o.SourceInfo = true
 	prog, err := Compile(g, o)
 	if err != nil {
 		t.Fatalf("compile error: %v\n%s", err, src)

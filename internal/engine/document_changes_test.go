@@ -94,7 +94,7 @@ func TestDocumentChangesOverflowRequiresFullRefresh(t *testing.T) {
 
 func TestDocumentChangesOutputAndInterruptedRetry(t *testing.T) {
 	prog := compile(t, `type Entry = { Name string; At int }
-rule main Entry = x:([a-z]+ #atomic) $$ => Entry{Name: text($x), At: $x.startPos}`)
+rule main Entry = x:([a-z]+ #atomic) $$ => Entry{Name: text($x), At: $x.Start}`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d := newChangeTestDocument(t, prog, "aa", o, 16)
 		old, err := d.Snapshot()

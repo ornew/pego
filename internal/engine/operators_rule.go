@@ -19,8 +19,12 @@ type operatorsRuleLine struct {
 	scope *scope
 	m     matcher
 	act   evaluator // action (nil if none)
-	isSeq bool
-	entry int // start of the bytecode (bytecode backend only)
+	// value makes the value of an operand line without an action, and single that of an operator
+	// line's operator, from the value of the line's expression.
+	value  func(p *parser, v *Node, start int) *Node
+	single singleMode
+	shape  shaper
+	entry  int // start of the bytecode (bytecode backend only)
 	// key is the line's *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator, and check
 	// the declared type its value is checked against at run time (nil if none).
 	key   any
@@ -97,37 +101,21 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 	r.body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(r, min) }
 }
 
-// leanLine reports whether the value of an Operators Rule line is unused. The line's value is not used by
-// operator lines with an action ($op is built from the range and $n is unavailable) or by operand
-// lines whose action does not use $n. The bytecode compiler uses the same test.
+// leanLine reports whether the value of an Operators Rule line is unused: the line is an operand
+// line with an action, which reads captures only. An operator line's value is $op or its element.
+// The bytecode compiler uses the same test.
 func leanLine(action grammar.Term, locals []string) bool {
-	if action == nil {
-		return false
-	}
-	if locals != nil {
-		return true
-	}
-	uses := false
-	walkTerm(action, func(t grammar.Term) {
-		if _, ok := t.(*grammar.IndexRef); ok {
-			uses = true
-		}
-	})
-	return !uses
+	return action != nil && locals == nil
 }
 
 func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string, key any) *operatorsRuleLine {
 	s := newScope()
 	novalue := c.rule.novalue || leanLine(action, locals)
 	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue), key: key}
-	_, l.isSeq = e.(*grammar.Seq)
+	l.value, l.single, l.shape = scopeValueOf(e), singleModeOf(e), shaperOf(e)
 	if action != nil && !c.rule.novalue {
 		l.act = termEvaluator(action)
-		if locals != nil {
-			c.noIndex = "operatorsRule operator actions; use captures, $lhs, $rhs, or $op"
-		}
 		c.checkTerm(action, s, locals)
-		c.noIndex = ""
 	}
 	return l
 }
@@ -321,18 +309,15 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 		return nil
 	}
 	if l.act != nil {
-		items := p.one(v)
-		if l.isSeq && v != nil {
-			items = v.Children
-		}
-		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: f, items: items, start: start, end: p.pos, locals: locals, cbase: len(p.created)})
+		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: f, start: start, end: p.pos, locals: locals, cbase: len(p.created)})
 		v = p.actionResult(ctx, l.act, r.name)
 	} else {
+		v = l.value(p, v, start)
 		if len(l.scope.names) > 0 {
 			v = p.attachCaptures(v, l.scope, f, start, p.pos)
 		}
 		if v != nil && v.fresh {
-			if v.kind.rule == "" {
+			if p.prog.sourceInfo && v.kind.rule == "" {
 				v.kind = r.kinds.named(v.kind, r.name)
 			}
 			v.fresh = false
@@ -357,11 +342,22 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		end = a.end
 	}
 	l := a.op.line
+	// The operator's value is its one element, or the node of its tuple, which has the line's
+	// captures.
+	opv, ok := l.shape.single(p, l.single, a.v, a.start)
+	if !ok {
+		opv = p.newNode(Node{kind: kindSeq, Start: int32(a.start), End: int32(a.end)})
+	}
+	if l.single == singleTuple && len(l.scope.names) > 0 {
+		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
+	}
+	if opv != nil {
+		opv.fresh = false
+	}
 	if l.act != nil {
-		op := p.newNode(Node{kind: kindMatch, Start: int32(a.start), End: int32(a.end), Text: p.text(a.start, a.end), terminal: true})
 		// The locals live in the parser, like the evaluation context (see useCtx).
 		ls := &p.oplocals
-		ls[0] = local{name: "op", val: op}
+		ls[0] = local{name: "op", val: nodeOrNil(opv)}
 		locals := &ls[0]
 		if a.op.kind != grammar.Prefix {
 			ls[1] = local{name: "lhs", val: nodeOrNil(lhs), next: locals}
@@ -378,24 +374,27 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		}
 		return v
 	}
-	opv := a.v
-	if len(l.scope.names) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
-	}
-	if opv != nil {
-		opv.fresh = false
-	}
+	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
+	// kind, with those captures.
 	var kids []*Node
+	var fields Fields
 	switch a.op.kind {
 	case grammar.Prefix:
 		kids = p.nodes(2)
 		kids[0], kids[1] = opv, rhs
+		fields = Fields{{"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	case grammar.Postfix:
 		kids = p.nodes(2)
 		kids[0], kids[1] = lhs, opv
+		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}}
 	default:
 		kids = p.nodes(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
+		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
-	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
+	kind := kindSeq
+	if p.prog.sourceInfo {
+		kind = r.kinds.named(kindSeq, r.name)
+	}
+	return p.newNode(Node{kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, labeled: p.prog.sourceInfo})
 }

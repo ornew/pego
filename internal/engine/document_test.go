@@ -18,7 +18,7 @@ rule line = ^ (assign / list / pos) "\n"
 rule assign = n:name " = " e:expr
 rule list = list "," item / item
 rule item = [a-z]+ #atomic
-rule pos Pos = "@" n:name => Pos{At: $n.startPos, Name: $n}
+rule pos Pos = "@" n:name => Pos{At: $n.Start, Name: $n}
 rule name = [a-z]+ #atomic
 rule expr = operators {
     operand [0-9]+ #atomic
@@ -443,7 +443,7 @@ rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, true},
 		{"positional", `type P = { At int }
 rule main = stmt* $$
 rule stmt = assign / "\n"
-rule assign = k:key " = " v:val ";\n" => P{At: $k.startPos}
+rule assign = k:key " = " v:val ";\n" => P{At: $k.Start}
 rule key = [a-z]+ #atomic
 rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, false},
 	}

@@ -33,6 +33,8 @@ type runSite struct {
 	ownScope, build bool
 	min, max        int
 	shiftable       bool // the elements' values contain no position values
+	// value makes an element's value from the value of the element expression.
+	value func(p *parser, v *Node, start int) *Node
 }
 
 type runKey struct{ site, start int }
@@ -322,8 +324,11 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 		}
 		p.beginElem(&r)
 		v, ok := rs.m(p)
-		if ok && rs.ownScope && rs.build {
-			v = p.attachCaptures(v, rs.scope, f, m0.pos, p.pos)
+		if ok && rs.build {
+			v = rs.value(p, v, m0.pos)
+			if rs.ownScope {
+				v = p.attachCaptures(v, rs.scope, f, m0.pos, p.pos)
+			}
 		}
 		p.endElem(&r, ok, v)
 		cut := p.cut

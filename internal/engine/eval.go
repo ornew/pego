@@ -79,7 +79,11 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 		return nil
 	}
 	if !ok {
-		p.failAction(where, p.actionError("result must be a node, got ", typeName(v)))
+		if _, isFn := v.(function); isFn {
+			p.failAction(where, p.actionError("result must be a value, got a function"))
+		}
+		// A value other than a node travels boxed, with the range of the action's input.
+		return p.newNode(Node{kind: kindBox, box: v, Start: int32(ctx.start), End: int32(ctx.end)})
 	}
 	if n != nil {
 		// The value of an action is final: a node it returns from the rule body (=> $1) is not
@@ -132,22 +136,16 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		for l := c.locals; l != nil; l = l.next {
 			c.p.stepWork()
 			if c.p.valueEqual(l.name, t.Name) {
-				return l.val, nil
+				return unboxValue(l.val), nil
 			}
 		}
 		if i, ok := c.scope.slots[t.Name]; ok && c.frame != nil {
-			return nodeOrNil(c.frame.vals[i]), nil
+			return unboxNode(c.frame.vals[i]), nil
 		}
 		return nil, c.p.actionError("undefined capture $", t.Name)
 
 	case *grammar.IndexRef:
-		if t.Index == 0 {
-			return c.newList(c.items), nil
-		}
-		if t.Index > len(c.items) {
-			return nil, c.p.actionIndexError(t.Index, len(c.items))
-		}
-		return nodeOrNil(c.items[t.Index-1]), nil
+		return nil, c.p.actionError("positional captures are removed")
 
 	case *grammar.VarRef:
 		v, ok := c.p.lookupValue(t.Name)
@@ -294,13 +292,15 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 	if !ok || n == nil {
 		return nil, c.p.actionError("cannot access .", name, " of ", typeName(x))
 	}
-	switch name {
-	case "startPos":
-		return int(n.Start), nil
-	case "endPos":
-		return int(n.End), nil
-	case "children":
-		return c.newList(n.Children), nil
+	if n.isNode() {
+		switch name {
+		case "Start":
+			return int(n.Start), nil
+		case "End":
+			return int(n.End), nil
+		case "Value":
+			return c.p.nodeValue(n), nil
+		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
@@ -840,8 +840,6 @@ func (c *evalCtx) keep() *evalCtx {
 
 // predicate compiles a Predicate Action { ... }.
 func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
-	c.noIndex = "predicates"
-	defer func() { c.noIndex = "" }()
 	if a, ok := e.Term.(*grammar.Assign); ok {
 		c.checkTerm(a.Value, s, nil)
 		return func(p *parser) (*Node, bool) {
@@ -891,9 +889,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			c.errorf(t.Diagnostic(), "undefined capture $%s", t.Name)
 		}
 	case *grammar.IndexRef:
-		if c.noIndex != "" {
-			c.errorf(t.Diagnostic(), "$%d cannot be used in %s", t.Index, c.noIndex)
-		}
+		c.errorf(t.Diagnostic(), "positional capture $%d is removed; name the element with a capture", t.Index)
 	case *grammar.Member:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.New:

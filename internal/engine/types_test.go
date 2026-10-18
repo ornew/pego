@@ -105,7 +105,7 @@ rule stmts = stmt* #recover(skip=[^;]+ ";")
 rule stmt S = x:"x" #atomic ";" => S{X: $x}`,
 		// Field access and built-in fields
 		`type P = { S int; K []*node }
-rule main = w:word => P{S: $w.startPos + $w.endPos, K: $w.children}
+rule main = w:word => P{S: $w.Start + $w.End, K: $w.Value}
 rule word = k:"a" v:"b"`,
 	} {
 		compile(t, src)
@@ -119,7 +119,7 @@ func TestInferenceOfGrowingTypes(t *testing.T) {
 rule r0 = ";"
 rule r1 = "a"
 rule r2 = r3 "é" / "a"
-rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1.children), (i) => concat(list(i), map($c1.children, (j) => list(i, j))))`
+rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1.Value), (i) => concat(list(i), map($c1.Value, (j) => list(i, j))))`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

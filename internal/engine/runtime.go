@@ -770,26 +770,25 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return nil
 	}
 	if r.act != nil {
-		var items []*Node
-		if r.bodyIsSeq && v != nil {
-			items = v.Children
-		} else {
-			items = p.one(v)
-		}
-		v = p.runAction(r, f, items, start, p.pos)
+		v = p.runAction(r, f, nil, start, p.pos)
 		if r.resultCheck != nil {
 			p.checkResult(r.resultCheck, v, r.name)
 		}
 		return v
 	}
 	if r.terminalType != "" {
-		return p.newNode(Node{kind: r.kinds.term, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
+		kind := r.kinds.termValue
+		if p.prog.sourceInfo {
+			kind = r.kinds.term
+		}
+		return p.newNode(Node{kind: kind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
 	}
+	v = r.value(p, v, start)
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
 	if v != nil && v.fresh {
-		if v.kind.rule == "" {
+		if p.prog.sourceInfo && v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
@@ -824,6 +823,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 	if v.Fields == nil {
 		v.Fields = p.fields(len(s.names))
 	}
+	v.labeled = p.prog.sourceInfo
 	for i, name := range s.names {
 		p.stepWork()
 		if f.vals[i] != nil {

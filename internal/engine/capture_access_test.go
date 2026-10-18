@@ -100,11 +100,11 @@ func TestCaptureAccessErrors(t *testing.T) {
 }
 
 func TestCaptureAccessSyntax(t *testing.T) {
-	g, err := syntax.Parse(`rule main = xs:(y:"a")+ => map($xs, (i) => i.$y.startPos)`)
+	g, err := syntax.Parse(`rule main = xs:(y:"a")+ => map($xs, (i) => i.$y.Start)`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := grammar.Format(g); !strings.Contains(got, "i.$y.startPos") {
+	if got := grammar.Format(g); !strings.Contains(got, "i.$y.Start") {
 		t.Fatalf("formatted:\n%s", got)
 	}
 	body := g.Rules()[0].Action.(*grammar.Call).Args[1].(*grammar.Lambda).Body.(*grammar.Member)

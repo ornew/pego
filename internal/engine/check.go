@@ -1038,15 +1038,18 @@ func elemType(t ty) (ty, bool) {
 func (k *checker) member(x ty, m *grammar.Member) ty {
 	switch m.Name {
 	case "startPos", "endPos":
-		if !isNode(x) {
-			k.errorf(m.Diagnostic(), "cannot access .%s of %s", m.Name, x)
-		}
+		k.errorf(m.Diagnostic(), ".%s is removed: use .Start or .End", m.Name)
 		return tyInt
 	case "children":
-		if !isNode(x) {
-			k.errorf(m.Diagnostic(), "cannot access .%s of %s", m.Name, x)
+		k.errorf(m.Diagnostic(), ".children is removed: use .Value")
+		return tyAny
+	case "Start", "End", "Value":
+		if isNode(x) && !isStructType(k.prog, x) {
+			if m.Name == "Value" {
+				return tyAny
+			}
+			return tyInt
 		}
-		return listTy{optional(tyNode)}
 	}
 	if x == tyAny {
 		return tyAny
@@ -1244,4 +1247,14 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 		return listTy{union(elems...)}
 	}
 	return tyAny
+}
+
+// isStructType reports whether t is a struct type, whose members are its fields.
+func isStructType(prog *Program, t ty) bool {
+	n, ok := t.(namedTy)
+	if !ok {
+		return false
+	}
+	_, ok = prog.types[n.name].(*grammar.StructSpec)
+	return ok
 }

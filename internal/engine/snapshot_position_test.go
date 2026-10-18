@@ -16,7 +16,7 @@ func TestSnapshotPositionOverlaysAcrossEdits(t *testing.T) {
 rule item = [a-z]`,
 		`type Item = { At int; Text string }
 rule main = -[ ]* item* $$
-rule item = x:[a-z] => Item{At: $x.startPos, Text: text($x)}`,
+rule item = x:[a-z] => Item{At: $x.Start, Text: text($x)}`,
 	} {
 		prog := compile(t, src)
 		snapshotVariants(t, func(t *testing.T, o ParseOptions) {
@@ -45,7 +45,7 @@ rule item = x:[a-z] => Item{At: $x.startPos, Text: text($x)}`,
 					t.Fatal(err)
 				}
 				if len(versions) == 1 {
-					wantOverlay := !strings.Contains(src, "$x.startPos")
+					wantOverlay := !strings.Contains(src, "$x.Start")
 					if (s.graph.positions != nil) != wantOverlay {
 						t.Fatal("prefix-shift overlay eligibility ignored action position values")
 					}

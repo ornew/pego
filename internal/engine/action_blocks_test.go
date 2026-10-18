@@ -60,5 +60,5 @@ func TestSinglePredicateBlockAST(t *testing.T) {
 }
 
 func TestContextualOperatorsBeforeLiteralBrace(t *testing.T) {
-	check(t, "rule operators = \"x\"\nrule main = operators \"{\"", ok("x{", `(Seq "x"@operators "{")@main`))
+	check(t, "rule operators = \"x\"\nrule main = operators \"{\"", ok("x{", `("x"@operators "{")@main`))
 }

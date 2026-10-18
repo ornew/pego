@@ -26,8 +26,10 @@ type Program struct {
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
-	byName        map[string]*rule
-	types         map[string]grammar.TypeSpec
+	// sourceInfo reports that nodes record source information (Options.SourceInfo).
+	sourceInfo bool
+	byName     map[string]*rule
+	types      map[string]grammar.TypeSpec
 	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
 	// and the types of casts (castType).
 	fieldTypes sync.Map
@@ -70,6 +72,9 @@ type Options struct {
 	DisableMemo bool
 	// NoTypeCheck skips type checking.
 	NoTypeCheck bool
+	// SourceInfo records source information in the values: the rule that produced each node and
+	// where its captures are.
+	SourceInfo bool
 	// controlledDispatch builds only the metered closure graph for lazy work setup.
 	controlledDispatch bool
 	// recognize builds a program that only checks whether the input conforms to the grammar, without
@@ -115,6 +120,8 @@ type rule struct {
 	positional bool
 	// act evaluates the action (nil if there is no action).
 	act evaluator
+	// value makes the rule's value from the value of its body, for a rule without an action.
+	value func(p *parser, v *Node, start int) *Node
 	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
 	entry int
 	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
@@ -208,16 +215,13 @@ var builtinTypes = map[string]bool{
 }
 
 type compiler struct {
-	control *compileControl
-	prog    *Program
-	proj    map[string]string // projected captures of the rule being compiled (ruleProjections)
-	an      *analysis
-	opts    Options
-	errs    ErrorList
-	rule    *rule
-	// noIndex reports that a place where $n is not allowed (a predicate or an Operators Rule operator action)
-	// is being checked.
-	noIndex        string
+	control        *compileControl
+	prog           *Program
+	proj           map[string]string // projected captures of the rule being compiled (ruleProjections)
+	an             *analysis
+	opts           Options
+	errs           ErrorList
+	rule           *rule
 	descIDs        map[string]expID
 	missingSites   int
 	missingSiteIDs map[*grammar.Attribute]int
@@ -374,6 +378,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	prog.workRecognize = opts.recognize
 	prog.checks = opts.checks
 	prog.noProjections = opts.noProjections
+	prog.sourceInfo = opts.SourceInfo
 
 	for _, td := range control.types(g) {
 		control.poll()
@@ -511,6 +516,8 @@ func (c *compiler) compileRule(r *rule) {
 	c.rule = r
 	r.kinds = newRuleKinds(r.name, r.terminalType)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
+		// The lines build the rule's value.
+		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
 		c.compileOperatorsRule(r, p)
 		return
 	}
@@ -519,6 +526,7 @@ func (c *compiler) compileRule(r *rule) {
 	r.lean = r.novalue || leanBody(r)
 	c.proj = ruleProjectionsControlled(c.prog, r, control)
 	m := c.expr(r.def.Expr, r.scope, !r.lean)
+	r.value = scopeValueOf(r.def.Expr)
 	if c.proj != nil {
 		if c.prog.projected == nil {
 			c.prog.projected = map[*grammar.Call]bool{}
@@ -534,23 +542,13 @@ func (c *compiler) compileRule(r *rule) {
 }
 
 // leanBody reports whether the value of the rule body is unused. It is unused when there is an
-// action that does not use the body's value (does not refer to $n), or when the rule has no
-// action and a terminal type, provided it has no #stream. Every backend and the code generator
+// action, which reads captures only, or a terminal type, provided the rule has no #stream. Every backend and the code generator
 // use this test to compile the body value-free.
 func leanBody(r *rule) bool {
 	if r.stream {
 		return false
 	}
-	if r.action != nil {
-		uses := false
-		walkTerm(r.action, func(t grammar.Term) {
-			if _, ok := t.(*grammar.IndexRef); ok {
-				uses = true
-			}
-		})
-		return !uses
-	}
-	return r.terminalType != ""
+	return r.action != nil || r.terminalType != ""
 }
 
 // twinOf returns the value-free twin of rule r (creating it if needed; it is assembled later).
@@ -805,28 +803,34 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		}
 
 	case *grammar.Seq:
+		// The value is the tuple node of the elements, flattened through nested sequences.
 		ms := make([]matcher, len(e.Items))
-		vis := make([]bool, len(e.Items))
-		nvis := 0
+		flat := make([]bool, len(e.Items))
+		valued := make([]bool, len(e.Items))
 		for i, it := range e.Items {
 			ms[i] = c.expr(it, s, build)
-			vis[i] = visible(it)
-			if vis[i] {
-				nvis++
-			}
+			flat[i] = isElems(it)
+			valued[i] = !flat[i] && valuedCount(it) == 1
 		}
+		n := valuedCount(e)
 		return func(p *parser) (*Node, bool) {
 			start := p.pos
 			var kids []*Node
 			if build {
-				kids = p.nodes(nvis)[:0]
+				kids = p.nodes(n)[:0]
 			}
 			for i, m := range ms {
 				v, ok := m(p)
 				if !ok {
 					return nil, false
 				}
-				if build && vis[i] {
+				if !build {
+					continue
+				}
+				switch {
+				case flat[i]:
+					kids = append(kids, v.Children...)
+				case valued[i]:
 					kids = append(kids, v)
 				}
 			}
@@ -842,6 +846,9 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		guarded := false
 		for i, alt := range e.Alts {
 			ms[i] = c.expr(alt, s, build)
+			if build {
+				ms[i] = singleMatcher(alt, ms[i])
+			}
 			guards[i] = c.first(alt)
 			guarded = guarded || guards[i].accept != nil
 		}
@@ -902,6 +909,9 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 
 	case *grammar.Optional:
 		m := c.expr(e.Expr, s, build)
+		if build {
+			m = singleMatcher(e.Expr, m)
+		}
 		return func(p *parser) (*Node, bool) {
 			m0 := p.mark()
 			prevCut := p.cut
@@ -974,16 +984,12 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			return c.expr(e.Expr, s, false)
 		}
 		// Even inside a value-free body (leanBody), captures build and record their values.
-		if !visible(e.Expr) {
-			c.errorf(e.Diagnostic(), "capture %s of an expression without a value", e.Name)
-			return nil
-		}
 		slot := s.slot(e.Name)
 		var m matcher
 		if field := c.proj[e.Name]; field != "" {
 			m = c.projectRepeat(e.Expr.(*grammar.Repeat), field)
 		} else {
-			m = c.expr(e.Expr, s, true)
+			m = captureMatcher(e.Expr, c.expr(e.Expr, s, true))
 		}
 		return func(p *parser) (*Node, bool) {
 			v, ok := m(p)
@@ -1003,12 +1009,8 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		}
 
 	case *grammar.Top:
-		return func(p *parser) (*Node, bool) {
-			if !build {
-				return nil, true
-			}
-			return p.newNode(Node{kind: kindMatch, Start: int32(p.pos), End: int32(p.pos), terminal: true, fresh: true}), true
-		}
+		// _ matches the empty input and has no value.
+		return func(p *parser) (*Node, bool) { return nil, true }
 
 	case *grammar.Bottom:
 		return func(p *parser) (*Node, bool) { return nil, false }
@@ -1243,10 +1245,11 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 	m := c.expr(e.Expr, elemScope, build)
 	ownScope := elemScope != s
 	min, max := e.Min, e.Max
+	elemValue := scopeValueOf(e.Expr)
 	var rs *runSite
 	if c.resumable(e.Expr) { // a Document parse is not a stream: #stream has no effect there
 		c.runSites++
-		rs = &runSite{id: c.runSites, m: m, scope: elemScope, ownScope: ownScope, build: build, min: min, max: max, shiftable: !c.positional(e.Expr)}
+		rs = &runSite{id: c.runSites, m: m, scope: elemScope, ownScope: ownScope, build: build, min: min, max: max, shiftable: !c.positional(e.Expr), value: elemValue}
 	}
 	return func(p *parser) (*Node, bool) {
 		if rs != nil && p.runs != nil && p.silent == 0 {
@@ -1278,8 +1281,11 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 				}
 				break
 			}
-			if ownScope && build {
-				v = p.attachCaptures(v, elemScope, f, m0.pos, p.pos)
+			if build {
+				v = elemValue(p, v, m0.pos)
+				if ownScope {
+					v = p.attachCaptures(v, elemScope, f, m0.pos, p.pos)
+				}
 			}
 			count++
 			if stream && p.emit != nil && p.depth == 1 {

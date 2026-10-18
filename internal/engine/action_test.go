@@ -11,25 +11,25 @@ func TestCaptures(t *testing.T) {
 	t.Run("rule level", func(t *testing.T) {
 		check(t, `rule main = first:word " " last:word
 rule word = [a-z]+ #atomic`,
-			ok("ab cd", `(Seq "ab"@word " " "cd"@word first="ab"@word last="cd"@word)@main`),
+			ok("ab cd", `(first:"ab"@word " " last:"cd"@word)@main`),
 		)
 	})
 	t.Run("in choice and optional", func(t *testing.T) {
 		check(t, `rule main = (a:"a" / b:"b") c:"c"?`,
-			ok("a", `(Seq "a" nil a="a")@main`),
-			ok("bc", `(Seq "b" "c" b="b" c="c")@main`),
+			ok("a", `(a:"a" nil)@main`),
+			ok("bc", `(b:"b" c:"c")@main`),
 		)
 	})
 	t.Run("repetition scope", func(t *testing.T) {
 		check(t, `rule main = items:(k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";")*`,
 			// A capture of the whole body is wrapped in a Seq and made a field.
-			ok("a=1;b=2;", `(Seq [(Seq "a" "=" "1" ";" k="a" v="1") (Seq "b" "=" "2" ";" k="b" v="2")] items=[(Seq "a" "=" "1" ";" k="a" v="1") (Seq "b" "=" "2" ";" k="b" v="2")])@main`),
+			ok("a=1;b=2;", `(items:[(k:"a" "=" v:"1" ";") (k:"b" "=" v:"2" ";")])@main`),
 		)
 	})
 	t.Run("backtracking resets captures", func(t *testing.T) {
 		check(t, `rule main = x:"a" "b" / "a" "c" => R{X: $x}
 type R = { X *Match }`,
-			ok("ac", `(R X=nil)`),
+			ok("ac", `R{X: nil}`),
 		)
 	})
 }
@@ -37,7 +37,7 @@ type R = { X *Match }`,
 func TestActions(t *testing.T) {
 	check(t, `type KV = { Key Match; Op Match; Value Match }
 rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $k, Op: $op, Value: $v}`,
-		ok("abc=12", `(KV Key="abc" Op="=" Value="12")`),
+		ok("abc=12", `KV{Key: "abc", Op: "=", Value: "12"}`),
 	)
 	check(t, `rule main = "(" e:inner ")" => $e
 rule inner = [a-z]+ #atomic`,
@@ -45,7 +45,7 @@ rule inner = [a-z]+ #atomic`,
 	)
 	check(t, `type Pair = { All node; N int; S string; B bool }
 rule main = v1:"a" v2:"b" => Pair{All: list($v1, $v2), N: 1 + 2 * 3, S: "x" + text($v2), B: !false && 1 < 2}`,
-		ok("ab", "(Pair All=[\"a\" \"b\"] B=true N=7 S=`xb`)"),
+		ok("ab", `Pair{All: ["a" "b"], B: true, N: 7, S: "xb"}`),
 	)
 }
 
@@ -59,7 +59,7 @@ rule b = r
 rule r = c:"q" e => $c
 rule e = _`
 	want := `[(Seq "q" "y") (Seq "q" "x") (Seq "q" "y")]@main`
-	check(t, src, ok("qyqxqy", want), ok("qy", `[(Seq "q" "y")]@main`))
+	check(t, src, ok("qyqxqy", want), ok("qy", `[("q" "y")]@main`))
 	doc, err := compile(t, src).NewDocument("main", "qyqxqy")
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func TestOptionalResults(t *testing.T) {
 	check(t, `type C = { X Match; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
 		ok("", `nil`),
-		ok("aa", `(C Next=(C Next=nil X="a") X="a")`),
+		ok("aa", `C{Next: C{Next: nil, X: "a"}, X: "a"}`),
 	)
 }
 
@@ -105,7 +105,7 @@ rule right Node = (
 rule num = [0-9]+ #atomic`
 	check(t, src,
 		ok("1", `"1"@num`),
-		ok("1+2-3", `(Op Left=(Op Left="1"@num Op="+" Right="2"@num) Op="-" Right="3"@num)`),
+		ok("1+2-3", `Op{Left: Op{Left: "1"@num, Op: "+", Right: "2"@num}, Op: "-", Right: "3"@num}`),
 	)
 }
 
@@ -115,21 +115,21 @@ rule main = (
     first:item rest:(-"," x:item)*
 ) => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest) + 1}
 rule item = [a-z]+ #atomic`,
-		ok("a,bc,d", `(Args Items=["a"@item "bc"@item "d"@item] N=3)`),
+		ok("a,bc,d", `Args{Items: ["a"@item "bc"@item "d"@item], N: 3}`),
 	)
 	// An inner lambda reads a parameter of the enclosing lambda.
 	check(t, `type Pair = { G Match; X Match }
 rule main = gs:group* => map($gs, (g) => map(g.$xs, (x) => Pair{G: g.$k, X: x.$v}))
 rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
-		ok("a=12;b=3;", `[[(Pair G="a" X="1") (Pair G="a" X="2")] [(Pair G="b" X="3")]]`),
+		ok("a=12;b=3;", `[[Pair{G: "a", X: "1"} Pair{G: "a", X: "2"}] [Pair{G: "b", X: "3"}]]`),
 	)
 }
 
 func TestMemberAccess(t *testing.T) {
 	check(t, `type Span = { Start int; End int; Kids int }
-rule main = "  " w:word => Span{Start: $w.startPos, End: $w.endPos, Kids: len($w.children)}
+rule main = "  " w:word => Span{Start: $w.Start, End: $w.End, Kids: len($w.Value)}
 rule word = [a-z] [a-z]`,
-		ok("  ab", `(Span End=4 Kids=2 Start=2)`),
+		ok("  ab", `Span{End: 4, Kids: 2, Start: 2}`),
 	)
 }
 
@@ -159,14 +159,14 @@ rule num = -" "* n:[0-9]+ #atomic => $n`)
 func TestPredicates(t *testing.T) {
 	t.Run("comparison", func(t *testing.T) {
 		check(t, `rule main = d:[0-9]+ #atomic {len($d) <= 3} "!"`,
-			ok("123!", `(Seq "123" "!" d="123")@main`),
+			ok("123!", `(d:"123" "!")@main`),
 			fails("1234!", `1:5: syntax error: expected [0-9]`),
 		)
 	})
 	t.Run("variables are scoped to rules", func(t *testing.T) {
 		check(t, `rule main = {x := 1} a {x == 1}
 rule a = {x == 1} {x := 2} {x == 2} "a"`,
-			ok("a", `(Seq (Seq "a")@a)@main`),
+			ok("a", `(("a")@a)@main`),
 		)
 	})
 	t.Run("undefined variable fails", func(t *testing.T) {
@@ -178,7 +178,7 @@ rule a = {x == 1} {x := 2} {x == 2} "a"`,
 	t.Run("backtracking rolls back definitions", func(t *testing.T) {
 		check(t, `rule main = ({x := 1} "a" "b" / "a") {x == 1} "c"`,
 			fails("ac", `1:2: syntax error: expected "b"`),
-			ok("abc", `(Seq (Seq "a" "b") "c")@main`),
+			ok("abc", `(("a" "b") "c")@main`),
 		)
 	})
 	t.Run("indentation", func(t *testing.T) {
@@ -189,7 +189,7 @@ rule children = &s:spaces {len($s) > indent} {indent := len($s)} block
 rule spaces = " "* #atomic`
 		check(t, src,
 			ok(lines("a", "  b", "  c", "    d", "e", ""),
-				`(Seq [(Seq ""@spaces "a" "\n" (Seq [(Seq "  "@spaces "b" "\n" nil name="b" s="  "@spaces)@item (Seq "  "@spaces "c" "\n" (Seq [(Seq "    "@spaces "d" "\n" nil name="d" s="    "@spaces)@item]@block s="    "@spaces)@children name="c" s="  "@spaces)@item]@block s="  "@spaces)@children name="a" s=""@spaces)@item (Seq ""@spaces "e" "\n" nil name="e" s=""@spaces)@item]@block)@main`),
+				`([(s:""@spaces name:"a" "\n" ([(s:"  "@spaces name:"b" "\n" nil)@item (s:"  "@spaces name:"c" "\n" ([(s:"    "@spaces name:"d" "\n" nil)@item]@block &s:"    "@spaces)@children)@item]@block &s:"  "@spaces)@children)@item (s:""@spaces name:"e" "\n" nil)@item]@block)@main`),
 			// The indentation of " c" matches no indentation level.
 			fails(lines("a", "   b", " c", ""), `3:2: syntax error: expected " "`),
 		)
@@ -248,9 +248,9 @@ rule main = v1:"a" => A{N: 1 / (len($v1) - 1)}`)
 // TestTextOfNil checks that text of a capture that did not match is "" on every backend, as
 // specified.
 func TestTextOfNil(t *testing.T) {
-	check(t, `rule main = x:"a"? {text($x) == ""} "b"`, ok("b", `(Seq nil "b")@main`))
+	check(t, `rule main = x:"a"? {text($x) == ""} "b"`, ok("b", `(nil "b")@main`))
 	check(t, `type T = { S string }
-rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", "(T S=`!`)"))
+rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", `T{S: "!"}`))
 }
 
 // TestLargeIntegers checks that integer literals beyond 32 bits keep their value on every backend.

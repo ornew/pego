@@ -20,17 +20,17 @@ rule e = operators {
 
 func TestOperatorsRuleCST(t *testing.T) {
 	check(t, arith,
-		ok("1", `(Seq "1"@e)@main`),
-		ok("1+2*3", `(Seq (Operator "1"@e "+" (Operator "2"@e "*" "3"@e operator=2)@e operator=1)@e)@main`),
-		ok("1 - 2 - 3", `(Seq (Operator (Operator "1"@e "-" "2"@e operator=1)@e "-" "3"@e operator=1)@e)@main`),
-		ok("2^3^4", `(Seq (Operator "2"@e "^" (Operator "3"@e "^" "4"@e operator=4)@e operator=4)@e)@main`),
-		ok("-2^2", `(Seq (Operator "-" (Operator "2"@e "^" "2"@e operator=4)@e operator=3)@e)@main`),
-		ok("-2*3", `(Seq (Operator (Operator "-" "2"@e operator=3)@e "*" "3"@e operator=2)@e)@main`),
-		ok("2^-1", `(Seq (Operator "2"@e "^" (Operator "-" "1"@e operator=3)@e operator=4)@e)@main`),
-		ok("3!!", `(Seq (Operator (Operator "3"@e "!" operator=5)@e "!" operator=5)@e)@main`),
-		ok("(1+2)*3", `(Seq (Operator (Seq "(" (Operator "1"@e "+" "2"@e operator=1)@e ")" x=(Operator "1"@e "+" "2"@e operator=1)@e)@e "*" "3"@e operator=2)@e)@main`),
-		ok("1==2", `(Seq (Operator "1"@e "==" "2"@e operator=0)@e)@main`),
-		ok("1+1==2*1", `(Seq (Operator (Operator "1"@e "+" "1"@e operator=1)@e "==" (Operator "2"@e "*" "1"@e operator=2)@e operator=0)@e)@main`),
+		ok("1", `(("1")@e)@main`),
+		ok("1+2*3", `((lhs:("1")@e op:"+" rhs:(lhs:("2")@e op:"*" rhs:("3")@e)@e)@e)@main`),
+		ok("1 - 2 - 3", `((lhs:(lhs:("1")@e op:"-" rhs:("2")@e)@e op:"-" rhs:("3")@e)@e)@main`),
+		ok("2^3^4", `((lhs:("2")@e op:"^" rhs:(lhs:("3")@e op:"^" rhs:("4")@e)@e)@e)@main`),
+		ok("-2^2", `((op:"-" rhs:(lhs:("2")@e op:"^" rhs:("2")@e)@e)@e)@main`),
+		ok("-2*3", `((lhs:(op:"-" rhs:("2")@e)@e op:"*" rhs:("3")@e)@e)@main`),
+		ok("2^-1", `((lhs:("2")@e op:"^" rhs:(op:"-" rhs:("1")@e)@e)@e)@main`),
+		ok("3!!", `((lhs:(lhs:("3")@e op:"!")@e op:"!")@e)@main`),
+		ok("(1+2)*3", `((lhs:(("(" x:(lhs:("1")@e op:"+" rhs:("2")@e)@e ")"))@e op:"*" rhs:("3")@e)@e)@main`),
+		ok("1==2", `((lhs:("1")@e op:"==" rhs:("2")@e)@e)@main`),
+		ok("1+1==2*1", `((lhs:(lhs:("1")@e op:"+" rhs:("1")@e)@e op:"==" rhs:(lhs:("2")@e op:"*" rhs:("1")@e)@e)@e)@main`),
 		// Non-associative operators do not chain.
 		fails("1==2==3", `1:5: syntax error: expected "!", "*", "+", "-", "/", "^", [0-9], end of input`),
 		fails("1+", `1:3: syntax error: expected "(", "-", [0-9]`),
@@ -89,16 +89,16 @@ rule e Expr = operators {
 
 func TestOperatorsRuleActions(t *testing.T) {
 	check(t, ast,
-		ok("1+2-3", `(Bin L=(Bin L=Num"1"@num Op="+" R=Num"2"@num) Op="-" R=Num"3"@num)`),
-		ok("a ? b : c ? d : e", `(Cond C="a"@ident F=(Cond C="c"@ident F="e"@ident T="d"@ident) T="b"@ident)`),
-		ok("a ? b = c : d", `(Cond C="a"@ident F="d"@ident T=(Bin L="b"@ident Op="=" R="c"@ident))`),
-		ok("-a(1)[2]", `(Neg X=(Index I=Num"2"@num X=(Call Args=[Num"1"@num] Fn="a"@ident)))`),
-		ok("f()", `(Call Args=[] Fn="f"@ident)`),
+		ok("1+2-3", `Bin{L: Bin{L: "1"@num, Op: "+", R: "2"@num}, Op: "-", R: "3"@num}`),
+		ok("a ? b : c ? d : e", `Cond{C: "a"@ident, F: Cond{C: "c"@ident, F: "e"@ident, T: "d"@ident}, T: "b"@ident}`),
+		ok("a ? b = c : d", `Cond{C: "a"@ident, F: "d"@ident, T: Bin{L: "b"@ident, Op: "=", R: "c"@ident}}`),
+		ok("-a(1)[2]", `Neg{X: Index{I: "2"@num, X: Call{Args: ["1"@num], Fn: "a"@ident}}}`),
+		ok("f()", `Call{Args: [], Fn: "f"@ident}`),
 		// The comma operator is not parsed inside arguments.
-		ok("f(a = 1, b), c", `(Bin L=(Call Args=[(Bin L="a"@ident Op="=" R=Num"1"@num) "b"@ident] Fn="f"@ident) Op="," R="c"@ident)`),
+		ok("f(a = 1, b), c", `Bin{L: Call{Args: [Bin{L: "a"@ident, Op: "=", R: "1"@num} "b"@ident], Fn: "f"@ident}, Op: ",", R: "c"@ident}`),
 		// "-" and "->" are distinguished by longest match even at different binding levels.
-		ok("a->b-c", `(Bin L="a"@ident Op="->" R=(Bin L="b"@ident Op="-" R="c"@ident))`),
-		ok("a-b->c", `(Bin L=(Bin L="a"@ident Op="-" R="b"@ident) Op="->" R="c"@ident)`),
+		ok("a->b-c", `Bin{L: "a"@ident, Op: "->", R: Bin{L: "b"@ident, Op: "-", R: "c"@ident}}`),
+		ok("a-b->c", `Bin{L: Bin{L: "a"@ident, Op: "-", R: "b"@ident}, Op: "->", R: "c"@ident}`),
 		ok("(a)", `"a"@ident`),
 	)
 }
@@ -127,8 +127,8 @@ rule e Expr = operators {
     level { infix left "+" => App{F: $lhs, X: $rhs} }
     level { infix left _ => App{F: $lhs, X: $rhs} }
 }`,
-		ok("f x y", `(App F=(App F="f"@e X="x"@e) X="y"@e)`),
-		ok("f x + g", `(App F=(App F="f"@e X="x"@e) X="g"@e)`),
+		ok("f x y", `App{F: App{F: "f"@e, X: "x"@e}, X: "y"@e}`),
+		ok("f x + g", `App{F: App{F: "f"@e, X: "x"@e}, X: "g"@e}`),
 	)
 }
 
@@ -140,7 +140,7 @@ rule e = operators {
 }`
 	check(t, src,
 		// The operator part is a Seq, so the Operator's child is a Seq too.
-		ok("1+2", `(Seq (Operator "1"@e (Seq "+") "2"@e operator=0)@e nil)@main`),
+		ok("1+2", `((lhs:"1"@e op:("+") rhs:"2"@e)@e nil)@main`),
 		// Without the cut, the "+" after "1" would match the outer "+"?, but the cut makes it fail.
 		fails("1+", `1:3: syntax error: expected [0-9]`),
 	)
@@ -149,7 +149,7 @@ rule e = operators {
     operand [0-9]+ #atomic
     level { infix left "+" }
 }`,
-		ok("1+", `(Seq "1"@e "+")@main`),
+		ok("1+", `("1"@e "+")@main`),
 	)
 }
 
@@ -159,7 +159,7 @@ rule e = operators {
     operand "!" / [0-9]+ #atomic
     level { prefix "!" }
 }`,
-		ok("!1", `(Operator "!" "1"@e operator=0)@e`),
+		ok("!1", `(op:"!" rhs:"1"@e)@e`),
 		// If no operand follows a prefix operator, it is reparsed as an operand.
 		ok("!", `"!"@e`),
 	)
@@ -173,7 +173,7 @@ rule e = operators {
     level { infix left "+" }
     level mul { infix left "*" }
 }`,
-		ok("1*2+3+4", `(Seq (Operator "1"@e "*" "2"@e operator=1)@e "+" (Operator "3"@e "+" "4"@e operator=0)@e a=(Operator "1"@e "*" "2"@e operator=1)@e b=(Operator "3"@e "+" "4"@e operator=0)@e)@main`),
+		ok("1*2+3+4", `(a:(lhs:"1"@e op:"*" rhs:"2"@e)@e "+" b:(lhs:"3"@e op:"+" rhs:"4"@e)@e)@main`),
 	)
 }
 
@@ -202,15 +202,15 @@ rule e Expr = operators {
 
 func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 	check(t, restrictedPrefix,
-		ok("~é", `(Prefix Op="~" X=Atom"é"@atom)`),
-		ok("~~x", `(Prefix Op="~" X=(Prefix Op="~" X=Atom"x"@atom))`),
-		ok("x*y", `(Binary L=Atom"x"@atom Op="*" R=Atom"y"@atom)`),
-		ok("é!", `(Postfix Op="!" X=Atom"é"@atom)`),
-		ok("x^y^z", `(Binary L=Atom"x"@atom Op="^" R=(Binary L=Atom"y"@atom Op="^" R=Atom"z"@atom))`),
+		ok("~é", `Prefix{Op: "~", X: "é"@atom}`),
+		ok("~~x", `Prefix{Op: "~", X: Prefix{Op: "~", X: "x"@atom}}`),
+		ok("x*y", `Binary{L: "x"@atom, Op: "*", R: "y"@atom}`),
+		ok("é!", `Postfix{Op: "!", X: "é"@atom}`),
+		ok("x^y^z", `Binary{L: "x"@atom, Op: "^", R: Binary{L: "y"@atom, Op: "^", R: "z"@atom}}`),
 		// A lower-level prefix still uses its own level for its right operand.
-		ok("~é+y", `(Prefix Op="~" X=(Binary L=Atom"é"@atom Op="+" R=Atom"y"@atom))`),
-		ok("x*~y+z", `(Binary L=Atom"x"@atom Op="*" R=(Prefix Op="~" X=(Binary L=Atom"y"@atom Op="+" R=Atom"z"@atom)))`),
-		ok("x^~y+z", `(Binary L=Atom"x"@atom Op="^" R=(Prefix Op="~" X=(Binary L=Atom"y"@atom Op="+" R=Atom"z"@atom)))`),
+		ok("~é+y", `Prefix{Op: "~", X: Binary{L: "é"@atom, Op: "+", R: "y"@atom}}`),
+		ok("x*~y+z", `Binary{L: "x"@atom, Op: "*", R: Prefix{Op: "~", X: Binary{L: "y"@atom, Op: "+", R: "z"@atom}}}`),
+		ok("x^~y+z", `Binary{L: "x"@atom, Op: "^", R: Prefix{Op: "~", X: Binary{L: "y"@atom, Op: "+", R: "z"@atom}}}`),
 		// Tail operators below the active minimum are left for the caller.
 		fails("x+y", "end of input"),
 		fails("x|y", "end of input"),
@@ -224,7 +224,7 @@ func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 	// not share a result with a different minimum level, even after a prefix.
 	check(t, strings.Replace(restrictedPrefix, `rule main = x:level(e, mul) $$ => $x`,
 		`rule main = &(level(e, mul) "|") x:e $$ => $x`, 1),
-		ok("~é+y|z", `(Binary L=(Prefix Op="~" X=(Binary L=Atom"é"@atom Op="+" R=Atom"y"@atom)) Op="|" R=Atom"z"@atom)`),
+		ok("~é+y|z", `Binary{L: Prefix{Op: "~", X: Binary{L: "é"@atom, Op: "+", R: "y"@atom}}, Op: "|", R: "z"@atom}`),
 		fails("~é+y", `1:1: syntax error`),
 	)
 }
@@ -279,8 +279,8 @@ rule e = operators {
     level { prefix "-"? }
     level { postfix "!"? }
 }`,
-		ok("x", `(Seq "x"@e)@main`),
-		ok("-x!", `(Seq (Operator "-" (Operator "x"@e "!" operator=1)@e operator=0)@e)@main`),
+		ok("x", `("x"@e)@main`),
+		ok("-x!", `((op:"-" rhs:(lhs:"x"@e op:"!")@e)@e)@main`),
 		fails("", "expected"),
 	)
 }
@@ -294,12 +294,12 @@ rule e = operators {
     operand "a"?
     level { infix left _ }
 }`,
-		ok("a", `(Seq (Operator "a"@e "" nil operator=0)@e)@main`),
-		ok("", `(Seq (Operator nil "" nil operator=0)@e)@main`))
+		ok("a", `((lhs:"a"@e op:() nil)@e)@main`),
+		ok("", `((nil op:() nil)@e)@main`))
 	check(t, `rule main = e $$
 rule e = operators {
     operand "a"?
     level { postfix "!"? }
 }`,
-		ok("a!!", `(Seq (Operator (Operator "a"@e "!" operator=0)@e "!" operator=0)@e)@main`))
+		ok("a!!", `((lhs:(lhs:"a"@e op:"!")@e op:"!")@e)@main`))
 }
