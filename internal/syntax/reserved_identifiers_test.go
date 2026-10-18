@@ -17,7 +17,7 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 		`rule main = "x" @_attr`, `rule main = "x" @error(_message="x")`,
 		`rule main = {_indent := 0}`, `rule main = {_indent > 0}`, `rule main = {_ := 0}`,
 		`rule main = "x" => $_capture`, `rule main = v1:"x" => _helper($v1)`,
-		`rule main = v1:"x" => Node{_field: $v1}`, `rule main = v1:"x" => $v1._field`,
+		`rule main = v1:"x" => Node{_field: $v1}`, `rule main = v1:"x" => $v1.$_field`,
 		`rule main = v1:"x" => map($v1, (_item) => _item)`,
 		`rule main = v1:"x" => map($v1, (_) => $v1)`,
 		`rule main = level(expr, _tight)`, `rule main = level(_expr, tight)`,

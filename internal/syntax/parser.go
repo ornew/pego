@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -1565,10 +1567,25 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 			continue
 		}
 		name := p.ident()
+		if !p.legacy && captureMember(name.text) {
+			p.errs.addRange(name.pos, name.end, fmt.Sprintf("a capture is read with .$%s; run pego fix to rewrite .%s", name.text, name.text))
+		}
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
 		p.sourceNode(x, sourceStart)
 	}
 	return x
+}
+
+// captureMember reports whether x.name read the capture name in earlier syntax: field names
+// start with an uppercase letter, and startPos, endPos, children, expected and message are
+// members of every node or of Missing.
+func captureMember(name string) bool {
+	switch name {
+	case "startPos", "endPos", "children", "expected", "message", "":
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(name)
+	return r != '$' && !unicode.IsUpper(r) // x.$y is parsed as the member $y
 }
 
 func (p *parser) termPrimary() (sourceResult grammar.Term) {

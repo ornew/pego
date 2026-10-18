@@ -110,7 +110,7 @@ type Stmt ~ DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStm
 rule main File = (
     -"\u{feff}"? -ws kw_package -ws n:ident -sp -semi -ws
     is:(d:importDecl -sp -semi -ws)* ds:(d:topDecl -sp -semi -ws)* $$
-) => File{Name: $n, Decls: concat(map($is, (x) => x.d), map($ds, (x) => x.d))}
+) => File{Name: $n, Decls: concat(map($is, (x) => x.$d), map($ds, (x) => x.$d))}
 
 rule topDecl Decl = funcDecl / constDecl / varDecl / typeDecl
 
@@ -120,31 +120,31 @@ rule topDecl Decl = funcDecl / constDecl / varDecl / typeDecl
 
 rule importDecl GenDecl = kw_import -ws ss:(importGroup / importOne) => GenDecl{Tok: "import", Specs: $ss}
 rule importOne = s:importSpec => list($s)
-rule importGroup = "(" -ws ss:(s:importSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.s)
+rule importGroup = "(" -ws ss:(s:importSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.$s)
 rule importSpec ImportSpec = n:importName? p:stringLit => ImportSpec{Name: $n, Path: $p}
 rule importName Ident = i:ident -sp / i:dotName -ws => $i
 rule dotName Ident = "." !".."
 
 rule constDecl GenDecl = kw_const -ws ss:(constGroup / constOne) => GenDecl{Tok: "const", Specs: $ss}
 rule constOne = s:constSpec => list($s)
-rule constGroup = "(" -ws ss:(s:constSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.s)
+rule constGroup = "(" -ws ss:(s:constSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.$s)
 // The type and the values of a constant are optional (go/parser leaves the checks to the type
 // checker).
 rule constSpec ValueSpec = ns:identList t:typeSp? vs:valuesSp? => ValueSpec{Names: $ns, Type: $t, Values: concat($vs)}
 rule typeSp Expr = -sp t:typ => $t
-rule identList = first:ident rest:(-sp "," -ws n:ident)* => concat(list($first), map($rest, (r) => r.n))
+rule identList = first:ident rest:(-sp "," -ws n:ident)* => concat(list($first), map($rest, (r) => r.$n))
 rule valuesSp = -sp "=" !"=" -ws vs:exprList => $vs
 
 rule varDecl GenDecl = kw_var -ws ss:(varGroup / varOne) => GenDecl{Tok: "var", Specs: $ss}
 rule varOne = s:varSpec => list($s)
-rule varGroup = "(" -ws ss:(s:varSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.s)
+rule varGroup = "(" -ws ss:(s:varSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.$s)
 rule varSpec ValueSpec = varSpecTyped / varSpecUntyped
 rule varSpecTyped ValueSpec = ns:identList -sp t:typ vs:valuesSp? => ValueSpec{Names: $ns, Type: $t, Values: concat($vs)}
 rule varSpecUntyped ValueSpec = ns:identList -sp "=" !"=" -ws vs:exprList => ValueSpec{Names: $ns, Values: $vs}
 
 rule typeDecl GenDecl = kw_type -ws ss:(typeGroup / typeOne) => GenDecl{Tok: "type", Specs: $ss}
 rule typeOne = s:typeSpec => list($s)
-rule typeGroup = "(" -ws ss:(s:typeSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.s)
+rule typeGroup = "(" -ws ss:(s:typeSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.$s)
 
 // A type specification is generic or an array type when "[" follows the name. go/parser decides it
 // as follows (parseTypeSpec), and so does the grammar:
@@ -170,10 +170,10 @@ rule genericParams FieldList = &("[" -ws ident -sp "[") p:typeParams / &generalS
 rule splitParams FieldList = (
     &("[" -ws splitDecision) "[" -ws p:ident -sp t:splitType
     rest:(-sp "," -ws g:typeParam)* -sp ("," -ws)? "]"
-) => FieldList{List: concat(list(Field{Names: list($p), Type: $t}), map($rest, (r) => r.g))}
+) => FieldList{List: concat(list(Field{Names: list($p), Type: $t}), map($rest, (r) => r.$g))}
 rule splitType Expr = (
     h:splitHead rest:(-sp "|" ![|=] -ws t:mulExpr)*
-) => foldl($h, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.t})
+) => foldl($h, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.$t})
 rule splitHead Expr = splitStar / splitParen
 rule splitStar StarExpr = "*" !"=" -ws u:unaryExpr => StarExpr{X: $u}
 rule splitParen ParenExpr = "(" -ws a:expr -sp ("," -ws)? ")" !(-sp [.\[(]) => ParenExpr{X: $a}
@@ -221,7 +221,7 @@ rule params FieldList = "(" -ws l:paramList? ")" => FieldList{List: concat($l)}
 rule paramList = namedParams / unnamedParams
 rule namedParams = (
     first:paramGroup rest:(-sp "," -ws g:paramGroup)* -sp ("," -ws)?
-) => concat(list($first), map($rest, (r) => r.g))
+) => concat(list($first), map($rest, (r) => r.$g))
 rule paramGroup Field = g:variadicGroup &(-sp ("," -ws)? ")") / g:namedGroup => $g
 rule variadicGroup Field = n:ident -sp t:variadicType => Field{Names: list($n), Type: $t}
 rule namedGroup Field = ns:identList -sp t:namedParamType => Field{Names: $ns, Type: $t}
@@ -229,7 +229,7 @@ rule namedParamType Expr = t:arrayFieldType / !"[" !"..." t:typ => $t
 rule variadicType Ellipsis = "..." -ws t:typ => Ellipsis{Elt: $t}
 rule unnamedParams = (
     first:unnamedParam rest:(-sp "," -ws p:unnamedParam)* -sp ("," -ws)?
-) => concat(list($first), map($rest, (r) => r.p))
+) => concat(list($first), map($rest, (r) => r.$p))
 rule unnamedParam Field = t:variadicType &(-sp ("," -ws)? ")") / t:unnamedType => Field{Type: $t}
 // An unnamed parameter that starts with a name: a type name, or an instance whose arguments are
 // expressions (go/parser's parseArrayFieldOrTypeInstance).
@@ -243,20 +243,20 @@ rule resultParams FieldList = "(" -ws l:resultList? ")" => FieldList{List: conca
 rule resultList = namedResults / unnamedResults
 rule namedResults = (
     first:namedGroup rest:(-sp "," -ws g:namedGroup)* -sp ("," -ws)?
-) => concat(list($first), map($rest, (r) => r.g))
+) => concat(list($first), map($rest, (r) => r.$g))
 rule unnamedResults = (
     first:unnamedResult rest:(-sp "," -ws p:unnamedResult)* -sp ("," -ws)?
-) => concat(list($first), map($rest, (r) => r.p))
+) => concat(list($first), map($rest, (r) => r.$p))
 rule unnamedResult Field = t:unnamedType => Field{Type: $t}
 
 // Type parameters: [K comparable, V any], [S ~[]E, E any], [T ~int | ~string].
 rule typeParams FieldList = (
     "[" -ws first:typeParam rest:(-sp "," -ws g:typeParam)* -sp ("," -ws)? "]"
-) => FieldList{List: concat(list($first), map($rest, (r) => r.g))}
+) => FieldList{List: concat(list($first), map($rest, (r) => r.$g))}
 rule typeParam Field = ns:identList -sp c:constraint => Field{Names: $ns, Type: $c}
 rule constraint Expr = (
     first:constraintFirst rest:(-sp "|" ![|=] -ws t:embeddedTerm)*
-) => foldl($first, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.t})
+) => foldl($first, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.$t})
 rule constraintFirst Expr = t:tildeTerm / t:arrayFieldType / !"[" !"..." t:typ => $t
 rule embeddedTerm Expr = tildeTerm / typ
 rule tildeTerm UnaryExpr = "~" -ws t:typ => UnaryExpr{Op: "~", X: $t}
@@ -270,7 +270,7 @@ rule exprSp Expr = x:expr -sp => $x
 rule identIndex IndexExpr = x:ident -sp "[" -ws i:expr -sp ("," -ws)? "]" => IndexExpr{X: $x, Index: $i}
 rule identIndexList IndexListExpr = (
     x:ident -sp "[" -ws first:expr rest:(-sp "," -ws e:expr)+ -sp ("," -ws)? "]"
-) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.e))}
+) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.$e))}
 
 // ===================================================================
 // Types
@@ -291,7 +291,7 @@ rule qualifiedInstance Expr = typeInstanceList / typeInstance
 rule typeInstance IndexExpr = x:qualifiedIdent -sp "[" -ws t:typ -sp ("," -ws)? "]" => IndexExpr{X: $x, Index: $t}
 rule typeInstanceList IndexListExpr = (
     x:qualifiedIdent -sp "[" -ws first:typ rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? "]"
-) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.t))}
+) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.$t))}
 rule qualifiedIdent Expr = t:selectorIdent / t:ident !(-sp "." !"..") => $t
 rule selectorIdent SelectorExpr = x:ident -sp "." !".." -ws s:ident => SelectorExpr{X: $x, Sel: $s}
 
@@ -315,7 +315,7 @@ rule funcType FuncType = (
 ) => FuncType{Params: $ps, Results: $rs}
 
 rule structType StructType = kw_struct -ws l:fieldBlock => StructType{Fields: $l}
-rule fieldBlock FieldList = "{" -ws fs:(f:fieldDecl -sp -fieldTerm -ws)* "}" => FieldList{List: map($fs, (x) => x.f)}
+rule fieldBlock FieldList = "{" -ws fs:(f:fieldDecl -sp -fieldTerm -ws)* "}" => FieldList{List: map($fs, (x) => x.$f)}
 // go/parser's parseFieldDecl: a name followed by ".", a tag or the end of the field is an embedded
 // type; one name followed by "[" begins an array type or an embedded instance.
 rule fieldDecl Field = embeddedField / starField / multiNameField / arrayNameField / oneNameField / instanceField
@@ -324,14 +324,14 @@ rule starField Field = t:starEmbedded g:tagSp? => Field{Type: $t, Tag: $g}
 rule starEmbedded StarExpr = "*" !"=" -ws t:typeName => StarExpr{X: $t}
 rule multiNameField Field = (
     first:ident rest:(-sp "," -ws n:ident)+ -sp t:typ g:tagSp?
-) => Field{Names: concat(list($first), map($rest, (r) => r.n)), Type: $t, Tag: $g}
+) => Field{Names: concat(list($first), map($rest, (r) => r.$n)), Type: $t, Tag: $g}
 rule arrayNameField Field = n:ident -sp t:arrayFieldType g:tagSp? => Field{Names: list($n), Type: $t, Tag: $g}
 rule oneNameField Field = n:ident -sp !"[" t:typ g:tagSp? => Field{Names: list($n), Type: $t, Tag: $g}
 rule instanceField Field = t:(identIndexList / identIndex) g:tagSp? => Field{Type: $t, Tag: $g}
 rule tagSp StringLit = -sp s:stringLit => $s
 
 rule interfaceType InterfaceType = kw_interface -ws l:methodBlock => InterfaceType{Methods: $l}
-rule methodBlock FieldList = "{" -ws es:(e:interfaceElem -sp -fieldTerm -ws)* "}" => FieldList{List: map($es, (x) => x.e)}
+rule methodBlock FieldList = "{" -ws es:(e:interfaceElem -sp -fieldTerm -ws)* "}" => FieldList{List: map($es, (x) => x.$e)}
 rule interfaceElem Field = methodSpec / embeddedElem
 rule methodSpec Field = n:ident -sp t:signature => Field{Names: list($n), Type: $t}
 rule signature FuncType = ps:params rs:resultsSp? ({$rs != nil} / !(-sp typeStart)) => FuncType{Params: $ps, Results: $rs}
@@ -339,18 +339,18 @@ rule signature FuncType = ps:params rs:resultsSp? ({$rs != nil} / !(-sp typeStar
 // parsed as an expression (go/parser's parseMethodSpec).
 rule embeddedElem Field = (
     first:embeddedFirst rest:(-sp "|" ![|=] -ws t:embeddedTerm)*
-) => Field{Type: foldl($first, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.t})}
+) => Field{Type: foldl($first, $rest, (acc, i) => BinaryExpr{X: acc, Op: "|", Y: i.$t})}
 rule embeddedFirst Expr = embeddedIndexList / embeddedIndex / embeddedTerm
 rule embeddedIndex IndexExpr = x:ident -sp "[" -ws i:expr -sp ("," -ws)? "]" => IndexExpr{X: $x, Index: $i}
 rule embeddedIndexList IndexListExpr = (
     x:ident -sp "[" -ws first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? "]"
-) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.t))}
+) => IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => r.$t))}
 
 // ===================================================================
 // Statements
 // ===================================================================
 
-rule block BlockStmt = "{" -ws ss:(s:stmt -ws)* "}" => BlockStmt{List: map($ss, (x) => x.s)}
+rule block BlockStmt = "{" -ws ss:(s:stmt -ws)* "}" => BlockStmt{List: map($ss, (x) => x.$s)}
 
 // A statement and its semicolon. A label and an empty statement need none.
 rule stmt Stmt = emptyStmt / labeledEmpty / terminatedStmt
@@ -365,7 +365,7 @@ rule labeledStmt LabeledStmt = l:ident -sp ":" !"=" -ws s:(labeledStmt / plainSt
 
 // The statements of a case clause. The semicolon after the last one is left to the caller, so that
 // the clause ends with its last statement.
-rule clauseBody = ss:(-ws s:clauseStmt)* l:lastClauseStmt? => concat(map($ss, (x) => x.s), $l)
+rule clauseBody = ss:(-ws s:clauseStmt)* l:lastClauseStmt? => concat(map($ss, (x) => x.$s), $l)
 // A statement followed by another one.
 rule clauseStmt Stmt = s:(emptyStmt / labeledEmpty / clauseTerminated) &(-ws !clauseEnd) => $s
 rule clauseTerminated Stmt = s:(labeledStmt / plainStmt) -sp -stmtTerm => $s
@@ -437,13 +437,13 @@ rule typeSwitchGuard Stmt = guardAssign / guardExpr
 rule guardAssign AssignStmt = l:hexpr -sp ":=" -ws x:guardAssert => AssignStmt{Lhs: list($l), Tok: ":=", Rhs: list($x)}
 rule guardExpr ExprStmt = x:guardAssert => ExprStmt{X: $x}
 rule guardAssert TypeAssertExpr = x:guardPrimary -sp dot -ws "(" -ws kw_type -ws ")" => TypeAssertExpr{X: $x}
-rule caseBlock BlockStmt = "{" -ws cs:(c:caseClause (-sp -stmtTerm)? -ws)* "}" => BlockStmt{List: map($cs, (x) => x.c)}
+rule caseBlock BlockStmt = "{" -ws cs:(c:caseClause (-sp -stmtTerm)? -ws)* "}" => BlockStmt{List: map($cs, (x) => x.$c)}
 rule caseClause CaseClause = caseClauseList / caseClauseDefault
 rule caseClauseList CaseClause = kw_case -ws xs:exprList -sp ":" !"=" b:clauseBody => CaseClause{List: $xs, Body: $b}
 rule caseClauseDefault CaseClause = kw_default -ws ":" !"=" b:clauseBody => CaseClause{Body: $b}
 
 rule selectStmt SelectStmt = kw_select -ws b:commBlock => SelectStmt{Body: $b}
-rule commBlock BlockStmt = "{" -ws cs:(c:commClause (-sp -stmtTerm)? -ws)* "}" => BlockStmt{List: map($cs, (x) => x.c)}
+rule commBlock BlockStmt = "{" -ws cs:(c:commClause (-sp -stmtTerm)? -ws)* "}" => BlockStmt{List: map($cs, (x) => x.$c)}
 rule commClause CommClause = commClauseCase / commClauseDefault
 rule commClauseCase CommClause = kw_case -ws c:commStmt -sp ":" !"=" b:clauseBody => CommClause{Comm: $c, Body: $b}
 rule commClauseDefault CommClause = kw_default -ws ":" !"=" b:clauseBody => CommClause{Body: $b}
@@ -451,7 +451,7 @@ rule commClauseDefault CommClause = kw_default -ws ":" !"=" b:clauseBody => Comm
 rule commStmt Stmt = sendStmt / commRecv / exprStmt
 rule commRecv AssignStmt = (
     first:expr rest:(-sp "," -ws x:expr) #repeat(0, 1) -sp t:(":=" / "=" !"=") #atomic -ws r:expr
-) => AssignStmt{Lhs: concat(list($first), map($rest, (q) => q.x)), Tok: text($t), Rhs: list($r)}
+) => AssignStmt{Lhs: concat(list($first), map($rest, (q) => q.$x)), Tok: text($t), Rhs: list($r)}
 
 rule forStmt Stmt = forInfinite / forRange / forClause / forCond
 rule forInfinite ForStmt = kw_for -ws b:block => ForStmt{Body: $b}
@@ -472,23 +472,23 @@ rule rangeValue Expr = -sp "," -ws v:hexpr => $v
 // Most expressions have no binary operator: a unary expression that no operator follows is the
 // expression, without the five rules of the precedence levels (about 15% of the time of a parse).
 rule expr Expr = x:unaryExpr !(-sp binaryOp) / x:orExpr => $x
-rule exprList = first:expr rest:(-sp "," -ws x:expr)* => concat(list($first), map($rest, (r) => r.x))
+rule exprList = first:expr rest:(-sp "," -ws x:expr)* => concat(list($first), map($rest, (r) => r.$x))
 
 rule orExpr Expr = (
     l:andExpr rest:(-sp o:orOp -ws r:andExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule andExpr Expr = (
     l:cmpExpr rest:(-sp o:andOp -ws r:cmpExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule cmpExpr Expr = (
     l:addExpr rest:(-sp o:relOp -ws r:addExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule addExpr Expr = (
     l:mulExpr rest:(-sp o:addOp -ws r:mulExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule mulExpr Expr = (
     l:unaryExpr rest:(-sp o:mulOp -ws r:unaryExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 
 // <-chan T is a channel type, not a receive; go/parser reassociates the arrow when the operand of
 // "<-" is a channel type, which yields the type <-chan T or an error.
@@ -527,13 +527,13 @@ rule primaryOperand Expr = operandGuard (o:ident / o:literalOperand !(-sp "{") /
 // time of a parse).
 rule operandGuard = &[a-zA-Z_0-9.'"`(\[<\u{80}-\u{10ffff}] / _|_ @error(message="expected operand")
 rule literalOperand Expr = basicLit / parenExpr / funcLit / funcType / chanType / interfaceType
-rule indexList = first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? => concat(list($first), map($rest, (r) => r.t))
+rule indexList = first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? => concat(list($first), map($rest, (r) => r.$t))
 
 rule parenExpr ParenExpr = "(" -ws x:expr -sp ")" => ParenExpr{X: $x}
 rule funcLit FuncLit = t:funcType -sp b:block => FuncLit{Type: $t, Body: $b}
 
 rule litValue = "{" -ws es:elements? "}" => concat($es)
-rule elements = first:element rest:(-sp "," -ws e:element)* -sp ("," -ws)? => concat(list($first), map($rest, (r) => r.e))
+rule elements = first:element rest:(-sp "," -ws e:element)* -sp ("," -ws)? => concat(list($first), map($rest, (r) => r.$e))
 rule element Expr = keyValue / elementValue
 rule keyValue KeyValueExpr = k:elementValue -sp ":" !"=" -ws v:elementValue => KeyValueExpr{Key: $k, Value: $v}
 rule elementValue Expr = elidedLit / expr
@@ -563,23 +563,23 @@ rule goEnd = semi / "}" / ")"
 // ===================================================================
 
 rule hexpr Expr = x:hunaryExpr !(-sp binaryOp) / x:horExpr => $x
-rule hexprList = first:hexpr rest:(-sp "," -ws x:hexpr)* => concat(list($first), map($rest, (r) => r.x))
+rule hexprList = first:hexpr rest:(-sp "," -ws x:hexpr)* => concat(list($first), map($rest, (r) => r.$x))
 
 rule horExpr Expr = (
     l:handExpr rest:(-sp o:orOp -ws r:handExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule handExpr Expr = (
     l:hcmpExpr rest:(-sp o:andOp -ws r:hcmpExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule hcmpExpr Expr = (
     l:haddExpr rest:(-sp o:relOp -ws r:haddExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule haddExpr Expr = (
     l:hmulExpr rest:(-sp o:addOp -ws r:hmulExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 rule hmulExpr Expr = (
     l:hunaryExpr rest:(-sp o:mulOp -ws r:hunaryExpr)*
-) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.o), Y: i.r})
+) => foldl($l, $rest, (acc, i) => BinaryExpr{X: acc, Op: text(i.$o), Y: i.$r})
 
 rule hunaryExpr Expr = &[<+\-!\^&~*] u:(recvChanType / hrecvExpr / hunaryOpExpr / hstarExpr) / u:hprimaryExpr => $u
 rule hrecvExpr UnaryExpr = "<-" -ws !(chanType !(-sp [.\[(])) x:hunaryExpr => UnaryExpr{Op: "<-", X: $x}

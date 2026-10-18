@@ -186,13 +186,13 @@ type E = {}
     // capture the operands
     l:term rest:(op:binop r:term)*
     // fold them
-) => foldl($l, $rest, (acc, i) => i.r) // done
+) => foldl($l, $rest, (acc, i) => i.$r) // done
 `,
 			want: `rule expr Node = (
     // capture the operands
     l:term rest:(op:binop r:term)*
     // fold them
-) => foldl($l, $rest, (acc, i) => i.r) // done
+) => foldl($l, $rest, (acc, i) => i.$r) // done
 `,
 		},
 		{

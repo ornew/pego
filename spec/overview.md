@@ -59,12 +59,12 @@ rule expr Node = (
     // Capture the first term as l, and zero or more (operator, term) pairs as rest.
     l:term rest:(op:term_binary_op r:term)*
     // Fold the captured values from the left to build the tree.
-) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 
 // Term (multiplication and division).
 rule term Node = (
     l:factor rest:(op:factor_binary_op r:factor)*
-) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 
 rule term_binary_op OpType = ("+" / "-") #atomic
 rule factor_binary_op OpType = ("*" / "/") #atomic

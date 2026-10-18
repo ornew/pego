@@ -30,7 +30,7 @@ rule expr Expr = operators {
 }
 
 rule call Call = f:name ws "(" ws as:args? ws ")" => Call{Fn: $f, Args: concat($as)}
-rule args = first:expr rest:(ws "," ws e:expr)* => concat(list($first), map($rest, (r) => r.e))
+rule args = first:expr rest:(ws "," ws e:expr)* => concat(list($first), map($rest, (r) => r.$e))
 
 rule num Num = [0-9]+ ("." [0-9]+)?
 rule name Name = [a-z_]+

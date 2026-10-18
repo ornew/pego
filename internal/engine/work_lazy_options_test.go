@@ -5,7 +5,7 @@ package engine
 import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
-	original := compile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.value))
+	original := compile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`)
 	flags := make([]ruleFlags, len(original.rules))
 	for i, r := range original.rules {

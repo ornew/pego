@@ -30,7 +30,7 @@ type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Mem
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 
-rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.s)
+rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 rule block Block = "{" body:stmts ws "}" => Block{Body: $body}
 
 // If a statement fails to parse, skip to the next ";" (or up to the next "{" or "}"), record the error and continue.
@@ -48,7 +48,7 @@ rule return Return = kw_return v:expr? ws ";" => Return{Value: $v}
 rule func Func = (
     kw_fn ws n:name ws "(" ps:params? ws ")" ws body:block
 ) => Func{Name: $n, Params: concat($ps), Body: $body}
-rule params = first:name rest:(-ws -"," -ws p:name)* => concat(list($first), map($rest, (r) => r.p))
+rule params = first:name rest:(-ws -"," -ws p:name)* => concat(list($first), map($rest, (r) => r.$p))
 rule exprStmt ExprStmt = x:expr ws ";" => ExprStmt{X: $x}
 
 // --- Expressions (Operators Rule) ---
@@ -76,7 +76,7 @@ rule operation Expr = operators {
         postfix "." ws n:name => Member{X: $lhs, Name: $n}
     }
 }
-rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => r.x))
+rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => r.$x))
 
 // --- Lexical structure ---
 rule ident Ident = !keyword [a-zA-Z_] idchar*

@@ -6,7 +6,7 @@
 type Name terminal
 type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P *Name; Last *Name; Mode int; Sign *Match }
 type L = { Items []A }
-rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => e.a)}
+rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => e.$a)}
 rule alt A = (
     (x:name "+" y:name "!" / x:name "+" z:name)
     ("(" q:name ")")? ("(" w:name ".")?

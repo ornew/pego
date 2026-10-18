@@ -84,7 +84,7 @@ type Pair = { Items []*Node; Name string }
 
 rule expr Node = (
     l:term rest:(op:term_binary_op r:term)*
-) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 
 rule term_binary_op OpType = ("+" / "-") #atomic
 rule group Node = "(" e:expr ")" => $e

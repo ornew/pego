@@ -223,7 +223,7 @@ type Branch = {
     Leaves []Leaf
 }
 
-rule main = xs:(x:leaf)+ => Branch{Leaves: map($xs, (x) => x.x)}
+rule main = xs:(x:leaf)+ => Branch{Leaves: map($xs, (x) => x.$x)}
 
 rule leaf Leaf = "é"`)
 	if err != nil {

@@ -41,8 +41,8 @@ rule main = n:"1" #atomic => P{N: $n}`, `cannot use Match as Num in field N of P
 rule main = x:"a"? => P{X: $x}`, `cannot use *Match as Match in field X of P`},
 		{`type P = { X Match }
 rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of P`},
-		{`rule main = x:("a" y:"b")? => $x.y`, `cannot access .y of *Seq: the value may be nil`},
-		{`rule main = xs:(k:"a")* => $xs.k`, `[]Seq{k: Match} has no field k`},
+		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *Seq: the value may be nil`},
+		{`rule main = xs:(k:"a")* => $xs.$k`, `[]Seq{k: Match} has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
 		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
@@ -73,11 +73,11 @@ func TestWellTyped(t *testing.T) {
 		`type Number terminal
 type Op = { Left Node; Op Match; Right Node }
 type Node ~ Op | Number
-rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule num Number = [0-9]+`,
 		// The accumulator type is widened by inference
 		`type Op = { L node; R Match }
-rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.r})
+rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.$r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
 		`type P = { X *Match; Y []Match; Z Seq }
@@ -89,7 +89,7 @@ rule pair = "(" ")"`,
 		`rule main *Match = "a"?`,
 		`type C = { X Match; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
-		`rule main = xs:p* => map($xs, (p) => p.x)
+		`rule main = xs:p* => map($xs, (p) => p.$x)
 rule p = x:"a"? #atomic ";"`,
 		// Inference for recursive rules
 		`rule list = "a" list / _

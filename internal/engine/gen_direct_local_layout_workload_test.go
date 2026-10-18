@@ -35,17 +35,17 @@ var typedLocalLayoutWorkloads = []struct{ name, src string }{
 	{"ordinary", `type Doc = { Items []Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:(x:"é" #atomic -",")+
-) => Doc{Items: map($items, (e) => e.x), N: len($items), Missing: $ignored}
+) => Doc{Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
 `},
 	{"element", `type Doc = { Items []*Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) {$unused == nil && len($x) > 0} -",")+
-) => Doc{Items: map($items, (e) => e.x), N: len($items), Missing: $ignored}
+) => Doc{Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
 `},
 	{"cuts", `type Doc = { Items []Match; N int; Missing *Match }
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:(x:"é" #atomic #cut {n := n + 1} -",")+
-) => Doc{Items: map($items, (e) => e.x), N: n, Missing: $ignored}
+) => Doc{Items: map($items, (e) => e.$x), N: n, Missing: $ignored}
 `},
 }
 

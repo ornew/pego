@@ -50,7 +50,15 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 // On capture nodes x.$y and x.y read the same capture, and both project a repetition.
 func TestCaptureAccessMatchesField(t *testing.T) {
 	access := compile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
-	field := compile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
+	// x.y is earlier syntax, which still reaches the engine from JSON grammars.
+	g, err := syntax.ParseLegacy(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	field, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if a, f := ruleProjections(access, access.rules[0]), ruleProjections(field, field.rules[0]); a["xs"] != "y" || f["xs"] != "y" {
 		t.Fatalf("projection: %v / %v", a, f)
 	}

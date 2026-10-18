@@ -1,4 +1,4 @@
 type Item = { Name Match }
 type Out = { A []Item; B [][]Item }
-rule main Out = ys:(xs:(n:item)* ";")* "|" xs:(n:item)* => Out{A: map($xs, (e) => e.n), B: map($ys, (y) => map(y.xs, (e) => e.n))}
+rule main Out = ys:(xs:(n:item)* ";")* "|" xs:(n:item)* => Out{A: map($xs, (e) => e.$n), B: map($ys, (y) => map(y.$xs, (e) => e.$n))}
 rule item Item = n:"x" #atomic => Item{Name: $n}

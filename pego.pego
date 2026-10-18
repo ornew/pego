@@ -137,7 +137,7 @@ rule file_contents File = (
   pkg:package_entry?
   defs:(-empty_stmts d:def_stmt)*
   -empty_stmts tc:comments $$
-) => File{Package: $pkg, Defs: map($defs, (x) => x.d), TrailingComments: $tc}
+) => File{Package: $pkg, Defs: map($defs, (x) => x.$d), TrailingComments: $tc}
 rule empty_stmts = (";" -comments)*
 rule package_entry PackageStmt = &(comments "package" !ident_char) p:(package_stmt #recover(skip=stmt_sync)) => $p
 rule package_stmt Package = (
@@ -194,7 +194,7 @@ rule type_spec TypeSpec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec StructSpec = (
   "=" -ws "{" #cut {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
-) => StructSpec{Fields: map($fields, (x) => x.f), Comments: $cs}
+) => StructSpec{Fields: map($fields, (x) => x.$f), Comments: $cs}
 rule field_spec FieldSpec = !(comments "}") f:(field #recover(skip=field_sync)) => $f
 rule field Field = (
   cs:comments name:(ident @error(message="expected field name")) -ws
@@ -221,12 +221,12 @@ rule type_expr Type = operators {
 rule struct_type StructType = (
   "{" {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
-) => StructType{Fields: map($fields, (x) => x.f), Comments: $cs}
+) => StructType{Fields: map($fields, (x) => x.$f), Comments: $cs}
 
 // The brackets of type arguments follow the name directly.
 rule type_args []Type = (
   "[" {ml := true} -ws first:type_expr rest:(-ws "," -ws t:type_expr)* -ws ","? -ws "]"
-) => concat(list($first), map($rest, (x) => x.t))
+) => concat(list($first), map($rest, (x) => x.$t))
 
 // A rule of its own keeps ml from reaching the rest of the type. Parentheses
 // around one type without a comma group it; any other parentheses form a tuple.
@@ -234,7 +234,7 @@ rule type_group Type = type_paren / type_tuple
 rule type_paren TypeGroup = "(" {ml := true} -ws t:type_expr -ws ")" => TypeGroup{Type: $t}
 rule type_tuple TupleType = (
   "(" {ml := true} -ws ts:(t:type_expr -ws "," -ws)* last:type_expr? -ws ")"
-) => TupleType{Types: concat(map($ts, (x) => x.t), filter(list($last), (x) => x != nil)).([]Type)}
+) => TupleType{Types: concat(map($ts, (x) => x.$t), filter(list($last), (x) => x != nil)).([]Type)}
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
@@ -315,10 +315,10 @@ rule attr_args AttrArgs = (
 ) => $a
 rule attr_named_args AttrArgs = (
   first:attr_named rest:(-ws "," -ws n:attr_named)* (-ws "," -ws)?
-) => AttrArgs{Args: list(), KwArgs: concat(list($first), map($rest, (x) => x.n))}
+) => AttrArgs{Args: list(), KwArgs: concat(list($first), map($rest, (x) => x.$n))}
 rule attr_mixed_args AttrArgs = (
   first:attr_slot rest:(-ws "," -ws a:attr_slot)* named:(attr_named_tail / attr_empty_args)
-) => AttrArgs{Args: concat(list($first.Value), map($rest, (x) => x.a.Value)), KwArgs: $named.KwArgs}
+) => AttrArgs{Args: concat(list($first.Value), map($rest, (x) => x.$a.Value)), KwArgs: $named.KwArgs}
 rule attr_no_args AttrArgs = !"(" => AttrArgs{Args: list(), KwArgs: list()}
 rule attr_no_values AttrArgs = &")" => AttrArgs{Args: list(), KwArgs: list()}
 rule attr_empty_args AttrArgs = _ => AttrArgs{Args: list(), KwArgs: list()}
@@ -335,7 +335,7 @@ rule signed_int Int = ("-" -ws)? digit+ #atomic
 rule ops_rule_expr OperatorsRule = (
   "operators" !ident_char -ws &"{" #cut "{" {ml := false} items:(-empty_stmts i:ops_stmt)* -empty_stmts
   cs:comments -("}" @error(message="expected closing brace for operators"))
-) => OperatorsRule{Items: map($items, (x) => x.i), Comments: $cs}
+) => OperatorsRule{Items: map($items, (x) => x.$i), Comments: $cs}
 rule ops_stmt OperatorsStmt = (
   !(comments "}")
   s:((ops_skip_stmt / ops_operand_stmt / ops_level_stmt / _|_ @error(message="expected skip, operand, or level")) #recover(skip=item_sync))
@@ -351,7 +351,7 @@ rule ops_level_stmt OperatorsLevel = (
   cs:comments "level" -word_end #cut name:ident? -ws
   -("{" @error(message="expected opening brace for level")) xs:(-empty_stmts o:ops_operator)*
   -empty_stmts tc:comments -("}" @error(message="expected closing brace for level")) end:item_end
-) => OperatorsLevel{Name: $name, Operators: map($xs, (x) => x.o), Comments: concat($cs, $tc, $end)}
+) => OperatorsLevel{Name: $name, Operators: map($xs, (x) => x.$o), Comments: concat($cs, $tc, $end)}
 rule ops_operator OpsOperator = (
   !(comments "}")
   s:((ops_prefix / ops_postfix / ops_infix / _|_ @error(message="expected prefix, postfix, or infix")) #recover(skip=item_sync))
@@ -377,7 +377,7 @@ rule default_action DefaultAction = "..."
 rule action_block ActionBlock = (
   "{" {ml := false} xs:(s:action_block_stmt)* cs:comments
   -("}" @error(message="expected closing brace for action block"))
-) => ActionBlock{Actions: map($xs, (x) => x.s), Comments: $cs}
+) => ActionBlock{Actions: map($xs, (x) => x.$s), Comments: $cs}
 rule action_block_stmt ActionStmt = !(comments "}") x:(action_block_value #recover(skip=item_sync)) => $x
 rule action_block_value ActionStmt = -comments x:action_stmt -item_end => $x
 rule action_stmt ActionStmt = action_assign_stmt / action_expr
@@ -410,7 +410,7 @@ rule cast_type Type = "(" {ml := true} -ws t:type_expr -ws ")" => $t
 rule lambda Lambda = (
   "(" {ml := true} -ws names:lambda_params? -ws ")" -ws "=>" -ws x:action_expr
 ) => Lambda{Params: concat($names), Body: $x}
-rule lambda_params []Ident = first:ident rest:(-ws "," -ws name:ident)* => concat(list($first), map($rest, (x) => x.name))
+rule lambda_params []Ident = first:ident rest:(-ws "," -ws name:ident)* => concat(list($first), map($rest, (x) => x.$name))
 rule action_group ActionGroup = (
   "(" {ml := true} -ws x:action_expr -ws
   -(")" @error(message="expected closing parenthesis for action expression"))
@@ -421,7 +421,7 @@ rule call Call = (
 ) => Call{X: $name, Args: concat($args)}
 rule action_args []ActionExpr = (
   first:action_expr rest:(-ws "," -ws x:action_expr)* (-ws "," -ws)?
-) => concat(list($first), map($rest, (x) => x.x))
+) => concat(list($first), map($rest, (x) => x.$x))
 rule list_constructor ListConstructor = (
   "[]" -ws #cut elem:level(type_expr, prefix) -ws
   -("{" @error(message="expected opening brace for list constructor")) {ml := true} -ws
@@ -437,7 +437,7 @@ rule constructor Constructor = (
 ) => Constructor{X: $name, Inits: concat($fields), Comments: $cs}
 rule constructor_fields []InitField = (
   first:init_field rest:(-ws "," -ws f:init_field)* (-ws "," -ws)?
-) => concat(list($first), map($rest, (x) => x.f))
+) => concat(list($first), map($rest, (x) => x.$f))
 rule init_field InitField = (
   cs:comments name:(ident @error(message="expected initializer field name")) -ws -":" -ws
   x:(action_expr @error(message="expected initializer value"))
@@ -453,15 +453,15 @@ rule var_ref VarRef = ident !"("
 // Trivia. Space is discarded before and after each retained comment, keeping
 // the resulting list homogeneous without introducing nil whitespace elements.
 rule ws []Comment = ({ml} cs:comments / cs:horizontal) => $cs
-rule comments []Comment = -space* xs:(c:comment -space*)* => map($xs, (x) => x.c)
-rule horizontal []Comment = -space_no_line* xs:(c:(line_comment / block_no_line) -space_no_line*)* => map($xs, (x) => x.c)
+rule comments []Comment = -space* xs:(c:comment -space*)* => map($xs, (x) => x.$c)
+rule horizontal []Comment = -space_no_line* xs:(c:(line_comment / block_no_line) -space_no_line*)* => map($xs, (x) => x.$c)
 rule word_end = !ident_char -ws
 rule space_no_line = !nl space
 rule nl = "\r\n" / [\r\n]
 rule space = [ \t\n\u{b}\u{c}\r\u{85}\u{a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}]
 // A lexical comment view retains trivia inside parsing and action expressions.
 // Incomplete tokens remain available to the error-recovering structural pass.
-rule source_comments []Comment = -source_non_comment* xs:(c:comment -source_non_comment*)* $$ => map($xs, (x) => x.c)
+rule source_comments []Comment = -source_non_comment* xs:(c:comment -source_non_comment*)* $$ => map($xs, (x) => x.$c)
 rule source_non_comment = source_string / source_class / incomplete_comment / !("//" / "/*") .
 rule source_string = "\"" ("\\" . / [^"\\\n])* "\""?
 rule source_class = "[" ("\\" . / [^\]\\\n])* "]"?
@@ -469,7 +469,7 @@ rule incomplete_comment = !inline_comment "/*" .* $$
 rule comment Comment = comment_group / inline_comment
 rule comment_group CommentGroup = (
   first:comment_line rest:(-nl -space_no_line* c:comment_line)*
-) => CommentGroup{Lines: concat(list($first), map($rest, (x) => x.c))}
+) => CommentGroup{Lines: concat(list($first), map($rest, (x) => x.$c))}
 rule line_comment CommentGroup = c:comment_line => CommentGroup{Lines: list($c)}
 rule comment_line Match = ("//" [^\n\r]*) #atomic
 rule inline_comment InlineComment = (
@@ -524,10 +524,10 @@ rule source_first_trailing SourceComment = (
 rule source_remaining SourceBoundary = source_scope_tail / source_next_boundary
 rule source_scope_tail SourceBoundary = (
   -source_space* xs:(c:source_comment -source_space*)* &source_scope_end
-) => SourceBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => x.c), HasNext: false}
+) => SourceBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => x.$c), HasNext: false}
 rule source_next_boundary SourceBoundary = (
   -source_space* detached:(c:source_detached_group -source_space*)* lead:(source_leading_group / source_empty_comment) -source_space* &source_next_token
-) => SourceBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => x.c), HasNext: true}
+) => SourceBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => x.$c), HasNext: true}
 rule source_empty_comment SourceComment = _ => SourceComment{Text: ""}
 rule source_detached_group SourceComment = (
   c:source_line_group &source_line_flush / c:source_block_comment &source_block_flush
@@ -541,13 +541,13 @@ rule source_comment_start = "//" / "/*"
 rule source_comment SourceComment = source_line_group / source_block_comment
 rule source_line_group SourceComment = (
   first:source_line_comment rest:(-source_horizontal c:source_line_comment)*
-) => SourceComment{Text: foldl($first.Text, $rest, (s, x) => s + x.c.Text)}
+) => SourceComment{Text: foldl($first.Text, $rest, (s, x) => s + x.$c.Text)}
 rule source_line_comment SourceComment = "//" body:[^\r\n]* end:source_nl? => SourceComment{Text: text($body) + text($end)}
 rule source_block_comment SourceComment = (
   "/*" first:source_block_line rest:(line:source_nl -source_horizontal -source_block_star? body:source_block_line)* "*/"
-) => SourceComment{Text: foldl($first.Text, $rest, (s, x) => s + text(x.line) + x.body.Text)}
+) => SourceComment{Text: foldl($first.Text, $rest, (s, x) => s + text(x.$line) + x.$body.Text)}
 rule source_block_star = "*" !"/"
-rule source_block_line SourceComment = xs:(c:source_block_piece)* => SourceComment{Text: foldl("", $xs, (s, x) => s + x.c.Text)}
+rule source_block_line SourceComment = xs:(c:source_block_piece)* => SourceComment{Text: foldl("", $xs, (s, x) => s + x.$c.Text)}
 rule source_block_piece SourceComment = source_nested_piece / source_character_piece
 rule source_nested_piece SourceComment = c:source_block_comment => SourceComment{Text: "/*" + $c.Text + "*/"}
 rule source_character_piece SourceComment = c:(!(source_nl / "*/" / "/*") .) #atomic => SourceComment{Text: text($c)}

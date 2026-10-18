@@ -9,8 +9,8 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// fixParsed rewrites the parts of src that need the grammar parsed: positional captures and
-// lambda parameters written $x. If src does not parse, it is an error when positional captures
+// fixParsed rewrites the parts of src that need the grammar parsed: positional captures,
+// lambda parameters written $x and captures read as members x.y. If src does not parse, it is an error when positional captures
 // need rewriting, and otherwise src is returned unchanged.
 //
 // The positional captures of rule, operand and inline actions become named captures. An element
@@ -85,6 +85,12 @@ func fixParsed(src string, positional bool) (string, error) {
 		return "", err
 	}
 	edits = append(edits, params...)
+	inspectAST(g, func(n any) {
+		if m, ok := n.(*grammar.Member); ok && captureMember(m.Name) {
+			start := o.at(m.Diagnostic()) // the name
+			edits = append(edits, fixEdit{start, start, "$"})
+		}
+	})
 	if len(edits) == 0 {
 		return src, nil
 	}

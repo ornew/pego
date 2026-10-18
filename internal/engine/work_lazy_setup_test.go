@@ -62,7 +62,7 @@ func TestWorkLazyClosureMetadataAndDocument(t *testing.T) {
 rule main = item+ $$
 rule item = word ";"
 rule word Word = [a-z]+`, strings.Repeat("abc;", 80)},
-		{`rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.value))
+		{`rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`, strings.TrimSuffix(strings.Repeat("abc,", 80), ",")},
 		{`rule main = expr $$
 rule expr = operators {

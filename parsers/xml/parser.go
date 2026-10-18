@@ -9778,7 +9778,7 @@ func init() {
 			return c.newStruct("Mixed", "Names", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_163 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_163 }(), "n") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_163 }(), "$n") }()
 				})
 			}())
 		}()
@@ -44273,7 +44273,7 @@ func (p *tparser) i32() (any, bool) {
 				f_258 := func() any {
 
 					return c.mapList(func() any { return k1 }(), func(l_259 any) any {
-						return func() any { return c.member(func() any { return l_259 }(), "n") }()
+						return func() any { return c.member(func() any { return l_259 }(), "$n") }()
 					})
 				}()
 				return tmk_Mixed(c, true, f_258)
@@ -44446,7 +44446,7 @@ L17:
 			f_258 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_259 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_259 }(), "n") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_259 }(), "$n") }()
 				})
 			}()
 			return tmk_Mixed(c, true, f_258)

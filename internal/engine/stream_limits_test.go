@@ -81,7 +81,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 	for _, src := range []string{
 		`rule main = ("a" "b") #repeat(0) "ab" $$`,
 		`rule main = -("a" "b") #repeat(0) "ab" $$`,
-		`rule main = xs:(f:"a" "b") #repeat(0) "ab" $$ => map($xs, (x) => x.f)`,
+		`rule main = xs:(f:"a" "b") #repeat(0) "ab" $$ => map($xs, (x) => x.$f)`,
 		"rule main = r #repeat(0) \"ab\" $$\nrule r = \"a\" => nil",
 	} {
 		// The zero bound must leave the entire input for the suffix,

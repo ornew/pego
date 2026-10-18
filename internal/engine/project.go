@@ -16,11 +16,11 @@ import (
 // action alone).
 
 // ruleProjections returns the captures of repetitions that the rule r's action reads only as
-// map($x, (e) => e.f), mapped to the field f. The conditions:
+// map($x, (e) => e.$f), mapped to the capture f. The conditions:
 //   - the action uses no $n, which could reach the same list (it is an element of the body);
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
-//     never nil (nonNil): otherwise an element can have no record, and $e.f would be an error.
+//     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
 func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) map[string]string {
 	control.poll()
 	if prog.noProjections || r.action == nil || usesItemsControlled(r.action, control) {
@@ -157,7 +157,7 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 	return proj
 }
 
-// projectedMap reports whether the call t is map($x, (e) => e.f) for a projected capture x (proj
+// projectedMap reports whether the call t is map($x, (e) => e.$f) for a projected capture x (proj
 // as from ruleProjections; locals are names bound by enclosing lambdas).
 func projectedMap(t *grammar.Call, proj map[string]string, local func(string) bool) (*grammar.CaptureRef, bool) {
 	if proj == nil || t.Func != "map" || len(t.Args) != 2 {
@@ -229,7 +229,7 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 	walk(t, map[string]bool{})
 }
 
-// projField reports whether the lambda is (e) => e.f and returns f.
+// projField reports whether the lambda is (e) => e.$f, or e.f in earlier syntax, and returns f.
 func projField(t grammar.Term) (string, bool) {
 	l, ok := t.(*grammar.Lambda)
 	if !ok || len(l.Params) != 1 {

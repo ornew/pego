@@ -26,7 +26,7 @@ rule main Bag = x:leaf* #cut => Bag{Items: $x, Nested: list($x, $x)}
 
 rule leaf Leaf = "a"
 
-rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut => Bag{Items: list($x, $last), Nested: list(map($rest, (r) => r.part))}`)
+rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut => Bag{Items: list($x, $last), Nested: list(map($rest, (r) => r.$part))}`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -17392,7 +17392,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_635 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_635 }(), "s") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_635 }(), "$s") }()
 				})
 				return c.endList(b)
 			}()
@@ -17460,7 +17460,7 @@ func init() {
 			return c.newStruct("Assign", "Targets", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_636 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_636 }(), "t") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_636 }(), "$t") }()
 				})
 			}(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
@@ -17583,8 +17583,8 @@ func init() {
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_637, l_638 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_637, l_638 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -17592,7 +17592,7 @@ func init() {
 							return c.binary("+", func() any { c.p.stepWork(); return l_637 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_638 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_638 }(), "$n") }())
 						}())
 					}()
 				})
@@ -17608,8 +17608,8 @@ func init() {
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "r") }(), func(l_639, l_640 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$r") }(), func(l_639, l_640 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -17617,7 +17617,7 @@ func init() {
 							return c.binary("+", func() any { c.p.stepWork(); return l_639 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_640 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_640 }(), "$n") }())
 						}())
 					}()
 				})
@@ -17628,7 +17628,7 @@ func init() {
 						c.p.stepWork()
 						return c.binary("+", func() any { c.p.stepWork(); return l_641 }(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_642 }(), "d") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_642 }(), "$d") }())
 						}())
 					}()
 				})
@@ -17784,7 +17784,7 @@ func init() {
 				return c.newStruct("Try", "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "Handlers", func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_643 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_643 }(), "h") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_643 }(), "$h") }()
 					})
 				}(), "OrElse", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(3) }()) }(), "FinalBody", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(4) }()) }())
 			}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_644, l_645 any) any {
@@ -17793,7 +17793,7 @@ func init() {
 					return c.newStruct("TryStar", "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "Handlers", func() any {
 						c.p.stepWork()
 						return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_646 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_646 }(), "h") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_646 }(), "$h") }()
 						})
 					}(), "OrElse", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(3) }()) }(), "FinalBody", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(4) }()) }())
 				}()
@@ -17844,7 +17844,7 @@ func init() {
 		return func() any {
 			c.p.stepWork()
 			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_647 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_647 }(), "e") }()
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_647 }(), "$e") }()
 			})
 		}()
 	}
@@ -17874,15 +17874,15 @@ func init() {
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "pos") }(), func(l_648 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_648 }(), "a") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$pos") }(), func(l_648 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_648 }(), "$a") }()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw1") }(), func(l_649, l_650 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw1") }(), func(l_649, l_650 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_649 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_650 }(), "ss") }())
+							return c.concat(func() any { c.p.stepWork(); return l_649 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_650 }(), "$ss") }())
 						}()
 					})
 				}())
@@ -17890,16 +17890,16 @@ func init() {
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw1") }(), func(l_651, l_652 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw1") }(), func(l_651, l_652 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_651 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_652 }(), "ks") }())
+							return c.concat(func() any { c.p.stepWork(); return l_651 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_652 }(), "$ks") }())
 						}()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw2") }(), func(l_653 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_653 }(), "k") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw2") }(), func(l_653 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_653 }(), "$k") }()
 					})
 				}())
 			}(), "Body", func() any { c.p.stepWork(); return c.cap(4) }(), "DecoratorList", func() any { c.p.stepWork(); return c.cap(0) }(), "TypeParams", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }())
@@ -17930,10 +17930,10 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_654 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_654 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_654 }(), "$x") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_655 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_655 }(), "y") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_655 }(), "$y") }()
 					})
 					return c.endList(b)
 				}()
@@ -17968,12 +17968,12 @@ func init() {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_656 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_656 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_656 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_656 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "l") }(), func(l_657 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_657 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$l") }(), func(l_657 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_657 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -18001,8 +18001,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_659 }(), "rs") }(), func(l_660 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_660 }(), "p") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_659 }(), "$rs") }(), func(l_660 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_660 }(), "$p") }()
 							})
 							return c.endList(b)
 						}()
@@ -18097,7 +18097,7 @@ func init() {
 					c.p.stepWork()
 					return c.newStruct("Attribute", "Value", func() any { c.p.stepWork(); return l_661 }(), "Attr", func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_662 }(), "n") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_662 }(), "$n") }())
 					}(), "Ctx", func() any { c.p.stepWork(); return any("Load") }())
 				}()
 			})
@@ -18124,7 +18124,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_663 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_663 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_663 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -18138,12 +18138,12 @@ func init() {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_664 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_664 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_664 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_664 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "l") }(), func(l_665 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_665 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$l") }(), func(l_665 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_665 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -18165,12 +18165,12 @@ func init() {
 			return c.newStruct("MatchMapping", "Keys", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_666 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_666 }(), "k") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_666 }(), "$k") }()
 				})
 			}(), "Patterns", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_667 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_667 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_667 }(), "$v") }()
 				})
 			}(), "Rest", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 		}()
@@ -18195,12 +18195,12 @@ func init() {
 			return c.newStruct("MatchClass", "Cls", func() any { c.p.stepWork(); return c.cap(0) }(), "Patterns", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(1) }()) }(), "KwdAttrs", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_668 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_668 }(), "n") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_668 }(), "$n") }()
 				})
 			}(), "KwdPatterns", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_669 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_669 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_669 }(), "$v") }()
 				})
 			}())
 		}()
@@ -18213,7 +18213,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_670 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_670 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_670 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -18278,7 +18278,7 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_673 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_673 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_673 }(), "$p") }()
 							})
 						}())
 					}()
@@ -18292,35 +18292,35 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_674 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_674 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_674 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_675, l_676 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return c.cap(3) }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_677 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_677 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_677 }(), "$p") }()
 					})
 				}())
-			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "va") }(), "KwOnlyArgs", func() any {
+			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$va") }(), "KwOnlyArgs", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_678 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_678 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_678 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_678 }(), "$p") }()
 				})
 			}(), "KwDefaults", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_679 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_679 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_679 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_679 }(), "$d") }()
 				})
-			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "kw") }(), "Defaults", func() any {
+			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$kw") }(), "Defaults", func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_680 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_680 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_680 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_681 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_681 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_681 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -18361,8 +18361,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_683 }(), "rs") }(), func(l_684 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_684 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_683 }(), "$rs") }(), func(l_684 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_684 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -18383,8 +18383,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_686 }(), "rs") }(), func(l_687 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_687 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_686 }(), "$rs") }(), func(l_687 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_687 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -18427,7 +18427,7 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_688, l_689 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("IfExp", "Test", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_689 }(), "c") }(), "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "OrElse", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_689 }(), "o") }())
+					return c.newStruct("IfExp", "Test", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_689 }(), "$c") }(), "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "OrElse", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_689 }(), "$o") }())
 				}()
 			})
 		}()
@@ -18451,7 +18451,7 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_692 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_692 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_692 }(), "$p") }()
 							})
 						}())
 					}()
@@ -18465,35 +18465,35 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_693 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_693 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_693 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_694, l_695 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return c.cap(3) }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_696 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_696 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_696 }(), "$p") }()
 					})
 				}())
-			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "va") }(), "KwOnlyArgs", func() any {
+			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$va") }(), "KwOnlyArgs", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_697 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_697 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_697 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_697 }(), "$p") }()
 				})
 			}(), "KwDefaults", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_698 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_698 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_698 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_698 }(), "$d") }()
 				})
-			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "kw") }(), "Defaults", func() any {
+			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$kw") }(), "Defaults", func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_699 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_699 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_699 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_700 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_700 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_700 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -18537,14 +18537,14 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_701, l_702 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "o") }(), "Values", func() any {
+					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "$o") }(), "Values", func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "rs") }(), func(l_703 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_703 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_702 }(), "$rs") }(), func(l_703 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_703 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -18560,14 +18560,14 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_704, l_705 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "o") }(), "Values", func() any {
+					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "$o") }(), "Values", func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "rs") }(), func(l_706 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_706 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_705 }(), "$rs") }(), func(l_706 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_706 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -18596,13 +18596,13 @@ func init() {
 					c.p.stepWork()
 					return c.newStruct("Compare", "Left", func() any { c.p.stepWork(); return c.cap(0) }(), "Ops", func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_708 }(), "rs") }(), func(l_709 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_709 }(), "o") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_708 }(), "$rs") }(), func(l_709 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_709 }(), "$o") }()
 						})
 					}(), "Comparators", func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_708 }(), "rs") }(), func(l_710 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_710 }(), "x") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_708 }(), "$rs") }(), func(l_710 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_710 }(), "$x") }()
 						})
 					}())
 				}()
@@ -18709,15 +18709,15 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_742 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_742 }(), "a") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_742 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_742 }(), "$a") }()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_743, l_744 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_743, l_744 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_743 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_744 }(), "ss") }())
+									return c.concat(func() any { c.p.stepWork(); return l_743 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_744 }(), "$ss") }())
 								}()
 							})
 						}())
@@ -18725,16 +18725,16 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_745, l_746 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_745, l_746 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_745 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_746 }(), "ks") }())
+									return c.concat(func() any { c.p.stepWork(); return l_745 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_746 }(), "$ks") }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_747 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_747 }(), "k") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_747 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_747 }(), "$k") }()
 							})
 						}())
 					}())
@@ -18795,7 +18795,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_750 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_750 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_750 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -18814,8 +18814,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_752 }(), "rs") }(), func(l_753 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_753 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_752 }(), "$rs") }(), func(l_753 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_753 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -18852,7 +18852,7 @@ func init() {
 			return c.newStruct("Comprehension", "Target", func() any { c.p.stepWork(); return c.cap(1) }(), "Iter", func() any { c.p.stepWork(); return c.cap(2) }(), "Ifs", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(3) }(), func(l_754 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_754 }(), "c") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_754 }(), "$c") }()
 				})
 			}(), "IsAsync", func() any {
 				c.p.stepWork()
@@ -18890,7 +18890,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_755 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_755 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_755 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -18911,8 +18911,8 @@ func init() {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_757 }(), "rs") }(), func(l_758 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_758 }(), "x") }()
+								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_757 }(), "$rs") }(), func(l_758 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_758 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -18922,7 +18922,7 @@ func init() {
 			}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_759, l_760 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("GeneratorExp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_760 }(), "cs") }())
+					return c.newStruct("GeneratorExp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_760 }(), "$cs") }())
 				}()
 			})
 		}()
@@ -18947,7 +18947,7 @@ func init() {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 						c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_761 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_761 }(), "x") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_761 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -18955,7 +18955,7 @@ func init() {
 			}(), func() any { c.p.stepWork(); return c.cap(4) }(), func(l_762, l_763 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("ListComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_763 }(), "cs") }())
+					return c.newStruct("ListComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_763 }(), "$cs") }())
 				}()
 			})
 		}()
@@ -18973,7 +18973,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return any(nil) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_764 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_764 }(), "k") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_764 }(), "$k") }()
 					})
 					return c.endList(b)
 				}()
@@ -18983,7 +18983,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_765 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_765 }(), "v") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_765 }(), "$v") }()
 					})
 					return c.endList(b)
 				}()
@@ -19000,7 +19000,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_766 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_766 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_766 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -19021,7 +19021,7 @@ func init() {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 							c.pushMap(func() any { c.p.stepWork(); return c.cap(5) }(), func(l_767 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_767 }(), "x") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_767 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -19035,7 +19035,7 @@ func init() {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 								c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_770 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_770 }(), "k") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_770 }(), "$k") }()
 								})
 								return c.endList(b)
 							}()
@@ -19043,9 +19043,9 @@ func init() {
 							c.p.stepWork()
 							return func() any {
 								b := len(c.p.kidStack)
-								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_769 }(), "v") }())
+								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_769 }(), "$v") }())
 								c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_771 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_771 }(), "v") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_771 }(), "$v") }()
 								})
 								return c.endList(b)
 							}()
@@ -19057,11 +19057,11 @@ func init() {
 					c.p.stepWork()
 					return c.fold("foldl", false, func() any {
 						c.p.stepWork()
-						return c.newStruct("SetComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_773 }(), "cs") }())
+						return c.newStruct("SetComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_773 }(), "$cs") }())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_774, l_775 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.newStruct("DictComp", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_775 }(), "v") }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_773 }(), "cs") }())
+							return c.newStruct("DictComp", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_775 }(), "$v") }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_773 }(), "$cs") }())
 						}()
 					})
 				}()
@@ -19080,8 +19080,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_777 }(), "rs") }(), func(l_778 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_778 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_777 }(), "$rs") }(), func(l_778 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_778 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -19133,7 +19133,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_779 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_779 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_779 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -19198,15 +19198,15 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_788 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_788 }(), "a") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_788 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_788 }(), "$a") }()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_789, l_790 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_789, l_790 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_789 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_790 }(), "ss") }())
+									return c.concat(func() any { c.p.stepWork(); return l_789 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_790 }(), "$ss") }())
 								}()
 							})
 						}())
@@ -19214,16 +19214,16 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_791, l_792 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_791, l_792 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_791 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_792 }(), "ks") }())
+									return c.concat(func() any { c.p.stepWork(); return l_791 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_792 }(), "$ks") }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_793 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_793 }(), "k") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_793 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_793 }(), "$k") }()
 							})
 						}())
 					}())
@@ -19302,7 +19302,7 @@ func init() {
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_795, l_796 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_795 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_796 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_795 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_796 }(), "$p") }())
 					}()
 				})
 			}())
@@ -19323,7 +19323,7 @@ func init() {
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_797, l_798 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_797 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_798 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_797 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_798 }(), "$p") }())
 					}()
 				})
 			}())
@@ -20084,7 +20084,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1260 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1260 }(), "s") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1260 }(), "$s") }()
 				})
 				return c.endList(b)
 			}()
@@ -20103,7 +20103,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1261 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1261 }(), "s") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1261 }(), "$s") }()
 				})
 				return c.endList(b)
 			}()
@@ -20154,7 +20154,7 @@ func init() {
 			return c.newStruct("Assign", "Targets", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1262 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1262 }(), "t") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1262 }(), "$t") }()
 				})
 			}(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
@@ -20198,7 +20198,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1263 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1263 }(), "n") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1263 }(), "$n") }()
 					})
 					return c.endList(b)
 				}()
@@ -20215,7 +20215,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1264 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1264 }(), "n") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1264 }(), "$n") }()
 					})
 					return c.endList(b)
 				}()
@@ -20232,7 +20232,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1265 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1265 }(), "t") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1265 }(), "$t") }()
 					})
 					return c.endList(b)
 				}()
@@ -20270,7 +20270,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1266 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1266 }(), "a") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1266 }(), "$a") }()
 					})
 					return c.endList(b)
 				}()
@@ -20285,8 +20285,8 @@ func init() {
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_1267, l_1268 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_1267, l_1268 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -20294,7 +20294,7 @@ func init() {
 							return c.binary("+", func() any { c.p.stepWork(); return l_1267 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1268 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1268 }(), "$n") }())
 						}())
 					}()
 				})
@@ -20310,8 +20310,8 @@ func init() {
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "r") }(), func(l_1269, l_1270 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$r") }(), func(l_1269, l_1270 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -20319,7 +20319,7 @@ func init() {
 							return c.binary("+", func() any { c.p.stepWork(); return l_1269 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1270 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1270 }(), "$n") }())
 						}())
 					}()
 				})
@@ -20330,7 +20330,7 @@ func init() {
 						c.p.stepWork()
 						return c.binary("+", func() any { c.p.stepWork(); return l_1271 }(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1272 }(), "d") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1272 }(), "$d") }())
 						}())
 					}()
 				})
@@ -20347,7 +20347,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1273 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1273 }(), "a") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1273 }(), "$a") }()
 				})
 				return c.endList(b)
 			}()
@@ -20361,7 +20361,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1274 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1274 }(), "a") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1274 }(), "$a") }()
 				})
 				return c.endList(b)
 			}()
@@ -20450,7 +20450,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1275 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1275 }(), "w") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1275 }(), "$w") }()
 				})
 				return c.endList(b)
 			}()
@@ -20464,7 +20464,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1276 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1276 }(), "w") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1276 }(), "$w") }()
 				})
 				return c.endList(b)
 			}()
@@ -20494,7 +20494,7 @@ func init() {
 				return c.newStruct("Try", "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "Handlers", func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1277 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1277 }(), "h") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1277 }(), "$h") }()
 					})
 				}(), "OrElse", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(3) }()) }(), "FinalBody", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(4) }()) }())
 			}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1278, l_1279 any) any {
@@ -20503,7 +20503,7 @@ func init() {
 					return c.newStruct("TryStar", "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "Handlers", func() any {
 						c.p.stepWork()
 						return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1280 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1280 }(), "h") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1280 }(), "$h") }()
 						})
 					}(), "OrElse", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(3) }()) }(), "FinalBody", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(4) }()) }())
 				}()
@@ -20554,7 +20554,7 @@ func init() {
 		return func() any {
 			c.p.stepWork()
 			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1281 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1281 }(), "e") }()
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1281 }(), "$e") }()
 			})
 		}()
 	}
@@ -20584,15 +20584,15 @@ func init() {
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "pos") }(), func(l_1282 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1282 }(), "a") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$pos") }(), func(l_1282 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1282 }(), "$a") }()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw1") }(), func(l_1283, l_1284 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw1") }(), func(l_1283, l_1284 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_1283 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1284 }(), "ss") }())
+							return c.concat(func() any { c.p.stepWork(); return l_1283 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1284 }(), "$ss") }())
 						}()
 					})
 				}())
@@ -20600,16 +20600,16 @@ func init() {
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw1") }(), func(l_1285, l_1286 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw1") }(), func(l_1285, l_1286 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_1285 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1286 }(), "ks") }())
+							return c.concat(func() any { c.p.stepWork(); return l_1285 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1286 }(), "$ks") }())
 						}()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "kw2") }(), func(l_1287 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1287 }(), "k") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(3) }(), "$kw2") }(), func(l_1287 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1287 }(), "$k") }()
 					})
 				}())
 			}(), "Body", func() any { c.p.stepWork(); return c.cap(4) }(), "DecoratorList", func() any { c.p.stepWork(); return c.cap(0) }(), "TypeParams", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }())
@@ -20640,10 +20640,10 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1288 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1288 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1288 }(), "$x") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1289 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1289 }(), "y") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1289 }(), "$y") }()
 					})
 					return c.endList(b)
 				}()
@@ -20658,7 +20658,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(1) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1290 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1290 }(), "c") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1290 }(), "$c") }()
 				})
 				return c.endList(b)
 			}()
@@ -20680,12 +20680,12 @@ func init() {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_1291 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1291 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_1291 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1291 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "l") }(), func(l_1292 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1292 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$l") }(), func(l_1292 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1292 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -20713,8 +20713,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1294 }(), "rs") }(), func(l_1295 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1295 }(), "p") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1294 }(), "$rs") }(), func(l_1295 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1295 }(), "$p") }()
 							})
 							return c.endList(b)
 						}()
@@ -20809,7 +20809,7 @@ func init() {
 					c.p.stepWork()
 					return c.newStruct("Attribute", "Value", func() any { c.p.stepWork(); return l_1296 }(), "Attr", func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1297 }(), "n") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1297 }(), "$n") }())
 					}(), "Ctx", func() any { c.p.stepWork(); return any("Load") }())
 				}()
 			})
@@ -20836,7 +20836,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1298 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1298 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1298 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -20850,12 +20850,12 @@ func init() {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "r") }(), func(l_1299 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1299 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$r") }(), func(l_1299 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1299 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "l") }(), func(l_1300 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1300 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$l") }(), func(l_1300 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1300 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -20877,12 +20877,12 @@ func init() {
 			return c.newStruct("MatchMapping", "Keys", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1301 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1301 }(), "k") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1301 }(), "$k") }()
 				})
 			}(), "Patterns", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1302 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1302 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1302 }(), "$v") }()
 				})
 			}(), "Rest", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 		}()
@@ -20895,7 +20895,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1303 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1303 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1303 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -20909,12 +20909,12 @@ func init() {
 			return c.newStruct("MatchClass", "Cls", func() any { c.p.stepWork(); return c.cap(0) }(), "Patterns", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(1) }()) }(), "KwdAttrs", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1304 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1304 }(), "n") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1304 }(), "$n") }()
 				})
 			}(), "KwdPatterns", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1305 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1305 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1305 }(), "$v") }()
 				})
 			}())
 		}()
@@ -20927,7 +20927,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1306 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1306 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1306 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -20941,7 +20941,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1307 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1307 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1307 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -20956,7 +20956,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1308 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1308 }(), "p") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1308 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -20996,7 +20996,7 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1311 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1311 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1311 }(), "$p") }()
 							})
 						}())
 					}()
@@ -21010,35 +21010,35 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1312 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1312 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1312 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1313, l_1314 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return c.cap(3) }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1315 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1315 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1315 }(), "$p") }()
 					})
 				}())
-			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "va") }(), "KwOnlyArgs", func() any {
+			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$va") }(), "KwOnlyArgs", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_1316 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1316 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_1316 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1316 }(), "$p") }()
 				})
 			}(), "KwDefaults", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_1317 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1317 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_1317 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1317 }(), "$d") }()
 				})
-			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "kw") }(), "Defaults", func() any {
+			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$kw") }(), "Defaults", func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1318 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1318 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1318 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1319 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1319 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1319 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -21079,8 +21079,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1321 }(), "rs") }(), func(l_1322 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1322 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1321 }(), "$rs") }(), func(l_1322 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1322 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21101,8 +21101,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1324 }(), "rs") }(), func(l_1325 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1325 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1324 }(), "$rs") }(), func(l_1325 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1325 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21145,7 +21145,7 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1326, l_1327 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("IfExp", "Test", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1327 }(), "c") }(), "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "OrElse", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1327 }(), "o") }())
+					return c.newStruct("IfExp", "Test", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1327 }(), "$c") }(), "Body", func() any { c.p.stepWork(); return c.cap(0) }(), "OrElse", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1327 }(), "$o") }())
 				}()
 			})
 		}()
@@ -21169,7 +21169,7 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1330 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1330 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1330 }(), "$p") }()
 							})
 						}())
 					}()
@@ -21183,35 +21183,35 @@ func init() {
 						return c.concat(func() any { c.p.stepWork(); return c.cap(0) }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1331 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1331 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1331 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1332, l_1333 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return c.cap(3) }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1334 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1334 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1334 }(), "$p") }()
 					})
 				}())
-			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "va") }(), "KwOnlyArgs", func() any {
+			}(), "VarArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$va") }(), "KwOnlyArgs", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_1335 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1335 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_1335 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1335 }(), "$p") }()
 				})
 			}(), "KwDefaults", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "ko") }(), func(l_1336 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1336 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$ko") }(), func(l_1336 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1336 }(), "$d") }()
 				})
-			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "kw") }(), "Defaults", func() any {
+			}(), "KwArg", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(5) }(), "$kw") }(), "Defaults", func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1337 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1337 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1337 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1338 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1338 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1338 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -21255,14 +21255,14 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1339, l_1340 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "o") }(), "Values", func() any {
+					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "$o") }(), "Values", func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "rs") }(), func(l_1341 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1341 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1340 }(), "$rs") }(), func(l_1341 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1341 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21278,14 +21278,14 @@ func init() {
 			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1342, l_1343 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "o") }(), "Values", func() any {
+					return c.newStruct("BoolOp", "Op", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "$o") }(), "Values", func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "rs") }(), func(l_1344 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1344 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1343 }(), "$rs") }(), func(l_1344 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1344 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21314,13 +21314,13 @@ func init() {
 					c.p.stepWork()
 					return c.newStruct("Compare", "Left", func() any { c.p.stepWork(); return c.cap(0) }(), "Ops", func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1346 }(), "rs") }(), func(l_1347 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1347 }(), "o") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1346 }(), "$rs") }(), func(l_1347 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1347 }(), "$o") }()
 						})
 					}(), "Comparators", func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1346 }(), "rs") }(), func(l_1348 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1348 }(), "x") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1346 }(), "$rs") }(), func(l_1348 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1348 }(), "$x") }()
 						})
 					}())
 				}()
@@ -21427,15 +21427,15 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_1377 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1377 }(), "a") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_1377 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1377 }(), "$a") }()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1378, l_1379 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1378, l_1379 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_1378 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1379 }(), "ss") }())
+									return c.concat(func() any { c.p.stepWork(); return l_1378 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1379 }(), "$ss") }())
 								}()
 							})
 						}())
@@ -21443,16 +21443,16 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1380, l_1381 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1380, l_1381 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_1380 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1381 }(), "ks") }())
+									return c.concat(func() any { c.p.stepWork(); return l_1380 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1381 }(), "$ks") }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_1382 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1382 }(), "k") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_1382 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1382 }(), "$k") }()
 							})
 						}())
 					}())
@@ -21513,7 +21513,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1385 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1385 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1385 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -21532,8 +21532,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1387 }(), "rs") }(), func(l_1388 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1388 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1387 }(), "$rs") }(), func(l_1388 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1388 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21559,7 +21559,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1389 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1389 }(), "c") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1389 }(), "$c") }()
 				})
 				return c.endList(b)
 			}()
@@ -21572,7 +21572,7 @@ func init() {
 			return c.newStruct("Comprehension", "Target", func() any { c.p.stepWork(); return c.cap(1) }(), "Iter", func() any { c.p.stepWork(); return c.cap(2) }(), "Ifs", func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(3) }(), func(l_1390 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1390 }(), "c") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1390 }(), "$c") }()
 				})
 			}(), "IsAsync", func() any {
 				c.p.stepWork()
@@ -21610,7 +21610,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1391 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1391 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1391 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -21631,8 +21631,8 @@ func init() {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1393 }(), "rs") }(), func(l_1394 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1394 }(), "x") }()
+								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1393 }(), "$rs") }(), func(l_1394 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1394 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -21642,7 +21642,7 @@ func init() {
 			}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1395, l_1396 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("GeneratorExp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1396 }(), "cs") }())
+					return c.newStruct("GeneratorExp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1396 }(), "$cs") }())
 				}()
 			})
 		}()
@@ -21667,7 +21667,7 @@ func init() {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 						c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1397 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1397 }(), "x") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1397 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -21675,7 +21675,7 @@ func init() {
 			}(), func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1398, l_1399 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("ListComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1399 }(), "cs") }())
+					return c.newStruct("ListComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1399 }(), "$cs") }())
 				}()
 			})
 		}()
@@ -21693,7 +21693,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return any(nil) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1400 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1400 }(), "k") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1400 }(), "$k") }()
 					})
 					return c.endList(b)
 				}()
@@ -21703,7 +21703,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1401 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1401 }(), "v") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1401 }(), "$v") }()
 					})
 					return c.endList(b)
 				}()
@@ -21720,7 +21720,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1402 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1402 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1402 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -21741,7 +21741,7 @@ func init() {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 							c.pushMap(func() any { c.p.stepWork(); return c.cap(5) }(), func(l_1403 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1403 }(), "x") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1403 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21755,7 +21755,7 @@ func init() {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 								c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1406 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1406 }(), "k") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1406 }(), "$k") }()
 								})
 								return c.endList(b)
 							}()
@@ -21763,9 +21763,9 @@ func init() {
 							c.p.stepWork()
 							return func() any {
 								b := len(c.p.kidStack)
-								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1405 }(), "v") }())
+								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1405 }(), "$v") }())
 								c.pushMap(func() any { c.p.stepWork(); return c.cap(4) }(), func(l_1407 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1407 }(), "v") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1407 }(), "$v") }()
 								})
 								return c.endList(b)
 							}()
@@ -21777,11 +21777,11 @@ func init() {
 					c.p.stepWork()
 					return c.fold("foldl", false, func() any {
 						c.p.stepWork()
-						return c.newStruct("SetComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1409 }(), "cs") }())
+						return c.newStruct("SetComp", "Elt", func() any { c.p.stepWork(); return c.cap(0) }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1409 }(), "$cs") }())
 					}(), func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1410, l_1411 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.newStruct("DictComp", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1411 }(), "v") }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1409 }(), "cs") }())
+							return c.newStruct("DictComp", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1411 }(), "$v") }(), "Generators", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1409 }(), "$cs") }())
 						}()
 					})
 				}()
@@ -21800,8 +21800,8 @@ func init() {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1413 }(), "rs") }(), func(l_1414 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1414 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1413 }(), "$rs") }(), func(l_1414 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1414 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -21853,7 +21853,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1415 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1415 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1415 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -21877,7 +21877,7 @@ func init() {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1416 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1416 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1416 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -21920,15 +21920,15 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_1425 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1425 }(), "a") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_1425 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1425 }(), "$a") }()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1426, l_1427 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1426, l_1427 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_1426 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1427 }(), "ss") }())
+									return c.concat(func() any { c.p.stepWork(); return l_1426 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1427 }(), "$ss") }())
 								}()
 							})
 						}())
@@ -21936,16 +21936,16 @@ func init() {
 						c.p.stepWork()
 						return c.concat(func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1428, l_1429 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1428, l_1429 any) any {
 								return func() any {
 									c.p.stepWork()
-									return c.concat(func() any { c.p.stepWork(); return l_1428 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1429 }(), "ks") }())
+									return c.concat(func() any { c.p.stepWork(); return l_1428 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1429 }(), "$ks") }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_1430 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1430 }(), "k") }()
+							return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_1430 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1430 }(), "$k") }()
 							})
 						}())
 					}())
@@ -22006,7 +22006,7 @@ func init() {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1432 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1432 }(), "t") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1432 }(), "$t") }()
 				})
 				return c.endList(b)
 			}()
@@ -22026,7 +22026,7 @@ func init() {
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1433, l_1434 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_1433 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1434 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_1433 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1434 }(), "$p") }())
 					}()
 				})
 			}())
@@ -22047,7 +22047,7 @@ func init() {
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1435, l_1436 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_1435 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1436 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_1435 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1436 }(), "$p") }())
 					}()
 				})
 			}())
@@ -22960,15 +22960,15 @@ func init() {
 							c.p.stepWork()
 							return c.concat(func() any {
 								c.p.stepWork()
-								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_1984 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1984 }(), "a") }()
+								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_1984 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1984 }(), "$a") }()
 								})
 							}(), func() any {
 								c.p.stepWork()
-								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1985, l_1986 any) any {
+								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1985, l_1986 any) any {
 									return func() any {
 										c.p.stepWork()
-										return c.concat(func() any { c.p.stepWork(); return l_1985 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1986 }(), "ss") }())
+										return c.concat(func() any { c.p.stepWork(); return l_1985 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1986 }(), "$ss") }())
 									}()
 								})
 							}())
@@ -22977,16 +22977,16 @@ func init() {
 							c.p.stepWork()
 							return c.concat(func() any {
 								c.p.stepWork()
-								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_1988, l_1989 any) any {
+								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_1988, l_1989 any) any {
 									return func() any {
 										c.p.stepWork()
-										return c.concat(func() any { c.p.stepWork(); return l_1988 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1989 }(), "ks") }())
+										return c.concat(func() any { c.p.stepWork(); return l_1988 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1989 }(), "$ks") }())
 									}()
 								})
 							}(), func() any {
 								c.p.stepWork()
-								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_1990 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1990 }(), "k") }()
+								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_1990 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1990 }(), "$k") }()
 								})
 							}())
 						}()
@@ -23094,15 +23094,15 @@ func init() {
 							c.p.stepWork()
 							return c.concat(func() any {
 								c.p.stepWork()
-								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "pos") }(), func(l_2006 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2006 }(), "a") }()
+								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$pos") }(), func(l_2006 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2006 }(), "$a") }()
 								})
 							}(), func() any {
 								c.p.stepWork()
-								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_2007, l_2008 any) any {
+								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_2007, l_2008 any) any {
 									return func() any {
 										c.p.stepWork()
-										return c.concat(func() any { c.p.stepWork(); return l_2007 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2008 }(), "ss") }())
+										return c.concat(func() any { c.p.stepWork(); return l_2007 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2008 }(), "$ss") }())
 									}()
 								})
 							}())
@@ -23111,16 +23111,16 @@ func init() {
 							c.p.stepWork()
 							return c.concat(func() any {
 								c.p.stepWork()
-								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw1") }(), func(l_2010, l_2011 any) any {
+								return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw1") }(), func(l_2010, l_2011 any) any {
 									return func() any {
 										c.p.stepWork()
-										return c.concat(func() any { c.p.stepWork(); return l_2010 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2011 }(), "ks") }())
+										return c.concat(func() any { c.p.stepWork(); return l_2010 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2011 }(), "$ks") }())
 									}()
 								})
 							}(), func() any {
 								c.p.stepWork()
-								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "kw2") }(), func(l_2012 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2012 }(), "k") }()
+								return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$kw2") }(), func(l_2012 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_2012 }(), "$k") }()
 								})
 							}())
 						}()
@@ -23502,7 +23502,7 @@ func (p *parser) e7() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_2, l_3 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_2, l_3 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -23513,7 +23513,7 @@ func (p *parser) e7() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_2 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_3 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_3 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -23522,7 +23522,7 @@ func (p *parser) e7() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any { return any(0) }())
 				}(), func() any {
@@ -23532,21 +23532,21 @@ func (p *parser) e7() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_4, l_5 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_4, l_5 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_4 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_5 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_5 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any { return any(0) }())
 					}()
@@ -23619,7 +23619,7 @@ func (p *parser) e7() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_2, l_3 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_2, l_3 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -23630,7 +23630,7 @@ func (p *parser) e7() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_2 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_3 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_3 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -23639,7 +23639,7 @@ func (p *parser) e7() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any { c.p.stepWork(); return any(0) }())
 			}(), func() any {
@@ -23649,21 +23649,21 @@ func (p *parser) e7() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_4, l_5 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_4, l_5 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_4 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_5 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_5 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any { c.p.stepWork(); return any(0) }())
 				}()
@@ -24480,7 +24480,7 @@ func (p *parser) e16() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_12, l_13 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_12, l_13 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -24491,7 +24491,7 @@ func (p *parser) e16() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_12 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_13 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_13 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -24500,7 +24500,7 @@ func (p *parser) e16() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -24508,21 +24508,21 @@ func (p *parser) e16() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_14, l_15 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_14, l_15 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_14 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_15 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_15 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -24640,7 +24640,7 @@ L6:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_12, l_13 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_12, l_13 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -24651,7 +24651,7 @@ L6:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_12 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_13 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_13 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -24660,7 +24660,7 @@ L6:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -24668,21 +24668,21 @@ L6:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_14, l_15 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_14, l_15 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_14 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_15 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_15 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -24841,7 +24841,7 @@ func (p *parser) e26() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_18, l_19 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_18, l_19 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -24852,7 +24852,7 @@ func (p *parser) e26() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_18 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_19 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_19 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -24861,7 +24861,7 @@ func (p *parser) e26() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -24874,21 +24874,21 @@ func (p *parser) e26() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_20, l_21 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_20, l_21 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_20 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_21 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_21 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -24946,7 +24946,7 @@ func (p *parser) e26() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_22, l_23 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_22, l_23 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -24957,7 +24957,7 @@ func (p *parser) e26() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_22 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_23 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_23 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -24966,7 +24966,7 @@ func (p *parser) e26() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -24974,21 +24974,21 @@ func (p *parser) e26() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_24, l_25 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_24, l_25 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_24 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_25 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_25 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -25079,7 +25079,7 @@ func (p *parser) e26() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_18, l_19 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_18, l_19 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -25090,7 +25090,7 @@ func (p *parser) e26() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_18 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_19 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_19 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -25099,7 +25099,7 @@ func (p *parser) e26() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -25112,21 +25112,21 @@ func (p *parser) e26() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_20, l_21 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_20, l_21 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_20 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_21 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_21 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -25184,7 +25184,7 @@ L14:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_22, l_23 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_22, l_23 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -25195,7 +25195,7 @@ L14:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_22 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_23 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_23 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -25204,7 +25204,7 @@ L14:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -25212,21 +25212,21 @@ L14:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_24, l_25 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_24, l_25 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_24 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_25 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_25 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -25502,7 +25502,7 @@ func (p *parser) e33() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_29, l_30 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_29, l_30 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -25513,7 +25513,7 @@ func (p *parser) e33() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_29 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_30 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_30 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -25522,7 +25522,7 @@ func (p *parser) e33() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -25530,21 +25530,21 @@ func (p *parser) e33() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_31, l_32 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_31, l_32 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_31 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_32 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_32 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -25662,7 +25662,7 @@ L6:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_29, l_30 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_29, l_30 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -25673,7 +25673,7 @@ L6:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_29 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_30 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_30 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -25682,7 +25682,7 @@ L6:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -25690,21 +25690,21 @@ L6:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_31, l_32 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_31, l_32 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_31 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_32 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_32 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -31943,7 +31943,7 @@ func (p *parser) e96() (*Node, bool) {
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.member(func() any { return c.cap(1) }(), "f") }(), func() any { return any(nil) }())
+						return c.binary("!=", func() any { return c.member(func() any { return c.cap(1) }(), "$f") }(), func() any { return any(nil) }())
 					}()
 				})
 			}()
@@ -32099,7 +32099,7 @@ func (p *parser) e96() (*Node, bool) {
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "f") }(), func() any { c.p.stepWork(); return any(nil) }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$f") }(), func() any { c.p.stepWork(); return any(nil) }())
 				}()
 			})
 		}()
@@ -36794,7 +36794,7 @@ func (p *parser) e146() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_142, l_143 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_142, l_143 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -36805,7 +36805,7 @@ func (p *parser) e146() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_142 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_143 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_143 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -36814,7 +36814,7 @@ func (p *parser) e146() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -36822,21 +36822,21 @@ func (p *parser) e146() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_144, l_145 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_144, l_145 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_144 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_145 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_145 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -36919,7 +36919,7 @@ func (p *parser) e146() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_142, l_143 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_142, l_143 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -36930,7 +36930,7 @@ func (p *parser) e146() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_142 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_143 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_143 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -36939,7 +36939,7 @@ func (p *parser) e146() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -36947,21 +36947,21 @@ func (p *parser) e146() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_144, l_145 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_144, l_145 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_144 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_145 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_145 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -38438,7 +38438,7 @@ func (p *parser) e168() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_159, l_160 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_159, l_160 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -38449,7 +38449,7 @@ func (p *parser) e168() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_159 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_160 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_160 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -38458,7 +38458,7 @@ func (p *parser) e168() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -38471,21 +38471,21 @@ func (p *parser) e168() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_161, l_162 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_161, l_162 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_161 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_162 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_162 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -38543,7 +38543,7 @@ func (p *parser) e168() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_163, l_164 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_163, l_164 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -38554,7 +38554,7 @@ func (p *parser) e168() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_163 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_164 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_164 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -38563,7 +38563,7 @@ func (p *parser) e168() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -38571,21 +38571,21 @@ func (p *parser) e168() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_165, l_166 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_165, l_166 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_165 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_166 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_166 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -38721,7 +38721,7 @@ func (p *parser) e168() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_159, l_160 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_159, l_160 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -38732,7 +38732,7 @@ func (p *parser) e168() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_159 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_160 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_160 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -38741,7 +38741,7 @@ func (p *parser) e168() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -38754,21 +38754,21 @@ func (p *parser) e168() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_161, l_162 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_161, l_162 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_161 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_162 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_162 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -38826,7 +38826,7 @@ L14:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_163, l_164 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_163, l_164 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -38837,7 +38837,7 @@ L14:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_163 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_164 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_164 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -38846,7 +38846,7 @@ L14:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -38854,21 +38854,21 @@ L14:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_165, l_166 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_165, l_166 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_165 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_166 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_166 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -88034,7 +88034,7 @@ func (p *parser) e556() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_552, l_553 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_552, l_553 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -88045,7 +88045,7 @@ func (p *parser) e556() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_552 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_553 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_553 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -88054,7 +88054,7 @@ func (p *parser) e556() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -88062,21 +88062,21 @@ func (p *parser) e556() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_554, l_555 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_554, l_555 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_554 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_555 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_555 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -88160,7 +88160,7 @@ L3:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_552, l_553 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_552, l_553 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -88171,7 +88171,7 @@ L3:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_552 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_553 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_553 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -88180,7 +88180,7 @@ L3:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -88188,21 +88188,21 @@ L3:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_554, l_555 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_554, l_555 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_554 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_555 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_555 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -89443,7 +89443,7 @@ func (p *parser) e577() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_573, l_574 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_573, l_574 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -89454,7 +89454,7 @@ func (p *parser) e577() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_573 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_574 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_574 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -89463,7 +89463,7 @@ func (p *parser) e577() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -89471,21 +89471,21 @@ func (p *parser) e577() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_575, l_576 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_575, l_576 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_575 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_576 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_576 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -89569,7 +89569,7 @@ L3:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_573, l_574 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_573, l_574 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -89580,7 +89580,7 @@ L3:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_573 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_574 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_574 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -89589,7 +89589,7 @@ L3:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -89597,21 +89597,21 @@ L3:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_575, l_576 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_575, l_576 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_575 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_576 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_576 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -90322,7 +90322,7 @@ func (p *parser) e592() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_588, l_589 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_588, l_589 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -90333,7 +90333,7 @@ func (p *parser) e592() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_588 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_589 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_589 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -90342,7 +90342,7 @@ func (p *parser) e592() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -90350,21 +90350,21 @@ func (p *parser) e592() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_590, l_591 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_590, l_591 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_590 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_591 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_591 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -90430,7 +90430,7 @@ func (p *parser) e592() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_588, l_589 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_588, l_589 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -90441,7 +90441,7 @@ func (p *parser) e592() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_588 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_589 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_589 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -90450,7 +90450,7 @@ func (p *parser) e592() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -90458,21 +90458,21 @@ func (p *parser) e592() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_590, l_591 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_590, l_591 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_590 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_591 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_591 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -117313,7 +117313,7 @@ func (p *parser) e804() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_800, l_801 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_800, l_801 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -117324,7 +117324,7 @@ func (p *parser) e804() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_800 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_801 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_801 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -117333,7 +117333,7 @@ func (p *parser) e804() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any { return any(0) }())
 				}(), func() any {
@@ -117343,21 +117343,21 @@ func (p *parser) e804() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_802, l_803 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_802, l_803 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_802 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_803 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_803 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any { return any(0) }())
 					}()
@@ -117430,7 +117430,7 @@ func (p *parser) e804() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_800, l_801 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_800, l_801 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -117441,7 +117441,7 @@ func (p *parser) e804() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_800 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_801 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_801 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -117450,7 +117450,7 @@ func (p *parser) e804() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any { c.p.stepWork(); return any(0) }())
 			}(), func() any {
@@ -117460,21 +117460,21 @@ func (p *parser) e804() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_802, l_803 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_802, l_803 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_802 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_803 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_803 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any { c.p.stepWork(); return any(0) }())
 				}()
@@ -118116,7 +118116,7 @@ func (p *parser) e812() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_808, l_809 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_808, l_809 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -118127,7 +118127,7 @@ func (p *parser) e812() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_808 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_809 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_809 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -118136,7 +118136,7 @@ func (p *parser) e812() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -118144,21 +118144,21 @@ func (p *parser) e812() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_810, l_811 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_810, l_811 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_810 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_811 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_811 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -118276,7 +118276,7 @@ L6:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_808, l_809 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_808, l_809 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -118287,7 +118287,7 @@ L6:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_808 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_809 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_809 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -118296,7 +118296,7 @@ L6:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -118304,21 +118304,21 @@ L6:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_810, l_811 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_810, l_811 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_810 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_811 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_811 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -118477,7 +118477,7 @@ func (p *parser) e822() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_814, l_815 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_814, l_815 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -118488,7 +118488,7 @@ func (p *parser) e822() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_814 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_815 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_815 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -118497,7 +118497,7 @@ func (p *parser) e822() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -118510,21 +118510,21 @@ func (p *parser) e822() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_816, l_817 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_816, l_817 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_816 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_817 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_817 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -118582,7 +118582,7 @@ func (p *parser) e822() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_818, l_819 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_818, l_819 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -118593,7 +118593,7 @@ func (p *parser) e822() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_818 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_819 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_819 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -118602,7 +118602,7 @@ func (p *parser) e822() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -118610,21 +118610,21 @@ func (p *parser) e822() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_820, l_821 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_820, l_821 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_820 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_821 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_821 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -118715,7 +118715,7 @@ func (p *parser) e822() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_814, l_815 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_814, l_815 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -118726,7 +118726,7 @@ func (p *parser) e822() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_814 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_815 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_815 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -118735,7 +118735,7 @@ func (p *parser) e822() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -118748,21 +118748,21 @@ func (p *parser) e822() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_816, l_817 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_816, l_817 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_816 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_817 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_817 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -118820,7 +118820,7 @@ L14:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_818, l_819 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_818, l_819 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -118831,7 +118831,7 @@ L14:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_818 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_819 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_819 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -118840,7 +118840,7 @@ L14:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -118848,21 +118848,21 @@ L14:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_820, l_821 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_820, l_821 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_820 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_821 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_821 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -119156,7 +119156,7 @@ func (p *parser) e829() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_825, l_826 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_825, l_826 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -119167,7 +119167,7 @@ func (p *parser) e829() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_825 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_826 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_826 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -119176,7 +119176,7 @@ func (p *parser) e829() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -119184,21 +119184,21 @@ func (p *parser) e829() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_827, l_828 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_827, l_828 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_827 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_828 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_828 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -119316,7 +119316,7 @@ L6:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_825, l_826 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_825, l_826 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -119327,7 +119327,7 @@ L6:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_825 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_826 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_826 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -119336,7 +119336,7 @@ L6:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -119344,21 +119344,21 @@ L6:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_827, l_828 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_827, l_828 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_827 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_828 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_828 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -124251,7 +124251,7 @@ func (p *parser) e865() (*Node, bool) {
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.member(func() any { return c.cap(1) }(), "f") }(), func() any { return any(nil) }())
+						return c.binary("!=", func() any { return c.member(func() any { return c.cap(1) }(), "$f") }(), func() any { return any(nil) }())
 					}()
 				})
 			}()
@@ -124407,7 +124407,7 @@ func (p *parser) e865() (*Node, bool) {
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "f") }(), func() any { c.p.stepWork(); return any(nil) }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(1) }(), "$f") }(), func() any { c.p.stepWork(); return any(nil) }())
 				}()
 			})
 		}()
@@ -129141,7 +129141,7 @@ func (p *parser) e910() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_906, l_907 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_906, l_907 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -129152,7 +129152,7 @@ func (p *parser) e910() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_906 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_907 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_907 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -129161,7 +129161,7 @@ func (p *parser) e910() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -129169,21 +129169,21 @@ func (p *parser) e910() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_908, l_909 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_908, l_909 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_908 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_909 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_909 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -129266,7 +129266,7 @@ func (p *parser) e910() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_906, l_907 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_906, l_907 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -129277,7 +129277,7 @@ func (p *parser) e910() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_906 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_907 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_907 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -129286,7 +129286,7 @@ func (p *parser) e910() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -129294,21 +129294,21 @@ func (p *parser) e910() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_908, l_909 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_908, l_909 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_908 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_909 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_909 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -130789,7 +130789,7 @@ func (p *parser) e931() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_922, l_923 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_922, l_923 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -130800,7 +130800,7 @@ func (p *parser) e931() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_922 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_923 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_923 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -130809,7 +130809,7 @@ func (p *parser) e931() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -130822,21 +130822,21 @@ func (p *parser) e931() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_924, l_925 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_924, l_925 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_924 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_925 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_925 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -130894,7 +130894,7 @@ func (p *parser) e931() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_926, l_927 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_926, l_927 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -130905,7 +130905,7 @@ func (p *parser) e931() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_926 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_927 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_927 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -130914,7 +130914,7 @@ func (p *parser) e931() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -130922,21 +130922,21 @@ func (p *parser) e931() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_928, l_929 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_928, l_929 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_928 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_929 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_929 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -131081,7 +131081,7 @@ func (p *parser) e931() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_922, l_923 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_922, l_923 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -131092,7 +131092,7 @@ func (p *parser) e931() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_922 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_923 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_923 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -131101,7 +131101,7 @@ func (p *parser) e931() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -131114,21 +131114,21 @@ func (p *parser) e931() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_924, l_925 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_924, l_925 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_924 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_925 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_925 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -131186,7 +131186,7 @@ L14:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_926, l_927 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_926, l_927 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -131197,7 +131197,7 @@ L14:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_926 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_927 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_927 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -131206,7 +131206,7 @@ L14:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -131214,21 +131214,21 @@ L14:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_928, l_929 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_928, l_929 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_928 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_929 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_929 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -172273,7 +172273,7 @@ func (p *parser) e1200() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1196, l_1197 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1196, l_1197 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -172284,7 +172284,7 @@ func (p *parser) e1200() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_1196 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1197 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1197 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -172293,7 +172293,7 @@ func (p *parser) e1200() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -172301,21 +172301,21 @@ func (p *parser) e1200() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1198, l_1199 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1198, l_1199 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1198 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1199 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1199 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -172399,7 +172399,7 @@ L3:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1196, l_1197 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1196, l_1197 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -172410,7 +172410,7 @@ L3:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1196 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1197 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1197 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -172419,7 +172419,7 @@ L3:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -172427,21 +172427,21 @@ L3:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1198, l_1199 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1198, l_1199 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1198 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1199 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1199 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -173461,7 +173461,7 @@ func (p *parser) e1219() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1215, l_1216 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1215, l_1216 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -173472,7 +173472,7 @@ func (p *parser) e1219() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_1215 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1216 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1216 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -173481,7 +173481,7 @@ func (p *parser) e1219() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -173489,21 +173489,21 @@ func (p *parser) e1219() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1217, l_1218 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1217, l_1218 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1217 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1218 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1218 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -173587,7 +173587,7 @@ L3:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1215, l_1216 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1215, l_1216 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -173598,7 +173598,7 @@ L3:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1215 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1216 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1216 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -173607,7 +173607,7 @@ L3:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -173615,21 +173615,21 @@ L3:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1217, l_1218 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1217, l_1218 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1217 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1218 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1218 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -174340,7 +174340,7 @@ func (p *parser) e1234() (*Node, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1230, l_1231 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1230, l_1231 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -174351,7 +174351,7 @@ func (p *parser) e1234() (*Node, bool) {
 
 												return c.binary("+", func() any { return l_1230 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1231 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1231 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -174360,7 +174360,7 @@ func (p *parser) e1234() (*Node, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -174368,21 +174368,21 @@ func (p *parser) e1234() (*Node, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "segs") }(), func(l_1232, l_1233 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return c.cap(0) }(), "$segs") }(), func(l_1232, l_1233 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1232 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1233 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1233 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return c.cap(0) }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -174448,7 +174448,7 @@ func (p *parser) e1234() (*Node, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1230, l_1231 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1230, l_1231 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -174459,7 +174459,7 @@ func (p *parser) e1234() (*Node, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1230 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1231 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1231 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -174468,7 +174468,7 @@ func (p *parser) e1234() (*Node, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -174476,21 +174476,21 @@ func (p *parser) e1234() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "segs") }(), func(l_1232, l_1233 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$segs") }(), func(l_1232, l_1233 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1232 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1233 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1233 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -196749,7 +196749,7 @@ func (p *tparser) i1() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k1 }(), "segs") }(), func(l_1438, l_1439 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k1 }(), "$segs") }(), func(l_1438, l_1439 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -196760,7 +196760,7 @@ func (p *tparser) i1() (any, bool) {
 
 												return c.binary("+", func() any { return l_1438 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1439 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1439 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -196769,7 +196769,7 @@ func (p *tparser) i1() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k1 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k1 }(), "$tail") }())
 						}())
 					}(), func() any { return any(0) }())
 				}(), func() any {
@@ -196779,21 +196779,21 @@ func (p *tparser) i1() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k1 }(), "segs") }(), func(l_1440, l_1441 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k1 }(), "$segs") }(), func(l_1440, l_1441 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1440 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1441 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1441 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k1 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k1 }(), "$tail") }())
 							}())
 						}(), func() any { return any(0) }())
 					}()
@@ -196887,7 +196887,7 @@ func (p *tparser) i1() (any, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "segs") }(), func(l_1438, l_1439 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$segs") }(), func(l_1438, l_1439 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -196898,7 +196898,7 @@ func (p *tparser) i1() (any, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1438 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1439 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1439 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -196907,7 +196907,7 @@ func (p *tparser) i1() (any, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$tail") }())
 					}())
 				}(), func() any { c.p.stepWork(); return any(0) }())
 			}(), func() any {
@@ -196917,21 +196917,21 @@ func (p *tparser) i1() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "segs") }(), func(l_1440, l_1441 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$segs") }(), func(l_1440, l_1441 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1440 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1441 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1441 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$tail") }())
 						}())
 					}(), func() any { c.p.stepWork(); return any(0) }())
 				}()
@@ -197642,7 +197642,7 @@ func (p *tparser) i3() (any, bool) {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
 				c.pushMap(func() any { return k3 }(), func(l_1443 any) any {
-					return func() any { return c.member(func() any { return l_1443 }(), "s") }()
+					return func() any { return c.member(func() any { return l_1443 }(), "$s") }()
 				})
 				return c.endList(b)
 			}()
@@ -197795,7 +197795,7 @@ func (p *tparser) i3() (any, bool) {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
 			c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1443 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1443 }(), "s") }()
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1443 }(), "$s") }()
 			})
 			return c.endList(b)
 		}()
@@ -197941,7 +197941,7 @@ func (p *tparser) i4() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "segs") }(), func(l_1444, l_1445 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "$segs") }(), func(l_1444, l_1445 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -197952,7 +197952,7 @@ func (p *tparser) i4() (any, bool) {
 
 												return c.binary("+", func() any { return l_1444 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1445 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1445 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -197961,7 +197961,7 @@ func (p *tparser) i4() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k23 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k23 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -197969,21 +197969,21 @@ func (p *tparser) i4() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "segs") }(), func(l_1446, l_1447 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "$segs") }(), func(l_1446, l_1447 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1446 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1447 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1447 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k23 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k23 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -198119,7 +198119,7 @@ L7:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "segs") }(), func(l_1444, l_1445 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$segs") }(), func(l_1444, l_1445 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -198130,7 +198130,7 @@ L7:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1444 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1445 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1445 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -198139,7 +198139,7 @@ L7:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -198147,21 +198147,21 @@ L7:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "segs") }(), func(l_1446, l_1447 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$segs") }(), func(l_1446, l_1447 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1446 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1447 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1447 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -198431,7 +198431,7 @@ func (p *tparser) i6() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1449, l_1450 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1449, l_1450 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -198442,7 +198442,7 @@ func (p *tparser) i6() (any, bool) {
 
 												return c.binary("+", func() any { return l_1449 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1450 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1450 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -198451,7 +198451,7 @@ func (p *tparser) i6() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -198464,21 +198464,21 @@ func (p *tparser) i6() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1451, l_1452 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1451, l_1452 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1451 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1452 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1452 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -198536,7 +198536,7 @@ func (p *tparser) i6() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1453, l_1454 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1453, l_1454 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -198547,7 +198547,7 @@ func (p *tparser) i6() (any, bool) {
 
 												return c.binary("+", func() any { return l_1453 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1454 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1454 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -198556,7 +198556,7 @@ func (p *tparser) i6() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -198564,21 +198564,21 @@ func (p *tparser) i6() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1455, l_1456 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1455, l_1456 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1455 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1456 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1456 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -198694,7 +198694,7 @@ func (p *tparser) i6() (any, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1449, l_1450 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1449, l_1450 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -198705,7 +198705,7 @@ func (p *tparser) i6() (any, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1449 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1450 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1450 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -198714,7 +198714,7 @@ func (p *tparser) i6() (any, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -198727,21 +198727,21 @@ func (p *tparser) i6() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1451, l_1452 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1451, l_1452 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1451 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1452 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1452 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -198799,7 +198799,7 @@ L16:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1453, l_1454 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1453, l_1454 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -198810,7 +198810,7 @@ L16:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1453 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1454 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1454 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -198819,7 +198819,7 @@ L16:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -198827,21 +198827,21 @@ L16:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1455, l_1456 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1455, l_1456 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1455 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1456 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1456 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -199233,7 +199233,7 @@ func (p *tparser) i8() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "segs") }(), func(l_1457, l_1458 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "$segs") }(), func(l_1457, l_1458 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -199244,7 +199244,7 @@ func (p *tparser) i8() (any, bool) {
 
 												return c.binary("+", func() any { return l_1457 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1458 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1458 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -199253,7 +199253,7 @@ func (p *tparser) i8() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k23 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k23 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -199261,21 +199261,21 @@ func (p *tparser) i8() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "segs") }(), func(l_1459, l_1460 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k23 }(), "$segs") }(), func(l_1459, l_1460 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1459 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1460 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1460 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k23 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k23 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -199411,7 +199411,7 @@ L7:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "segs") }(), func(l_1457, l_1458 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$segs") }(), func(l_1457, l_1458 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -199422,7 +199422,7 @@ L7:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1457 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1458 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1458 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -199431,7 +199431,7 @@ L7:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -199439,21 +199439,21 @@ L7:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "segs") }(), func(l_1459, l_1460 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$segs") }(), func(l_1459, l_1460 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1459 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1460 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1460 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k23 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -205313,7 +205313,7 @@ func (p *tparser) i22() (any, bool) {
 				f_1476 := func() any {
 
 					return c.mapList(func() any { return k1 }(), func(l_1477 any) any {
-						return func() any { return c.member(func() any { return l_1477 }(), "t") }()
+						return func() any { return c.member(func() any { return l_1477 }(), "$t") }()
 					})
 				}()
 				f_1478 := func() any { return k20 }()
@@ -205493,7 +205493,7 @@ L24:
 			f_1476 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1477 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1477 }(), "t") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1477 }(), "$t") }()
 				})
 			}()
 			f_1478 := func() any { c.p.stepWork(); return k20 }()
@@ -208702,8 +208702,8 @@ func (p *tparser) i38() (any, bool) {
 
 					return c.fold("foldl", false, func() any {
 
-						return c.text(func() any { return c.member(func() any { return k1 }(), "f") }())
-					}(), func() any { return c.member(func() any { return k1 }(), "r") }(), func(l_1496, l_1497 any) any {
+						return c.text(func() any { return c.member(func() any { return k1 }(), "$f") }())
+					}(), func() any { return c.member(func() any { return k1 }(), "$r") }(), func(l_1496, l_1497 any) any {
 						return func() any {
 
 							return c.binary("+", func() any {
@@ -208711,7 +208711,7 @@ func (p *tparser) i38() (any, bool) {
 								return c.binary("+", func() any { return l_1496 }(), func() any { return any(".") }())
 							}(), func() any {
 
-								return c.text(func() any { return c.member(func() any { return l_1497 }(), "n") }())
+								return c.text(func() any { return c.member(func() any { return l_1497 }(), "$n") }())
 							}())
 						}()
 					})
@@ -208797,8 +208797,8 @@ L8:
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "r") }(), func(l_1496, l_1497 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$r") }(), func(l_1496, l_1497 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -208806,7 +208806,7 @@ L8:
 							return c.binary("+", func() any { c.p.stepWork(); return l_1496 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1497 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1497 }(), "$n") }())
 						}())
 					}()
 				})
@@ -209206,7 +209206,7 @@ func (p *tparser) i40() (any, bool) {
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.member(func() any { return k28 }(), "f") }(), func() any { return any(nil) }())
+						return c.binary("!=", func() any { return c.member(func() any { return k28 }(), "$f") }(), func() any { return any(nil) }())
 					}()
 				})
 			}()
@@ -209240,8 +209240,8 @@ func (p *tparser) i40() (any, bool) {
 
 					return c.fold("foldl", false, func() any {
 
-						return c.text(func() any { return c.member(func() any { return k28 }(), "f") }())
-					}(), func() any { return c.member(func() any { return k28 }(), "r") }(), func(l_1503, l_1504 any) any {
+						return c.text(func() any { return c.member(func() any { return k28 }(), "$f") }())
+					}(), func() any { return c.member(func() any { return k28 }(), "$r") }(), func(l_1503, l_1504 any) any {
 						return func() any {
 
 							return c.binary("+", func() any {
@@ -209249,7 +209249,7 @@ func (p *tparser) i40() (any, bool) {
 								return c.binary("+", func() any { return l_1503 }(), func() any { return any(".") }())
 							}(), func() any {
 
-								return c.text(func() any { return c.member(func() any { return l_1504 }(), "n") }())
+								return c.text(func() any { return c.member(func() any { return l_1504 }(), "$n") }())
 							}())
 						}()
 					})
@@ -209262,7 +209262,7 @@ func (p *tparser) i40() (any, bool) {
 
 							return c.binary("+", func() any { return l_1507 }(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return l_1508 }(), "d") }())
+								return c.length(func() any { return c.member(func() any { return l_1508 }(), "$d") }())
 							}())
 						}()
 					})
@@ -209418,7 +209418,7 @@ func (p *tparser) i40() (any, bool) {
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "f") }(), func() any { c.p.stepWork(); return any(nil) }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "$f") }(), func() any { c.p.stepWork(); return any(nil) }())
 				}()
 			})
 		}()
@@ -209455,8 +209455,8 @@ func (p *tparser) i40() (any, bool) {
 				c.p.stepWork()
 				return c.fold("foldl", false, func() any {
 					c.p.stepWork()
-					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "f") }())
-				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "r") }(), func(l_1503, l_1504 any) any {
+					return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "$f") }())
+				}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k28 }(), "$r") }(), func(l_1503, l_1504 any) any {
 					return func() any {
 						c.p.stepWork()
 						return c.binary("+", func() any {
@@ -209464,7 +209464,7 @@ func (p *tparser) i40() (any, bool) {
 							return c.binary("+", func() any { c.p.stepWork(); return l_1503 }(), func() any { c.p.stepWork(); return any(".") }())
 						}(), func() any {
 							c.p.stepWork()
-							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1504 }(), "n") }())
+							return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1504 }(), "$n") }())
 						}())
 					}()
 				})
@@ -209477,7 +209477,7 @@ func (p *tparser) i40() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any { c.p.stepWork(); return l_1507 }(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1508 }(), "d") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1508 }(), "$d") }())
 						}())
 					}()
 				})
@@ -214723,7 +214723,7 @@ func (p *tparser) i64() (any, bool) {
 					f_1541 := func() any {
 
 						return c.mapList(func() any { return k3 }(), func(l_1542 any) any {
-							return func() any { return c.member(func() any { return l_1542 }(), "h") }()
+							return func() any { return c.member(func() any { return l_1542 }(), "$h") }()
 						})
 					}()
 					f_1543 := func() any { return c.concat(func() any { return k31 }()) }()
@@ -214738,7 +214738,7 @@ func (p *tparser) i64() (any, bool) {
 						f_1548 := func() any {
 
 							return c.mapList(func() any { return k17 }(), func(l_1549 any) any {
-								return func() any { return c.member(func() any { return l_1549 }(), "h") }()
+								return func() any { return c.member(func() any { return l_1549 }(), "$h") }()
 							})
 						}()
 						f_1550 := func() any { return c.concat(func() any { return k31 }()) }()
@@ -215007,7 +215007,7 @@ L49:
 				f_1541 := func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return k3 }(), func(l_1542 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1542 }(), "h") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1542 }(), "$h") }()
 					})
 				}()
 				f_1543 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k31 }()) }()
@@ -215022,7 +215022,7 @@ L49:
 					f_1548 := func() any {
 						c.p.stepWork()
 						return c.mapList(func() any { c.p.stepWork(); return k17 }(), func(l_1549 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1549 }(), "h") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1549 }(), "$h") }()
 						})
 					}()
 					f_1550 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k31 }()) }()
@@ -216487,7 +216487,7 @@ func (p *tparser) i73() (any, bool) {
 		v = func() any {
 
 			return c.mapList(func() any { return k1 }(), func(l_1564 any) any {
-				return func() any { return c.member(func() any { return l_1564 }(), "e") }()
+				return func() any { return c.member(func() any { return l_1564 }(), "$e") }()
 			})
 		}()
 		v = c.finish(v)
@@ -216583,7 +216583,7 @@ func (p *tparser) i73() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1564 any) any {
-			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1564 }(), "e") }()
+			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1564 }(), "$e") }()
 		})
 	}()
 	v = c.finish(v)
@@ -216687,7 +216687,7 @@ func (p *tparser) i74() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k12 }(), "segs") }(), func(l_1565, l_1566 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k12 }(), "$segs") }(), func(l_1565, l_1566 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -216698,7 +216698,7 @@ func (p *tparser) i74() (any, bool) {
 
 												return c.binary("+", func() any { return l_1565 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1566 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1566 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -216707,7 +216707,7 @@ func (p *tparser) i74() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k12 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k12 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -216715,21 +216715,21 @@ func (p *tparser) i74() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k12 }(), "segs") }(), func(l_1567, l_1568 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k12 }(), "$segs") }(), func(l_1567, l_1568 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1567 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1568 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1568 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k12 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k12 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -216828,7 +216828,7 @@ func (p *tparser) i74() (any, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "segs") }(), func(l_1565, l_1566 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$segs") }(), func(l_1565, l_1566 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -216839,7 +216839,7 @@ func (p *tparser) i74() (any, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1565 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1566 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1566 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -216848,7 +216848,7 @@ func (p *tparser) i74() (any, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -216856,21 +216856,21 @@ func (p *tparser) i74() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "segs") }(), func(l_1567, l_1568 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$segs") }(), func(l_1567, l_1568 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1567 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1568 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1568 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -218013,15 +218013,15 @@ func (p *tparser) i79() (any, bool) {
 
 					return c.concat(func() any {
 
-						return c.mapList(func() any { return c.member(func() any { return k12 }(), "pos") }(), func(l_1584 any) any {
-							return func() any { return c.member(func() any { return l_1584 }(), "a") }()
+						return c.mapList(func() any { return c.member(func() any { return k12 }(), "$pos") }(), func(l_1584 any) any {
+							return func() any { return c.member(func() any { return l_1584 }(), "$a") }()
 						})
 					}(), func() any {
 
-						return c.fold("foldl", false, func() any { return c.list() }(), func() any { return c.member(func() any { return k12 }(), "kw1") }(), func(l_1585, l_1586 any) any {
+						return c.fold("foldl", false, func() any { return c.list() }(), func() any { return c.member(func() any { return k12 }(), "$kw1") }(), func(l_1585, l_1586 any) any {
 							return func() any {
 
-								return c.concat(func() any { return l_1585 }(), func() any { return c.member(func() any { return l_1586 }(), "ss") }())
+								return c.concat(func() any { return l_1585 }(), func() any { return c.member(func() any { return l_1586 }(), "$ss") }())
 							}()
 						})
 					}())
@@ -218030,16 +218030,16 @@ func (p *tparser) i79() (any, bool) {
 
 					return c.concat(func() any {
 
-						return c.fold("foldl", false, func() any { return c.list() }(), func() any { return c.member(func() any { return k12 }(), "kw1") }(), func(l_1588, l_1589 any) any {
+						return c.fold("foldl", false, func() any { return c.list() }(), func() any { return c.member(func() any { return k12 }(), "$kw1") }(), func(l_1588, l_1589 any) any {
 							return func() any {
 
-								return c.concat(func() any { return l_1588 }(), func() any { return c.member(func() any { return l_1589 }(), "ks") }())
+								return c.concat(func() any { return l_1588 }(), func() any { return c.member(func() any { return l_1589 }(), "$ks") }())
 							}()
 						})
 					}(), func() any {
 
-						return c.mapList(func() any { return c.member(func() any { return k12 }(), "kw2") }(), func(l_1590 any) any {
-							return func() any { return c.member(func() any { return l_1590 }(), "k") }()
+						return c.mapList(func() any { return c.member(func() any { return k12 }(), "$kw2") }(), func(l_1590 any) any {
+							return func() any { return c.member(func() any { return l_1590 }(), "$k") }()
 						})
 					}())
 				}()
@@ -218167,15 +218167,15 @@ L10:
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "pos") }(), func(l_1584 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1584 }(), "a") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$pos") }(), func(l_1584 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1584 }(), "$a") }()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "kw1") }(), func(l_1585, l_1586 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$kw1") }(), func(l_1585, l_1586 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_1585 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1586 }(), "ss") }())
+							return c.concat(func() any { c.p.stepWork(); return l_1585 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1586 }(), "$ss") }())
 						}()
 					})
 				}())
@@ -218184,16 +218184,16 @@ L10:
 				c.p.stepWork()
 				return c.concat(func() any {
 					c.p.stepWork()
-					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "kw1") }(), func(l_1588, l_1589 any) any {
+					return c.fold("foldl", false, func() any { c.p.stepWork(); return c.list() }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$kw1") }(), func(l_1588, l_1589 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.concat(func() any { c.p.stepWork(); return l_1588 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1589 }(), "ks") }())
+							return c.concat(func() any { c.p.stepWork(); return l_1588 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1589 }(), "$ks") }())
 						}()
 					})
 				}(), func() any {
 					c.p.stepWork()
-					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "kw2") }(), func(l_1590 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1590 }(), "k") }()
+					return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k12 }(), "$kw2") }(), func(l_1590 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1590 }(), "$k") }()
 					})
 				}())
 			}()
@@ -218879,10 +218879,10 @@ func (p *tparser) i83() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1603 any) any {
-							return func() any { return c.member(func() any { return l_1603 }(), "x") }()
+							return func() any { return c.member(func() any { return l_1603 }(), "$x") }()
 						})
 						c.pushMap(func() any { return k17 }(), func(l_1604 any) any {
-							return func() any { return c.member(func() any { return l_1604 }(), "y") }()
+							return func() any { return c.member(func() any { return l_1604 }(), "$y") }()
 						})
 						return c.endList(b)
 					}()
@@ -219060,10 +219060,10 @@ func (p *tparser) i83() (any, bool) {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1603 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1603 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1603 }(), "$x") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return k17 }(), func(l_1604 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1604 }(), "y") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1604 }(), "$y") }()
 					})
 					return c.endList(b)
 				}()
@@ -219185,7 +219185,7 @@ func (p *tparser) i84() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1606, l_1607 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1606, l_1607 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -219196,7 +219196,7 @@ func (p *tparser) i84() (any, bool) {
 
 												return c.binary("+", func() any { return l_1606 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1607 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1607 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -219205,7 +219205,7 @@ func (p *tparser) i84() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -219218,21 +219218,21 @@ func (p *tparser) i84() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1608, l_1609 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1608, l_1609 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1608 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1609 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1609 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 							}())
 						}(), func() any {
 
@@ -219290,7 +219290,7 @@ func (p *tparser) i84() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1610, l_1611 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1610, l_1611 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -219301,7 +219301,7 @@ func (p *tparser) i84() (any, bool) {
 
 												return c.binary("+", func() any { return l_1610 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1611 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1611 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -219310,7 +219310,7 @@ func (p *tparser) i84() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -219318,21 +219318,21 @@ func (p *tparser) i84() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1612, l_1613 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1612, l_1613 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1612 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1613 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1613 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -219498,7 +219498,7 @@ func (p *tparser) i84() (any, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1606, l_1607 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1606, l_1607 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -219509,7 +219509,7 @@ func (p *tparser) i84() (any, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1606 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1607 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1607 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -219518,7 +219518,7 @@ func (p *tparser) i84() (any, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -219531,21 +219531,21 @@ func (p *tparser) i84() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1608, l_1609 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1608, l_1609 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1608 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1609 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1609 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 						c.p.stepWork()
@@ -219603,7 +219603,7 @@ L16:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1610, l_1611 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1610, l_1611 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -219614,7 +219614,7 @@ L16:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1610 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1611 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1611 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -219623,7 +219623,7 @@ L16:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -219631,21 +219631,21 @@ L16:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1612, l_1613 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1612, l_1613 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1612 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1613 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1613 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -220126,12 +220126,12 @@ func (p *tparser) i87() (any, bool) {
 
 					return func() any {
 						b := len(c.p.kidStack)
-						c.pushList(func() any { return c.member(func() any { return k1 }(), "f") }())
-						c.pushMap(func() any { return c.member(func() any { return k1 }(), "r") }(), func(l_1618 any) any {
-							return func() any { return c.member(func() any { return l_1618 }(), "p") }()
+						c.pushList(func() any { return c.member(func() any { return k1 }(), "$f") }())
+						c.pushMap(func() any { return c.member(func() any { return k1 }(), "$r") }(), func(l_1618 any) any {
+							return func() any { return c.member(func() any { return l_1618 }(), "$p") }()
 						})
-						c.pushMap(func() any { return c.member(func() any { return k1 }(), "l") }(), func(l_1619 any) any {
-							return func() any { return c.member(func() any { return l_1619 }(), "q") }()
+						c.pushMap(func() any { return c.member(func() any { return k1 }(), "$l") }(), func(l_1619 any) any {
+							return func() any { return c.member(func() any { return l_1619 }(), "$q") }()
 						})
 						return c.endList(b)
 					}()
@@ -220178,12 +220178,12 @@ func (p *tparser) i87() (any, bool) {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "r") }(), func(l_1618 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1618 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$r") }(), func(l_1618 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1618 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "l") }(), func(l_1619 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1619 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$l") }(), func(l_1619 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1619 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -221103,8 +221103,8 @@ func (p *tparser) i91() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushMap(func() any { return c.member(func() any { return l_1628 }(), "rs") }(), func(l_1630 any) any {
-									return func() any { return c.member(func() any { return l_1630 }(), "p") }()
+								c.pushMap(func() any { return c.member(func() any { return l_1628 }(), "$rs") }(), func(l_1630 any) any {
+									return func() any { return c.member(func() any { return l_1630 }(), "$p") }()
 								})
 								return c.endList(b)
 							}()
@@ -221277,8 +221277,8 @@ func (p *tparser) i91() (any, bool) {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1628 }(), "rs") }(), func(l_1630 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1630 }(), "p") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1628 }(), "$rs") }(), func(l_1630 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1630 }(), "$p") }()
 							})
 							return c.endList(b)
 						}()
@@ -225415,7 +225415,7 @@ func (p *tparser) i112() (any, bool) {
 						f_1647 := func() any { return l_1645 }()
 						f_1648 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return l_1646 }(), "n") }())
+							return c.text(func() any { return c.member(func() any { return l_1646 }(), "$n") }())
 						}()
 						f_1649 := func() any { return any("Load") }()
 						return tmk_Attribute(c, false, f_1647, f_1648, f_1649)
@@ -225553,7 +225553,7 @@ func (p *tparser) i112() (any, bool) {
 					f_1647 := func() any { c.p.stepWork(); return l_1645 }()
 					f_1648 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1646 }(), "n") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1646 }(), "$n") }())
 					}()
 					f_1649 := func() any { c.p.stepWork(); return any("Load") }()
 					return tmk_Attribute(c, false, f_1647, f_1648, f_1649)
@@ -226562,7 +226562,7 @@ func (p *tparser) i118() (any, bool) {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
 				c.pushMap(func() any { return k3 }(), func(l_1652 any) any {
-					return func() any { return c.member(func() any { return l_1652 }(), "p") }()
+					return func() any { return c.member(func() any { return l_1652 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -226693,7 +226693,7 @@ L20:
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
 			c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1652 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1652 }(), "p") }()
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1652 }(), "$p") }()
 			})
 			return c.endList(b)
 		}()
@@ -226810,12 +226810,12 @@ func (p *tparser) i119() (any, bool) {
 
 					return func() any {
 						b := len(c.p.kidStack)
-						c.pushList(func() any { return c.member(func() any { return k1 }(), "f") }())
-						c.pushMap(func() any { return c.member(func() any { return k1 }(), "r") }(), func(l_1654 any) any {
-							return func() any { return c.member(func() any { return l_1654 }(), "p") }()
+						c.pushList(func() any { return c.member(func() any { return k1 }(), "$f") }())
+						c.pushMap(func() any { return c.member(func() any { return k1 }(), "$r") }(), func(l_1654 any) any {
+							return func() any { return c.member(func() any { return l_1654 }(), "$p") }()
 						})
-						c.pushMap(func() any { return c.member(func() any { return k1 }(), "l") }(), func(l_1655 any) any {
-							return func() any { return c.member(func() any { return l_1655 }(), "q") }()
+						c.pushMap(func() any { return c.member(func() any { return k1 }(), "$l") }(), func(l_1655 any) any {
+							return func() any { return c.member(func() any { return l_1655 }(), "$q") }()
 						})
 						return c.endList(b)
 					}()
@@ -226916,12 +226916,12 @@ func (p *tparser) i119() (any, bool) {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "f") }())
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "r") }(), func(l_1654 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1654 }(), "p") }()
+					c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$f") }())
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$r") }(), func(l_1654 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1654 }(), "$p") }()
 					})
-					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "l") }(), func(l_1655 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1655 }(), "q") }()
+					c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "$l") }(), func(l_1655 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1655 }(), "$q") }()
 					})
 					return c.endList(b)
 				}()
@@ -227691,13 +227691,13 @@ func (p *tparser) i122() (any, bool) {
 				f_1657 := func() any {
 
 					return c.mapList(func() any { return k3 }(), func(l_1658 any) any {
-						return func() any { return c.member(func() any { return l_1658 }(), "k") }()
+						return func() any { return c.member(func() any { return l_1658 }(), "$k") }()
 					})
 				}()
 				f_1659 := func() any {
 
 					return c.mapList(func() any { return k3 }(), func(l_1660 any) any {
-						return func() any { return c.member(func() any { return l_1660 }(), "v") }()
+						return func() any { return c.member(func() any { return l_1660 }(), "$v") }()
 					})
 				}()
 				f_1661 := func() any { return c.text(func() any { return k5 }()) }()
@@ -227949,13 +227949,13 @@ L30:
 			f_1657 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k3 }(), func(l_1658 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1658 }(), "k") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1658 }(), "$k") }()
 				})
 			}()
 			f_1659 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k3 }(), func(l_1660 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1660 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1660 }(), "$v") }()
 				})
 			}()
 			f_1661 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
@@ -228610,13 +228610,13 @@ func (p *tparser) i125() (any, bool) {
 				f_1665 := func() any {
 
 					return c.mapList(func() any { return k7 }(), func(l_1666 any) any {
-						return func() any { return c.member(func() any { return l_1666 }(), "n") }()
+						return func() any { return c.member(func() any { return l_1666 }(), "$n") }()
 					})
 				}()
 				f_1667 := func() any {
 
 					return c.mapList(func() any { return k7 }(), func(l_1668 any) any {
-						return func() any { return c.member(func() any { return l_1668 }(), "v") }()
+						return func() any { return c.member(func() any { return l_1668 }(), "$v") }()
 					})
 				}()
 				return tmk_MatchClass(c, true, f_1663, f_1664, f_1665, f_1667)
@@ -228846,13 +228846,13 @@ L29:
 			f_1665 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k7 }(), func(l_1666 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1666 }(), "n") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1666 }(), "$n") }()
 				})
 			}()
 			f_1667 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k7 }(), func(l_1668 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1668 }(), "v") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1668 }(), "$v") }()
 				})
 			}()
 			return tmk_MatchClass(c, true, f_1663, f_1664, f_1665, f_1667)
@@ -228980,7 +228980,7 @@ func (p *tparser) i126() (any, bool) {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
 				c.pushMap(func() any { return k3 }(), func(l_1670 any) any {
-					return func() any { return c.member(func() any { return l_1670 }(), "p") }()
+					return func() any { return c.member(func() any { return l_1670 }(), "$p") }()
 				})
 				return c.endList(b)
 			}()
@@ -229089,7 +229089,7 @@ func (p *tparser) i126() (any, bool) {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
 			c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1670 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1670 }(), "p") }()
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1670 }(), "$p") }()
 			})
 			return c.endList(b)
 		}()
@@ -231307,7 +231307,7 @@ func (p *tparser) i134() (any, bool) {
 							return c.concat(func() any { return k1 }(), func() any {
 
 								return c.mapList(func() any { return k10 }(), func(l_1682 any) any {
-									return func() any { return c.member(func() any { return l_1682 }(), "p") }()
+									return func() any { return c.member(func() any { return l_1682 }(), "$p") }()
 								})
 							}())
 						}()
@@ -231322,40 +231322,40 @@ func (p *tparser) i134() (any, bool) {
 							return c.concat(func() any { return k1 }(), func() any {
 
 								return c.mapList(func() any { return k10 }(), func(l_1684 any) any {
-									return func() any { return c.member(func() any { return l_1684 }(), "p") }()
+									return func() any { return c.member(func() any { return l_1684 }(), "$p") }()
 								})
 							}())
 						}(), func() any { return k19 }(), func(l_1685, l_1686 any) any { return func() any { return c.list() }() })
 					}(), func() any { return k29 }(), func() any {
 
 						return c.mapList(func() any { return k38 }(), func(l_1687 any) any {
-							return func() any { return c.member(func() any { return l_1687 }(), "p") }()
+							return func() any { return c.member(func() any { return l_1687 }(), "$p") }()
 						})
 					}())
 				}()
-				f_1688 := func() any { return c.member(func() any { return k47 }(), "va") }()
+				f_1688 := func() any { return c.member(func() any { return k47 }(), "$va") }()
 				f_1689 := func() any {
 
-					return c.mapList(func() any { return c.member(func() any { return k47 }(), "ko") }(), func(l_1690 any) any {
-						return func() any { return c.member(func() any { return l_1690 }(), "p") }()
+					return c.mapList(func() any { return c.member(func() any { return k47 }(), "$ko") }(), func(l_1690 any) any {
+						return func() any { return c.member(func() any { return l_1690 }(), "$p") }()
 					})
 				}()
 				f_1691 := func() any {
 
-					return c.mapList(func() any { return c.member(func() any { return k47 }(), "ko") }(), func(l_1692 any) any {
-						return func() any { return c.member(func() any { return l_1692 }(), "d") }()
+					return c.mapList(func() any { return c.member(func() any { return k47 }(), "$ko") }(), func(l_1692 any) any {
+						return func() any { return c.member(func() any { return l_1692 }(), "$d") }()
 					})
 				}()
-				f_1693 := func() any { return c.member(func() any { return k47 }(), "kw") }()
+				f_1693 := func() any { return c.member(func() any { return k47 }(), "$kw") }()
 				f_1694 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushMap(func() any { return k10 }(), func(l_1695 any) any {
-							return func() any { return c.member(func() any { return l_1695 }(), "d") }()
+							return func() any { return c.member(func() any { return l_1695 }(), "$d") }()
 						})
 						c.pushMap(func() any { return k38 }(), func(l_1696 any) any {
-							return func() any { return c.member(func() any { return l_1696 }(), "d") }()
+							return func() any { return c.member(func() any { return l_1696 }(), "$d") }()
 						})
 						return c.endList(b)
 					}()
@@ -231647,7 +231647,7 @@ L58:
 						return c.concat(func() any { c.p.stepWork(); return k1 }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return k10 }(), func(l_1682 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1682 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1682 }(), "$p") }()
 							})
 						}())
 					}()
@@ -231662,40 +231662,40 @@ L58:
 						return c.concat(func() any { c.p.stepWork(); return k1 }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return k10 }(), func(l_1684 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1684 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1684 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return k19 }(), func(l_1685, l_1686 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return k29 }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return k38 }(), func(l_1687 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1687 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1687 }(), "$p") }()
 					})
 				}())
 			}()
-			f_1688 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "va") }()
+			f_1688 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$va") }()
 			f_1689 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "ko") }(), func(l_1690 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1690 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$ko") }(), func(l_1690 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1690 }(), "$p") }()
 				})
 			}()
 			f_1691 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "ko") }(), func(l_1692 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1692 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$ko") }(), func(l_1692 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1692 }(), "$d") }()
 				})
 			}()
-			f_1693 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "kw") }()
+			f_1693 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$kw") }()
 			f_1694 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return k10 }(), func(l_1695 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1695 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1695 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return k38 }(), func(l_1696 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1696 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1696 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -234153,8 +234153,8 @@ func (p *tparser) i143() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushMap(func() any { return c.member(func() any { return l_1708 }(), "rs") }(), func(l_1710 any) any {
-									return func() any { return c.member(func() any { return l_1710 }(), "x") }()
+								c.pushMap(func() any { return c.member(func() any { return l_1708 }(), "$rs") }(), func(l_1710 any) any {
+									return func() any { return c.member(func() any { return l_1710 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -234408,8 +234408,8 @@ func (p *tparser) i143() (any, bool) {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1708 }(), "rs") }(), func(l_1710 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1710 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1708 }(), "$rs") }(), func(l_1710 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1710 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -234681,8 +234681,8 @@ func (p *tparser) i144() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushMap(func() any { return c.member(func() any { return l_1715 }(), "rs") }(), func(l_1717 any) any {
-									return func() any { return c.member(func() any { return l_1717 }(), "x") }()
+								c.pushMap(func() any { return c.member(func() any { return l_1715 }(), "$rs") }(), func(l_1717 any) any {
+									return func() any { return c.member(func() any { return l_1717 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -234936,8 +234936,8 @@ func (p *tparser) i144() (any, bool) {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1715 }(), "rs") }(), func(l_1717 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1717 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1715 }(), "$rs") }(), func(l_1717 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1717 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -236790,9 +236790,9 @@ func (p *tparser) i153() (any, bool) {
 				return func() any {
 
 					return func() any {
-						f_1728 := func() any { return c.member(func() any { return l_1727 }(), "c") }()
+						f_1728 := func() any { return c.member(func() any { return l_1727 }(), "$c") }()
 						f_1729 := func() any { return k1 }()
-						f_1730 := func() any { return c.member(func() any { return l_1727 }(), "o") }()
+						f_1730 := func() any { return c.member(func() any { return l_1727 }(), "$o") }()
 						return tmk_IfExp(c, false, f_1728, f_1729, f_1730)
 					}()
 				}()
@@ -236929,9 +236929,9 @@ func (p *tparser) i153() (any, bool) {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1728 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1727 }(), "c") }()
+					f_1728 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1727 }(), "$c") }()
 					f_1729 := func() any { c.p.stepWork(); return k1 }()
-					f_1730 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1727 }(), "o") }()
+					f_1730 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1727 }(), "$o") }()
 					return tmk_IfExp(c, false, f_1728, f_1729, f_1730)
 				}()
 			}()
@@ -237494,7 +237494,7 @@ func (p *tparser) i155() (any, bool) {
 							return c.concat(func() any { return k1 }(), func() any {
 
 								return c.mapList(func() any { return k10 }(), func(l_1736 any) any {
-									return func() any { return c.member(func() any { return l_1736 }(), "p") }()
+									return func() any { return c.member(func() any { return l_1736 }(), "$p") }()
 								})
 							}())
 						}()
@@ -237509,40 +237509,40 @@ func (p *tparser) i155() (any, bool) {
 							return c.concat(func() any { return k1 }(), func() any {
 
 								return c.mapList(func() any { return k10 }(), func(l_1738 any) any {
-									return func() any { return c.member(func() any { return l_1738 }(), "p") }()
+									return func() any { return c.member(func() any { return l_1738 }(), "$p") }()
 								})
 							}())
 						}(), func() any { return k19 }(), func(l_1739, l_1740 any) any { return func() any { return c.list() }() })
 					}(), func() any { return k29 }(), func() any {
 
 						return c.mapList(func() any { return k38 }(), func(l_1741 any) any {
-							return func() any { return c.member(func() any { return l_1741 }(), "p") }()
+							return func() any { return c.member(func() any { return l_1741 }(), "$p") }()
 						})
 					}())
 				}()
-				f_1742 := func() any { return c.member(func() any { return k47 }(), "va") }()
+				f_1742 := func() any { return c.member(func() any { return k47 }(), "$va") }()
 				f_1743 := func() any {
 
-					return c.mapList(func() any { return c.member(func() any { return k47 }(), "ko") }(), func(l_1744 any) any {
-						return func() any { return c.member(func() any { return l_1744 }(), "p") }()
+					return c.mapList(func() any { return c.member(func() any { return k47 }(), "$ko") }(), func(l_1744 any) any {
+						return func() any { return c.member(func() any { return l_1744 }(), "$p") }()
 					})
 				}()
 				f_1745 := func() any {
 
-					return c.mapList(func() any { return c.member(func() any { return k47 }(), "ko") }(), func(l_1746 any) any {
-						return func() any { return c.member(func() any { return l_1746 }(), "d") }()
+					return c.mapList(func() any { return c.member(func() any { return k47 }(), "$ko") }(), func(l_1746 any) any {
+						return func() any { return c.member(func() any { return l_1746 }(), "$d") }()
 					})
 				}()
-				f_1747 := func() any { return c.member(func() any { return k47 }(), "kw") }()
+				f_1747 := func() any { return c.member(func() any { return k47 }(), "$kw") }()
 				f_1748 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushMap(func() any { return k10 }(), func(l_1749 any) any {
-							return func() any { return c.member(func() any { return l_1749 }(), "d") }()
+							return func() any { return c.member(func() any { return l_1749 }(), "$d") }()
 						})
 						c.pushMap(func() any { return k38 }(), func(l_1750 any) any {
-							return func() any { return c.member(func() any { return l_1750 }(), "d") }()
+							return func() any { return c.member(func() any { return l_1750 }(), "$d") }()
 						})
 						return c.endList(b)
 					}()
@@ -237834,7 +237834,7 @@ L58:
 						return c.concat(func() any { c.p.stepWork(); return k1 }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return k10 }(), func(l_1736 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1736 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1736 }(), "$p") }()
 							})
 						}())
 					}()
@@ -237849,40 +237849,40 @@ L58:
 						return c.concat(func() any { c.p.stepWork(); return k1 }(), func() any {
 							c.p.stepWork()
 							return c.mapList(func() any { c.p.stepWork(); return k10 }(), func(l_1738 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1738 }(), "p") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1738 }(), "$p") }()
 							})
 						}())
 					}(), func() any { c.p.stepWork(); return k19 }(), func(l_1739, l_1740 any) any { return func() any { c.p.stepWork(); return c.list() }() })
 				}(), func() any { c.p.stepWork(); return k29 }(), func() any {
 					c.p.stepWork()
 					return c.mapList(func() any { c.p.stepWork(); return k38 }(), func(l_1741 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1741 }(), "p") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1741 }(), "$p") }()
 					})
 				}())
 			}()
-			f_1742 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "va") }()
+			f_1742 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$va") }()
 			f_1743 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "ko") }(), func(l_1744 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1744 }(), "p") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$ko") }(), func(l_1744 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1744 }(), "$p") }()
 				})
 			}()
 			f_1745 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "ko") }(), func(l_1746 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1746 }(), "d") }()
+				return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$ko") }(), func(l_1746 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1746 }(), "$d") }()
 				})
 			}()
-			f_1747 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "kw") }()
+			f_1747 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k47 }(), "$kw") }()
 			f_1748 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushMap(func() any { c.p.stepWork(); return k10 }(), func(l_1749 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1749 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1749 }(), "$d") }()
 					})
 					c.pushMap(func() any { c.p.stepWork(); return k38 }(), func(l_1750 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1750 }(), "d") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1750 }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
@@ -240586,15 +240586,15 @@ func (p *tparser) i166() (any, bool) {
 				return func() any {
 
 					return func() any {
-						f_1762 := func() any { return c.member(func() any { return l_1761 }(), "o") }()
+						f_1762 := func() any { return c.member(func() any { return l_1761 }(), "$o") }()
 						f_1763 := func() any {
 
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushList(func() any { return c.member(func() any { return l_1761 }(), "c") }())
-								c.pushMap(func() any { return c.member(func() any { return l_1761 }(), "rs") }(), func(l_1764 any) any {
-									return func() any { return c.member(func() any { return l_1764 }(), "x") }()
+								c.pushList(func() any { return c.member(func() any { return l_1761 }(), "$c") }())
+								c.pushMap(func() any { return c.member(func() any { return l_1761 }(), "$rs") }(), func(l_1764 any) any {
+									return func() any { return c.member(func() any { return l_1764 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -240777,15 +240777,15 @@ func (p *tparser) i166() (any, bool) {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1762 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "o") }()
+					f_1762 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "$o") }()
 					f_1763 := func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "rs") }(), func(l_1764 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1764 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1761 }(), "$rs") }(), func(l_1764 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1764 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -240986,15 +240986,15 @@ func (p *tparser) i167() (any, bool) {
 				return func() any {
 
 					return func() any {
-						f_1769 := func() any { return c.member(func() any { return l_1768 }(), "o") }()
+						f_1769 := func() any { return c.member(func() any { return l_1768 }(), "$o") }()
 						f_1770 := func() any {
 
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushList(func() any { return c.member(func() any { return l_1768 }(), "c") }())
-								c.pushMap(func() any { return c.member(func() any { return l_1768 }(), "rs") }(), func(l_1771 any) any {
-									return func() any { return c.member(func() any { return l_1771 }(), "x") }()
+								c.pushList(func() any { return c.member(func() any { return l_1768 }(), "$c") }())
+								c.pushMap(func() any { return c.member(func() any { return l_1768 }(), "$rs") }(), func(l_1771 any) any {
+									return func() any { return c.member(func() any { return l_1771 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -241177,15 +241177,15 @@ func (p *tparser) i167() (any, bool) {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1769 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "o") }()
+					f_1769 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "$o") }()
 					f_1770 := func() any {
 						c.p.stepWork()
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "c") }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "rs") }(), func(l_1771 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1771 }(), "x") }()
+							c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "$c") }())
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1768 }(), "$rs") }(), func(l_1771 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1771 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -242244,14 +242244,14 @@ func (p *tparser) i173() (any, bool) {
 						f_1778 := func() any { return k1 }()
 						f_1779 := func() any {
 
-							return c.mapList(func() any { return c.member(func() any { return l_1777 }(), "rs") }(), func(l_1780 any) any {
-								return func() any { return c.member(func() any { return l_1780 }(), "o") }()
+							return c.mapList(func() any { return c.member(func() any { return l_1777 }(), "$rs") }(), func(l_1780 any) any {
+								return func() any { return c.member(func() any { return l_1780 }(), "$o") }()
 							})
 						}()
 						f_1781 := func() any {
 
-							return c.mapList(func() any { return c.member(func() any { return l_1777 }(), "rs") }(), func(l_1782 any) any {
-								return func() any { return c.member(func() any { return l_1782 }(), "x") }()
+							return c.mapList(func() any { return c.member(func() any { return l_1777 }(), "$rs") }(), func(l_1782 any) any {
+								return func() any { return c.member(func() any { return l_1782 }(), "$x") }()
 							})
 						}()
 						return tmk_Compare(c, false, f_1778, f_1779, f_1781)
@@ -242405,14 +242405,14 @@ func (p *tparser) i173() (any, bool) {
 					f_1778 := func() any { c.p.stepWork(); return k1 }()
 					f_1779 := func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1777 }(), "rs") }(), func(l_1780 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1780 }(), "o") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1777 }(), "$rs") }(), func(l_1780 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1780 }(), "$o") }()
 						})
 					}()
 					f_1781 := func() any {
 						c.p.stepWork()
-						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1777 }(), "rs") }(), func(l_1782 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1782 }(), "x") }()
+						return c.mapList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1777 }(), "$rs") }(), func(l_1782 any) any {
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1782 }(), "$x") }()
 						})
 					}()
 					return tmk_Compare(c, false, f_1778, f_1779, f_1781)
@@ -248558,7 +248558,7 @@ func (p *tparser) i199() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1795 any) any {
-							return func() any { return c.member(func() any { return l_1795 }(), "x") }()
+							return func() any { return c.member(func() any { return l_1795 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -248695,7 +248695,7 @@ L20:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1795 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1795 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1795 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -248958,8 +248958,8 @@ func (p *tparser) i200() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushMap(func() any { return c.member(func() any { return l_1800 }(), "rs") }(), func(l_1802 any) any {
-									return func() any { return c.member(func() any { return l_1802 }(), "x") }()
+								c.pushMap(func() any { return c.member(func() any { return l_1800 }(), "$rs") }(), func(l_1802 any) any {
+									return func() any { return c.member(func() any { return l_1802 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -249213,8 +249213,8 @@ func (p *tparser) i200() (any, bool) {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1800 }(), "rs") }(), func(l_1802 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1802 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1800 }(), "$rs") }(), func(l_1802 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1802 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -250483,7 +250483,7 @@ func (p *tparser) i205() (any, bool) {
 				f_1810 := func() any {
 
 					return c.mapList(func() any { return k15 }(), func(l_1811 any) any {
-						return func() any { return c.member(func() any { return l_1811 }(), "c") }()
+						return func() any { return c.member(func() any { return l_1811 }(), "$c") }()
 					})
 				}()
 				f_1812 := func() any {
@@ -250661,7 +250661,7 @@ L6:
 			f_1810 := func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return k15 }(), func(l_1811 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1811 }(), "c") }()
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1811 }(), "$c") }()
 				})
 			}()
 			f_1812 := func() any {
@@ -252337,7 +252337,7 @@ func (p *tparser) i213() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1818 any) any {
-							return func() any { return c.member(func() any { return l_1818 }(), "x") }()
+							return func() any { return c.member(func() any { return l_1818 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -252560,7 +252560,7 @@ L22:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1818 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1818 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1818 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -252937,8 +252937,8 @@ func (p *tparser) i214() (any, bool) {
 								return func() any {
 									b := len(c.p.kidStack)
 									c.pushList(func() any { return k1 }())
-									c.pushMap(func() any { return c.member(func() any { return l_1824 }(), "rs") }(), func(l_1826 any) any {
-										return func() any { return c.member(func() any { return l_1826 }(), "x") }()
+									c.pushMap(func() any { return c.member(func() any { return l_1824 }(), "$rs") }(), func(l_1826 any) any {
+										return func() any { return c.member(func() any { return l_1826 }(), "$x") }()
 									})
 									return c.endList(b)
 								}()
@@ -252953,7 +252953,7 @@ func (p *tparser) i214() (any, bool) {
 
 					return func() any {
 						f_1830 := func() any { return k1 }()
-						f_1831 := func() any { return c.member(func() any { return l_1829 }(), "cs") }()
+						f_1831 := func() any { return c.member(func() any { return l_1829 }(), "$cs") }()
 						return tmk_GeneratorExp(c, false, f_1830, f_1831)
 					}()
 				}()
@@ -253321,8 +253321,8 @@ func (p *tparser) i214() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return k1 }())
-								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1824 }(), "rs") }(), func(l_1826 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1826 }(), "x") }()
+								c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1824 }(), "$rs") }(), func(l_1826 any) any {
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1826 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -253337,7 +253337,7 @@ func (p *tparser) i214() (any, bool) {
 				c.p.stepWork()
 				return func() any {
 					f_1830 := func() any { c.p.stepWork(); return k1 }()
-					f_1831 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1829 }(), "cs") }()
+					f_1831 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1829 }(), "$cs") }()
 					return tmk_GeneratorExp(c, false, f_1830, f_1831)
 				}()
 			}()
@@ -253992,7 +253992,7 @@ func (p *tparser) i217() (any, bool) {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { return k1 }())
 							c.pushMap(func() any { return k15 }(), func(l_1836 any) any {
-								return func() any { return c.member(func() any { return l_1836 }(), "x") }()
+								return func() any { return c.member(func() any { return l_1836 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -254005,7 +254005,7 @@ func (p *tparser) i217() (any, bool) {
 
 					return func() any {
 						f_1840 := func() any { return k1 }()
-						f_1841 := func() any { return c.member(func() any { return l_1839 }(), "cs") }()
+						f_1841 := func() any { return c.member(func() any { return l_1839 }(), "$cs") }()
 						return tmk_ListComp(c, false, f_1840, f_1841)
 					}()
 				}()
@@ -254341,7 +254341,7 @@ L34:
 						b := len(c.p.kidStack)
 						c.pushList(func() any { c.p.stepWork(); return k1 }())
 						c.pushMap(func() any { c.p.stepWork(); return k15 }(), func(l_1836 any) any {
-							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1836 }(), "x") }()
+							return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1836 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -254354,7 +254354,7 @@ L34:
 				c.p.stepWork()
 				return func() any {
 					f_1840 := func() any { c.p.stepWork(); return k1 }()
-					f_1841 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1839 }(), "cs") }()
+					f_1841 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1839 }(), "$cs") }()
 					return tmk_ListComp(c, false, f_1840, f_1841)
 				}()
 			}()
@@ -255042,7 +255042,7 @@ func (p *tparser) i220() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return any(nil) }())
 						c.pushMap(func() any { return k3 }(), func(l_1844 any) any {
-							return func() any { return c.member(func() any { return l_1844 }(), "k") }()
+							return func() any { return c.member(func() any { return l_1844 }(), "$k") }()
 						})
 						return c.endList(b)
 					}()
@@ -255053,7 +255053,7 @@ func (p *tparser) i220() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1846 any) any {
-							return func() any { return c.member(func() any { return l_1846 }(), "v") }()
+							return func() any { return c.member(func() any { return l_1846 }(), "$v") }()
 						})
 						return c.endList(b)
 					}()
@@ -255379,7 +255379,7 @@ L43:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return any(nil) }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1844 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1844 }(), "k") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1844 }(), "$k") }()
 					})
 					return c.endList(b)
 				}()
@@ -255390,7 +255390,7 @@ L43:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1846 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1846 }(), "v") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1846 }(), "$v") }()
 					})
 					return c.endList(b)
 				}()
@@ -255592,7 +255592,7 @@ func (p *tparser) i221() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1849 any) any {
-							return func() any { return c.member(func() any { return l_1849 }(), "x") }()
+							return func() any { return c.member(func() any { return l_1849 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -255781,7 +255781,7 @@ L20:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1849 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1849 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1849 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -256410,7 +256410,7 @@ func (p *tparser) i222() (any, bool) {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
 								c.pushMap(func() any { return k84 }(), func(l_1855 any) any {
-									return func() any { return c.member(func() any { return l_1855 }(), "x") }()
+									return func() any { return c.member(func() any { return l_1855 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -256427,7 +256427,7 @@ func (p *tparser) i222() (any, bool) {
 									b := len(c.p.kidStack)
 									c.pushList(func() any { return k1 }())
 									c.pushMap(func() any { return k47 }(), func(l_1859 any) any {
-										return func() any { return c.member(func() any { return l_1859 }(), "k") }()
+										return func() any { return c.member(func() any { return l_1859 }(), "$k") }()
 									})
 									return c.endList(b)
 								}()
@@ -256436,9 +256436,9 @@ func (p *tparser) i222() (any, bool) {
 
 								return func() any {
 									b := len(c.p.kidStack)
-									c.pushList(func() any { return c.member(func() any { return l_1857 }(), "v") }())
+									c.pushList(func() any { return c.member(func() any { return l_1857 }(), "$v") }())
 									c.pushMap(func() any { return k47 }(), func(l_1861 any) any {
-										return func() any { return c.member(func() any { return l_1861 }(), "v") }()
+										return func() any { return c.member(func() any { return l_1861 }(), "$v") }()
 									})
 									return c.endList(b)
 								}()
@@ -256454,7 +256454,7 @@ func (p *tparser) i222() (any, bool) {
 
 						return func() any {
 							f_1864 := func() any { return k1 }()
-							f_1865 := func() any { return c.member(func() any { return l_1863 }(), "cs") }()
+							f_1865 := func() any { return c.member(func() any { return l_1863 }(), "$cs") }()
 							return tmk_SetComp(c, false, f_1864, f_1865)
 						}()
 					}(), func() any { return k12 }(), func(l_1866, l_1867 any) any {
@@ -256462,8 +256462,8 @@ func (p *tparser) i222() (any, bool) {
 
 							return func() any {
 								f_1868 := func() any { return k1 }()
-								f_1869 := func() any { return c.member(func() any { return l_1867 }(), "v") }()
-								f_1870 := func() any { return c.member(func() any { return l_1863 }(), "cs") }()
+								f_1869 := func() any { return c.member(func() any { return l_1867 }(), "$v") }()
+								f_1870 := func() any { return c.member(func() any { return l_1863 }(), "$cs") }()
 								return tmk_DictComp(c, false, f_1868, f_1869, f_1870)
 							}()
 						}()
@@ -257100,7 +257100,7 @@ L103:
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
 							c.pushMap(func() any { c.p.stepWork(); return k84 }(), func(l_1855 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1855 }(), "x") }()
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1855 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -257117,7 +257117,7 @@ L103:
 								b := len(c.p.kidStack)
 								c.pushList(func() any { c.p.stepWork(); return k1 }())
 								c.pushMap(func() any { c.p.stepWork(); return k47 }(), func(l_1859 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1859 }(), "k") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1859 }(), "$k") }()
 								})
 								return c.endList(b)
 							}()
@@ -257126,9 +257126,9 @@ L103:
 							c.p.stepWork()
 							return func() any {
 								b := len(c.p.kidStack)
-								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1857 }(), "v") }())
+								c.pushList(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1857 }(), "$v") }())
 								c.pushMap(func() any { c.p.stepWork(); return k47 }(), func(l_1861 any) any {
-									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1861 }(), "v") }()
+									return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1861 }(), "$v") }()
 								})
 								return c.endList(b)
 							}()
@@ -257144,7 +257144,7 @@ L103:
 					c.p.stepWork()
 					return func() any {
 						f_1864 := func() any { c.p.stepWork(); return k1 }()
-						f_1865 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1863 }(), "cs") }()
+						f_1865 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1863 }(), "$cs") }()
 						return tmk_SetComp(c, false, f_1864, f_1865)
 					}()
 				}(), func() any { c.p.stepWork(); return k12 }(), func(l_1866, l_1867 any) any {
@@ -257152,8 +257152,8 @@ L103:
 						c.p.stepWork()
 						return func() any {
 							f_1868 := func() any { c.p.stepWork(); return k1 }()
-							f_1869 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1867 }(), "v") }()
-							f_1870 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1863 }(), "cs") }()
+							f_1869 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1867 }(), "$v") }()
+							f_1870 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1863 }(), "$cs") }()
 							return tmk_DictComp(c, false, f_1868, f_1869, f_1870)
 						}()
 					}()
@@ -257424,8 +257424,8 @@ func (p *tparser) i223() (any, bool) {
 							return func() any {
 								b := len(c.p.kidStack)
 								c.pushList(func() any { return k1 }())
-								c.pushMap(func() any { return c.member(func() any { return l_1874 }(), "rs") }(), func(l_1876 any) any {
-									return func() any { return c.member(func() any { return l_1876 }(), "x") }()
+								c.pushMap(func() any { return c.member(func() any { return l_1874 }(), "$rs") }(), func(l_1876 any) any {
+									return func() any { return c.member(func() any { return l_1876 }(), "$x") }()
 								})
 								return c.endList(b)
 							}()
@@ -257679,8 +257679,8 @@ func (p *tparser) i223() (any, bool) {
 						return func() any {
 							b := len(c.p.kidStack)
 							c.pushList(func() any { c.p.stepWork(); return k1 }())
-							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1874 }(), "rs") }(), func(l_1876 any) any {
-								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1876 }(), "x") }()
+							c.pushMap(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1874 }(), "$rs") }(), func(l_1876 any) any {
+								return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1876 }(), "$x") }()
 							})
 							return c.endList(b)
 						}()
@@ -259697,7 +259697,7 @@ func (p *tparser) i232() (any, bool) {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
 						c.pushMap(func() any { return k3 }(), func(l_1889 any) any {
-							return func() any { return c.member(func() any { return l_1889 }(), "x") }()
+							return func() any { return c.member(func() any { return l_1889 }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
@@ -259920,7 +259920,7 @@ L22:
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
 					c.pushMap(func() any { c.p.stepWork(); return k3 }(), func(l_1889 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1889 }(), "x") }()
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1889 }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
@@ -264708,7 +264708,7 @@ func (p *tparser) i253() (any, bool) {
 					return c.fold("foldl", false, func() any { return k1 }(), func() any { return k3 }(), func(l_1910, l_1911 any) any {
 						return func() any {
 
-							return c.concat(func() any { return l_1910 }(), func() any { return c.member(func() any { return l_1911 }(), "p") }())
+							return c.concat(func() any { return l_1910 }(), func() any { return c.member(func() any { return l_1911 }(), "$p") }())
 						}()
 					})
 				}()
@@ -264830,7 +264830,7 @@ L19:
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k3 }(), func(l_1910, l_1911 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_1910 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1911 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_1910 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1911 }(), "$p") }())
 					}()
 				})
 			}()
@@ -265335,7 +265335,7 @@ func (p *tparser) i257() (any, bool) {
 					return c.fold("foldl", false, func() any { return k1 }(), func() any { return k3 }(), func(l_1914, l_1915 any) any {
 						return func() any {
 
-							return c.concat(func() any { return l_1914 }(), func() any { return c.member(func() any { return l_1915 }(), "p") }())
+							return c.concat(func() any { return l_1914 }(), func() any { return c.member(func() any { return l_1915 }(), "$p") }())
 						}()
 					})
 				}()
@@ -265457,7 +265457,7 @@ L19:
 				return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k3 }(), func(l_1914, l_1915 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.concat(func() any { c.p.stepWork(); return l_1914 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1915 }(), "p") }())
+						return c.concat(func() any { c.p.stepWork(); return l_1914 }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1915 }(), "$p") }())
 					}()
 				})
 			}()
@@ -300531,7 +300531,7 @@ func (p *tparser) i340() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "segs") }(), func(l_1927, l_1928 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "$segs") }(), func(l_1927, l_1928 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -300542,7 +300542,7 @@ func (p *tparser) i340() (any, bool) {
 
 												return c.binary("+", func() any { return l_1927 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1928 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1928 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -300551,7 +300551,7 @@ func (p *tparser) i340() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k9 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k9 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -300559,21 +300559,21 @@ func (p *tparser) i340() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "segs") }(), func(l_1929, l_1930 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "$segs") }(), func(l_1929, l_1930 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1929 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1930 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1930 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k9 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k9 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -300670,7 +300670,7 @@ L4:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "segs") }(), func(l_1927, l_1928 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$segs") }(), func(l_1927, l_1928 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -300681,7 +300681,7 @@ L4:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1927 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1928 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1928 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -300690,7 +300690,7 @@ L4:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -300698,21 +300698,21 @@ L4:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "segs") }(), func(l_1929, l_1930 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$segs") }(), func(l_1929, l_1930 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1929 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1930 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1930 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -302924,7 +302924,7 @@ func (p *tparser) i357() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "segs") }(), func(l_1931, l_1932 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "$segs") }(), func(l_1931, l_1932 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -302935,7 +302935,7 @@ func (p *tparser) i357() (any, bool) {
 
 												return c.binary("+", func() any { return l_1931 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1932 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1932 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -302944,7 +302944,7 @@ func (p *tparser) i357() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k9 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k9 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -302952,21 +302952,21 @@ func (p *tparser) i357() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "segs") }(), func(l_1933, l_1934 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k9 }(), "$segs") }(), func(l_1933, l_1934 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1933 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1934 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1934 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k9 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k9 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -303063,7 +303063,7 @@ L4:
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "segs") }(), func(l_1931, l_1932 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$segs") }(), func(l_1931, l_1932 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -303074,7 +303074,7 @@ L4:
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1931 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1932 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1932 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -303083,7 +303083,7 @@ L4:
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -303091,21 +303091,21 @@ L4:
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "segs") }(), func(l_1933, l_1934 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$segs") }(), func(l_1933, l_1934 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1933 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1934 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1934 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k9 }(), "$tail") }())
 						}())
 					}())
 				}())
@@ -304714,7 +304714,7 @@ func (p *tparser) i368() (any, bool) {
 
 						return c.binary("+", func() any {
 
-							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1935, l_1936 any) any {
+							return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1935, l_1936 any) any {
 								return func() any {
 
 									return c.binary("+", func() any {
@@ -304725,7 +304725,7 @@ func (p *tparser) i368() (any, bool) {
 
 												return c.binary("+", func() any { return l_1935 }(), func() any {
 
-													return c.length(func() any { return c.member(func() any { return l_1936 }(), "sp") }())
+													return c.length(func() any { return c.member(func() any { return l_1936 }(), "$sp") }())
 												}())
 											}(), func() any { return any(8) }())
 										}(), func() any { return any(8) }())
@@ -304734,7 +304734,7 @@ func (p *tparser) i368() (any, bool) {
 							})
 						}(), func() any {
 
-							return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+							return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 						}())
 					}(), func() any {
 
@@ -304742,21 +304742,21 @@ func (p *tparser) i368() (any, bool) {
 
 							return c.binary("+", func() any {
 
-								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "segs") }(), func(l_1937, l_1938 any) any {
+								return c.fold("foldl", false, func() any { return any(0) }(), func() any { return c.member(func() any { return k5 }(), "$segs") }(), func(l_1937, l_1938 any) any {
 									return func() any {
 
 										return c.binary("+", func() any {
 
 											return c.binary("+", func() any { return l_1937 }(), func() any {
 
-												return c.length(func() any { return c.member(func() any { return l_1938 }(), "sp") }())
+												return c.length(func() any { return c.member(func() any { return l_1938 }(), "$sp") }())
 											}())
 										}(), func() any { return any(1) }())
 									}()
 								})
 							}(), func() any {
 
-								return c.length(func() any { return c.member(func() any { return k5 }(), "tail") }())
+								return c.length(func() any { return c.member(func() any { return k5 }(), "$tail") }())
 							}())
 						}())
 					}())
@@ -304833,7 +304833,7 @@ func (p *tparser) i368() (any, bool) {
 					c.p.stepWork()
 					return c.binary("+", func() any {
 						c.p.stepWork()
-						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1935, l_1936 any) any {
+						return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1935, l_1936 any) any {
 							return func() any {
 								c.p.stepWork()
 								return c.binary("+", func() any {
@@ -304844,7 +304844,7 @@ func (p *tparser) i368() (any, bool) {
 											c.p.stepWork()
 											return c.binary("+", func() any { c.p.stepWork(); return l_1935 }(), func() any {
 												c.p.stepWork()
-												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1936 }(), "sp") }())
+												return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1936 }(), "$sp") }())
 											}())
 										}(), func() any { c.p.stepWork(); return any(8) }())
 									}(), func() any { c.p.stepWork(); return any(8) }())
@@ -304853,7 +304853,7 @@ func (p *tparser) i368() (any, bool) {
 						})
 					}(), func() any {
 						c.p.stepWork()
-						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+						return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 					}())
 				}(), func() any {
 					c.p.stepWork()
@@ -304861,21 +304861,21 @@ func (p *tparser) i368() (any, bool) {
 						c.p.stepWork()
 						return c.binary("+", func() any {
 							c.p.stepWork()
-							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "segs") }(), func(l_1937, l_1938 any) any {
+							return c.fold("foldl", false, func() any { c.p.stepWork(); return any(0) }(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$segs") }(), func(l_1937, l_1938 any) any {
 								return func() any {
 									c.p.stepWork()
 									return c.binary("+", func() any {
 										c.p.stepWork()
 										return c.binary("+", func() any { c.p.stepWork(); return l_1937 }(), func() any {
 											c.p.stepWork()
-											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1938 }(), "sp") }())
+											return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_1938 }(), "$sp") }())
 										}())
 									}(), func() any { c.p.stepWork(); return any(1) }())
 								}()
 							})
 						}(), func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "tail") }())
+							return c.length(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k5 }(), "$tail") }())
 						}())
 					}())
 				}())

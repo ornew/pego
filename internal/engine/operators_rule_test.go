@@ -69,7 +69,7 @@ rule num Num = [0-9]+
 rule ident = [a-z]+ #atomic
 rule args = (
     first:level(e, assignment) rest:(" "* "," r:level(e, assignment))*
-) => concat(list($first), map($rest, (x) => x.r))
+) => concat(list($first), map($rest, (x) => x.$r))
 rule e Expr = operators {
     skip " "*
     operand num

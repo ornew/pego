@@ -48,7 +48,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 		{"ordinary", `rule main = "é"* $$`, OpRepeat},
 		{"class scan", `rule main = [é]* #atomic $$`, OpScan},
 		{"any scan", `rule main = .* #atomic $$`, OpScan},
-		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => x.v)`, OpRepeat},
+		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => x.$v)`, OpRepeat},
 	} {
 		for _, maximum := range negativeMaxima() {
 			t.Run(fmt.Sprintf("%s/%d", c.name, maximum), func(t *testing.T) {
@@ -81,6 +81,11 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 					if !found {
 						t.Fatalf("expected %s lowering", c.op)
 					}
+					for _, in := range p.Module().Code {
+						if in.Op == OpRepeatWide || in.Op == OpScanWide {
+							t.Errorf("negative maxima alone must not lower to %s", in.Op)
+						}
+					}
 					if err := validateModule(p.Module()); err != nil {
 						t.Errorf("module: %v", err)
 					}
@@ -89,8 +94,14 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						if err != nil {
 							t.Fatal(err)
 						}
-						if data[len(compiledMagic)+1] != 3 {
-							t.Fatal("negative maxima alone must not require wide instructions")
+						// Without projections, the element's capture is read with x.$v,
+						// which needs instruction set 11.
+						want := byte(3)
+						if p.Module().hasCaptureAccess() {
+							want = 11
+						}
+						if data[len(compiledMagic)+1] != want {
+							t.Fatalf("negative maxima alone must not require wide instructions: instruction set %d, want %d", data[len(compiledMagic)+1], want)
 						}
 						loaded, _, err := LoadProgram(data, Options{})
 						if err != nil {

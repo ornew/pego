@@ -120,6 +120,12 @@ func TestFixLambdaParams(t *testing.T) {
 		{"rule main = xs:\"a\"* => map($xs, (x) => x)", "rule main = xs:\"a\"* => map($xs, (x) => x)", []string{"aa"}},
 		// A parameter named like a function: the call stays a call.
 		{"rule main = xs:\"a\"* => filter($xs, (text) => text($text) == \"a\")", "rule main = xs:\"a\"* => filter($xs, (text) => text(text) == \"a\")", []string{"aa"}},
+		// A capture read as a member is read with .$; fields and the node members stay.
+		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"", "abab"}},
+		{"rule main = xs:(y:\"a\" \"b\")+ => $xs[0].y", "rule main = xs:(y:\"a\" \"b\")+ => $xs[0].$y", []string{"abab"}},
+		{"rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.y), (j) => j.endPos > 1)", "rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.$y), (j) => j.endPos > 1)", []string{"abab"}},
+		{"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
+		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"ab"}},
 		// Positional captures and parameters in one lambda.
 		{"rule main = \"b\" xs:\"a\"* => map($2, (e) => list($1, $e))", "rule main = v1:\"b\" xs:\"a\"* => map($xs, (e) => list($v1, e))", []string{"baa"}},
 	} {
@@ -178,6 +184,23 @@ func TestLambdaParamDollarRejected(t *testing.T) {
 	// Source that does not parse keeps its other rewrites.
 	if got, err := syntax.Fix("rule main = \"a\" -- (\n(x) => $x"); err != nil || got != "rule main = \"a\" #cut (\n(x) => $x" {
 		t.Fatalf("unparsed: %q %v", got, err)
+	}
+}
+
+// x.y with a name that is not a field name reads a capture, which is written x.$y.
+func TestCaptureMemberRejected(t *testing.T) {
+	_, err := syntax.Parse(`rule main = xs:(y:"a")* => map($xs, (i) => i.y)`)
+	if err == nil || !strings.Contains(err.Error(), "1:46: a capture is read with .$y; run pego fix to rewrite .y") {
+		t.Fatalf("got %v", err)
+	}
+	for _, src := range []string{
+		`rule main = x:"a" => list($x.children)`,
+		`rule main = x:"a" {$x.startPos == 0 && $x.endPos == 1}`,
+		"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}",
+	} {
+		if _, err := syntax.Parse(src); err != nil {
+			t.Errorf("%q: %v", src, err)
+		}
 	}
 }
 

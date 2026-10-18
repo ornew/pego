@@ -315,7 +315,7 @@ type Decl = {
 type Program = { Decls []Decl }
 
 rule main Program = ds:decls $$ => Program{Decls: $ds}
-rule decls = ds:(-ws d:decl)* -ws => map($ds, (x) => x.d)
+rule decls = ds:(-ws d:decl)* -ws => map($ds, (x) => x.$d)
 rule decl Decl = -"let" -ws n:ident v:init? -ws -";" => Decl{Name: $n, Value: $v}
 rule init Lit = -ws -"=" -ws l:lit => $l
 rule lit Lit = num / ident
@@ -568,7 +568,7 @@ type Ident terminal
 type Pair = { A Ident; B Ident }
 type Pairs = { Items []Pair }
 
-rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: r.x})}
+rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: r.$x})}
 rule ident Ident = [a-z]+
 ```
 
@@ -741,7 +741,7 @@ type Bin = {
 type Expr ~ Num | Bin
 
 rule main Expr = e:sum $$ => $e
-rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.op, Right: i.n})
+rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.$op, Right: i.$n})
 rule num Num = [0-9]+
 rule op Op = "+" / "-"
 rule ws = " "*
@@ -778,7 +778,7 @@ type Bin = {
 }
 type Expr ~ Num | Bin
 
-rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: i.l, Op: i.op, Right: acc})
+rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: i.$l, Op: i.$op, Right: acc})
 rule num Num = [0-9]+
 rule op Op = "^"
 rule ws = " "*
@@ -811,7 +811,7 @@ type Member = {
 }
 type Path ~ Ident | Member
 
-rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: acc, Name: i.n})
+rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: acc, Name: i.$n})
 rule ident Ident = [a-z]+
 ```
 
@@ -838,7 +838,7 @@ type Call = {
 }
 
 rule call Call = fn:ident -ws "(" -ws args:args? -ws ")" => Call{Fn: $fn, Args: concat($args)}
-rule args = first:ident rest:(-ws "," -ws x:ident)* => concat(list($first), map($rest, (r) => r.x))
+rule args = first:ident rest:(-ws "," -ws x:ident)* => concat(list($first), map($rest, (r) => r.$x))
 rule args_cst = ident (-ws "," -ws ident)*
 rule ident Ident = [a-z]+
 rule ws = " "*
@@ -864,7 +864,7 @@ pego parse -g args.pego -s args_cst -f sexpr -i 'a, b, c'
 type Ident terminal
 type Call = { Fn Ident; Args []Ident }
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
-rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => r.x))
+rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => r.$x))
 rule ident Ident = [a-z]+
 ```
 
@@ -898,7 +898,7 @@ type Entry = {
 type Config = { Entries []Entry }
 
 rule main Config = es:entries ws $$ => Config{Entries: $es}
-rule entries = es:(-ws e:entry)* => map($es, (x) => x.e)
+rule entries = es:(-ws e:entry)* => map($es, (x) => x.$e)
 rule entry Entry = k:key -ws -"=" -ws v:value -ws -";" => Entry{Key: $k, Value: $v}
 rule key Ident = [a-z_]+
 rule value Value = [a-z0-9.]+

@@ -6,7 +6,7 @@ intermediate records and the later field traversal.
 
 ## Mechanism and Invariants
 
-`ruleProjections` accepts a capture used only as `map($x, (e) => e.f)`. No
+`ruleProjections` accepts a capture used only as `map($x, (e) => e.$f)`. No
 predicate may read `$x`, positional body values must be unused, both capture
 names must occur once, and every element must produce a non-nil `f`. These
 checks prevent replacing a field-access error with a successful projection.

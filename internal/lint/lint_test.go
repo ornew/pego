@@ -196,7 +196,7 @@ func TestUnusedCapture(t *testing.T) {
 		{name: "captured repetition", src: `rule main = r:(x:"a")* => $r`},
 		{name: "repetition read with $n", src: `rule main = v1:(x:"a")* => $v1`},
 		{name: "repetition element read by its predicate", src: `rule main = (x:"a" {len($x) > 0})* => nil`},
-		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => x.x)`,
+		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => x.$x)`,
 			want: []string{"1:24 warning unused-capture"}},
 		{name: "terminal type", src: "type T terminal\nrule main T = a:\"x\"", want: []string{"2:15 warning unused-capture"},
 			msg: "terminal of type T"},

@@ -23,7 +23,7 @@ rule main Doc = v:(("b" #cut "c")? "b") #atomic $$ => Doc{Text: $v}
 rule main Doc = v:(("b" #cut "c") #repeat(0, 2) "b") #atomic $$ => Doc{Text: $v}
 `, []string{"bcbcb", "b", "bcb", "bcbc", "", "bcbcbcb"}},
 	{"typed/direct_cut_projection", `type Doc = { Items []Match }
-rule main Doc = items:(-"," #cut x:[a-z] #atomic) #repeat(0, 3) ";" $$ => Doc{Items: map($items, (e) => e.x)}
+rule main Doc = items:(-"," #cut x:[a-z] #atomic) #repeat(0, 3) ";" $$ => Doc{Items: map($items, (e) => e.$x)}
 `, []string{";", ",a;", ",a,b;", ",;", ",a,b,c;", ",a,b,c,d;", ""}},
 	{"typed/direct_cut_lookahead", `type Doc = { Text Match }
 rule main Doc = v:(&("a" #cut "b") "ab" / !("a" #cut "b") "ac") #atomic $$ => Doc{Text: $v}

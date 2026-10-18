@@ -128,7 +128,7 @@ func TestNullableRepetitionResumedMinimum(t *testing.T) {
 
 func TestNullableRepetitionProjection(t *testing.T) {
 	for _, minimum := range []int{1, 2} {
-		p := compile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.f)`, minimum))
+		p := compile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.$f)`, minimum))
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				if n, err := p.ParseWith("main", "", ParseOptions{Backend: backend, Unit: unit}); (err == nil) != (minimum == 1) || err == nil && len(n.Children) != 1 {
@@ -164,7 +164,7 @@ func BenchmarkNullableRepetitionControl(b *testing.B) {
 rule item = "a"`},
 		{"NullableTail", `rule main = item #repeat(2, ) $$
 rule item = "a" / _`},
-		{"Projected", `rule main = xs:(f:"a" / f:_) #repeat(2, ) $$ => map($xs, (x) => x.f)`},
+		{"Projected", `rule main = xs:(f:"a" / f:_) #repeat(2, ) $$ => map($xs, (x) => x.$f)`},
 	} {
 		g, err := syntax.Parse(strings.ReplaceAll(tc.source, "; ", "\n"))
 		if err != nil {

@@ -49,7 +49,7 @@ const typedRecoveryWorkloadTypes = `type Atom terminal
 type Post = { X Expr }
 type Expr ~ Atom | Post
 type Doc = { Items []Expr; N int }
-rule main Doc = items:(e:expr -";")* $$ => Doc{Items: map($items, (x) => x.e), N: len($items)}
+rule main Doc = items:(e:expr -";")* $$ => Doc{Items: map($items, (x) => x.$e), N: len($items)}
 `
 
 // Generation includes compilation, runtime embedding and formatting, but not

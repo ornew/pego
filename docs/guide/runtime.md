@@ -692,10 +692,15 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
 - the old cut `--` to `#cut`;
 - the struct declaration `type T struct {...}` to `type T = {...}`, and the alias `type T = U` to `type T ~ U`;
 - positional captures `$1`, `$2`, ... to named ones, labeling the element each refers to (with the name of the rule it
-  calls when that name is free, and `v1`, `v2`, ... otherwise), and `$0` to a `list(...)` of the labeled elements.
+  calls when that name is free, and `v1`, `v2`, ... otherwise), and `$0` to a `list(...)` of the labeled elements;
+- a lambda parameter written `$p` in the lambda body to `p`;
+- a capture read `x.y` to `x.$y`, for every member whose name does not begin with an uppercase letter and is not a
+  built-in field.
 
 The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
-comments is left alone. The positional rewrite needs a grammar that otherwise parses, so fix syntax errors first.
+comments is left alone. The rewrites other than the cut and type declarations need a grammar that otherwise parses, so
+fix syntax errors first. A capture read on a union of node types was optional when some of them lacked the capture,
+and `x.$y` requires every one to have it, so the rewritten grammar can report a type error that the old one did not.
 
 ```bash
 $ echo 'rule a = "a" -- "b" / "c"' | pego fix

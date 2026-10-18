@@ -15,7 +15,7 @@ type Item = {
 rule main = {indent := 0} items:block blank* $$ => $items
 
 // Items at the current indentation.
-rule block = v1:(blank* i:item)+ => map($v1, (x) => x.i)
+rule block = v1:(blank* i:item)+ => map($v1, (x) => x.$i)
 
 // A line indented exactly at the current depth, followed by its children.
 rule item Item = (

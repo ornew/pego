@@ -20,7 +20,7 @@ func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	t.Run("LR", func(t *testing.T) {
 		testGeneratedTypedBodyWorkload(t, `type Doc = { Items []Match; N int }
 rule main Doc = e:expr $$ => $e
-rule expr Doc = previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat(3) / items:(x:[a-z] #atomic #cut -",") #repeat(3) => Doc{Items: map($items, (e) => e.x), N: len($items)}
+rule expr Doc = previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat(3) / items:(x:[a-z] #atomic #cut -",") #repeat(3) => Doc{Items: map($items, (e) => e.$x), N: len($items)}
 `, typedLRActionWorkloadFixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", control)
 	})
 	t.Run("OperatorsRule", func(t *testing.T) {
@@ -32,7 +32,7 @@ rule expr Expr = operators {
     skip (" " #cut)*
     operand a:atom #cut => $a
     level {
-        postfix "[" #cut items:(x:[a-z] #atomic #cut {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.x), N: len($items)}
+        postfix "[" #cut items:(x:[a-z] #atomic #cut {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items)}
     }
 }
 rule atom Atom = "a"

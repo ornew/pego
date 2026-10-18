@@ -98,10 +98,10 @@ func TestFold(t *testing.T) {
 type Node ~ Op | Match
 rule main Node = (
     l:num rest:(op:("+" / "-") #atomic r:num)*
-) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.op, Right: i.r})
+) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule right Node = (
     l:num rest:(op:"^" r:num)*
-) => foldr($l, $rest, (acc, i) => Op{Left: i.r, Op: i.op, Right: acc})
+) => foldr($l, $rest, (acc, i) => Op{Left: i.$r, Op: i.$op, Right: acc})
 rule num = [0-9]+ #atomic`
 	check(t, src,
 		ok("1", `"1"@num`),
@@ -113,13 +113,13 @@ func TestListBuiltins(t *testing.T) {
 	check(t, `type Args = { Items []Match; N int }
 rule main = (
     first:item rest:(-"," x:item)*
-) => Args{Items: concat(list($first), map($rest, (r) => r.x)), N: len($rest) + 1}
+) => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest) + 1}
 rule item = [a-z]+ #atomic`,
 		ok("a,bc,d", `(Args Items=["a"@item "bc"@item "d"@item] N=3)`),
 	)
 	// An inner lambda reads a parameter of the enclosing lambda.
 	check(t, `type Pair = { G Match; X Match }
-rule main = gs:group* => map($gs, (g) => map(g.xs, (x) => Pair{G: g.k, X: x.v}))
+rule main = gs:group* => map($gs, (g) => map(g.$xs, (x) => Pair{G: g.$k, X: x.$v}))
 rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
 		ok("a=12;b=3;", `[[(Pair G="a" X="1") (Pair G="a" X="2")] [(Pair G="b" X="3")]]`),
 	)
@@ -136,7 +136,7 @@ rule word = [a-z] [a-z]`,
 func TestNodePositions(t *testing.T) {
 	prog := compile(t, `type Op = { Left Node; Right Node }
 type Node ~ Op | Match
-rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.r})
+rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.$r})
 rule num = -" "* n:[0-9]+ #atomic => $n`)
 	n, err := prog.Parse("main", " 1 + 22+3")
 	if err != nil {

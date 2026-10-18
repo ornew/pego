@@ -17,7 +17,7 @@ type Entry = {
 rule main = {indent := 0} es:block blank* $$ => $es
 
 // The entries at the current indentation.
-rule block = v1:(blank* e:entry)+ => map($v1, (x) => x.e)
+rule block = v1:(blank* e:entry)+ => map($v1, (x) => x.$e)
 
 // A line indented exactly at the current depth, with the lines below it that are indented deeper.
 rule entry Entry = (

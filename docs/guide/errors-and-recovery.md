@@ -210,14 +210,14 @@ type Stmt ~ Let | Print | Block
 type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
-rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.s)
+rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 
 rule stmt Stmt = let / print / block
 rule let Let = "let" ws n:name ws "=" ws v:expr ws ";" => Let{Name: $n, Value: $v}
 rule print Print = "print" ws v:expr ws ";" => Print{Value: $v}
 rule block Block = "{" body:stmts ws "}" => Block{Body: $body}
 
-rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (acc, i) => Sum{Left: acc, Right: i.t})
+rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (acc, i) => Sum{Left: acc, Right: i.$t})
 rule term Expr = number / name / group
 rule group Expr = "(" ws e:expr ws ")" => $e
 
@@ -759,7 +759,7 @@ type Stmt ~ Let | Print | Block
 type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
-rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.s)
+rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 
 rule stmt Stmt = s:(let / print / block) #recover(skip=[^;\n]+ ";"?) => $s
 rule let Let = "let" ws n:name ws "=" ws v:expr ws ";" => Let{Name: $n, Value: $v}
@@ -890,7 +890,7 @@ type If = { Test Name; Body []Stmt }
 type Stmt ~ Assign | If
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
-rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => x.s)
+rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => x.$s)
 
 // The indentation is outside the recovery: a line that is not at this block's indentation ends the block.
 rule stmt = indentation s:(if_stmt / assign) #recover(skip=skip_line) => $s
@@ -950,7 +950,7 @@ type Numbers = { Items []Num }
 rule main Numbers = ws l:list ws $$ => $l
 
 rule list Numbers = "[" ws xs:items? ws "]" @error(message="expected ',' or ']'") => Numbers{Items: concat($xs)}
-rule items = first:item rest:(-ws "," -ws i:item)* => concat(list($first), map($rest, (r) => r.i))
+rule items = first:item rest:(-ws "," -ws i:item)* => concat(list($first), map($rest, (r) => r.$i))
 
 // A bad element is skipped up to (not including) the next "," or "]".
 rule item Num = n:number @error(message="expected a number") #recover(skip=[^,]\n]+) => $n

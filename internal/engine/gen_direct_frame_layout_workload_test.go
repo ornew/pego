@@ -31,7 +31,7 @@ func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 
 const typedFrameLayoutLRWorkload = `type Doc = { Items []Match; N int; Missing *Match }
 rule main Doc = e:expr $$ => $e
-rule expr Doc = _|_ ignored:"z" #atomic / previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => e.x), N: len($items), Missing: $ignored}
+rule expr Doc = _|_ ignored:"z" #atomic / previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
 `
 
 const typedFrameLayoutOperatorsRuleWorkload = `type Atom terminal
@@ -42,7 +42,7 @@ rule expr Expr = operators {
     skip " "*
     operand atom
     level {
-        postfix _|_ ignored:"z" #atomic / "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.x), N: len($items), Missing: $ignored}
+        postfix _|_ ignored:"z" #atomic / "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
     }
 }
 rule atom Atom = "a"

@@ -17,12 +17,15 @@ import (
 //   - an alias "type T = U" becomes "type T ~ U";
 //   - a positional capture "$n" becomes a named capture: the element it refers to is labeled,
 //     reusing its name when it already has one, and "$0" becomes a list of the elements;
-//   - a lambda parameter "$x" is written "x".
+//   - a lambda parameter "$x" is written "x";
+//   - a capture read as a member "x.y" is read "x.$y". Since field names start with an uppercase
+//     letter, a member with another name reads a capture, except the node members startPos,
+//     endPos and children, and the members expected and message of Missing.
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
 // is an error, and so is source with positional captures that does not parse. Lambda
-// parameters are rewritten only in source that parses.
+// parameters and members are rewritten only in source that parses.
 func Fix(src string) (string, error) {
 	errs := &errorList{}
 	toks := lex(src, errs)
@@ -31,9 +34,11 @@ func Fix(src string) (string, error) {
 	}
 	out := fixTokens(src, toks)
 	positional, captures := false, false
-	for _, t := range toks {
+	for i, t := range toks {
 		positional = positional || t.kind == tIndex
 		captures = captures || t.kind == tCapture
+		// x.y may read a capture.
+		captures = captures || t.kind == tPunct && t.text == "." && i+1 < len(toks) && toks[i+1].kind == tIdent
 	}
 	if positional || captures {
 		return fixParsed(out, positional)

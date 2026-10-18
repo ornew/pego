@@ -14,7 +14,7 @@ rule expr Expr = operators {
     level { prefix "-" => Unary{Op: $op, X: $rhs} }
     level {
         postfix "!" => Post{X: $lhs, Op: $op, Args: list()}
-        postfix "{" #cut a:(x:expr ws ",")* ws "}" => Post{X: $lhs, Op: $op, Args: map($a, (q) => q.x)}
+        postfix "{" #cut a:(x:expr ws ",")* ws "}" => Post{X: $lhs, Op: $op, Args: map($a, (q) => q.$x)}
     }
     level { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }

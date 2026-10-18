@@ -89,7 +89,7 @@ rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
 rule args = "x" => Word{"a", "b",}
 rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
-rule cast = x:"x" => $x.([]Foo | *Word).len
+rule cast = x:"x" => $x.([]Foo | *Word).Len
 type Meet ~ []Foo & *Word | _ & _|_
 type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[Word]
 type Unnamed ~ {} | []{ A Foo; B { C Word } }

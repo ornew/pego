@@ -32,24 +32,24 @@ rule body Doc = (_|_ ignored:"z" #atomic / _) {$ignored == nil} x:"é" #atomic =
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) {$unused == nil && len($x) == 1} -",") #repeat(1, 3)
-) => Doc{Items: map($items, (e) => e.x), Missing: $ignored}
+) => Doc{Items: map($items, (e) => e.$x), Missing: $ignored}
 `, []string{"é,", "é,é,é,", "é,é,", "é,z,", "é,é,é,é,", "z", "", "é"}},
 	{"typed/local_element_dead_predicate", `type Doc = { Items []Match }
 rule main Doc = e:body $$ => $e
-rule body Doc = items:((_|_ unused:"z" #atomic / _) {$unused == nil} x:"é" #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => e.x)}
+rule body Doc = items:((_|_ unused:"z" #atomic / _) {$unused == nil} x:"é" #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => e.$x)}
 `, []string{"é,", "é,é,é,", "é,é,", "é,z,", "é,é,é,é,", "", "é"}},
 	{"typed/local_element_unused_projection", `type Doc = { Items []*Match; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic) -",") #repeat(1, 3)
-) => Doc{Items: map($items, (e) => e.unused), Missing: $ignored}
+) => Doc{Items: map($items, (e) => e.$unused), Missing: $ignored}
 `, []string{"é,", "é,é,é,", "é,é,", "z", "", "é"}},
 	{"typed/local_owned_element_reset", `type Item = { Text *Match; Missing *Match }
 type Doc = { Items []Item; Missing *Match }
 rule main Doc = e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:"é" #atomic / "a") {$unused == nil} -",") #repeat(1, 3)
-) => Doc{Items: map($items, (e) => Item{Text: e.x, Missing: e.unused}), Missing: $ignored}
+) => Doc{Items: map($items, (e) => Item{Text: e.$x, Missing: e.$unused}), Missing: $ignored}
 `, []string{"é,a,é,", "a,é,a,", "a,", "é,", "é,é,é,é,", "é,z,", "", "é"}},
 	{"typed/local_optional_cut", `type Doc = { Text *Match; Missing *Match; N int }
 rule main Doc = {n := 0} e:body $$ => $e

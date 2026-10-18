@@ -128,10 +128,11 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 }
 
 // valueTypesOf compiles src without the current model's type check, whose rules for actions
-// differ, and returns the value types of its rules and the errors of its actions.
+// differ, and returns the value types of its rules and the errors of its actions. It accepts
+// earlier syntax, which still reaches the engine from JSON grammars.
 func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := syntax.ParseLegacy(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}

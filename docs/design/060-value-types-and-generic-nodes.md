@@ -186,7 +186,7 @@ and the parser returns the default `node` tree even for grammars with actions.
   resolve to indexes at compile time, so named access has no runtime lookup.
 - **Lambda parameters are variables.** Captures remain `$x`; lambda
   parameters share the variable namespace and are written without `$`:
-  `{ indent := 1 } => { indent + 1; map($items, (x) => x.item) }`.
+  `{ indent := 1 } => { indent + 1; map($items, (x) => x.$item) }`.
 - **Node access.** `text` is removed. A captured node exposes `.Start`, `.End`
   and `.Value`; `.Source` is rejected. `rule a = x:"x" => $x.Value` replaces
   `X{Text: text($x)}`. `len($x.Value)` and `len($x)` keep their meaning.

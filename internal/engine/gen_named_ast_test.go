@@ -29,7 +29,7 @@ rule mixed Mixed = cst
 rule structure = t:term => S{T: $t}
 rule values = "v" => Values{N: 42, Text: "yes", Flag: true}
 rule optional = t:term? => $t
-rule items Items = xs:(s:structure)* => map($xs, (x) => x.s)
+rule items Items = xs:(s:structure)* => map($xs, (x) => x.$s)
 rule union U = structure / term
 rule cst = "x" "y"
 rule open node = "z"
@@ -40,9 +40,9 @@ rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
 rule recoverStruct S = structure #recover(skip="?")
 rule recoverTerminal = t:term #recover(skip="?") => Recovery{T: $t}
 rule recoverUnion U = union #recover(skip="?")
-rule nonemptyItems Items = xs:(s:structure)+ => map($xs, (x) => x.s)
+rule nonemptyItems Items = xs:(s:structure)+ => map($xs, (x) => x.$s)
 rule recoverList Items = nonemptyItems #recover(skip="?")
-rule recoveryElements Items = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.s)
+rule recoveryElements Items = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
 `
 
 func TestGeneratedNamedAST(t *testing.T) {

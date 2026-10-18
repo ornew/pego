@@ -195,8 +195,15 @@ list; it is empty for node kinds without children.
 capture reads as `nil`. A struct value has no captures, so `x.$y` on one is a
 compile-time error, or a runtime action error for a dynamically typed
 receiver. A captured sequence does not yet carry the captures inside it, so
-`$x.$y` for `x:(y:a b)` is rejected; write `$y`. On a capture record, `x.y`
-and `x.$y` read the same capture.
+`$x.$y` for `x:(y:a b)` is rejected; write `$y`.
+
+Field names begin with an uppercase letter, so `x.y` with any other name, except
+the built-in fields and the `expected` and `message` fields of `Missing`, is an
+error in PEGO source that asks for `x.$y`; `pego fix` rewrites it. A grammar in
+JSON or a compiled grammar may still read a capture with `x.y`, which reads the
+same capture as `x.$y` at run time. Its type check is looser: `x.y` on a union
+some of whose node types lack `y` has an optional type. After `pego fix`, such a
+read is an error until every alternative captures `y`.
 
 ## Casts
 
@@ -308,7 +315,7 @@ callback result type; the checker checks the callback against that widened
 type.
 
 ```pego
-foldl(0, $items, (sum, item) => sum + item.value)
+foldl(0, $items, (sum, item) => sum + item.$value)
 ```
 
 #### foldr
