@@ -1,6 +1,6 @@
 // Checks the extension's static files: that the JSON files parse, that every regular expression of
 // the TextMate grammar compiles with Oniguruma (the engine VS Code uses), and that the grammar
-// tokenizes the example grammars of the repository and a sample with the expected scopes.
+// tokenizes the example and ready-made parser grammars of the repository and a sample with the expected scopes.
 //
 // Run with `npm run check` after `npm install`.
 'use strict';
@@ -62,7 +62,7 @@ const sample = [
   '    Right *Num',
   '}',
   'type Node ~ Op | Num | []Match',
-  'rule expr Node = l:term rest:(op:"+" r:term)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.r})',
+  'rule expr Node = l:term rest:(op:"+" r:term)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.$r})',
   'rule term = [0-9_\\-]+ #atomic / "\\u{1F600}\\q" @error(message="expected (a term)")  #stream',
   'rule calc = operators {',
   '    skip " "*',
@@ -118,7 +118,7 @@ const expectations = [
   ['foldl', 'support.function.builtin.pego'],
   ['$rest', 'variable.parameter.capture.pego'],
   ['Op', 'entity.name.type.pego', '=> Op'],
-  ['r', 'variable.other.property.pego', 'i.r'],
+  ['$r', 'variable.parameter.capture.pego', 'i.$r'],
   ['term', 'entity.name.function.pego', 'rule term'],
   ['[', 'punctuation.definition.character-class.begin.pego', '[0-9'],
   ['-', 'keyword.operator.range.pego', '0-9'],
@@ -267,33 +267,34 @@ async function main() {
   }
   console.log(`${expectations.length} scopes of the sample are as expected`);
 
-  // The example grammars are valid, so nothing in them is marked invalid, and every line ends
-  // outside strings, character classes and attribute arguments (their rules end on the line).
-  const examples = path.join(repo, 'examples');
+  // The example and ready-made parser grammars are valid, so nothing in them is marked invalid.
   let files = 0;
-  for (const dir of fs.readdirSync(examples)) {
-    const d = path.join(examples, dir);
-    if (!fs.statSync(d).isDirectory()) {
-      continue;
-    }
-    for (const name of fs.readdirSync(d).filter((n) => n.endsWith('.pego'))) {
-      const file = path.join(d, name);
-      const text = fs.readFileSync(file, 'utf8');
-      let state = vsctm.INITIAL;
-      text.split('\n').forEach((line, i) => {
-        const r = grammar.tokenizeLine(line, state);
-        for (const t of r.tokens) {
-          const invalid = t.scopes.find((s) => s.startsWith('invalid.'));
-          if (invalid) {
-            fail(`${path.relative(repo, file)}:${i + 1}: ${invalid} at ${JSON.stringify(line.slice(t.startIndex, t.endIndex))}`);
+  for (const top of ['examples', 'parsers']) {
+    const base = path.join(repo, top);
+    for (const dir of fs.readdirSync(base)) {
+      const d = path.join(base, dir);
+      if (!fs.statSync(d).isDirectory()) {
+        continue;
+      }
+      for (const name of fs.readdirSync(d).filter((n) => n.endsWith('.pego'))) {
+        const file = path.join(d, name);
+        const text = fs.readFileSync(file, 'utf8');
+        let state = vsctm.INITIAL;
+        text.split('\n').forEach((line, i) => {
+          const r = grammar.tokenizeLine(line, state);
+          for (const t of r.tokens) {
+            const invalid = t.scopes.find((s) => s.startsWith('invalid.'));
+            if (invalid) {
+              fail(`${path.relative(repo, file)}:${i + 1}: ${invalid} at ${JSON.stringify(line.slice(t.startIndex, t.endIndex))}`);
+            }
           }
-        }
-        state = r.ruleStack;
-      });
-      files++;
+          state = r.ruleStack;
+        });
+        files++;
+      }
     }
   }
-  console.log(`${files} example grammars tokenized`);
+  console.log(`${files} example and parser grammars tokenized`);
 }
 
 main()
