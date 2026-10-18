@@ -3,7 +3,8 @@ package genrt
 import "testing"
 
 func TestActionTrackingReleasesReferences(t *testing.T) {
-	for _, name := range []string{"nil", "node", "invalid", "error"} {
+	// Any value but a function is a result: a value other than a node is boxed.
+	for _, name := range []string{"nil", "node", "value", "invalid", "error"} {
 		t.Run(name, func(t *testing.T) {
 			prefix := &Node{Text: "keep"}
 			made := &Node{fresh: true}
@@ -18,8 +19,10 @@ func TestActionTrackingReleasesReferences(t *testing.T) {
 					switch name {
 					case "node":
 						return made
-					case "invalid":
+					case "value":
 						return 1
+					case "invalid":
+						return func(...any) any { return nil }
 					case "error":
 						evalErrorf("failed")
 					}
@@ -40,7 +43,7 @@ func TestActionTrackingReleasesReferences(t *testing.T) {
 }
 
 func TestTypedActionTrackingReleasesReferences(t *testing.T) {
-	for _, name := range []string{"nil", "node", "invalid"} {
+	for _, name := range []string{"nil", "node", "value", "invalid"} {
 		t.Run(name, func(t *testing.T) {
 			prefix := &tnode{typ: "keep"}
 			made := &tnode{fresh: true}
@@ -53,8 +56,10 @@ func TestTypedActionTrackingReleasesReferences(t *testing.T) {
 				var value any
 				if name == "node" {
 					value = made
-				} else if name == "invalid" {
+				} else if name == "value" {
 					value = 1
+				} else if name == "invalid" {
+					value = func(...any) any { return nil }
 				}
 				got = c.finish(value)
 			}()

@@ -10,49 +10,52 @@ import (
 	"testing"
 )
 
-type legacyNodeJSON struct {
-	Type     string            `json:"type"`
-	Rule     string            `json:"rule,omitempty"`
-	Start    int32             `json:"start"`
-	End      int32             `json:"end"`
-	Text     string            `json:"text,omitempty"`
-	Children []*legacyNodeJSON `json:"children,omitempty"`
-	Fields   map[string]any    `json:"fields,omitempty"`
-}
-
-// legacyNodeReference builds the old nodeJSON/encoding/json shape without invoking Node.MarshalJSON.
-// It is intentionally used only for shallow, acyclic test values.
-func legacyNodeReference(n *Node) *legacyNodeJSON {
+// referenceJSON builds the JSON shape of a value with encoding/json, without invoking
+// Node.MarshalJSON: a string, tuple or list node is {start, end, value} (with rule when it has
+// one), and a struct is {type, fields}. It is intentionally used only for shallow, acyclic test
+// values without captures.
+func referenceJSON(n *Node) any {
 	if n == nil {
 		return nil
 	}
-	out := &legacyNodeJSON{Type: n.Type(), Rule: n.Rule(), Start: n.Start, End: n.End, Text: n.Text}
-	if len(n.Children) != 0 {
-		out.Children = make([]*legacyNodeJSON, len(n.Children))
-		for i, child := range n.Children {
-			out.Children[i] = legacyNodeReference(child)
-		}
+	type node struct {
+		Start int32  `json:"start"`
+		End   int32  `json:"end"`
+		Value any    `json:"value"`
+		Rule  string `json:"rule,omitempty"`
 	}
-	if len(n.Fields) != 0 {
-		out.Fields = make(map[string]any, len(n.Fields))
-		for _, field := range n.Fields {
-			out.Fields[field.Name] = legacyFieldReference(field.Value)
-		}
+	type structValue struct {
+		Type   string         `json:"type"`
+		Fields map[string]any `json:"fields"`
 	}
-	return out
+	switch n.shape() {
+	case shapeString:
+		return node{n.Start, n.End, n.Text, n.Rule()}
+	case shapeTuple, shapeList:
+		elems := make([]any, len(n.Children))
+		for i, c := range n.Children {
+			elems[i] = referenceJSON(c)
+		}
+		return node{n.Start, n.End, elems, n.Rule()}
+	}
+	fields := make(map[string]any, len(n.Fields))
+	for _, field := range n.Fields {
+		fields[field.Name] = referenceField(field.Value)
+	}
+	return structValue{n.Type(), fields}
 }
 
-func legacyFieldReference(value any) any {
+func referenceField(value any) any {
 	switch value := value.(type) {
 	case *Node:
-		return legacyNodeReference(value)
+		return referenceJSON(value)
 	case []any:
 		if value == nil {
 			return []any(nil)
 		}
 		out := make([]any, len(value))
 		for i, item := range value {
-			out[i] = legacyFieldReference(item)
+			out[i] = referenceField(item)
 		}
 		return out
 	default:
@@ -60,13 +63,12 @@ func legacyFieldReference(value any) any {
 	}
 }
 
-func TestNodeWriteJSONMatchesLegacyShape(t *testing.T) {
+func TestNodeWriteJSONMatchesReferenceShape(t *testing.T) {
 	child := &Node{kind: kindMatch, Start: 3, End: 5, Text: "<&>\xff"}
-	n := &Node{
-		kind:     kindOf("Record", "entry"),
-		Start:    1,
-		End:      8,
-		Children: []*Node{child, nil, child},
+	record := &Node{
+		kind:  kindOf("Record", "entry"),
+		Start: 1,
+		End:   8,
 		Fields: Fields{
 			{Name: "z", Value: []any{"<tag>", []byte{0, 1, 255}, child}},
 			{Name: "a", Value: int64(9007199254740992)},
@@ -74,23 +76,26 @@ func TestNodeWriteJSONMatchesLegacyShape(t *testing.T) {
 			{Name: "emptyList", Value: []any{}},
 		},
 	}
-	want, err := json.Marshal(legacyNodeReference(n))
-	if err != nil {
-		t.Fatal(err)
-	}
-	got, err := n.MarshalJSON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Fatalf("MarshalJSON mismatch\n got: %s\nwant: %s", got, want)
-	}
-	var streamed bytes.Buffer
-	if err := n.WriteJSON(&streamed); err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(streamed.Bytes(), want) {
-		t.Fatalf("WriteJSON mismatch\n got: %s\nwant: %s", streamed.Bytes(), want)
+	tuple := &Node{kind: kindOf("Seq", "pair"), Start: 1, End: 8, Children: []*Node{child, nil, child}}
+	for _, n := range []*Node{record, tuple} {
+		want, err := json.Marshal(referenceJSON(n))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := n.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Fatalf("MarshalJSON mismatch\n got: %s\nwant: %s", got, want)
+		}
+		var streamed bytes.Buffer
+		if err := n.WriteJSON(&streamed); err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(streamed.Bytes(), want) {
+			t.Fatalf("WriteJSON mismatch\n got: %s\nwant: %s", streamed.Bytes(), want)
+		}
 	}
 }
 
@@ -114,7 +119,7 @@ func TestNodeWriteJSONNilAndFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `{"bytes":"AQI=","child":{"type":"Match","start":0,"end":0,"text":"x"}}`; string(got) != want {
+	if want := `{"bytes":"AQI=","child":{"start":0,"end":0,"value":"x"}}`; string(got) != want {
 		t.Fatalf("Fields.MarshalJSON = %s, want %s", got, want)
 	}
 	listFields := Fields{{Name: "nil", Value: []any(nil)}, {Name: "empty", Value: []any{}}}
@@ -131,7 +136,7 @@ func TestNodeWriteJSONSharedNodesAndCycles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := bytes.Count(data, []byte(`"text":"shared"`)); got != 2 {
+	if got := bytes.Count(data, []byte(`"value":"shared"`)); got != 2 {
 		t.Fatalf("shared node appeared %d times in %s, want 2", got, data)
 	}
 
@@ -140,12 +145,12 @@ func TestNodeWriteJSONSharedNodesAndCycles(t *testing.T) {
 		make func() *Node
 	}{
 		{"child", func() *Node { n := &Node{kind: kindSeq}; n.Children = []*Node{n}; return n }},
-		{"field", func() *Node { n := &Node{kind: kindSeq}; n.Fields = Fields{{Name: "self", Value: n}}; return n }},
+		{"field", func() *Node { n := &Node{kind: kindOf("R", "")}; n.Fields = Fields{{Name: "self", Value: n}}; return n }},
 		{"slice", func() *Node {
 			var values []any
 			values = append(values, nil)
 			values[0] = values
-			return &Node{kind: kindSeq, Fields: Fields{{Name: "cycle", Value: values}}}
+			return &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "cycle", Value: values}}}
 		}},
 	} {
 		t.Run(makeCycle.name, func(t *testing.T) {
@@ -169,7 +174,7 @@ func (v failingJSONValue) MarshalJSON() ([]byte, error) { return nil, sentinelJS
 
 func TestNodeWriteJSONPreservesLeafErrors(t *testing.T) {
 	want := errors.New("leaf cause")
-	n := &Node{kind: kindSeq, Fields: Fields{{Name: "bad", Value: failingJSONValue{want}}}}
+	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "bad", Value: failingJSONValue{want}}}}
 	for name, err := range map[string]error{
 		"WriteJSON":      n.WriteJSON(io.Discard),
 		"MarshalJSON":    func() error { _, err := n.MarshalJSON(); return err }(),
@@ -237,7 +242,7 @@ func (shortWriter) Write(p []byte) (int, error) {
 
 func TestNodeWriteJSONLargeScalarAcrossBufferBoundary(t *testing.T) {
 	n := &Node{kind: kindMatch, Text: strings.Repeat("x", 600)}
-	want, err := json.Marshal(legacyNodeReference(n))
+	want, err := json.Marshal(referenceJSON(n))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,14 +286,14 @@ func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantPrefix := `{"type":"Match","start":0,"end":0,"text":` + string(encoded[:len(encoded)/2])
+	wantPrefix := `{"start":0,"end":0,"value":` + string(encoded[:len(encoded)/2])
 	if w.String() != wantPrefix {
 		t.Fatalf("written prefix = %q, want %q", w.String(), wantPrefix)
 	}
 }
 
 func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
-	n := &Node{kind: kindSeq, Fields: Fields{{Name: "bad", Value: math.NaN()}}}
+	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "bad", Value: math.NaN()}}}
 	_, gotErr := n.MarshalJSON()
 	_, wantErr := json.Marshal(struct {
 		Type   string         `json:"type"`
@@ -304,7 +309,7 @@ func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
 
 func TestNodeJSONSliceIdentityAllowsRepeatedAcyclicEdges(t *testing.T) {
 	shared := []any{"ok"}
-	n := &Node{kind: kindSeq, Fields: Fields{{Name: "a", Value: shared}, {Name: "b", Value: shared}}}
+	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "a", Value: shared}, {Name: "b", Value: shared}}}
 	got, err := n.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -325,7 +330,7 @@ func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
 		t.Fatalf("capacity-limited slice cycle = %v, want UnsupportedValueError", err)
 	}
 	// Reject the first re-entry, before emitting another list delimiter.
-	const wantPrefix = `{"type":"","start":0,"end":0,"fields":{"x":[`
+	const wantPrefix = `{"type":"","fields":{"x":[`
 	if prefix.String() != wantPrefix {
 		t.Fatalf("cycle prefix = %q, want %q", prefix.String(), wantPrefix)
 	}
