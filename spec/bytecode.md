@@ -264,7 +264,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 105 | `EITEM` | A n | Push `$n`. For n = 0, push a `List` of all items. An out-of-range n is an error. |
 | 106 | `ELOCAL` | A index | Push a local (a lambda parameter, or `$lhs`, `$rhs`, `$op`). |
 | 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
-| 108 | `EMEMBER` | A name | Pop a value and push its field. `startPos`, `endPos` and `children` are built in. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
+| 108 | `EMEMBER` | A name | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
 | 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. |
 | 111 | `EUNARY` | A operator | Pop a value and push the result of the operation. |

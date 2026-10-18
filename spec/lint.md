@@ -73,7 +73,7 @@ than the nesting limit, which can make any call fail.
 | `unreachable-rule` | warning | A rule that the start rule never calls, directly or indirectly |
 | `deprecated-any` | warning | A use of the deprecated type `any` |
 | `right-recursion` | hint | A list written as right recursion |
-| `positions` | hint | `startPos` or `endPos` read in a rule that is used repeatedly |
+| `positions` | hint | `.Start` or `.End` read in a rule that is used repeatedly |
 | `long-lookahead` | hint | A lookahead that repeats `.` or a class that admits line breaks |
 | `lint-directive` | warning | A directive that names an unknown check or suppresses nothing |
 
@@ -126,13 +126,13 @@ that iteration still adds an element to the list. A rule such as
 #### `redundant-optional`
 
 `"x"*?`. An optional lookahead `(&x)?` is not reported, because it adds a `nil`
-child that `&x` does not have.
+element that `&x` does not have.
 
 #### `unused-capture`
 
 A capture is reported when nothing can read its value: it is not referred to by
-the action or a predicate of its scope, and the rule has no action that would
-expose it as a field of the rule's value. A terminal type keeps no captures, and
+the action or a predicate of its scope, and the rule has no action: the capture of a
+rule without an action names an element of the rule's value. A terminal type keeps no captures, and
 the list of a repetition whose action discards it is not read. A `map` or `foldl`
 parameter is not a capture.
 
@@ -170,7 +170,7 @@ right-associative binary operator written this way is.
 
 #### `positions`
 
-A rule that reads `startPos` or `endPos` and is used repeatedly (in the element of
+A rule that reads `.Start` or `.End` and is used repeatedly (in the element of
 a repetition or on a recursion cycle): a `Document` cannot shift its results past
 an edit, nor those of the rules that call it.
 

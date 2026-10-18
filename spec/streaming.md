@@ -10,10 +10,10 @@ The `#stream` pragma itself is listed in [Pragmas](pragmas.md#stream).
 ## Scope and Terminology
 
 An **element** is the value that one iteration of a `#stream` repetition
-contributes to the `List` of an ordinary parse: a struct node if the element is
-a rule with an action, and a node of the concrete syntax tree (`Seq`, `Match`
-and so on) otherwise. An element has no value if its expression has none, for
-example `(-"a")* #stream`; the caller then receives `nil`.
+contributes to the list of an ordinary parse: the value of the rule if the element
+is a rule with an action, and a node (a string, tuple or list node) otherwise. An
+element whose expression has no valued element, for example `(-"a")* #stream`, is
+the unit `()`.
 
 A **stream parse** is a parse started with `Parser.ParseStream` or
 `Parser.Iterate`, or with `pego parse -stream`. The **streaming repetition** is
@@ -84,14 +84,13 @@ overlap, including from a callback. `Close` cannot interrupt a blocked `Read`.
 
 ### Positions and Text
 
-`Node.Start`, `Node.End`, `startPos` and `endPos` in actions, and `SyntaxError.Pos`,
+`Node.Start`, `Node.End`, `.Start` and `.End` in actions, and `SyntaxError.Pos`,
 `Line` and `Col` count from the start of the whole input, regardless of how much
 has been discarded; the parser keeps a running line and column for the discarded
 part. The position unit option changes all of them to bytes.
 
-The parser keeps no text for the caller. Terminal nodes (`Match`, terminal types,
-`(...) #atomic`) carry their text in `Node.Text`; structural nodes (`Seq`, `List`)
-do not. `text(...)` in an action of the start rule, which runs after elements have
+The parser keeps no text for the caller. String nodes (literals, classes,
+`(...) #atomic`) carry their text in `Node.Text`; tuple and list nodes do not. `text(...)` in an action of the start rule, which runs after elements have
 been discarded, returns only the part of the node's input that is still held,
 possibly the empty string.
 
@@ -135,7 +134,7 @@ A stream parse ends in one of the following ways.
 
 ### Recovered Errors
 
-With `#recover` inside an element, a bad element becomes an `Error` node that is
+With `#recover` inside an element, a bad element becomes an error value that is
 delivered like any other element, and parsing continues. At the end the parse
 returns the recorded errors as `SyntaxErrors`, a result that means success with
 diagnostics and is distinguished from a fatal `*SyntaxError` by `errors.As`. By

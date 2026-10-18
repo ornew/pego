@@ -86,8 +86,8 @@ The following identifiers are also contextual:
 | `_` | The [Top](parser-expressions.md#top) Rule Expression | Rule Expression |
 | `left`, `right`, `none` | Associativity | After `infix` in an [Operators Rule](operators-rule.md) |
 | `true`, `false`, `nil` | Literal values | Actions and predicates |
-| `len`, `text`, `foldl`, `foldr`, `map`, `list`, `concat` | Built-in functions | Actions and predicates |
-| `startPos`, `endPos`, `children` | Built-in fields | Field access |
+| `len`, `text`, `foldl`, `foldr`, `map`, `filter`, `list`, `concat` | Built-in functions | Actions and predicates |
+| `Start`, `End`, `Value` | Built-in node members | Field access |
 
 ### String Literals
 

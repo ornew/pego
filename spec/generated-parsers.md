@@ -25,7 +25,7 @@ runtime, which is the same for every grammar of one generator release.
 ```text
 pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
          [-types] [-document] [-stream] [-recognize] [-observability]
-         [-nodoc] [-max-depth <n>]
+         [-source-info] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Go option | Meaning |
@@ -40,6 +40,7 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
 | `-stream` | `WithStream()` | Generate `ParseStream` (Go only; the start rule MUST contain a `#stream` repetition) |
 | `-recognize` | `WithRecognize()` | Generate recognition without a tree |
 | `-observability` | `WithGeneratedObservability()` | Generate tracing and profiling, specified in [Observability](observability.md) |
+| `-source-info` | `WithGeneratedSourceInfo()` | Make the parser record [source information](nodes.md#source-information): the rule of each node and the names of captures. Without it, `Node.Rule`, `Node.Field` and `Node.Fields` of a parsed node are empty and the outputs omit them |
 | `-nodoc` | `WithoutPackageDoc()` | Omit the package comment (Go only; rejected with `-lang ts`) |
 | `-max-depth` | `WithGeneratedMaxDepth(n)` | The default nested rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript also requires a safe integer |
 
@@ -64,14 +65,14 @@ func Parse(input string, opts ...ParseOption) (*Node, error)
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 
 type ParseOption func(*parseOptions)
-func WithUnit(unit Unit) ParseOption
+func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
 func WithContext(ctx context.Context) ParseOption
 func WithWorkLimits(limits WorkLimits) ParseOption
 
-type Unit int
+type PositionUnit int
 const (
-	CodePoints Unit = iota // the default
+	CodePoints PositionUnit = iota // the default
 	Bytes
 )
 ```
@@ -121,21 +122,23 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | `int`, `string`, `bool` | The same |
 | Struct type `T` | `*T` with the same fields and an embedded `Span{Start, End int}` |
 | Terminal type `T` | `*T` with `Span` and `Text` |
-| `Match` | `*Match` with `Span` and `Text` |
-| `Error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
-| Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by `*Node` if a member is a concrete syntax tree type) |
+| `Match`, a string node | `*TNode[string]`, with `Span` and `Value`, the text |
+| `error` (from `#recover`), `Error` | `*Error` with `Span`, `Text` and `Message` |
+| Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| `Seq`, `List`, `Operator` and records | `*Node` |
-| `node`, `terminal`, `any`, unions with basic members | `any`, holding the converted value |
+| A rule without an action whose type is not declared, or is declared `Seq`, `List`, `Operator`, `node` or `terminal` | The Go type of its value: `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
+| `node`, `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
+- `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
+  and `Unit` is `struct{}`. A missing element of a tuple is `nil`. A list node's `Value` is a slice.
 - A grammar type whose name collides with a name that the generated code reserves
-  (`Node`, `Match`, `Error`, `Parse`, `Unit`, `Span`, `ParseOption`, `ParseRuleAST`
+  (`Node`, `TNode`, `Match`, `Error`, `Parse`, `Unit`, `Span`, `ParseOption`, `ParseRuleAST`
   and the other exported names of the generated runtime) gets a trailing
   underscore. Names are assigned in sorted order, so `Node` becomes `Node_` and an
   existing `Node_` becomes `Node__`. Every declared alias is exported.
-- After `#recover`, an `Error` in a list of a union type stays in the list as
+- After `#recover`, an error value in a list of a union type stays in the list as
   `*Error`; where a struct or terminal type is expected it becomes `nil`.
 - `ParseRuleAST` consumes the whole input, applies options once before it looks up
   the name, and returns the selected rule's typed value as `any`. Unknown names and
@@ -155,14 +158,15 @@ mapping is:
 | Grammar type | TypeScript value |
 |:--|:--|
 | Struct, terminal | An interface with `type` (the grammar name), `start`, `end` and the fields; terminals also have `text`; nullable where an absent or incompatible recovered value becomes nil |
+| `Match`, a string node | `Match`, which extends `TNode<string>` (`type`, `start`, `end` and `value`) |
 | `[]T` | A readonly array, or null; null differs from an empty array |
 | `*T` | A nullable target |
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
-| Declared pure node union | The member interfaces, `RecoveredError` and null; concrete syntax tree members remain `Node` |
+| Declared pure node union | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
 | Mixed or undeclared union, `any`, `node`, `terminal` | `TypedValue`, following the conversion of `any` in Go |
-| Concrete syntax tree and record | `Node` |
+| Tuple and list nodes | `Node` |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by
 rule name is not available in TypeScript.

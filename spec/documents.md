@@ -147,7 +147,7 @@ inherit its context or work limits.
 | `snapshot.Materialize()` | A new independent mutable `*Node` graph. Each call creates a separate graph |
 
 `SnapshotNode` is a read-only handle. Its zero value represents a nil node.
-`ChildCount` includes nil child slots. `Field(name)` returns a value and a
+`ChildCount` and `Child` address the elements of a tuple or list node, and `ChildCount` includes nil slots. `Field(name)` returns a value and a
 presence flag that distinguishes an absent field from a present nil value; a typed
 nil `*Node` field becomes a zero handle and an untyped nil stays nil. `Fields()`
 returns an owned slice in original order. Handles and snapshots are immutable and
@@ -205,7 +205,7 @@ differences.
 
 The first capture reports `OutputMayHaveChanged`. Later complete captures report
 `OutputUnchanged` or a conservative `OutputChanged`, comparing immutable node
-metadata, positions, terminal text, children, scalar fields, syntax diagnostics
+metadata, positions, string text, elements, scalar fields, syntax diagnostics
 and graph sharing. Alias topology and nil versus empty collection differences
 count as changes; this is a refresh policy and not language value equality.
 Unknown non-syntax diagnostic types count as changed. Source text and parse

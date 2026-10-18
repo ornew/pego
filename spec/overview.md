@@ -20,9 +20,9 @@ language adds typed values, actions, contextual recognition, and error recovery:
 |:--|:--|:--|
 | How the text is structured | Rules, sequences, ordered choice, repetition, lookahead, [left recursion](parser-expressions.md#left-recursion) | [Rule Expressions](parser-expressions.md) |
 | How expressions with operators are parsed | Operators Rule declarations: operators grouped by precedence and associativity | [Operators Rule](operators-rule.md) |
-| What the tree looks like | A predictable concrete syntax tree by default; `#atomic` and `-` to shape it; captures `label:a` | [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree) |
-| What the types of the tree are | `type` definitions: struct, union and terminal types, checked when the grammar is compiled | [Type System](types.md), [Type Checking](type-checking.md) |
-| How the value of a rule is built | Value Actions `=> expr` inside rule bodies build typed nodes from captures | [Actions](actions.md) |
+| What the result looks like | Values that follow the shape of the rule by default: strings, tuples for sequences, lists for repetitions; `#atomic` and `-` to shape them; captures `label:a` to name elements | [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree), [Nodes and Values](nodes.md) |
+| What the types of the values are | `type` definitions: struct, union and terminal types, checked when the grammar is compiled | [Type System](types.md), [Type Checking](type-checking.md) |
+| How the value of a rule is built | Value Actions `=> expr` inside rule bodies build structs, lists and other values from captures | [Actions](actions.md) |
 | What depends on context | Predicate Actions `{expr}` that read and define variables | [Predicates and Variables](predicates.md) |
 | How a parse reports and survives errors | `@error` messages, `#recover` | [Attributes](attributes.md), [Pragmas](pragmas.md), [Syntax errors](parsing.md#syntax-errors) |
 | What may be handed over early | `#stream` repetitions | [Pragmas](pragmas.md#stream) |

@@ -168,7 +168,7 @@ used as names when the surrounding syntax expects a name.
   entries rather than an ordinary Rule Expression; entries may have Value
   Actions as described in [Operators Rule](operators-rule.md). A Value Action
   after the closing brace may be omitted or use the explicit `=> ...`
-  default-CST form; any other such action is rejected at compile time.
+  default form; any other such action is rejected at compile time.
 
 Comments may occur at top-level Definition Statement boundaries and at statement
 or field boundaries inside braces. They are also permitted inside Rule

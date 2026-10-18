@@ -34,8 +34,8 @@ assignment is visible to the later statements and rolled back like an adjacent
 Predicate Action. The block consumes no input and adds no variable, capture,
 rollback, memoization or recovery scope. In a sequence it expands to adjacent
 actions; in a single-expression position it behaves like the grouped adjacent
-sequence, including the existing CST result for a sequence of valueless
-predicates. An empty block is a compile-time error.
+sequence, including the unit `()` that a sequence of valueless
+predicates produces. An empty block is a compile-time error.
 
 The expression has the same operators and built-in functions as a
 [Value Action](actions.md#operators-and-functions). Capture visibility follows the enclosing

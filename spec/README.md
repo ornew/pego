@@ -32,7 +32,7 @@ The chapters are in three parts, in reading order: each builds on the ones befor
 | 2 | [Lexical Structure](lexical.md) | Characters, white space, `//` and nested `/* ... */` comments, identifiers, keywords, literals, escape sequences, punctuation and adjacency |
 | 3 | [Grammar Files](grammar-files.md) | The optional package clause, Type and Rule Definition Statements, names, source metadata and grammar representations |
 | 4 | [Type System](types.md) | Built-in and reserved types, struct, union and terminal types, names of types, assignability |
-| 5 | [Rule Expressions](parser-expressions.md) | The expressions that match input, the concrete syntax tree they build, captures, cut, rule calls and left recursion |
+| 5 | [Rule Expressions](parser-expressions.md) | The expressions that match input, the values they build, captures, cut, rule calls and left recursion |
 | 6 | [Operators Rule](operators-rule.md) | Operator expressions declared by precedence and associativity |
 | 7 | [Predicates and Variables](predicates.md) | Predicates, variables and their scope, and context-sensitive parsing |
 | 8 | [Actions](actions.md) | Building the value of a rule: captures, constructors, operators and built-in functions |
@@ -46,7 +46,7 @@ The chapters are in three parts, in reading order: each builds on the ones befor
 | | Chapter | Defines |
 |--:|:--|:--|
 | 13 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results, syntax errors, memoization, prefix parsing, limits and modes |
-| 14 | [Nodes and Values](nodes.md) | The node model, the Go `Node` type, traversal, and the text and JSON renderings |
+| 14 | [Nodes and Values](nodes.md) | The value and node model, source information, the Go `Node` type, traversal, and the text and JSON renderings |
 | 15 | [Incremental Documents](documents.md) | Editing and reparsing text: versions, snapshots, interruption and change notifications |
 | 16 | [Streaming](streaming.md) | Parsing a reader and delivering the elements of a `#stream` repetition as they match |
 | 17 | [Observability](observability.md) | Rule tracing and profiling of the engine and of generated parsers |

@@ -35,7 +35,8 @@ have the following types.
 
 | Action Expression | Type |
 |:--|:--|
-| Integer literal, `len(x)`, `x.startPos`, `x.endPos` | `int` |
+| Integer literal, `len(x)`, `x.Start`, `x.End` | `int` |
+| `x.Value` | `string` for a string node; the list of the element types for a tuple or list node |
 | String literal, `text(x)` | `string` |
 | `true`, `false`, a comparison, `&&`, `\|\|`, `!` | `bool` |
 | `nil` | `nil`, assignable to any optional type |
@@ -82,6 +83,11 @@ than `any`, except the terminal a rule with a terminal Type and no action
 produces, the lines of such a rule when it is an Operators Rule, and the
 `Operator` value of an operator line without an action.
 
+Diagnostics print the shape of a value type as `node[string]` for a string node,
+`(node[string], node[string])` for a tuple of two and `[]node[string]` for a list;
+the declared names `Match`, `Seq` and `List` describe the same values (see
+[Type System](types.md#reserved-node-types)).
+
 A run-time check tests a value as the value types describe it. `Match`,
 `terminal` and a terminal Type take a string node; `node`, `Seq`, `List` and
 `Operator` take every node; a list Type takes a list value, such as one an
@@ -92,7 +98,7 @@ value that fails its check makes the predicate fail.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and
-`Error` (from [error recovery](pragmas.md#recover)) counts as an empty list.
+an error value (from [error recovery](pragmas.md#recover)) counts as an empty list.
 A function (`(acc, item) => ...`) can appear only as an argument of `foldl`,
 `foldr` or `map`, and it has the number of parameters those functions require.
 

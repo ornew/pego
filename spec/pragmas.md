@@ -22,14 +22,14 @@ The name is adjacent to `#`, and an argument list is adjacent to its name:
 | `#repeat(,m)` | Repeats from zero through `m` times |
 | `#repeat(n,m)` | Repeats from `n` through `m` times |
 | `#stream` | Hands each element of a repetition to the caller as soon as it matches in a stream parse |
-| `#atomic` | Returns one text-only `Match` and suppresses construction of child nodes |
+| `#atomic` | Returns one string node and suppresses construction of the values of the elements inside it |
 | `#cut` | Stands in place of an expression and commits the enclosing choice; see [Cut](parser-expressions.md#cut). It takes no arguments: `#cut(` is an error |
 
 ## `#recover`
 
 On failure, `#recover(skip=e)` records the syntax error and starts matching
 `e` from the annotated expression's initial position. If `e` matches and
-consumes input, the expression produces an `Error` node covering the skipped
+consumes input, the expression produces an error value covering the skipped
 input and parsing continues.
 
 ```pego
@@ -40,8 +40,9 @@ rule stmt = s:(let / assign / call) #recover(skip=[^;]+ ";") => $s
 The skip expression cannot contain captures and must consume input. Recovered
 errors are returned with the resulting node. Backtracking that undoes a
 recovery also removes its error. A recovered expression's type is the union
-of its original type and `Error`, and `Error` is assignable to every node type.
-`Parser.Parse` returns a recovered node together with a `SyntaxErrors` error
+of its original type and `error`, and an error value is assignable only to a type that admits `error`
+(see [Type System](types.md#assignability)).
+`Parser.Parse` returns a recovered value together with a `SyntaxErrors` error
 listing the diagnostics. If parsing later fails, only the final syntax error
 is returned. A no-value expression, including lookahead or a predicate,
 remains no-value after recovery, though its error is recorded.
@@ -55,14 +56,15 @@ Recovery proceeds in these steps.
    starting position, not from the position of the failure, so the error position
    is usually inside the skipped range.
 4. If the skip expression matches and consumes input, the value of the annotated
-   expression is an `Error` node and parsing continues after the skipped input.
+   expression is an error value and parsing continues after the skipped input.
    If it fails or consumes nothing, there is no recovery and the annotated
    expression fails as usual. A `#recover` in a repetition therefore cannot loop on
    empty skips.
 
-The `Error` node has the type `Error`, the skipped input as its range and text, and
-the string field `message`, which holds the recorded error with its position
-(`1:5: expected a name`).
+The error value has the skipped input as its range and the recorded error with its
+position as its message (`1:5: expected a name`); `Node.Text()` returns the
+message. Its `Kind` is `KindError`, and it encodes as `{"start", "end", "error"}`
+(see [Nodes and Values](nodes.md#json-encoding)).
 
 Recovery applies to every failure inside the annotated expression, however deeply
 nested; the nearest enclosing `#recover` handles it. Attributes and pragmas apply
@@ -116,8 +118,8 @@ and count rule.
 
 ## `#atomic`
 
-Postfix `expr #atomic` matches `expr` but returns a single text-only `Match`
-node and suppresses construction of the expression's child nodes. It does not
+Postfix `expr #atomic` matches `expr` but returns a single string node
+and suppresses construction of the values of the expressions inside it. It does not
 commit to the match: ordinary PEG backtracking and choice behavior remain in
 effect.
 
@@ -144,10 +146,10 @@ rule main = name ";" #missing $$
 rule name = [a-z]+ #atomic
 ```
 
-Parsing `name` with insertion enabled produces a `Missing` Node at EOF and a
-recovered `SyntaxErrors` entry. The node's `Start` and `End` are equal, `Text`
-is empty, and string fields `expected` and `message` carry the expected literal
-and diagnostic. Partial literal matches are restored completely before insertion;
+Parsing `name` with insertion enabled produces an error value of type `Missing`
+at EOF and a recovered `SyntaxErrors` entry. The value's `Start` and `End` are
+equal, and the string fields `expected` and `message` carry the expected literal
+and diagnostic; it encodes with an `expected` member. Partial literal matches are restored completely before insertion;
 no source text is invented. An enclosing `@error` labels the insertion diagnostic;
 nested labels use the outermost applicable explicit label. Ordinary successful
 consuming recovery keeps its existing label behavior.
@@ -182,6 +184,6 @@ even when the grammar contains no `#missing` annotation. Zero preserves strict
 prefix matching for grammars without `#missing`. Grammar AST JSON and formatting
 preserve the annotation. `Missing` is a reserved type
 name; a preexisting user type with that name must be renamed. The annotated literal infers `Match | Missing`; `Missing` is assignable wherever
-a node is expected, as with `Error`. Declare a union or keep the Node tree when
+an error value is admitted, as with `Error`. Declare a union or keep the Node tree when
 consumers need the missing-token identity. Concrete generated typed mappings and
 additional backends are outside the initial implementation.

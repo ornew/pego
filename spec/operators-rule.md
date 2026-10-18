@@ -67,7 +67,7 @@ rule <name> [<Type Expression>] = operators {
 - An action after an `operand` or operator declaration uses `=>` and applies to
   that complete operand or operator entry.
 - A rule-level Value Action after the closing `}` may be omitted or use the
-  explicit `=> ...` default-CST form. Any other rule-level Value Action is a
+  explicit `=> ...` default form. Any other rule-level Value Action is a
   compile-time error.
 - Semicolons separate Definition Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
 - An Operators Rule has at most one `skip`, at least one `operand`, and any
@@ -213,7 +213,7 @@ An operator Value Action can refer to the following names.
 |:--|:--|:--|
 | `$lhs` | The value of the left operand | `infix`, `postfix` |
 | `$rhs` | The value of the right operand | `infix`, `prefix` |
-| `$op` | The text that the operator part matched, as a `Match` node | all operators |
+| `$op` | The value of the operator part: a string node for a single literal or class, a tuple node for a sequence | all operators |
 
 Captures inside the operator part (such as `then:expr`) can be referred to as
 well. `lhs`, `rhs` and `op` MUST NOT be used as capture names in operator
@@ -227,7 +227,7 @@ operand (or of the postfix operator).
 
 If the rule is declared with type `T`, the values of all `operand` items and of
 all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
-An operator without an action produces an `Operator` node, so when `T` does not
+An operator without an action produces an `Operator` tuple, so when `T` does not
 accept `Operator`, every operator needs an action.
 
 If the rule has no declared type, its type is the union of the types of all
@@ -235,21 +235,23 @@ If the rule has no declared type, its type is the union of the types of all
 
 ## Concrete Syntax Tree
 
-An operator without an action produces a node of the reserved type `Operator`.
+An operator without an action produces a tuple node of the reserved type
+`Operator`, whose range covers the operator expression.
 
-| Property | Value |
+| Operator | Elements |
 |:--|:--|
-| Rule name | The rule that contains the Operators Rule |
-| `operator` field | The index of the operator in declaration order, counted across all levels (0-based) |
-| Children | prefix: `[op, rhs]`; postfix: `[lhs, op]`; infix: `[lhs, op, rhs]` |
+| `prefix` | `(op, rhs)` |
+| `postfix` | `(lhs, op)` |
+| `infix` | `(lhs, op, rhs)` |
 
-`op` is the value of the operator part: a `Match` node for `"+"`, a `Seq` node
-for `"[" i:e "]"`, and so on. Captures in the operator part become fields of
-that value.
+The elements are captured as `lhs`, `op` and `rhs`, which source information
+reports (see [Nodes and Values](nodes.md#source-information)). `op` is the value
+of the operator part: a string node for `"+"`, a tuple for `"[" i:e "]"`, whose
+elements include the captured `i`, and so on. A node of a nested operand or
+operator is not wrapped: the number of levels does not make the tree deeper.
 
-The value of an `operand` item without an action appears unchanged; a node that
-it creates is labeled with the name of the rule. The number of levels does not
-make the CST deeper.
+The value of an `operand` item without an action appears unchanged; with source
+information, a node that it creates is labeled with the name of the rule.
 
 ```pego
 rule e = operators {
@@ -260,8 +262,10 @@ rule e = operators {
 ```
 
 With this rule, `1+2*3` produces the following tree (in the S-expression
-format of `pego parse -f sexpr`, where `@e` is the rule name):
+format of `pego parse -f sexpr -source-info`, where `@e` is the rule name):
 
 ```text
-(Operator "1"@e "+" (Operator "2"@e "*" "3"@e operator=1)@e operator=0)@e
+(lhs:"1"@e op:"+" rhs:(lhs:"2"@e op:"*" rhs:"3"@e)@e)@e
 ```
+
+Without source information the same tree is `("1" "+" ("2" "*" "3"))`.

@@ -1,7 +1,7 @@
 # Type System
 
-PEGO is statically typed. Types describe the values that rules produce and the
-shape of the nodes that actions build. This chapter defines the types, how they
+PEGO is statically typed. Types describe the values that rules produce (see [Nodes and Values](nodes.md)) and the
+shape of the values that actions build. This chapter defines the types, how they
 are declared, their names and when a value of one type may be used where another
 is expected. How the type of an expression is determined, and the errors that
 the checker reports, are defined in [Type Checking](type-checking.md). Type
@@ -16,8 +16,8 @@ offending construct.
 | `string` | A string. `len` measures its length in the [position unit](parsing.md#positions). |
 | `bool` | A boolean. |
 | `node` | Any node. |
-| `terminal` | Any terminal: a `Match` node or a node of a terminal type. |
-| `[]T` | A list of `T`. A list value is a node (a `List` node). |
+| `terminal` | Any string node: a `Match` node or a node of a terminal type. |
+| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a `List`, whose list is its `.Value`. |
 | `*T` | A `T` or `nil`. |
 | `T & U` | The values that are both a `T` and a `U` (see [Top, Bottom and Meet](#top-bottom-and-meet)). |
 | `_` | Every value: the top type. |
@@ -92,16 +92,17 @@ location has that type.
 
 ### Reserved Node Types
 
-The node types that Rule Expressions produce are predefined and can be used
-as types.
+The types of the values that Rule Expressions produce are predefined and can be
+used as types. They name the value shapes defined in [Nodes and Values](nodes.md#node-model);
+`Node.Type()` returns these names for nodes that are not structs.
 
 | Type | Values |
 |:--|:--|
-| `Match` | Terminals produced by literals, character classes, `.`, `a #atomic` and `_` |
-| `Seq` | Values of sequences |
-| `List` | Values of repetitions |
-| `Operator` | Values of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action |
-| `Error` | Ranges skipped by [error recovery](pragmas.md#recover) |
+| `Match` | String nodes produced by literals, character classes, `.` and `a #atomic` |
+| `Seq` | Tuple nodes: values of sequences |
+| `List` | List nodes: values of repetitions |
+| `Operator` | Tuple nodes of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action |
+| `Error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) |
 | `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only |
 
 ## Names
@@ -145,7 +146,7 @@ type Pair = { Key Match; Value Match }
 
 A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
 
-`[]T{value, ...}` constructs a node list with explicit element Type `T`,
+`[]T{value, ...}` constructs a list value with explicit element Type `T`,
 including an empty list. Every element must have a known static type assignable
 to `T`; `nil` requires an optional element type, and nested lists are checked
 recursively. Primitive-valued list construction is unsupported. A declared
@@ -176,7 +177,7 @@ This also applies to unions normalized to a single type, such as `T | T`.
 
 ### Terminal Types
 
-`type T terminal` defines a terminal type: a node type for terminals, which have
+`type T terminal` defines a terminal type: a type for string nodes, which have
 no internal structure. A rule declared with a terminal type and without an
 action produces, whatever its body, a terminal of that type holding the matched
 text. If the rule has an action, the action's value is the rule's value, and it
@@ -184,7 +185,7 @@ must be assignable to the terminal type like any other declared type.
 
 ```pego
 type Identifier terminal
-rule ident Identifier = [a-z]+ // produces Identifier"abc", not a List
+rule ident Identifier = [a-z]+ // produces a string node "abc" of type Identifier, not a list
 ```
 
 ## Assignability
@@ -201,7 +202,7 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is `node` and `V` is a node type.
 - `T` is `terminal` and `V` is `Match`, a terminal type or `terminal`.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
-- `T` is `Seq`, `List` or `Operator` and `V` is a node type.
+- `T` is `Seq`, `List` or `Operator` and `V` is the same type; the run-time check of a value that the checker could not type accepts every string, tuple or list node for them (see [Type Checking](type-checking.md#action-expression-types)).
 
 An error value from [error recovery](pragmas.md#recover) is assignable only to a
 type that admits `error`, such as `T | error`.

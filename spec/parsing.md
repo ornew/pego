@@ -34,7 +34,7 @@ input: 0 is the beginning, and the length of the input is the end. The **range**
 of a node is a pair of positions `[start, end)`.
 
 Positions are measured in a **position unit**, which is selected for each parse.
-The unit applies to node ranges, the `startPos` and `endPos` fields and the
+The unit applies to node ranges, the `.Start` and `.End` members and the
 `len` function in actions, and the line and column of syntax errors.
 
 | Position unit | A position is the number of ... from the beginning of the input |
@@ -54,7 +54,7 @@ its valid UTF-8 encoding or one invalid input byte, in either position unit.
 For example, `rule main = "�"` accepts the single byte `0xff`; the
 matched range ends at position 1. Two invalid bytes require two replacement
 characters. Position units do not change which Unicode characters match.
-The terminal's text is the matched input: byte mode keeps the invalid byte,
+The text of the string node is the matched input: byte mode keeps the invalid byte,
 while code-point mode substitutes U+FFFD. The literal's spelling need not have
 the same byte length as the matched input.
 
@@ -105,12 +105,14 @@ A parse has one of the following outcomes.
 | Syntax error | No value; the [syntax error](#syntax-errors). If errors were recovered before, only the final syntax error is returned |
 | Run-time error | No value; the error of an [action](actions.md#types-and-errors) or a [limit](#limits) that was exceeded. It aborts the whole parse |
 
-The value of the start rule is nil if the rule has no value. For example, a
-rule `rule main = -"a"` or `rule main = "a"?` on empty input succeeds with `nil`.
+The value of the start rule is nil if the rule's value is an optional that did not
+match. For example, `rule main = "a"?` on empty input succeeds with `nil`. A rule
+whose expression has no valued element, such as `rule main = -"a"`, has the unit
+`()` as its value.
 
 ### Nodes
 
-The value of a rule that builds a tree is a node. The properties of a node, the
+The value of a rule without an action is a node. The properties of a node, the
 Go type `pego.Node`, traversal, and the text and JSON renderings are defined in
 [Nodes and Values](nodes.md).
 

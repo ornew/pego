@@ -7,7 +7,7 @@ rule's value from the values produced by its grammar body. An ordinary rule may
 have a whole-rule Value Action after its complete expression:
 `rule name [Type] = expression => term`. An Operators Rule has specialized
 Value Actions on its operand and operator entries. A declaration-level action
-is accepted only when it selects the existing default CST behavior; omitting
+is accepted only when it selects the default value behavior; omitting
 it or writing the explicit `=> ...` default form preserves that behavior. Any
 other declaration-level action on an Operators Rule is a compile-time error.
 
@@ -26,11 +26,11 @@ not implemented. PEGO has no rule-initialization action block.
 
 ```pego
 type KV = { Key Match; Op Match; Value Match }
-rule key_value KV = (k:[a-z]+ op:"=" v:[0-9]+) => KV{Key: $k, Op: $op, Value: $v}
+rule key_value KV = (k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic) => KV{Key: $k, Op: $op, Value: $v}
 ```
 
 A Value Action runs after the complete body succeeds. Its result must be a node
-or `nil` and must fit the declared or inferred rule type. It applies to the
+(a string, tuple, list or struct value; see [Nodes](nodes.md#node-model)) or `nil`, and must fit the declared or inferred rule type. It applies to the
 whole body, including every alternative. Predicate Actions use the same value
 operators and built-in functions described below, but their result controls
 whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-actions).
@@ -45,7 +45,10 @@ a line break inside a braced action block is local to the block.
 
 `$label` refers to a named capture visible to the action's expression scope.
 Captures are referred to by name only: an element is labeled (`label:expr`) to
-be used in an action. A `$` followed by a digit, the positional reference of
+be used in an action. A capture is a name for an element of the rule's tuple, so
+its value is the value of that element: a string node for a literal or class, a
+list node for a repetition, a tuple node for a parenthesized group with several
+valued elements. A `$` followed by a digit, the positional reference of
 earlier versions, is a syntax error; `pego fix` labels the element it referred
 to and rewrites the reference.
 
@@ -74,9 +77,9 @@ Action Expressions operate on nodes, integers, strings, booleans, `nil`, and
 restricted lambda functions. String and integer literals use the same escapes
 and decimal syntax as grammar literals. `T{Field: value, ...}` constructs a
 node of struct type `T`; unset fields read as `nil`. A typed node-list literal
-`[]T{value, ...}` constructs a `List` whose element Type is explicitly `T`. A
-terminal Type can be constructed positionally as `T{text}`; the sole argument
-must be a string-valued Action Expression. These forms never stringify or filter
+`[]T{value, ...}` constructs a list value whose element Type is explicitly `T`. A
+terminal Type can be constructed positionally as `T{text}`, which builds a string
+node; the sole argument must be a string-valued Action Expression. These forms never stringify or filter
 values implicitly.
 
 ```pego
@@ -118,11 +121,11 @@ evaluated:
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
 - an optional Type `*T` admits `nil` and the values `T` admits;
 - a union admits the values any of its alternatives admits;
-- a struct, terminal or CST node Type admits only nodes of that Type, `node`
-  admits every node, and `terminal` every terminal;
-- `[]T` admits a `List` whose every element `T` admits; list elements are
-  nodes or `nil`, so `[]_` and `[]any` admit every `List`;
-- `Error` and `Missing` nodes from error recovery stand for every node Type
+- a struct, terminal or generic node Type admits only nodes of that Type, `node`
+  admits every node, and `terminal` every string node;
+- `[]T` admits a list node or list value whose every element `T` admits; list
+  elements are nodes or `nil`, so `[]_` and `[]any` admit every list;
+- Error values from error recovery and `Missing` nodes stand for every node Type
   and, as an empty list, for every list Type.
 
 A mismatch aborts a Value Action with an error such as
@@ -150,15 +153,21 @@ for comment and layout preservation.
 field that no member of the static type declares is a compile-time error. For
 a union type, a field declared by only some members has an optional result
 type. Reading a declared struct whose type lacks that field is a runtime
-action error. Other node kinds, such as `Match`, `List` or a capture record,
-return `nil` for absent fields. Accessing a field on `nil` is a runtime error;
-an explicitly optional receiver type is rejected by type checking.
+action error. A string, tuple or list node has no fields other than the members
+below; naming another field is a compile-time error. Accessing a field on `nil` is a
+runtime error; an explicitly optional receiver type is rejected by type checking.
 
-The built-in fields `startPos`, `endPos` and `children` are available on every
-node. Positions use the parse's selected unit. `children` is the node's child
-list; it is empty for node kinds without children.
+The built-in members `.Start`, `.End` and `.Value` are available on every node
+that has a range, that is, a string, tuple or list node. `.Start` and `.End` are
+the `int` range of the node in the parse's selected position unit. `.Value` is the
+string of a string node, and the list of elements of a tuple or list node, as in
+`$xs.Value[0]`; an element is a node or `nil`. The members `startPos`, `endPos`
+and `children` and the positional reference `$1` are not accepted; `pego fix`
+rewrites them to `.Start`, `.End`, `.Value` and a labeled capture. A struct value
+has no range members: `.Start` on a struct is a compile-time error.
 
-`x.$y` reads capture `y` of node `x`, such as a repetition element:
+`x.$y` reads capture `y` of node `x`, such as an element of a repetition
+(see [Captures](parser-expressions.md#capture)):
 `map($items, (i) => i.$name)`. Every node type that `x` may have must capture
 `y`, and the result type is the join of their capture types; an unmatched
 capture reads as `nil`. A struct value has no captures, so `x.$y` on one is a
@@ -167,7 +176,7 @@ receiver. A captured sequence does not yet carry the captures inside it, so
 `$x.$y` for `x:(y:a b)` is rejected; write `$y`.
 
 Field names begin with an uppercase letter, so `x.y` with any other name, except
-the built-in fields and the `expected` and `message` fields of `Missing`, is an
+the `expected` and `message` fields of `Missing`, is an
 error in PEGO source that asks for `x.$y`; `pego fix` rewrites it. A grammar in
 JSON or a compiled grammar may still read a capture with `x.y`, which reads the
 same capture as `x.$y` at run time. Its type check is looser: `x.y` on a union
@@ -256,24 +265,26 @@ Strings are ordered lexicographically. Comparisons return `bool`.
 | [`concat`](#concat) | Any, including 0 | A list of the union of its input element types |
 | [`filter`](#filter) | 2 | A list with the input's element Type |
 
-An optional list value contributes no elements when it is `nil`. An `Error`
-node produced by `#recover` also contributes no elements to list-consuming
+An optional list value contributes no elements when it is `nil`. An error
+value produced by `#recover` also contributes no elements to list-consuming
 functions. The checker accepts a union of list types and combines their
-possible element types. At runtime the functions consume the child values of a
-list-like node; a broad `node` type can therefore supply that node's children.
+possible element types. At runtime the functions consume the elements of a
+list node, list value or tuple node; a broad `node` type can therefore supply
+that node's elements.
 
 #### `len`
 
 `len(x)` accepts a string, node or `nil` and returns `int`. For a string, it
-returns the length in the selected position unit. For a terminal node, it
-returns the length of matched text in that unit. For another node, it returns
-the number of children. For `nil`, it returns `0`.
+returns the length in the selected position unit. For a string node, it
+returns the length of matched text in that unit. For a tuple or list node or a
+list value, it returns the number of elements. For `nil`, it returns `0`.
 
 #### `text`
 
 `text(x)` accepts a string, node or `nil` and returns `string`. It returns a
-string argument unchanged, returns `""` for `nil`, returns a terminal node's
-matched text, and returns the input text covered by a nonterminal node's range.
+string argument unchanged, returns `""` for `nil`, returns a string node's
+matched text, and returns the input text covered by the range of a tuple or list
+node. A list value and a struct have no range and are rejected as arguments.
 
 #### `foldl`
 
@@ -297,9 +308,9 @@ value type and the callback result type, as for `foldl`.
 #### `map`
 
 `map(xs, f)` calls the one-parameter callback `f(element)` in input order and
-returns its results in a `List`. The callback must return a node or `nil`;
+returns its results in a list value. The callback must return a node or `nil`;
 `nil` remains a `nil` element. `map` does not filter elements. A `nil` or
-`Error` list input is empty, and a `nil` element in a list is passed to the
+error-value list input is empty, and a `nil` element in a list is passed to the
 callback as `nil`.
 
 #### `filter`
@@ -309,7 +320,7 @@ right. The lambda must take one argument and produce an actual Boolean:
 `true` keeps the original element and `false` drops it. A nil element is
 passed to the lambda as nil and is kept when the result is true. The result
 preserves element order and node identity; elements are not cloned. A nil
-input produces an empty List and does not call the lambda.
+input produces an empty list and does not call the lambda.
 
 The result keeps the input list's static element Type. A predicate such as
 `$item != nil` does not narrow an optional element Type. A statically known
@@ -320,15 +331,15 @@ backtracking; inside a Value Action they abort the parse.
 
 #### `list`
 
-`list(x, ...)` constructs a `List` with its arguments in order. Each argument
+`list(x, ...)` constructs a list value with its arguments in order. Each argument
 must be a node or `nil`, and `nil` values remain elements. `list()` constructs
-an empty `List`. Unlike `concat`, `list` does not flatten its arguments.
+an empty list. Unlike `concat`, `list` does not flatten its arguments.
 
 #### `concat`
 
 `concat(xs, ...)` appends the child elements of each list-like argument, in
-argument order and then element order, into one `List`. A `nil` or `Error`
-argument contributes no elements. `concat()` returns an empty `List`. The
+argument order and then element order, into one list value. A `nil` or error value
+argument contributes no elements. `concat()` returns an empty list. The
 checker combines the element types of all list arguments.
 
 ## Types and Errors
@@ -370,5 +381,7 @@ range matched by the rule body. A node returned from a capture or rule call
 keeps its existing range. A newly constructed struct node initially has the
 smallest range covering its node fields, or the rule body's range when it has
 no node fields.
-A list has the smallest range covering its non-nil elements; a list with no
-non-nil elements has an empty range at the start of the rule match.
+A list or tuple value built by an action (`list`, `map`, `concat`, `filter`,
+`[]T{...}`) has no range: `.Start`, `.End` and `text` do not apply to it, and it
+encodes as a plain array. A struct encodes without a range as well, and its range
+members are not readable from an action.
