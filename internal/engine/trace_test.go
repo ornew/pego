@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // traceLines parses input with a trace and returns one line per event:
@@ -469,4 +470,99 @@ rule word = [a-z]+ #atomic`)
 			t.Errorf("%v: %v\n%s\nwant\n%s", b, err, strings.Join(got, "\n"), strings.Join(want, "\n"))
 		}
 	}
+}
+
+// dispatchFreeTrace parses input with a trace and returns one line per event, leaving out the
+// calls that fail having examined at most their first character, with the calls in them: those
+// are the calls first-character dispatch may skip.
+func dispatchFreeTrace(prog *Program, input string, o ParseOptions) ([]string, string) {
+	type line struct {
+		text string
+		drop bool
+	}
+	var lines []line
+	var open []int
+	o.Trace = func(e TraceEvent) {
+		switch e.Kind {
+		case TraceEnter:
+			open = append(open, len(lines))
+			lines = append(lines, line{text: fmt.Sprintf("> %s@%d:%d", e.Rule, e.Pos, e.Level)})
+		case TraceExit:
+			i := open[len(open)-1]
+			open = open[:len(open)-1]
+			if !e.Matched && e.Examined <= firstCharEnd(input, e.Pos, o.Unit) {
+				for j := i; j < len(lines); j++ {
+					lines[j].drop = true
+				}
+				return
+			}
+			res := "fail"
+			if e.Matched {
+				res = fmt.Sprintf("ok %d", e.End)
+			}
+			lines = append(lines, line{text: fmt.Sprintf("< %s@%d %s memo=%v evals=%d examined=%d", e.Rule, e.Pos, res, e.Memo, e.Evals, e.Examined)})
+		}
+	}
+	n, err := prog.ParseWith("main", input, o)
+	var out []string
+	for _, l := range lines {
+		if !l.drop {
+			out = append(out, l.text)
+		}
+	}
+	return out, resultJSON(n, err)
+}
+
+// TestTracesAgreeAcrossBackends checks that the backends' traces of the corpus differ only in the
+// calls first-character dispatch may skip: calls that fail having examined at most their first
+// character.
+func TestTracesAgreeAcrossBackends(t *testing.T) {
+	for _, c := range genCorpus(t) {
+		prog := compile(t, c.src)
+		for _, in := range c.inputs {
+			for _, o := range []ParseOptions{{Unit: CodePoints}, {Unit: Bytes}, {Unit: CodePoints, Recognize: true}} {
+				o.Backend = Closure
+				want, wantResult := dispatchFreeTrace(prog, in, o)
+				for _, b := range []Backend{Bytecode, BytecodeIterative} {
+					o.Backend = b
+					got, result := dispatchFreeTrace(prog, in, o)
+					if result != wantResult {
+						t.Fatalf("%s %q (%v, unit %v, recognize %v): result %s, closure %s", c.name, in, b, o.Unit, o.Recognize, result, wantResult)
+					}
+					if i := firstDifference(got, want); i >= 0 {
+						t.Errorf("%s %q (%v, unit %v, recognize %v): event %d differs from the closure backend's\n got  %s\n want %s",
+							c.name, in, b, o.Unit, o.Recognize, i, at(got, i), at(want, i))
+					}
+				}
+			}
+		}
+	}
+}
+
+// firstCharEnd returns the position after the character at pos in the unit u: what a call that
+// looks at that character only has examined, which is pos+1 at the end of the input.
+func firstCharEnd(input string, pos int, u Unit) int {
+	if u == Bytes && pos < len(input) {
+		_, size := utf8.DecodeRuneInString(input[pos:])
+		return pos + size
+	}
+	return pos + 1
+}
+
+// firstDifference returns the index of the first line where a and b differ, or -1.
+func firstDifference(a, b []string) int {
+	for i := range max(len(a), len(b)) {
+		if i >= len(a) || i >= len(b) || a[i] != b[i] {
+			return i
+		}
+	}
+	return -1
+}
+
+// at returns line i of lines, or a note that there is none.
+func at(lines []string, i int) string {
+	if i < len(lines) {
+		return lines[i]
+	}
+	return "(no event)"
 }

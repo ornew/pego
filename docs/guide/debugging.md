@@ -226,8 +226,9 @@ pego: 2:14: syntax error: expected ")", ",", [ \t\n]
 `[N reused elements]`; JSON exit events append `reusedElements`. Both omit the addition for zero reuse, and JSON
 enter events never include it. The trace formatter can display these events from a `Document` reparse; the ordinary
 `trace` command parses its input once and normally has no repetition reuse. The backends do not all make the same calls: each skips some calls that cannot
-match the next character (first-character dispatch), not always the same ones, so their traces can differ in calls
-that fail on the first character; results never differ.
+match the next character (first-character dispatch), not always the same ones. Their traces can differ only in calls
+that fail having examined no more than the next character, with the calls inside them; every other event is the same
+on each backend, and results never differ.
 
 ## 4. Why Is a Parse Slow?
 

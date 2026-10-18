@@ -200,8 +200,9 @@ one that gave a `Document` parse a fresh memo fails the document comparison 573 
 ## Limitations
 
 - The engine tracing API does not instrument standalone generated Go parsers; see [design 043](043-generated-parser-observability.md) for their separate opt-in trace API.
-- The backends skip different calls by first-character dispatch, so their traces can differ in calls that fail at
-  once; results and memoization decisions do not.
+- The backends skip different calls by first-character dispatch, so their traces can differ in calls that fail
+  having examined no more than the next character, with the calls inside them; the other events, results and
+  memoization decisions do not differ, which `TestTracesAgreeAcrossBackends` checks on the backend corpus.
 - `wasted` counts failed calls only; work thrown away by a backtracking choice in a successful call shows as repeats.
 - Profile times include the cost of tracing, which is large relative to small rules: they are meaningful relative to
   each other.
