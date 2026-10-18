@@ -11,7 +11,7 @@ import (
 )
 
 func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
-	retained := &Node{Text: "retained", Start: 7, End: 9, Fields: Fields{{Name: "value", Value: "unchanged"}}}
+	retained := &Node{text: "retained", start: 7, end: 9, fields: Fields{{Name: "value", Value: "unchanged"}}}
 	p := &parser{kidStack: make([]*Node, 257)}
 	for i := range p.kidStack {
 		p.kidStack[i] = retained
@@ -39,7 +39,7 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 			t.Fatalf("retry child %d lost its identity", i)
 		}
 	}
-	if retained.Text != "retained" || retained.Start != 7 || retained.End != 9 || retained.Fields[0].Value != "unchanged" {
+	if retained.text != "retained" || retained.start != 7 || retained.end != 9 || retained.fields[0].Value != "unchanged" {
 		t.Fatal("clearing tracking references modified the retained node")
 	}
 }
@@ -77,7 +77,7 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 }
 
 func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
-	retained := &Node{Text: "retained"}
+	retained := &Node{text: "retained"}
 	p := &parser{created: make([]*Node, 258)}
 	for i := range p.created {
 		p.created[i] = retained
@@ -89,7 +89,7 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 	// The interruption boundary must disable controls before mandatory cleanup.
 	p.releaseScratch()
 	p.dropCreated(1)
-	if p.control != nil || len(p.created) != 1 || p.created[0] != retained || retained.Text != "retained" {
+	if p.control != nil || len(p.created) != 1 || p.created[0] != retained || retained.text != "retained" {
 		t.Fatal("cleanup changed the tracking prefix or retained value")
 	}
 	for _, n := range p.created[1:cap(p.created)] {
@@ -100,7 +100,7 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 }
 
 func TestWorkActionArenaResetInterruption(t *testing.T) {
-	retained := &Node{Text: "retained"}
+	retained := &Node{text: "retained"}
 	p := &parser{}
 	for range 300 {
 		*p.closures.alloc() = closure{ctx: &evalCtx{items: []*Node{retained}}}
@@ -111,7 +111,7 @@ func TestWorkActionArenaResetInterruption(t *testing.T) {
 	}
 	p.releaseScratch()
 	p.useCtx(evalCtx{p: p})
-	if p.closures.n != 0 || retained.Text != "retained" {
+	if p.closures.n != 0 || retained.text != "retained" {
 		t.Fatal("reset retry failed or changed an externally retained value")
 	}
 	for _, chunk := range p.closures.chunks {

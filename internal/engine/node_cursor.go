@@ -26,7 +26,7 @@ func (c Cursor) At(position int32, visit func(WalkVisit) (WalkAction, error)) er
 		return err
 	}
 	return c.filter(visit, func(n *Node) bool {
-		return n.Start == n.End && n.Start == position || n.Start <= position && position < n.End
+		return n.start == n.end && n.start == position || n.start <= position && position < n.end
 	})
 }
 
@@ -40,10 +40,10 @@ func (c Cursor) Range(start, end int32, visit func(WalkVisit) (WalkAction, error
 		if start == end {
 			return false
 		}
-		if n.Start == n.End {
-			return start <= n.Start && n.Start < end
+		if n.start == n.end {
+			return start <= n.start && n.start < end
 		}
-		return n.Start < end && start < n.End
+		return n.start < end && start < n.end
 	})
 }
 

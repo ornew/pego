@@ -624,7 +624,7 @@ func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input strin
 			return Actual{}, err
 		}
 		actual.Node = data
-		actual.Start, actual.End = intPointer(int(node.Start)), intPointer(int(node.End))
+		actual.Start, actual.End = intPointer(int(node.Start())), intPointer(int(node.End()))
 	}
 	var many pego.SyntaxErrors
 	var one *pego.SyntaxError

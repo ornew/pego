@@ -263,15 +263,15 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 		case tupleTy:
 			fmt.Fprintf(b, "\tvar out %s\n\tn := astNode(v)\n\tif n == nil {\n\t\treturn out\n\t}\n", g)
 			for i, e := range x.elems {
-				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.conv(e, fmt.Sprintf("astKid(n.Children, %d)", i)))
+				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.conv(e, fmt.Sprintf("astKid(n.children, %d)", i)))
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
-			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"Error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.Start), int(n.End)}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"Error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.start), int(n.end)}}\n", g[1:], t.span, t.span)
 			switch value := x.value.(type) {
 			case basicTy:
 				if value == tyString {
-					b.WriteString("\tout.Value = n.Text\n")
+					b.WriteString("\tout.Value = n.text\n")
 				} else {
 					fmt.Fprintf(b, "\tout.Value = %s\n", t.conv(value, "a.nodeValue(n)"))
 				}

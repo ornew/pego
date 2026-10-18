@@ -28,7 +28,7 @@ func actionWorkParser(ctx context.Context, limits WorkLimits, unit PositionUnit)
 func actionWorkNodes(n int) []*Node {
 	items := make([]*Node, n)
 	for i := range items {
-		items[i] = &Node{Start: int32(i), End: int32(i + 1), terminal: true, Text: "x"}
+		items[i] = &Node{start: int32(i), end: int32(i + 1), terminal: true, text: "x"}
 	}
 	return items
 }
@@ -95,7 +95,7 @@ func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 	const size = 2048
 	items := actionWorkNodes(size)
-	list := &Node{Children: items}
+	list := &Node{children: items}
 	identity := workActionFunc{params: 1, fn: func(x, _ any) (any, error) { return x, nil }}
 	keepLeft := workActionFunc{params: 2, fn: func(x, _ any) (any, error) { return x, nil }}
 

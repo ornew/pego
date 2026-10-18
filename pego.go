@@ -15,8 +15,25 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// Node is a node of a parse result. Nodes can be encoded to JSON with encoding/json.
+// Node is a value of a parse result: a node of the input with a range and a string, tuple or list
+// value, an error value of recovery, or a value built by an action. It is opaque; its methods
+// read it (Kind tells which of them apply). Nodes can be encoded to JSON with encoding/json.
 type Node = engine.Node
+
+// NodeKind is what a Node stands for (Node.Kind).
+type NodeKind = engine.Kind
+
+// The kinds of nodes.
+const (
+	KindString     = engine.KindString     // a node whose value is a string: Text
+	KindTuple      = engine.KindTuple      // a node whose value is a tuple: Len and Elem
+	KindList       = engine.KindList       // a node whose value is a list: Len and Elem
+	KindError      = engine.KindError      // an error value of recovery: Text is its message
+	KindStruct     = engine.KindStruct     // a struct built by an action: Type and Field
+	KindTupleValue = engine.KindTupleValue // a tuple built by an action, without a range
+	KindListValue  = engine.KindListValue  // a list built by an action, without a range
+	KindValue      = engine.KindValue      // another value built by an action: Value
+)
 
 // SyntaxError reports that the input does not match the grammar.
 type SyntaxError = engine.SyntaxError

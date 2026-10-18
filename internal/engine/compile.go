@@ -778,7 +778,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, value), terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, value), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.CharClass:
@@ -835,7 +835,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 				}
 				switch {
 				case flat[i]:
-					kids = append(kids, v.Children...)
+					kids = append(kids, v.children...)
 				case valued[i]:
 					kids = append(kids, v)
 				}
@@ -843,7 +843,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+			return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 		}
 
 	case *grammar.Choice:
@@ -973,7 +973,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.Discard:
@@ -1128,7 +1128,7 @@ func (c *compiler) single(build bool, desc expID, accept func(*parser, rune) boo
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+		return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
 	}
 }
 
@@ -1323,7 +1323,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
+		return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
 	}
 }
 
@@ -1366,7 +1366,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 			p.kids(base)
 			return nil, false
 		}
-		return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
+		return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
 	}
 }
 

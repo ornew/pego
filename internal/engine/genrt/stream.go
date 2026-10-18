@@ -595,7 +595,7 @@ func (p *parser) streamMatchLiteral(rs []rune, text string, desc expID, build bo
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 func (p *parser) streamAtLineStart() bool {

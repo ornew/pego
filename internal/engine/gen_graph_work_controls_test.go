@@ -77,14 +77,14 @@ func requireGraphLimit(t *testing.T,p *parser,f func()){
 }
 func graphKids()([]*Node,[]any){
  nodes:=make([]*Node,300);values:=make([]any,300)
- for i:=range nodes{nodes[i]=&Node{Start:int32(i+3),End:int32(i+4),Text:"a"};values[i]=&tmatch{TNode:TNode[string]{Span:Span{Start:i+3,End:i+4},Value:"a"}}}
+ for i:=range nodes{nodes[i]=&Node{start:int32(i+3),end:int32(i+4),text:"a"};values[i]=&tmatch{TNode:TNode[string]{Span:Span{Start:i+3,End:i+4},Value:"a"}}}
  return nodes,values
 }
 func TestGraphFields(t *testing.T){
  nodes,_:=graphKids();fs:=make(Fields,300);tn:=&tnode{typ:"Seq",fields:make([]tfield,300)}
  for i:=range fs{name:=fmt.Sprintf("field%d",i);fs[i]=NodeField{name,i};tn.fields[i]=tfield{name,i}}
  for _,typed:=range []bool{false,true}{
-  p:=graphParser(32);tp:=&tparser{parser:p};node:=&Node{Fields:fs}
+  p:=graphParser(32);tp:=&tparser{parser:p};node:=&Node{fields:fs}
   requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).member(tn,"absent-field-with-distinct-length")}else{(&actx{p:p}).member(node,"absent-field-with-distinct-length")}})
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
   var got any;if typed{got=(&tctx{p:tp}).member(tn,"field299")}else{got=(&actx{p:p}).member(node,"field299")}
@@ -104,7 +104,7 @@ func TestGraphListsAndOwnership(t *testing.T){
    requireGraphLimit(t,p,func(){if typed{c:=&tctx{p:tp};if spanOnly{result=c.listNode(values)}else{result=c.newList(values)}}else{c:=&actx{p:p};if spanOnly{result=c.listNode(nodes)}else{result=c.newList(nodes)}}})
    if !reference && result!=nil{t.Fatal("partial list returned")}
    p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-   if typed{n:=(&tctx{p:tp}).newList(values).(*tnode);if n.Start!=3 || n.End!=303 || len(n.kids)!=300{t.Fatal("typed list spans")};n.kids[0]=nil;if values[0]==nil{t.Fatal("typed list aliases source")}}else{n:=(&actx{p:p}).newList(nodes);if n.Start!=3 || n.End!=303 || len(n.Children)!=300{t.Fatal("Node list spans")};n.Children[0]=nil;if nodes[0]==nil{t.Fatal("Node list aliases source")}}
+   if typed{n:=(&tctx{p:tp}).newList(values).(*tnode);if n.Start!=3 || n.End!=303 || len(n.kids)!=300{t.Fatal("typed list spans")};n.kids[0]=nil;if values[0]==nil{t.Fatal("typed list aliases source")}}else{n:=(&actx{p:p}).newList(nodes);if n.start!=3 || n.end!=303 || len(n.children)!=300{t.Fatal("Node list spans")};n.children[0]=nil;if nodes[0]==nil{t.Fatal("Node list aliases source")}}
   }
   p:=graphParser(129);tp:=&tparser{parser:p}
   requireGraphLimit(t,p,func(){if typed{tp.kidStack=append([]any(nil),values...);tp.kids(0)}else{p.kidStack=append([]*Node(nil),nodes...);p.kids(0)}})
@@ -115,7 +115,7 @@ func TestGraphListsAndOwnership(t *testing.T){
 func TestGraphCaptureUndoAndCleanup(t *testing.T){
  for _,typed:=range []bool{false,true}{
   p:=graphParser(32);tp:=&tparser{parser:p}
-  n:=&Node{Text:"old"};changed:=&Node{Text:"new"};f:=&frame{vals:make([]*Node,300)};tf:=&tframe{vals:make([]any,300)}
+  n:=&Node{text:"old"};changed:=&Node{text:"new"};f:=&frame{vals:make([]*Node,300)};tf:=&tframe{vals:make([]any,300)}
   for i:=0;i<300;i++{f.vals[i]=changed;tf.vals[i]=changed;p.trail=append(p.trail,undo{f:f,slot:i,old:n});tp.trail=append(tp.trail,tundo{f:tf,slot:i,old:n})}
   requireGraphLimit(t,p,func(){if typed{tp.reset(mark{})}else{p.reset(mark{})}})
   if !reference {if typed && len(tp.trail)!=300 || !typed && len(p.trail)!=300{t.Fatal("fatal lost undo records")}}
@@ -146,10 +146,10 @@ func TestGraphFoldOrderAndBudget(t *testing.T){
  for _,typed:=range []bool{false,true}{for _,right:=range []bool{false,true}{
   p:=graphParser(32);tp:=&tparser{parser:p};visits:=0
   f:=func(acc,item any)any{visits++;return item}
-  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,Children:nodes},f)}})
+  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}})
   if !reference && visits!=32{t.Fatal("fold advanced past budget",visits)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});visits=0
-  var got any;if typed{got=(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{got=(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,Children:nodes},f)}
+  var got any;if typed{got=(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{got=(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}
   index:=299;if right{index=0};want:=any(nodes[index]);if typed{want=values[index]};if visits!=300 || got!=want{t.Fatal("fold order changed",visits)}
  }}
 }
@@ -181,7 +181,7 @@ func TestGraphCaptureAttachment(t *testing.T){
   requireGraphLimit(t,p,func(){if typed{result=tp.attachCaptures(nil,names,values,3,303)}else{result=p.attachCaptures(nil,names,&frame{vals:nodes},3,303)}})
   if !reference && result!=nil{t.Fatal("partial capture node published")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:10000000})
-  if typed{n:=tp.attachCaptures(nil,names,values,3,303).(*tnode);if len(n.fields)!=299 || n.fields[0].val!=values[299] || n.fields[1].name!=names[1]{t.Fatal("typed capture order/replacement")}}else{n:=p.attachCaptures(nil,names,&frame{vals:nodes},3,303);if len(n.Fields)!=299 || n.Fields[0].Value!=nodes[299] || n.Fields[1].Name!=names[1]{t.Fatal("Node capture order/replacement")}}
+  if typed{n:=tp.attachCaptures(nil,names,values,3,303).(*tnode);if len(n.fields)!=299 || n.fields[0].val!=values[299] || n.fields[1].name!=names[1]{t.Fatal("typed capture order/replacement")}}else{n:=p.attachCaptures(nil,names,&frame{vals:nodes},3,303);if len(n.fields)!=299 || n.fields[0].Value!=nodes[299] || n.fields[1].Name!=names[1]{t.Fatal("Node capture order/replacement")}}
  }
 }
 func TestGraphOperatorsRuleSnapshots(t *testing.T){

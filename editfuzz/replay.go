@@ -435,7 +435,7 @@ func invalidStrings(n *pego.Node) []any {
 	}
 	err := pego.Walk(n, func(v pego.WalkVisit) (pego.WalkAction, error) {
 		if v.Node != nil {
-			add(v.Node.Text)
+			add(v.Node.Text())
 		} else if s, ok := v.Value.(string); ok {
 			add(s)
 		}

@@ -36,15 +36,15 @@ func TestPublicStreamIteratorLifecycle(t *testing.T) {
 				t.Fatalf("%s/%s eager construction: err=%v reads=%d", backend, unit, err, r.reads)
 			}
 			first, ok, err := it.Next()
-			wantEnd := int32(1)
+			wantEnd := 1
 			if unit == pego.Bytes {
 				wantEnd = 2
 			}
-			if err != nil || !ok || first == nil || first.Start != 0 || first.End != wantEnd || r.reads == 0 {
+			if err != nil || !ok || first == nil || first.Start() != 0 || first.End() != wantEnd || r.reads == 0 {
 				t.Fatalf("%s/%s first: node=%v ok=%v err=%v reads=%d", backend, unit, first, ok, err, r.reads)
 			}
 			second, ok, err := it.Next()
-			if err != nil || !ok || second == nil || second.Start != wantEnd || second.End != wantEnd+1 {
+			if err != nil || !ok || second == nil || second.Start() != wantEnd || second.End() != wantEnd+1 {
 				t.Fatalf("%s/%s second: node=%v ok=%v err=%v", backend, unit, second, ok, err)
 			}
 			for range 2 {

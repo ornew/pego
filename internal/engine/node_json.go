@@ -35,13 +35,13 @@ func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
 	if err := out.raw(prefix); err != nil {
 		return err
 	}
-	if err := out.number(n.Start); err != nil {
+	if err := out.number(n.start); err != nil {
 		return err
 	}
 	if err := out.raw(`,"end":`); err != nil {
 		return err
 	}
-	return out.number(n.End)
+	return out.number(n.end)
 }
 
 type nodeJSONSliceID struct {
@@ -146,7 +146,7 @@ func writeJSONValue(w io.Writer, value any) error {
 						break
 					}
 					if shape == shapeString {
-						err = out.encoded(value.Text)
+						err = out.encoded(value.text)
 						frame.phase = nodeJSONFieldsStart
 						break
 					}
@@ -156,11 +156,11 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					msg, _ := value.Fields.Get("message")
+					msg, _ := value.fields.Get("message")
 					if err = out.raw(`,"error":`); err == nil {
 						err = out.encoded(msg)
 					}
-					if expected, ok := value.Fields.Get("expected"); ok && err == nil {
+					if expected, ok := value.fields.Get("expected"); ok && err == nil {
 						if err = out.raw(`,"expected":`); err == nil {
 							err = out.encoded(expected)
 						}
@@ -176,18 +176,18 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.Fields.sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
 			case nodeJSONChildren, nodeJSONSliceItems:
-				if frame.index < len(value.Children) {
+				if frame.index < len(value.children) {
 					if frame.index != 0 {
 						if err = out.raw(","); err != nil {
 							break
 						}
 					}
-					child := value.Children[frame.index]
+					child := value.children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
 					break
@@ -212,7 +212,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					}
 				}
 				frame.phase = nodeJSONExit
-				if !value.labeled || len(value.Fields) == 0 {
+				if !value.labeled || len(value.fields) == 0 {
 					break
 				}
 				frame.caps = captureLocations(value)

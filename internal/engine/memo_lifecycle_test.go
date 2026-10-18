@@ -83,13 +83,13 @@ func TestDocumentReplacedMemoMemoryIsBounded(t *testing.T) {
 func TestMemoPruneKeepsActiveSeed(t *testing.T) {
 	table := newMemoTable()
 	seed := table.alloc()
-	*seed = memoEntry{growing: true, node: &Node{Text: "active"}}
+	*seed = memoEntry{growing: true, node: &Node{text: "active"}}
 	table.put(memoKey{rule: 1}, seed)
 	completed := table.alloc()
-	*completed = memoEntry{node: &Node{Text: "retired"}}
+	*completed = memoEntry{node: &Node{text: "retired"}}
 	table.put(memoKey{rule: 2}, completed)
 	table.prune(1)
-	if seed.node == nil || seed.node.Text != "active" || !seed.growing {
+	if seed.node == nil || seed.node.text != "active" || !seed.growing {
 		t.Fatal("pruning overwrote a stack-owned growth seed")
 	}
 	if table.len() != 0 {

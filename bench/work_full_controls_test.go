@@ -257,38 +257,50 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		}
 		return s
 	}
-	if hash(&pego.Node{Text: "\xff"}) == hash(&pego.Node{Text: "\xfe"}) {
+	str := func(start, end int, text string) *pego.Node {
+		return engine.NewNode(engine.KindString, start, end, text, nil, "", nil, nil)
+	}
+	tuple := func(elems ...*pego.Node) *pego.Node {
+		return engine.NewNode(engine.KindTuple, 0, 0, "", elems, "", nil, nil)
+	}
+	object := func(fields ...engine.NodeField) *pego.Node {
+		return engine.NewNode(engine.KindStruct, 0, 0, "", nil, "T", engine.Fields(fields), nil)
+	}
+	if hash(str(0, 0, "\xff")) == hash(str(0, 0, "\xfe")) {
 		t.Fatal("raw invalid terminal bytes were replaced")
 	}
-	if hash(&pego.Node{Fields: engine.Fields{{Name: "x", Value: "\xff"}}}) == hash(&pego.Node{Fields: engine.Fields{{Name: "x", Value: "\xfe"}}}) {
+	if hash(object(engine.NodeField{Name: "x", Value: "\xff"})) == hash(object(engine.NodeField{Name: "x", Value: "\xfe"})) {
 		t.Fatal("raw invalid scalar bytes were replaced")
 	}
-	leaf := &pego.Node{Text: "x"}
-	shared := &pego.Node{Children: []*pego.Node{leaf, leaf}}
-	copied := &pego.Node{Children: []*pego.Node{{Text: "x"}, {Text: "x"}}}
+	leaf := str(0, 0, "x")
+	shared := tuple(leaf, leaf)
+	copied := tuple(str(0, 0, "x"), str(0, 0, "x"))
 	if hash(shared) == hash(copied) {
 		t.Fatal("sharing was discarded")
 	}
-	fields := &pego.Node{Fields: engine.Fields{{Name: "a", Value: "one"}, {Name: "b", Value: "two"}}}
-	reordered := &pego.Node{Fields: engine.Fields{{Name: "b", Value: "two"}, {Name: "a", Value: "one"}}}
+	fields := object(engine.NodeField{Name: "a", Value: "one"}, engine.NodeField{Name: "b", Value: "two"})
+	reordered := object(engine.NodeField{Name: "b", Value: "two"}, engine.NodeField{Name: "a", Value: "one"})
 	if hash(fields) == hash(reordered) {
 		t.Fatal("field order was discarded")
 	}
-	if hash(&pego.Node{}) == hash(&pego.Node{Children: []*pego.Node{}}) {
-		t.Fatal("nil children became empty")
+	if hash(tuple()) == hash(engine.NewNode(engine.KindList, 0, 0, "", nil, "", nil, nil)) {
+		t.Fatal("the kind of an empty node was discarded")
 	}
-	shifted := &pego.Node{Text: "x", Start: 1, End: 2}
+	shifted := str(1, 2, "x")
 	if hash(leaf) == hash(shifted) {
 		t.Fatal("positions were discarded")
 	}
-	changed := &pego.Node{Fields: engine.Fields{{Name: "a", Value: "changed"}, {Name: "b", Value: "two"}}}
+	changed := object(engine.NodeField{Name: "a", Value: "changed"}, engine.NodeField{Name: "b", Value: "two"})
 	if hash(fields) == hash(changed) {
 		t.Fatal("field values were discarded")
 	}
-	cycle := &pego.Node{}
-	cycle.Children = []*pego.Node{cycle}
-	other := &pego.Node{}
-	other.Children = []*pego.Node{other}
+	if hash(engine.NewNode(engine.KindValue, 0, 0, "", nil, "", nil, 1)) == hash(engine.NewNode(engine.KindValue, 0, 0, "", nil, "", nil, 2)) {
+		t.Fatal("carried values were discarded")
+	}
+	cycle := tuple()
+	engine.SetNodeElems(cycle, []*pego.Node{cycle})
+	other := tuple()
+	engine.SetNodeElems(other, []*pego.Node{other})
 	if hash(cycle) != hash(other) {
 		t.Fatal("equivalent cycles differ")
 	}

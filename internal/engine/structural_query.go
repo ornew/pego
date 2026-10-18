@@ -306,12 +306,12 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			if category != "struct" && category != "error" {
 				return nil, false, nil
 			}
-			if err := b.charge(uint64(len(p.Fields) + len(n.Fields))); err != nil {
+			if err := b.charge(uint64(len(p.Fields) + len(n.fields))); err != nil {
 				return nil, false, err
 			}
 			for i := len(p.Fields) - 1; i >= 0; i-- {
 				f := &p.Fields[i]
-				value, ok := n.Fields.Get(f.Name)
+				value, ok := n.fields.Get(f.Name)
 				if !ok {
 					return nil, false, nil
 				}
@@ -331,7 +331,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			tasks = append(tasks, queryMatchTask{p.Value, queryVisit{queryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
 		}
 		if len(p.Elements) > 0 {
-			if !queryHasElements(n) || len(n.Children) < len(p.Elements) {
+			if !queryHasElements(n) || len(n.children) < len(p.Elements) {
 				return nil, false, nil
 			}
 			if err := b.charge(uint64(len(p.Elements))); err != nil {
@@ -341,7 +341,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{n.Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
+				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{n.children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
 			}
 		}
 		if p.Capture != "" {
@@ -371,11 +371,11 @@ func queryHasElements(n *Node) bool {
 func queryNodeValue(n *Node) any {
 	switch n.shape() {
 	case shapeTuple:
-		return &Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children}
+		return &Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children}
 	case shapeList:
-		return &Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children}
+		return &Node{kind: kindListValue, start: n.start, end: n.end, children: n.children}
 	}
-	return n.Text
+	return n.text
 }
 
 func appendQueryPath(path []QueryEdge, e QueryEdge) []QueryEdge {

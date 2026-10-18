@@ -94,16 +94,16 @@ func (s shaper) tuple(p *parser, v *Node, start int) *Node {
 		kids = p.nodes(1)
 		kids[0] = v
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true})
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true})
 }
 
 // one returns the one element of the result v.
 func (s shaper) one(v *Node) *Node {
 	if s.elems {
-		if v == nil || len(v.Children) == 0 {
+		if v == nil || len(v.children) == 0 {
 			return nil
 		}
-		return v.Children[0]
+		return v.children[0]
 	}
 	return v
 }
@@ -152,7 +152,7 @@ func captureMatcher(e grammar.Expr, m matcher) matcher {
 			return nil, false
 		}
 		if v, ok = sh.single(p, mode, v, start); !ok {
-			v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), fresh: true})
+			v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), fresh: true})
 		}
 		return v, true
 	}

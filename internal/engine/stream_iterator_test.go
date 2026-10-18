@@ -62,7 +62,7 @@ func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 			t.Fatal(err)
 		}
 		// An element without a value is the unit tuple of its range.
-		if n, ok, err := it.Next(); n == nil || n.shape() != shapeTuple || len(n.Children) != 0 || !ok || err != nil {
+		if n, ok, err := it.Next(); n == nil || n.shape() != shapeTuple || len(n.children) != 0 || !ok || err != nil {
 			t.Fatalf("unit element: %v %v %v", n, ok, err)
 		}
 		it.Close()

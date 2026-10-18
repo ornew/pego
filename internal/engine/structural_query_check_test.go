@@ -258,12 +258,12 @@ func describeQueryValue(v any, depth int) QueryPattern {
 		p.Value = &value
 	}
 	if category == "struct" || category == "error" {
-		for _, f := range n.Fields {
+		for _, f := range n.fields {
 			p.Fields = append(p.Fields, QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
 		}
 	}
 	if queryHasElements(n) {
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			if i == 2 {
 				break
 			}

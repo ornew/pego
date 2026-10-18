@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"math"
 	"reflect"
 	"slices"
@@ -25,11 +26,11 @@ import (
 // captures.
 type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
-	Start    int32     // the range in the input, in the parse's position unit (End is exclusive)
-	End      int32
-	Text     string  // the text of a string node
-	Children []*Node // the elements of a tuple or list
-	Fields   Fields  // struct fields and captures
+	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
+	end      int32
+	text     string  // the text of a string node
+	children []*Node // the elements of a tuple or list
+	fields   Fields  // struct fields and captures
 
 	fresh    bool
 	terminal bool
@@ -130,11 +131,11 @@ func unboxValue(v any) any {
 func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
-		return n.Text
+		return n.text
 	case n.kind.typeName() == "List":
-		return p.newNode(Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children})
+		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
-	return p.newNode(Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children})
+	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
 }
 
 var kinds sync.Map // [2]string → *nodeKind
@@ -242,13 +243,168 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 // IsTerminal reports whether the node is a terminal.
 func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
 
-// Field returns the value of the field name.
-func (n *Node) Field(name string) any {
+// NodeKind is what a Node stands for in the value model.
+type NodeKind uint8
+
+const (
+	// KindString is a node whose value is a string, the text it matched: Text.
+	KindString NodeKind = iota
+	// KindTuple is a node whose value is a tuple: Len and Elem.
+	KindTuple
+	// KindList is a node whose value is a list: Len and Elem.
+	KindList
+	// KindError is an error value of recovery: Text is its message.
+	KindError
+	// KindStruct is a struct built by an action: Type and Field.
+	KindStruct
+	// KindTupleValue is a tuple built by an action, without a range: Len and Elem.
+	KindTupleValue
+	// KindListValue is a list built by an action, without a range: Len and Elem.
+	KindListValue
+	// KindValue is any other value built by an action, such as an int or a bool: Value.
+	KindValue
+)
+
+var nodeKindNames = [...]string{"string", "tuple", "list", "error", "struct", "tuple value", "list value", "value"}
+
+func (k NodeKind) String() string {
+	if int(k) < len(nodeKindNames) {
+		return nodeKindNames[k]
+	}
+	return fmt.Sprintf("NodeKind(%d)", k)
+}
+
+// Kind returns what the node stands for.
+func (n *Node) Kind() NodeKind {
+	switch n.shape() {
+	case shapeString:
+		return KindString
+	case shapeTuple:
+		return KindTuple
+	case shapeList:
+		return KindList
+	case shapeError:
+		return KindError
+	case shapeBox:
+		return KindValue
+	case shapeTupleValue:
+		return KindTupleValue
+	case shapeListValue:
+		return KindListValue
+	}
+	return KindStruct
+}
+
+// Start returns the start of the range of the input that the node spans, in the position unit of
+// the parse.
+func (n *Node) Start() int { return int(n.start) }
+
+// End returns the end of the range of the input that the node spans (exclusive), in the position
+// unit of the parse.
+func (n *Node) End() int { return int(n.end) }
+
+// Text returns the string value of a KindString node, and the message of a KindError value; it
+// returns "" for other nodes and nil.
+func (n *Node) Text() string {
+	if n == nil {
+		return ""
+	}
+	switch n.shape() {
+	case shapeString:
+		return n.text
+	case shapeError:
+		msg, _ := n.fields.Get("message")
+		s, _ := msg.(string)
+		return s
+	}
+	return ""
+}
+
+// Len returns the number of elements of a tuple or a list (KindTuple, KindList, KindTupleValue,
+// KindListValue), and 0 for other nodes and nil.
+func (n *Node) Len() int {
+	if n == nil {
+		return 0
+	}
+	switch n.shape() {
+	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
+		return len(n.children)
+	}
+	return 0
+}
+
+// Elem returns the element i of a tuple or a list: a node, or nil for an optional that did not
+// match. It panics if i is out of the range [0, Len()).
+func (n *Node) Elem(i int) *Node {
+	if i < 0 || i >= n.Len() {
+		panic(fmt.Sprintf("element %d of a node with %d elements", i, n.Len()))
+	}
+	return n.children[i]
+}
+
+// Elems returns the elements of a tuple or a list in order, as Elem does.
+func (n *Node) Elems() iter.Seq2[int, *Node] {
+	return func(yield func(int, *Node) bool) {
+		for i := range n.Len() {
+			if !yield(i, n.children[i]) {
+				return
+			}
+		}
+	}
+}
+
+// Value returns the value of a KindValue node (such as an int, a string or a bool) and the string
+// of a KindString node; it returns nil for other nodes and nil.
+func (n *Node) Value() any {
 	if n == nil {
 		return nil
 	}
-	v, _ := n.Fields.Get(name)
+	switch n.shape() {
+	case shapeBox:
+		return n.box
+	case shapeString:
+		return n.text
+	}
+	return nil
+}
+
+// Field returns the value of the field name of a struct, and, with source information, the value
+// of the capture name of a node: a *Node, an int, a string, a bool, or nil.
+func (n *Node) Field(name string) any {
+	if !n.fieldsVisible() {
+		return nil
+	}
+	return n.field(name)
+}
+
+// field returns the value of the field or capture name, whether or not it is public.
+func (n *Node) field(name string) any {
+	if n == nil {
+		return nil
+	}
+	v, _ := n.fields.Get(name)
 	return v
+}
+
+// fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
+// of a node with source information.
+func (n *Node) fieldsVisible() bool {
+	return n != nil && (n.labeled || n.shape() == shapeStruct)
+}
+
+// Fields returns the fields of a struct, and, with source information, the captures of a node,
+// in the order the action wrote them.
+func (n *Node) Fields() iter.Seq2[string, any] {
+	return func(yield func(string, any) bool) {
+		if !n.fieldsVisible() {
+			return
+		}
+		for _, f := range n.fields {
+			if !yield(f.Name, f.Value) {
+				return
+			}
+		}
+	}
 }
 
 // nodeShape is what a Node stands for in the value model.
@@ -300,7 +456,7 @@ type captureLocation struct {
 // captureLocations returns the locations of the captures of the tuple node n, in name order.
 func captureLocations(n *Node) []captureLocation {
 	var out []captureLocation
-	for _, f := range n.Fields.sorted() {
+	for _, f := range n.fields.sorted() {
 		v, ok := f.Value.(*Node)
 		if !ok || v == nil {
 			if f.Value != nil {
@@ -328,7 +484,7 @@ func findElement(n, x *Node) ([]int, bool) {
 	for len(queue) > 0 {
 		it := queue[0]
 		queue = queue[1:]
-		for i, c := range it.n.Children {
+		for i, c := range it.n.children {
 			if c == nil {
 				continue
 			}
@@ -383,13 +539,13 @@ func writeValue(b *strings.Builder, v any) {
 				f.v, f.enter = n.box, true
 				continue
 			case shapeString:
-				b.WriteString(strconv.Quote(n.Text))
+				b.WriteString(strconv.Quote(n.text))
 				f.close = ruleSuffix(n)
 				f.i = -1
 			case shapeError:
-				msg, _ := n.Fields.Get("message")
+				msg, _ := n.fields.Get("message")
 				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
-				if expected, ok := n.Fields.Get("expected"); ok {
+				if expected, ok := n.fields.Get("expected"); ok {
 					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
 				}
 				b.WriteString(")")
@@ -406,7 +562,7 @@ func writeValue(b *strings.Builder, v any) {
 						}
 						x := n
 						for _, i := range c.path {
-							x = x.Children[i]
+							x = x.children[i]
 						}
 						f.labels[x] = append(f.labels[x], c.name)
 					}
@@ -425,7 +581,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.Fields.sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -439,7 +595,7 @@ func writeValue(b *strings.Builder, v any) {
 			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
 			continue
 		}
-		if f.i == len(n.Children) {
+		if f.i == len(n.children) {
 			for j, c := range f.side {
 				if f.i > 0 || j > 0 {
 					b.WriteString(" ")
@@ -456,7 +612,7 @@ func writeValue(b *strings.Builder, v any) {
 		if f.i > 0 {
 			b.WriteString(" ")
 		}
-		c := n.Children[f.i]
+		c := n.children[f.i]
 		f.i++
 		labels := f.labels
 		for _, name := range labels[c] {
@@ -1830,7 +1986,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		if sourceInfo {
 			kind = r.kinds.term
 		}
-		return p.newNode(Node{kind: kind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
+		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -1866,16 +2022,16 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	if v.Fields == nil {
-		v.Fields = p.fields(len(names))
+	if v.fields == nil {
+		v.fields = p.fields(len(names))
 	}
 	v.labeled = sourceInfo
 	for i, name := range names {
 		p.stepWork()
 		if f.vals[i] != nil {
-			p.setValueField(&v.Fields, name, f.vals[i])
+			p.setValueField(&v.fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -1920,16 +2076,16 @@ func (p *parser) shapeTuple(s shaper, v *Node, start int) *Node {
 		kids = p.nodes(1)
 		kids[0] = v
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true})
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true})
 }
 
 // one returns the one element of the result v.
 func (s shaper) one(v *Node) *Node {
 	if s.elems {
-		if v == nil || len(v.Children) == 0 {
+		if v == nil || len(v.children) == 0 {
 			return nil
 		}
-		return v.Children[0]
+		return v.children[0]
 	}
 	return v
 }
@@ -1951,7 +2107,7 @@ func (p *parser) shapeSingle(s shaper, v *Node, start int) (*Node, bool) {
 func (p *parser) shapeCapture(s shaper, v *Node, start int) *Node {
 	v, ok := p.shapeSingle(s, v, start)
 	if !ok {
-		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), fresh: true})
 	}
 	return v
 }
@@ -1997,7 +2153,7 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 // matchReplacementLiteral is the cold path for raw-byte mismatches. An
@@ -2019,7 +2175,7 @@ func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, bui
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 func (p *parser) matchAny(build bool) (*Node, bool) {
@@ -2038,7 +2194,7 @@ func (p *parser) single(size int, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 func (p *parser) anchor(ok bool, desc expID) (*Node, bool) {
@@ -2138,7 +2294,7 @@ func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
+	return p.newNode(Node{kind: kindError, start: int32(m0.pos), end: int32(p.pos), text: p.text(m0.pos, p.pos), fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
 }
 
 // --- Actions and predicates ---
@@ -2199,12 +2355,12 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			c.p.evalErrorf("result must be a value, got a function")
 		}
 		// A value other than a node travels boxed, with the range of the action's input.
-		return c.p.newNode(Node{kind: kindBox, box: v, Start: int32(c.start), End: int32(c.end)})
+		return c.p.newNode(Node{kind: kindBox, box: v, start: int32(c.start), end: int32(c.end)})
 	}
 	for _, x := range c.p.created[c.cbase:] {
 		c.p.stepWork()
 		if x == n {
-			n.Start, n.End = int32(c.start), int32(c.end)
+			n.start, n.end = int32(c.start), int32(c.end)
 			break
 		}
 	}
@@ -2305,24 +2461,24 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	if k == nil {
 		k = kindOf(typ, "")
 	}
-	n := c.p.newNode(Node{kind: k, Fields: c.p.fields(len(kv) / 2)})
+	n := c.p.newNode(Node{kind: k, fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
 		c.p.stepWork()
 		v := kv[i+1]
-		c.p.setValueField(&n.Fields, kv[i].(string), v)
+		c.p.setValueField(&n.fields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
-			if first || child.Start < n.Start {
-				n.Start = child.Start
+			if first || child.start < n.start {
+				n.start = child.start
 			}
-			if first || child.End > n.End {
-				n.End = child.End
+			if first || child.end > n.end {
+				n.end = child.end
 			}
 			first = false
 		}
 	}
 	if first {
-		n.Start, n.End = int32(c.start), int32(c.end)
+		n.start, n.end = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n
@@ -2337,7 +2493,7 @@ func (c *actx) newTerminal(typ string, value any) any {
 	if k == nil {
 		k = kindOf(typ, "")
 	}
-	n := c.p.newNode(Node{kind: k, terminal: true, Text: text, Start: int32(c.start), End: int32(c.end)})
+	n := c.p.newNode(Node{kind: k, terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n
 }
@@ -2351,18 +2507,18 @@ func (c *actx) newList(items []*Node) *Node {
 // listNode returns a list value with the child list kids (which it takes over). Its range, which
 // the value model does not show, covers the elements that are nodes.
 func (c *actx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindListValue, Children: kids, Start: int32(c.start), End: int32(c.start)})
+	n := c.p.newNode(Node{kind: kindListValue, children: kids, start: int32(c.start), end: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
 		if it == nil {
 			continue
 		}
-		if first || it.Start < n.Start {
-			n.Start = it.Start
+		if first || it.start < n.start {
+			n.start = it.start
 		}
-		if first || it.End > n.End {
-			n.End = it.End
+		if first || it.end > n.end {
+			n.end = it.end
 		}
 		first = false
 	}
@@ -2377,9 +2533,9 @@ func (c *actx) member(x any, name string) any {
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return int(n.Start)
+			return int(n.start)
 		case "End":
-			return int(n.End)
+			return int(n.end)
 		case "Value":
 			return c.p.nodeValue(n)
 		}
@@ -2389,13 +2545,13 @@ func (c *actx) member(x any, name string) any {
 		if _, ok := structFields[n.Type()]; ok {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
-		v, _ := c.p.valueField(n.Fields, capture)
+		v, _ := c.p.valueField(n.fields, capture)
 		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	v, _ := c.p.valueField(n.Fields, name)
+	v, _ := c.p.valueField(n.fields, name)
 	return v
 }
 
@@ -2522,9 +2678,9 @@ func (c *actx) length(x any) any {
 			return 0
 		}
 		if x.terminal {
-			return c.p.unitLen(x.Text)
+			return c.p.unitLen(x.text)
 		}
-		return len(x.Children)
+		return len(x.children)
 	case nil:
 		return 0
 	}
@@ -2547,9 +2703,9 @@ func (c *actx) textStr(x any) string {
 			return ""
 		}
 		if x.terminal {
-			return x.Text
+			return x.text
 		}
-		return c.p.text(int(x.Start), int(x.End))
+		return c.p.text(int(x.start), int(x.end))
 	}
 	c.p.evalErrorf("text: invalid argument %s", typeName(x))
 	return ""
@@ -2563,7 +2719,7 @@ func listItems(fn string, v any) []*Node {
 		if x == nil {
 			return nil
 		}
-		return x.Children
+		return x.children
 	}
 	evalErrorf("%s: expected a list, got %s", fn, typeName(v))
 	return nil
@@ -2892,7 +3048,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = int(lhs.Start)
+		start = int(lhs.start)
 	}
 	if a.op.kind == "postfix" {
 		end = a.end
@@ -2902,7 +3058,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	// captures.
 	opv, ok := p.shapeSingle(l.value, a.v, a.start)
 	if !ok {
-		opv = p.newNode(Node{kind: kindSeq, Start: int32(a.start), End: int32(a.end)})
+		opv = p.newNode(Node{kind: kindSeq, start: int32(a.start), end: int32(a.end)})
 	}
 	if l.value.mode == singleTuple && len(l.scope) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
@@ -2941,7 +3097,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	if sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
-	return p.newNode(Node{kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, labeled: sourceInfo})
+	return p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: sourceInfo})
 }
 
 func rtUnaryWork(p *parser, op string, x any) any {
@@ -3033,7 +3189,7 @@ func listItemsWork(p *parser, fn string, v any) []*Node {
 		if x == nil {
 			return nil
 		}
-		return x.Children
+		return x.children
 	}
 	p.evalErrorf("%s: expected a list, got %s", fn, typeName(v))
 	return nil
@@ -3079,13 +3235,13 @@ func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
 	if err := out.raw(prefix); err != nil {
 		return err
 	}
-	if err := out.number(n.Start); err != nil {
+	if err := out.number(n.start); err != nil {
 		return err
 	}
 	if err := out.raw(`,"end":`); err != nil {
 		return err
 	}
-	return out.number(n.End)
+	return out.number(n.end)
 }
 
 type nodeJSONSliceID struct {
@@ -3190,7 +3346,7 @@ func writeJSONValue(w io.Writer, value any) error {
 						break
 					}
 					if shape == shapeString {
-						err = out.encoded(value.Text)
+						err = out.encoded(value.text)
 						frame.phase = nodeJSONFieldsStart
 						break
 					}
@@ -3200,11 +3356,11 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					msg, _ := value.Fields.Get("message")
+					msg, _ := value.fields.Get("message")
 					if err = out.raw(`,"error":`); err == nil {
 						err = out.encoded(msg)
 					}
-					if expected, ok := value.Fields.Get("expected"); ok && err == nil {
+					if expected, ok := value.fields.Get("expected"); ok && err == nil {
 						if err = out.raw(`,"expected":`); err == nil {
 							err = out.encoded(expected)
 						}
@@ -3220,18 +3376,18 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.Fields.sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
 			case nodeJSONChildren, nodeJSONSliceItems:
-				if frame.index < len(value.Children) {
+				if frame.index < len(value.children) {
 					if frame.index != 0 {
 						if err = out.raw(","); err != nil {
 							break
 						}
 					}
-					child := value.Children[frame.index]
+					child := value.children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
 					break
@@ -3256,7 +3412,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					}
 				}
 				frame.phase = nodeJSONExit
-				if !value.labeled || len(value.Fields) == 0 {
+				if !value.labeled || len(value.fields) == 0 {
 					break
 				}
 				frame.caps = captureLocations(value)
@@ -3516,12 +3672,12 @@ func WalkTree(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			fields := x.Fields.sorted()
+			fields := x.fields.sorted()
 			for i := len(fields) - 1; i >= 0; i-- {
 				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}
-			for i := len(x.Children) - 1; i >= 0; i-- {
-				push(x.Children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
+			for i := len(x.children) - 1; i >= 0; i-- {
+				push(x.children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
 			}
 		case []any:
 			for i := len(x) - 1; i >= 0; i-- {
@@ -3558,7 +3714,7 @@ func (c Cursor) At(position int32, visit func(WalkVisit) (WalkAction, error)) er
 		return err
 	}
 	return c.filter(visit, func(n *Node) bool {
-		return n.Start == n.End && n.Start == position || n.Start <= position && position < n.End
+		return n.start == n.end && n.start == position || n.start <= position && position < n.end
 	})
 }
 
@@ -3572,10 +3728,10 @@ func (c Cursor) Range(start, end int32, visit func(WalkVisit) (WalkAction, error
 		if start == end {
 			return false
 		}
-		if n.Start == n.End {
-			return start <= n.Start && n.Start < end
+		if n.start == n.end {
+			return start <= n.start && n.start < end
 		}
-		return n.Start < end && start < n.End
+		return n.start < end && start < n.end
 	})
 }
 
@@ -24912,9 +25068,9 @@ func (p *parser) e9() (*Node, bool) {
 			p.reset(x13)
 			break
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x10), end: int32(p.pos), children: p.kids(x11), fresh: true})
 		x8 = append(x8, v17)
-		v18 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v19, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v18, x3.pos)
 		v4 = v19
 		goto L6_ordinary
@@ -24941,7 +25097,7 @@ func (p *parser) e9() (*Node, bool) {
 			}
 			x25 = p.pos
 			p.pos += size
-			v26 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+			v26 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 			v27 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v26, x23.pos)
 			x22++
 			p.kidStack = append(p.kidStack, v27)
@@ -24953,7 +25109,7 @@ func (p *parser) e9() (*Node, bool) {
 			p.reset(x23)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		x2 = append(x2, v28)
 
 		x29, x30 = p.pos, len(p.kidStack)
@@ -24970,7 +25126,7 @@ func (p *parser) e9() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L33_ordinary
 			}
-			v37 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x35 = append(x35, v37)
 
 			if v38, ok = p.r12(); !ok {
@@ -25009,7 +25165,7 @@ func (p *parser) e9() (*Node, bool) {
 				}
 				x46 = p.pos
 				p.pos += size
-				v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: p.text(x46, p.pos), terminal: true, fresh: true})
+				v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: p.text(x46, p.pos), terminal: true, fresh: true})
 				v48 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v47, x44.pos)
 				x43++
 				p.kidStack = append(p.kidStack, v48)
@@ -25021,9 +25177,9 @@ func (p *parser) e9() (*Node, bool) {
 				p.reset(x44)
 				break
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 			x35 = append(x35, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 			v51 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v50, x32.pos)
 			x31++
 			p.kidStack = append(p.kidStack, v51)
@@ -25035,7 +25191,7 @@ func (p *parser) e9() (*Node, bool) {
 			p.reset(x32)
 			break
 		}
-		v52 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x29), End: int32(p.pos), Children: p.kids(x30), fresh: true})
+		v52 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x29), end: int32(p.pos), children: p.kids(x30), fresh: true})
 		x2 = append(x2, v52)
 
 		x53 = p.mark()
@@ -25050,7 +25206,7 @@ func (p *parser) e9() (*Node, bool) {
 		v54 = nil
 	L56_ordinary:
 		x2 = append(x2, v54)
-		v58 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v58 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v58, true
 	}
 
@@ -25143,9 +25299,9 @@ func (p *parser) e9() (*Node, bool) {
 		p.reset(x13)
 		break
 	}
-	v17 = p.newNode(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
+	v17 = p.newNode(Node{kind: kindList, start: int32(x10), end: int32(p.pos), children: p.kids(x11), fresh: true})
 	x8 = append(x8, v17)
-	v18 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v18 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v19, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v18, x3.pos)
 	v4 = v19
 	goto L6
@@ -25172,7 +25328,7 @@ L6:
 		}
 		x25 = p.pos
 		p.pos += size
-		v26 = p.newNode(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+		v26 = p.newNode(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 		v27 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v26, x23.pos)
 		x22++
 		p.kidStack = append(p.kidStack, v27)
@@ -25184,7 +25340,7 @@ L6:
 		p.reset(x23)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	x2 = append(x2, v28)
 	p.stepWork()
 	x29, x30 = p.pos, len(p.kidStack)
@@ -25201,7 +25357,7 @@ L6:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L33
 		}
-		v37 = p.newNode(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v37 = p.newNode(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x35 = append(x35, v37)
 		p.stepWork()
 		if v38, ok = p.r12(); !ok {
@@ -25240,7 +25396,7 @@ L6:
 			}
 			x46 = p.pos
 			p.pos += size
-			v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: p.text(x46, p.pos), terminal: true, fresh: true})
+			v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: p.text(x46, p.pos), terminal: true, fresh: true})
 			v48 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v47, x44.pos)
 			x43++
 			p.kidStack = append(p.kidStack, v48)
@@ -25252,9 +25408,9 @@ L6:
 			p.reset(x44)
 			break
 		}
-		v49 = p.newNode(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+		v49 = p.newNode(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 		x35 = append(x35, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 		v51 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v50, x32.pos)
 		x31++
 		p.kidStack = append(p.kidStack, v51)
@@ -25266,7 +25422,7 @@ L6:
 		p.reset(x32)
 		break
 	}
-	v52 = p.newNode(Node{kind: kindList, Start: int32(x29), End: int32(p.pos), Children: p.kids(x30), fresh: true})
+	v52 = p.newNode(Node{kind: kindList, start: int32(x29), end: int32(p.pos), children: p.kids(x30), fresh: true})
 	x2 = append(x2, v52)
 	p.stepWork()
 	x53 = p.mark()
@@ -25281,7 +25437,7 @@ L55:
 	v54 = nil
 L56:
 	x2 = append(x2, v54)
-	v58 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v58 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v58, true
 }
 
@@ -25363,7 +25519,7 @@ func (p *parser) e11() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v18)
 			x16 = append(x16, v18)
-			v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 			v20, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x11.pos)
 			v12 = v20
 			goto L13_ordinary
@@ -25384,7 +25540,7 @@ func (p *parser) e11() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v25)
 			x23 = append(x23, v25)
-			v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+			v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 			v27, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x11.pos)
 			v12 = v27
 			goto L13_ordinary
@@ -25406,7 +25562,7 @@ func (p *parser) e11() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v30)
 		return nil, true
 	fail_ordinary:
@@ -25492,7 +25648,7 @@ func (p *parser) e11() (*Node, bool) {
 		}
 		p.setCapture(0, v18)
 		x16 = append(x16, v18)
-		v19 = p.newNode(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+		v19 = p.newNode(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 		v20, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x11.pos)
 		v12 = v20
 		goto L13
@@ -25514,7 +25670,7 @@ func (p *parser) e11() (*Node, bool) {
 		}
 		p.setCapture(0, v25)
 		x23 = append(x23, v25)
-		v26 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v26 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v27, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x11.pos)
 		v12 = v27
 		goto L13
@@ -25536,7 +25692,7 @@ func (p *parser) e11() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v30 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v30 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v30)
 	return nil, true
 fail:
@@ -25593,9 +25749,9 @@ func (p *parser) e16() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 			goto L5_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 		x8 = append(x8, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 		v4 = v13
 		goto L6_ordinary
@@ -25629,7 +25785,7 @@ func (p *parser) e16() (*Node, bool) {
 			p.reset(x18)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		x2 = append(x2, v22)
 
 		x23 = p.pos
@@ -25712,7 +25868,7 @@ func (p *parser) e16() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -25765,9 +25921,9 @@ func (p *parser) e16() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 		goto L5
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 	x8 = append(x8, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 	v4 = v13
 	goto L6
@@ -25801,7 +25957,7 @@ L6:
 		p.reset(x18)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	x2 = append(x2, v22)
 	p.stepWork()
 	x23 = p.pos
@@ -25884,7 +26040,7 @@ L6:
 	}) {
 		goto fail
 	}
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -26557,7 +26713,7 @@ func (p *parser) e28() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -26634,7 +26790,7 @@ func (p *parser) e28() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -26691,9 +26847,9 @@ func (p *parser) e33() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 			goto L5_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 		x8 = append(x8, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 		v4 = v13
 		goto L6_ordinary
@@ -26727,7 +26883,7 @@ func (p *parser) e33() (*Node, bool) {
 			p.reset(x18)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		x2 = append(x2, v22)
 
 		x23 = p.pos
@@ -26810,7 +26966,7 @@ func (p *parser) e33() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -26863,9 +27019,9 @@ func (p *parser) e33() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 		goto L5
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 	x8 = append(x8, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 	v4 = v13
 	goto L6
@@ -26899,7 +27055,7 @@ L6:
 		p.reset(x18)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	x2 = append(x2, v22)
 	p.stepWork()
 	x23 = p.pos
@@ -26982,7 +27138,7 @@ L6:
 	}) {
 		goto fail
 	}
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -27178,7 +27334,7 @@ func (p *parser) e38() (*Node, bool) {
 				p.reset(x27)
 				break
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			x23 = append(x23, v29)
 
@@ -27188,9 +27344,9 @@ func (p *parser) e38() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit37, "\t", 15, false); !ok {
 				goto L21_ordinary
 			}
-			v31 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "\t", terminal: true, fresh: true})
+			v31 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "\t", terminal: true, fresh: true})
 			x23 = append(x23, v31)
-			v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 			v33 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v32, x20.pos)
 			p.frame = x18
 			v34 = p.attachCaptures(v33, scope35, x17, x20.pos, p.pos)
@@ -27205,7 +27361,7 @@ func (p *parser) e38() (*Node, bool) {
 			p.reset(x20)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		p.setCaptureOrdinary(0, v35)
 		x2 = append(x2, v35)
 
@@ -27231,7 +27387,7 @@ func (p *parser) e38() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v41 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: p.text(x37, p.pos), terminal: true, fresh: true})
+		v41 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: p.text(x37, p.pos), terminal: true, fresh: true})
 		p.setCaptureOrdinary(1, v41)
 		x2 = append(x2, v41)
 
@@ -27285,7 +27441,7 @@ func (p *parser) e38() (*Node, bool) {
 			p.reset(x43)
 			break
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v47, true
 	}
 
@@ -27481,7 +27637,7 @@ func (p *parser) e38() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v29 = p.newNode(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+		v29 = p.newNode(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 		p.setCapture(0, v29)
 		x23 = append(x23, v29)
 		p.stepWork()
@@ -27491,9 +27647,9 @@ func (p *parser) e38() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit37, "\t", 15, false); !ok {
 			goto L21
 		}
-		v31 = p.newNode(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "\t", terminal: true, fresh: true})
+		v31 = p.newNode(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "\t", terminal: true, fresh: true})
 		x23 = append(x23, v31)
-		v32 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v32 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v33 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v32, x20.pos)
 		p.frame = x18
 		v34 = p.attachCaptures(v33, scope35, x17, x20.pos, p.pos)
@@ -27508,7 +27664,7 @@ func (p *parser) e38() (*Node, bool) {
 		p.reset(x20)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	p.setCapture(0, v35)
 	x2 = append(x2, v35)
 	p.stepWork()
@@ -27534,7 +27690,7 @@ func (p *parser) e38() (*Node, bool) {
 		p.reset(x39)
 		break
 	}
-	v41 = p.newNode(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: p.text(x37, p.pos), terminal: true, fresh: true})
+	v41 = p.newNode(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: p.text(x37, p.pos), terminal: true, fresh: true})
 	p.setCapture(1, v41)
 	x2 = append(x2, v41)
 	p.stepWork()
@@ -27590,7 +27746,7 @@ func (p *parser) e38() (*Node, bool) {
 		p.reset(x43)
 		break
 	}
-	v47 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v47 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v47, true
 }
 
@@ -27661,7 +27817,7 @@ func (p *parser) e39() (*Node, bool) {
 			}
 			x8 = p.pos
 			p.pos += size
-			v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+			v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 			v10 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v9, x6.pos)
 			x5++
 			p.kidStack = append(p.kidStack, v10)
@@ -27673,7 +27829,7 @@ func (p *parser) e39() (*Node, bool) {
 			p.reset(x6)
 			break
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		x2 = append(x2, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -27690,7 +27846,7 @@ func (p *parser) e39() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L16_ordinary
 			}
-			v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x18 = append(x18, v20)
 
 			if v21, ok = p.r12(); !ok {
@@ -27729,7 +27885,7 @@ func (p *parser) e39() (*Node, bool) {
 				}
 				x29 = p.pos
 				p.pos += size
-				v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: p.text(x29, p.pos), terminal: true, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: p.text(x29, p.pos), terminal: true, fresh: true})
 				v31 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v30, x27.pos)
 				x26++
 				p.kidStack = append(p.kidStack, v31)
@@ -27741,9 +27897,9 @@ func (p *parser) e39() (*Node, bool) {
 				p.reset(x27)
 				break
 			}
-			v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 			x18 = append(x18, v32)
-			v33 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 			v34 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v33, x15.pos)
 			x14++
 			p.kidStack = append(p.kidStack, v34)
@@ -27755,7 +27911,7 @@ func (p *parser) e39() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x2 = append(x2, v35)
 
 		x36 = p.mark()
@@ -27775,7 +27931,7 @@ func (p *parser) e39() (*Node, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v41)
-		v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v42, true
 	fail_ordinary:
 		return nil, false
@@ -27845,7 +28001,7 @@ func (p *parser) e39() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v10 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v9, x6.pos)
 		x5++
 		p.kidStack = append(p.kidStack, v10)
@@ -27857,7 +28013,7 @@ func (p *parser) e39() (*Node, bool) {
 		p.reset(x6)
 		break
 	}
-	v11 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v11 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	x2 = append(x2, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -27874,7 +28030,7 @@ func (p *parser) e39() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L16
 		}
-		v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x18 = append(x18, v20)
 		p.stepWork()
 		if v21, ok = p.r12(); !ok {
@@ -27913,7 +28069,7 @@ func (p *parser) e39() (*Node, bool) {
 			}
 			x29 = p.pos
 			p.pos += size
-			v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: p.text(x29, p.pos), terminal: true, fresh: true})
+			v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: p.text(x29, p.pos), terminal: true, fresh: true})
 			v31 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v30, x27.pos)
 			x26++
 			p.kidStack = append(p.kidStack, v31)
@@ -27925,9 +28081,9 @@ func (p *parser) e39() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v32 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v32 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		x18 = append(x18, v32)
-		v33 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v33 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v34 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v33, x15.pos)
 		x14++
 		p.kidStack = append(p.kidStack, v34)
@@ -27939,7 +28095,7 @@ func (p *parser) e39() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x2 = append(x2, v35)
 	p.stepWork()
 	x36 = p.mark()
@@ -27959,7 +28115,7 @@ L39:
 		goto fail
 	}
 	x2 = append(x2, v41)
-	v42 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v42 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v42, true
 fail:
 	return nil, false
@@ -28027,7 +28183,7 @@ func (p *parser) e40() (*Node, bool) {
 		goto fail_ordinary
 	L11_ordinary:
 		x2 = append(x2, v10)
-		v16 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v16 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v16, true
 	fail_ordinary:
 		return nil, false
@@ -28092,7 +28248,7 @@ L14:
 	goto fail
 L11:
 	x2 = append(x2, v10)
-	v16 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v16 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v16, true
 fail:
 	return nil, false
@@ -28134,7 +28290,7 @@ func (p *parser) e42() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L7_ordinary
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -28157,7 +28313,7 @@ func (p *parser) e42() (*Node, bool) {
 		}
 		x12 = p.pos
 		p.pos += size
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: p.text(x12, p.pos), terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: p.text(x12, p.pos), terminal: true, fresh: true})
 		v2 = v13
 		goto L3_ordinary
 	L11_ordinary:
@@ -28203,7 +28359,7 @@ func (p *parser) e42() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 		goto L7
 	}
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -28226,7 +28382,7 @@ L6:
 	}
 	x12 = p.pos
 	p.pos += size
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: p.text(x12, p.pos), terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: p.text(x12, p.pos), terminal: true, fresh: true})
 	v2 = v13
 	goto L3
 L11:
@@ -28272,7 +28428,7 @@ func (p *parser) e44() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit43, "#", 18, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "#", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "#", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5, x6 = p.pos, len(p.kidStack)
@@ -28292,7 +28448,7 @@ func (p *parser) e44() (*Node, bool) {
 			}
 			x10 = p.pos
 			p.pos += size
-			v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+			v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 			v12 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, x8.pos)
 			x7++
 			p.kidStack = append(p.kidStack, v12)
@@ -28304,9 +28460,9 @@ func (p *parser) e44() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 		x2 = append(x2, v13)
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -28342,7 +28498,7 @@ func (p *parser) e44() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit43, "#", 18, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "#", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "#", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5, x6 = p.pos, len(p.kidStack)
@@ -28362,7 +28518,7 @@ func (p *parser) e44() (*Node, bool) {
 		}
 		x10 = p.pos
 		p.pos += size
-		v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+		v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 		v12 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, x8.pos)
 		x7++
 		p.kidStack = append(p.kidStack, v12)
@@ -28374,9 +28530,9 @@ func (p *parser) e44() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v13 = p.newNode(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+	v13 = p.newNode(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 	x2 = append(x2, v13)
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v14, true
 fail:
 	return nil, false
@@ -28477,7 +28633,7 @@ func (p *parser) e45() (*Node, bool) {
 				}
 				x15 = p.pos
 				p.pos += size
-				v16 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x15), End: int32(p.pos), Text: p.text(x15, p.pos), terminal: true, fresh: true})
+				v16 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x15), end: int32(p.pos), text: p.text(x15, p.pos), terminal: true, fresh: true})
 				v17 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v16, x13.pos)
 				x12++
 				p.kidStack = append(p.kidStack, v17)
@@ -28493,7 +28649,7 @@ func (p *parser) e45() (*Node, bool) {
 				p.dropKids(x11)
 				goto L9_ordinary
 			}
-			v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
+			v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x10), end: int32(p.pos), children: p.kids(x11), fresh: true})
 			v7 = v18
 			goto L8_ordinary
 		L9_ordinary:
@@ -28518,7 +28674,7 @@ func (p *parser) e45() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L22_ordinary
 			}
-			v26 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v26 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x24 = append(x24, v26)
 
 			x27 = p.mark()
@@ -28539,7 +28695,7 @@ func (p *parser) e45() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L33_ordinary
 			}
-			v35 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v35 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v28 = v35
 			goto L29_ordinary
 		L33_ordinary:
@@ -28562,7 +28718,7 @@ func (p *parser) e45() (*Node, bool) {
 			}
 			x38 = p.pos
 			p.pos += size
-			v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: p.text(x38, p.pos), terminal: true, fresh: true})
+			v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: p.text(x38, p.pos), terminal: true, fresh: true})
 			v28 = v39
 			goto L29_ordinary
 		L37_ordinary:
@@ -28585,7 +28741,7 @@ func (p *parser) e45() (*Node, bool) {
 		L41_ordinary:
 			p.silent--
 			p.reset(x40)
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v42, x6.pos)
 			v7 = v43
 			goto L8_ordinary
@@ -28652,7 +28808,7 @@ func (p *parser) e45() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit43, "#", 18, false); !ok {
 				goto L56_ordinary
 			}
-			v60 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x59), End: int32(p.pos), Text: "#", terminal: true, fresh: true})
+			v60 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x59), end: int32(p.pos), text: "#", terminal: true, fresh: true})
 			x58 = append(x58, v60)
 
 			x61, x62 = p.pos, len(p.kidStack)
@@ -28672,7 +28828,7 @@ func (p *parser) e45() (*Node, bool) {
 				}
 				x66 = p.pos
 				p.pos += size
-				v67 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: p.text(x66, p.pos), terminal: true, fresh: true})
+				v67 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: p.text(x66, p.pos), terminal: true, fresh: true})
 				v68 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v67, x64.pos)
 				x63++
 				p.kidStack = append(p.kidStack, v68)
@@ -28684,9 +28840,9 @@ func (p *parser) e45() (*Node, bool) {
 				p.reset(x64)
 				break
 			}
-			v69 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x61), End: int32(p.pos), Children: p.kids(x62), fresh: true})
+			v69 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x61), end: int32(p.pos), children: p.kids(x62), fresh: true})
 			x58 = append(x58, v69)
-			v70 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x57), End: int32(p.pos), Children: x58, fresh: true})
+			v70 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x57), end: int32(p.pos), children: x58, fresh: true})
 			v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x50.pos)
 			v51 = v71
 			goto L52_ordinary
@@ -28704,7 +28860,7 @@ func (p *parser) e45() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L73_ordinary
 			}
-			v75 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v75 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v51 = v75
 			goto L52_ordinary
 		L73_ordinary:
@@ -28727,7 +28883,7 @@ func (p *parser) e45() (*Node, bool) {
 			}
 			x78 = p.pos
 			p.pos += size
-			v79 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: p.text(x78, p.pos), terminal: true, fresh: true})
+			v79 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: p.text(x78, p.pos), terminal: true, fresh: true})
 			v51 = v79
 			goto L52_ordinary
 		L77_ordinary:
@@ -28736,7 +28892,7 @@ func (p *parser) e45() (*Node, bool) {
 			goto L44_ordinary
 		L52_ordinary:
 			x46 = append(x46, v51)
-			v80 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v81, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v80, x6.pos)
 			v7 = v81
 			goto L8_ordinary
@@ -28755,7 +28911,7 @@ func (p *parser) e45() (*Node, bool) {
 			p.reset(x4)
 			break
 		}
-		v83 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+		v83 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x1), end: int32(p.pos), children: p.kids(x2), fresh: true})
 		return v83, true
 	}
 
@@ -28851,7 +29007,7 @@ func (p *parser) e45() (*Node, bool) {
 			}
 			x15 = p.pos
 			p.pos += size
-			v16 = p.newNode(Node{kind: kindMatch, Start: int32(x15), End: int32(p.pos), Text: p.text(x15, p.pos), terminal: true, fresh: true})
+			v16 = p.newNode(Node{kind: kindMatch, start: int32(x15), end: int32(p.pos), text: p.text(x15, p.pos), terminal: true, fresh: true})
 			v17 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v16, x13.pos)
 			x12++
 			p.kidStack = append(p.kidStack, v17)
@@ -28867,7 +29023,7 @@ func (p *parser) e45() (*Node, bool) {
 			p.dropKids(x11)
 			goto L9
 		}
-		v18 = p.newNode(Node{kind: kindList, Start: int32(x10), End: int32(p.pos), Children: p.kids(x11), fresh: true})
+		v18 = p.newNode(Node{kind: kindList, start: int32(x10), end: int32(p.pos), children: p.kids(x11), fresh: true})
 		v7 = v18
 		goto L8
 	L9:
@@ -28892,7 +29048,7 @@ func (p *parser) e45() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L22
 		}
-		v26 = p.newNode(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v26 = p.newNode(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x24 = append(x24, v26)
 		p.stepWork()
 		x27 = p.mark()
@@ -28913,7 +29069,7 @@ func (p *parser) e45() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L33
 		}
-		v35 = p.newNode(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v35 = p.newNode(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v28 = v35
 		goto L29
 	L33:
@@ -28936,7 +29092,7 @@ func (p *parser) e45() (*Node, bool) {
 		}
 		x38 = p.pos
 		p.pos += size
-		v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: p.text(x38, p.pos), terminal: true, fresh: true})
+		v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: p.text(x38, p.pos), terminal: true, fresh: true})
 		v28 = v39
 		goto L29
 	L37:
@@ -28959,7 +29115,7 @@ func (p *parser) e45() (*Node, bool) {
 	L41:
 		p.silent--
 		p.reset(x40)
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v42, x6.pos)
 		v7 = v43
 		goto L8
@@ -29026,7 +29182,7 @@ func (p *parser) e45() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit43, "#", 18, false); !ok {
 			goto L56
 		}
-		v60 = p.newNode(Node{kind: kindMatch, Start: int32(x59), End: int32(p.pos), Text: "#", terminal: true, fresh: true})
+		v60 = p.newNode(Node{kind: kindMatch, start: int32(x59), end: int32(p.pos), text: "#", terminal: true, fresh: true})
 		x58 = append(x58, v60)
 		p.stepWork()
 		x61, x62 = p.pos, len(p.kidStack)
@@ -29046,7 +29202,7 @@ func (p *parser) e45() (*Node, bool) {
 			}
 			x66 = p.pos
 			p.pos += size
-			v67 = p.newNode(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: p.text(x66, p.pos), terminal: true, fresh: true})
+			v67 = p.newNode(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: p.text(x66, p.pos), terminal: true, fresh: true})
 			v68 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v67, x64.pos)
 			x63++
 			p.kidStack = append(p.kidStack, v68)
@@ -29058,9 +29214,9 @@ func (p *parser) e45() (*Node, bool) {
 			p.reset(x64)
 			break
 		}
-		v69 = p.newNode(Node{kind: kindList, Start: int32(x61), End: int32(p.pos), Children: p.kids(x62), fresh: true})
+		v69 = p.newNode(Node{kind: kindList, start: int32(x61), end: int32(p.pos), children: p.kids(x62), fresh: true})
 		x58 = append(x58, v69)
-		v70 = p.newNode(Node{kind: kindSeq, Start: int32(x57), End: int32(p.pos), Children: x58, fresh: true})
+		v70 = p.newNode(Node{kind: kindSeq, start: int32(x57), end: int32(p.pos), children: x58, fresh: true})
 		v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x50.pos)
 		v51 = v71
 		goto L52
@@ -29078,7 +29234,7 @@ func (p *parser) e45() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L73
 		}
-		v75 = p.newNode(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v75 = p.newNode(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v51 = v75
 		goto L52
 	L73:
@@ -29101,7 +29257,7 @@ func (p *parser) e45() (*Node, bool) {
 		}
 		x78 = p.pos
 		p.pos += size
-		v79 = p.newNode(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: p.text(x78, p.pos), terminal: true, fresh: true})
+		v79 = p.newNode(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: p.text(x78, p.pos), terminal: true, fresh: true})
 		v51 = v79
 		goto L52
 	L77:
@@ -29110,7 +29266,7 @@ func (p *parser) e45() (*Node, bool) {
 		goto L44
 	L52:
 		x46 = append(x46, v51)
-		v80 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v80 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v81, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v80, x6.pos)
 		v7 = v81
 		goto L8
@@ -29129,7 +29285,7 @@ func (p *parser) e45() (*Node, bool) {
 		p.reset(x4)
 		break
 	}
-	v83 = p.newNode(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+	v83 = p.newNode(Node{kind: kindList, start: int32(x1), end: int32(p.pos), children: p.kids(x2), fresh: true})
 	return v83, true
 }
 
@@ -30752,7 +30908,7 @@ func (p *parser) e56() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L8_ordinary
 			}
-			v14 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v14 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x10 = append(x10, v14)
 
 			x15 = p.mark()
@@ -30773,7 +30929,7 @@ func (p *parser) e56() (*Node, bool) {
 			if _, ok = p.r339(); !ok {
 				goto L8_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x7.pos)
 			p.frame = x5
 			v19 = p.attachCaptures(v18, scope55, x4, x7.pos, p.pos)
@@ -30792,7 +30948,7 @@ func (p *parser) e56() (*Node, bool) {
 			p.dropKids(x3)
 			goto fail_ordinary
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v20)
 
 		x21 = p.pos
@@ -30901,7 +31057,7 @@ func (p *parser) e56() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L8
 		}
-		v14 = p.newNode(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v14 = p.newNode(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x10 = append(x10, v14)
 		p.stepWork()
 		x15 = p.mark()
@@ -30923,7 +31079,7 @@ func (p *parser) e56() (*Node, bool) {
 		if _, ok = p.r339(); !ok {
 			goto L8
 		}
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x7.pos)
 		p.frame = x5
 		v19 = p.attachCaptures(v18, scope55, x4, x7.pos, p.pos)
@@ -30942,7 +31098,7 @@ func (p *parser) e56() (*Node, bool) {
 		p.dropKids(x3)
 		goto fail
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v20)
 	p.stepWork()
 	x21 = p.pos
@@ -31937,7 +32093,7 @@ func (p *parser) e80() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -32023,7 +32179,7 @@ func (p *parser) e80() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -32106,7 +32262,7 @@ func (p *parser) e82() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -32192,7 +32348,7 @@ func (p *parser) e82() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -32280,7 +32436,7 @@ func (p *parser) e84() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -32455,7 +32611,7 @@ func (p *parser) e84() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -32971,7 +33127,7 @@ func (p *parser) e89() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -33057,7 +33213,7 @@ func (p *parser) e89() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -33239,7 +33395,7 @@ func (p *parser) e93() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v16)
 			x14 = append(x14, v16)
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 			p.frame = x9
 			v19 = p.attachCaptures(v18, scope91, x8, x11.pos, p.pos)
@@ -33254,10 +33410,10 @@ func (p *parser) e93() (*Node, bool) {
 			p.reset(x11)
 			break
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 		p.setCaptureOrdinary(1, v20)
 		x2 = append(x2, v20)
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v21, true
 	fail_ordinary:
 		return nil, false
@@ -33337,7 +33493,7 @@ func (p *parser) e93() (*Node, bool) {
 		}
 		p.setCapture(0, v16)
 		x14 = append(x14, v16)
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 		p.frame = x9
 		v19 = p.attachCaptures(v18, scope91, x8, x11.pos, p.pos)
@@ -33352,10 +33508,10 @@ func (p *parser) e93() (*Node, bool) {
 		p.reset(x11)
 		break
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 	p.setCapture(1, v20)
 	x2 = append(x2, v20)
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v21, true
 fail:
 	return nil, false
@@ -33437,7 +33593,7 @@ func (p *parser) e96() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit95, "...", 51, false); !ok {
 				goto L18_ordinary
 			}
-			v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "...", terminal: true, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "...", terminal: true, fresh: true})
 			v13 = v20
 			goto L14_ordinary
 		L18_ordinary:
@@ -33454,7 +33610,7 @@ func (p *parser) e96() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 				goto L22_ordinary
 			}
-			v24 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x23), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+			v24 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x23), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 			v13 = v24
 			goto L14_ordinary
 		L22_ordinary:
@@ -33464,7 +33620,7 @@ func (p *parser) e96() (*Node, bool) {
 		L14_ordinary:
 			p.setCaptureOrdinary(0, v13)
 			x10 = append(x10, v13)
-			v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x7.pos)
 			p.frame = x5
 			v27 = p.attachCaptures(v26, scope94, x4, x7.pos, p.pos)
@@ -33479,7 +33635,7 @@ func (p *parser) e96() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v28)
 
 		x29 = p.pos
@@ -33604,7 +33760,7 @@ func (p *parser) e96() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit95, "...", 51, false); !ok {
 			goto L18
 		}
-		v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "...", terminal: true, fresh: true})
+		v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "...", terminal: true, fresh: true})
 		v13 = v20
 		goto L14
 	L18:
@@ -33621,7 +33777,7 @@ func (p *parser) e96() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L22
 		}
-		v24 = p.newNode(Node{kind: kindMatch, Start: int32(x23), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v24 = p.newNode(Node{kind: kindMatch, start: int32(x23), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		v13 = v24
 		goto L14
 	L22:
@@ -33631,7 +33787,7 @@ func (p *parser) e96() (*Node, bool) {
 	L14:
 		p.setCapture(0, v13)
 		x10 = append(x10, v13)
-		v25 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v25 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x7.pos)
 		p.frame = x5
 		v27 = p.attachCaptures(v26, scope94, x4, x7.pos, p.pos)
@@ -33646,7 +33802,7 @@ func (p *parser) e96() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -33787,7 +33943,7 @@ func (p *parser) e98() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v22)
 			x20 = append(x20, v22)
-			v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+			v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 			v24 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x17.pos)
 			p.frame = x15
 			v25 = p.attachCaptures(v24, scope97, x14, x17.pos, p.pos)
@@ -33802,10 +33958,10 @@ func (p *parser) e98() (*Node, bool) {
 			p.reset(x17)
 			break
 		}
-		v26 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v26 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		p.setCaptureOrdinary(1, v26)
 		x8 = append(x8, v26)
-		v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x3.pos)
 		v4 = v28
 		goto L6_ordinary
@@ -33814,7 +33970,7 @@ func (p *parser) e98() (*Node, bool) {
 		v4 = nil
 	L6_ordinary:
 		x2 = append(x2, v4)
-		v29 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v29 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v29, true
 	}
 
@@ -33909,7 +34065,7 @@ func (p *parser) e98() (*Node, bool) {
 		}
 		p.setCapture(0, v22)
 		x20 = append(x20, v22)
-		v23 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v23 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v24 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x17.pos)
 		p.frame = x15
 		v25 = p.attachCaptures(v24, scope97, x14, x17.pos, p.pos)
@@ -33924,10 +34080,10 @@ func (p *parser) e98() (*Node, bool) {
 		p.reset(x17)
 		break
 	}
-	v26 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v26 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	p.setCapture(1, v26)
 	x8 = append(x8, v26)
-	v27 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v27 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x3.pos)
 	v4 = v28
 	goto L6
@@ -33936,7 +34092,7 @@ L5:
 	v4 = nil
 L6:
 	x2 = append(x2, v4)
-	v29 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v29 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v29, true
 }
 
@@ -34169,7 +34325,7 @@ func (p *parser) e103() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -34312,7 +34468,7 @@ func (p *parser) e103() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -34418,7 +34574,7 @@ func (p *parser) e105() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -34515,7 +34671,7 @@ func (p *parser) e105() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -36451,7 +36607,7 @@ func (p *parser) e122() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -36616,7 +36772,7 @@ func (p *parser) e122() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -36743,7 +36899,7 @@ func (p *parser) e124() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -36820,7 +36976,7 @@ func (p *parser) e124() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -37181,7 +37337,7 @@ func (p *parser) e130() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope128, x6, x9.pos, p.pos)
@@ -37196,7 +37352,7 @@ func (p *parser) e130() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -37223,7 +37379,7 @@ func (p *parser) e130() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v30)
 			x28 = append(x28, v30)
-			v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+			v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 			v32 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x25.pos)
 			p.frame = x23
 			v33 = p.attachCaptures(v32, scope129, x22, x25.pos, p.pos)
@@ -37238,7 +37394,7 @@ func (p *parser) e130() (*Node, bool) {
 			p.reset(x25)
 			break
 		}
-		v34 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v34 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v34)
 
 		x35 = p.pos
@@ -37427,7 +37583,7 @@ func (p *parser) e130() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope128, x6, x9.pos, p.pos)
@@ -37442,7 +37598,7 @@ func (p *parser) e130() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -37470,7 +37626,7 @@ func (p *parser) e130() (*Node, bool) {
 		}
 		p.setCapture(0, v30)
 		x28 = append(x28, v30)
-		v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x25.pos)
 		p.frame = x23
 		v33 = p.attachCaptures(v32, scope129, x22, x25.pos, p.pos)
@@ -37485,7 +37641,7 @@ func (p *parser) e130() (*Node, bool) {
 		p.reset(x25)
 		break
 	}
-	v34 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v34 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v34)
 	p.stepWork()
 	x35 = p.pos
@@ -38533,7 +38689,7 @@ func (p *parser) e141() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit140, "@", 64, false); !ok {
 				goto L8_ordinary
 			}
-			v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: "@", terminal: true, fresh: true})
+			v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: "@", terminal: true, fresh: true})
 			x10 = append(x10, v12)
 
 			if _, ok = p.r339(); !ok {
@@ -38551,7 +38707,7 @@ func (p *parser) e141() (*Node, bool) {
 			if _, ok = p.call(rules[368], 0); !ok {
 				goto L8_ordinary
 			}
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, x7.pos)
 			p.frame = x5
 			v17 = p.attachCaptures(v16, scope139, x4, x7.pos, p.pos)
@@ -38566,7 +38722,7 @@ func (p *parser) e141() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v18)
 		return nil, true
 	}
@@ -38613,7 +38769,7 @@ func (p *parser) e141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit140, "@", 64, false); !ok {
 			goto L8
 		}
-		v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: "@", terminal: true, fresh: true})
+		v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: "@", terminal: true, fresh: true})
 		x10 = append(x10, v12)
 		p.stepWork()
 		p.stepWork()
@@ -38633,7 +38789,7 @@ func (p *parser) e141() (*Node, bool) {
 		if _, ok = p.call(rules[368], 0); !ok {
 			goto L8
 		}
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, x7.pos)
 		p.frame = x5
 		v17 = p.attachCaptures(v16, scope139, x4, x7.pos, p.pos)
@@ -38648,7 +38804,7 @@ func (p *parser) e141() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v18)
 	return nil, true
 }
@@ -38702,7 +38858,7 @@ func (p *parser) e146() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		x2 = append(x2, v11)
 
 		x12 = p.pos
@@ -38785,7 +38941,7 @@ func (p *parser) e146() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -38837,7 +38993,7 @@ func (p *parser) e146() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v11 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v11 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	x2 = append(x2, v11)
 	p.stepWork()
 	x12 = p.pos
@@ -38920,7 +39076,7 @@ func (p *parser) e146() (*Node, bool) {
 	}) {
 		goto fail
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v14, true
 fail:
 	return nil, false
@@ -40255,7 +40411,7 @@ func (p *parser) e158() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L10_ordinary
 			}
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope156, x6, x9.pos, p.pos)
@@ -40270,7 +40426,7 @@ func (p *parser) e158() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -40297,7 +40453,7 @@ func (p *parser) e158() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v31)
 			x29 = append(x29, v31)
-			v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x28), End: int32(p.pos), Children: x29, fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x28), end: int32(p.pos), children: x29, fresh: true})
 			v33 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v32, x26.pos)
 			p.frame = x23
 			v34 = p.attachCaptures(v33, scope157, x22, x26.pos, p.pos)
@@ -40312,7 +40468,7 @@ func (p *parser) e158() (*Node, bool) {
 			p.reset(x26)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v35)
 		return nil, true
 	fail_ordinary:
@@ -40414,7 +40570,7 @@ func (p *parser) e158() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L10
 		}
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope156, x6, x9.pos, p.pos)
@@ -40429,7 +40585,7 @@ func (p *parser) e158() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -40457,7 +40613,7 @@ func (p *parser) e158() (*Node, bool) {
 		}
 		p.setCapture(0, v31)
 		x29 = append(x29, v31)
-		v32 = p.newNode(Node{kind: kindSeq, Start: int32(x28), End: int32(p.pos), Children: x29, fresh: true})
+		v32 = p.newNode(Node{kind: kindSeq, start: int32(x28), end: int32(p.pos), children: x29, fresh: true})
 		v33 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v32, x26.pos)
 		p.frame = x23
 		v34 = p.attachCaptures(v33, scope157, x22, x26.pos, p.pos)
@@ -40472,7 +40628,7 @@ func (p *parser) e158() (*Node, bool) {
 		p.reset(x26)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v35)
 	return nil, true
 fail:
@@ -40774,7 +40930,7 @@ func (p *parser) e168() (*Node, bool) {
 			p.reset(x23)
 			break
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x18), End: int32(p.pos), Children: p.kids(x19), fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x18), end: int32(p.pos), children: p.kids(x19), fresh: true})
 		p.setCaptureOrdinary(2, v27)
 		return nil, true
 	fail_ordinary:
@@ -41079,7 +41235,7 @@ L15:
 		p.reset(x23)
 		break
 	}
-	v27 = p.newNode(Node{kind: kindList, Start: int32(x18), End: int32(p.pos), Children: p.kids(x19), fresh: true})
+	v27 = p.newNode(Node{kind: kindList, start: int32(x18), end: int32(p.pos), children: p.kids(x19), fresh: true})
 	p.setCapture(2, v27)
 	return nil, true
 fail:
@@ -41422,7 +41578,7 @@ func (p *parser) e174() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.pos
@@ -41459,7 +41615,7 @@ func (p *parser) e174() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L14_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x13.pos)
 			p.frame = x11
 			v21 = p.attachCaptures(v20, scope172, x10, x13.pos, p.pos)
@@ -41474,7 +41630,7 @@ func (p *parser) e174() (*Node, bool) {
 			p.reset(x13)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x8), End: int32(p.pos), Children: p.kids(x9), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x8), end: int32(p.pos), children: p.kids(x9), fresh: true})
 		p.setCaptureOrdinary(1, v22)
 		x2 = append(x2, v22)
 
@@ -41502,7 +41658,7 @@ func (p *parser) e174() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v35)
 			x33 = append(x33, v35)
-			v36 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x32), End: int32(p.pos), Children: x33, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x32), end: int32(p.pos), children: x33, fresh: true})
 			v37 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v36, x30.pos)
 			p.frame = x27
 			v38 = p.attachCaptures(v37, scope173, x26, x30.pos, p.pos)
@@ -41517,10 +41673,10 @@ func (p *parser) e174() (*Node, bool) {
 			p.reset(x30)
 			break
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(2, v39)
 		x2 = append(x2, v39)
-		v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v40, true
 	fail_ordinary:
 		return nil, false
@@ -41592,7 +41748,7 @@ func (p *parser) e174() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.pos
@@ -41632,7 +41788,7 @@ func (p *parser) e174() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L14
 		}
-		v19 = p.newNode(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+		v19 = p.newNode(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x13.pos)
 		p.frame = x11
 		v21 = p.attachCaptures(v20, scope172, x10, x13.pos, p.pos)
@@ -41647,7 +41803,7 @@ func (p *parser) e174() (*Node, bool) {
 		p.reset(x13)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x8), End: int32(p.pos), Children: p.kids(x9), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x8), end: int32(p.pos), children: p.kids(x9), fresh: true})
 	p.setCapture(1, v22)
 	x2 = append(x2, v22)
 	p.stepWork()
@@ -41676,7 +41832,7 @@ func (p *parser) e174() (*Node, bool) {
 		}
 		p.setCapture(0, v35)
 		x33 = append(x33, v35)
-		v36 = p.newNode(Node{kind: kindSeq, Start: int32(x32), End: int32(p.pos), Children: x33, fresh: true})
+		v36 = p.newNode(Node{kind: kindSeq, start: int32(x32), end: int32(p.pos), children: x33, fresh: true})
 		v37 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v36, x30.pos)
 		p.frame = x27
 		v38 = p.attachCaptures(v37, scope173, x26, x30.pos, p.pos)
@@ -41691,10 +41847,10 @@ func (p *parser) e174() (*Node, bool) {
 		p.reset(x30)
 		break
 	}
-	v39 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v39 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(2, v39)
 	x2 = append(x2, v39)
-	v40 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v40 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v40, true
 fail:
 	return nil, false
@@ -41959,7 +42115,7 @@ func (p *parser) e180() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v25)
 				x21 = append(x21, v25)
-				v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+				v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 				v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x18.pos)
 				p.frame = x16
 				v28 = p.attachCaptures(v27, scope178, x15, x18.pos, p.pos)
@@ -41978,7 +42134,7 @@ func (p *parser) e180() (*Node, bool) {
 				p.dropKids(x14)
 				goto L11_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 			p.frame = x7
@@ -41994,7 +42150,7 @@ func (p *parser) e180() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v32)
 		return nil, true
 	fail_ordinary:
@@ -42106,7 +42262,7 @@ func (p *parser) e180() (*Node, bool) {
 			}
 			p.setCapture(0, v25)
 			x21 = append(x21, v25)
-			v26 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v26 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x18.pos)
 			p.frame = x16
 			v28 = p.attachCaptures(v27, scope178, x15, x18.pos, p.pos)
@@ -42125,7 +42281,7 @@ func (p *parser) e180() (*Node, bool) {
 			p.dropKids(x14)
 			goto L11
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 		p.setCapture(0, v29)
 		v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 		p.frame = x7
@@ -42141,7 +42297,7 @@ func (p *parser) e180() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v32 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v32 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v32)
 	return nil, true
 fail:
@@ -44391,7 +44547,7 @@ func (p *parser) e208() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v16)
 			x12 = append(x12, v16)
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
 			v19 = p.attachCaptures(v18, scope207, x6, x9.pos, p.pos)
@@ -44410,7 +44566,7 @@ func (p *parser) e208() (*Node, bool) {
 			p.dropKids(x5)
 			goto fail_ordinary
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v20)
 		return nil, true
 	fail_ordinary:
@@ -44501,7 +44657,7 @@ func (p *parser) e208() (*Node, bool) {
 		}
 		p.setCapture(0, v16)
 		x12 = append(x12, v16)
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
 		v19 = p.attachCaptures(v18, scope207, x6, x9.pos, p.pos)
@@ -44520,7 +44676,7 @@ func (p *parser) e208() (*Node, bool) {
 		p.dropKids(x5)
 		goto fail
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v20)
 	return nil, true
 fail:
@@ -45202,7 +45358,7 @@ func (p *parser) e217() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope216, x6, x9.pos, p.pos)
@@ -45217,7 +45373,7 @@ func (p *parser) e217() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -45309,7 +45465,7 @@ func (p *parser) e217() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope216, x6, x9.pos, p.pos)
@@ -45324,7 +45480,7 @@ func (p *parser) e217() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -46167,7 +46323,7 @@ func (p *parser) e226() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -46244,7 +46400,7 @@ func (p *parser) e226() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -46309,7 +46465,7 @@ func (p *parser) e227() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 			goto fail_ordinary
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 		x2 = append(x2, v12)
 
 		if _, ok = p.r339(); !ok {
@@ -46323,7 +46479,7 @@ func (p *parser) e227() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v14)
 		x2 = append(x2, v14)
-		v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v15, true
 	fail_ordinary:
 		return nil, false
@@ -46385,7 +46541,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 		goto fail
 	}
-	v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+	v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 	x2 = append(x2, v12)
 	p.stepWork()
 	p.stepWork()
@@ -46400,7 +46556,7 @@ L6:
 	}
 	p.setCapture(1, v14)
 	x2 = append(x2, v14)
-	v15 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v15 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v15, true
 fail:
 	return nil, false
@@ -46795,7 +46951,7 @@ func (p *parser) e230() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope229, x6, x9.pos, p.pos)
@@ -46810,7 +46966,7 @@ func (p *parser) e230() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -46885,7 +47041,7 @@ func (p *parser) e230() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope229, x6, x9.pos, p.pos)
@@ -46900,7 +47056,7 @@ func (p *parser) e230() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -46975,7 +47131,7 @@ func (p *parser) e232() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -47052,7 +47208,7 @@ func (p *parser) e232() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -47099,7 +47255,7 @@ func (p *parser) e233() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -47128,7 +47284,7 @@ func (p *parser) e233() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x2 = append(x2, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -47172,7 +47328,7 @@ func (p *parser) e233() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -47202,7 +47358,7 @@ L8:
 	}
 	p.setCapture(1, v10)
 	x2 = append(x2, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -47314,7 +47470,7 @@ func (p *parser) e235() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -47457,7 +47613,7 @@ func (p *parser) e235() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -48244,7 +48400,7 @@ func (p *parser) e240() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 
 		x10 = p.pos
@@ -48268,7 +48424,7 @@ func (p *parser) e240() (*Node, bool) {
 			p.reset(x14)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -48292,7 +48448,7 @@ func (p *parser) e240() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -48316,7 +48472,7 @@ func (p *parser) e240() (*Node, bool) {
 			p.reset(x33)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 		p.setCaptureOrdinary(3, v37)
 
 		x38 = p.pos
@@ -48340,7 +48496,7 @@ func (p *parser) e240() (*Node, bool) {
 			p.reset(x42)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 		p.setCaptureOrdinary(4, v46)
 
 		x47 = p.pos
@@ -48508,7 +48664,7 @@ func (p *parser) e240() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	p.stepWork()
 	x10 = p.pos
@@ -48532,7 +48688,7 @@ func (p *parser) e240() (*Node, bool) {
 		p.reset(x14)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -48556,7 +48712,7 @@ func (p *parser) e240() (*Node, bool) {
 		p.reset(x24)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -48580,7 +48736,7 @@ func (p *parser) e240() (*Node, bool) {
 		p.reset(x33)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 	p.setCapture(3, v37)
 	p.stepWork()
 	x38 = p.pos
@@ -48604,7 +48760,7 @@ func (p *parser) e240() (*Node, bool) {
 		p.reset(x42)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 	p.setCapture(4, v46)
 	p.stepWork()
 	x47 = p.pos
@@ -48786,7 +48942,7 @@ func (p *parser) e242() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -48819,7 +48975,7 @@ func (p *parser) e242() (*Node, bool) {
 		if _, ok = p.call(rules[374], 0); !ok {
 			goto fail_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -48863,7 +49019,7 @@ func (p *parser) e242() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -48898,7 +49054,7 @@ L8:
 	if _, ok = p.call(rules[374], 0); !ok {
 		goto fail
 	}
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -48930,14 +49086,14 @@ func (p *parser) e244() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v5)
 		x2 = append(x2, v5)
 
 		if _, ok = p.call(rules[374], 0); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v6, true
 	fail_ordinary:
 		return nil, false
@@ -48966,7 +49122,7 @@ func (p *parser) e244() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 	p.setCapture(0, v5)
 	x2 = append(x2, v5)
 	p.stepWork()
@@ -48974,7 +49130,7 @@ func (p *parser) e244() (*Node, bool) {
 	if _, ok = p.call(rules[374], 0); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v6 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v6, true
 fail:
 	return nil, false
@@ -49066,7 +49222,7 @@ func (p *parser) e246() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 			goto L5_ordinary
 		}
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 		x8 = append(x8, v10)
 
 		x11 = p.mark()
@@ -49110,7 +49266,7 @@ func (p *parser) e246() (*Node, bool) {
 		if _, ok = p.call(rules[374], 0); !ok {
 			goto L16_ordinary
 		}
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 		v14 = v22
 		goto L15_ordinary
@@ -49136,13 +49292,13 @@ func (p *parser) e246() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L26_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x28 = append(x28, v30)
 
 		if _, ok = p.r339(); !ok {
 			goto L26_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 		v14 = v32
 		goto L15_ordinary
@@ -49189,7 +49345,7 @@ func (p *parser) e246() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L47_ordinary
 			}
-			v52 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v52 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x50 = append(x50, v52)
 
 			x53 = p.mark()
@@ -49218,7 +49374,7 @@ func (p *parser) e246() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v56)
 			x50 = append(x50, v56)
-			v57 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v57 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 			v46 = v58
 			goto L48_ordinary
@@ -49231,7 +49387,7 @@ func (p *parser) e246() (*Node, bool) {
 			if _, ok = p.call(rules[374], 0); !ok {
 				goto L40_ordinary
 			}
-			v59 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+			v59 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 			v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 			p.frame = x37
 			v61 = p.attachCaptures(v60, scope245, x36, x39.pos, p.pos)
@@ -49246,7 +49402,7 @@ func (p *parser) e246() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 		p.setCaptureOrdinary(1, v62)
 		x8 = append(x8, v62)
 
@@ -49276,7 +49432,7 @@ func (p *parser) e246() (*Node, bool) {
 		p.expectOrdinary(x64, msgBit|85)
 		goto L5_ordinary
 	L67_ordinary:
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 		v4 = v69
 		goto L6_ordinary
@@ -49301,7 +49457,7 @@ func (p *parser) e246() (*Node, bool) {
 		v71 = nil
 	L73_ordinary:
 		x2 = append(x2, v71)
-		v76 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v76 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v76, true
 	}
 
@@ -49389,7 +49545,7 @@ func (p *parser) e246() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 		goto L5
 	}
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 	x8 = append(x8, v10)
 	p.stepWork()
 	x11 = p.mark()
@@ -49435,7 +49591,7 @@ L12:
 	if _, ok = p.call(rules[374], 0); !ok {
 		goto L16
 	}
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 	v14 = v22
 	goto L15
@@ -49461,14 +49617,14 @@ L16:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L26
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x28 = append(x28, v30)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r339(); !ok {
 		goto L26
 	}
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 	v14 = v32
 	goto L15
@@ -49516,7 +49672,7 @@ L15:
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L47
 		}
-		v52 = p.newNode(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v52 = p.newNode(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x50 = append(x50, v52)
 		p.stepWork()
 		x53 = p.mark()
@@ -49546,7 +49702,7 @@ L15:
 		}
 		p.setCapture(1, v56)
 		x50 = append(x50, v56)
-		v57 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v57 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 		v46 = v58
 		goto L48
@@ -49560,7 +49716,7 @@ L15:
 		if _, ok = p.call(rules[374], 0); !ok {
 			goto L40
 		}
-		v59 = p.newNode(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+		v59 = p.newNode(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 		v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 		p.frame = x37
 		v61 = p.attachCaptures(v60, scope245, x36, x39.pos, p.pos)
@@ -49575,7 +49731,7 @@ L15:
 		p.reset(x39)
 		break
 	}
-	v62 = p.newNode(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+	v62 = p.newNode(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 	p.setCapture(1, v62)
 	x8 = append(x8, v62)
 	p.stepWork()
@@ -49605,7 +49761,7 @@ L66:
 	p.expect(x64, msgBit|85)
 	goto L5
 L67:
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 	v4 = v69
 	goto L6
@@ -49630,7 +49786,7 @@ L72:
 	v71 = nil
 L73:
 	x2 = append(x2, v71)
-	v76 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v76 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v76, true
 }
 
@@ -50031,13 +50187,13 @@ func (p *parser) e250() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L9_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x11 = append(x11, v13)
 
 		if _, ok = p.r339(); !ok {
 			goto L9_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 		v4 = v15
 		goto L5_ordinary
@@ -50069,7 +50225,7 @@ func (p *parser) e250() (*Node, bool) {
 		goto fail_ordinary
 	L5_ordinary:
 		x2 = append(x2, v4)
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v21, true
 	fail_ordinary:
 		return nil, false
@@ -50124,14 +50280,14 @@ func (p *parser) e250() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L9
 	}
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x11 = append(x11, v13)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r339(); !ok {
 		goto L9
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 	v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 	v4 = v15
 	goto L5
@@ -50163,7 +50319,7 @@ L16:
 	goto fail
 L5:
 	x2 = append(x2, v4)
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v21, true
 fail:
 	return nil, false
@@ -50281,7 +50437,7 @@ func (p *parser) e253() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope252, x21, x24.pos, p.pos)
@@ -50300,7 +50456,7 @@ func (p *parser) e253() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -50318,7 +50474,7 @@ func (p *parser) e253() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -50326,7 +50482,7 @@ func (p *parser) e253() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -50348,10 +50504,10 @@ func (p *parser) e253() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -50373,7 +50529,7 @@ func (p *parser) e253() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -50493,7 +50649,7 @@ func (p *parser) e253() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope252, x21, x24.pos, p.pos)
@@ -50512,7 +50668,7 @@ func (p *parser) e253() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -50532,7 +50688,7 @@ func (p *parser) e253() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -50540,7 +50696,7 @@ func (p *parser) e253() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -50563,10 +50719,10 @@ func (p *parser) e253() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -50588,7 +50744,7 @@ func (p *parser) e253() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -50707,7 +50863,7 @@ func (p *parser) e256() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope255, x21, x24.pos, p.pos)
@@ -50726,7 +50882,7 @@ func (p *parser) e256() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -50744,7 +50900,7 @@ func (p *parser) e256() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -50752,7 +50908,7 @@ func (p *parser) e256() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -50774,10 +50930,10 @@ func (p *parser) e256() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -50799,7 +50955,7 @@ func (p *parser) e256() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -50919,7 +51075,7 @@ func (p *parser) e256() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope255, x21, x24.pos, p.pos)
@@ -50938,7 +51094,7 @@ func (p *parser) e256() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -50958,7 +51114,7 @@ func (p *parser) e256() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -50966,7 +51122,7 @@ func (p *parser) e256() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -50989,10 +51145,10 @@ func (p *parser) e256() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -51014,7 +51170,7 @@ func (p *parser) e256() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -51862,7 +52018,7 @@ func (p *parser) e267() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v19)
 			x13 = append(x13, v19)
-			v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v21 = p.scopeValue(shaper{elems: true, k: 4, mode: 2, tuple: true}, v20, x10.pos)
 			p.frame = x7
 			v22 = p.attachCaptures(v21, scope266, x6, x10.pos, p.pos)
@@ -51877,7 +52033,7 @@ func (p *parser) e267() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v23 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v23)
 		return nil, true
 	fail_ordinary:
@@ -51978,7 +52134,7 @@ func (p *parser) e267() (*Node, bool) {
 		}
 		p.setCapture(1, v19)
 		x13 = append(x13, v19)
-		v20 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v20 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v21 = p.scopeValue(shaper{elems: true, k: 4, mode: 2, tuple: true}, v20, x10.pos)
 		p.frame = x7
 		v22 = p.attachCaptures(v21, scope266, x6, x10.pos, p.pos)
@@ -51993,7 +52149,7 @@ func (p *parser) e267() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v23 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v23 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v23)
 	return nil, true
 fail:
@@ -52269,7 +52425,7 @@ func (p *parser) e269() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 
 		x10 = p.pos
@@ -52293,7 +52449,7 @@ func (p *parser) e269() (*Node, bool) {
 			p.reset(x14)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -52317,7 +52473,7 @@ func (p *parser) e269() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -52341,7 +52497,7 @@ func (p *parser) e269() (*Node, bool) {
 			p.reset(x33)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 		p.setCaptureOrdinary(3, v37)
 
 		x38 = p.pos
@@ -52365,7 +52521,7 @@ func (p *parser) e269() (*Node, bool) {
 			p.reset(x42)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 		p.setCaptureOrdinary(4, v46)
 
 		x47 = p.pos
@@ -52533,7 +52689,7 @@ func (p *parser) e269() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	p.stepWork()
 	x10 = p.pos
@@ -52557,7 +52713,7 @@ func (p *parser) e269() (*Node, bool) {
 		p.reset(x14)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -52581,7 +52737,7 @@ func (p *parser) e269() (*Node, bool) {
 		p.reset(x24)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -52605,7 +52761,7 @@ func (p *parser) e269() (*Node, bool) {
 		p.reset(x33)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 	p.setCapture(3, v37)
 	p.stepWork()
 	x38 = p.pos
@@ -52629,7 +52785,7 @@ func (p *parser) e269() (*Node, bool) {
 		p.reset(x42)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 	p.setCapture(4, v46)
 	p.stepWork()
 	x47 = p.pos
@@ -52811,7 +52967,7 @@ func (p *parser) e271() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -52844,7 +53000,7 @@ func (p *parser) e271() (*Node, bool) {
 		if _, ok = p.call(rules[376], 0); !ok {
 			goto fail_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -52888,7 +53044,7 @@ func (p *parser) e271() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -52923,7 +53079,7 @@ L8:
 	if _, ok = p.call(rules[376], 0); !ok {
 		goto fail
 	}
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -52955,14 +53111,14 @@ func (p *parser) e272() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v5)
 		x2 = append(x2, v5)
 
 		if _, ok = p.call(rules[376], 0); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v6, true
 	fail_ordinary:
 		return nil, false
@@ -52991,7 +53147,7 @@ func (p *parser) e272() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 	p.setCapture(0, v5)
 	x2 = append(x2, v5)
 	p.stepWork()
@@ -52999,7 +53155,7 @@ func (p *parser) e272() (*Node, bool) {
 	if _, ok = p.call(rules[376], 0); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v6 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v6, true
 fail:
 	return nil, false
@@ -53091,7 +53247,7 @@ func (p *parser) e274() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 			goto L5_ordinary
 		}
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 		x8 = append(x8, v10)
 
 		x11 = p.mark()
@@ -53135,7 +53291,7 @@ func (p *parser) e274() (*Node, bool) {
 		if _, ok = p.call(rules[376], 0); !ok {
 			goto L16_ordinary
 		}
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 		v14 = v22
 		goto L15_ordinary
@@ -53161,13 +53317,13 @@ func (p *parser) e274() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L26_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x28 = append(x28, v30)
 
 		if _, ok = p.r339(); !ok {
 			goto L26_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 		v14 = v32
 		goto L15_ordinary
@@ -53214,7 +53370,7 @@ func (p *parser) e274() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L47_ordinary
 			}
-			v52 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v52 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x50 = append(x50, v52)
 
 			x53 = p.mark()
@@ -53243,7 +53399,7 @@ func (p *parser) e274() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v56)
 			x50 = append(x50, v56)
-			v57 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v57 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 			v46 = v58
 			goto L48_ordinary
@@ -53256,7 +53412,7 @@ func (p *parser) e274() (*Node, bool) {
 			if _, ok = p.call(rules[376], 0); !ok {
 				goto L40_ordinary
 			}
-			v59 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+			v59 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 			v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 			p.frame = x37
 			v61 = p.attachCaptures(v60, scope273, x36, x39.pos, p.pos)
@@ -53271,7 +53427,7 @@ func (p *parser) e274() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 		p.setCaptureOrdinary(1, v62)
 		x8 = append(x8, v62)
 
@@ -53301,7 +53457,7 @@ func (p *parser) e274() (*Node, bool) {
 		p.expectOrdinary(x64, msgBit|85)
 		goto L5_ordinary
 	L67_ordinary:
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 		v4 = v69
 		goto L6_ordinary
@@ -53326,7 +53482,7 @@ func (p *parser) e274() (*Node, bool) {
 		v71 = nil
 	L73_ordinary:
 		x2 = append(x2, v71)
-		v76 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v76 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v76, true
 	}
 
@@ -53414,7 +53570,7 @@ func (p *parser) e274() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 		goto L5
 	}
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 	x8 = append(x8, v10)
 	p.stepWork()
 	x11 = p.mark()
@@ -53460,7 +53616,7 @@ L12:
 	if _, ok = p.call(rules[376], 0); !ok {
 		goto L16
 	}
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 	v14 = v22
 	goto L15
@@ -53486,14 +53642,14 @@ L16:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L26
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x28 = append(x28, v30)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r339(); !ok {
 		goto L26
 	}
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 	v14 = v32
 	goto L15
@@ -53541,7 +53697,7 @@ L15:
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L47
 		}
-		v52 = p.newNode(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v52 = p.newNode(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x50 = append(x50, v52)
 		p.stepWork()
 		x53 = p.mark()
@@ -53571,7 +53727,7 @@ L15:
 		}
 		p.setCapture(1, v56)
 		x50 = append(x50, v56)
-		v57 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v57 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 		v46 = v58
 		goto L48
@@ -53585,7 +53741,7 @@ L15:
 		if _, ok = p.call(rules[376], 0); !ok {
 			goto L40
 		}
-		v59 = p.newNode(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+		v59 = p.newNode(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 		v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 		p.frame = x37
 		v61 = p.attachCaptures(v60, scope273, x36, x39.pos, p.pos)
@@ -53600,7 +53756,7 @@ L15:
 		p.reset(x39)
 		break
 	}
-	v62 = p.newNode(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+	v62 = p.newNode(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 	p.setCapture(1, v62)
 	x8 = append(x8, v62)
 	p.stepWork()
@@ -53630,7 +53786,7 @@ L66:
 	p.expect(x64, msgBit|85)
 	goto L5
 L67:
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 	v4 = v69
 	goto L6
@@ -53655,7 +53811,7 @@ L72:
 	v71 = nil
 L73:
 	x2 = append(x2, v71)
-	v76 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v76 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v76, true
 }
 
@@ -53824,13 +53980,13 @@ func (p *parser) e277() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L9_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x11 = append(x11, v13)
 
 		if _, ok = p.r339(); !ok {
 			goto L9_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 		v4 = v15
 		goto L5_ordinary
@@ -53877,7 +54033,7 @@ func (p *parser) e277() (*Node, bool) {
 		goto fail_ordinary
 	L5_ordinary:
 		x2 = append(x2, v4)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v23, true
 	fail_ordinary:
 		return nil, false
@@ -53933,14 +54089,14 @@ func (p *parser) e277() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L9
 	}
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x11 = append(x11, v13)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r339(); !ok {
 		goto L9
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 	v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 	v4 = v15
 	goto L5
@@ -53988,7 +54144,7 @@ L16:
 	goto fail
 L5:
 	x2 = append(x2, v4)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v23, true
 fail:
 	return nil, false
@@ -54369,7 +54525,7 @@ func (p *parser) e283() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope282, x21, x24.pos, p.pos)
@@ -54384,10 +54540,10 @@ func (p *parser) e283() (*Node, bool) {
 				p.reset(x24)
 				break
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(2, v33)
 			x13 = append(x13, v33)
-			v34 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v34 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 			p.frame = x7
 			v36 = p.attachCaptures(v35, scope281, x6, x10.pos, p.pos)
@@ -54402,7 +54558,7 @@ func (p *parser) e283() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v37)
 		return nil, true
 	fail_ordinary:
@@ -54532,7 +54688,7 @@ func (p *parser) e283() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope282, x21, x24.pos, p.pos)
@@ -54547,10 +54703,10 @@ func (p *parser) e283() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(2, v33)
 		x13 = append(x13, v33)
-		v34 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v34 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 		p.frame = x7
 		v36 = p.attachCaptures(v35, scope281, x6, x10.pos, p.pos)
@@ -54565,7 +54721,7 @@ func (p *parser) e283() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v37)
 	return nil, true
 fail:
@@ -54692,7 +54848,7 @@ func (p *parser) e286() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope285, x21, x24.pos, p.pos)
@@ -54707,10 +54863,10 @@ func (p *parser) e286() (*Node, bool) {
 				p.reset(x24)
 				break
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(2, v33)
 			x13 = append(x13, v33)
-			v34 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v34 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 			p.frame = x7
 			v36 = p.attachCaptures(v35, scope284, x6, x10.pos, p.pos)
@@ -54725,7 +54881,7 @@ func (p *parser) e286() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v37)
 		return nil, true
 	fail_ordinary:
@@ -54855,7 +55011,7 @@ func (p *parser) e286() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope285, x21, x24.pos, p.pos)
@@ -54870,10 +55026,10 @@ func (p *parser) e286() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(2, v33)
 		x13 = append(x13, v33)
-		v34 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v34 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 		p.frame = x7
 		v36 = p.attachCaptures(v35, scope284, x6, x10.pos, p.pos)
@@ -54888,7 +55044,7 @@ func (p *parser) e286() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v37)
 	return nil, true
 fail:
@@ -55337,7 +55493,7 @@ func (p *parser) e297() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(1, v25)
 				x21 = append(x21, v25)
-				v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+				v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 				v27 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v26, x18.pos)
 				p.frame = x16
 				v28 = p.attachCaptures(v27, scope296, x15, x18.pos, p.pos)
@@ -55356,7 +55512,7 @@ func (p *parser) e297() (*Node, bool) {
 				p.dropKids(x14)
 				goto L11_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 			p.frame = x7
@@ -55372,7 +55528,7 @@ func (p *parser) e297() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v32)
 		return nil, true
 	fail_ordinary:
@@ -55471,7 +55627,7 @@ func (p *parser) e297() (*Node, bool) {
 			}
 			p.setCapture(1, v25)
 			x21 = append(x21, v25)
-			v26 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v26 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v27 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v26, x18.pos)
 			p.frame = x16
 			v28 = p.attachCaptures(v27, scope296, x15, x18.pos, p.pos)
@@ -55490,7 +55646,7 @@ func (p *parser) e297() (*Node, bool) {
 			p.dropKids(x14)
 			goto L11
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 		p.setCapture(0, v29)
 		v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 		p.frame = x7
@@ -55506,7 +55662,7 @@ func (p *parser) e297() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v32 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v32 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v32)
 	return nil, true
 fail:
@@ -57611,7 +57767,7 @@ func (p *parser) e328() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit100, "(", 35, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "(", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "(", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		if !p.predicate(func(c *actx) any {
@@ -57669,7 +57825,7 @@ func (p *parser) e328() (*Node, bool) {
 			if _, ok = p.call(rules[379], 0); !ok {
 				goto L12_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 			p.frame = x9
 			v19 = p.attachCaptures(v18, scope325, x8, x11.pos, p.pos)
@@ -57684,7 +57840,7 @@ func (p *parser) e328() (*Node, bool) {
 			p.reset(x11)
 			break
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 		p.setCaptureOrdinary(0, v20)
 		x2 = append(x2, v20)
 
@@ -57742,7 +57898,7 @@ func (p *parser) e328() (*Node, bool) {
 			if _, ok = p.call(rules[379], 0); !ok {
 				goto L28_ordinary
 			}
-			v43 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x29), End: int32(p.pos), Children: x30, fresh: true})
+			v43 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x29), end: int32(p.pos), children: x30, fresh: true})
 			v44 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v43, x27.pos)
 			p.frame = x25
 			v45 = p.attachCaptures(v44, scope326, x24, x27.pos, p.pos)
@@ -57757,7 +57913,7 @@ func (p *parser) e328() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x22), End: int32(p.pos), Children: p.kids(x23), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x22), end: int32(p.pos), children: p.kids(x23), fresh: true})
 		p.setCaptureOrdinary(1, v46)
 		x2 = append(x2, v46)
 
@@ -57812,7 +57968,7 @@ func (p *parser) e328() (*Node, bool) {
 			if _, ok = p.call(rules[379], 0); !ok {
 				goto L54_ordinary
 			}
-			v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x55), End: int32(p.pos), Children: x56, fresh: true})
+			v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x55), end: int32(p.pos), children: x56, fresh: true})
 			v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x53.pos)
 			p.frame = x51
 			v70 = p.attachCaptures(v69, scope327, x50, x53.pos, p.pos)
@@ -57827,7 +57983,7 @@ func (p *parser) e328() (*Node, bool) {
 			p.reset(x53)
 			break
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x48), End: int32(p.pos), Children: p.kids(x49), fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x48), end: int32(p.pos), children: p.kids(x49), fresh: true})
 		p.setCaptureOrdinary(2, v71)
 		x2 = append(x2, v71)
 
@@ -57837,9 +57993,9 @@ func (p *parser) e328() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit102, ")", 53, false); !ok {
 			goto fail_ordinary
 		}
-		v73 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x72), End: int32(p.pos), Text: ")", terminal: true, fresh: true})
+		v73 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x72), end: int32(p.pos), text: ")", terminal: true, fresh: true})
 		x2 = append(x2, v73)
-		v74 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v74 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v74, true
 	fail_ordinary:
 		return nil, false
@@ -57923,7 +58079,7 @@ func (p *parser) e328() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit100, "(", 35, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "(", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "(", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	if !p.predicate(func(c *actx) any {
@@ -57983,7 +58139,7 @@ func (p *parser) e328() (*Node, bool) {
 		if _, ok = p.call(rules[379], 0); !ok {
 			goto L12
 		}
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 		p.frame = x9
 		v19 = p.attachCaptures(v18, scope325, x8, x11.pos, p.pos)
@@ -57998,7 +58154,7 @@ func (p *parser) e328() (*Node, bool) {
 		p.reset(x11)
 		break
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 	p.setCapture(0, v20)
 	x2 = append(x2, v20)
 	p.stepWork()
@@ -58057,7 +58213,7 @@ func (p *parser) e328() (*Node, bool) {
 		if _, ok = p.call(rules[379], 0); !ok {
 			goto L28
 		}
-		v43 = p.newNode(Node{kind: kindSeq, Start: int32(x29), End: int32(p.pos), Children: x30, fresh: true})
+		v43 = p.newNode(Node{kind: kindSeq, start: int32(x29), end: int32(p.pos), children: x30, fresh: true})
 		v44 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v43, x27.pos)
 		p.frame = x25
 		v45 = p.attachCaptures(v44, scope326, x24, x27.pos, p.pos)
@@ -58072,7 +58228,7 @@ func (p *parser) e328() (*Node, bool) {
 		p.reset(x27)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x22), End: int32(p.pos), Children: p.kids(x23), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x22), end: int32(p.pos), children: p.kids(x23), fresh: true})
 	p.setCapture(1, v46)
 	x2 = append(x2, v46)
 	p.stepWork()
@@ -58128,7 +58284,7 @@ func (p *parser) e328() (*Node, bool) {
 		if _, ok = p.call(rules[379], 0); !ok {
 			goto L54
 		}
-		v68 = p.newNode(Node{kind: kindSeq, Start: int32(x55), End: int32(p.pos), Children: x56, fresh: true})
+		v68 = p.newNode(Node{kind: kindSeq, start: int32(x55), end: int32(p.pos), children: x56, fresh: true})
 		v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x53.pos)
 		p.frame = x51
 		v70 = p.attachCaptures(v69, scope327, x50, x53.pos, p.pos)
@@ -58143,7 +58299,7 @@ func (p *parser) e328() (*Node, bool) {
 		p.reset(x53)
 		break
 	}
-	v71 = p.newNode(Node{kind: kindList, Start: int32(x48), End: int32(p.pos), Children: p.kids(x49), fresh: true})
+	v71 = p.newNode(Node{kind: kindList, start: int32(x48), end: int32(p.pos), children: p.kids(x49), fresh: true})
 	p.setCapture(2, v71)
 	x2 = append(x2, v71)
 	p.stepWork()
@@ -58153,9 +58309,9 @@ func (p *parser) e328() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit102, ")", 53, false); !ok {
 		goto fail
 	}
-	v73 = p.newNode(Node{kind: kindMatch, Start: int32(x72), End: int32(p.pos), Text: ")", terminal: true, fresh: true})
+	v73 = p.newNode(Node{kind: kindMatch, start: int32(x72), end: int32(p.pos), text: ")", terminal: true, fresh: true})
 	x2 = append(x2, v73)
-	v74 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v74 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v74, true
 fail:
 	return nil, false
@@ -59104,7 +59260,7 @@ func (p *parser) e339() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope338, x6, x9.pos, p.pos)
@@ -59119,7 +59275,7 @@ func (p *parser) e339() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -59211,7 +59367,7 @@ func (p *parser) e339() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope338, x6, x9.pos, p.pos)
@@ -59226,7 +59382,7 @@ func (p *parser) e339() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -59364,7 +59520,7 @@ func (p *parser) e342() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope341, x21, x24.pos, p.pos)
@@ -59383,7 +59539,7 @@ func (p *parser) e342() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -59401,7 +59557,7 @@ func (p *parser) e342() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -59409,7 +59565,7 @@ func (p *parser) e342() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -59431,10 +59587,10 @@ func (p *parser) e342() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -59456,7 +59612,7 @@ func (p *parser) e342() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -59576,7 +59732,7 @@ func (p *parser) e342() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope341, x21, x24.pos, p.pos)
@@ -59595,7 +59751,7 @@ func (p *parser) e342() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -59615,7 +59771,7 @@ func (p *parser) e342() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -59623,7 +59779,7 @@ func (p *parser) e342() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -59646,10 +59802,10 @@ func (p *parser) e342() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -59671,7 +59827,7 @@ func (p *parser) e342() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -60162,7 +60318,7 @@ func (p *parser) e347() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -60227,7 +60383,7 @@ func (p *parser) e347() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -60286,7 +60442,7 @@ func (p *parser) e349() (*Node, bool) {
 		if _, ok = p.r339(); !ok {
 			goto L4_ordinary
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x6), End: int32(p.pos), Children: x7, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x6), end: int32(p.pos), children: x7, fresh: true})
 		v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x2.pos)
 		v3 = v10
 		goto L5_ordinary
@@ -60363,7 +60519,7 @@ func (p *parser) e349() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v27)
 			x24 = append(x24, v27)
-			v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+			v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 			v29 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v28, x21.pos)
 			p.frame = x19
 			v30 = p.attachCaptures(v29, scope348, x18, x21.pos, p.pos)
@@ -60378,7 +60534,7 @@ func (p *parser) e349() (*Node, bool) {
 			p.reset(x21)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 		p.setCaptureOrdinary(3, v31)
 		return nil, true
 	fail_ordinary:
@@ -60436,7 +60592,7 @@ func (p *parser) e349() (*Node, bool) {
 	if _, ok = p.r339(); !ok {
 		goto L4
 	}
-	v9 = p.newNode(Node{kind: kindSeq, Start: int32(x6), End: int32(p.pos), Children: x7, fresh: true})
+	v9 = p.newNode(Node{kind: kindSeq, start: int32(x6), end: int32(p.pos), children: x7, fresh: true})
 	v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x2.pos)
 	v3 = v10
 	goto L5
@@ -60518,7 +60674,7 @@ L5:
 		}
 		p.setCapture(0, v27)
 		x24 = append(x24, v27)
-		v28 = p.newNode(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+		v28 = p.newNode(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 		v29 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v28, x21.pos)
 		p.frame = x19
 		v30 = p.attachCaptures(v29, scope348, x18, x21.pos, p.pos)
@@ -60533,7 +60689,7 @@ L5:
 		p.reset(x21)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 	p.setCapture(3, v31)
 	return nil, true
 fail:
@@ -61344,7 +61500,7 @@ func (p *parser) e356() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope355, x6, x9.pos, p.pos)
@@ -61359,7 +61515,7 @@ func (p *parser) e356() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -61379,9 +61535,9 @@ func (p *parser) e356() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L22_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x25 = append(x25, v27)
-		v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 		v21 = v29
 		goto L23_ordinary
@@ -61537,7 +61693,7 @@ func (p *parser) e356() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope355, x6, x9.pos, p.pos)
@@ -61552,7 +61708,7 @@ func (p *parser) e356() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -61573,9 +61729,9 @@ func (p *parser) e356() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L22
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x25 = append(x25, v27)
-	v28 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v28 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 	v21 = v29
 	goto L23
@@ -61782,7 +61938,7 @@ func (p *parser) e360() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope358, x21, x24.pos, p.pos)
@@ -61801,7 +61957,7 @@ func (p *parser) e360() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -61819,7 +61975,7 @@ func (p *parser) e360() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -61827,7 +61983,7 @@ func (p *parser) e360() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -61849,10 +62005,10 @@ func (p *parser) e360() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -61874,7 +62030,7 @@ func (p *parser) e360() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 
 		x55 = p.pos
@@ -61901,7 +62057,7 @@ func (p *parser) e360() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v67)
 			x65 = append(x65, v67)
-			v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x64), End: int32(p.pos), Children: x65, fresh: true})
+			v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x64), end: int32(p.pos), children: x65, fresh: true})
 			v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x62.pos)
 			p.frame = x59
 			v70 = p.attachCaptures(v69, scope359, x58, x62.pos, p.pos)
@@ -61916,7 +62072,7 @@ func (p *parser) e360() (*Node, bool) {
 			p.reset(x62)
 			break
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		p.setCaptureOrdinary(2, v71)
 
 		if _, ok = p.r339(); !ok {
@@ -62112,7 +62268,7 @@ func (p *parser) e360() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope358, x21, x24.pos, p.pos)
@@ -62131,7 +62287,7 @@ func (p *parser) e360() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -62151,7 +62307,7 @@ func (p *parser) e360() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -62159,7 +62315,7 @@ func (p *parser) e360() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -62182,10 +62338,10 @@ func (p *parser) e360() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -62207,7 +62363,7 @@ func (p *parser) e360() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	p.stepWork()
 	x55 = p.pos
@@ -62235,7 +62391,7 @@ func (p *parser) e360() (*Node, bool) {
 		}
 		p.setCapture(0, v67)
 		x65 = append(x65, v67)
-		v68 = p.newNode(Node{kind: kindSeq, Start: int32(x64), End: int32(p.pos), Children: x65, fresh: true})
+		v68 = p.newNode(Node{kind: kindSeq, start: int32(x64), end: int32(p.pos), children: x65, fresh: true})
 		v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x62.pos)
 		p.frame = x59
 		v70 = p.attachCaptures(v69, scope359, x58, x62.pos, p.pos)
@@ -62250,7 +62406,7 @@ func (p *parser) e360() (*Node, bool) {
 		p.reset(x62)
 		break
 	}
-	v71 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v71 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	p.setCapture(2, v71)
 	p.stepWork()
 	p.stepWork()
@@ -62659,7 +62815,7 @@ func (p *parser) e365() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v24)
 			x22 = append(x22, v24)
-			v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x21), End: int32(p.pos), Children: x22, fresh: true})
+			v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x21), end: int32(p.pos), children: x22, fresh: true})
 			v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x19.pos)
 			p.frame = x17
 			v27 = p.attachCaptures(v26, scope363, x16, x19.pos, p.pos)
@@ -62674,7 +62830,7 @@ func (p *parser) e365() (*Node, bool) {
 			p.reset(x19)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x14), End: int32(p.pos), Children: p.kids(x15), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x14), end: int32(p.pos), children: p.kids(x15), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -62694,9 +62850,9 @@ func (p *parser) e365() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L32_ordinary
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x35 = append(x35, v37)
-		v38 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+		v38 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 		v39, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30.pos)
 		v31 = v39
 		goto L33_ordinary
@@ -62730,7 +62886,7 @@ func (p *parser) e365() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v52)
 			x50 = append(x50, v52)
-			v53 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v53 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v54 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v53, x47.pos)
 			p.frame = x44
 			v55 = p.attachCaptures(v54, scope364, x43, x47.pos, p.pos)
@@ -62745,7 +62901,7 @@ func (p *parser) e365() (*Node, bool) {
 			p.reset(x47)
 			break
 		}
-		v56 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+		v56 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 		p.setCaptureOrdinary(4, v56)
 
 		if _, ok = p.r339(); !ok {
@@ -62962,7 +63118,7 @@ L4:
 		}
 		p.setCapture(0, v24)
 		x22 = append(x22, v24)
-		v25 = p.newNode(Node{kind: kindSeq, Start: int32(x21), End: int32(p.pos), Children: x22, fresh: true})
+		v25 = p.newNode(Node{kind: kindSeq, start: int32(x21), end: int32(p.pos), children: x22, fresh: true})
 		v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x19.pos)
 		p.frame = x17
 		v27 = p.attachCaptures(v26, scope363, x16, x19.pos, p.pos)
@@ -62977,7 +63133,7 @@ L4:
 		p.reset(x19)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x14), End: int32(p.pos), Children: p.kids(x15), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x14), end: int32(p.pos), children: p.kids(x15), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -62998,9 +63154,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L32
 	}
-	v37 = p.newNode(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v37 = p.newNode(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x35 = append(x35, v37)
-	v38 = p.newNode(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+	v38 = p.newNode(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 	v39, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30.pos)
 	v31 = v39
 	goto L33
@@ -63035,7 +63191,7 @@ L33:
 		}
 		p.setCapture(0, v52)
 		x50 = append(x50, v52)
-		v53 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v53 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v54 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v53, x47.pos)
 		p.frame = x44
 		v55 = p.attachCaptures(v54, scope364, x43, x47.pos, p.pos)
@@ -63050,7 +63206,7 @@ L33:
 		p.reset(x47)
 		break
 	}
-	v56 = p.newNode(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+	v56 = p.newNode(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 	p.setCapture(4, v56)
 	p.stepWork()
 	p.stepWork()
@@ -63528,7 +63684,7 @@ func (p *parser) e369() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v23)
 			x21 = append(x21, v23)
-			v24 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v24 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v25, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v24, x13.pos)
 			v14 = v25
 			goto L15_ordinary
@@ -63583,7 +63739,7 @@ func (p *parser) e369() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v34)
 			x28 = append(x28, v34)
-			v35 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+			v35 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 			v36, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v35, x13.pos)
 			v14 = v36
 			goto L15_ordinary
@@ -63592,7 +63748,7 @@ func (p *parser) e369() (*Node, bool) {
 			goto L10_ordinary
 		L15_ordinary:
 			x12 = append(x12, v14)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v38 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x9.pos)
 			p.frame = x7
 			v39 = p.attachCaptures(v38, scope368, x6, x9.pos, p.pos)
@@ -63607,7 +63763,7 @@ func (p *parser) e369() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v40 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v40 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v40)
 
 		x41 = p.mark()
@@ -63803,7 +63959,7 @@ func (p *parser) e369() (*Node, bool) {
 		}
 		p.setCapture(0, v23)
 		x21 = append(x21, v23)
-		v24 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+		v24 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 		v25, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v24, x13.pos)
 		v14 = v25
 		goto L15
@@ -63861,7 +64017,7 @@ func (p *parser) e369() (*Node, bool) {
 		}
 		p.setCapture(0, v34)
 		x28 = append(x28, v34)
-		v35 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v35 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v35, x13.pos)
 		v14 = v36
 		goto L15
@@ -63870,7 +64026,7 @@ func (p *parser) e369() (*Node, bool) {
 		goto L10
 	L15:
 		x12 = append(x12, v14)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v38 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x9.pos)
 		p.frame = x7
 		v39 = p.attachCaptures(v38, scope368, x6, x9.pos, p.pos)
@@ -63885,7 +64041,7 @@ func (p *parser) e369() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v40 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v40 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v40)
 	p.stepWork()
 	x41 = p.mark()
@@ -64027,7 +64183,7 @@ func (p *parser) e371() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope370, x6, x9.pos, p.pos)
@@ -64042,7 +64198,7 @@ func (p *parser) e371() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -64183,7 +64339,7 @@ func (p *parser) e371() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope370, x6, x9.pos, p.pos)
@@ -64198,7 +64354,7 @@ func (p *parser) e371() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -64427,7 +64583,7 @@ func (p *parser) e376() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 				goto L18_ordinary
 			}
-			v22 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 			x20 = append(x20, v22)
 
 			x23 = p.mark()
@@ -64456,7 +64612,7 @@ func (p *parser) e376() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v26)
 			x20 = append(x20, v26)
-			v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+			v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 			v28 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x17.pos)
 			p.frame = x14
 			v29 = p.attachCaptures(v28, scope372, x13, x17.pos, p.pos)
@@ -64471,7 +64627,7 @@ func (p *parser) e376() (*Node, bool) {
 			p.reset(x17)
 			break
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(2, v30)
 
 		if !p.assign("isdict", func(c *actx) any {
@@ -64524,7 +64680,7 @@ func (p *parser) e376() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v43)
 			x41 = append(x41, v43)
-			v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x40), End: int32(p.pos), Children: x41, fresh: true})
+			v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x40), end: int32(p.pos), children: x41, fresh: true})
 			v45 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v44, x38.pos)
 			p.frame = x35
 			v46 = p.attachCaptures(v45, scope373, x34, x38.pos, p.pos)
@@ -64539,7 +64695,7 @@ func (p *parser) e376() (*Node, bool) {
 			p.reset(x38)
 			break
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x32), End: int32(p.pos), Children: p.kids(x33), fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x32), end: int32(p.pos), children: p.kids(x33), fresh: true})
 		p.setCaptureOrdinary(3, v47)
 
 		x48 = p.pos
@@ -64605,7 +64761,7 @@ func (p *parser) e376() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v68)
 			x66 = append(x66, v68)
-			v69 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x65), End: int32(p.pos), Children: x66, fresh: true})
+			v69 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x65), end: int32(p.pos), children: x66, fresh: true})
 			v70, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v69, x58.pos)
 			v59 = v70
 			goto L60_ordinary
@@ -64660,7 +64816,7 @@ func (p *parser) e376() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v79)
 			x73 = append(x73, v79)
-			v80 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x72), End: int32(p.pos), Children: x73, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x72), end: int32(p.pos), children: x73, fresh: true})
 			v81, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v80, x58.pos)
 			v59 = v81
 			goto L60_ordinary
@@ -64669,7 +64825,7 @@ func (p *parser) e376() (*Node, bool) {
 			goto L55_ordinary
 		L60_ordinary:
 			x57 = append(x57, v59)
-			v82 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x56), End: int32(p.pos), Children: x57, fresh: true})
+			v82 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x56), end: int32(p.pos), children: x57, fresh: true})
 			v83 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v82, x54.pos)
 			p.frame = x52
 			v84 = p.attachCaptures(v83, scope374, x51, x54.pos, p.pos)
@@ -64684,7 +64840,7 @@ func (p *parser) e376() (*Node, bool) {
 			p.reset(x54)
 			break
 		}
-		v85 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x49), End: int32(p.pos), Children: p.kids(x50), fresh: true})
+		v85 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x49), end: int32(p.pos), children: p.kids(x50), fresh: true})
 		p.setCaptureOrdinary(4, v85)
 
 		x86 = p.pos
@@ -64730,7 +64886,7 @@ func (p *parser) e376() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v97)
 			x95 = append(x95, v97)
-			v98 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+			v98 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 			v99 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v98, x92.pos)
 			p.frame = x90
 			v100 = p.attachCaptures(v99, scope375, x89, x92.pos, p.pos)
@@ -64745,7 +64901,7 @@ func (p *parser) e376() (*Node, bool) {
 			p.reset(x92)
 			break
 		}
-		v101 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x87), End: int32(p.pos), Children: p.kids(x88), fresh: true})
+		v101 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x87), end: int32(p.pos), children: p.kids(x88), fresh: true})
 		p.setCaptureOrdinary(5, v101)
 
 		x102 = p.pos
@@ -64765,9 +64921,9 @@ func (p *parser) e376() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L105_ordinary
 		}
-		v110 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x109), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v110 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x109), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x108 = append(x108, v110)
-		v111 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x107), End: int32(p.pos), Children: x108, fresh: true})
+		v111 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x107), end: int32(p.pos), children: x108, fresh: true})
 		v112, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v111, x103.pos)
 		v104 = v112
 		goto L106_ordinary
@@ -65011,7 +65167,7 @@ L4:
 		} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 			goto L18
 		}
-		v22 = p.newNode(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+		v22 = p.newNode(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 		x20 = append(x20, v22)
 		p.stepWork()
 		x23 = p.mark()
@@ -65041,7 +65197,7 @@ L4:
 		}
 		p.setCapture(0, v26)
 		x20 = append(x20, v26)
-		v27 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v27 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v28 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x17.pos)
 		p.frame = x14
 		v29 = p.attachCaptures(v28, scope372, x13, x17.pos, p.pos)
@@ -65056,7 +65212,7 @@ L4:
 		p.reset(x17)
 		break
 	}
-	v30 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v30 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(2, v30)
 	p.stepWork()
 	if !p.assign("isdict", func(c *actx) any {
@@ -65110,7 +65266,7 @@ L4:
 		}
 		p.setCapture(0, v43)
 		x41 = append(x41, v43)
-		v44 = p.newNode(Node{kind: kindSeq, Start: int32(x40), End: int32(p.pos), Children: x41, fresh: true})
+		v44 = p.newNode(Node{kind: kindSeq, start: int32(x40), end: int32(p.pos), children: x41, fresh: true})
 		v45 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v44, x38.pos)
 		p.frame = x35
 		v46 = p.attachCaptures(v45, scope373, x34, x38.pos, p.pos)
@@ -65125,7 +65281,7 @@ L4:
 		p.reset(x38)
 		break
 	}
-	v47 = p.newNode(Node{kind: kindList, Start: int32(x32), End: int32(p.pos), Children: p.kids(x33), fresh: true})
+	v47 = p.newNode(Node{kind: kindList, start: int32(x32), end: int32(p.pos), children: p.kids(x33), fresh: true})
 	p.setCapture(3, v47)
 	p.stepWork()
 	x48 = p.pos
@@ -65196,7 +65352,7 @@ L4:
 		}
 		p.setCapture(0, v68)
 		x66 = append(x66, v68)
-		v69 = p.newNode(Node{kind: kindSeq, Start: int32(x65), End: int32(p.pos), Children: x66, fresh: true})
+		v69 = p.newNode(Node{kind: kindSeq, start: int32(x65), end: int32(p.pos), children: x66, fresh: true})
 		v70, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v69, x58.pos)
 		v59 = v70
 		goto L60
@@ -65254,7 +65410,7 @@ L4:
 		}
 		p.setCapture(0, v79)
 		x73 = append(x73, v79)
-		v80 = p.newNode(Node{kind: kindSeq, Start: int32(x72), End: int32(p.pos), Children: x73, fresh: true})
+		v80 = p.newNode(Node{kind: kindSeq, start: int32(x72), end: int32(p.pos), children: x73, fresh: true})
 		v81, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v80, x58.pos)
 		v59 = v81
 		goto L60
@@ -65263,7 +65419,7 @@ L4:
 		goto L55
 	L60:
 		x57 = append(x57, v59)
-		v82 = p.newNode(Node{kind: kindSeq, Start: int32(x56), End: int32(p.pos), Children: x57, fresh: true})
+		v82 = p.newNode(Node{kind: kindSeq, start: int32(x56), end: int32(p.pos), children: x57, fresh: true})
 		v83 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v82, x54.pos)
 		p.frame = x52
 		v84 = p.attachCaptures(v83, scope374, x51, x54.pos, p.pos)
@@ -65278,7 +65434,7 @@ L4:
 		p.reset(x54)
 		break
 	}
-	v85 = p.newNode(Node{kind: kindList, Start: int32(x49), End: int32(p.pos), Children: p.kids(x50), fresh: true})
+	v85 = p.newNode(Node{kind: kindList, start: int32(x49), end: int32(p.pos), children: p.kids(x50), fresh: true})
 	p.setCapture(4, v85)
 	p.stepWork()
 	x86 = p.pos
@@ -65327,7 +65483,7 @@ L4:
 		}
 		p.setCapture(0, v97)
 		x95 = append(x95, v97)
-		v98 = p.newNode(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+		v98 = p.newNode(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 		v99 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v98, x92.pos)
 		p.frame = x90
 		v100 = p.attachCaptures(v99, scope375, x89, x92.pos, p.pos)
@@ -65342,7 +65498,7 @@ L4:
 		p.reset(x92)
 		break
 	}
-	v101 = p.newNode(Node{kind: kindList, Start: int32(x87), End: int32(p.pos), Children: p.kids(x88), fresh: true})
+	v101 = p.newNode(Node{kind: kindList, start: int32(x87), end: int32(p.pos), children: p.kids(x88), fresh: true})
 	p.setCapture(5, v101)
 	p.stepWork()
 	x102 = p.pos
@@ -65363,9 +65519,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L105
 	}
-	v110 = p.newNode(Node{kind: kindMatch, Start: int32(x109), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v110 = p.newNode(Node{kind: kindMatch, start: int32(x109), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x108 = append(x108, v110)
-	v111 = p.newNode(Node{kind: kindSeq, Start: int32(x107), End: int32(p.pos), Children: x108, fresh: true})
+	v111 = p.newNode(Node{kind: kindSeq, start: int32(x107), end: int32(p.pos), children: x108, fresh: true})
 	v112, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v111, x103.pos)
 	v104 = v112
 	goto L106
@@ -65530,7 +65686,7 @@ func (p *parser) e379() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope378, x21, x24.pos, p.pos)
@@ -65549,7 +65705,7 @@ func (p *parser) e379() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -65567,7 +65723,7 @@ func (p *parser) e379() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -65575,7 +65731,7 @@ func (p *parser) e379() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -65597,10 +65753,10 @@ func (p *parser) e379() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -65622,7 +65778,7 @@ func (p *parser) e379() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -65742,7 +65898,7 @@ func (p *parser) e379() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope378, x21, x24.pos, p.pos)
@@ -65761,7 +65917,7 @@ func (p *parser) e379() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -65781,7 +65937,7 @@ func (p *parser) e379() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -65789,7 +65945,7 @@ func (p *parser) e379() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -65812,10 +65968,10 @@ func (p *parser) e379() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -65837,7 +65993,7 @@ func (p *parser) e379() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -66892,7 +67048,7 @@ func (p *parser) e388() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope387, x6, x9.pos, p.pos)
@@ -66907,7 +67063,7 @@ func (p *parser) e388() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -66927,9 +67083,9 @@ func (p *parser) e388() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L22_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x25 = append(x25, v27)
-		v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 		v21 = v29
 		goto L23_ordinary
@@ -67085,7 +67241,7 @@ func (p *parser) e388() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope387, x6, x9.pos, p.pos)
@@ -67100,7 +67256,7 @@ func (p *parser) e388() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -67121,9 +67277,9 @@ func (p *parser) e388() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L22
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x25 = append(x25, v27)
-	v28 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v28 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 	v21 = v29
 	goto L23
@@ -67271,7 +67427,7 @@ func (p *parser) e390() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -67414,7 +67570,7 @@ func (p *parser) e390() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -67818,7 +67974,7 @@ func (p *parser) e394() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -67838,7 +67994,7 @@ func (p *parser) e394() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L11_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x13 = append(x13, v15)
 
 		x16 = p.mark()
@@ -67855,7 +68011,7 @@ func (p *parser) e394() (*Node, bool) {
 	L17_ordinary:
 		p.silent--
 		p.reset(x16)
-		v18 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v19, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x1.pos)
 		v2 = v19
 		goto L3_ordinary
@@ -67913,7 +68069,7 @@ func (p *parser) e394() (*Node, bool) {
 	}
 	x8 = p.pos
 	p.pos += size
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -67933,7 +68089,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 		goto L11
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x13 = append(x13, v15)
 	p.stepWork()
 	x16 = p.mark()
@@ -67950,7 +68106,7 @@ L6:
 L17:
 	p.silent--
 	p.reset(x16)
-	v18 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+	v18 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 	v19, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x1.pos)
 	v2 = v19
 	goto L3
@@ -68674,7 +68830,7 @@ func (p *parser) e400() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 
 		x13 = p.mark()
@@ -68768,7 +68924,7 @@ func (p *parser) e400() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -68987,7 +69143,7 @@ func (p *parser) e403() (*Node, bool) {
 			}
 			x9 = p.pos
 			p.pos += size
-			v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+			v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 			v11 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v10, x7.pos)
 			x5++
 			p.kidStack = append(p.kidStack, v11)
@@ -68999,7 +69155,7 @@ func (p *parser) e403() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		x2 = append(x2, v12)
 
 		if p.pos < len(p.in) {
@@ -69014,9 +69170,9 @@ func (p *parser) e403() (*Node, bool) {
 		}
 		x13 = p.pos
 		p.pos += size
-		v14 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: p.text(x13, p.pos), terminal: true, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: p.text(x13, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v14)
-		v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v15, true
 	fail_ordinary:
 		return nil, false
@@ -69064,7 +69220,7 @@ func (p *parser) e403() (*Node, bool) {
 		}
 		x9 = p.pos
 		p.pos += size
-		v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+		v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 		v11 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v10, x7.pos)
 		x5++
 		p.kidStack = append(p.kidStack, v11)
@@ -69076,7 +69232,7 @@ func (p *parser) e403() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	x2 = append(x2, v12)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -69091,9 +69247,9 @@ func (p *parser) e403() (*Node, bool) {
 	}
 	x13 = p.pos
 	p.pos += size
-	v14 = p.newNode(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: p.text(x13, p.pos), terminal: true, fresh: true})
+	v14 = p.newNode(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: p.text(x13, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v14)
-	v15 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v15 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v15, true
 fail:
 	return nil, false
@@ -69389,7 +69545,7 @@ func (p *parser) e407() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope406, x6, x9.pos, p.pos)
@@ -69404,7 +69560,7 @@ func (p *parser) e407() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -69485,7 +69641,7 @@ func (p *parser) e407() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope406, x6, x9.pos, p.pos)
@@ -69500,7 +69656,7 @@ func (p *parser) e407() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -69722,7 +69878,7 @@ func (p *parser) e412() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope411, x6, x9.pos, p.pos)
@@ -69737,7 +69893,7 @@ func (p *parser) e412() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -69818,7 +69974,7 @@ func (p *parser) e412() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope411, x6, x9.pos, p.pos)
@@ -69833,7 +69989,7 @@ func (p *parser) e412() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -69914,14 +70070,14 @@ func (p *parser) e413() (*Node, bool) {
 		}
 		x10 = p.pos
 		p.pos += size
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		if v12, ok = p.call(rules[260], 0); !ok {
 			goto L7_ordinary
 		}
 		x9 = append(x9, v12)
-		v13 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 		v2 = v14
 		goto L3_ordinary
@@ -69948,14 +70104,14 @@ func (p *parser) e413() (*Node, bool) {
 		}
 		x19 = p.pos
 		p.pos += size
-		v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: p.text(x19, p.pos), terminal: true, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: p.text(x19, p.pos), terminal: true, fresh: true})
 		x18 = append(x18, v20)
 
 		if v21, ok = p.r262(); !ok {
 			goto L16_ordinary
 		}
 		x18 = append(x18, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -70030,14 +70186,14 @@ func (p *parser) e413() (*Node, bool) {
 	}
 	x10 = p.pos
 	p.pos += size
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	if v12, ok = p.call(rules[260], 0); !ok {
 		goto L7
 	}
 	x9 = append(x9, v12)
-	v13 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v13 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 	v2 = v14
 	goto L3
@@ -70064,14 +70220,14 @@ L6:
 	}
 	x19 = p.pos
 	p.pos += size
-	v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: p.text(x19, p.pos), terminal: true, fresh: true})
+	v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: p.text(x19, p.pos), terminal: true, fresh: true})
 	x18 = append(x18, v20)
 	p.stepWork()
 	if v21, ok = p.r262(); !ok {
 		goto L16
 	}
 	x18 = append(x18, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -70171,7 +70327,7 @@ func (p *parser) e414() (*Node, bool) {
 		}
 		x16 = p.pos
 		p.pos += size
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if p.pos < len(p.in) {
@@ -70186,9 +70342,9 @@ func (p *parser) e414() (*Node, bool) {
 		}
 		x18 = p.pos
 		p.pos += size
-		v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x7.pos)
 		v8 = v21
 		goto L9_ordinary
@@ -70215,7 +70371,7 @@ func (p *parser) e414() (*Node, bool) {
 		}
 		x26 = p.pos
 		p.pos += size
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if p.pos < len(p.in) {
@@ -70230,9 +70386,9 @@ func (p *parser) e414() (*Node, bool) {
 		}
 		x28 = p.pos
 		p.pos += size
-		v29 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: p.text(x28, p.pos), terminal: true, fresh: true})
+		v29 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: p.text(x28, p.pos), terminal: true, fresh: true})
 		x25 = append(x25, v29)
-		v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v31, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v30, x7.pos)
 		v8 = v31
 		goto L9_ordinary
@@ -70247,7 +70403,7 @@ func (p *parser) e414() (*Node, bool) {
 			goto L4_ordinary
 		}
 		x6 = append(x6, v32)
-		v33 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v33 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v34, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v33, x1.pos)
 		v2 = v34
 		goto L3_ordinary
@@ -70279,14 +70435,14 @@ func (p *parser) e414() (*Node, bool) {
 		}
 		x41 = p.pos
 		p.pos += size
-		v42 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x41), End: int32(p.pos), Text: p.text(x41, p.pos), terminal: true, fresh: true})
+		v42 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x41), end: int32(p.pos), text: p.text(x41, p.pos), terminal: true, fresh: true})
 		x40 = append(x40, v42)
 
 		if v43, ok = p.r263(); !ok {
 			goto L38_ordinary
 		}
 		x40 = append(x40, v43)
-		v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+		v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 		v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 		v2 = v45
 		goto L3_ordinary
@@ -70375,7 +70531,7 @@ func (p *parser) e414() (*Node, bool) {
 	}
 	x16 = p.pos
 	p.pos += size
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -70390,9 +70546,9 @@ func (p *parser) e414() (*Node, bool) {
 	}
 	x18 = p.pos
 	p.pos += size
-	v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+	v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x7.pos)
 	v8 = v21
 	goto L9
@@ -70419,7 +70575,7 @@ L12:
 	}
 	x26 = p.pos
 	p.pos += size
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -70434,9 +70590,9 @@ L12:
 	}
 	x28 = p.pos
 	p.pos += size
-	v29 = p.newNode(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: p.text(x28, p.pos), terminal: true, fresh: true})
+	v29 = p.newNode(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: p.text(x28, p.pos), terminal: true, fresh: true})
 	x25 = append(x25, v29)
-	v30 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v30 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v31, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v30, x7.pos)
 	v8 = v31
 	goto L9
@@ -70451,7 +70607,7 @@ L9:
 		goto L4
 	}
 	x6 = append(x6, v32)
-	v33 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v33 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v34, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v33, x1.pos)
 	v2 = v34
 	goto L3
@@ -70483,14 +70639,14 @@ L4:
 	}
 	x41 = p.pos
 	p.pos += size
-	v42 = p.newNode(Node{kind: kindMatch, Start: int32(x41), End: int32(p.pos), Text: p.text(x41, p.pos), terminal: true, fresh: true})
+	v42 = p.newNode(Node{kind: kindMatch, start: int32(x41), end: int32(p.pos), text: p.text(x41, p.pos), terminal: true, fresh: true})
 	x40 = append(x40, v42)
 	p.stepWork()
 	if v43, ok = p.r263(); !ok {
 		goto L38
 	}
 	x40 = append(x40, v43)
-	v44 = p.newNode(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+	v44 = p.newNode(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 	v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 	v2 = v45
 	goto L3
@@ -70664,7 +70820,7 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -70691,7 +70847,7 @@ func (p *parser) e421() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -70707,7 +70863,7 @@ func (p *parser) e421() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -70737,9 +70893,9 @@ func (p *parser) e421() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -70777,7 +70933,7 @@ func (p *parser) e421() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v45 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v45 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v45)
 
 		x46 = p.pos
@@ -70786,9 +70942,9 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v47)
-		v48 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v48 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 		v2 = v49
 		goto L3_ordinary
@@ -70809,7 +70965,7 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v55)
 
 		x56, x57 = p.pos, len(p.kidStack)
@@ -70836,7 +70992,7 @@ func (p *parser) e421() (*Node, bool) {
 				}
 				x70 = p.pos
 				p.pos += size
-				v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+				v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 				v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 				x67++
 				p.kidStack = append(p.kidStack, v72)
@@ -70852,7 +71008,7 @@ func (p *parser) e421() (*Node, bool) {
 				p.dropKids(x66)
 				goto L64_ordinary
 			}
-			v73 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+			v73 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 			v62 = v73
 			goto L63_ordinary
 		L64_ordinary:
@@ -70882,9 +71038,9 @@ func (p *parser) e421() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L74_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x76 = append(x76, v80)
-			v81 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+			v81 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 			v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 			v62 = v82
 			goto L63_ordinary
@@ -70922,7 +71078,7 @@ func (p *parser) e421() (*Node, bool) {
 			p.reset(x59)
 			break
 		}
-		v89 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		x53 = append(x53, v89)
 
 		x90 = p.pos
@@ -70931,9 +71087,9 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v91)
-		v92 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+		v92 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 		v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 		v2 = v93
 		goto L3_ordinary
@@ -70965,7 +71121,7 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v100 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v100)
 
 		x101, x102 = p.pos, len(p.kidStack)
@@ -70992,7 +71148,7 @@ func (p *parser) e421() (*Node, bool) {
 				}
 				x115 = p.pos
 				p.pos += size
-				v116 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+				v116 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 				v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 				x112++
 				p.kidStack = append(p.kidStack, v117)
@@ -71008,7 +71164,7 @@ func (p *parser) e421() (*Node, bool) {
 				p.dropKids(x111)
 				goto L109_ordinary
 			}
-			v118 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+			v118 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 			v107 = v118
 			goto L108_ordinary
 		L109_ordinary:
@@ -71045,7 +71201,7 @@ func (p *parser) e421() (*Node, bool) {
 			p.reset(x104)
 			break
 		}
-		v125 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+		v125 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 		x96 = append(x96, v125)
 
 		x126 = p.pos
@@ -71054,9 +71210,9 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v127)
-		v128 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+		v128 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 		v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 		v2 = v129
 		goto L3_ordinary
@@ -71087,7 +71243,7 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v136 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v136 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v136)
 
 		x137, x138 = p.pos, len(p.kidStack)
@@ -71114,7 +71270,7 @@ func (p *parser) e421() (*Node, bool) {
 				}
 				x151 = p.pos
 				p.pos += size
-				v152 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+				v152 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 				v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 				x148++
 				p.kidStack = append(p.kidStack, v153)
@@ -71130,7 +71286,7 @@ func (p *parser) e421() (*Node, bool) {
 				p.dropKids(x147)
 				goto L145_ordinary
 			}
-			v154 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 			v143 = v154
 			goto L144_ordinary
 		L145_ordinary:
@@ -71167,7 +71323,7 @@ func (p *parser) e421() (*Node, bool) {
 			p.reset(x140)
 			break
 		}
-		v161 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+		v161 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 		x132 = append(x132, v161)
 
 		x162 = p.pos
@@ -71176,9 +71332,9 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v163 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v163 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v163)
-		v164 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+		v164 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 		v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 		v2 = v165
 		goto L3_ordinary
@@ -71348,7 +71504,7 @@ func (p *parser) e421() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -71375,7 +71531,7 @@ func (p *parser) e421() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -71391,7 +71547,7 @@ func (p *parser) e421() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -71421,9 +71577,9 @@ func (p *parser) e421() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -71461,7 +71617,7 @@ func (p *parser) e421() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v45 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v45 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v45)
 	p.stepWork()
 	x46 = p.pos
@@ -71470,9 +71626,9 @@ func (p *parser) e421() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v47)
-	v48 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v48 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 	v2 = v49
 	goto L3
@@ -71493,7 +71649,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v55)
 	p.stepWork()
 	x56, x57 = p.pos, len(p.kidStack)
@@ -71520,7 +71676,7 @@ L6:
 			}
 			x70 = p.pos
 			p.pos += size
-			v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+			v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 			v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 			x67++
 			p.kidStack = append(p.kidStack, v72)
@@ -71536,7 +71692,7 @@ L6:
 			p.dropKids(x66)
 			goto L64
 		}
-		v73 = p.newNode(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+		v73 = p.newNode(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 		v62 = v73
 		goto L63
 	L64:
@@ -71566,9 +71722,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L74
 		}
-		v80 = p.newNode(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v80 = p.newNode(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x76 = append(x76, v80)
-		v81 = p.newNode(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+		v81 = p.newNode(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 		v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 		v62 = v82
 		goto L63
@@ -71606,7 +71762,7 @@ L6:
 		p.reset(x59)
 		break
 	}
-	v89 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v89 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	x53 = append(x53, v89)
 	p.stepWork()
 	x90 = p.pos
@@ -71615,9 +71771,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v91)
-	v92 = p.newNode(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+	v92 = p.newNode(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 	v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 	v2 = v93
 	goto L3
@@ -71649,7 +71805,7 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v100 = p.newNode(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v100 = p.newNode(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v100)
 	p.stepWork()
 	x101, x102 = p.pos, len(p.kidStack)
@@ -71676,7 +71832,7 @@ L98:
 			}
 			x115 = p.pos
 			p.pos += size
-			v116 = p.newNode(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+			v116 = p.newNode(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 			v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 			x112++
 			p.kidStack = append(p.kidStack, v117)
@@ -71692,7 +71848,7 @@ L98:
 			p.dropKids(x111)
 			goto L109
 		}
-		v118 = p.newNode(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+		v118 = p.newNode(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 		v107 = v118
 		goto L108
 	L109:
@@ -71729,7 +71885,7 @@ L98:
 		p.reset(x104)
 		break
 	}
-	v125 = p.newNode(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+	v125 = p.newNode(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 	x96 = append(x96, v125)
 	p.stepWork()
 	x126 = p.pos
@@ -71738,9 +71894,9 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v127)
-	v128 = p.newNode(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+	v128 = p.newNode(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 	v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 	v2 = v129
 	goto L3
@@ -71771,7 +71927,7 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v136 = p.newNode(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v136 = p.newNode(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v136)
 	p.stepWork()
 	x137, x138 = p.pos, len(p.kidStack)
@@ -71798,7 +71954,7 @@ L134:
 			}
 			x151 = p.pos
 			p.pos += size
-			v152 = p.newNode(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+			v152 = p.newNode(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 			v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 			x148++
 			p.kidStack = append(p.kidStack, v153)
@@ -71814,7 +71970,7 @@ L134:
 			p.dropKids(x147)
 			goto L145
 		}
-		v154 = p.newNode(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+		v154 = p.newNode(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 		v143 = v154
 		goto L144
 	L145:
@@ -71851,7 +72007,7 @@ L134:
 		p.reset(x140)
 		break
 	}
-	v161 = p.newNode(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+	v161 = p.newNode(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 	x132 = append(x132, v161)
 	p.stepWork()
 	x162 = p.pos
@@ -71860,9 +72016,9 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v163 = p.newNode(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v163 = p.newNode(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v163)
-	v164 = p.newNode(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+	v164 = p.newNode(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 	v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 	v2 = v165
 	goto L3
@@ -71971,7 +72127,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -72003,7 +72159,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.r266(); !ok {
@@ -72015,7 +72171,7 @@ func (p *parser) e430() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -72036,7 +72192,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 			goto L23_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if v28, ok = p.r266(); !ok {
@@ -72058,7 +72214,7 @@ func (p *parser) e430() (*Node, bool) {
 			goto L23_ordinary
 		}
 		x25 = append(x25, v31)
-		v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 		v6 = v33
 		goto L7_ordinary
@@ -72079,7 +72235,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 			goto L35_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 		x37 = append(x37, v39)
 
 		x40 = p.mark()
@@ -72103,7 +72259,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 			goto L46_ordinary
 		}
-		v50 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+		v50 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 		x48 = append(x48, v50)
 
 		if v51, ok = p.r266(); !ok {
@@ -72125,7 +72281,7 @@ func (p *parser) e430() (*Node, bool) {
 			goto L46_ordinary
 		}
 		x48 = append(x48, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 		v41 = v56
 		goto L42_ordinary
@@ -72146,7 +72302,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		if v63, ok = p.r266(); !ok {
@@ -72173,7 +72329,7 @@ func (p *parser) e430() (*Node, bool) {
 			goto L58_ordinary
 		}
 		x60 = append(x60, v67)
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 		v41 = v69
 		goto L42_ordinary
@@ -72183,7 +72339,7 @@ func (p *parser) e430() (*Node, bool) {
 		goto L35_ordinary
 	L42_ordinary:
 		x37 = append(x37, v41)
-		v70 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+		v70 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 		v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 		v6 = v71
 		goto L7_ordinary
@@ -72204,7 +72360,7 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 			goto L73_ordinary
 		}
-		v77 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+		v77 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 		x75 = append(x75, v77)
 
 		x78, x79 = p.pos, len(p.kidStack)
@@ -72224,7 +72380,7 @@ func (p *parser) e430() (*Node, bool) {
 			}
 			x83 = p.pos
 			p.pos += size
-			v84 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+			v84 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 			v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 			x80++
 			p.kidStack = append(p.kidStack, v85)
@@ -72240,7 +72396,7 @@ func (p *parser) e430() (*Node, bool) {
 			p.dropKids(x79)
 			goto L73_ordinary
 		}
-		v86 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+		v86 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 		x75 = append(x75, v86)
 
 		x87 = p.pos
@@ -72249,9 +72405,9 @@ func (p *parser) e430() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 			goto L73_ordinary
 		}
-		v88 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+		v88 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 		x75 = append(x75, v88)
-		v89 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 		v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 		v6 = v90
 		goto L7_ordinary
@@ -72275,7 +72431,7 @@ func (p *parser) e430() (*Node, bool) {
 		}
 		x93 = p.pos
 		p.pos += size
-		v94 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+		v94 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 		v6 = v94
 		goto L7_ordinary
 	L92_ordinary:
@@ -72284,7 +72440,7 @@ func (p *parser) e430() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v95 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v95 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v95, true
 	fail_ordinary:
 		return nil, false
@@ -72383,7 +72539,7 @@ func (p *parser) e430() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -72415,7 +72571,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.r266(); !ok {
@@ -72427,7 +72583,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -72448,7 +72604,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 		goto L23
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if v28, ok = p.r266(); !ok {
@@ -72470,7 +72626,7 @@ L12:
 		goto L23
 	}
 	x25 = append(x25, v31)
-	v32 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v32 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 	v6 = v33
 	goto L7
@@ -72491,7 +72647,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 		goto L35
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 	x37 = append(x37, v39)
 	p.stepWork()
 	x40 = p.mark()
@@ -72515,7 +72671,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 		goto L46
 	}
-	v50 = p.newNode(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+	v50 = p.newNode(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 	x48 = append(x48, v50)
 	p.stepWork()
 	if v51, ok = p.r266(); !ok {
@@ -72537,7 +72693,7 @@ L22:
 		goto L46
 	}
 	x48 = append(x48, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 	v41 = v56
 	goto L42
@@ -72558,7 +72714,7 @@ L45:
 	} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	if v63, ok = p.r266(); !ok {
@@ -72585,7 +72741,7 @@ L45:
 		goto L58
 	}
 	x60 = append(x60, v67)
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 	v41 = v69
 	goto L42
@@ -72595,7 +72751,7 @@ L57:
 	goto L35
 L42:
 	x37 = append(x37, v41)
-	v70 = p.newNode(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+	v70 = p.newNode(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 	v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 	v6 = v71
 	goto L7
@@ -72616,7 +72772,7 @@ L34:
 	} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 		goto L73
 	}
-	v77 = p.newNode(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+	v77 = p.newNode(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 	x75 = append(x75, v77)
 	p.stepWork()
 	x78, x79 = p.pos, len(p.kidStack)
@@ -72636,7 +72792,7 @@ L34:
 		}
 		x83 = p.pos
 		p.pos += size
-		v84 = p.newNode(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+		v84 = p.newNode(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 		v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 		x80++
 		p.kidStack = append(p.kidStack, v85)
@@ -72652,7 +72808,7 @@ L34:
 		p.dropKids(x79)
 		goto L73
 	}
-	v86 = p.newNode(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+	v86 = p.newNode(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 	x75 = append(x75, v86)
 	p.stepWork()
 	x87 = p.pos
@@ -72661,9 +72817,9 @@ L34:
 	} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 		goto L73
 	}
-	v88 = p.newNode(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+	v88 = p.newNode(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 	x75 = append(x75, v88)
-	v89 = p.newNode(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+	v89 = p.newNode(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 	v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 	v6 = v90
 	goto L7
@@ -72687,7 +72843,7 @@ L72:
 	}
 	x93 = p.pos
 	p.pos += size
-	v94 = p.newNode(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+	v94 = p.newNode(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 	v6 = v94
 	goto L7
 L92:
@@ -72696,7 +72852,7 @@ L91:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v95 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v95 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v95, true
 fail:
 	return nil, false
@@ -72902,7 +73058,7 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -72929,7 +73085,7 @@ func (p *parser) e431() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -72945,7 +73101,7 @@ func (p *parser) e431() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -72975,9 +73131,9 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -73003,7 +73159,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L42_ordinary
 			}
-			v46 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x45), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v46 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x45), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x44 = append(x44, v46)
 
 			if p.pos < len(p.in) {
@@ -73018,9 +73174,9 @@ func (p *parser) e431() (*Node, bool) {
 			}
 			x47 = p.pos
 			p.pos += size
-			v48 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x47), End: int32(p.pos), Text: p.text(x47, p.pos), terminal: true, fresh: true})
+			v48 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x47), end: int32(p.pos), text: p.text(x47, p.pos), terminal: true, fresh: true})
 			x44 = append(x44, v48)
-			v49 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x43), End: int32(p.pos), Children: x44, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x43), end: int32(p.pos), children: x44, fresh: true})
 			v50, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v49, x17.pos)
 			v18 = v50
 			goto L19_ordinary
@@ -73040,7 +73196,7 @@ func (p *parser) e431() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v52 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v52 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v52)
 
 		x53 = p.pos
@@ -73049,9 +73205,9 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x53), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x53), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v55, x1.pos)
 		v2 = v56
 		goto L3_ordinary
@@ -73072,7 +73228,7 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		x63, x64 = p.pos, len(p.kidStack)
@@ -73099,7 +73255,7 @@ func (p *parser) e431() (*Node, bool) {
 				}
 				x77 = p.pos
 				p.pos += size
-				v78 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x77), End: int32(p.pos), Text: p.text(x77, p.pos), terminal: true, fresh: true})
+				v78 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x77), end: int32(p.pos), text: p.text(x77, p.pos), terminal: true, fresh: true})
 				v79 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v78, x75.pos)
 				x74++
 				p.kidStack = append(p.kidStack, v79)
@@ -73115,7 +73271,7 @@ func (p *parser) e431() (*Node, bool) {
 				p.dropKids(x73)
 				goto L71_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x72), End: int32(p.pos), Children: p.kids(x73), fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x72), end: int32(p.pos), children: p.kids(x73), fresh: true})
 			v69 = v80
 			goto L70_ordinary
 		L71_ordinary:
@@ -73145,9 +73301,9 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L81_ordinary
 			}
-			v87 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v87 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x83 = append(x83, v87)
-			v88 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x82), End: int32(p.pos), Children: x83, fresh: true})
+			v88 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x82), end: int32(p.pos), children: x83, fresh: true})
 			v89, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v88, x68.pos)
 			v69 = v89
 			goto L70_ordinary
@@ -73173,7 +73329,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L93_ordinary
 			}
-			v97 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x96), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v97 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x96), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x95 = append(x95, v97)
 
 			if p.pos < len(p.in) {
@@ -73188,9 +73344,9 @@ func (p *parser) e431() (*Node, bool) {
 			}
 			x98 = p.pos
 			p.pos += size
-			v99 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: p.text(x98, p.pos), terminal: true, fresh: true})
+			v99 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: p.text(x98, p.pos), terminal: true, fresh: true})
 			x95 = append(x95, v99)
-			v100 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+			v100 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 			v101, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v100, x68.pos)
 			v69 = v101
 			goto L70_ordinary
@@ -73210,7 +73366,7 @@ func (p *parser) e431() (*Node, bool) {
 			p.reset(x66)
 			break
 		}
-		v103 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x63), End: int32(p.pos), Children: p.kids(x64), fresh: true})
+		v103 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x63), end: int32(p.pos), children: p.kids(x64), fresh: true})
 		x60 = append(x60, v103)
 
 		x104 = p.pos
@@ -73219,9 +73375,9 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L58_ordinary
 		}
-		v105 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x104), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v105 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x104), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x60 = append(x60, v105)
-		v106 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v106 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v107, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v106, x1.pos)
 		v2 = v107
 		goto L3_ordinary
@@ -73253,7 +73409,7 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L108_ordinary
 		}
-		v114 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x113), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v114 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x113), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x110 = append(x110, v114)
 
 		x115, x116 = p.pos, len(p.kidStack)
@@ -73280,7 +73436,7 @@ func (p *parser) e431() (*Node, bool) {
 				}
 				x129 = p.pos
 				p.pos += size
-				v130 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x129), End: int32(p.pos), Text: p.text(x129, p.pos), terminal: true, fresh: true})
+				v130 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x129), end: int32(p.pos), text: p.text(x129, p.pos), terminal: true, fresh: true})
 				v131 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v130, x127.pos)
 				x126++
 				p.kidStack = append(p.kidStack, v131)
@@ -73296,7 +73452,7 @@ func (p *parser) e431() (*Node, bool) {
 				p.dropKids(x125)
 				goto L123_ordinary
 			}
-			v132 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x124), End: int32(p.pos), Children: p.kids(x125), fresh: true})
+			v132 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x124), end: int32(p.pos), children: p.kids(x125), fresh: true})
 			v121 = v132
 			goto L122_ordinary
 		L123_ordinary:
@@ -73321,7 +73477,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L136_ordinary
 			}
-			v140 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x139), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v140 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x139), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x138 = append(x138, v140)
 
 			x141 = p.mark()
@@ -73342,7 +73498,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L147_ordinary
 			}
-			v149 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x148), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v149 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x148), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v142 = v149
 			goto L143_ordinary
 		L147_ordinary:
@@ -73365,7 +73521,7 @@ func (p *parser) e431() (*Node, bool) {
 			}
 			x152 = p.pos
 			p.pos += size
-			v153 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x152), End: int32(p.pos), Text: p.text(x152, p.pos), terminal: true, fresh: true})
+			v153 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x152), end: int32(p.pos), text: p.text(x152, p.pos), terminal: true, fresh: true})
 			v142 = v153
 			goto L143_ordinary
 		L151_ordinary:
@@ -73374,7 +73530,7 @@ func (p *parser) e431() (*Node, bool) {
 			goto L136_ordinary
 		L143_ordinary:
 			x138 = append(x138, v142)
-			v154 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x137), End: int32(p.pos), Children: x138, fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x137), end: int32(p.pos), children: x138, fresh: true})
 			v155, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v154, x120.pos)
 			v121 = v155
 			goto L122_ordinary
@@ -73394,7 +73550,7 @@ func (p *parser) e431() (*Node, bool) {
 			p.reset(x118)
 			break
 		}
-		v157 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x115), End: int32(p.pos), Children: p.kids(x116), fresh: true})
+		v157 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x115), end: int32(p.pos), children: p.kids(x116), fresh: true})
 		x110 = append(x110, v157)
 
 		x158 = p.pos
@@ -73403,9 +73559,9 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L108_ordinary
 		}
-		v159 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x158), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v159 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x158), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x110 = append(x110, v159)
-		v160 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x109), End: int32(p.pos), Children: x110, fresh: true})
+		v160 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x109), end: int32(p.pos), children: x110, fresh: true})
 		v161, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v160, x1.pos)
 		v2 = v161
 		goto L3_ordinary
@@ -73436,7 +73592,7 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L162_ordinary
 		}
-		v168 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x167), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v168 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x167), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x164 = append(x164, v168)
 
 		x169, x170 = p.pos, len(p.kidStack)
@@ -73463,7 +73619,7 @@ func (p *parser) e431() (*Node, bool) {
 				}
 				x183 = p.pos
 				p.pos += size
-				v184 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x183), End: int32(p.pos), Text: p.text(x183, p.pos), terminal: true, fresh: true})
+				v184 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x183), end: int32(p.pos), text: p.text(x183, p.pos), terminal: true, fresh: true})
 				v185 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v184, x181.pos)
 				x180++
 				p.kidStack = append(p.kidStack, v185)
@@ -73479,7 +73635,7 @@ func (p *parser) e431() (*Node, bool) {
 				p.dropKids(x179)
 				goto L177_ordinary
 			}
-			v186 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x178), End: int32(p.pos), Children: p.kids(x179), fresh: true})
+			v186 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x178), end: int32(p.pos), children: p.kids(x179), fresh: true})
 			v175 = v186
 			goto L176_ordinary
 		L177_ordinary:
@@ -73504,7 +73660,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L190_ordinary
 			}
-			v194 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x193), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v194 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x193), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x192 = append(x192, v194)
 
 			x195 = p.mark()
@@ -73525,7 +73681,7 @@ func (p *parser) e431() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L201_ordinary
 			}
-			v203 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x202), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v203 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x202), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v196 = v203
 			goto L197_ordinary
 		L201_ordinary:
@@ -73548,7 +73704,7 @@ func (p *parser) e431() (*Node, bool) {
 			}
 			x206 = p.pos
 			p.pos += size
-			v207 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x206), End: int32(p.pos), Text: p.text(x206, p.pos), terminal: true, fresh: true})
+			v207 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x206), end: int32(p.pos), text: p.text(x206, p.pos), terminal: true, fresh: true})
 			v196 = v207
 			goto L197_ordinary
 		L205_ordinary:
@@ -73557,7 +73713,7 @@ func (p *parser) e431() (*Node, bool) {
 			goto L190_ordinary
 		L197_ordinary:
 			x192 = append(x192, v196)
-			v208 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x191), End: int32(p.pos), Children: x192, fresh: true})
+			v208 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x191), end: int32(p.pos), children: x192, fresh: true})
 			v209, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v208, x174.pos)
 			v175 = v209
 			goto L176_ordinary
@@ -73577,7 +73733,7 @@ func (p *parser) e431() (*Node, bool) {
 			p.reset(x172)
 			break
 		}
-		v211 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x169), End: int32(p.pos), Children: p.kids(x170), fresh: true})
+		v211 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x169), end: int32(p.pos), children: p.kids(x170), fresh: true})
 		x164 = append(x164, v211)
 
 		x212 = p.pos
@@ -73586,9 +73742,9 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L162_ordinary
 		}
-		v213 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x212), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v213 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x212), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x164 = append(x164, v213)
-		v214 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x163), End: int32(p.pos), Children: x164, fresh: true})
+		v214 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x163), end: int32(p.pos), children: x164, fresh: true})
 		v215, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v214, x1.pos)
 		v2 = v215
 		goto L3_ordinary
@@ -73798,7 +73954,7 @@ func (p *parser) e431() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -73825,7 +73981,7 @@ func (p *parser) e431() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -73841,7 +73997,7 @@ func (p *parser) e431() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -73871,9 +74027,9 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -73899,7 +74055,7 @@ func (p *parser) e431() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L42
 		}
-		v46 = p.newNode(Node{kind: kindMatch, Start: int32(x45), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v46 = p.newNode(Node{kind: kindMatch, start: int32(x45), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x44 = append(x44, v46)
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -73914,9 +74070,9 @@ func (p *parser) e431() (*Node, bool) {
 		}
 		x47 = p.pos
 		p.pos += size
-		v48 = p.newNode(Node{kind: kindMatch, Start: int32(x47), End: int32(p.pos), Text: p.text(x47, p.pos), terminal: true, fresh: true})
+		v48 = p.newNode(Node{kind: kindMatch, start: int32(x47), end: int32(p.pos), text: p.text(x47, p.pos), terminal: true, fresh: true})
 		x44 = append(x44, v48)
-		v49 = p.newNode(Node{kind: kindSeq, Start: int32(x43), End: int32(p.pos), Children: x44, fresh: true})
+		v49 = p.newNode(Node{kind: kindSeq, start: int32(x43), end: int32(p.pos), children: x44, fresh: true})
 		v50, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v49, x17.pos)
 		v18 = v50
 		goto L19
@@ -73936,7 +74092,7 @@ func (p *parser) e431() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v52 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v52 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v52)
 	p.stepWork()
 	x53 = p.pos
@@ -73945,9 +74101,9 @@ func (p *parser) e431() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v54 = p.newNode(Node{kind: kindMatch, Start: int32(x53), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v54 = p.newNode(Node{kind: kindMatch, start: int32(x53), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v55, x1.pos)
 	v2 = v56
 	goto L3
@@ -73968,7 +74124,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	x63, x64 = p.pos, len(p.kidStack)
@@ -73995,7 +74151,7 @@ L6:
 			}
 			x77 = p.pos
 			p.pos += size
-			v78 = p.newNode(Node{kind: kindMatch, Start: int32(x77), End: int32(p.pos), Text: p.text(x77, p.pos), terminal: true, fresh: true})
+			v78 = p.newNode(Node{kind: kindMatch, start: int32(x77), end: int32(p.pos), text: p.text(x77, p.pos), terminal: true, fresh: true})
 			v79 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v78, x75.pos)
 			x74++
 			p.kidStack = append(p.kidStack, v79)
@@ -74011,7 +74167,7 @@ L6:
 			p.dropKids(x73)
 			goto L71
 		}
-		v80 = p.newNode(Node{kind: kindList, Start: int32(x72), End: int32(p.pos), Children: p.kids(x73), fresh: true})
+		v80 = p.newNode(Node{kind: kindList, start: int32(x72), end: int32(p.pos), children: p.kids(x73), fresh: true})
 		v69 = v80
 		goto L70
 	L71:
@@ -74041,9 +74197,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L81
 		}
-		v87 = p.newNode(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v87 = p.newNode(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x83 = append(x83, v87)
-		v88 = p.newNode(Node{kind: kindSeq, Start: int32(x82), End: int32(p.pos), Children: x83, fresh: true})
+		v88 = p.newNode(Node{kind: kindSeq, start: int32(x82), end: int32(p.pos), children: x83, fresh: true})
 		v89, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v88, x68.pos)
 		v69 = v89
 		goto L70
@@ -74069,7 +74225,7 @@ L6:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L93
 		}
-		v97 = p.newNode(Node{kind: kindMatch, Start: int32(x96), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v97 = p.newNode(Node{kind: kindMatch, start: int32(x96), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x95 = append(x95, v97)
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -74084,9 +74240,9 @@ L6:
 		}
 		x98 = p.pos
 		p.pos += size
-		v99 = p.newNode(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: p.text(x98, p.pos), terminal: true, fresh: true})
+		v99 = p.newNode(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: p.text(x98, p.pos), terminal: true, fresh: true})
 		x95 = append(x95, v99)
-		v100 = p.newNode(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+		v100 = p.newNode(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 		v101, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v100, x68.pos)
 		v69 = v101
 		goto L70
@@ -74106,7 +74262,7 @@ L6:
 		p.reset(x66)
 		break
 	}
-	v103 = p.newNode(Node{kind: kindList, Start: int32(x63), End: int32(p.pos), Children: p.kids(x64), fresh: true})
+	v103 = p.newNode(Node{kind: kindList, start: int32(x63), end: int32(p.pos), children: p.kids(x64), fresh: true})
 	x60 = append(x60, v103)
 	p.stepWork()
 	x104 = p.pos
@@ -74115,9 +74271,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L58
 	}
-	v105 = p.newNode(Node{kind: kindMatch, Start: int32(x104), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v105 = p.newNode(Node{kind: kindMatch, start: int32(x104), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x60 = append(x60, v105)
-	v106 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v106 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v107, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v106, x1.pos)
 	v2 = v107
 	goto L3
@@ -74149,7 +74305,7 @@ L112:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L108
 	}
-	v114 = p.newNode(Node{kind: kindMatch, Start: int32(x113), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v114 = p.newNode(Node{kind: kindMatch, start: int32(x113), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x110 = append(x110, v114)
 	p.stepWork()
 	x115, x116 = p.pos, len(p.kidStack)
@@ -74176,7 +74332,7 @@ L112:
 			}
 			x129 = p.pos
 			p.pos += size
-			v130 = p.newNode(Node{kind: kindMatch, Start: int32(x129), End: int32(p.pos), Text: p.text(x129, p.pos), terminal: true, fresh: true})
+			v130 = p.newNode(Node{kind: kindMatch, start: int32(x129), end: int32(p.pos), text: p.text(x129, p.pos), terminal: true, fresh: true})
 			v131 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v130, x127.pos)
 			x126++
 			p.kidStack = append(p.kidStack, v131)
@@ -74192,7 +74348,7 @@ L112:
 			p.dropKids(x125)
 			goto L123
 		}
-		v132 = p.newNode(Node{kind: kindList, Start: int32(x124), End: int32(p.pos), Children: p.kids(x125), fresh: true})
+		v132 = p.newNode(Node{kind: kindList, start: int32(x124), end: int32(p.pos), children: p.kids(x125), fresh: true})
 		v121 = v132
 		goto L122
 	L123:
@@ -74217,7 +74373,7 @@ L112:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L136
 		}
-		v140 = p.newNode(Node{kind: kindMatch, Start: int32(x139), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v140 = p.newNode(Node{kind: kindMatch, start: int32(x139), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x138 = append(x138, v140)
 		p.stepWork()
 		x141 = p.mark()
@@ -74238,7 +74394,7 @@ L112:
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L147
 		}
-		v149 = p.newNode(Node{kind: kindMatch, Start: int32(x148), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v149 = p.newNode(Node{kind: kindMatch, start: int32(x148), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v142 = v149
 		goto L143
 	L147:
@@ -74261,7 +74417,7 @@ L112:
 		}
 		x152 = p.pos
 		p.pos += size
-		v153 = p.newNode(Node{kind: kindMatch, Start: int32(x152), End: int32(p.pos), Text: p.text(x152, p.pos), terminal: true, fresh: true})
+		v153 = p.newNode(Node{kind: kindMatch, start: int32(x152), end: int32(p.pos), text: p.text(x152, p.pos), terminal: true, fresh: true})
 		v142 = v153
 		goto L143
 	L151:
@@ -74270,7 +74426,7 @@ L112:
 		goto L136
 	L143:
 		x138 = append(x138, v142)
-		v154 = p.newNode(Node{kind: kindSeq, Start: int32(x137), End: int32(p.pos), Children: x138, fresh: true})
+		v154 = p.newNode(Node{kind: kindSeq, start: int32(x137), end: int32(p.pos), children: x138, fresh: true})
 		v155, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v154, x120.pos)
 		v121 = v155
 		goto L122
@@ -74290,7 +74446,7 @@ L112:
 		p.reset(x118)
 		break
 	}
-	v157 = p.newNode(Node{kind: kindList, Start: int32(x115), End: int32(p.pos), Children: p.kids(x116), fresh: true})
+	v157 = p.newNode(Node{kind: kindList, start: int32(x115), end: int32(p.pos), children: p.kids(x116), fresh: true})
 	x110 = append(x110, v157)
 	p.stepWork()
 	x158 = p.pos
@@ -74299,9 +74455,9 @@ L112:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L108
 	}
-	v159 = p.newNode(Node{kind: kindMatch, Start: int32(x158), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v159 = p.newNode(Node{kind: kindMatch, start: int32(x158), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x110 = append(x110, v159)
-	v160 = p.newNode(Node{kind: kindSeq, Start: int32(x109), End: int32(p.pos), Children: x110, fresh: true})
+	v160 = p.newNode(Node{kind: kindSeq, start: int32(x109), end: int32(p.pos), children: x110, fresh: true})
 	v161, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v160, x1.pos)
 	v2 = v161
 	goto L3
@@ -74332,7 +74488,7 @@ L166:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L162
 	}
-	v168 = p.newNode(Node{kind: kindMatch, Start: int32(x167), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v168 = p.newNode(Node{kind: kindMatch, start: int32(x167), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x164 = append(x164, v168)
 	p.stepWork()
 	x169, x170 = p.pos, len(p.kidStack)
@@ -74359,7 +74515,7 @@ L166:
 			}
 			x183 = p.pos
 			p.pos += size
-			v184 = p.newNode(Node{kind: kindMatch, Start: int32(x183), End: int32(p.pos), Text: p.text(x183, p.pos), terminal: true, fresh: true})
+			v184 = p.newNode(Node{kind: kindMatch, start: int32(x183), end: int32(p.pos), text: p.text(x183, p.pos), terminal: true, fresh: true})
 			v185 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v184, x181.pos)
 			x180++
 			p.kidStack = append(p.kidStack, v185)
@@ -74375,7 +74531,7 @@ L166:
 			p.dropKids(x179)
 			goto L177
 		}
-		v186 = p.newNode(Node{kind: kindList, Start: int32(x178), End: int32(p.pos), Children: p.kids(x179), fresh: true})
+		v186 = p.newNode(Node{kind: kindList, start: int32(x178), end: int32(p.pos), children: p.kids(x179), fresh: true})
 		v175 = v186
 		goto L176
 	L177:
@@ -74400,7 +74556,7 @@ L166:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L190
 		}
-		v194 = p.newNode(Node{kind: kindMatch, Start: int32(x193), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v194 = p.newNode(Node{kind: kindMatch, start: int32(x193), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x192 = append(x192, v194)
 		p.stepWork()
 		x195 = p.mark()
@@ -74421,7 +74577,7 @@ L166:
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L201
 		}
-		v203 = p.newNode(Node{kind: kindMatch, Start: int32(x202), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v203 = p.newNode(Node{kind: kindMatch, start: int32(x202), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v196 = v203
 		goto L197
 	L201:
@@ -74444,7 +74600,7 @@ L166:
 		}
 		x206 = p.pos
 		p.pos += size
-		v207 = p.newNode(Node{kind: kindMatch, Start: int32(x206), End: int32(p.pos), Text: p.text(x206, p.pos), terminal: true, fresh: true})
+		v207 = p.newNode(Node{kind: kindMatch, start: int32(x206), end: int32(p.pos), text: p.text(x206, p.pos), terminal: true, fresh: true})
 		v196 = v207
 		goto L197
 	L205:
@@ -74453,7 +74609,7 @@ L166:
 		goto L190
 	L197:
 		x192 = append(x192, v196)
-		v208 = p.newNode(Node{kind: kindSeq, Start: int32(x191), End: int32(p.pos), Children: x192, fresh: true})
+		v208 = p.newNode(Node{kind: kindSeq, start: int32(x191), end: int32(p.pos), children: x192, fresh: true})
 		v209, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v208, x174.pos)
 		v175 = v209
 		goto L176
@@ -74473,7 +74629,7 @@ L166:
 		p.reset(x172)
 		break
 	}
-	v211 = p.newNode(Node{kind: kindList, Start: int32(x169), End: int32(p.pos), Children: p.kids(x170), fresh: true})
+	v211 = p.newNode(Node{kind: kindList, start: int32(x169), end: int32(p.pos), children: p.kids(x170), fresh: true})
 	x164 = append(x164, v211)
 	p.stepWork()
 	x212 = p.pos
@@ -74482,9 +74638,9 @@ L166:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L162
 	}
-	v213 = p.newNode(Node{kind: kindMatch, Start: int32(x212), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v213 = p.newNode(Node{kind: kindMatch, start: int32(x212), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x164 = append(x164, v213)
-	v214 = p.newNode(Node{kind: kindSeq, Start: int32(x163), End: int32(p.pos), Children: x164, fresh: true})
+	v214 = p.newNode(Node{kind: kindSeq, start: int32(x163), end: int32(p.pos), children: x164, fresh: true})
 	v215, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v214, x1.pos)
 	v2 = v215
 	goto L3
@@ -74657,7 +74813,7 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -74684,7 +74840,7 @@ func (p *parser) e434() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -74700,7 +74856,7 @@ func (p *parser) e434() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -74730,9 +74886,9 @@ func (p *parser) e434() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -74770,7 +74926,7 @@ func (p *parser) e434() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v45 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v45 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v45)
 
 		x46 = p.pos
@@ -74779,9 +74935,9 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v47)
-		v48 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v48 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 		v2 = v49
 		goto L3_ordinary
@@ -74802,7 +74958,7 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v55)
 
 		x56, x57 = p.pos, len(p.kidStack)
@@ -74829,7 +74985,7 @@ func (p *parser) e434() (*Node, bool) {
 				}
 				x70 = p.pos
 				p.pos += size
-				v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+				v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 				v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 				x67++
 				p.kidStack = append(p.kidStack, v72)
@@ -74845,7 +75001,7 @@ func (p *parser) e434() (*Node, bool) {
 				p.dropKids(x66)
 				goto L64_ordinary
 			}
-			v73 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+			v73 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 			v62 = v73
 			goto L63_ordinary
 		L64_ordinary:
@@ -74875,9 +75031,9 @@ func (p *parser) e434() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L74_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x76 = append(x76, v80)
-			v81 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+			v81 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 			v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 			v62 = v82
 			goto L63_ordinary
@@ -74915,7 +75071,7 @@ func (p *parser) e434() (*Node, bool) {
 			p.reset(x59)
 			break
 		}
-		v89 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		x53 = append(x53, v89)
 
 		x90 = p.pos
@@ -74924,9 +75080,9 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v91)
-		v92 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+		v92 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 		v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 		v2 = v93
 		goto L3_ordinary
@@ -74958,7 +75114,7 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v100 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v100)
 
 		x101, x102 = p.pos, len(p.kidStack)
@@ -74985,7 +75141,7 @@ func (p *parser) e434() (*Node, bool) {
 				}
 				x115 = p.pos
 				p.pos += size
-				v116 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+				v116 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 				v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 				x112++
 				p.kidStack = append(p.kidStack, v117)
@@ -75001,7 +75157,7 @@ func (p *parser) e434() (*Node, bool) {
 				p.dropKids(x111)
 				goto L109_ordinary
 			}
-			v118 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+			v118 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 			v107 = v118
 			goto L108_ordinary
 		L109_ordinary:
@@ -75038,7 +75194,7 @@ func (p *parser) e434() (*Node, bool) {
 			p.reset(x104)
 			break
 		}
-		v125 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+		v125 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 		x96 = append(x96, v125)
 
 		x126 = p.pos
@@ -75047,9 +75203,9 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v127)
-		v128 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+		v128 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 		v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 		v2 = v129
 		goto L3_ordinary
@@ -75080,7 +75236,7 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v136 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v136 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v136)
 
 		x137, x138 = p.pos, len(p.kidStack)
@@ -75107,7 +75263,7 @@ func (p *parser) e434() (*Node, bool) {
 				}
 				x151 = p.pos
 				p.pos += size
-				v152 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+				v152 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 				v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 				x148++
 				p.kidStack = append(p.kidStack, v153)
@@ -75123,7 +75279,7 @@ func (p *parser) e434() (*Node, bool) {
 				p.dropKids(x147)
 				goto L145_ordinary
 			}
-			v154 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 			v143 = v154
 			goto L144_ordinary
 		L145_ordinary:
@@ -75160,7 +75316,7 @@ func (p *parser) e434() (*Node, bool) {
 			p.reset(x140)
 			break
 		}
-		v161 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+		v161 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 		x132 = append(x132, v161)
 
 		x162 = p.pos
@@ -75169,9 +75325,9 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v163 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v163 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v163)
-		v164 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+		v164 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 		v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 		v2 = v165
 		goto L3_ordinary
@@ -75341,7 +75497,7 @@ func (p *parser) e434() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -75368,7 +75524,7 @@ func (p *parser) e434() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -75384,7 +75540,7 @@ func (p *parser) e434() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -75414,9 +75570,9 @@ func (p *parser) e434() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -75454,7 +75610,7 @@ func (p *parser) e434() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v45 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v45 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v45)
 	p.stepWork()
 	x46 = p.pos
@@ -75463,9 +75619,9 @@ func (p *parser) e434() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v47)
-	v48 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v48 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 	v2 = v49
 	goto L3
@@ -75486,7 +75642,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v55)
 	p.stepWork()
 	x56, x57 = p.pos, len(p.kidStack)
@@ -75513,7 +75669,7 @@ L6:
 			}
 			x70 = p.pos
 			p.pos += size
-			v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+			v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 			v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 			x67++
 			p.kidStack = append(p.kidStack, v72)
@@ -75529,7 +75685,7 @@ L6:
 			p.dropKids(x66)
 			goto L64
 		}
-		v73 = p.newNode(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+		v73 = p.newNode(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 		v62 = v73
 		goto L63
 	L64:
@@ -75559,9 +75715,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L74
 		}
-		v80 = p.newNode(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v80 = p.newNode(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x76 = append(x76, v80)
-		v81 = p.newNode(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+		v81 = p.newNode(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 		v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 		v62 = v82
 		goto L63
@@ -75599,7 +75755,7 @@ L6:
 		p.reset(x59)
 		break
 	}
-	v89 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v89 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	x53 = append(x53, v89)
 	p.stepWork()
 	x90 = p.pos
@@ -75608,9 +75764,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v91)
-	v92 = p.newNode(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+	v92 = p.newNode(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 	v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 	v2 = v93
 	goto L3
@@ -75642,7 +75798,7 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v100 = p.newNode(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v100 = p.newNode(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v100)
 	p.stepWork()
 	x101, x102 = p.pos, len(p.kidStack)
@@ -75669,7 +75825,7 @@ L98:
 			}
 			x115 = p.pos
 			p.pos += size
-			v116 = p.newNode(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+			v116 = p.newNode(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 			v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 			x112++
 			p.kidStack = append(p.kidStack, v117)
@@ -75685,7 +75841,7 @@ L98:
 			p.dropKids(x111)
 			goto L109
 		}
-		v118 = p.newNode(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+		v118 = p.newNode(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 		v107 = v118
 		goto L108
 	L109:
@@ -75722,7 +75878,7 @@ L98:
 		p.reset(x104)
 		break
 	}
-	v125 = p.newNode(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+	v125 = p.newNode(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 	x96 = append(x96, v125)
 	p.stepWork()
 	x126 = p.pos
@@ -75731,9 +75887,9 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v127)
-	v128 = p.newNode(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+	v128 = p.newNode(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 	v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 	v2 = v129
 	goto L3
@@ -75764,7 +75920,7 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v136 = p.newNode(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v136 = p.newNode(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v136)
 	p.stepWork()
 	x137, x138 = p.pos, len(p.kidStack)
@@ -75791,7 +75947,7 @@ L134:
 			}
 			x151 = p.pos
 			p.pos += size
-			v152 = p.newNode(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+			v152 = p.newNode(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 			v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 			x148++
 			p.kidStack = append(p.kidStack, v153)
@@ -75807,7 +75963,7 @@ L134:
 			p.dropKids(x147)
 			goto L145
 		}
-		v154 = p.newNode(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+		v154 = p.newNode(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 		v143 = v154
 		goto L144
 	L145:
@@ -75844,7 +76000,7 @@ L134:
 		p.reset(x140)
 		break
 	}
-	v161 = p.newNode(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+	v161 = p.newNode(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 	x132 = append(x132, v161)
 	p.stepWork()
 	x162 = p.pos
@@ -75853,9 +76009,9 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v163 = p.newNode(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v163 = p.newNode(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v163)
-	v164 = p.newNode(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+	v164 = p.newNode(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 	v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 	v2 = v165
 	goto L3
@@ -75907,7 +76063,7 @@ func (p *parser) e436() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -75939,7 +76095,7 @@ func (p *parser) e436() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.r266(); !ok {
@@ -75951,7 +76107,7 @@ func (p *parser) e436() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -75975,7 +76131,7 @@ func (p *parser) e436() (*Node, bool) {
 		}
 		x24 = p.pos
 		p.pos += size
-		v25 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: p.text(x24, p.pos), terminal: true, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: p.text(x24, p.pos), terminal: true, fresh: true})
 		v6 = v25
 		goto L7_ordinary
 	L23_ordinary:
@@ -75984,7 +76140,7 @@ func (p *parser) e436() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v26, true
 	fail_ordinary:
 		return nil, false
@@ -76026,7 +76182,7 @@ func (p *parser) e436() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -76058,7 +76214,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.r266(); !ok {
@@ -76070,7 +76226,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -76094,7 +76250,7 @@ L12:
 	}
 	x24 = p.pos
 	p.pos += size
-	v25 = p.newNode(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: p.text(x24, p.pos), terminal: true, fresh: true})
+	v25 = p.newNode(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: p.text(x24, p.pos), terminal: true, fresh: true})
 	v6 = v25
 	goto L7
 L23:
@@ -76103,7 +76259,7 @@ L22:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v26 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v26 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v26, true
 fail:
 	return nil, false
@@ -76309,7 +76465,7 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -76336,7 +76492,7 @@ func (p *parser) e437() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -76352,7 +76508,7 @@ func (p *parser) e437() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -76382,9 +76538,9 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -76410,7 +76566,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L42_ordinary
 			}
-			v46 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x45), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v46 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x45), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x44 = append(x44, v46)
 
 			if p.pos < len(p.in) {
@@ -76425,9 +76581,9 @@ func (p *parser) e437() (*Node, bool) {
 			}
 			x47 = p.pos
 			p.pos += size
-			v48 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x47), End: int32(p.pos), Text: p.text(x47, p.pos), terminal: true, fresh: true})
+			v48 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x47), end: int32(p.pos), text: p.text(x47, p.pos), terminal: true, fresh: true})
 			x44 = append(x44, v48)
-			v49 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x43), End: int32(p.pos), Children: x44, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x43), end: int32(p.pos), children: x44, fresh: true})
 			v50, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v49, x17.pos)
 			v18 = v50
 			goto L19_ordinary
@@ -76447,7 +76603,7 @@ func (p *parser) e437() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v52 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v52 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v52)
 
 		x53 = p.pos
@@ -76456,9 +76612,9 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x53), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x53), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v55, x1.pos)
 		v2 = v56
 		goto L3_ordinary
@@ -76479,7 +76635,7 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		x63, x64 = p.pos, len(p.kidStack)
@@ -76506,7 +76662,7 @@ func (p *parser) e437() (*Node, bool) {
 				}
 				x77 = p.pos
 				p.pos += size
-				v78 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x77), End: int32(p.pos), Text: p.text(x77, p.pos), terminal: true, fresh: true})
+				v78 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x77), end: int32(p.pos), text: p.text(x77, p.pos), terminal: true, fresh: true})
 				v79 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v78, x75.pos)
 				x74++
 				p.kidStack = append(p.kidStack, v79)
@@ -76522,7 +76678,7 @@ func (p *parser) e437() (*Node, bool) {
 				p.dropKids(x73)
 				goto L71_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x72), End: int32(p.pos), Children: p.kids(x73), fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x72), end: int32(p.pos), children: p.kids(x73), fresh: true})
 			v69 = v80
 			goto L70_ordinary
 		L71_ordinary:
@@ -76552,9 +76708,9 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L81_ordinary
 			}
-			v87 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v87 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x83 = append(x83, v87)
-			v88 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x82), End: int32(p.pos), Children: x83, fresh: true})
+			v88 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x82), end: int32(p.pos), children: x83, fresh: true})
 			v89, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v88, x68.pos)
 			v69 = v89
 			goto L70_ordinary
@@ -76580,7 +76736,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L93_ordinary
 			}
-			v97 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x96), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v97 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x96), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x95 = append(x95, v97)
 
 			if p.pos < len(p.in) {
@@ -76595,9 +76751,9 @@ func (p *parser) e437() (*Node, bool) {
 			}
 			x98 = p.pos
 			p.pos += size
-			v99 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: p.text(x98, p.pos), terminal: true, fresh: true})
+			v99 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: p.text(x98, p.pos), terminal: true, fresh: true})
 			x95 = append(x95, v99)
-			v100 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+			v100 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 			v101, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v100, x68.pos)
 			v69 = v101
 			goto L70_ordinary
@@ -76617,7 +76773,7 @@ func (p *parser) e437() (*Node, bool) {
 			p.reset(x66)
 			break
 		}
-		v103 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x63), End: int32(p.pos), Children: p.kids(x64), fresh: true})
+		v103 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x63), end: int32(p.pos), children: p.kids(x64), fresh: true})
 		x60 = append(x60, v103)
 
 		x104 = p.pos
@@ -76626,9 +76782,9 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L58_ordinary
 		}
-		v105 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x104), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v105 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x104), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x60 = append(x60, v105)
-		v106 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v106 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v107, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v106, x1.pos)
 		v2 = v107
 		goto L3_ordinary
@@ -76660,7 +76816,7 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L108_ordinary
 		}
-		v114 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x113), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v114 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x113), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x110 = append(x110, v114)
 
 		x115, x116 = p.pos, len(p.kidStack)
@@ -76687,7 +76843,7 @@ func (p *parser) e437() (*Node, bool) {
 				}
 				x129 = p.pos
 				p.pos += size
-				v130 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x129), End: int32(p.pos), Text: p.text(x129, p.pos), terminal: true, fresh: true})
+				v130 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x129), end: int32(p.pos), text: p.text(x129, p.pos), terminal: true, fresh: true})
 				v131 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v130, x127.pos)
 				x126++
 				p.kidStack = append(p.kidStack, v131)
@@ -76703,7 +76859,7 @@ func (p *parser) e437() (*Node, bool) {
 				p.dropKids(x125)
 				goto L123_ordinary
 			}
-			v132 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x124), End: int32(p.pos), Children: p.kids(x125), fresh: true})
+			v132 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x124), end: int32(p.pos), children: p.kids(x125), fresh: true})
 			v121 = v132
 			goto L122_ordinary
 		L123_ordinary:
@@ -76728,7 +76884,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L136_ordinary
 			}
-			v140 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x139), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v140 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x139), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x138 = append(x138, v140)
 
 			x141 = p.mark()
@@ -76749,7 +76905,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L147_ordinary
 			}
-			v149 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x148), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v149 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x148), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v142 = v149
 			goto L143_ordinary
 		L147_ordinary:
@@ -76772,7 +76928,7 @@ func (p *parser) e437() (*Node, bool) {
 			}
 			x152 = p.pos
 			p.pos += size
-			v153 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x152), End: int32(p.pos), Text: p.text(x152, p.pos), terminal: true, fresh: true})
+			v153 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x152), end: int32(p.pos), text: p.text(x152, p.pos), terminal: true, fresh: true})
 			v142 = v153
 			goto L143_ordinary
 		L151_ordinary:
@@ -76781,7 +76937,7 @@ func (p *parser) e437() (*Node, bool) {
 			goto L136_ordinary
 		L143_ordinary:
 			x138 = append(x138, v142)
-			v154 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x137), End: int32(p.pos), Children: x138, fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x137), end: int32(p.pos), children: x138, fresh: true})
 			v155, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v154, x120.pos)
 			v121 = v155
 			goto L122_ordinary
@@ -76801,7 +76957,7 @@ func (p *parser) e437() (*Node, bool) {
 			p.reset(x118)
 			break
 		}
-		v157 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x115), End: int32(p.pos), Children: p.kids(x116), fresh: true})
+		v157 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x115), end: int32(p.pos), children: p.kids(x116), fresh: true})
 		x110 = append(x110, v157)
 
 		x158 = p.pos
@@ -76810,9 +76966,9 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L108_ordinary
 		}
-		v159 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x158), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v159 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x158), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x110 = append(x110, v159)
-		v160 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x109), End: int32(p.pos), Children: x110, fresh: true})
+		v160 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x109), end: int32(p.pos), children: x110, fresh: true})
 		v161, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v160, x1.pos)
 		v2 = v161
 		goto L3_ordinary
@@ -76843,7 +76999,7 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L162_ordinary
 		}
-		v168 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x167), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v168 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x167), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x164 = append(x164, v168)
 
 		x169, x170 = p.pos, len(p.kidStack)
@@ -76870,7 +77026,7 @@ func (p *parser) e437() (*Node, bool) {
 				}
 				x183 = p.pos
 				p.pos += size
-				v184 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x183), End: int32(p.pos), Text: p.text(x183, p.pos), terminal: true, fresh: true})
+				v184 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x183), end: int32(p.pos), text: p.text(x183, p.pos), terminal: true, fresh: true})
 				v185 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v184, x181.pos)
 				x180++
 				p.kidStack = append(p.kidStack, v185)
@@ -76886,7 +77042,7 @@ func (p *parser) e437() (*Node, bool) {
 				p.dropKids(x179)
 				goto L177_ordinary
 			}
-			v186 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x178), End: int32(p.pos), Children: p.kids(x179), fresh: true})
+			v186 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x178), end: int32(p.pos), children: p.kids(x179), fresh: true})
 			v175 = v186
 			goto L176_ordinary
 		L177_ordinary:
@@ -76911,7 +77067,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L190_ordinary
 			}
-			v194 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x193), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v194 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x193), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x192 = append(x192, v194)
 
 			x195 = p.mark()
@@ -76932,7 +77088,7 @@ func (p *parser) e437() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 				goto L201_ordinary
 			}
-			v203 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x202), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+			v203 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x202), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 			v196 = v203
 			goto L197_ordinary
 		L201_ordinary:
@@ -76955,7 +77111,7 @@ func (p *parser) e437() (*Node, bool) {
 			}
 			x206 = p.pos
 			p.pos += size
-			v207 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x206), End: int32(p.pos), Text: p.text(x206, p.pos), terminal: true, fresh: true})
+			v207 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x206), end: int32(p.pos), text: p.text(x206, p.pos), terminal: true, fresh: true})
 			v196 = v207
 			goto L197_ordinary
 		L205_ordinary:
@@ -76964,7 +77120,7 @@ func (p *parser) e437() (*Node, bool) {
 			goto L190_ordinary
 		L197_ordinary:
 			x192 = append(x192, v196)
-			v208 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x191), End: int32(p.pos), Children: x192, fresh: true})
+			v208 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x191), end: int32(p.pos), children: x192, fresh: true})
 			v209, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v208, x174.pos)
 			v175 = v209
 			goto L176_ordinary
@@ -76984,7 +77140,7 @@ func (p *parser) e437() (*Node, bool) {
 			p.reset(x172)
 			break
 		}
-		v211 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x169), End: int32(p.pos), Children: p.kids(x170), fresh: true})
+		v211 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x169), end: int32(p.pos), children: p.kids(x170), fresh: true})
 		x164 = append(x164, v211)
 
 		x212 = p.pos
@@ -76993,9 +77149,9 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L162_ordinary
 		}
-		v213 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x212), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v213 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x212), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x164 = append(x164, v213)
-		v214 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x163), End: int32(p.pos), Children: x164, fresh: true})
+		v214 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x163), end: int32(p.pos), children: x164, fresh: true})
 		v215, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v214, x1.pos)
 		v2 = v215
 		goto L3_ordinary
@@ -77205,7 +77361,7 @@ func (p *parser) e437() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -77232,7 +77388,7 @@ func (p *parser) e437() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -77248,7 +77404,7 @@ func (p *parser) e437() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -77278,9 +77434,9 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -77306,7 +77462,7 @@ func (p *parser) e437() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L42
 		}
-		v46 = p.newNode(Node{kind: kindMatch, Start: int32(x45), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v46 = p.newNode(Node{kind: kindMatch, start: int32(x45), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x44 = append(x44, v46)
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -77321,9 +77477,9 @@ func (p *parser) e437() (*Node, bool) {
 		}
 		x47 = p.pos
 		p.pos += size
-		v48 = p.newNode(Node{kind: kindMatch, Start: int32(x47), End: int32(p.pos), Text: p.text(x47, p.pos), terminal: true, fresh: true})
+		v48 = p.newNode(Node{kind: kindMatch, start: int32(x47), end: int32(p.pos), text: p.text(x47, p.pos), terminal: true, fresh: true})
 		x44 = append(x44, v48)
-		v49 = p.newNode(Node{kind: kindSeq, Start: int32(x43), End: int32(p.pos), Children: x44, fresh: true})
+		v49 = p.newNode(Node{kind: kindSeq, start: int32(x43), end: int32(p.pos), children: x44, fresh: true})
 		v50, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v49, x17.pos)
 		v18 = v50
 		goto L19
@@ -77343,7 +77499,7 @@ func (p *parser) e437() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v52 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v52 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v52)
 	p.stepWork()
 	x53 = p.pos
@@ -77352,9 +77508,9 @@ func (p *parser) e437() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v54 = p.newNode(Node{kind: kindMatch, Start: int32(x53), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v54 = p.newNode(Node{kind: kindMatch, start: int32(x53), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v55, x1.pos)
 	v2 = v56
 	goto L3
@@ -77375,7 +77531,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	x63, x64 = p.pos, len(p.kidStack)
@@ -77402,7 +77558,7 @@ L6:
 			}
 			x77 = p.pos
 			p.pos += size
-			v78 = p.newNode(Node{kind: kindMatch, Start: int32(x77), End: int32(p.pos), Text: p.text(x77, p.pos), terminal: true, fresh: true})
+			v78 = p.newNode(Node{kind: kindMatch, start: int32(x77), end: int32(p.pos), text: p.text(x77, p.pos), terminal: true, fresh: true})
 			v79 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v78, x75.pos)
 			x74++
 			p.kidStack = append(p.kidStack, v79)
@@ -77418,7 +77574,7 @@ L6:
 			p.dropKids(x73)
 			goto L71
 		}
-		v80 = p.newNode(Node{kind: kindList, Start: int32(x72), End: int32(p.pos), Children: p.kids(x73), fresh: true})
+		v80 = p.newNode(Node{kind: kindList, start: int32(x72), end: int32(p.pos), children: p.kids(x73), fresh: true})
 		v69 = v80
 		goto L70
 	L71:
@@ -77448,9 +77604,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L81
 		}
-		v87 = p.newNode(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v87 = p.newNode(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x83 = append(x83, v87)
-		v88 = p.newNode(Node{kind: kindSeq, Start: int32(x82), End: int32(p.pos), Children: x83, fresh: true})
+		v88 = p.newNode(Node{kind: kindSeq, start: int32(x82), end: int32(p.pos), children: x83, fresh: true})
 		v89, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v88, x68.pos)
 		v69 = v89
 		goto L70
@@ -77476,7 +77632,7 @@ L6:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L93
 		}
-		v97 = p.newNode(Node{kind: kindMatch, Start: int32(x96), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v97 = p.newNode(Node{kind: kindMatch, start: int32(x96), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x95 = append(x95, v97)
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -77491,9 +77647,9 @@ L6:
 		}
 		x98 = p.pos
 		p.pos += size
-		v99 = p.newNode(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: p.text(x98, p.pos), terminal: true, fresh: true})
+		v99 = p.newNode(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: p.text(x98, p.pos), terminal: true, fresh: true})
 		x95 = append(x95, v99)
-		v100 = p.newNode(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+		v100 = p.newNode(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 		v101, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v100, x68.pos)
 		v69 = v101
 		goto L70
@@ -77513,7 +77669,7 @@ L6:
 		p.reset(x66)
 		break
 	}
-	v103 = p.newNode(Node{kind: kindList, Start: int32(x63), End: int32(p.pos), Children: p.kids(x64), fresh: true})
+	v103 = p.newNode(Node{kind: kindList, start: int32(x63), end: int32(p.pos), children: p.kids(x64), fresh: true})
 	x60 = append(x60, v103)
 	p.stepWork()
 	x104 = p.pos
@@ -77522,9 +77678,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L58
 	}
-	v105 = p.newNode(Node{kind: kindMatch, Start: int32(x104), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v105 = p.newNode(Node{kind: kindMatch, start: int32(x104), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x60 = append(x60, v105)
-	v106 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v106 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v107, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v106, x1.pos)
 	v2 = v107
 	goto L3
@@ -77556,7 +77712,7 @@ L112:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L108
 	}
-	v114 = p.newNode(Node{kind: kindMatch, Start: int32(x113), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v114 = p.newNode(Node{kind: kindMatch, start: int32(x113), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x110 = append(x110, v114)
 	p.stepWork()
 	x115, x116 = p.pos, len(p.kidStack)
@@ -77583,7 +77739,7 @@ L112:
 			}
 			x129 = p.pos
 			p.pos += size
-			v130 = p.newNode(Node{kind: kindMatch, Start: int32(x129), End: int32(p.pos), Text: p.text(x129, p.pos), terminal: true, fresh: true})
+			v130 = p.newNode(Node{kind: kindMatch, start: int32(x129), end: int32(p.pos), text: p.text(x129, p.pos), terminal: true, fresh: true})
 			v131 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v130, x127.pos)
 			x126++
 			p.kidStack = append(p.kidStack, v131)
@@ -77599,7 +77755,7 @@ L112:
 			p.dropKids(x125)
 			goto L123
 		}
-		v132 = p.newNode(Node{kind: kindList, Start: int32(x124), End: int32(p.pos), Children: p.kids(x125), fresh: true})
+		v132 = p.newNode(Node{kind: kindList, start: int32(x124), end: int32(p.pos), children: p.kids(x125), fresh: true})
 		v121 = v132
 		goto L122
 	L123:
@@ -77624,7 +77780,7 @@ L112:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L136
 		}
-		v140 = p.newNode(Node{kind: kindMatch, Start: int32(x139), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v140 = p.newNode(Node{kind: kindMatch, start: int32(x139), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x138 = append(x138, v140)
 		p.stepWork()
 		x141 = p.mark()
@@ -77645,7 +77801,7 @@ L112:
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L147
 		}
-		v149 = p.newNode(Node{kind: kindMatch, Start: int32(x148), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v149 = p.newNode(Node{kind: kindMatch, start: int32(x148), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v142 = v149
 		goto L143
 	L147:
@@ -77668,7 +77824,7 @@ L112:
 		}
 		x152 = p.pos
 		p.pos += size
-		v153 = p.newNode(Node{kind: kindMatch, Start: int32(x152), End: int32(p.pos), Text: p.text(x152, p.pos), terminal: true, fresh: true})
+		v153 = p.newNode(Node{kind: kindMatch, start: int32(x152), end: int32(p.pos), text: p.text(x152, p.pos), terminal: true, fresh: true})
 		v142 = v153
 		goto L143
 	L151:
@@ -77677,7 +77833,7 @@ L112:
 		goto L136
 	L143:
 		x138 = append(x138, v142)
-		v154 = p.newNode(Node{kind: kindSeq, Start: int32(x137), End: int32(p.pos), Children: x138, fresh: true})
+		v154 = p.newNode(Node{kind: kindSeq, start: int32(x137), end: int32(p.pos), children: x138, fresh: true})
 		v155, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v154, x120.pos)
 		v121 = v155
 		goto L122
@@ -77697,7 +77853,7 @@ L112:
 		p.reset(x118)
 		break
 	}
-	v157 = p.newNode(Node{kind: kindList, Start: int32(x115), End: int32(p.pos), Children: p.kids(x116), fresh: true})
+	v157 = p.newNode(Node{kind: kindList, start: int32(x115), end: int32(p.pos), children: p.kids(x116), fresh: true})
 	x110 = append(x110, v157)
 	p.stepWork()
 	x158 = p.pos
@@ -77706,9 +77862,9 @@ L112:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L108
 	}
-	v159 = p.newNode(Node{kind: kindMatch, Start: int32(x158), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v159 = p.newNode(Node{kind: kindMatch, start: int32(x158), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x110 = append(x110, v159)
-	v160 = p.newNode(Node{kind: kindSeq, Start: int32(x109), End: int32(p.pos), Children: x110, fresh: true})
+	v160 = p.newNode(Node{kind: kindSeq, start: int32(x109), end: int32(p.pos), children: x110, fresh: true})
 	v161, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v160, x1.pos)
 	v2 = v161
 	goto L3
@@ -77739,7 +77895,7 @@ L166:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L162
 	}
-	v168 = p.newNode(Node{kind: kindMatch, Start: int32(x167), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v168 = p.newNode(Node{kind: kindMatch, start: int32(x167), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x164 = append(x164, v168)
 	p.stepWork()
 	x169, x170 = p.pos, len(p.kidStack)
@@ -77766,7 +77922,7 @@ L166:
 			}
 			x183 = p.pos
 			p.pos += size
-			v184 = p.newNode(Node{kind: kindMatch, Start: int32(x183), End: int32(p.pos), Text: p.text(x183, p.pos), terminal: true, fresh: true})
+			v184 = p.newNode(Node{kind: kindMatch, start: int32(x183), end: int32(p.pos), text: p.text(x183, p.pos), terminal: true, fresh: true})
 			v185 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v184, x181.pos)
 			x180++
 			p.kidStack = append(p.kidStack, v185)
@@ -77782,7 +77938,7 @@ L166:
 			p.dropKids(x179)
 			goto L177
 		}
-		v186 = p.newNode(Node{kind: kindList, Start: int32(x178), End: int32(p.pos), Children: p.kids(x179), fresh: true})
+		v186 = p.newNode(Node{kind: kindList, start: int32(x178), end: int32(p.pos), children: p.kids(x179), fresh: true})
 		v175 = v186
 		goto L176
 	L177:
@@ -77807,7 +77963,7 @@ L166:
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L190
 		}
-		v194 = p.newNode(Node{kind: kindMatch, Start: int32(x193), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v194 = p.newNode(Node{kind: kindMatch, start: int32(x193), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x192 = append(x192, v194)
 		p.stepWork()
 		x195 = p.mark()
@@ -77828,7 +77984,7 @@ L166:
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L201
 		}
-		v203 = p.newNode(Node{kind: kindMatch, Start: int32(x202), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v203 = p.newNode(Node{kind: kindMatch, start: int32(x202), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v196 = v203
 		goto L197
 	L201:
@@ -77851,7 +78007,7 @@ L166:
 		}
 		x206 = p.pos
 		p.pos += size
-		v207 = p.newNode(Node{kind: kindMatch, Start: int32(x206), End: int32(p.pos), Text: p.text(x206, p.pos), terminal: true, fresh: true})
+		v207 = p.newNode(Node{kind: kindMatch, start: int32(x206), end: int32(p.pos), text: p.text(x206, p.pos), terminal: true, fresh: true})
 		v196 = v207
 		goto L197
 	L205:
@@ -77860,7 +78016,7 @@ L166:
 		goto L190
 	L197:
 		x192 = append(x192, v196)
-		v208 = p.newNode(Node{kind: kindSeq, Start: int32(x191), End: int32(p.pos), Children: x192, fresh: true})
+		v208 = p.newNode(Node{kind: kindSeq, start: int32(x191), end: int32(p.pos), children: x192, fresh: true})
 		v209, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v208, x174.pos)
 		v175 = v209
 		goto L176
@@ -77880,7 +78036,7 @@ L166:
 		p.reset(x172)
 		break
 	}
-	v211 = p.newNode(Node{kind: kindList, Start: int32(x169), End: int32(p.pos), Children: p.kids(x170), fresh: true})
+	v211 = p.newNode(Node{kind: kindList, start: int32(x169), end: int32(p.pos), children: p.kids(x170), fresh: true})
 	x164 = append(x164, v211)
 	p.stepWork()
 	x212 = p.pos
@@ -77889,9 +78045,9 @@ L166:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L162
 	}
-	v213 = p.newNode(Node{kind: kindMatch, Start: int32(x212), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v213 = p.newNode(Node{kind: kindMatch, start: int32(x212), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x164 = append(x164, v213)
-	v214 = p.newNode(Node{kind: kindSeq, Start: int32(x163), End: int32(p.pos), Children: x164, fresh: true})
+	v214 = p.newNode(Node{kind: kindSeq, start: int32(x163), end: int32(p.pos), children: x164, fresh: true})
 	v215, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v214, x1.pos)
 	v2 = v215
 	goto L3
@@ -77928,7 +78084,7 @@ func (p *parser) e438() (*Node, bool) {
 		}
 		x1 = p.pos
 		p.pos += size
-		v2 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -77955,7 +78111,7 @@ func (p *parser) e438() (*Node, bool) {
 	}
 	x1 = p.pos
 	p.pos += size
-	v2 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v2, true
 fail:
 	return nil, false
@@ -78248,7 +78404,7 @@ func (p *parser) e439() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(0, v31)
 
 		x32 = p.isolate(p.pos)
@@ -78561,7 +78717,7 @@ L12:
 		p.reset(x27)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(0, v31)
 	p.stepWork()
 	x32 = p.isolate(p.pos)
@@ -78869,7 +79025,7 @@ func (p *parser) e440() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(0, v31)
 
 		x32 = p.isolate(p.pos)
@@ -79182,7 +79338,7 @@ L12:
 		p.reset(x27)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(0, v31)
 	p.stepWork()
 	x32 = p.isolate(p.pos)
@@ -79263,9 +79419,9 @@ func (p *parser) e441() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L4_ordinary
 		}
-		v8 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v8 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x6 = append(x6, v8)
-		v9 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 		v2 = v10
 		goto L3_ordinary
@@ -79296,9 +79452,9 @@ func (p *parser) e441() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L11_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x13 = append(x13, v15)
-		v16 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v16 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 		v2 = v17
 		goto L3_ordinary
@@ -79329,9 +79485,9 @@ func (p *parser) e441() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L18_ordinary
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x20 = append(x20, v22)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v24, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x1.pos)
 		v2 = v24
 		goto L3_ordinary
@@ -79362,9 +79518,9 @@ func (p *parser) e441() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L25_ordinary
 		}
-		v29 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v29 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x27 = append(x27, v29)
-		v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 		v31, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x1.pos)
 		v2 = v31
 		goto L3_ordinary
@@ -79434,9 +79590,9 @@ func (p *parser) e441() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L4
 	}
-	v8 = p.newNode(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v8 = p.newNode(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x6 = append(x6, v8)
-	v9 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v9 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 	v2 = v10
 	goto L3
@@ -79467,9 +79623,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L11
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x13 = append(x13, v15)
-	v16 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+	v16 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 	v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 	v2 = v17
 	goto L3
@@ -79500,9 +79656,9 @@ L11:
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L18
 	}
-	v22 = p.newNode(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v22 = p.newNode(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x20 = append(x20, v22)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 	v24, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x1.pos)
 	v2 = v24
 	goto L3
@@ -79533,9 +79689,9 @@ L18:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L25
 	}
-	v29 = p.newNode(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v29 = p.newNode(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x27 = append(x27, v29)
-	v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+	v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 	v31, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x1.pos)
 	v2 = v31
 	goto L3
@@ -80374,9 +80530,9 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L4_ordinary
 		}
-		v8 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v8 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x6 = append(x6, v8)
-		v9 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 		v2 = v10
 		goto L3_ordinary
@@ -80407,9 +80563,9 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L11_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x13 = append(x13, v15)
-		v16 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v16 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 		v2 = v17
 		goto L3_ordinary
@@ -80460,9 +80616,9 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L24_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x26 = append(x26, v30)
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x21.pos)
 		v22 = v32
 		goto L23_ordinary
@@ -80485,7 +80641,7 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L36_ordinary
 		}
-		v38 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v38 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		v22 = v38
 		goto L23_ordinary
 	L36_ordinary:
@@ -80502,7 +80658,7 @@ func (p *parser) e449() (*Node, bool) {
 		goto L18_ordinary
 	L23_ordinary:
 		x20 = append(x20, v22)
-		v41 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v41 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v42, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v41, x1.pos)
 		v2 = v42
 		goto L3_ordinary
@@ -80553,9 +80709,9 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L49_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x51 = append(x51, v55)
-		v56 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x50), End: int32(p.pos), Children: x51, fresh: true})
+		v56 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x50), end: int32(p.pos), children: x51, fresh: true})
 		v57, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v56, x46.pos)
 		v47 = v57
 		goto L48_ordinary
@@ -80578,7 +80734,7 @@ func (p *parser) e449() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L61_ordinary
 		}
-		v63 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v63 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		v47 = v63
 		goto L48_ordinary
 	L61_ordinary:
@@ -80595,7 +80751,7 @@ func (p *parser) e449() (*Node, bool) {
 		goto L43_ordinary
 	L48_ordinary:
 		x45 = append(x45, v47)
-		v66 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x44), End: int32(p.pos), Children: x45, fresh: true})
+		v66 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x44), end: int32(p.pos), children: x45, fresh: true})
 		v67, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v66, x1.pos)
 		v2 = v67
 		goto L3_ordinary
@@ -80689,9 +80845,9 @@ func (p *parser) e449() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L4
 	}
-	v8 = p.newNode(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v8 = p.newNode(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x6 = append(x6, v8)
-	v9 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v9 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 	v2 = v10
 	goto L3
@@ -80722,9 +80878,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L11
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x13 = append(x13, v15)
-	v16 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+	v16 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 	v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 	v2 = v17
 	goto L3
@@ -80775,9 +80931,9 @@ L28:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L24
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x26 = append(x26, v30)
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x21.pos)
 	v22 = v32
 	goto L23
@@ -80800,7 +80956,7 @@ L24:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L36
 	}
-	v38 = p.newNode(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v38 = p.newNode(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	v22 = v38
 	goto L23
 L36:
@@ -80817,7 +80973,7 @@ L39:
 	goto L18
 L23:
 	x20 = append(x20, v22)
-	v41 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+	v41 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 	v42, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v41, x1.pos)
 	v2 = v42
 	goto L3
@@ -80868,9 +81024,9 @@ L53:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L49
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x51 = append(x51, v55)
-	v56 = p.newNode(Node{kind: kindSeq, Start: int32(x50), End: int32(p.pos), Children: x51, fresh: true})
+	v56 = p.newNode(Node{kind: kindSeq, start: int32(x50), end: int32(p.pos), children: x51, fresh: true})
 	v57, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v56, x46.pos)
 	v47 = v57
 	goto L48
@@ -80893,7 +81049,7 @@ L49:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L61
 	}
-	v63 = p.newNode(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v63 = p.newNode(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	v47 = v63
 	goto L48
 L61:
@@ -80910,7 +81066,7 @@ L64:
 	goto L43
 L48:
 	x45 = append(x45, v47)
-	v66 = p.newNode(Node{kind: kindSeq, Start: int32(x44), End: int32(p.pos), Children: x45, fresh: true})
+	v66 = p.newNode(Node{kind: kindSeq, start: int32(x44), end: int32(p.pos), children: x45, fresh: true})
 	v67, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v66, x1.pos)
 	v2 = v67
 	goto L3
@@ -81021,7 +81177,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -81053,7 +81209,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.r266(); !ok {
@@ -81065,7 +81221,7 @@ func (p *parser) e451() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -81086,7 +81242,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 			goto L23_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if v28, ok = p.r266(); !ok {
@@ -81108,7 +81264,7 @@ func (p *parser) e451() (*Node, bool) {
 			goto L23_ordinary
 		}
 		x25 = append(x25, v31)
-		v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 		v6 = v33
 		goto L7_ordinary
@@ -81129,7 +81285,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 			goto L35_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 		x37 = append(x37, v39)
 
 		x40 = p.mark()
@@ -81153,7 +81309,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 			goto L46_ordinary
 		}
-		v50 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+		v50 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 		x48 = append(x48, v50)
 
 		if v51, ok = p.r266(); !ok {
@@ -81175,7 +81331,7 @@ func (p *parser) e451() (*Node, bool) {
 			goto L46_ordinary
 		}
 		x48 = append(x48, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 		v41 = v56
 		goto L42_ordinary
@@ -81196,7 +81352,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		if v63, ok = p.r266(); !ok {
@@ -81223,7 +81379,7 @@ func (p *parser) e451() (*Node, bool) {
 			goto L58_ordinary
 		}
 		x60 = append(x60, v67)
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 		v41 = v69
 		goto L42_ordinary
@@ -81233,7 +81389,7 @@ func (p *parser) e451() (*Node, bool) {
 		goto L35_ordinary
 	L42_ordinary:
 		x37 = append(x37, v41)
-		v70 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+		v70 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 		v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 		v6 = v71
 		goto L7_ordinary
@@ -81254,7 +81410,7 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 			goto L73_ordinary
 		}
-		v77 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+		v77 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 		x75 = append(x75, v77)
 
 		x78, x79 = p.pos, len(p.kidStack)
@@ -81274,7 +81430,7 @@ func (p *parser) e451() (*Node, bool) {
 			}
 			x83 = p.pos
 			p.pos += size
-			v84 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+			v84 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 			v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 			x80++
 			p.kidStack = append(p.kidStack, v85)
@@ -81290,7 +81446,7 @@ func (p *parser) e451() (*Node, bool) {
 			p.dropKids(x79)
 			goto L73_ordinary
 		}
-		v86 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+		v86 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 		x75 = append(x75, v86)
 
 		x87 = p.pos
@@ -81299,9 +81455,9 @@ func (p *parser) e451() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 			goto L73_ordinary
 		}
-		v88 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+		v88 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 		x75 = append(x75, v88)
-		v89 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 		v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 		v6 = v90
 		goto L7_ordinary
@@ -81325,7 +81481,7 @@ func (p *parser) e451() (*Node, bool) {
 		}
 		x93 = p.pos
 		p.pos += size
-		v94 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+		v94 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 		v6 = v94
 		goto L7_ordinary
 	L92_ordinary:
@@ -81362,7 +81518,7 @@ func (p *parser) e451() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v100 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v100, true
 	fail_ordinary:
 		return nil, false
@@ -81463,7 +81619,7 @@ func (p *parser) e451() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -81495,7 +81651,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.r266(); !ok {
@@ -81507,7 +81663,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -81528,7 +81684,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 		goto L23
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if v28, ok = p.r266(); !ok {
@@ -81550,7 +81706,7 @@ L12:
 		goto L23
 	}
 	x25 = append(x25, v31)
-	v32 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v32 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 	v6 = v33
 	goto L7
@@ -81571,7 +81727,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 		goto L35
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 	x37 = append(x37, v39)
 	p.stepWork()
 	x40 = p.mark()
@@ -81595,7 +81751,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 		goto L46
 	}
-	v50 = p.newNode(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+	v50 = p.newNode(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 	x48 = append(x48, v50)
 	p.stepWork()
 	if v51, ok = p.r266(); !ok {
@@ -81617,7 +81773,7 @@ L22:
 		goto L46
 	}
 	x48 = append(x48, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 	v41 = v56
 	goto L42
@@ -81638,7 +81794,7 @@ L45:
 	} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	if v63, ok = p.r266(); !ok {
@@ -81665,7 +81821,7 @@ L45:
 		goto L58
 	}
 	x60 = append(x60, v67)
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 	v41 = v69
 	goto L42
@@ -81675,7 +81831,7 @@ L57:
 	goto L35
 L42:
 	x37 = append(x37, v41)
-	v70 = p.newNode(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+	v70 = p.newNode(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 	v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 	v6 = v71
 	goto L7
@@ -81696,7 +81852,7 @@ L34:
 	} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 		goto L73
 	}
-	v77 = p.newNode(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+	v77 = p.newNode(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 	x75 = append(x75, v77)
 	p.stepWork()
 	x78, x79 = p.pos, len(p.kidStack)
@@ -81716,7 +81872,7 @@ L34:
 		}
 		x83 = p.pos
 		p.pos += size
-		v84 = p.newNode(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+		v84 = p.newNode(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 		v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 		x80++
 		p.kidStack = append(p.kidStack, v85)
@@ -81732,7 +81888,7 @@ L34:
 		p.dropKids(x79)
 		goto L73
 	}
-	v86 = p.newNode(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+	v86 = p.newNode(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 	x75 = append(x75, v86)
 	p.stepWork()
 	x87 = p.pos
@@ -81741,9 +81897,9 @@ L34:
 	} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 		goto L73
 	}
-	v88 = p.newNode(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+	v88 = p.newNode(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 	x75 = append(x75, v88)
-	v89 = p.newNode(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+	v89 = p.newNode(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 	v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 	v6 = v90
 	goto L7
@@ -81767,7 +81923,7 @@ L72:
 	}
 	x93 = p.pos
 	p.pos += size
-	v94 = p.newNode(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+	v94 = p.newNode(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 	v6 = v94
 	goto L7
 L92:
@@ -81804,7 +81960,7 @@ L95:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v100 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v100 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v100, true
 fail:
 	return nil, false
@@ -81844,7 +82000,7 @@ func (p *parser) e452() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -81865,7 +82021,7 @@ func (p *parser) e452() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 			goto L11_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 		v6 = v13
 		goto L7_ordinary
 	L11_ordinary:
@@ -81888,7 +82044,7 @@ func (p *parser) e452() (*Node, bool) {
 		}
 		x16 = p.pos
 		p.pos += size
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 		v6 = v17
 		goto L7_ordinary
 	L15_ordinary:
@@ -81925,7 +82081,7 @@ func (p *parser) e452() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v23, true
 	fail_ordinary:
 		return nil, false
@@ -81962,7 +82118,7 @@ func (p *parser) e452() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -81983,7 +82139,7 @@ func (p *parser) e452() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit41, "\r\n", 16, false); !ok {
 		goto L11
 	}
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: "\r\n", terminal: true, fresh: true})
 	v6 = v13
 	goto L7
 L11:
@@ -82006,7 +82162,7 @@ L10:
 	}
 	x16 = p.pos
 	p.pos += size
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 	v6 = v17
 	goto L7
 L15:
@@ -82043,7 +82199,7 @@ L18:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v23, true
 fail:
 	return nil, false
@@ -82150,7 +82306,7 @@ func (p *parser) e453() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x8 = append(x8, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 		p.setCaptureOrdinary(0, v12)
 
@@ -82319,7 +82475,7 @@ L5:
 	}
 	p.setCapture(1, v10)
 	x8 = append(x8, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 	p.setCapture(0, v12)
 	p.stepWork()
@@ -82492,7 +82648,7 @@ func (p *parser) e454() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x8 = append(x8, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 		p.setCaptureOrdinary(0, v12)
 
@@ -82661,7 +82817,7 @@ L5:
 	}
 	p.setCapture(1, v10)
 	x8 = append(x8, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 	p.setCapture(0, v12)
 	p.stepWork()
@@ -82762,14 +82918,14 @@ func (p *parser) e455() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v5)
 
 		if v6, ok = p.r14(); !ok {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v6)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -82801,14 +82957,14 @@ func (p *parser) e455() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v5)
 	p.stepWork()
 	if v6, ok = p.r14(); !ok {
 		goto fail
 	}
 	x2 = append(x2, v6)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -82854,7 +83010,7 @@ func (p *parser) e457() (*Node, bool) {
 			goto fail_ordinary
 		}
 		p.pos += size
-		v3 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x2), End: int32(p.pos), Text: p.text(x2, p.pos), terminal: true, fresh: true})
+		v3 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x2), end: int32(p.pos), text: p.text(x2, p.pos), terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v3)
 
 		x4 = p.mark()
@@ -82913,7 +83069,7 @@ func (p *parser) e457() (*Node, bool) {
 		goto fail
 	}
 	p.pos += size
-	v3 = p.newNode(Node{kind: kindMatch, Start: int32(x2), End: int32(p.pos), Text: p.text(x2, p.pos), terminal: true, fresh: true})
+	v3 = p.newNode(Node{kind: kindMatch, start: int32(x2), end: int32(p.pos), text: p.text(x2, p.pos), terminal: true, fresh: true})
 	p.setCapture(0, v3)
 	p.stepWork()
 	x4 = p.mark()
@@ -82986,7 +83142,7 @@ func (p *parser) e458() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 		return nil, true
 	fail_ordinary:
@@ -83044,7 +83200,7 @@ func (p *parser) e458() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	return nil, true
 fail:
@@ -84109,7 +84265,7 @@ func (p *parser) e466() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		if p.pos < len(p.in) {
@@ -84124,7 +84280,7 @@ func (p *parser) e466() (*Node, bool) {
 		}
 		x5 = p.pos
 		p.pos += size
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7, x8 = p.pos, len(p.kidStack)
@@ -84143,7 +84299,7 @@ func (p *parser) e466() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L16_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v15 = v19
 			goto L17_ordinary
 		L16_ordinary:
@@ -84164,9 +84320,9 @@ func (p *parser) e466() (*Node, bool) {
 			}
 			x20 = p.pos
 			p.pos += size
-			v21 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+			v21 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 			x13 = append(x13, v21)
-			v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 			x9++
 			p.kidStack = append(p.kidStack, v23)
@@ -84182,9 +84338,9 @@ func (p *parser) e466() (*Node, bool) {
 			p.dropKids(x8)
 			goto fail_ordinary
 		}
-		v24 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+		v24 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 		x2 = append(x2, v24)
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -84228,7 +84384,7 @@ func (p *parser) e466() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -84243,7 +84399,7 @@ func (p *parser) e466() (*Node, bool) {
 	}
 	x5 = p.pos
 	p.pos += size
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7, x8 = p.pos, len(p.kidStack)
@@ -84262,7 +84418,7 @@ func (p *parser) e466() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L16
 		}
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v15 = v19
 		goto L17
 	L16:
@@ -84283,9 +84439,9 @@ func (p *parser) e466() (*Node, bool) {
 		}
 		x20 = p.pos
 		p.pos += size
-		v21 = p.newNode(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+		v21 = p.newNode(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 		x13 = append(x13, v21)
-		v22 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v22 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 		x9++
 		p.kidStack = append(p.kidStack, v23)
@@ -84301,9 +84457,9 @@ func (p *parser) e466() (*Node, bool) {
 		p.dropKids(x8)
 		goto fail
 	}
-	v24 = p.newNode(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+	v24 = p.newNode(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 	x2 = append(x2, v24)
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -84350,7 +84506,7 @@ func (p *parser) e467() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		if p.pos < len(p.in) {
@@ -84365,7 +84521,7 @@ func (p *parser) e467() (*Node, bool) {
 		}
 		x5 = p.pos
 		p.pos += size
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7, x8 = p.pos, len(p.kidStack)
@@ -84384,7 +84540,7 @@ func (p *parser) e467() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L16_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v15 = v19
 			goto L17_ordinary
 		L16_ordinary:
@@ -84405,9 +84561,9 @@ func (p *parser) e467() (*Node, bool) {
 			}
 			x20 = p.pos
 			p.pos += size
-			v21 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+			v21 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 			x13 = append(x13, v21)
-			v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 			x9++
 			p.kidStack = append(p.kidStack, v23)
@@ -84423,9 +84579,9 @@ func (p *parser) e467() (*Node, bool) {
 			p.dropKids(x8)
 			goto fail_ordinary
 		}
-		v24 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+		v24 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 		x2 = append(x2, v24)
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -84469,7 +84625,7 @@ func (p *parser) e467() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -84484,7 +84640,7 @@ func (p *parser) e467() (*Node, bool) {
 	}
 	x5 = p.pos
 	p.pos += size
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7, x8 = p.pos, len(p.kidStack)
@@ -84503,7 +84659,7 @@ func (p *parser) e467() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L16
 		}
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v15 = v19
 		goto L17
 	L16:
@@ -84524,9 +84680,9 @@ func (p *parser) e467() (*Node, bool) {
 		}
 		x20 = p.pos
 		p.pos += size
-		v21 = p.newNode(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+		v21 = p.newNode(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 		x13 = append(x13, v21)
-		v22 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v22 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 		x9++
 		p.kidStack = append(p.kidStack, v23)
@@ -84542,9 +84698,9 @@ func (p *parser) e467() (*Node, bool) {
 		p.dropKids(x8)
 		goto fail
 	}
-	v24 = p.newNode(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+	v24 = p.newNode(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 	x2 = append(x2, v24)
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -84591,7 +84747,7 @@ func (p *parser) e468() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		if p.pos < len(p.in) {
@@ -84606,7 +84762,7 @@ func (p *parser) e468() (*Node, bool) {
 		}
 		x5 = p.pos
 		p.pos += size
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7, x8 = p.pos, len(p.kidStack)
@@ -84625,7 +84781,7 @@ func (p *parser) e468() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L16_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v15 = v19
 			goto L17_ordinary
 		L16_ordinary:
@@ -84646,9 +84802,9 @@ func (p *parser) e468() (*Node, bool) {
 			}
 			x20 = p.pos
 			p.pos += size
-			v21 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+			v21 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 			x13 = append(x13, v21)
-			v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 			x9++
 			p.kidStack = append(p.kidStack, v23)
@@ -84664,9 +84820,9 @@ func (p *parser) e468() (*Node, bool) {
 			p.dropKids(x8)
 			goto fail_ordinary
 		}
-		v24 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+		v24 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 		x2 = append(x2, v24)
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -84710,7 +84866,7 @@ func (p *parser) e468() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -84725,7 +84881,7 @@ func (p *parser) e468() (*Node, bool) {
 	}
 	x5 = p.pos
 	p.pos += size
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: p.text(x5, p.pos), terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: p.text(x5, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7, x8 = p.pos, len(p.kidStack)
@@ -84744,7 +84900,7 @@ func (p *parser) e468() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L16
 		}
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v15 = v19
 		goto L17
 	L16:
@@ -84765,9 +84921,9 @@ func (p *parser) e468() (*Node, bool) {
 		}
 		x20 = p.pos
 		p.pos += size
-		v21 = p.newNode(Node{kind: kindMatch, Start: int32(x20), End: int32(p.pos), Text: p.text(x20, p.pos), terminal: true, fresh: true})
+		v21 = p.newNode(Node{kind: kindMatch, start: int32(x20), end: int32(p.pos), text: p.text(x20, p.pos), terminal: true, fresh: true})
 		x13 = append(x13, v21)
-		v22 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v22 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x10.pos)
 		x9++
 		p.kidStack = append(p.kidStack, v23)
@@ -84783,9 +84939,9 @@ func (p *parser) e468() (*Node, bool) {
 		p.dropKids(x8)
 		goto fail
 	}
-	v24 = p.newNode(Node{kind: kindList, Start: int32(x7), End: int32(p.pos), Children: p.kids(x8), fresh: true})
+	v24 = p.newNode(Node{kind: kindList, start: int32(x7), end: int32(p.pos), children: p.kids(x8), fresh: true})
 	x2 = append(x2, v24)
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -84873,7 +85029,7 @@ func (p *parser) e469() (*Node, bool) {
 		}
 		x17 = p.pos
 		p.pos += size
-		v18 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x17), End: int32(p.pos), Text: p.text(x17, p.pos), terminal: true, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x17), end: int32(p.pos), text: p.text(x17, p.pos), terminal: true, fresh: true})
 		v14 = v18
 		goto L16_ordinary
 	L15_ordinary:
@@ -84881,7 +85037,7 @@ func (p *parser) e469() (*Node, bool) {
 		v14 = nil
 	L16_ordinary:
 		x6 = append(x6, v14)
-		v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v20, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v19, x1.pos)
 		v2 = v20
 		goto L3_ordinary
@@ -84925,7 +85081,7 @@ func (p *parser) e469() (*Node, bool) {
 		}
 		x33 = p.pos
 		p.pos += size
-		v34 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x33), End: int32(p.pos), Text: p.text(x33, p.pos), terminal: true, fresh: true})
+		v34 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x33), end: int32(p.pos), text: p.text(x33, p.pos), terminal: true, fresh: true})
 		v30 = v34
 		goto L32_ordinary
 	L31_ordinary:
@@ -84933,7 +85089,7 @@ func (p *parser) e469() (*Node, bool) {
 		v30 = nil
 	L32_ordinary:
 		x26 = append(x26, v30)
-		v35 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x1.pos)
 		v2 = v36
 		goto L3_ordinary
@@ -84965,9 +85121,9 @@ func (p *parser) e469() (*Node, bool) {
 		}
 		x42 = p.pos
 		p.pos += size
-		v43 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: p.text(x42, p.pos), terminal: true, fresh: true})
+		v43 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: p.text(x42, p.pos), terminal: true, fresh: true})
 		x40 = append(x40, v43)
-		v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+		v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 		v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 		v2 = v45
 		goto L3_ordinary
@@ -85086,7 +85242,7 @@ L11:
 	}
 	x17 = p.pos
 	p.pos += size
-	v18 = p.newNode(Node{kind: kindMatch, Start: int32(x17), End: int32(p.pos), Text: p.text(x17, p.pos), terminal: true, fresh: true})
+	v18 = p.newNode(Node{kind: kindMatch, start: int32(x17), end: int32(p.pos), text: p.text(x17, p.pos), terminal: true, fresh: true})
 	v14 = v18
 	goto L16
 L15:
@@ -85094,7 +85250,7 @@ L15:
 	v14 = nil
 L16:
 	x6 = append(x6, v14)
-	v19 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v19 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v20, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v19, x1.pos)
 	v2 = v20
 	goto L3
@@ -85138,7 +85294,7 @@ L4:
 	}
 	x33 = p.pos
 	p.pos += size
-	v34 = p.newNode(Node{kind: kindMatch, Start: int32(x33), End: int32(p.pos), Text: p.text(x33, p.pos), terminal: true, fresh: true})
+	v34 = p.newNode(Node{kind: kindMatch, start: int32(x33), end: int32(p.pos), text: p.text(x33, p.pos), terminal: true, fresh: true})
 	v30 = v34
 	goto L32
 L31:
@@ -85146,7 +85302,7 @@ L31:
 	v30 = nil
 L32:
 	x26 = append(x26, v30)
-	v35 = p.newNode(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+	v35 = p.newNode(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 	v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x1.pos)
 	v2 = v36
 	goto L3
@@ -85178,9 +85334,9 @@ L23:
 	}
 	x42 = p.pos
 	p.pos += size
-	v43 = p.newNode(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: p.text(x42, p.pos), terminal: true, fresh: true})
+	v43 = p.newNode(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: p.text(x42, p.pos), terminal: true, fresh: true})
 	x40 = append(x40, v43)
-	v44 = p.newNode(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+	v44 = p.newNode(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 	v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 	v2 = v45
 	goto L3
@@ -85270,7 +85426,7 @@ func (p *parser) e470() (*Node, bool) {
 		v9 = nil
 	L11_ordinary:
 		x6 = append(x6, v9)
-		v13 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 		v2 = v14
 		goto L3_ordinary
@@ -85299,7 +85455,7 @@ func (p *parser) e470() (*Node, bool) {
 			goto L18_ordinary
 		}
 		x20 = append(x20, v22)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v24, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v23, x1.pos)
 		v2 = v24
 		goto L3_ordinary
@@ -85386,7 +85542,7 @@ L10:
 	v9 = nil
 L11:
 	x6 = append(x6, v9)
-	v13 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v13 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 	v2 = v14
 	goto L3
@@ -85415,7 +85571,7 @@ L4:
 		goto L18
 	}
 	x20 = append(x20, v22)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 	v24, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v23, x1.pos)
 	v2 = v24
 	goto L3
@@ -85510,7 +85666,7 @@ func (p *parser) e471() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L7_ordinary
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x9 = append(x9, v12)
 
 		x13 = p.mark()
@@ -85525,7 +85681,7 @@ func (p *parser) e471() (*Node, bool) {
 		v14 = nil
 	L16_ordinary:
 		x9 = append(x9, v14)
-		v18 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v19, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v18, x1.pos)
 		v2 = v19
 		goto L3_ordinary
@@ -85546,14 +85702,14 @@ func (p *parser) e471() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L21_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x23 = append(x23, v25)
 
 		if v26, ok = p.r295(); !ok {
 			goto L21_ordinary
 		}
 		x23 = append(x23, v26)
-		v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1.pos)
 		v2 = v28
 		goto L3_ordinary
@@ -85619,7 +85775,7 @@ func (p *parser) e471() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 		goto L7
 	}
-	v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x9 = append(x9, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -85634,7 +85790,7 @@ L15:
 	v14 = nil
 L16:
 	x9 = append(x9, v14)
-	v18 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v18 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v19, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v18, x1.pos)
 	v2 = v19
 	goto L3
@@ -85655,14 +85811,14 @@ L6:
 	} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 		goto L21
 	}
-	v25 = p.newNode(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v25 = p.newNode(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x23 = append(x23, v25)
 	p.stepWork()
 	if v26, ok = p.r295(); !ok {
 		goto L21
 	}
 	x23 = append(x23, v26)
-	v27 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+	v27 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 	v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1.pos)
 	v2 = v28
 	goto L3
@@ -85711,7 +85867,7 @@ func (p *parser) e472() (*Node, bool) {
 		}
 		x3 = p.pos
 		p.pos += size
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -85728,7 +85884,7 @@ func (p *parser) e472() (*Node, bool) {
 		}
 		x9 = p.pos
 		p.pos += size
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 		v6 = v10
 		goto L8_ordinary
 	L7_ordinary:
@@ -85741,7 +85897,7 @@ func (p *parser) e472() (*Node, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v12, true
 	fail_ordinary:
 		return nil, false
@@ -85779,7 +85935,7 @@ func (p *parser) e472() (*Node, bool) {
 	}
 	x3 = p.pos
 	p.pos += size
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -85796,7 +85952,7 @@ func (p *parser) e472() (*Node, bool) {
 	}
 	x9 = p.pos
 	p.pos += size
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 	v6 = v10
 	goto L8
 L7:
@@ -85809,7 +85965,7 @@ L8:
 		goto fail
 	}
 	x2 = append(x2, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v12, true
 fail:
 	return nil, false
@@ -85861,7 +86017,7 @@ func (p *parser) e473() (*Node, bool) {
 		}
 		x3 = p.pos
 		p.pos += size
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5, x6 = p.pos, len(p.kidStack)
@@ -85880,7 +86036,7 @@ func (p *parser) e473() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L14_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v13 = v17
 			goto L15_ordinary
 		L14_ordinary:
@@ -85901,9 +86057,9 @@ func (p *parser) e473() (*Node, bool) {
 			}
 			x18 = p.pos
 			p.pos += size
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 			x11 = append(x11, v19)
-			v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 			x7++
 			p.kidStack = append(p.kidStack, v21)
@@ -85915,9 +86071,9 @@ func (p *parser) e473() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 		x2 = append(x2, v22)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v23, true
 	fail_ordinary:
 		return nil, false
@@ -85966,7 +86122,7 @@ func (p *parser) e473() (*Node, bool) {
 	}
 	x3 = p.pos
 	p.pos += size
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5, x6 = p.pos, len(p.kidStack)
@@ -85985,7 +86141,7 @@ func (p *parser) e473() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L14
 		}
-		v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v13 = v17
 		goto L15
 	L14:
@@ -86006,9 +86162,9 @@ func (p *parser) e473() (*Node, bool) {
 		}
 		x18 = p.pos
 		p.pos += size
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 		x11 = append(x11, v19)
-		v20 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v20 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 		x7++
 		p.kidStack = append(p.kidStack, v21)
@@ -86020,9 +86176,9 @@ func (p *parser) e473() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 	x2 = append(x2, v22)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v23, true
 fail:
 	return nil, false
@@ -86074,7 +86230,7 @@ func (p *parser) e474() (*Node, bool) {
 		}
 		x3 = p.pos
 		p.pos += size
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5, x6 = p.pos, len(p.kidStack)
@@ -86093,7 +86249,7 @@ func (p *parser) e474() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L14_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v13 = v17
 			goto L15_ordinary
 		L14_ordinary:
@@ -86114,9 +86270,9 @@ func (p *parser) e474() (*Node, bool) {
 			}
 			x18 = p.pos
 			p.pos += size
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 			x11 = append(x11, v19)
-			v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 			x7++
 			p.kidStack = append(p.kidStack, v21)
@@ -86128,9 +86284,9 @@ func (p *parser) e474() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 		x2 = append(x2, v22)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v23, true
 	fail_ordinary:
 		return nil, false
@@ -86179,7 +86335,7 @@ func (p *parser) e474() (*Node, bool) {
 	}
 	x3 = p.pos
 	p.pos += size
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5, x6 = p.pos, len(p.kidStack)
@@ -86198,7 +86354,7 @@ func (p *parser) e474() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L14
 		}
-		v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v13 = v17
 		goto L15
 	L14:
@@ -86219,9 +86375,9 @@ func (p *parser) e474() (*Node, bool) {
 		}
 		x18 = p.pos
 		p.pos += size
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 		x11 = append(x11, v19)
-		v20 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v20 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 		x7++
 		p.kidStack = append(p.kidStack, v21)
@@ -86233,9 +86389,9 @@ func (p *parser) e474() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 	x2 = append(x2, v22)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v23, true
 fail:
 	return nil, false
@@ -86282,7 +86438,7 @@ func (p *parser) e476() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5, x6 = p.pos, len(p.kidStack)
@@ -86301,7 +86457,7 @@ func (p *parser) e476() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 				goto L14_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 			v13 = v17
 			goto L15_ordinary
 		L14_ordinary:
@@ -86316,9 +86472,9 @@ func (p *parser) e476() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 				goto L9_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 			x11 = append(x11, v19)
-			v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 			x7++
 			p.kidStack = append(p.kidStack, v21)
@@ -86330,7 +86486,7 @@ func (p *parser) e476() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 		x2 = append(x2, v22)
 
 		x23 = p.mark()
@@ -86353,7 +86509,7 @@ func (p *parser) e476() (*Node, bool) {
 	L24_ordinary:
 		p.silent--
 		p.reset(x23)
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -86397,7 +86553,7 @@ func (p *parser) e476() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5, x6 = p.pos, len(p.kidStack)
@@ -86416,7 +86572,7 @@ func (p *parser) e476() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit202, "_", 67, false); !ok {
 			goto L14
 		}
-		v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "_", terminal: true, fresh: true})
+		v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "_", terminal: true, fresh: true})
 		v13 = v17
 		goto L15
 	L14:
@@ -86431,9 +86587,9 @@ func (p *parser) e476() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit465, "0", 156, false); !ok {
 			goto L9
 		}
-		v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		x11 = append(x11, v19)
-		v20 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v20 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x8.pos)
 		x7++
 		p.kidStack = append(p.kidStack, v21)
@@ -86445,7 +86601,7 @@ func (p *parser) e476() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 	x2 = append(x2, v22)
 	p.stepWork()
 	x23 = p.mark()
@@ -86468,7 +86624,7 @@ func (p *parser) e476() (*Node, bool) {
 L24:
 	p.silent--
 	p.reset(x23)
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -86871,7 +87027,7 @@ func (p *parser) e481() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v7 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -86924,7 +87080,7 @@ L3:
 		p.reset(x5)
 		break
 	}
-	v7 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v7 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -87008,7 +87164,7 @@ func (p *parser) e483() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -87055,7 +87211,7 @@ func (p *parser) e483() (*Node, bool) {
 		goto L10_ordinary
 	L20_ordinary:
 		x12 = append(x12, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -87114,7 +87270,7 @@ func (p *parser) e483() (*Node, bool) {
 	}
 	x8 = p.pos
 	p.pos += size
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -87161,7 +87317,7 @@ L19:
 	goto L10
 L20:
 	x12 = append(x12, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -87223,7 +87379,7 @@ func (p *parser) e484() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -87270,7 +87426,7 @@ func (p *parser) e484() (*Node, bool) {
 		goto L10_ordinary
 	L20_ordinary:
 		x12 = append(x12, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -87329,7 +87485,7 @@ func (p *parser) e484() (*Node, bool) {
 	}
 	x8 = p.pos
 	p.pos += size
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -87376,7 +87532,7 @@ L19:
 	goto L10
 L20:
 	x12 = append(x12, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -87494,7 +87650,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit189, "False", 72, false); !ok {
 			goto L9_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "False", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "False", terminal: true, fresh: true})
 		v4 = v11
 		goto L5_ordinary
 	L9_ordinary:
@@ -87511,7 +87667,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit187, "None", 70, false); !ok {
 			goto L13_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "None", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "None", terminal: true, fresh: true})
 		v4 = v15
 		goto L5_ordinary
 	L13_ordinary:
@@ -87528,7 +87684,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit188, "True", 71, false); !ok {
 			goto L17_ordinary
 		}
-		v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "True", terminal: true, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "True", terminal: true, fresh: true})
 		v4 = v19
 		goto L5_ordinary
 	L17_ordinary:
@@ -87545,7 +87701,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit289, "and", 91, false); !ok {
 			goto L21_ordinary
 		}
-		v23 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x22), End: int32(p.pos), Text: "and", terminal: true, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x22), end: int32(p.pos), text: "and", terminal: true, fresh: true})
 		v4 = v23
 		goto L5_ordinary
 	L21_ordinary:
@@ -87560,7 +87716,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 			goto L25_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 		v4 = v27
 		goto L5_ordinary
 	L25_ordinary:
@@ -87575,7 +87731,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 			goto L29_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 		v4 = v31
 		goto L5_ordinary
 	L29_ordinary:
@@ -87592,7 +87748,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 			goto L33_ordinary
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 		v4 = v35
 		goto L5_ordinary
 	L33_ordinary:
@@ -87607,7 +87763,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 			goto L37_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 		v4 = v39
 		goto L5_ordinary
 	L37_ordinary:
@@ -87622,7 +87778,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 			goto L41_ordinary
 		}
-		v43 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+		v43 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 		v4 = v43
 		goto L5_ordinary
 	L41_ordinary:
@@ -87637,7 +87793,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 			goto L45_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 		v4 = v47
 		goto L5_ordinary
 	L45_ordinary:
@@ -87652,7 +87808,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 			goto L49_ordinary
 		}
-		v51 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x50), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+		v51 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x50), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 		v4 = v51
 		goto L5_ordinary
 	L49_ordinary:
@@ -87669,7 +87825,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 			goto L53_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 		v4 = v55
 		goto L5_ordinary
 	L53_ordinary:
@@ -87686,7 +87842,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 			goto L57_ordinary
 		}
-		v59 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x58), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+		v59 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x58), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 		v4 = v59
 		goto L5_ordinary
 	L57_ordinary:
@@ -87703,7 +87859,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 			goto L61_ordinary
 		}
-		v63 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+		v63 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 		v4 = v63
 		goto L5_ordinary
 	L61_ordinary:
@@ -87720,7 +87876,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 			goto L65_ordinary
 		}
-		v67 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+		v67 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 		v4 = v67
 		goto L5_ordinary
 	L65_ordinary:
@@ -87735,7 +87891,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 			goto L69_ordinary
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 		v4 = v71
 		goto L5_ordinary
 	L69_ordinary:
@@ -87750,7 +87906,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 			goto L73_ordinary
 		}
-		v75 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+		v75 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 		v4 = v75
 		goto L5_ordinary
 	L73_ordinary:
@@ -87767,7 +87923,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 			goto L77_ordinary
 		}
-		v79 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+		v79 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 		v4 = v79
 		goto L5_ordinary
 	L77_ordinary:
@@ -87784,7 +87940,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 			goto L81_ordinary
 		}
-		v83 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x82), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+		v83 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x82), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 		v4 = v83
 		goto L5_ordinary
 	L81_ordinary:
@@ -87799,7 +87955,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 			goto L85_ordinary
 		}
-		v87 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+		v87 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 		v4 = v87
 		goto L5_ordinary
 	L85_ordinary:
@@ -87816,7 +87972,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 			goto L89_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 		v4 = v91
 		goto L5_ordinary
 	L89_ordinary:
@@ -87831,7 +87987,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 			goto L93_ordinary
 		}
-		v95 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x94), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+		v95 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x94), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 		v4 = v95
 		goto L5_ordinary
 	L93_ordinary:
@@ -87848,7 +88004,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 			goto L97_ordinary
 		}
-		v99 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+		v99 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 		v4 = v99
 		goto L5_ordinary
 	L97_ordinary:
@@ -87865,7 +88021,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit306, "is", 103, false); !ok {
 			goto L101_ordinary
 		}
-		v103 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x102), End: int32(p.pos), Text: "is", terminal: true, fresh: true})
+		v103 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x102), end: int32(p.pos), text: "is", terminal: true, fresh: true})
 		v4 = v103
 		goto L5_ordinary
 	L101_ordinary:
@@ -87880,7 +88036,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 			goto L105_ordinary
 		}
-		v107 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x106), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+		v107 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x106), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 		v4 = v107
 		goto L5_ordinary
 	L105_ordinary:
@@ -87895,7 +88051,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 			goto L109_ordinary
 		}
-		v111 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x110), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+		v111 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x110), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 		v4 = v111
 		goto L5_ordinary
 	L109_ordinary:
@@ -87912,7 +88068,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit293, "not", 92, false); !ok {
 			goto L113_ordinary
 		}
-		v115 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x114), End: int32(p.pos), Text: "not", terminal: true, fresh: true})
+		v115 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x114), end: int32(p.pos), text: "not", terminal: true, fresh: true})
 		v4 = v115
 		goto L5_ordinary
 	L113_ordinary:
@@ -87929,7 +88085,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
 			goto L117_ordinary
 		}
-		v119 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x118), End: int32(p.pos), Text: "or", terminal: true, fresh: true})
+		v119 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x118), end: int32(p.pos), text: "or", terminal: true, fresh: true})
 		v4 = v119
 		goto L5_ordinary
 	L117_ordinary:
@@ -87946,7 +88102,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 			goto L121_ordinary
 		}
-		v123 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x122), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+		v123 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x122), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 		v4 = v123
 		goto L5_ordinary
 	L121_ordinary:
@@ -87961,7 +88117,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 			goto L125_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 		v4 = v127
 		goto L5_ordinary
 	L125_ordinary:
@@ -87976,7 +88132,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 			goto L129_ordinary
 		}
-		v131 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x130), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+		v131 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x130), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 		v4 = v131
 		goto L5_ordinary
 	L129_ordinary:
@@ -87993,7 +88149,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 			goto L133_ordinary
 		}
-		v135 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x134), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+		v135 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x134), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 		v4 = v135
 		goto L5_ordinary
 	L133_ordinary:
@@ -88008,7 +88164,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 			goto L137_ordinary
 		}
-		v139 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x138), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+		v139 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x138), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 		v4 = v139
 		goto L5_ordinary
 	L137_ordinary:
@@ -88025,7 +88181,7 @@ func (p *parser) e510() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 			goto L141_ordinary
 		}
-		v143 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x142), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+		v143 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x142), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 		v4 = v143
 		goto L5_ordinary
 	L141_ordinary:
@@ -88040,7 +88196,7 @@ func (p *parser) e510() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 			goto L145_ordinary
 		}
-		v147 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x146), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+		v147 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x146), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 		v4 = v147
 		goto L5_ordinary
 	L145_ordinary:
@@ -88062,7 +88218,7 @@ func (p *parser) e510() (*Node, bool) {
 	L149_ordinary:
 		p.silent--
 		p.reset(x148)
-		v150 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v150 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v150, true
 	fail_ordinary:
 		return nil, false
@@ -88170,7 +88326,7 @@ func (p *parser) e510() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit189, "False", 72, false); !ok {
 		goto L9
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "False", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "False", terminal: true, fresh: true})
 	v4 = v11
 	goto L5
 L9:
@@ -88187,7 +88343,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit187, "None", 70, false); !ok {
 		goto L13
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "None", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "None", terminal: true, fresh: true})
 	v4 = v15
 	goto L5
 L13:
@@ -88204,7 +88360,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit188, "True", 71, false); !ok {
 		goto L17
 	}
-	v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "True", terminal: true, fresh: true})
+	v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "True", terminal: true, fresh: true})
 	v4 = v19
 	goto L5
 L17:
@@ -88221,7 +88377,7 @@ L16:
 	} else if _, ok = p.matchLiteral(lit289, "and", 91, false); !ok {
 		goto L21
 	}
-	v23 = p.newNode(Node{kind: kindMatch, Start: int32(x22), End: int32(p.pos), Text: "and", terminal: true, fresh: true})
+	v23 = p.newNode(Node{kind: kindMatch, start: int32(x22), end: int32(p.pos), text: "and", terminal: true, fresh: true})
 	v4 = v23
 	goto L5
 L21:
@@ -88236,7 +88392,7 @@ L20:
 	if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 		goto L25
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 	v4 = v27
 	goto L5
 L25:
@@ -88251,7 +88407,7 @@ L24:
 	if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 		goto L29
 	}
-	v31 = p.newNode(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+	v31 = p.newNode(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 	v4 = v31
 	goto L5
 L29:
@@ -88268,7 +88424,7 @@ L28:
 	} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 		goto L33
 	}
-	v35 = p.newNode(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+	v35 = p.newNode(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 	v4 = v35
 	goto L5
 L33:
@@ -88283,7 +88439,7 @@ L32:
 	if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 		goto L37
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 	v4 = v39
 	goto L5
 L37:
@@ -88298,7 +88454,7 @@ L36:
 	if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 		goto L41
 	}
-	v43 = p.newNode(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+	v43 = p.newNode(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 	v4 = v43
 	goto L5
 L41:
@@ -88313,7 +88469,7 @@ L40:
 	if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 		goto L45
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 	v4 = v47
 	goto L5
 L45:
@@ -88328,7 +88484,7 @@ L44:
 	if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 		goto L49
 	}
-	v51 = p.newNode(Node{kind: kindMatch, Start: int32(x50), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+	v51 = p.newNode(Node{kind: kindMatch, start: int32(x50), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 	v4 = v51
 	goto L5
 L49:
@@ -88345,7 +88501,7 @@ L48:
 	} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 		goto L53
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 	v4 = v55
 	goto L5
 L53:
@@ -88362,7 +88518,7 @@ L52:
 	} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 		goto L57
 	}
-	v59 = p.newNode(Node{kind: kindMatch, Start: int32(x58), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+	v59 = p.newNode(Node{kind: kindMatch, start: int32(x58), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 	v4 = v59
 	goto L5
 L57:
@@ -88379,7 +88535,7 @@ L56:
 	} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 		goto L61
 	}
-	v63 = p.newNode(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+	v63 = p.newNode(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 	v4 = v63
 	goto L5
 L61:
@@ -88396,7 +88552,7 @@ L60:
 	} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 		goto L65
 	}
-	v67 = p.newNode(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+	v67 = p.newNode(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 	v4 = v67
 	goto L5
 L65:
@@ -88411,7 +88567,7 @@ L64:
 	if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 		goto L69
 	}
-	v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+	v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 	v4 = v71
 	goto L5
 L69:
@@ -88426,7 +88582,7 @@ L68:
 	if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 		goto L73
 	}
-	v75 = p.newNode(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+	v75 = p.newNode(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 	v4 = v75
 	goto L5
 L73:
@@ -88443,7 +88599,7 @@ L72:
 	} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 		goto L77
 	}
-	v79 = p.newNode(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+	v79 = p.newNode(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 	v4 = v79
 	goto L5
 L77:
@@ -88460,7 +88616,7 @@ L76:
 	} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 		goto L81
 	}
-	v83 = p.newNode(Node{kind: kindMatch, Start: int32(x82), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+	v83 = p.newNode(Node{kind: kindMatch, start: int32(x82), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 	v4 = v83
 	goto L5
 L81:
@@ -88475,7 +88631,7 @@ L80:
 	if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 		goto L85
 	}
-	v87 = p.newNode(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+	v87 = p.newNode(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 	v4 = v87
 	goto L5
 L85:
@@ -88492,7 +88648,7 @@ L84:
 	} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 		goto L89
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 	v4 = v91
 	goto L5
 L89:
@@ -88507,7 +88663,7 @@ L88:
 	if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 		goto L93
 	}
-	v95 = p.newNode(Node{kind: kindMatch, Start: int32(x94), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+	v95 = p.newNode(Node{kind: kindMatch, start: int32(x94), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 	v4 = v95
 	goto L5
 L93:
@@ -88524,7 +88680,7 @@ L92:
 	} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 		goto L97
 	}
-	v99 = p.newNode(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+	v99 = p.newNode(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 	v4 = v99
 	goto L5
 L97:
@@ -88541,7 +88697,7 @@ L96:
 	} else if _, ok = p.matchLiteral(lit306, "is", 103, false); !ok {
 		goto L101
 	}
-	v103 = p.newNode(Node{kind: kindMatch, Start: int32(x102), End: int32(p.pos), Text: "is", terminal: true, fresh: true})
+	v103 = p.newNode(Node{kind: kindMatch, start: int32(x102), end: int32(p.pos), text: "is", terminal: true, fresh: true})
 	v4 = v103
 	goto L5
 L101:
@@ -88556,7 +88712,7 @@ L100:
 	if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 		goto L105
 	}
-	v107 = p.newNode(Node{kind: kindMatch, Start: int32(x106), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+	v107 = p.newNode(Node{kind: kindMatch, start: int32(x106), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 	v4 = v107
 	goto L5
 L105:
@@ -88571,7 +88727,7 @@ L104:
 	if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 		goto L109
 	}
-	v111 = p.newNode(Node{kind: kindMatch, Start: int32(x110), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+	v111 = p.newNode(Node{kind: kindMatch, start: int32(x110), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 	v4 = v111
 	goto L5
 L109:
@@ -88588,7 +88744,7 @@ L108:
 	} else if _, ok = p.matchLiteral(lit293, "not", 92, false); !ok {
 		goto L113
 	}
-	v115 = p.newNode(Node{kind: kindMatch, Start: int32(x114), End: int32(p.pos), Text: "not", terminal: true, fresh: true})
+	v115 = p.newNode(Node{kind: kindMatch, start: int32(x114), end: int32(p.pos), text: "not", terminal: true, fresh: true})
 	v4 = v115
 	goto L5
 L113:
@@ -88605,7 +88761,7 @@ L112:
 	} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
 		goto L117
 	}
-	v119 = p.newNode(Node{kind: kindMatch, Start: int32(x118), End: int32(p.pos), Text: "or", terminal: true, fresh: true})
+	v119 = p.newNode(Node{kind: kindMatch, start: int32(x118), end: int32(p.pos), text: "or", terminal: true, fresh: true})
 	v4 = v119
 	goto L5
 L117:
@@ -88622,7 +88778,7 @@ L116:
 	} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 		goto L121
 	}
-	v123 = p.newNode(Node{kind: kindMatch, Start: int32(x122), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+	v123 = p.newNode(Node{kind: kindMatch, start: int32(x122), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 	v4 = v123
 	goto L5
 L121:
@@ -88637,7 +88793,7 @@ L120:
 	if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 		goto L125
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 	v4 = v127
 	goto L5
 L125:
@@ -88652,7 +88808,7 @@ L124:
 	if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 		goto L129
 	}
-	v131 = p.newNode(Node{kind: kindMatch, Start: int32(x130), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+	v131 = p.newNode(Node{kind: kindMatch, start: int32(x130), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 	v4 = v131
 	goto L5
 L129:
@@ -88669,7 +88825,7 @@ L128:
 	} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 		goto L133
 	}
-	v135 = p.newNode(Node{kind: kindMatch, Start: int32(x134), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+	v135 = p.newNode(Node{kind: kindMatch, start: int32(x134), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 	v4 = v135
 	goto L5
 L133:
@@ -88684,7 +88840,7 @@ L132:
 	if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 		goto L137
 	}
-	v139 = p.newNode(Node{kind: kindMatch, Start: int32(x138), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+	v139 = p.newNode(Node{kind: kindMatch, start: int32(x138), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 	v4 = v139
 	goto L5
 L137:
@@ -88701,7 +88857,7 @@ L136:
 	} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 		goto L141
 	}
-	v143 = p.newNode(Node{kind: kindMatch, Start: int32(x142), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+	v143 = p.newNode(Node{kind: kindMatch, start: int32(x142), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 	v4 = v143
 	goto L5
 L141:
@@ -88716,7 +88872,7 @@ L140:
 	if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 		goto L145
 	}
-	v147 = p.newNode(Node{kind: kindMatch, Start: int32(x146), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+	v147 = p.newNode(Node{kind: kindMatch, start: int32(x146), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 	v4 = v147
 	goto L5
 L145:
@@ -88738,7 +88894,7 @@ L5:
 L149:
 	p.silent--
 	p.reset(x148)
-	v150 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v150 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v150, true
 fail:
 	return nil, false
@@ -88767,7 +88923,7 @@ func (p *parser) e511() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -88782,7 +88938,7 @@ func (p *parser) e511() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -88808,7 +88964,7 @@ func (p *parser) e511() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -88823,7 +88979,7 @@ func (p *parser) e511() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -88850,7 +89006,7 @@ func (p *parser) e512() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -88865,7 +89021,7 @@ func (p *parser) e512() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -88889,7 +89045,7 @@ func (p *parser) e512() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -88904,7 +89060,7 @@ func (p *parser) e512() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -88931,7 +89087,7 @@ func (p *parser) e513() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -88946,7 +89102,7 @@ func (p *parser) e513() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -88970,7 +89126,7 @@ func (p *parser) e513() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -88985,7 +89141,7 @@ func (p *parser) e513() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89012,7 +89168,7 @@ func (p *parser) e514() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89027,7 +89183,7 @@ func (p *parser) e514() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89051,7 +89207,7 @@ func (p *parser) e514() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89066,7 +89222,7 @@ func (p *parser) e514() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89093,7 +89249,7 @@ func (p *parser) e515() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89108,7 +89264,7 @@ func (p *parser) e515() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89132,7 +89288,7 @@ func (p *parser) e515() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89147,7 +89303,7 @@ func (p *parser) e515() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89176,7 +89332,7 @@ func (p *parser) e517() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit516, "case", 179, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "case", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "case", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89191,7 +89347,7 @@ func (p *parser) e517() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89217,7 +89373,7 @@ func (p *parser) e517() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit516, "case", 179, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "case", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "case", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89232,7 +89388,7 @@ func (p *parser) e517() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89259,7 +89415,7 @@ func (p *parser) e518() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89274,7 +89430,7 @@ func (p *parser) e518() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89298,7 +89454,7 @@ func (p *parser) e518() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89313,7 +89469,7 @@ func (p *parser) e518() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89340,7 +89496,7 @@ func (p *parser) e519() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89355,7 +89511,7 @@ func (p *parser) e519() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89379,7 +89535,7 @@ func (p *parser) e519() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89394,7 +89550,7 @@ func (p *parser) e519() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89423,7 +89579,7 @@ func (p *parser) e520() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89438,7 +89594,7 @@ func (p *parser) e520() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89464,7 +89620,7 @@ func (p *parser) e520() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89479,7 +89635,7 @@ func (p *parser) e520() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89508,7 +89664,7 @@ func (p *parser) e521() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89523,7 +89679,7 @@ func (p *parser) e521() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89549,7 +89705,7 @@ func (p *parser) e521() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89564,7 +89720,7 @@ func (p *parser) e521() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89593,7 +89749,7 @@ func (p *parser) e522() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89608,7 +89764,7 @@ func (p *parser) e522() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89634,7 +89790,7 @@ func (p *parser) e522() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89649,7 +89805,7 @@ func (p *parser) e522() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89678,7 +89834,7 @@ func (p *parser) e523() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89693,7 +89849,7 @@ func (p *parser) e523() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89719,7 +89875,7 @@ func (p *parser) e523() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89734,7 +89890,7 @@ func (p *parser) e523() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89761,7 +89917,7 @@ func (p *parser) e524() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89776,7 +89932,7 @@ func (p *parser) e524() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89800,7 +89956,7 @@ func (p *parser) e524() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89815,7 +89971,7 @@ func (p *parser) e524() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89842,7 +89998,7 @@ func (p *parser) e525() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89857,7 +90013,7 @@ func (p *parser) e525() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89881,7 +90037,7 @@ func (p *parser) e525() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89896,7 +90052,7 @@ func (p *parser) e525() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -89925,7 +90081,7 @@ func (p *parser) e526() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -89940,7 +90096,7 @@ func (p *parser) e526() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -89966,7 +90122,7 @@ func (p *parser) e526() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -89981,7 +90137,7 @@ func (p *parser) e526() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90010,7 +90166,7 @@ func (p *parser) e527() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90025,7 +90181,7 @@ func (p *parser) e527() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90051,7 +90207,7 @@ func (p *parser) e527() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90066,7 +90222,7 @@ func (p *parser) e527() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90093,7 +90249,7 @@ func (p *parser) e528() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90108,7 +90264,7 @@ func (p *parser) e528() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90132,7 +90288,7 @@ func (p *parser) e528() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90147,7 +90303,7 @@ func (p *parser) e528() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90176,7 +90332,7 @@ func (p *parser) e529() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90191,7 +90347,7 @@ func (p *parser) e529() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90217,7 +90373,7 @@ func (p *parser) e529() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90232,7 +90388,7 @@ func (p *parser) e529() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90259,7 +90415,7 @@ func (p *parser) e530() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90274,7 +90430,7 @@ func (p *parser) e530() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90298,7 +90454,7 @@ func (p *parser) e530() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90313,7 +90469,7 @@ func (p *parser) e530() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90342,7 +90498,7 @@ func (p *parser) e531() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90357,7 +90513,7 @@ func (p *parser) e531() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90383,7 +90539,7 @@ func (p *parser) e531() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90398,7 +90554,7 @@ func (p *parser) e531() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90425,7 +90581,7 @@ func (p *parser) e532() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90440,7 +90596,7 @@ func (p *parser) e532() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90464,7 +90620,7 @@ func (p *parser) e532() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90479,7 +90635,7 @@ func (p *parser) e532() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90506,7 +90662,7 @@ func (p *parser) e534() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit533, "match", 60, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "match", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "match", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90521,7 +90677,7 @@ func (p *parser) e534() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90545,7 +90701,7 @@ func (p *parser) e534() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit533, "match", 60, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "match", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "match", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90560,7 +90716,7 @@ func (p *parser) e534() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90587,7 +90743,7 @@ func (p *parser) e535() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90602,7 +90758,7 @@ func (p *parser) e535() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90626,7 +90782,7 @@ func (p *parser) e535() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90641,7 +90797,7 @@ func (p *parser) e535() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90670,7 +90826,7 @@ func (p *parser) e536() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90685,7 +90841,7 @@ func (p *parser) e536() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90711,7 +90867,7 @@ func (p *parser) e536() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90726,7 +90882,7 @@ func (p *parser) e536() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90753,7 +90909,7 @@ func (p *parser) e537() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90768,7 +90924,7 @@ func (p *parser) e537() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90792,7 +90948,7 @@ func (p *parser) e537() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90807,7 +90963,7 @@ func (p *parser) e537() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90834,7 +90990,7 @@ func (p *parser) e538() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90849,7 +91005,7 @@ func (p *parser) e538() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90873,7 +91029,7 @@ func (p *parser) e538() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90888,7 +91044,7 @@ func (p *parser) e538() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -90917,7 +91073,7 @@ func (p *parser) e539() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -90932,7 +91088,7 @@ func (p *parser) e539() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -90958,7 +91114,7 @@ func (p *parser) e539() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -90973,7 +91129,7 @@ func (p *parser) e539() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -91002,7 +91158,7 @@ func (p *parser) e541() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit540, "type", 32, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "type", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "type", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -91017,7 +91173,7 @@ func (p *parser) e541() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -91043,7 +91199,7 @@ func (p *parser) e541() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit540, "type", 32, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "type", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "type", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -91058,7 +91214,7 @@ func (p *parser) e541() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -91085,7 +91241,7 @@ func (p *parser) e542() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -91100,7 +91256,7 @@ func (p *parser) e542() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -91124,7 +91280,7 @@ func (p *parser) e542() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -91139,7 +91295,7 @@ func (p *parser) e542() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -91168,7 +91324,7 @@ func (p *parser) e543() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -91183,7 +91339,7 @@ func (p *parser) e543() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -91209,7 +91365,7 @@ func (p *parser) e543() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -91224,7 +91380,7 @@ func (p *parser) e543() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -91251,7 +91407,7 @@ func (p *parser) e544() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -91266,7 +91422,7 @@ func (p *parser) e544() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -91290,7 +91446,7 @@ func (p *parser) e544() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -91305,7 +91461,7 @@ func (p *parser) e544() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -91335,7 +91491,7 @@ func (p *parser) e546() (*Node, bool) {
 		}
 		x1 = p.pos
 		p.pos += size
-		v2 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -91362,7 +91518,7 @@ func (p *parser) e546() (*Node, bool) {
 	}
 	x1 = p.pos
 	p.pos += size
-	v2 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v2, true
 fail:
 	return nil, false
@@ -91392,7 +91548,7 @@ func (p *parser) e548() (*Node, bool) {
 		}
 		x1 = p.pos
 		p.pos += size
-		v2 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -91419,7 +91575,7 @@ func (p *parser) e548() (*Node, bool) {
 	}
 	x1 = p.pos
 	p.pos += size
-	v2 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v2, true
 fail:
 	return nil, false
@@ -108656,7 +108812,7 @@ func (p *parser) e737() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -108678,7 +108834,7 @@ func (p *parser) e737() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // genexp
@@ -109506,7 +109662,7 @@ func (p *parser) e785() (*Node, bool) {
 		if _, ok := p.e783(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -109531,7 +109687,7 @@ func (p *parser) e785() (*Node, bool) {
 	if _, ok := p.e783(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // g:genexp &(ws t_lookahead)
@@ -109548,7 +109704,7 @@ func (p *parser) e786() (*Node, bool) {
 		if _, ok := p.e783(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -109562,7 +109718,7 @@ func (p *parser) e786() (*Node, bool) {
 	if _, ok := p.e783(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // c:call_args &(ws t_lookahead)
@@ -109579,7 +109735,7 @@ func (p *parser) e787() (*Node, bool) {
 		if _, ok := p.e783(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -109593,7 +109749,7 @@ func (p *parser) e787() (*Node, bool) {
 	if _, ok := p.e783(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // s:subscript &(ws t_lookahead)
@@ -109610,7 +109766,7 @@ func (p *parser) e794() (*Node, bool) {
 		if _, ok := p.e783(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -109624,7 +109780,7 @@ func (p *parser) e794() (*Node, bool) {
 	if _, ok := p.e783(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // t_lookahead, called as by invokePlain
@@ -122420,7 +122576,7 @@ func (p *parser) e807() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v18)
 			x16 = append(x16, v18)
-			v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 			v20, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x11.pos)
 			v12 = v20
 			goto L13_ordinary
@@ -122441,7 +122597,7 @@ func (p *parser) e807() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v25)
 			x23 = append(x23, v25)
-			v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+			v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 			v27, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x11.pos)
 			v12 = v27
 			goto L13_ordinary
@@ -122463,7 +122619,7 @@ func (p *parser) e807() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v30)
 		return nil, true
 	fail_ordinary:
@@ -122549,7 +122705,7 @@ func (p *parser) e807() (*Node, bool) {
 		}
 		p.setCapture(0, v18)
 		x16 = append(x16, v18)
-		v19 = p.newNode(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+		v19 = p.newNode(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 		v20, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x11.pos)
 		v12 = v20
 		goto L13
@@ -122571,7 +122727,7 @@ func (p *parser) e807() (*Node, bool) {
 		}
 		p.setCapture(0, v25)
 		x23 = append(x23, v25)
-		v26 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v26 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v27, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x11.pos)
 		v12 = v27
 		goto L13
@@ -122593,7 +122749,7 @@ func (p *parser) e807() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v30 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v30 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v30)
 	return nil, true
 fail:
@@ -122650,9 +122806,9 @@ func (p *parser) e812() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 			goto L5_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 		x8 = append(x8, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 		v4 = v13
 		goto L6_ordinary
@@ -122686,7 +122842,7 @@ func (p *parser) e812() (*Node, bool) {
 			p.reset(x18)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		x2 = append(x2, v22)
 
 		x23 = p.pos
@@ -122769,7 +122925,7 @@ func (p *parser) e812() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -122822,9 +122978,9 @@ func (p *parser) e812() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 		goto L5
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 	x8 = append(x8, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 	v4 = v13
 	goto L6
@@ -122858,7 +123014,7 @@ L6:
 		p.reset(x18)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	x2 = append(x2, v22)
 	p.stepWork()
 	x23 = p.pos
@@ -122941,7 +123097,7 @@ L6:
 	}) {
 		goto fail
 	}
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -123613,7 +123769,7 @@ func (p *parser) e824() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope823, x6, x9.pos, p.pos)
@@ -123628,7 +123784,7 @@ func (p *parser) e824() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -123703,7 +123859,7 @@ func (p *parser) e824() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope823, x6, x9.pos, p.pos)
@@ -123718,7 +123874,7 @@ func (p *parser) e824() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -123775,9 +123931,9 @@ func (p *parser) e829() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 			goto L5_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 		x8 = append(x8, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 		v4 = v13
 		goto L6_ordinary
@@ -123811,7 +123967,7 @@ func (p *parser) e829() (*Node, bool) {
 			p.reset(x18)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		x2 = append(x2, v22)
 
 		x23 = p.pos
@@ -123894,7 +124050,7 @@ func (p *parser) e829() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v25, true
 	fail_ordinary:
 		return nil, false
@@ -123947,9 +124103,9 @@ func (p *parser) e829() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit6, ";", 7, false); !ok {
 		goto L5
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: ";", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: ";", terminal: true, fresh: true})
 	x8 = append(x8, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v13, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v12, x3.pos)
 	v4 = v13
 	goto L6
@@ -123983,7 +124139,7 @@ L6:
 		p.reset(x18)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	x2 = append(x2, v22)
 	p.stepWork()
 	x23 = p.pos
@@ -124066,7 +124222,7 @@ L6:
 	}) {
 		goto fail
 	}
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v25, true
 fail:
 	return nil, false
@@ -124262,7 +124418,7 @@ func (p *parser) e831() (*Node, bool) {
 				p.reset(x27)
 				break
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			x23 = append(x23, v29)
 
@@ -124272,9 +124428,9 @@ func (p *parser) e831() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit37, "\t", 15, false); !ok {
 				goto L21_ordinary
 			}
-			v31 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "\t", terminal: true, fresh: true})
+			v31 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "\t", terminal: true, fresh: true})
 			x23 = append(x23, v31)
-			v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 			v33 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v32, x20.pos)
 			p.frame = x18
 			v34 = p.attachCaptures(v33, scope830, x17, x20.pos, p.pos)
@@ -124289,7 +124445,7 @@ func (p *parser) e831() (*Node, bool) {
 			p.reset(x20)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 		p.setCaptureOrdinary(0, v35)
 		x2 = append(x2, v35)
 
@@ -124315,7 +124471,7 @@ func (p *parser) e831() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v41 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: p.text(x37, p.pos), terminal: true, fresh: true})
+		v41 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: p.text(x37, p.pos), terminal: true, fresh: true})
 		p.setCaptureOrdinary(1, v41)
 		x2 = append(x2, v41)
 
@@ -124369,7 +124525,7 @@ func (p *parser) e831() (*Node, bool) {
 			p.reset(x43)
 			break
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v47, true
 	}
 
@@ -124565,7 +124721,7 @@ func (p *parser) e831() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v29 = p.newNode(Node{kind: kindMatch, Start: int32(x25), End: int32(p.pos), Text: p.text(x25, p.pos), terminal: true, fresh: true})
+		v29 = p.newNode(Node{kind: kindMatch, start: int32(x25), end: int32(p.pos), text: p.text(x25, p.pos), terminal: true, fresh: true})
 		p.setCapture(0, v29)
 		x23 = append(x23, v29)
 		p.stepWork()
@@ -124575,9 +124731,9 @@ func (p *parser) e831() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit37, "\t", 15, false); !ok {
 			goto L21
 		}
-		v31 = p.newNode(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "\t", terminal: true, fresh: true})
+		v31 = p.newNode(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "\t", terminal: true, fresh: true})
 		x23 = append(x23, v31)
-		v32 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v32 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v33 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v32, x20.pos)
 		p.frame = x18
 		v34 = p.attachCaptures(v33, scope830, x17, x20.pos, p.pos)
@@ -124592,7 +124748,7 @@ func (p *parser) e831() (*Node, bool) {
 		p.reset(x20)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x15), End: int32(p.pos), Children: p.kids(x16), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x15), end: int32(p.pos), children: p.kids(x16), fresh: true})
 	p.setCapture(0, v35)
 	x2 = append(x2, v35)
 	p.stepWork()
@@ -124618,7 +124774,7 @@ func (p *parser) e831() (*Node, bool) {
 		p.reset(x39)
 		break
 	}
-	v41 = p.newNode(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: p.text(x37, p.pos), terminal: true, fresh: true})
+	v41 = p.newNode(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: p.text(x37, p.pos), terminal: true, fresh: true})
 	p.setCapture(1, v41)
 	x2 = append(x2, v41)
 	p.stepWork()
@@ -124674,7 +124830,7 @@ func (p *parser) e831() (*Node, bool) {
 		p.reset(x43)
 		break
 	}
-	v47 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v47 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v47, true
 }
 
@@ -124745,7 +124901,7 @@ func (p *parser) e832() (*Node, bool) {
 			}
 			x8 = p.pos
 			p.pos += size
-			v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+			v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 			v10 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v9, x6.pos)
 			x5++
 			p.kidStack = append(p.kidStack, v10)
@@ -124757,7 +124913,7 @@ func (p *parser) e832() (*Node, bool) {
 			p.reset(x6)
 			break
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		x2 = append(x2, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -124774,7 +124930,7 @@ func (p *parser) e832() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 				goto L16_ordinary
 			}
-			v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 			x18 = append(x18, v20)
 
 			if v21, ok = p.q12(); !ok {
@@ -124813,7 +124969,7 @@ func (p *parser) e832() (*Node, bool) {
 				}
 				x29 = p.pos
 				p.pos += size
-				v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: p.text(x29, p.pos), terminal: true, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: p.text(x29, p.pos), terminal: true, fresh: true})
 				v31 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v30, x27.pos)
 				x26++
 				p.kidStack = append(p.kidStack, v31)
@@ -124825,9 +124981,9 @@ func (p *parser) e832() (*Node, bool) {
 				p.reset(x27)
 				break
 			}
-			v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 			x18 = append(x18, v32)
-			v33 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 			v34 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v33, x15.pos)
 			x14++
 			p.kidStack = append(p.kidStack, v34)
@@ -124839,7 +124995,7 @@ func (p *parser) e832() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x2 = append(x2, v35)
 
 		x36 = p.mark()
@@ -124859,7 +125015,7 @@ func (p *parser) e832() (*Node, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v41)
-		v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v42, true
 	fail_ordinary:
 		return nil, false
@@ -124929,7 +125085,7 @@ func (p *parser) e832() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v10 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v9, x6.pos)
 		x5++
 		p.kidStack = append(p.kidStack, v10)
@@ -124941,7 +125097,7 @@ func (p *parser) e832() (*Node, bool) {
 		p.reset(x6)
 		break
 	}
-	v11 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v11 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	x2 = append(x2, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -124958,7 +125114,7 @@ func (p *parser) e832() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto L16
 		}
-		v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x18 = append(x18, v20)
 		p.stepWork()
 		if v21, ok = p.q12(); !ok {
@@ -124997,7 +125153,7 @@ func (p *parser) e832() (*Node, bool) {
 			}
 			x29 = p.pos
 			p.pos += size
-			v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: p.text(x29, p.pos), terminal: true, fresh: true})
+			v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: p.text(x29, p.pos), terminal: true, fresh: true})
 			v31 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v30, x27.pos)
 			x26++
 			p.kidStack = append(p.kidStack, v31)
@@ -125009,9 +125165,9 @@ func (p *parser) e832() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v32 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v32 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		x18 = append(x18, v32)
-		v33 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v33 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v34 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v33, x15.pos)
 		x14++
 		p.kidStack = append(p.kidStack, v34)
@@ -125023,7 +125179,7 @@ func (p *parser) e832() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x2 = append(x2, v35)
 	p.stepWork()
 	x36 = p.mark()
@@ -125043,7 +125199,7 @@ L39:
 		goto fail
 	}
 	x2 = append(x2, v41)
-	v42 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v42 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v42, true
 fail:
 	return nil, false
@@ -125111,7 +125267,7 @@ func (p *parser) e833() (*Node, bool) {
 		goto fail_ordinary
 	L11_ordinary:
 		x2 = append(x2, v10)
-		v16 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v16 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v16, true
 	fail_ordinary:
 		return nil, false
@@ -125176,7 +125332,7 @@ L14:
 	goto fail
 L11:
 	x2 = append(x2, v10)
-	v16 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v16 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v16, true
 fail:
 	return nil, false
@@ -126801,7 +126957,7 @@ func (p *parser) e842() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L8_ordinary
 			}
-			v14 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v14 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x10 = append(x10, v14)
 
 			x15 = p.mark()
@@ -126822,7 +126978,7 @@ func (p *parser) e842() (*Node, bool) {
 			if _, ok = p.q338(); !ok {
 				goto L8_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x7.pos)
 			p.frame = x5
 			v19 = p.attachCaptures(v18, scope841, x4, x7.pos, p.pos)
@@ -126841,7 +126997,7 @@ func (p *parser) e842() (*Node, bool) {
 			p.dropKids(x3)
 			goto fail_ordinary
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v20)
 
 		x21 = p.pos
@@ -126950,7 +127106,7 @@ func (p *parser) e842() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L8
 		}
-		v14 = p.newNode(Node{kind: kindMatch, Start: int32(x13), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v14 = p.newNode(Node{kind: kindMatch, start: int32(x13), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x10 = append(x10, v14)
 		p.stepWork()
 		x15 = p.mark()
@@ -126972,7 +127128,7 @@ func (p *parser) e842() (*Node, bool) {
 		if _, ok = p.q338(); !ok {
 			goto L8
 		}
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x7.pos)
 		p.frame = x5
 		v19 = p.attachCaptures(v18, scope841, x4, x7.pos, p.pos)
@@ -126991,7 +127147,7 @@ func (p *parser) e842() (*Node, bool) {
 		p.dropKids(x3)
 		goto fail
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v20)
 	p.stepWork()
 	x21 = p.pos
@@ -127574,7 +127730,7 @@ func (p *parser) e851() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope850, x6, x9.pos, p.pos)
@@ -127589,7 +127745,7 @@ func (p *parser) e851() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -127673,7 +127829,7 @@ func (p *parser) e851() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope850, x6, x9.pos, p.pos)
@@ -127688,7 +127844,7 @@ func (p *parser) e851() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -127770,7 +127926,7 @@ func (p *parser) e853() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope852, x6, x9.pos, p.pos)
@@ -127785,7 +127941,7 @@ func (p *parser) e853() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -127869,7 +128025,7 @@ func (p *parser) e853() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope852, x6, x9.pos, p.pos)
@@ -127884,7 +128040,7 @@ func (p *parser) e853() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -127971,7 +128127,7 @@ func (p *parser) e855() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope854, x6, x9.pos, p.pos)
@@ -127986,7 +128142,7 @@ func (p *parser) e855() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -128159,7 +128315,7 @@ func (p *parser) e855() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope854, x6, x9.pos, p.pos)
@@ -128174,7 +128330,7 @@ func (p *parser) e855() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -128689,7 +128845,7 @@ func (p *parser) e860() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope859, x6, x9.pos, p.pos)
@@ -128704,7 +128860,7 @@ func (p *parser) e860() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -128788,7 +128944,7 @@ func (p *parser) e860() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope859, x6, x9.pos, p.pos)
@@ -128803,7 +128959,7 @@ func (p *parser) e860() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -128985,7 +129141,7 @@ func (p *parser) e863() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v16)
 			x14 = append(x14, v16)
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 			p.frame = x9
 			v19 = p.attachCaptures(v18, scope862, x8, x11.pos, p.pos)
@@ -129000,10 +129156,10 @@ func (p *parser) e863() (*Node, bool) {
 			p.reset(x11)
 			break
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 		p.setCaptureOrdinary(1, v20)
 		x2 = append(x2, v20)
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v21, true
 	fail_ordinary:
 		return nil, false
@@ -129083,7 +129239,7 @@ func (p *parser) e863() (*Node, bool) {
 		}
 		p.setCapture(0, v16)
 		x14 = append(x14, v16)
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 		p.frame = x9
 		v19 = p.attachCaptures(v18, scope862, x8, x11.pos, p.pos)
@@ -129098,10 +129254,10 @@ func (p *parser) e863() (*Node, bool) {
 		p.reset(x11)
 		break
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 	p.setCapture(1, v20)
 	x2 = append(x2, v20)
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v21, true
 fail:
 	return nil, false
@@ -129183,7 +129339,7 @@ func (p *parser) e865() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit95, "...", 51, false); !ok {
 				goto L18_ordinary
 			}
-			v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "...", terminal: true, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "...", terminal: true, fresh: true})
 			v13 = v20
 			goto L14_ordinary
 		L18_ordinary:
@@ -129200,7 +129356,7 @@ func (p *parser) e865() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 				goto L22_ordinary
 			}
-			v24 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x23), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+			v24 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x23), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 			v13 = v24
 			goto L14_ordinary
 		L22_ordinary:
@@ -129210,7 +129366,7 @@ func (p *parser) e865() (*Node, bool) {
 		L14_ordinary:
 			p.setCaptureOrdinary(0, v13)
 			x10 = append(x10, v13)
-			v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x7.pos)
 			p.frame = x5
 			v27 = p.attachCaptures(v26, scope864, x4, x7.pos, p.pos)
@@ -129225,7 +129381,7 @@ func (p *parser) e865() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v28)
 
 		x29 = p.pos
@@ -129350,7 +129506,7 @@ func (p *parser) e865() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit95, "...", 51, false); !ok {
 			goto L18
 		}
-		v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: "...", terminal: true, fresh: true})
+		v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: "...", terminal: true, fresh: true})
 		v13 = v20
 		goto L14
 	L18:
@@ -129367,7 +129523,7 @@ func (p *parser) e865() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L22
 		}
-		v24 = p.newNode(Node{kind: kindMatch, Start: int32(x23), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v24 = p.newNode(Node{kind: kindMatch, start: int32(x23), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		v13 = v24
 		goto L14
 	L22:
@@ -129377,7 +129533,7 @@ func (p *parser) e865() (*Node, bool) {
 	L14:
 		p.setCapture(0, v13)
 		x10 = append(x10, v13)
-		v25 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v25 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x7.pos)
 		p.frame = x5
 		v27 = p.attachCaptures(v26, scope864, x4, x7.pos, p.pos)
@@ -129392,7 +129548,7 @@ func (p *parser) e865() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -129533,7 +129689,7 @@ func (p *parser) e867() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v22)
 			x20 = append(x20, v22)
-			v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+			v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 			v24 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x17.pos)
 			p.frame = x15
 			v25 = p.attachCaptures(v24, scope866, x14, x17.pos, p.pos)
@@ -129548,10 +129704,10 @@ func (p *parser) e867() (*Node, bool) {
 			p.reset(x17)
 			break
 		}
-		v26 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v26 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		p.setCaptureOrdinary(1, v26)
 		x8 = append(x8, v26)
-		v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x3.pos)
 		v4 = v28
 		goto L6_ordinary
@@ -129560,7 +129716,7 @@ func (p *parser) e867() (*Node, bool) {
 		v4 = nil
 	L6_ordinary:
 		x2 = append(x2, v4)
-		v29 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v29 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v29, true
 	}
 
@@ -129655,7 +129811,7 @@ func (p *parser) e867() (*Node, bool) {
 		}
 		p.setCapture(0, v22)
 		x20 = append(x20, v22)
-		v23 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v23 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v24 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v23, x17.pos)
 		p.frame = x15
 		v25 = p.attachCaptures(v24, scope866, x14, x17.pos, p.pos)
@@ -129670,10 +129826,10 @@ func (p *parser) e867() (*Node, bool) {
 		p.reset(x17)
 		break
 	}
-	v26 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v26 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	p.setCapture(1, v26)
 	x8 = append(x8, v26)
-	v27 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v27 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x3.pos)
 	v4 = v28
 	goto L6
@@ -129682,7 +129838,7 @@ L5:
 	v4 = nil
 L6:
 	x2 = append(x2, v4)
-	v29 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v29 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v29, true
 }
 
@@ -129914,7 +130070,7 @@ func (p *parser) e870() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope869, x6, x9.pos, p.pos)
@@ -129929,7 +130085,7 @@ func (p *parser) e870() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -130070,7 +130226,7 @@ func (p *parser) e870() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope869, x6, x9.pos, p.pos)
@@ -130085,7 +130241,7 @@ func (p *parser) e870() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -130190,7 +130346,7 @@ func (p *parser) e872() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope871, x6, x9.pos, p.pos)
@@ -130205,7 +130361,7 @@ func (p *parser) e872() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -130300,7 +130456,7 @@ func (p *parser) e872() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope871, x6, x9.pos, p.pos)
@@ -130315,7 +130471,7 @@ func (p *parser) e872() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -132217,7 +132373,7 @@ func (p *parser) e887() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope886, x6, x9.pos, p.pos)
@@ -132232,7 +132388,7 @@ func (p *parser) e887() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -132395,7 +132551,7 @@ func (p *parser) e887() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope886, x6, x9.pos, p.pos)
@@ -132410,7 +132566,7 @@ func (p *parser) e887() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -132536,7 +132692,7 @@ func (p *parser) e889() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope888, x6, x9.pos, p.pos)
@@ -132551,7 +132707,7 @@ func (p *parser) e889() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -132626,7 +132782,7 @@ func (p *parser) e889() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope888, x6, x9.pos, p.pos)
@@ -132641,7 +132797,7 @@ func (p *parser) e889() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -133002,7 +133158,7 @@ func (p *parser) e895() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope893, x6, x9.pos, p.pos)
@@ -133017,7 +133173,7 @@ func (p *parser) e895() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -133044,7 +133200,7 @@ func (p *parser) e895() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v30)
 			x28 = append(x28, v30)
-			v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+			v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 			v32 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x25.pos)
 			p.frame = x23
 			v33 = p.attachCaptures(v32, scope894, x22, x25.pos, p.pos)
@@ -133059,7 +133215,7 @@ func (p *parser) e895() (*Node, bool) {
 			p.reset(x25)
 			break
 		}
-		v34 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v34 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v34)
 
 		x35 = p.pos
@@ -133248,7 +133404,7 @@ func (p *parser) e895() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope893, x6, x9.pos, p.pos)
@@ -133263,7 +133419,7 @@ func (p *parser) e895() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -133291,7 +133447,7 @@ func (p *parser) e895() (*Node, bool) {
 		}
 		p.setCapture(0, v30)
 		x28 = append(x28, v30)
-		v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x25.pos)
 		p.frame = x23
 		v33 = p.attachCaptures(v32, scope894, x22, x25.pos, p.pos)
@@ -133306,7 +133462,7 @@ func (p *parser) e895() (*Node, bool) {
 		p.reset(x25)
 		break
 	}
-	v34 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v34 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v34)
 	p.stepWork()
 	x35 = p.pos
@@ -134354,7 +134510,7 @@ func (p *parser) e905() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit140, "@", 64, false); !ok {
 				goto L8_ordinary
 			}
-			v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: "@", terminal: true, fresh: true})
+			v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: "@", terminal: true, fresh: true})
 			x10 = append(x10, v12)
 
 			if _, ok = p.q338(); !ok {
@@ -134372,7 +134528,7 @@ func (p *parser) e905() (*Node, bool) {
 			if _, ok = p.call(recRules[368], 0); !ok {
 				goto L8_ordinary
 			}
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, x7.pos)
 			p.frame = x5
 			v17 = p.attachCaptures(v16, scope904, x4, x7.pos, p.pos)
@@ -134387,7 +134543,7 @@ func (p *parser) e905() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v18)
 		return nil, true
 	}
@@ -134434,7 +134590,7 @@ func (p *parser) e905() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit140, "@", 64, false); !ok {
 			goto L8
 		}
-		v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: "@", terminal: true, fresh: true})
+		v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: "@", terminal: true, fresh: true})
 		x10 = append(x10, v12)
 		p.stepWork()
 		p.stepWork()
@@ -134454,7 +134610,7 @@ func (p *parser) e905() (*Node, bool) {
 		if _, ok = p.call(recRules[368], 0); !ok {
 			goto L8
 		}
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x9), End: int32(p.pos), Children: x10, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, x7.pos)
 		p.frame = x5
 		v17 = p.attachCaptures(v16, scope904, x4, x7.pos, p.pos)
@@ -134469,7 +134625,7 @@ func (p *parser) e905() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v18)
 	return nil, true
 }
@@ -134523,7 +134679,7 @@ func (p *parser) e910() (*Node, bool) {
 			p.reset(x7)
 			break
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		x2 = append(x2, v11)
 
 		x12 = p.pos
@@ -134606,7 +134762,7 @@ func (p *parser) e910() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -134658,7 +134814,7 @@ func (p *parser) e910() (*Node, bool) {
 		p.reset(x7)
 		break
 	}
-	v11 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v11 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	x2 = append(x2, v11)
 	p.stepWork()
 	x12 = p.pos
@@ -134741,7 +134897,7 @@ func (p *parser) e910() (*Node, bool) {
 	}) {
 		goto fail
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v14, true
 fail:
 	return nil, false
@@ -136076,7 +136232,7 @@ func (p *parser) e921() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L10_ordinary
 			}
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope919, x6, x9.pos, p.pos)
@@ -136091,7 +136247,7 @@ func (p *parser) e921() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -136118,7 +136274,7 @@ func (p *parser) e921() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v31)
 			x29 = append(x29, v31)
-			v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x28), End: int32(p.pos), Children: x29, fresh: true})
+			v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x28), end: int32(p.pos), children: x29, fresh: true})
 			v33 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v32, x26.pos)
 			p.frame = x23
 			v34 = p.attachCaptures(v33, scope920, x22, x26.pos, p.pos)
@@ -136133,7 +136289,7 @@ func (p *parser) e921() (*Node, bool) {
 			p.reset(x26)
 			break
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v35)
 		return nil, true
 	fail_ordinary:
@@ -136235,7 +136391,7 @@ func (p *parser) e921() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L10
 		}
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope919, x6, x9.pos, p.pos)
@@ -136250,7 +136406,7 @@ func (p *parser) e921() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -136278,7 +136434,7 @@ func (p *parser) e921() (*Node, bool) {
 		}
 		p.setCapture(0, v31)
 		x29 = append(x29, v31)
-		v32 = p.newNode(Node{kind: kindSeq, Start: int32(x28), End: int32(p.pos), Children: x29, fresh: true})
+		v32 = p.newNode(Node{kind: kindSeq, start: int32(x28), end: int32(p.pos), children: x29, fresh: true})
 		v33 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v32, x26.pos)
 		p.frame = x23
 		v34 = p.attachCaptures(v33, scope920, x22, x26.pos, p.pos)
@@ -136293,7 +136449,7 @@ func (p *parser) e921() (*Node, bool) {
 		p.reset(x26)
 		break
 	}
-	v35 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v35 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v35)
 	return nil, true
 fail:
@@ -136594,7 +136750,7 @@ func (p *parser) e931() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope930, x21, x24.pos, p.pos)
@@ -136609,7 +136765,7 @@ func (p *parser) e931() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCaptureOrdinary(2, v33)
 		return nil, true
 	fail_ordinary:
@@ -136912,7 +137068,7 @@ L15:
 		}
 		p.setCapture(0, v29)
 		x27 = append(x27, v29)
-		v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+		v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 		v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 		p.frame = x22
 		v32 = p.attachCaptures(v31, scope930, x21, x24.pos, p.pos)
@@ -136927,7 +137083,7 @@ L15:
 		p.reset(x24)
 		break
 	}
-	v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+	v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 	p.setCapture(2, v33)
 	return nil, true
 fail:
@@ -137270,7 +137426,7 @@ func (p *parser) e937() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.pos
@@ -137307,7 +137463,7 @@ func (p *parser) e937() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L14_ordinary
 			}
-			v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x13.pos)
 			p.frame = x11
 			v21 = p.attachCaptures(v20, scope935, x10, x13.pos, p.pos)
@@ -137322,7 +137478,7 @@ func (p *parser) e937() (*Node, bool) {
 			p.reset(x13)
 			break
 		}
-		v22 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x8), End: int32(p.pos), Children: p.kids(x9), fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x8), end: int32(p.pos), children: p.kids(x9), fresh: true})
 		p.setCaptureOrdinary(1, v22)
 		x2 = append(x2, v22)
 
@@ -137350,7 +137506,7 @@ func (p *parser) e937() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v35)
 			x33 = append(x33, v35)
-			v36 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x32), End: int32(p.pos), Children: x33, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x32), end: int32(p.pos), children: x33, fresh: true})
 			v37 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v36, x30.pos)
 			p.frame = x27
 			v38 = p.attachCaptures(v37, scope936, x26, x30.pos, p.pos)
@@ -137365,10 +137521,10 @@ func (p *parser) e937() (*Node, bool) {
 			p.reset(x30)
 			break
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(2, v39)
 		x2 = append(x2, v39)
-		v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v40, true
 	fail_ordinary:
 		return nil, false
@@ -137440,7 +137596,7 @@ func (p *parser) e937() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.pos
@@ -137480,7 +137636,7 @@ func (p *parser) e937() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L14
 		}
-		v19 = p.newNode(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+		v19 = p.newNode(Node{kind: kindSeq, start: int32(x15), end: int32(p.pos), children: x16, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v19, x13.pos)
 		p.frame = x11
 		v21 = p.attachCaptures(v20, scope935, x10, x13.pos, p.pos)
@@ -137495,7 +137651,7 @@ func (p *parser) e937() (*Node, bool) {
 		p.reset(x13)
 		break
 	}
-	v22 = p.newNode(Node{kind: kindList, Start: int32(x8), End: int32(p.pos), Children: p.kids(x9), fresh: true})
+	v22 = p.newNode(Node{kind: kindList, start: int32(x8), end: int32(p.pos), children: p.kids(x9), fresh: true})
 	p.setCapture(1, v22)
 	x2 = append(x2, v22)
 	p.stepWork()
@@ -137524,7 +137680,7 @@ func (p *parser) e937() (*Node, bool) {
 		}
 		p.setCapture(0, v35)
 		x33 = append(x33, v35)
-		v36 = p.newNode(Node{kind: kindSeq, Start: int32(x32), End: int32(p.pos), Children: x33, fresh: true})
+		v36 = p.newNode(Node{kind: kindSeq, start: int32(x32), end: int32(p.pos), children: x33, fresh: true})
 		v37 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v36, x30.pos)
 		p.frame = x27
 		v38 = p.attachCaptures(v37, scope936, x26, x30.pos, p.pos)
@@ -137539,10 +137695,10 @@ func (p *parser) e937() (*Node, bool) {
 		p.reset(x30)
 		break
 	}
-	v39 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v39 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(2, v39)
 	x2 = append(x2, v39)
-	v40 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v40 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v40, true
 fail:
 	return nil, false
@@ -137807,7 +137963,7 @@ func (p *parser) e942() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v25)
 				x21 = append(x21, v25)
-				v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+				v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 				v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x18.pos)
 				p.frame = x16
 				v28 = p.attachCaptures(v27, scope941, x15, x18.pos, p.pos)
@@ -137826,7 +137982,7 @@ func (p *parser) e942() (*Node, bool) {
 				p.dropKids(x14)
 				goto L11_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 			p.frame = x7
@@ -137842,7 +137998,7 @@ func (p *parser) e942() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v32)
 		return nil, true
 	fail_ordinary:
@@ -137954,7 +138110,7 @@ func (p *parser) e942() (*Node, bool) {
 			}
 			p.setCapture(0, v25)
 			x21 = append(x21, v25)
-			v26 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v26 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x18.pos)
 			p.frame = x16
 			v28 = p.attachCaptures(v27, scope941, x15, x18.pos, p.pos)
@@ -137973,7 +138129,7 @@ func (p *parser) e942() (*Node, bool) {
 			p.dropKids(x14)
 			goto L11
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 		p.setCapture(0, v29)
 		v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 		p.frame = x7
@@ -137989,7 +138145,7 @@ func (p *parser) e942() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v32 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v32 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v32)
 	return nil, true
 fail:
@@ -139972,7 +140128,7 @@ func (p *parser) e961() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v16)
 			x12 = append(x12, v16)
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
 			v19 = p.attachCaptures(v18, scope960, x6, x9.pos, p.pos)
@@ -139991,7 +140147,7 @@ func (p *parser) e961() (*Node, bool) {
 			p.dropKids(x5)
 			goto fail_ordinary
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v20)
 		return nil, true
 	fail_ordinary:
@@ -140082,7 +140238,7 @@ func (p *parser) e961() (*Node, bool) {
 		}
 		p.setCapture(0, v16)
 		x12 = append(x12, v16)
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
 		v19 = p.attachCaptures(v18, scope960, x6, x9.pos, p.pos)
@@ -140101,7 +140257,7 @@ func (p *parser) e961() (*Node, bool) {
 		p.dropKids(x5)
 		goto fail
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v20)
 	return nil, true
 fail:
@@ -140783,7 +140939,7 @@ func (p *parser) e968() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope967, x6, x9.pos, p.pos)
@@ -140798,7 +140954,7 @@ func (p *parser) e968() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -140890,7 +141046,7 @@ func (p *parser) e968() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope967, x6, x9.pos, p.pos)
@@ -140905,7 +141061,7 @@ func (p *parser) e968() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -141747,7 +141903,7 @@ func (p *parser) e974() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope973, x6, x9.pos, p.pos)
@@ -141762,7 +141918,7 @@ func (p *parser) e974() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -141837,7 +141993,7 @@ func (p *parser) e974() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope973, x6, x9.pos, p.pos)
@@ -141852,7 +142008,7 @@ func (p *parser) e974() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -141917,7 +142073,7 @@ func (p *parser) e975() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 			goto fail_ordinary
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 		x2 = append(x2, v12)
 
 		if _, ok = p.q338(); !ok {
@@ -141931,7 +142087,7 @@ func (p *parser) e975() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v14)
 		x2 = append(x2, v14)
-		v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v15, true
 	fail_ordinary:
 		return nil, false
@@ -141993,7 +142149,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 		goto fail
 	}
-	v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+	v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 	x2 = append(x2, v12)
 	p.stepWork()
 	p.stepWork()
@@ -142008,7 +142164,7 @@ L6:
 	}
 	p.setCapture(1, v14)
 	x2 = append(x2, v14)
-	v15 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v15 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v15, true
 fail:
 	return nil, false
@@ -142403,7 +142559,7 @@ func (p *parser) e978() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope977, x6, x9.pos, p.pos)
@@ -142418,7 +142574,7 @@ func (p *parser) e978() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -142493,7 +142649,7 @@ func (p *parser) e978() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope977, x6, x9.pos, p.pos)
@@ -142508,7 +142664,7 @@ func (p *parser) e978() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -142582,7 +142738,7 @@ func (p *parser) e980() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope979, x6, x9.pos, p.pos)
@@ -142597,7 +142753,7 @@ func (p *parser) e980() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -142672,7 +142828,7 @@ func (p *parser) e980() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope979, x6, x9.pos, p.pos)
@@ -142687,7 +142843,7 @@ func (p *parser) e980() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -142734,7 +142890,7 @@ func (p *parser) e981() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -142763,7 +142919,7 @@ func (p *parser) e981() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x2 = append(x2, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -142807,7 +142963,7 @@ func (p *parser) e981() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -142837,7 +142993,7 @@ L8:
 	}
 	p.setCapture(1, v10)
 	x2 = append(x2, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -142948,7 +143104,7 @@ func (p *parser) e983() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope982, x6, x9.pos, p.pos)
@@ -142963,7 +143119,7 @@ func (p *parser) e983() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -143104,7 +143260,7 @@ func (p *parser) e983() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope982, x6, x9.pos, p.pos)
@@ -143119,7 +143275,7 @@ func (p *parser) e983() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -143906,7 +144062,7 @@ func (p *parser) e988() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 
 		x10 = p.pos
@@ -143930,7 +144086,7 @@ func (p *parser) e988() (*Node, bool) {
 			p.reset(x14)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -143954,7 +144110,7 @@ func (p *parser) e988() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -143978,7 +144134,7 @@ func (p *parser) e988() (*Node, bool) {
 			p.reset(x33)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 		p.setCaptureOrdinary(3, v37)
 
 		x38 = p.pos
@@ -144002,7 +144158,7 @@ func (p *parser) e988() (*Node, bool) {
 			p.reset(x42)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 		p.setCaptureOrdinary(4, v46)
 
 		x47 = p.pos
@@ -144170,7 +144326,7 @@ func (p *parser) e988() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	p.stepWork()
 	x10 = p.pos
@@ -144194,7 +144350,7 @@ func (p *parser) e988() (*Node, bool) {
 		p.reset(x14)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -144218,7 +144374,7 @@ func (p *parser) e988() (*Node, bool) {
 		p.reset(x24)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -144242,7 +144398,7 @@ func (p *parser) e988() (*Node, bool) {
 		p.reset(x33)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 	p.setCapture(3, v37)
 	p.stepWork()
 	x38 = p.pos
@@ -144266,7 +144422,7 @@ func (p *parser) e988() (*Node, bool) {
 		p.reset(x42)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 	p.setCapture(4, v46)
 	p.stepWork()
 	x47 = p.pos
@@ -144448,7 +144604,7 @@ func (p *parser) e990() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -144481,7 +144637,7 @@ func (p *parser) e990() (*Node, bool) {
 		if _, ok = p.call(recRules[374], 0); !ok {
 			goto fail_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -144525,7 +144681,7 @@ func (p *parser) e990() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -144560,7 +144716,7 @@ L8:
 	if _, ok = p.call(recRules[374], 0); !ok {
 		goto fail
 	}
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -144592,14 +144748,14 @@ func (p *parser) e991() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v5)
 		x2 = append(x2, v5)
 
 		if _, ok = p.call(recRules[374], 0); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v6, true
 	fail_ordinary:
 		return nil, false
@@ -144628,7 +144784,7 @@ func (p *parser) e991() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 	p.setCapture(0, v5)
 	x2 = append(x2, v5)
 	p.stepWork()
@@ -144636,7 +144792,7 @@ func (p *parser) e991() (*Node, bool) {
 	if _, ok = p.call(recRules[374], 0); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v6 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v6, true
 fail:
 	return nil, false
@@ -144728,7 +144884,7 @@ func (p *parser) e993() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 			goto L5_ordinary
 		}
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 		x8 = append(x8, v10)
 
 		x11 = p.mark()
@@ -144772,7 +144928,7 @@ func (p *parser) e993() (*Node, bool) {
 		if _, ok = p.call(recRules[374], 0); !ok {
 			goto L16_ordinary
 		}
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 		v14 = v22
 		goto L15_ordinary
@@ -144798,13 +144954,13 @@ func (p *parser) e993() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L26_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x28 = append(x28, v30)
 
 		if _, ok = p.q338(); !ok {
 			goto L26_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 		v14 = v32
 		goto L15_ordinary
@@ -144851,7 +145007,7 @@ func (p *parser) e993() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L47_ordinary
 			}
-			v52 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v52 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x50 = append(x50, v52)
 
 			x53 = p.mark()
@@ -144880,7 +145036,7 @@ func (p *parser) e993() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v56)
 			x50 = append(x50, v56)
-			v57 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v57 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 			v46 = v58
 			goto L48_ordinary
@@ -144893,7 +145049,7 @@ func (p *parser) e993() (*Node, bool) {
 			if _, ok = p.call(recRules[374], 0); !ok {
 				goto L40_ordinary
 			}
-			v59 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+			v59 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 			v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 			p.frame = x37
 			v61 = p.attachCaptures(v60, scope992, x36, x39.pos, p.pos)
@@ -144908,7 +145064,7 @@ func (p *parser) e993() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 		p.setCaptureOrdinary(1, v62)
 		x8 = append(x8, v62)
 
@@ -144938,7 +145094,7 @@ func (p *parser) e993() (*Node, bool) {
 		p.expectOrdinary(x64, msgBit|85)
 		goto L5_ordinary
 	L67_ordinary:
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 		v4 = v69
 		goto L6_ordinary
@@ -144963,7 +145119,7 @@ func (p *parser) e993() (*Node, bool) {
 		v71 = nil
 	L73_ordinary:
 		x2 = append(x2, v71)
-		v76 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v76 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v76, true
 	}
 
@@ -145051,7 +145207,7 @@ func (p *parser) e993() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 		goto L5
 	}
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 	x8 = append(x8, v10)
 	p.stepWork()
 	x11 = p.mark()
@@ -145097,7 +145253,7 @@ L12:
 	if _, ok = p.call(recRules[374], 0); !ok {
 		goto L16
 	}
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 	v14 = v22
 	goto L15
@@ -145123,14 +145279,14 @@ L16:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L26
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x28 = append(x28, v30)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q338(); !ok {
 		goto L26
 	}
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 	v14 = v32
 	goto L15
@@ -145178,7 +145334,7 @@ L15:
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L47
 		}
-		v52 = p.newNode(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v52 = p.newNode(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x50 = append(x50, v52)
 		p.stepWork()
 		x53 = p.mark()
@@ -145208,7 +145364,7 @@ L15:
 		}
 		p.setCapture(1, v56)
 		x50 = append(x50, v56)
-		v57 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v57 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 		v46 = v58
 		goto L48
@@ -145222,7 +145378,7 @@ L15:
 		if _, ok = p.call(recRules[374], 0); !ok {
 			goto L40
 		}
-		v59 = p.newNode(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+		v59 = p.newNode(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 		v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 		p.frame = x37
 		v61 = p.attachCaptures(v60, scope992, x36, x39.pos, p.pos)
@@ -145237,7 +145393,7 @@ L15:
 		p.reset(x39)
 		break
 	}
-	v62 = p.newNode(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+	v62 = p.newNode(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 	p.setCapture(1, v62)
 	x8 = append(x8, v62)
 	p.stepWork()
@@ -145267,7 +145423,7 @@ L66:
 	p.expect(x64, msgBit|85)
 	goto L5
 L67:
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 	v4 = v69
 	goto L6
@@ -145292,7 +145448,7 @@ L72:
 	v71 = nil
 L73:
 	x2 = append(x2, v71)
-	v76 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v76 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v76, true
 }
 
@@ -145693,13 +145849,13 @@ func (p *parser) e997() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L9_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x11 = append(x11, v13)
 
 		if _, ok = p.q338(); !ok {
 			goto L9_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 		v4 = v15
 		goto L5_ordinary
@@ -145731,7 +145887,7 @@ func (p *parser) e997() (*Node, bool) {
 		goto fail_ordinary
 	L5_ordinary:
 		x2 = append(x2, v4)
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v21, true
 	fail_ordinary:
 		return nil, false
@@ -145786,14 +145942,14 @@ func (p *parser) e997() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L9
 	}
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x11 = append(x11, v13)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q338(); !ok {
 		goto L9
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 	v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 	v4 = v15
 	goto L5
@@ -145825,7 +145981,7 @@ L16:
 	goto fail
 L5:
 	x2 = append(x2, v4)
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v21, true
 fail:
 	return nil, false
@@ -145943,7 +146099,7 @@ func (p *parser) e1000() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope999, x21, x24.pos, p.pos)
@@ -145962,7 +146118,7 @@ func (p *parser) e1000() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -145980,7 +146136,7 @@ func (p *parser) e1000() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -145988,7 +146144,7 @@ func (p *parser) e1000() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -146010,10 +146166,10 @@ func (p *parser) e1000() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -146035,7 +146191,7 @@ func (p *parser) e1000() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -146155,7 +146311,7 @@ func (p *parser) e1000() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope999, x21, x24.pos, p.pos)
@@ -146174,7 +146330,7 @@ func (p *parser) e1000() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -146194,7 +146350,7 @@ func (p *parser) e1000() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -146202,7 +146358,7 @@ func (p *parser) e1000() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -146225,10 +146381,10 @@ func (p *parser) e1000() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -146250,7 +146406,7 @@ func (p *parser) e1000() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -146369,7 +146525,7 @@ func (p *parser) e1003() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1002, x21, x24.pos, p.pos)
@@ -146388,7 +146544,7 @@ func (p *parser) e1003() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -146406,7 +146562,7 @@ func (p *parser) e1003() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -146414,7 +146570,7 @@ func (p *parser) e1003() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -146436,10 +146592,10 @@ func (p *parser) e1003() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -146461,7 +146617,7 @@ func (p *parser) e1003() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -146581,7 +146737,7 @@ func (p *parser) e1003() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1002, x21, x24.pos, p.pos)
@@ -146600,7 +146756,7 @@ func (p *parser) e1003() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -146620,7 +146776,7 @@ func (p *parser) e1003() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -146628,7 +146784,7 @@ func (p *parser) e1003() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -146651,10 +146807,10 @@ func (p *parser) e1003() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -146676,7 +146832,7 @@ func (p *parser) e1003() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -147524,7 +147680,7 @@ func (p *parser) e1013() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v19)
 			x13 = append(x13, v19)
-			v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v21 = p.scopeValue(shaper{elems: true, k: 4, mode: 2, tuple: true}, v20, x10.pos)
 			p.frame = x7
 			v22 = p.attachCaptures(v21, scope1012, x6, x10.pos, p.pos)
@@ -147539,7 +147695,7 @@ func (p *parser) e1013() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v23 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v23)
 		return nil, true
 	fail_ordinary:
@@ -147640,7 +147796,7 @@ func (p *parser) e1013() (*Node, bool) {
 		}
 		p.setCapture(1, v19)
 		x13 = append(x13, v19)
-		v20 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v20 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v21 = p.scopeValue(shaper{elems: true, k: 4, mode: 2, tuple: true}, v20, x10.pos)
 		p.frame = x7
 		v22 = p.attachCaptures(v21, scope1012, x6, x10.pos, p.pos)
@@ -147655,7 +147811,7 @@ func (p *parser) e1013() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v23 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v23 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v23)
 	return nil, true
 fail:
@@ -147931,7 +148087,7 @@ func (p *parser) e1015() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 
 		x10 = p.pos
@@ -147955,7 +148111,7 @@ func (p *parser) e1015() (*Node, bool) {
 			p.reset(x14)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -147979,7 +148135,7 @@ func (p *parser) e1015() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -148003,7 +148159,7 @@ func (p *parser) e1015() (*Node, bool) {
 			p.reset(x33)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 		p.setCaptureOrdinary(3, v37)
 
 		x38 = p.pos
@@ -148027,7 +148183,7 @@ func (p *parser) e1015() (*Node, bool) {
 			p.reset(x42)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 		p.setCaptureOrdinary(4, v46)
 
 		x47 = p.pos
@@ -148195,7 +148351,7 @@ func (p *parser) e1015() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	p.stepWork()
 	x10 = p.pos
@@ -148219,7 +148375,7 @@ func (p *parser) e1015() (*Node, bool) {
 		p.reset(x14)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -148243,7 +148399,7 @@ func (p *parser) e1015() (*Node, bool) {
 		p.reset(x24)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x20), End: int32(p.pos), Children: p.kids(x21), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x20), end: int32(p.pos), children: p.kids(x21), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -148267,7 +148423,7 @@ func (p *parser) e1015() (*Node, bool) {
 		p.reset(x33)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x30), End: int32(p.pos), Children: p.kids(x31), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x30), end: int32(p.pos), children: p.kids(x31), fresh: true})
 	p.setCapture(3, v37)
 	p.stepWork()
 	x38 = p.pos
@@ -148291,7 +148447,7 @@ func (p *parser) e1015() (*Node, bool) {
 		p.reset(x42)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x39), End: int32(p.pos), Children: p.kids(x40), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x39), end: int32(p.pos), children: p.kids(x40), fresh: true})
 	p.setCapture(4, v46)
 	p.stepWork()
 	x47 = p.pos
@@ -148473,7 +148629,7 @@ func (p *parser) e1017() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v6)
 
 		x7 = p.mark()
@@ -148506,7 +148662,7 @@ func (p *parser) e1017() (*Node, bool) {
 		if _, ok = p.call(recRules[376], 0); !ok {
 			goto fail_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -148550,7 +148706,7 @@ func (p *parser) e1017() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindMatch, Start: int32(x5), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v6 = p.newNode(Node{kind: kindMatch, start: int32(x5), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v6)
 	p.stepWork()
 	x7 = p.mark()
@@ -148585,7 +148741,7 @@ L8:
 	if _, ok = p.call(recRules[376], 0); !ok {
 		goto fail
 	}
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v11, true
 fail:
 	return nil, false
@@ -148617,14 +148773,14 @@ func (p *parser) e1018() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v5)
 		x2 = append(x2, v5)
 
 		if _, ok = p.call(recRules[376], 0); !ok {
 			goto fail_ordinary
 		}
-		v6 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v6 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v6, true
 	fail_ordinary:
 		return nil, false
@@ -148653,7 +148809,7 @@ func (p *parser) e1018() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit243, "/", 83, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "/", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "/", terminal: true, fresh: true})
 	p.setCapture(0, v5)
 	x2 = append(x2, v5)
 	p.stepWork()
@@ -148661,7 +148817,7 @@ func (p *parser) e1018() (*Node, bool) {
 	if _, ok = p.call(recRules[376], 0); !ok {
 		goto fail
 	}
-	v6 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v6 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v6, true
 fail:
 	return nil, false
@@ -148753,7 +148909,7 @@ func (p *parser) e1020() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 			goto L5_ordinary
 		}
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 		x8 = append(x8, v10)
 
 		x11 = p.mark()
@@ -148797,7 +148953,7 @@ func (p *parser) e1020() (*Node, bool) {
 		if _, ok = p.call(recRules[376], 0); !ok {
 			goto L16_ordinary
 		}
-		v21 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 		v14 = v22
 		goto L15_ordinary
@@ -148823,13 +148979,13 @@ func (p *parser) e1020() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L26_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x28 = append(x28, v30)
 
 		if _, ok = p.q338(); !ok {
 			goto L26_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 		v14 = v32
 		goto L15_ordinary
@@ -148876,7 +149032,7 @@ func (p *parser) e1020() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 				goto L47_ordinary
 			}
-			v52 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+			v52 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 			x50 = append(x50, v52)
 
 			x53 = p.mark()
@@ -148905,7 +149061,7 @@ func (p *parser) e1020() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(1, v56)
 			x50 = append(x50, v56)
-			v57 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v57 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 			v46 = v58
 			goto L48_ordinary
@@ -148918,7 +149074,7 @@ func (p *parser) e1020() (*Node, bool) {
 			if _, ok = p.call(recRules[376], 0); !ok {
 				goto L40_ordinary
 			}
-			v59 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+			v59 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 			v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 			p.frame = x37
 			v61 = p.attachCaptures(v60, scope1019, x36, x39.pos, p.pos)
@@ -148933,7 +149089,7 @@ func (p *parser) e1020() (*Node, bool) {
 			p.reset(x39)
 			break
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 		p.setCaptureOrdinary(1, v62)
 		x8 = append(x8, v62)
 
@@ -148963,7 +149119,7 @@ func (p *parser) e1020() (*Node, bool) {
 		p.expectOrdinary(x64, msgBit|85)
 		goto L5_ordinary
 	L67_ordinary:
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 		v4 = v69
 		goto L6_ordinary
@@ -148988,7 +149144,7 @@ func (p *parser) e1020() (*Node, bool) {
 		v71 = nil
 	L73_ordinary:
 		x2 = append(x2, v71)
-		v76 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v76 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v76, true
 	}
 
@@ -149076,7 +149232,7 @@ func (p *parser) e1020() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit107, "*", 52, false); !ok {
 		goto L5
 	}
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: "*", terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: "*", terminal: true, fresh: true})
 	x8 = append(x8, v10)
 	p.stepWork()
 	x11 = p.mark()
@@ -149122,7 +149278,7 @@ L12:
 	if _, ok = p.call(recRules[376], 0); !ok {
 		goto L16
 	}
-	v21 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v21 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v22, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13.pos)
 	v14 = v22
 	goto L15
@@ -149148,14 +149304,14 @@ L16:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L26
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x28 = append(x28, v30)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q338(); !ok {
 		goto L26
 	}
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x13.pos)
 	v14 = v32
 	goto L15
@@ -149203,7 +149359,7 @@ L15:
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto L47
 		}
-		v52 = p.newNode(Node{kind: kindMatch, Start: int32(x51), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v52 = p.newNode(Node{kind: kindMatch, start: int32(x51), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x50 = append(x50, v52)
 		p.stepWork()
 		x53 = p.mark()
@@ -149233,7 +149389,7 @@ L15:
 		}
 		p.setCapture(1, v56)
 		x50 = append(x50, v56)
-		v57 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v57 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v58, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v57, x45.pos)
 		v46 = v58
 		goto L48
@@ -149247,7 +149403,7 @@ L15:
 		if _, ok = p.call(recRules[376], 0); !ok {
 			goto L40
 		}
-		v59 = p.newNode(Node{kind: kindSeq, Start: int32(x41), End: int32(p.pos), Children: x42, fresh: true})
+		v59 = p.newNode(Node{kind: kindSeq, start: int32(x41), end: int32(p.pos), children: x42, fresh: true})
 		v60 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v59, x39.pos)
 		p.frame = x37
 		v61 = p.attachCaptures(v60, scope1019, x36, x39.pos, p.pos)
@@ -149262,7 +149418,7 @@ L15:
 		p.reset(x39)
 		break
 	}
-	v62 = p.newNode(Node{kind: kindList, Start: int32(x34), End: int32(p.pos), Children: p.kids(x35), fresh: true})
+	v62 = p.newNode(Node{kind: kindList, start: int32(x34), end: int32(p.pos), children: p.kids(x35), fresh: true})
 	p.setCapture(1, v62)
 	x8 = append(x8, v62)
 	p.stepWork()
@@ -149292,7 +149448,7 @@ L66:
 	p.expect(x64, msgBit|85)
 	goto L5
 L67:
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v68, x3.pos)
 	v4 = v69
 	goto L6
@@ -149317,7 +149473,7 @@ L72:
 	v71 = nil
 L73:
 	x2 = append(x2, v71)
-	v76 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v76 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v76, true
 }
 
@@ -149486,13 +149642,13 @@ func (p *parser) e1023() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L9_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x11 = append(x11, v13)
 
 		if _, ok = p.q338(); !ok {
 			goto L9_ordinary
 		}
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 		v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 		v4 = v15
 		goto L5_ordinary
@@ -149539,7 +149695,7 @@ func (p *parser) e1023() (*Node, bool) {
 		goto fail_ordinary
 	L5_ordinary:
 		x2 = append(x2, v4)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v23, true
 	fail_ordinary:
 		return nil, false
@@ -149595,14 +149751,14 @@ func (p *parser) e1023() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L9
 	}
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x11 = append(x11, v13)
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q338(); !ok {
 		goto L9
 	}
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x10), End: int32(p.pos), Children: x11, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x10), end: int32(p.pos), children: x11, fresh: true})
 	v15, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x3.pos)
 	v4 = v15
 	goto L5
@@ -149650,7 +149806,7 @@ L16:
 	goto fail
 L5:
 	x2 = append(x2, v4)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v23, true
 fail:
 	return nil, false
@@ -150031,7 +150187,7 @@ func (p *parser) e1029() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1028, x21, x24.pos, p.pos)
@@ -150046,10 +150202,10 @@ func (p *parser) e1029() (*Node, bool) {
 				p.reset(x24)
 				break
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(2, v33)
 			x13 = append(x13, v33)
-			v34 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v34 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 			p.frame = x7
 			v36 = p.attachCaptures(v35, scope1027, x6, x10.pos, p.pos)
@@ -150064,7 +150220,7 @@ func (p *parser) e1029() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v37)
 		return nil, true
 	fail_ordinary:
@@ -150194,7 +150350,7 @@ func (p *parser) e1029() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1028, x21, x24.pos, p.pos)
@@ -150209,10 +150365,10 @@ func (p *parser) e1029() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(2, v33)
 		x13 = append(x13, v33)
-		v34 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v34 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 		p.frame = x7
 		v36 = p.attachCaptures(v35, scope1027, x6, x10.pos, p.pos)
@@ -150227,7 +150383,7 @@ func (p *parser) e1029() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v37)
 	return nil, true
 fail:
@@ -150354,7 +150510,7 @@ func (p *parser) e1032() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1031, x21, x24.pos, p.pos)
@@ -150369,10 +150525,10 @@ func (p *parser) e1032() (*Node, bool) {
 				p.reset(x24)
 				break
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(2, v33)
 			x13 = append(x13, v33)
-			v34 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+			v34 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 			p.frame = x7
 			v36 = p.attachCaptures(v35, scope1030, x6, x10.pos, p.pos)
@@ -150387,7 +150543,7 @@ func (p *parser) e1032() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v37)
 		return nil, true
 	fail_ordinary:
@@ -150517,7 +150673,7 @@ func (p *parser) e1032() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1031, x21, x24.pos, p.pos)
@@ -150532,10 +150688,10 @@ func (p *parser) e1032() (*Node, bool) {
 			p.reset(x24)
 			break
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(2, v33)
 		x13 = append(x13, v33)
-		v34 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v34 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v35 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v34, x10.pos)
 		p.frame = x7
 		v36 = p.attachCaptures(v35, scope1030, x6, x10.pos, p.pos)
@@ -150550,7 +150706,7 @@ func (p *parser) e1032() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v37 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v37 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v37)
 	return nil, true
 fail:
@@ -150999,7 +151155,7 @@ func (p *parser) e1040() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(1, v25)
 				x21 = append(x21, v25)
-				v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+				v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 				v27 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v26, x18.pos)
 				p.frame = x16
 				v28 = p.attachCaptures(v27, scope1039, x15, x18.pos, p.pos)
@@ -151018,7 +151174,7 @@ func (p *parser) e1040() (*Node, bool) {
 				p.dropKids(x14)
 				goto L11_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 			p.setCaptureOrdinary(0, v29)
 			v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 			p.frame = x7
@@ -151034,7 +151190,7 @@ func (p *parser) e1040() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v32 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v32)
 		return nil, true
 	fail_ordinary:
@@ -151133,7 +151289,7 @@ func (p *parser) e1040() (*Node, bool) {
 			}
 			p.setCapture(1, v25)
 			x21 = append(x21, v25)
-			v26 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v26 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v27 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v26, x18.pos)
 			p.frame = x16
 			v28 = p.attachCaptures(v27, scope1039, x15, x18.pos, p.pos)
@@ -151152,7 +151308,7 @@ func (p *parser) e1040() (*Node, bool) {
 			p.dropKids(x14)
 			goto L11
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x13), End: int32(p.pos), Children: p.kids(x14), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x13), end: int32(p.pos), children: p.kids(x14), fresh: true})
 		p.setCapture(0, v29)
 		v30 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v29, x10.pos)
 		p.frame = x7
@@ -151168,7 +151324,7 @@ func (p *parser) e1040() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v32 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v32 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v32)
 	return nil, true
 fail:
@@ -152247,7 +152403,7 @@ func (p *parser) e1048() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit100, "(", 35, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "(", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "(", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		if !p.predicate(func(c *actx) any {
@@ -152305,7 +152461,7 @@ func (p *parser) e1048() (*Node, bool) {
 			if _, ok = p.call(recRules[379], 0); !ok {
 				goto L12_ordinary
 			}
-			v17 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 			p.frame = x9
 			v19 = p.attachCaptures(v18, scope1045, x8, x11.pos, p.pos)
@@ -152320,7 +152476,7 @@ func (p *parser) e1048() (*Node, bool) {
 			p.reset(x11)
 			break
 		}
-		v20 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 		p.setCaptureOrdinary(0, v20)
 		x2 = append(x2, v20)
 
@@ -152378,7 +152534,7 @@ func (p *parser) e1048() (*Node, bool) {
 			if _, ok = p.call(recRules[379], 0); !ok {
 				goto L28_ordinary
 			}
-			v43 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x29), End: int32(p.pos), Children: x30, fresh: true})
+			v43 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x29), end: int32(p.pos), children: x30, fresh: true})
 			v44 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v43, x27.pos)
 			p.frame = x25
 			v45 = p.attachCaptures(v44, scope1046, x24, x27.pos, p.pos)
@@ -152393,7 +152549,7 @@ func (p *parser) e1048() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v46 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x22), End: int32(p.pos), Children: p.kids(x23), fresh: true})
+		v46 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x22), end: int32(p.pos), children: p.kids(x23), fresh: true})
 		p.setCaptureOrdinary(1, v46)
 		x2 = append(x2, v46)
 
@@ -152448,7 +152604,7 @@ func (p *parser) e1048() (*Node, bool) {
 			if _, ok = p.call(recRules[379], 0); !ok {
 				goto L54_ordinary
 			}
-			v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x55), End: int32(p.pos), Children: x56, fresh: true})
+			v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x55), end: int32(p.pos), children: x56, fresh: true})
 			v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x53.pos)
 			p.frame = x51
 			v70 = p.attachCaptures(v69, scope1047, x50, x53.pos, p.pos)
@@ -152463,7 +152619,7 @@ func (p *parser) e1048() (*Node, bool) {
 			p.reset(x53)
 			break
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x48), End: int32(p.pos), Children: p.kids(x49), fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x48), end: int32(p.pos), children: p.kids(x49), fresh: true})
 		p.setCaptureOrdinary(2, v71)
 		x2 = append(x2, v71)
 
@@ -152473,9 +152629,9 @@ func (p *parser) e1048() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit102, ")", 53, false); !ok {
 			goto fail_ordinary
 		}
-		v73 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x72), End: int32(p.pos), Text: ")", terminal: true, fresh: true})
+		v73 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x72), end: int32(p.pos), text: ")", terminal: true, fresh: true})
 		x2 = append(x2, v73)
-		v74 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v74 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v74, true
 	fail_ordinary:
 		return nil, false
@@ -152559,7 +152715,7 @@ func (p *parser) e1048() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit100, "(", 35, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "(", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "(", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	if !p.predicate(func(c *actx) any {
@@ -152619,7 +152775,7 @@ func (p *parser) e1048() (*Node, bool) {
 		if _, ok = p.call(recRules[379], 0); !ok {
 			goto L12
 		}
-		v17 = p.newNode(Node{kind: kindSeq, Start: int32(x13), End: int32(p.pos), Children: x14, fresh: true})
+		v17 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x11.pos)
 		p.frame = x9
 		v19 = p.attachCaptures(v18, scope1045, x8, x11.pos, p.pos)
@@ -152634,7 +152790,7 @@ func (p *parser) e1048() (*Node, bool) {
 		p.reset(x11)
 		break
 	}
-	v20 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+	v20 = p.newNode(Node{kind: kindList, start: int32(x6), end: int32(p.pos), children: p.kids(x7), fresh: true})
 	p.setCapture(0, v20)
 	x2 = append(x2, v20)
 	p.stepWork()
@@ -152693,7 +152849,7 @@ func (p *parser) e1048() (*Node, bool) {
 		if _, ok = p.call(recRules[379], 0); !ok {
 			goto L28
 		}
-		v43 = p.newNode(Node{kind: kindSeq, Start: int32(x29), End: int32(p.pos), Children: x30, fresh: true})
+		v43 = p.newNode(Node{kind: kindSeq, start: int32(x29), end: int32(p.pos), children: x30, fresh: true})
 		v44 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v43, x27.pos)
 		p.frame = x25
 		v45 = p.attachCaptures(v44, scope1046, x24, x27.pos, p.pos)
@@ -152708,7 +152864,7 @@ func (p *parser) e1048() (*Node, bool) {
 		p.reset(x27)
 		break
 	}
-	v46 = p.newNode(Node{kind: kindList, Start: int32(x22), End: int32(p.pos), Children: p.kids(x23), fresh: true})
+	v46 = p.newNode(Node{kind: kindList, start: int32(x22), end: int32(p.pos), children: p.kids(x23), fresh: true})
 	p.setCapture(1, v46)
 	x2 = append(x2, v46)
 	p.stepWork()
@@ -152764,7 +152920,7 @@ func (p *parser) e1048() (*Node, bool) {
 		if _, ok = p.call(recRules[379], 0); !ok {
 			goto L54
 		}
-		v68 = p.newNode(Node{kind: kindSeq, Start: int32(x55), End: int32(p.pos), Children: x56, fresh: true})
+		v68 = p.newNode(Node{kind: kindSeq, start: int32(x55), end: int32(p.pos), children: x56, fresh: true})
 		v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x53.pos)
 		p.frame = x51
 		v70 = p.attachCaptures(v69, scope1047, x50, x53.pos, p.pos)
@@ -152779,7 +152935,7 @@ func (p *parser) e1048() (*Node, bool) {
 		p.reset(x53)
 		break
 	}
-	v71 = p.newNode(Node{kind: kindList, Start: int32(x48), End: int32(p.pos), Children: p.kids(x49), fresh: true})
+	v71 = p.newNode(Node{kind: kindList, start: int32(x48), end: int32(p.pos), children: p.kids(x49), fresh: true})
 	p.setCapture(2, v71)
 	x2 = append(x2, v71)
 	p.stepWork()
@@ -152789,9 +152945,9 @@ func (p *parser) e1048() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit102, ")", 53, false); !ok {
 		goto fail
 	}
-	v73 = p.newNode(Node{kind: kindMatch, Start: int32(x72), End: int32(p.pos), Text: ")", terminal: true, fresh: true})
+	v73 = p.newNode(Node{kind: kindMatch, start: int32(x72), end: int32(p.pos), text: ")", terminal: true, fresh: true})
 	x2 = append(x2, v73)
-	v74 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v74 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v74, true
 fail:
 	return nil, false
@@ -153740,7 +153896,7 @@ func (p *parser) e1059() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1058, x6, x9.pos, p.pos)
@@ -153755,7 +153911,7 @@ func (p *parser) e1059() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -153847,7 +154003,7 @@ func (p *parser) e1059() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1058, x6, x9.pos, p.pos)
@@ -153862,7 +154018,7 @@ func (p *parser) e1059() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -154000,7 +154156,7 @@ func (p *parser) e1062() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1061, x21, x24.pos, p.pos)
@@ -154019,7 +154175,7 @@ func (p *parser) e1062() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -154037,7 +154193,7 @@ func (p *parser) e1062() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -154045,7 +154201,7 @@ func (p *parser) e1062() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -154067,10 +154223,10 @@ func (p *parser) e1062() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -154092,7 +154248,7 @@ func (p *parser) e1062() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -154212,7 +154368,7 @@ func (p *parser) e1062() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1061, x21, x24.pos, p.pos)
@@ -154231,7 +154387,7 @@ func (p *parser) e1062() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -154251,7 +154407,7 @@ func (p *parser) e1062() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -154259,7 +154415,7 @@ func (p *parser) e1062() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -154282,10 +154438,10 @@ func (p *parser) e1062() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -154307,7 +154463,7 @@ func (p *parser) e1062() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -154797,7 +154953,7 @@ func (p *parser) e1067() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1066, x6, x9.pos, p.pos)
@@ -154812,7 +154968,7 @@ func (p *parser) e1067() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 		return nil, true
 	fail_ordinary:
@@ -154875,7 +155031,7 @@ func (p *parser) e1067() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1066, x6, x9.pos, p.pos)
@@ -154890,7 +155046,7 @@ func (p *parser) e1067() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	return nil, true
 fail:
@@ -154949,7 +155105,7 @@ func (p *parser) e1069() (*Node, bool) {
 		if _, ok = p.q338(); !ok {
 			goto L4_ordinary
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x6), End: int32(p.pos), Children: x7, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x6), end: int32(p.pos), children: x7, fresh: true})
 		v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x2.pos)
 		v3 = v10
 		goto L5_ordinary
@@ -155026,7 +155182,7 @@ func (p *parser) e1069() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v27)
 			x24 = append(x24, v27)
-			v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+			v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 			v29 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v28, x21.pos)
 			p.frame = x19
 			v30 = p.attachCaptures(v29, scope1068, x18, x21.pos, p.pos)
@@ -155041,7 +155197,7 @@ func (p *parser) e1069() (*Node, bool) {
 			p.reset(x21)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 		p.setCaptureOrdinary(3, v31)
 		return nil, true
 	fail_ordinary:
@@ -155099,7 +155255,7 @@ func (p *parser) e1069() (*Node, bool) {
 	if _, ok = p.q338(); !ok {
 		goto L4
 	}
-	v9 = p.newNode(Node{kind: kindSeq, Start: int32(x6), End: int32(p.pos), Children: x7, fresh: true})
+	v9 = p.newNode(Node{kind: kindSeq, start: int32(x6), end: int32(p.pos), children: x7, fresh: true})
 	v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x2.pos)
 	v3 = v10
 	goto L5
@@ -155181,7 +155337,7 @@ L5:
 		}
 		p.setCapture(0, v27)
 		x24 = append(x24, v27)
-		v28 = p.newNode(Node{kind: kindSeq, Start: int32(x23), End: int32(p.pos), Children: x24, fresh: true})
+		v28 = p.newNode(Node{kind: kindSeq, start: int32(x23), end: int32(p.pos), children: x24, fresh: true})
 		v29 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v28, x21.pos)
 		p.frame = x19
 		v30 = p.attachCaptures(v29, scope1068, x18, x21.pos, p.pos)
@@ -155196,7 +155352,7 @@ L5:
 		p.reset(x21)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 	p.setCapture(3, v31)
 	return nil, true
 fail:
@@ -155974,7 +156130,7 @@ func (p *parser) e1075() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1074, x6, x9.pos, p.pos)
@@ -155989,7 +156145,7 @@ func (p *parser) e1075() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -156009,9 +156165,9 @@ func (p *parser) e1075() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L22_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x25 = append(x25, v27)
-		v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 		v21 = v29
 		goto L23_ordinary
@@ -156167,7 +156323,7 @@ func (p *parser) e1075() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1074, x6, x9.pos, p.pos)
@@ -156182,7 +156338,7 @@ func (p *parser) e1075() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -156203,9 +156359,9 @@ func (p *parser) e1075() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L22
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x25 = append(x25, v27)
-	v28 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v28 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 	v21 = v29
 	goto L23
@@ -156412,7 +156568,7 @@ func (p *parser) e1079() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1077, x21, x24.pos, p.pos)
@@ -156431,7 +156587,7 @@ func (p *parser) e1079() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -156449,7 +156605,7 @@ func (p *parser) e1079() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -156457,7 +156613,7 @@ func (p *parser) e1079() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -156479,10 +156635,10 @@ func (p *parser) e1079() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -156504,7 +156660,7 @@ func (p *parser) e1079() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 
 		x55 = p.pos
@@ -156531,7 +156687,7 @@ func (p *parser) e1079() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v67)
 			x65 = append(x65, v67)
-			v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x64), End: int32(p.pos), Children: x65, fresh: true})
+			v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x64), end: int32(p.pos), children: x65, fresh: true})
 			v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x62.pos)
 			p.frame = x59
 			v70 = p.attachCaptures(v69, scope1078, x58, x62.pos, p.pos)
@@ -156546,7 +156702,7 @@ func (p *parser) e1079() (*Node, bool) {
 			p.reset(x62)
 			break
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		p.setCaptureOrdinary(2, v71)
 
 		if _, ok = p.q338(); !ok {
@@ -156742,7 +156898,7 @@ func (p *parser) e1079() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1077, x21, x24.pos, p.pos)
@@ -156761,7 +156917,7 @@ func (p *parser) e1079() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -156781,7 +156937,7 @@ func (p *parser) e1079() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -156789,7 +156945,7 @@ func (p *parser) e1079() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -156812,10 +156968,10 @@ func (p *parser) e1079() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -156837,7 +156993,7 @@ func (p *parser) e1079() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	p.stepWork()
 	x55 = p.pos
@@ -156865,7 +157021,7 @@ func (p *parser) e1079() (*Node, bool) {
 		}
 		p.setCapture(0, v67)
 		x65 = append(x65, v67)
-		v68 = p.newNode(Node{kind: kindSeq, Start: int32(x64), End: int32(p.pos), Children: x65, fresh: true})
+		v68 = p.newNode(Node{kind: kindSeq, start: int32(x64), end: int32(p.pos), children: x65, fresh: true})
 		v69 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v68, x62.pos)
 		p.frame = x59
 		v70 = p.attachCaptures(v69, scope1078, x58, x62.pos, p.pos)
@@ -156880,7 +157036,7 @@ func (p *parser) e1079() (*Node, bool) {
 		p.reset(x62)
 		break
 	}
-	v71 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v71 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	p.setCapture(2, v71)
 	p.stepWork()
 	p.stepWork()
@@ -157289,7 +157445,7 @@ func (p *parser) e1084() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v24)
 			x22 = append(x22, v24)
-			v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x21), End: int32(p.pos), Children: x22, fresh: true})
+			v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x21), end: int32(p.pos), children: x22, fresh: true})
 			v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x19.pos)
 			p.frame = x17
 			v27 = p.attachCaptures(v26, scope1082, x16, x19.pos, p.pos)
@@ -157304,7 +157460,7 @@ func (p *parser) e1084() (*Node, bool) {
 			p.reset(x19)
 			break
 		}
-		v28 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x14), End: int32(p.pos), Children: p.kids(x15), fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x14), end: int32(p.pos), children: p.kids(x15), fresh: true})
 		p.setCaptureOrdinary(2, v28)
 
 		x29 = p.pos
@@ -157324,9 +157480,9 @@ func (p *parser) e1084() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L32_ordinary
 		}
-		v37 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v37 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x35 = append(x35, v37)
-		v38 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+		v38 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 		v39, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30.pos)
 		v31 = v39
 		goto L33_ordinary
@@ -157360,7 +157516,7 @@ func (p *parser) e1084() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v52)
 			x50 = append(x50, v52)
-			v53 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+			v53 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 			v54 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v53, x47.pos)
 			p.frame = x44
 			v55 = p.attachCaptures(v54, scope1083, x43, x47.pos, p.pos)
@@ -157375,7 +157531,7 @@ func (p *parser) e1084() (*Node, bool) {
 			p.reset(x47)
 			break
 		}
-		v56 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+		v56 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 		p.setCaptureOrdinary(4, v56)
 
 		if _, ok = p.q338(); !ok {
@@ -157592,7 +157748,7 @@ L4:
 		}
 		p.setCapture(0, v24)
 		x22 = append(x22, v24)
-		v25 = p.newNode(Node{kind: kindSeq, Start: int32(x21), End: int32(p.pos), Children: x22, fresh: true})
+		v25 = p.newNode(Node{kind: kindSeq, start: int32(x21), end: int32(p.pos), children: x22, fresh: true})
 		v26 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v25, x19.pos)
 		p.frame = x17
 		v27 = p.attachCaptures(v26, scope1082, x16, x19.pos, p.pos)
@@ -157607,7 +157763,7 @@ L4:
 		p.reset(x19)
 		break
 	}
-	v28 = p.newNode(Node{kind: kindList, Start: int32(x14), End: int32(p.pos), Children: p.kids(x15), fresh: true})
+	v28 = p.newNode(Node{kind: kindList, start: int32(x14), end: int32(p.pos), children: p.kids(x15), fresh: true})
 	p.setCapture(2, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -157628,9 +157784,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L32
 	}
-	v37 = p.newNode(Node{kind: kindMatch, Start: int32(x36), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v37 = p.newNode(Node{kind: kindMatch, start: int32(x36), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x35 = append(x35, v37)
-	v38 = p.newNode(Node{kind: kindSeq, Start: int32(x34), End: int32(p.pos), Children: x35, fresh: true})
+	v38 = p.newNode(Node{kind: kindSeq, start: int32(x34), end: int32(p.pos), children: x35, fresh: true})
 	v39, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30.pos)
 	v31 = v39
 	goto L33
@@ -157665,7 +157821,7 @@ L33:
 		}
 		p.setCapture(0, v52)
 		x50 = append(x50, v52)
-		v53 = p.newNode(Node{kind: kindSeq, Start: int32(x49), End: int32(p.pos), Children: x50, fresh: true})
+		v53 = p.newNode(Node{kind: kindSeq, start: int32(x49), end: int32(p.pos), children: x50, fresh: true})
 		v54 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v53, x47.pos)
 		p.frame = x44
 		v55 = p.attachCaptures(v54, scope1083, x43, x47.pos, p.pos)
@@ -157680,7 +157836,7 @@ L33:
 		p.reset(x47)
 		break
 	}
-	v56 = p.newNode(Node{kind: kindList, Start: int32(x41), End: int32(p.pos), Children: p.kids(x42), fresh: true})
+	v56 = p.newNode(Node{kind: kindList, start: int32(x41), end: int32(p.pos), children: p.kids(x42), fresh: true})
 	p.setCapture(4, v56)
 	p.stepWork()
 	p.stepWork()
@@ -158158,7 +158314,7 @@ func (p *parser) e1088() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v23)
 			x21 = append(x21, v23)
-			v24 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+			v24 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 			v25, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v24, x13.pos)
 			v14 = v25
 			goto L15_ordinary
@@ -158213,7 +158369,7 @@ func (p *parser) e1088() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v34)
 			x28 = append(x28, v34)
-			v35 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+			v35 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 			v36, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v35, x13.pos)
 			v14 = v36
 			goto L15_ordinary
@@ -158222,7 +158378,7 @@ func (p *parser) e1088() (*Node, bool) {
 			goto L10_ordinary
 		L15_ordinary:
 			x12 = append(x12, v14)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v38 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x9.pos)
 			p.frame = x7
 			v39 = p.attachCaptures(v38, scope1087, x6, x9.pos, p.pos)
@@ -158237,7 +158393,7 @@ func (p *parser) e1088() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v40 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v40 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v40)
 
 		x41 = p.mark()
@@ -158433,7 +158589,7 @@ func (p *parser) e1088() (*Node, bool) {
 		}
 		p.setCapture(0, v23)
 		x21 = append(x21, v23)
-		v24 = p.newNode(Node{kind: kindSeq, Start: int32(x20), End: int32(p.pos), Children: x21, fresh: true})
+		v24 = p.newNode(Node{kind: kindSeq, start: int32(x20), end: int32(p.pos), children: x21, fresh: true})
 		v25, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v24, x13.pos)
 		v14 = v25
 		goto L15
@@ -158491,7 +158647,7 @@ func (p *parser) e1088() (*Node, bool) {
 		}
 		p.setCapture(0, v34)
 		x28 = append(x28, v34)
-		v35 = p.newNode(Node{kind: kindSeq, Start: int32(x27), End: int32(p.pos), Children: x28, fresh: true})
+		v35 = p.newNode(Node{kind: kindSeq, start: int32(x27), end: int32(p.pos), children: x28, fresh: true})
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v35, x13.pos)
 		v14 = v36
 		goto L15
@@ -158500,7 +158656,7 @@ func (p *parser) e1088() (*Node, bool) {
 		goto L10
 	L15:
 		x12 = append(x12, v14)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v38 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x9.pos)
 		p.frame = x7
 		v39 = p.attachCaptures(v38, scope1087, x6, x9.pos, p.pos)
@@ -158515,7 +158671,7 @@ func (p *parser) e1088() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v40 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v40 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v40)
 	p.stepWork()
 	x41 = p.mark()
@@ -158657,7 +158813,7 @@ func (p *parser) e1090() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1089, x6, x9.pos, p.pos)
@@ -158672,7 +158828,7 @@ func (p *parser) e1090() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -158813,7 +158969,7 @@ func (p *parser) e1090() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1089, x6, x9.pos, p.pos)
@@ -158828,7 +158984,7 @@ func (p *parser) e1090() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -159057,7 +159213,7 @@ func (p *parser) e1095() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 				goto L18_ordinary
 			}
-			v22 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 			x20 = append(x20, v22)
 
 			x23 = p.mark()
@@ -159086,7 +159242,7 @@ func (p *parser) e1095() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v26)
 			x20 = append(x20, v26)
-			v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+			v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 			v28 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x17.pos)
 			p.frame = x14
 			v29 = p.attachCaptures(v28, scope1091, x13, x17.pos, p.pos)
@@ -159101,7 +159257,7 @@ func (p *parser) e1095() (*Node, bool) {
 			p.reset(x17)
 			break
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		p.setCaptureOrdinary(2, v30)
 
 		if !p.assign("isdict", func(c *actx) any {
@@ -159154,7 +159310,7 @@ func (p *parser) e1095() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v43)
 			x41 = append(x41, v43)
-			v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x40), End: int32(p.pos), Children: x41, fresh: true})
+			v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x40), end: int32(p.pos), children: x41, fresh: true})
 			v45 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v44, x38.pos)
 			p.frame = x35
 			v46 = p.attachCaptures(v45, scope1092, x34, x38.pos, p.pos)
@@ -159169,7 +159325,7 @@ func (p *parser) e1095() (*Node, bool) {
 			p.reset(x38)
 			break
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x32), End: int32(p.pos), Children: p.kids(x33), fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x32), end: int32(p.pos), children: p.kids(x33), fresh: true})
 		p.setCaptureOrdinary(3, v47)
 
 		x48 = p.pos
@@ -159235,7 +159391,7 @@ func (p *parser) e1095() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v68)
 			x66 = append(x66, v68)
-			v69 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x65), End: int32(p.pos), Children: x66, fresh: true})
+			v69 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x65), end: int32(p.pos), children: x66, fresh: true})
 			v70, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v69, x58.pos)
 			v59 = v70
 			goto L60_ordinary
@@ -159290,7 +159446,7 @@ func (p *parser) e1095() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v79)
 			x73 = append(x73, v79)
-			v80 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x72), End: int32(p.pos), Children: x73, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x72), end: int32(p.pos), children: x73, fresh: true})
 			v81, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v80, x58.pos)
 			v59 = v81
 			goto L60_ordinary
@@ -159299,7 +159455,7 @@ func (p *parser) e1095() (*Node, bool) {
 			goto L55_ordinary
 		L60_ordinary:
 			x57 = append(x57, v59)
-			v82 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x56), End: int32(p.pos), Children: x57, fresh: true})
+			v82 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x56), end: int32(p.pos), children: x57, fresh: true})
 			v83 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v82, x54.pos)
 			p.frame = x52
 			v84 = p.attachCaptures(v83, scope1093, x51, x54.pos, p.pos)
@@ -159314,7 +159470,7 @@ func (p *parser) e1095() (*Node, bool) {
 			p.reset(x54)
 			break
 		}
-		v85 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x49), End: int32(p.pos), Children: p.kids(x50), fresh: true})
+		v85 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x49), end: int32(p.pos), children: p.kids(x50), fresh: true})
 		p.setCaptureOrdinary(4, v85)
 
 		x86 = p.pos
@@ -159360,7 +159516,7 @@ func (p *parser) e1095() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v97)
 			x95 = append(x95, v97)
-			v98 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+			v98 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 			v99 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v98, x92.pos)
 			p.frame = x90
 			v100 = p.attachCaptures(v99, scope1094, x89, x92.pos, p.pos)
@@ -159375,7 +159531,7 @@ func (p *parser) e1095() (*Node, bool) {
 			p.reset(x92)
 			break
 		}
-		v101 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x87), End: int32(p.pos), Children: p.kids(x88), fresh: true})
+		v101 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x87), end: int32(p.pos), children: p.kids(x88), fresh: true})
 		p.setCaptureOrdinary(5, v101)
 
 		x102 = p.pos
@@ -159395,9 +159551,9 @@ func (p *parser) e1095() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L105_ordinary
 		}
-		v110 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x109), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v110 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x109), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x108 = append(x108, v110)
-		v111 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x107), End: int32(p.pos), Children: x108, fresh: true})
+		v111 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x107), end: int32(p.pos), children: x108, fresh: true})
 		v112, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v111, x103.pos)
 		v104 = v112
 		goto L106_ordinary
@@ -159641,7 +159797,7 @@ L4:
 		} else if _, ok = p.matchLiteral(lit49, ":", 34, false); !ok {
 			goto L18
 		}
-		v22 = p.newNode(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: ":", terminal: true, fresh: true})
+		v22 = p.newNode(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: ":", terminal: true, fresh: true})
 		x20 = append(x20, v22)
 		p.stepWork()
 		x23 = p.mark()
@@ -159671,7 +159827,7 @@ L4:
 		}
 		p.setCapture(0, v26)
 		x20 = append(x20, v26)
-		v27 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v27 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v28 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x17.pos)
 		p.frame = x14
 		v29 = p.attachCaptures(v28, scope1091, x13, x17.pos, p.pos)
@@ -159686,7 +159842,7 @@ L4:
 		p.reset(x17)
 		break
 	}
-	v30 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v30 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	p.setCapture(2, v30)
 	p.stepWork()
 	if !p.assign("isdict", func(c *actx) any {
@@ -159740,7 +159896,7 @@ L4:
 		}
 		p.setCapture(0, v43)
 		x41 = append(x41, v43)
-		v44 = p.newNode(Node{kind: kindSeq, Start: int32(x40), End: int32(p.pos), Children: x41, fresh: true})
+		v44 = p.newNode(Node{kind: kindSeq, start: int32(x40), end: int32(p.pos), children: x41, fresh: true})
 		v45 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v44, x38.pos)
 		p.frame = x35
 		v46 = p.attachCaptures(v45, scope1092, x34, x38.pos, p.pos)
@@ -159755,7 +159911,7 @@ L4:
 		p.reset(x38)
 		break
 	}
-	v47 = p.newNode(Node{kind: kindList, Start: int32(x32), End: int32(p.pos), Children: p.kids(x33), fresh: true})
+	v47 = p.newNode(Node{kind: kindList, start: int32(x32), end: int32(p.pos), children: p.kids(x33), fresh: true})
 	p.setCapture(3, v47)
 	p.stepWork()
 	x48 = p.pos
@@ -159826,7 +159982,7 @@ L4:
 		}
 		p.setCapture(0, v68)
 		x66 = append(x66, v68)
-		v69 = p.newNode(Node{kind: kindSeq, Start: int32(x65), End: int32(p.pos), Children: x66, fresh: true})
+		v69 = p.newNode(Node{kind: kindSeq, start: int32(x65), end: int32(p.pos), children: x66, fresh: true})
 		v70, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v69, x58.pos)
 		v59 = v70
 		goto L60
@@ -159884,7 +160040,7 @@ L4:
 		}
 		p.setCapture(0, v79)
 		x73 = append(x73, v79)
-		v80 = p.newNode(Node{kind: kindSeq, Start: int32(x72), End: int32(p.pos), Children: x73, fresh: true})
+		v80 = p.newNode(Node{kind: kindSeq, start: int32(x72), end: int32(p.pos), children: x73, fresh: true})
 		v81, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v80, x58.pos)
 		v59 = v81
 		goto L60
@@ -159893,7 +160049,7 @@ L4:
 		goto L55
 	L60:
 		x57 = append(x57, v59)
-		v82 = p.newNode(Node{kind: kindSeq, Start: int32(x56), End: int32(p.pos), Children: x57, fresh: true})
+		v82 = p.newNode(Node{kind: kindSeq, start: int32(x56), end: int32(p.pos), children: x57, fresh: true})
 		v83 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v82, x54.pos)
 		p.frame = x52
 		v84 = p.attachCaptures(v83, scope1093, x51, x54.pos, p.pos)
@@ -159908,7 +160064,7 @@ L4:
 		p.reset(x54)
 		break
 	}
-	v85 = p.newNode(Node{kind: kindList, Start: int32(x49), End: int32(p.pos), Children: p.kids(x50), fresh: true})
+	v85 = p.newNode(Node{kind: kindList, start: int32(x49), end: int32(p.pos), children: p.kids(x50), fresh: true})
 	p.setCapture(4, v85)
 	p.stepWork()
 	x86 = p.pos
@@ -159957,7 +160113,7 @@ L4:
 		}
 		p.setCapture(0, v97)
 		x95 = append(x95, v97)
-		v98 = p.newNode(Node{kind: kindSeq, Start: int32(x94), End: int32(p.pos), Children: x95, fresh: true})
+		v98 = p.newNode(Node{kind: kindSeq, start: int32(x94), end: int32(p.pos), children: x95, fresh: true})
 		v99 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v98, x92.pos)
 		p.frame = x90
 		v100 = p.attachCaptures(v99, scope1094, x89, x92.pos, p.pos)
@@ -159972,7 +160128,7 @@ L4:
 		p.reset(x92)
 		break
 	}
-	v101 = p.newNode(Node{kind: kindList, Start: int32(x87), End: int32(p.pos), Children: p.kids(x88), fresh: true})
+	v101 = p.newNode(Node{kind: kindList, start: int32(x87), end: int32(p.pos), children: p.kids(x88), fresh: true})
 	p.setCapture(5, v101)
 	p.stepWork()
 	x102 = p.pos
@@ -159993,9 +160149,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L105
 	}
-	v110 = p.newNode(Node{kind: kindMatch, Start: int32(x109), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v110 = p.newNode(Node{kind: kindMatch, start: int32(x109), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x108 = append(x108, v110)
-	v111 = p.newNode(Node{kind: kindSeq, Start: int32(x107), End: int32(p.pos), Children: x108, fresh: true})
+	v111 = p.newNode(Node{kind: kindSeq, start: int32(x107), end: int32(p.pos), children: x108, fresh: true})
 	v112, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v111, x103.pos)
 	v104 = v112
 	goto L106
@@ -160160,7 +160316,7 @@ func (p *parser) e1098() (*Node, bool) {
 				}
 				p.setCaptureOrdinary(0, v29)
 				x27 = append(x27, v29)
-				v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+				v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 				v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 				p.frame = x22
 				v32 = p.attachCaptures(v31, scope1097, x21, x24.pos, p.pos)
@@ -160179,7 +160335,7 @@ func (p *parser) e1098() (*Node, bool) {
 				p.dropKids(x20)
 				goto L15_ordinary
 			}
-			v33 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+			v33 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 			p.setCaptureOrdinary(0, v33)
 			x17 = append(x17, v33)
 
@@ -160197,7 +160353,7 @@ func (p *parser) e1098() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L36_ordinary
 			}
-			v40 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+			v40 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 			v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 			v35 = v41
 			goto L37_ordinary
@@ -160205,7 +160361,7 @@ func (p *parser) e1098() (*Node, bool) {
 			p.reset(x34)
 			v35 = nil
 		L37_ordinary:
-			v42 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+			v42 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 			v13 = v43
 			goto L14_ordinary
@@ -160227,10 +160383,10 @@ func (p *parser) e1098() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 				goto L44_ordinary
 			}
-			v49 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+			v49 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 			p.setCaptureOrdinary(1, v49)
 			x46 = append(x46, v49)
-			v50 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+			v50 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 			v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 			v13 = v51
 			goto L14_ordinary
@@ -160252,7 +160408,7 @@ func (p *parser) e1098() (*Node, bool) {
 			p.reset(x10)
 			break
 		}
-		v54 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v54 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v54)
 		return nil, true
 	fail_ordinary:
@@ -160372,7 +160528,7 @@ func (p *parser) e1098() (*Node, bool) {
 			}
 			p.setCapture(0, v29)
 			x27 = append(x27, v29)
-			v30 = p.newNode(Node{kind: kindSeq, Start: int32(x26), End: int32(p.pos), Children: x27, fresh: true})
+			v30 = p.newNode(Node{kind: kindSeq, start: int32(x26), end: int32(p.pos), children: x27, fresh: true})
 			v31 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v30, x24.pos)
 			p.frame = x22
 			v32 = p.attachCaptures(v31, scope1097, x21, x24.pos, p.pos)
@@ -160391,7 +160547,7 @@ func (p *parser) e1098() (*Node, bool) {
 			p.dropKids(x20)
 			goto L15
 		}
-		v33 = p.newNode(Node{kind: kindList, Start: int32(x19), End: int32(p.pos), Children: p.kids(x20), fresh: true})
+		v33 = p.newNode(Node{kind: kindList, start: int32(x19), end: int32(p.pos), children: p.kids(x20), fresh: true})
 		p.setCapture(0, v33)
 		x17 = append(x17, v33)
 		p.stepWork()
@@ -160411,7 +160567,7 @@ func (p *parser) e1098() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L36
 		}
-		v40 = p.newNode(Node{kind: kindSeq, Start: int32(x38), End: int32(p.pos), Children: x39, fresh: true})
+		v40 = p.newNode(Node{kind: kindSeq, start: int32(x38), end: int32(p.pos), children: x39, fresh: true})
 		v41, _ = p.shapeSingle(shaper{elems: true, k: 0, mode: 0, tuple: true}, v40, x34.pos)
 		v35 = v41
 		goto L37
@@ -160419,7 +160575,7 @@ func (p *parser) e1098() (*Node, bool) {
 		p.reset(x34)
 		v35 = nil
 	L37:
-		v42 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v42 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v43, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v42, x12.pos)
 		v13 = v43
 		goto L14
@@ -160442,10 +160598,10 @@ func (p *parser) e1098() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L44
 		}
-		v49 = p.newNode(Node{kind: kindMatch, Start: int32(x48), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v49 = p.newNode(Node{kind: kindMatch, start: int32(x48), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		p.setCapture(1, v49)
 		x46 = append(x46, v49)
-		v50 = p.newNode(Node{kind: kindSeq, Start: int32(x45), End: int32(p.pos), Children: x46, fresh: true})
+		v50 = p.newNode(Node{kind: kindSeq, start: int32(x45), end: int32(p.pos), children: x46, fresh: true})
 		v51, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v50, x12.pos)
 		v13 = v51
 		goto L14
@@ -160467,7 +160623,7 @@ func (p *parser) e1098() (*Node, bool) {
 		p.reset(x10)
 		break
 	}
-	v54 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v54 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v54)
 	return nil, true
 fail:
@@ -161522,7 +161678,7 @@ func (p *parser) e1107() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1106, x6, x9.pos, p.pos)
@@ -161537,7 +161693,7 @@ func (p *parser) e1107() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.pos
@@ -161557,9 +161713,9 @@ func (p *parser) e1107() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 			goto L22_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 		x25 = append(x25, v27)
-		v28 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v28 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 		v21 = v29
 		goto L23_ordinary
@@ -161715,7 +161871,7 @@ func (p *parser) e1107() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1106, x6, x9.pos, p.pos)
@@ -161730,7 +161886,7 @@ func (p *parser) e1107() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.pos
@@ -161751,9 +161907,9 @@ func (p *parser) e1107() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit79, ",", 49, false); !ok {
 		goto L22
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: ",", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: ",", terminal: true, fresh: true})
 	x25 = append(x25, v27)
-	v28 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v28 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v29, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20.pos)
 	v21 = v29
 	goto L23
@@ -161900,7 +162056,7 @@ func (p *parser) e1109() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1108, x6, x9.pos, p.pos)
@@ -161915,7 +162071,7 @@ func (p *parser) e1109() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -162056,7 +162212,7 @@ func (p *parser) e1109() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1108, x6, x9.pos, p.pos)
@@ -162071,7 +162227,7 @@ func (p *parser) e1109() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -163137,7 +163293,7 @@ func (p *parser) e1118() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1117, x6, x9.pos, p.pos)
@@ -163152,7 +163308,7 @@ func (p *parser) e1118() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -163244,7 +163400,7 @@ func (p *parser) e1118() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1117, x6, x9.pos, p.pos)
@@ -163259,7 +163415,7 @@ func (p *parser) e1118() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -163723,7 +163879,7 @@ func (p *parser) e1123() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1122, x6, x9.pos, p.pos)
@@ -163738,7 +163894,7 @@ func (p *parser) e1123() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -163819,7 +163975,7 @@ func (p *parser) e1123() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1122, x6, x9.pos, p.pos)
@@ -163834,7 +163990,7 @@ func (p *parser) e1123() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -164056,7 +164212,7 @@ func (p *parser) e1128() (*Node, bool) {
 			}
 			p.setCaptureOrdinary(0, v14)
 			x12 = append(x12, v14)
-			v15 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+			v15 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 			p.frame = x7
 			v17 = p.attachCaptures(v16, scope1127, x6, x9.pos, p.pos)
@@ -164071,7 +164227,7 @@ func (p *parser) e1128() (*Node, bool) {
 			p.reset(x9)
 			break
 		}
-		v18 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 		p.setCaptureOrdinary(1, v18)
 
 		x19 = p.mark()
@@ -164152,7 +164308,7 @@ func (p *parser) e1128() (*Node, bool) {
 		}
 		p.setCapture(0, v14)
 		x12 = append(x12, v14)
-		v15 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v15 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x9.pos)
 		p.frame = x7
 		v17 = p.attachCaptures(v16, scope1127, x6, x9.pos, p.pos)
@@ -164167,7 +164323,7 @@ func (p *parser) e1128() (*Node, bool) {
 		p.reset(x9)
 		break
 	}
-	v18 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	v18 = p.newNode(Node{kind: kindList, start: int32(x4), end: int32(p.pos), children: p.kids(x5), fresh: true})
 	p.setCapture(1, v18)
 	p.stepWork()
 	x19 = p.mark()
@@ -164248,14 +164404,14 @@ func (p *parser) e1129() (*Node, bool) {
 		}
 		x10 = p.pos
 		p.pos += size
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		if v12, ok = p.call(recRules[260], 0); !ok {
 			goto L7_ordinary
 		}
 		x9 = append(x9, v12)
-		v13 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 		v2 = v14
 		goto L3_ordinary
@@ -164282,14 +164438,14 @@ func (p *parser) e1129() (*Node, bool) {
 		}
 		x19 = p.pos
 		p.pos += size
-		v20 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: p.text(x19, p.pos), terminal: true, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: p.text(x19, p.pos), terminal: true, fresh: true})
 		x18 = append(x18, v20)
 
 		if v21, ok = p.q262(); !ok {
 			goto L16_ordinary
 		}
 		x18 = append(x18, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -164364,14 +164520,14 @@ func (p *parser) e1129() (*Node, bool) {
 	}
 	x10 = p.pos
 	p.pos += size
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	if v12, ok = p.call(recRules[260], 0); !ok {
 		goto L7
 	}
 	x9 = append(x9, v12)
-	v13 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v13 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 	v2 = v14
 	goto L3
@@ -164398,14 +164554,14 @@ L6:
 	}
 	x19 = p.pos
 	p.pos += size
-	v20 = p.newNode(Node{kind: kindMatch, Start: int32(x19), End: int32(p.pos), Text: p.text(x19, p.pos), terminal: true, fresh: true})
+	v20 = p.newNode(Node{kind: kindMatch, start: int32(x19), end: int32(p.pos), text: p.text(x19, p.pos), terminal: true, fresh: true})
 	x18 = append(x18, v20)
 	p.stepWork()
 	if v21, ok = p.q262(); !ok {
 		goto L16
 	}
 	x18 = append(x18, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x17), End: int32(p.pos), Children: x18, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x17), end: int32(p.pos), children: x18, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -164505,7 +164661,7 @@ func (p *parser) e1130() (*Node, bool) {
 		}
 		x16 = p.pos
 		p.pos += size
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if p.pos < len(p.in) {
@@ -164520,9 +164676,9 @@ func (p *parser) e1130() (*Node, bool) {
 		}
 		x18 = p.pos
 		p.pos += size
-		v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x7.pos)
 		v8 = v21
 		goto L9_ordinary
@@ -164549,7 +164705,7 @@ func (p *parser) e1130() (*Node, bool) {
 		}
 		x26 = p.pos
 		p.pos += size
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if p.pos < len(p.in) {
@@ -164564,9 +164720,9 @@ func (p *parser) e1130() (*Node, bool) {
 		}
 		x28 = p.pos
 		p.pos += size
-		v29 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: p.text(x28, p.pos), terminal: true, fresh: true})
+		v29 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: p.text(x28, p.pos), terminal: true, fresh: true})
 		x25 = append(x25, v29)
-		v30 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v31, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v30, x7.pos)
 		v8 = v31
 		goto L9_ordinary
@@ -164581,7 +164737,7 @@ func (p *parser) e1130() (*Node, bool) {
 			goto L4_ordinary
 		}
 		x6 = append(x6, v32)
-		v33 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v33 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v34, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v33, x1.pos)
 		v2 = v34
 		goto L3_ordinary
@@ -164613,14 +164769,14 @@ func (p *parser) e1130() (*Node, bool) {
 		}
 		x41 = p.pos
 		p.pos += size
-		v42 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x41), End: int32(p.pos), Text: p.text(x41, p.pos), terminal: true, fresh: true})
+		v42 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x41), end: int32(p.pos), text: p.text(x41, p.pos), terminal: true, fresh: true})
 		x40 = append(x40, v42)
 
 		if v43, ok = p.q263(); !ok {
 			goto L38_ordinary
 		}
 		x40 = append(x40, v43)
-		v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+		v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 		v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 		v2 = v45
 		goto L3_ordinary
@@ -164709,7 +164865,7 @@ func (p *parser) e1130() (*Node, bool) {
 	}
 	x16 = p.pos
 	p.pos += size
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -164724,9 +164880,9 @@ func (p *parser) e1130() (*Node, bool) {
 	}
 	x18 = p.pos
 	p.pos += size
-	v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: p.text(x18, p.pos), terminal: true, fresh: true})
+	v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: p.text(x18, p.pos), terminal: true, fresh: true})
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x7.pos)
 	v8 = v21
 	goto L9
@@ -164753,7 +164909,7 @@ L12:
 	}
 	x26 = p.pos
 	p.pos += size
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -164768,9 +164924,9 @@ L12:
 	}
 	x28 = p.pos
 	p.pos += size
-	v29 = p.newNode(Node{kind: kindMatch, Start: int32(x28), End: int32(p.pos), Text: p.text(x28, p.pos), terminal: true, fresh: true})
+	v29 = p.newNode(Node{kind: kindMatch, start: int32(x28), end: int32(p.pos), text: p.text(x28, p.pos), terminal: true, fresh: true})
 	x25 = append(x25, v29)
-	v30 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v30 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v31, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v30, x7.pos)
 	v8 = v31
 	goto L9
@@ -164785,7 +164941,7 @@ L9:
 		goto L4
 	}
 	x6 = append(x6, v32)
-	v33 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v33 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v34, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v33, x1.pos)
 	v2 = v34
 	goto L3
@@ -164817,14 +164973,14 @@ L4:
 	}
 	x41 = p.pos
 	p.pos += size
-	v42 = p.newNode(Node{kind: kindMatch, Start: int32(x41), End: int32(p.pos), Text: p.text(x41, p.pos), terminal: true, fresh: true})
+	v42 = p.newNode(Node{kind: kindMatch, start: int32(x41), end: int32(p.pos), text: p.text(x41, p.pos), terminal: true, fresh: true})
 	x40 = append(x40, v42)
 	p.stepWork()
 	if v43, ok = p.q263(); !ok {
 		goto L38
 	}
 	x40 = append(x40, v43)
-	v44 = p.newNode(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+	v44 = p.newNode(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 	v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 	v2 = v45
 	goto L3
@@ -164998,7 +165154,7 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -165025,7 +165181,7 @@ func (p *parser) e1131() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -165041,7 +165197,7 @@ func (p *parser) e1131() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -165071,9 +165227,9 @@ func (p *parser) e1131() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -165111,7 +165267,7 @@ func (p *parser) e1131() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v45 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v45 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v45)
 
 		x46 = p.pos
@@ -165120,9 +165276,9 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v47)
-		v48 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v48 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 		v2 = v49
 		goto L3_ordinary
@@ -165143,7 +165299,7 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v55)
 
 		x56, x57 = p.pos, len(p.kidStack)
@@ -165170,7 +165326,7 @@ func (p *parser) e1131() (*Node, bool) {
 				}
 				x70 = p.pos
 				p.pos += size
-				v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+				v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 				v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 				x67++
 				p.kidStack = append(p.kidStack, v72)
@@ -165186,7 +165342,7 @@ func (p *parser) e1131() (*Node, bool) {
 				p.dropKids(x66)
 				goto L64_ordinary
 			}
-			v73 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+			v73 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 			v62 = v73
 			goto L63_ordinary
 		L64_ordinary:
@@ -165216,9 +165372,9 @@ func (p *parser) e1131() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L74_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x76 = append(x76, v80)
-			v81 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+			v81 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 			v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 			v62 = v82
 			goto L63_ordinary
@@ -165256,7 +165412,7 @@ func (p *parser) e1131() (*Node, bool) {
 			p.reset(x59)
 			break
 		}
-		v89 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		x53 = append(x53, v89)
 
 		x90 = p.pos
@@ -165265,9 +165421,9 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v91)
-		v92 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+		v92 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 		v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 		v2 = v93
 		goto L3_ordinary
@@ -165299,7 +165455,7 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v100 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v100)
 
 		x101, x102 = p.pos, len(p.kidStack)
@@ -165326,7 +165482,7 @@ func (p *parser) e1131() (*Node, bool) {
 				}
 				x115 = p.pos
 				p.pos += size
-				v116 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+				v116 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 				v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 				x112++
 				p.kidStack = append(p.kidStack, v117)
@@ -165342,7 +165498,7 @@ func (p *parser) e1131() (*Node, bool) {
 				p.dropKids(x111)
 				goto L109_ordinary
 			}
-			v118 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+			v118 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 			v107 = v118
 			goto L108_ordinary
 		L109_ordinary:
@@ -165379,7 +165535,7 @@ func (p *parser) e1131() (*Node, bool) {
 			p.reset(x104)
 			break
 		}
-		v125 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+		v125 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 		x96 = append(x96, v125)
 
 		x126 = p.pos
@@ -165388,9 +165544,9 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v127)
-		v128 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+		v128 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 		v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 		v2 = v129
 		goto L3_ordinary
@@ -165421,7 +165577,7 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v136 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v136 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v136)
 
 		x137, x138 = p.pos, len(p.kidStack)
@@ -165448,7 +165604,7 @@ func (p *parser) e1131() (*Node, bool) {
 				}
 				x151 = p.pos
 				p.pos += size
-				v152 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+				v152 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 				v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 				x148++
 				p.kidStack = append(p.kidStack, v153)
@@ -165464,7 +165620,7 @@ func (p *parser) e1131() (*Node, bool) {
 				p.dropKids(x147)
 				goto L145_ordinary
 			}
-			v154 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 			v143 = v154
 			goto L144_ordinary
 		L145_ordinary:
@@ -165501,7 +165657,7 @@ func (p *parser) e1131() (*Node, bool) {
 			p.reset(x140)
 			break
 		}
-		v161 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+		v161 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 		x132 = append(x132, v161)
 
 		x162 = p.pos
@@ -165510,9 +165666,9 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v163 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v163 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v163)
-		v164 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+		v164 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 		v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 		v2 = v165
 		goto L3_ordinary
@@ -165682,7 +165838,7 @@ func (p *parser) e1131() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -165709,7 +165865,7 @@ func (p *parser) e1131() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -165725,7 +165881,7 @@ func (p *parser) e1131() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -165755,9 +165911,9 @@ func (p *parser) e1131() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -165795,7 +165951,7 @@ func (p *parser) e1131() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v45 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v45 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v45)
 	p.stepWork()
 	x46 = p.pos
@@ -165804,9 +165960,9 @@ func (p *parser) e1131() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v47)
-	v48 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v48 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 	v2 = v49
 	goto L3
@@ -165827,7 +165983,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v55)
 	p.stepWork()
 	x56, x57 = p.pos, len(p.kidStack)
@@ -165854,7 +166010,7 @@ L6:
 			}
 			x70 = p.pos
 			p.pos += size
-			v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+			v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 			v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 			x67++
 			p.kidStack = append(p.kidStack, v72)
@@ -165870,7 +166026,7 @@ L6:
 			p.dropKids(x66)
 			goto L64
 		}
-		v73 = p.newNode(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+		v73 = p.newNode(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 		v62 = v73
 		goto L63
 	L64:
@@ -165900,9 +166056,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L74
 		}
-		v80 = p.newNode(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v80 = p.newNode(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x76 = append(x76, v80)
-		v81 = p.newNode(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+		v81 = p.newNode(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 		v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 		v62 = v82
 		goto L63
@@ -165940,7 +166096,7 @@ L6:
 		p.reset(x59)
 		break
 	}
-	v89 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v89 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	x53 = append(x53, v89)
 	p.stepWork()
 	x90 = p.pos
@@ -165949,9 +166105,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v91)
-	v92 = p.newNode(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+	v92 = p.newNode(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 	v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 	v2 = v93
 	goto L3
@@ -165983,7 +166139,7 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v100 = p.newNode(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v100 = p.newNode(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v100)
 	p.stepWork()
 	x101, x102 = p.pos, len(p.kidStack)
@@ -166010,7 +166166,7 @@ L98:
 			}
 			x115 = p.pos
 			p.pos += size
-			v116 = p.newNode(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+			v116 = p.newNode(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 			v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 			x112++
 			p.kidStack = append(p.kidStack, v117)
@@ -166026,7 +166182,7 @@ L98:
 			p.dropKids(x111)
 			goto L109
 		}
-		v118 = p.newNode(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+		v118 = p.newNode(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 		v107 = v118
 		goto L108
 	L109:
@@ -166063,7 +166219,7 @@ L98:
 		p.reset(x104)
 		break
 	}
-	v125 = p.newNode(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+	v125 = p.newNode(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 	x96 = append(x96, v125)
 	p.stepWork()
 	x126 = p.pos
@@ -166072,9 +166228,9 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v127)
-	v128 = p.newNode(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+	v128 = p.newNode(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 	v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 	v2 = v129
 	goto L3
@@ -166105,7 +166261,7 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v136 = p.newNode(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v136 = p.newNode(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v136)
 	p.stepWork()
 	x137, x138 = p.pos, len(p.kidStack)
@@ -166132,7 +166288,7 @@ L134:
 			}
 			x151 = p.pos
 			p.pos += size
-			v152 = p.newNode(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+			v152 = p.newNode(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 			v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 			x148++
 			p.kidStack = append(p.kidStack, v153)
@@ -166148,7 +166304,7 @@ L134:
 			p.dropKids(x147)
 			goto L145
 		}
-		v154 = p.newNode(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+		v154 = p.newNode(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 		v143 = v154
 		goto L144
 	L145:
@@ -166185,7 +166341,7 @@ L134:
 		p.reset(x140)
 		break
 	}
-	v161 = p.newNode(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+	v161 = p.newNode(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 	x132 = append(x132, v161)
 	p.stepWork()
 	x162 = p.pos
@@ -166194,9 +166350,9 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v163 = p.newNode(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v163 = p.newNode(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v163)
-	v164 = p.newNode(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+	v164 = p.newNode(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 	v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 	v2 = v165
 	goto L3
@@ -166305,7 +166461,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -166337,7 +166493,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.q266(); !ok {
@@ -166349,7 +166505,7 @@ func (p *parser) e1132() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -166370,7 +166526,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 			goto L23_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if v28, ok = p.q266(); !ok {
@@ -166392,7 +166548,7 @@ func (p *parser) e1132() (*Node, bool) {
 			goto L23_ordinary
 		}
 		x25 = append(x25, v31)
-		v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 		v6 = v33
 		goto L7_ordinary
@@ -166413,7 +166569,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 			goto L35_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 		x37 = append(x37, v39)
 
 		x40 = p.mark()
@@ -166437,7 +166593,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 			goto L46_ordinary
 		}
-		v50 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+		v50 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 		x48 = append(x48, v50)
 
 		if v51, ok = p.q266(); !ok {
@@ -166459,7 +166615,7 @@ func (p *parser) e1132() (*Node, bool) {
 			goto L46_ordinary
 		}
 		x48 = append(x48, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 		v41 = v56
 		goto L42_ordinary
@@ -166480,7 +166636,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		if v63, ok = p.q266(); !ok {
@@ -166507,7 +166663,7 @@ func (p *parser) e1132() (*Node, bool) {
 			goto L58_ordinary
 		}
 		x60 = append(x60, v67)
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 		v41 = v69
 		goto L42_ordinary
@@ -166517,7 +166673,7 @@ func (p *parser) e1132() (*Node, bool) {
 		goto L35_ordinary
 	L42_ordinary:
 		x37 = append(x37, v41)
-		v70 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+		v70 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 		v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 		v6 = v71
 		goto L7_ordinary
@@ -166538,7 +166694,7 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 			goto L73_ordinary
 		}
-		v77 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+		v77 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 		x75 = append(x75, v77)
 
 		x78, x79 = p.pos, len(p.kidStack)
@@ -166558,7 +166714,7 @@ func (p *parser) e1132() (*Node, bool) {
 			}
 			x83 = p.pos
 			p.pos += size
-			v84 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+			v84 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 			v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 			x80++
 			p.kidStack = append(p.kidStack, v85)
@@ -166574,7 +166730,7 @@ func (p *parser) e1132() (*Node, bool) {
 			p.dropKids(x79)
 			goto L73_ordinary
 		}
-		v86 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+		v86 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 		x75 = append(x75, v86)
 
 		x87 = p.pos
@@ -166583,9 +166739,9 @@ func (p *parser) e1132() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 			goto L73_ordinary
 		}
-		v88 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+		v88 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 		x75 = append(x75, v88)
-		v89 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 		v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 		v6 = v90
 		goto L7_ordinary
@@ -166609,7 +166765,7 @@ func (p *parser) e1132() (*Node, bool) {
 		}
 		x93 = p.pos
 		p.pos += size
-		v94 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+		v94 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 		v6 = v94
 		goto L7_ordinary
 	L92_ordinary:
@@ -166618,7 +166774,7 @@ func (p *parser) e1132() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v95 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v95 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v95, true
 	fail_ordinary:
 		return nil, false
@@ -166717,7 +166873,7 @@ func (p *parser) e1132() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -166749,7 +166905,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.q266(); !ok {
@@ -166761,7 +166917,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -166782,7 +166938,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 		goto L23
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if v28, ok = p.q266(); !ok {
@@ -166804,7 +166960,7 @@ L12:
 		goto L23
 	}
 	x25 = append(x25, v31)
-	v32 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v32 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 	v6 = v33
 	goto L7
@@ -166825,7 +166981,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 		goto L35
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 	x37 = append(x37, v39)
 	p.stepWork()
 	x40 = p.mark()
@@ -166849,7 +167005,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 		goto L46
 	}
-	v50 = p.newNode(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+	v50 = p.newNode(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 	x48 = append(x48, v50)
 	p.stepWork()
 	if v51, ok = p.q266(); !ok {
@@ -166871,7 +167027,7 @@ L22:
 		goto L46
 	}
 	x48 = append(x48, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 	v41 = v56
 	goto L42
@@ -166892,7 +167048,7 @@ L45:
 	} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	if v63, ok = p.q266(); !ok {
@@ -166919,7 +167075,7 @@ L45:
 		goto L58
 	}
 	x60 = append(x60, v67)
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 	v41 = v69
 	goto L42
@@ -166929,7 +167085,7 @@ L57:
 	goto L35
 L42:
 	x37 = append(x37, v41)
-	v70 = p.newNode(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+	v70 = p.newNode(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 	v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 	v6 = v71
 	goto L7
@@ -166950,7 +167106,7 @@ L34:
 	} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 		goto L73
 	}
-	v77 = p.newNode(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+	v77 = p.newNode(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 	x75 = append(x75, v77)
 	p.stepWork()
 	x78, x79 = p.pos, len(p.kidStack)
@@ -166970,7 +167126,7 @@ L34:
 		}
 		x83 = p.pos
 		p.pos += size
-		v84 = p.newNode(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+		v84 = p.newNode(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 		v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 		x80++
 		p.kidStack = append(p.kidStack, v85)
@@ -166986,7 +167142,7 @@ L34:
 		p.dropKids(x79)
 		goto L73
 	}
-	v86 = p.newNode(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+	v86 = p.newNode(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 	x75 = append(x75, v86)
 	p.stepWork()
 	x87 = p.pos
@@ -166995,9 +167151,9 @@ L34:
 	} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 		goto L73
 	}
-	v88 = p.newNode(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+	v88 = p.newNode(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 	x75 = append(x75, v88)
-	v89 = p.newNode(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+	v89 = p.newNode(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 	v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 	v6 = v90
 	goto L7
@@ -167021,7 +167177,7 @@ L72:
 	}
 	x93 = p.pos
 	p.pos += size
-	v94 = p.newNode(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+	v94 = p.newNode(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 	v6 = v94
 	goto L7
 L92:
@@ -167030,7 +167186,7 @@ L91:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v95 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v95 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v95, true
 fail:
 	return nil, false
@@ -167196,7 +167352,7 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v11)
 
 		x12, x13 = p.pos, len(p.kidStack)
@@ -167223,7 +167379,7 @@ func (p *parser) e1133() (*Node, bool) {
 				}
 				x26 = p.pos
 				p.pos += size
-				v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+				v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 				v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 				x23++
 				p.kidStack = append(p.kidStack, v28)
@@ -167239,7 +167395,7 @@ func (p *parser) e1133() (*Node, bool) {
 				p.dropKids(x22)
 				goto L20_ordinary
 			}
-			v29 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+			v29 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 			v18 = v29
 			goto L19_ordinary
 		L20_ordinary:
@@ -167269,9 +167425,9 @@ func (p *parser) e1133() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 				goto L30_ordinary
 			}
-			v36 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+			v36 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 			x32 = append(x32, v36)
-			v37 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+			v37 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 			v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 			v18 = v38
 			goto L19_ordinary
@@ -167309,7 +167465,7 @@ func (p *parser) e1133() (*Node, bool) {
 			p.reset(x15)
 			break
 		}
-		v45 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+		v45 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 		x9 = append(x9, v45)
 
 		x46 = p.pos
@@ -167318,9 +167474,9 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 			goto L7_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 		x9 = append(x9, v47)
-		v48 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v48 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 		v2 = v49
 		goto L3_ordinary
@@ -167341,7 +167497,7 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v55)
 
 		x56, x57 = p.pos, len(p.kidStack)
@@ -167368,7 +167524,7 @@ func (p *parser) e1133() (*Node, bool) {
 				}
 				x70 = p.pos
 				p.pos += size
-				v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+				v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 				v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 				x67++
 				p.kidStack = append(p.kidStack, v72)
@@ -167384,7 +167540,7 @@ func (p *parser) e1133() (*Node, bool) {
 				p.dropKids(x66)
 				goto L64_ordinary
 			}
-			v73 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+			v73 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 			v62 = v73
 			goto L63_ordinary
 		L64_ordinary:
@@ -167414,9 +167570,9 @@ func (p *parser) e1133() (*Node, bool) {
 			} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 				goto L74_ordinary
 			}
-			v80 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+			v80 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 			x76 = append(x76, v80)
-			v81 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+			v81 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 			v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 			v62 = v82
 			goto L63_ordinary
@@ -167454,7 +167610,7 @@ func (p *parser) e1133() (*Node, bool) {
 			p.reset(x59)
 			break
 		}
-		v89 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 		x53 = append(x53, v89)
 
 		x90 = p.pos
@@ -167463,9 +167619,9 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 			goto L51_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 		x53 = append(x53, v91)
-		v92 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+		v92 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 		v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 		v2 = v93
 		goto L3_ordinary
@@ -167497,7 +167653,7 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v100 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v100)
 
 		x101, x102 = p.pos, len(p.kidStack)
@@ -167524,7 +167680,7 @@ func (p *parser) e1133() (*Node, bool) {
 				}
 				x115 = p.pos
 				p.pos += size
-				v116 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+				v116 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 				v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 				x112++
 				p.kidStack = append(p.kidStack, v117)
@@ -167540,7 +167696,7 @@ func (p *parser) e1133() (*Node, bool) {
 				p.dropKids(x111)
 				goto L109_ordinary
 			}
-			v118 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+			v118 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 			v107 = v118
 			goto L108_ordinary
 		L109_ordinary:
@@ -167577,7 +167733,7 @@ func (p *parser) e1133() (*Node, bool) {
 			p.reset(x104)
 			break
 		}
-		v125 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+		v125 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 		x96 = append(x96, v125)
 
 		x126 = p.pos
@@ -167586,9 +167742,9 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L94_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x96 = append(x96, v127)
-		v128 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+		v128 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 		v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 		v2 = v129
 		goto L3_ordinary
@@ -167619,7 +167775,7 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v136 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v136 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v136)
 
 		x137, x138 = p.pos, len(p.kidStack)
@@ -167646,7 +167802,7 @@ func (p *parser) e1133() (*Node, bool) {
 				}
 				x151 = p.pos
 				p.pos += size
-				v152 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+				v152 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 				v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 				x148++
 				p.kidStack = append(p.kidStack, v153)
@@ -167662,7 +167818,7 @@ func (p *parser) e1133() (*Node, bool) {
 				p.dropKids(x147)
 				goto L145_ordinary
 			}
-			v154 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+			v154 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 			v143 = v154
 			goto L144_ordinary
 		L145_ordinary:
@@ -167699,7 +167855,7 @@ func (p *parser) e1133() (*Node, bool) {
 			p.reset(x140)
 			break
 		}
-		v161 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+		v161 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 		x132 = append(x132, v161)
 
 		x162 = p.pos
@@ -167708,9 +167864,9 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L130_ordinary
 		}
-		v163 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v163 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x132 = append(x132, v163)
-		v164 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+		v164 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 		v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 		v2 = v165
 		goto L3_ordinary
@@ -167880,7 +168036,7 @@ func (p *parser) e1133() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v11)
 	p.stepWork()
 	x12, x13 = p.pos, len(p.kidStack)
@@ -167907,7 +168063,7 @@ func (p *parser) e1133() (*Node, bool) {
 			}
 			x26 = p.pos
 			p.pos += size
-			v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: p.text(x26, p.pos), terminal: true, fresh: true})
+			v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: p.text(x26, p.pos), terminal: true, fresh: true})
 			v28 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v27, x24.pos)
 			x23++
 			p.kidStack = append(p.kidStack, v28)
@@ -167923,7 +168079,7 @@ func (p *parser) e1133() (*Node, bool) {
 			p.dropKids(x22)
 			goto L20
 		}
-		v29 = p.newNode(Node{kind: kindList, Start: int32(x21), End: int32(p.pos), Children: p.kids(x22), fresh: true})
+		v29 = p.newNode(Node{kind: kindList, start: int32(x21), end: int32(p.pos), children: p.kids(x22), fresh: true})
 		v18 = v29
 		goto L19
 	L20:
@@ -167953,9 +168109,9 @@ func (p *parser) e1133() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L30
 		}
-		v36 = p.newNode(Node{kind: kindMatch, Start: int32(x35), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v36 = p.newNode(Node{kind: kindMatch, start: int32(x35), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x32 = append(x32, v36)
-		v37 = p.newNode(Node{kind: kindSeq, Start: int32(x31), End: int32(p.pos), Children: x32, fresh: true})
+		v37 = p.newNode(Node{kind: kindSeq, start: int32(x31), end: int32(p.pos), children: x32, fresh: true})
 		v38, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v37, x17.pos)
 		v18 = v38
 		goto L19
@@ -167993,7 +168149,7 @@ func (p *parser) e1133() (*Node, bool) {
 		p.reset(x15)
 		break
 	}
-	v45 = p.newNode(Node{kind: kindList, Start: int32(x12), End: int32(p.pos), Children: p.kids(x13), fresh: true})
+	v45 = p.newNode(Node{kind: kindList, start: int32(x12), end: int32(p.pos), children: p.kids(x13), fresh: true})
 	x9 = append(x9, v45)
 	p.stepWork()
 	x46 = p.pos
@@ -168002,9 +168158,9 @@ func (p *parser) e1133() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit415, "'''", 118, false); !ok {
 		goto L7
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "'''", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "'''", terminal: true, fresh: true})
 	x9 = append(x9, v47)
-	v48 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v48 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v49, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v48, x1.pos)
 	v2 = v49
 	goto L3
@@ -168025,7 +168181,7 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v55)
 	p.stepWork()
 	x56, x57 = p.pos, len(p.kidStack)
@@ -168052,7 +168208,7 @@ L6:
 			}
 			x70 = p.pos
 			p.pos += size
-			v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: p.text(x70, p.pos), terminal: true, fresh: true})
+			v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: p.text(x70, p.pos), terminal: true, fresh: true})
 			v72 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v71, x68.pos)
 			x67++
 			p.kidStack = append(p.kidStack, v72)
@@ -168068,7 +168224,7 @@ L6:
 			p.dropKids(x66)
 			goto L64
 		}
-		v73 = p.newNode(Node{kind: kindList, Start: int32(x65), End: int32(p.pos), Children: p.kids(x66), fresh: true})
+		v73 = p.newNode(Node{kind: kindList, start: int32(x65), end: int32(p.pos), children: p.kids(x66), fresh: true})
 		v62 = v73
 		goto L63
 	L64:
@@ -168098,9 +168254,9 @@ L6:
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L74
 		}
-		v80 = p.newNode(Node{kind: kindMatch, Start: int32(x79), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v80 = p.newNode(Node{kind: kindMatch, start: int32(x79), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x76 = append(x76, v80)
-		v81 = p.newNode(Node{kind: kindSeq, Start: int32(x75), End: int32(p.pos), Children: x76, fresh: true})
+		v81 = p.newNode(Node{kind: kindSeq, start: int32(x75), end: int32(p.pos), children: x76, fresh: true})
 		v82, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v81, x61.pos)
 		v62 = v82
 		goto L63
@@ -168138,7 +168294,7 @@ L6:
 		p.reset(x59)
 		break
 	}
-	v89 = p.newNode(Node{kind: kindList, Start: int32(x56), End: int32(p.pos), Children: p.kids(x57), fresh: true})
+	v89 = p.newNode(Node{kind: kindList, start: int32(x56), end: int32(p.pos), children: p.kids(x57), fresh: true})
 	x53 = append(x53, v89)
 	p.stepWork()
 	x90 = p.pos
@@ -168147,9 +168303,9 @@ L6:
 	} else if _, ok = p.matchLiteral(lit417, "\"\"\"", 121, false); !ok {
 		goto L51
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "\"\"\"", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "\"\"\"", terminal: true, fresh: true})
 	x53 = append(x53, v91)
-	v92 = p.newNode(Node{kind: kindSeq, Start: int32(x52), End: int32(p.pos), Children: x53, fresh: true})
+	v92 = p.newNode(Node{kind: kindSeq, start: int32(x52), end: int32(p.pos), children: x53, fresh: true})
 	v93, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v92, x1.pos)
 	v2 = v93
 	goto L3
@@ -168181,7 +168337,7 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v100 = p.newNode(Node{kind: kindMatch, Start: int32(x99), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v100 = p.newNode(Node{kind: kindMatch, start: int32(x99), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v100)
 	p.stepWork()
 	x101, x102 = p.pos, len(p.kidStack)
@@ -168208,7 +168364,7 @@ L98:
 			}
 			x115 = p.pos
 			p.pos += size
-			v116 = p.newNode(Node{kind: kindMatch, Start: int32(x115), End: int32(p.pos), Text: p.text(x115, p.pos), terminal: true, fresh: true})
+			v116 = p.newNode(Node{kind: kindMatch, start: int32(x115), end: int32(p.pos), text: p.text(x115, p.pos), terminal: true, fresh: true})
 			v117 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v116, x113.pos)
 			x112++
 			p.kidStack = append(p.kidStack, v117)
@@ -168224,7 +168380,7 @@ L98:
 			p.dropKids(x111)
 			goto L109
 		}
-		v118 = p.newNode(Node{kind: kindList, Start: int32(x110), End: int32(p.pos), Children: p.kids(x111), fresh: true})
+		v118 = p.newNode(Node{kind: kindList, start: int32(x110), end: int32(p.pos), children: p.kids(x111), fresh: true})
 		v107 = v118
 		goto L108
 	L109:
@@ -168261,7 +168417,7 @@ L98:
 		p.reset(x104)
 		break
 	}
-	v125 = p.newNode(Node{kind: kindList, Start: int32(x101), End: int32(p.pos), Children: p.kids(x102), fresh: true})
+	v125 = p.newNode(Node{kind: kindList, start: int32(x101), end: int32(p.pos), children: p.kids(x102), fresh: true})
 	x96 = append(x96, v125)
 	p.stepWork()
 	x126 = p.pos
@@ -168270,9 +168426,9 @@ L98:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L94
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x96 = append(x96, v127)
-	v128 = p.newNode(Node{kind: kindSeq, Start: int32(x95), End: int32(p.pos), Children: x96, fresh: true})
+	v128 = p.newNode(Node{kind: kindSeq, start: int32(x95), end: int32(p.pos), children: x96, fresh: true})
 	v129, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v128, x1.pos)
 	v2 = v129
 	goto L3
@@ -168303,7 +168459,7 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v136 = p.newNode(Node{kind: kindMatch, Start: int32(x135), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v136 = p.newNode(Node{kind: kindMatch, start: int32(x135), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v136)
 	p.stepWork()
 	x137, x138 = p.pos, len(p.kidStack)
@@ -168330,7 +168486,7 @@ L134:
 			}
 			x151 = p.pos
 			p.pos += size
-			v152 = p.newNode(Node{kind: kindMatch, Start: int32(x151), End: int32(p.pos), Text: p.text(x151, p.pos), terminal: true, fresh: true})
+			v152 = p.newNode(Node{kind: kindMatch, start: int32(x151), end: int32(p.pos), text: p.text(x151, p.pos), terminal: true, fresh: true})
 			v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v152, x149.pos)
 			x148++
 			p.kidStack = append(p.kidStack, v153)
@@ -168346,7 +168502,7 @@ L134:
 			p.dropKids(x147)
 			goto L145
 		}
-		v154 = p.newNode(Node{kind: kindList, Start: int32(x146), End: int32(p.pos), Children: p.kids(x147), fresh: true})
+		v154 = p.newNode(Node{kind: kindList, start: int32(x146), end: int32(p.pos), children: p.kids(x147), fresh: true})
 		v143 = v154
 		goto L144
 	L145:
@@ -168383,7 +168539,7 @@ L134:
 		p.reset(x140)
 		break
 	}
-	v161 = p.newNode(Node{kind: kindList, Start: int32(x137), End: int32(p.pos), Children: p.kids(x138), fresh: true})
+	v161 = p.newNode(Node{kind: kindList, start: int32(x137), end: int32(p.pos), children: p.kids(x138), fresh: true})
 	x132 = append(x132, v161)
 	p.stepWork()
 	x162 = p.pos
@@ -168392,9 +168548,9 @@ L134:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L130
 	}
-	v163 = p.newNode(Node{kind: kindMatch, Start: int32(x162), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v163 = p.newNode(Node{kind: kindMatch, start: int32(x162), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x132 = append(x132, v163)
-	v164 = p.newNode(Node{kind: kindSeq, Start: int32(x131), End: int32(p.pos), Children: x132, fresh: true})
+	v164 = p.newNode(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 	v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x1.pos)
 	v2 = v165
 	goto L3
@@ -168446,7 +168602,7 @@ func (p *parser) e1134() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -168478,7 +168634,7 @@ func (p *parser) e1134() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.q266(); !ok {
@@ -168490,7 +168646,7 @@ func (p *parser) e1134() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -168514,7 +168670,7 @@ func (p *parser) e1134() (*Node, bool) {
 		}
 		x24 = p.pos
 		p.pos += size
-		v25 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: p.text(x24, p.pos), terminal: true, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: p.text(x24, p.pos), terminal: true, fresh: true})
 		v6 = v25
 		goto L7_ordinary
 	L23_ordinary:
@@ -168523,7 +168679,7 @@ func (p *parser) e1134() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v26, true
 	fail_ordinary:
 		return nil, false
@@ -168565,7 +168721,7 @@ func (p *parser) e1134() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -168597,7 +168753,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.q266(); !ok {
@@ -168609,7 +168765,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -168633,7 +168789,7 @@ L12:
 	}
 	x24 = p.pos
 	p.pos += size
-	v25 = p.newNode(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: p.text(x24, p.pos), terminal: true, fresh: true})
+	v25 = p.newNode(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: p.text(x24, p.pos), terminal: true, fresh: true})
 	v6 = v25
 	goto L7
 L23:
@@ -168642,7 +168798,7 @@ L22:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v26 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v26 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v26, true
 fail:
 	return nil, false
@@ -168935,7 +169091,7 @@ func (p *parser) e1135() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(0, v31)
 
 		x32 = p.isolate(p.pos)
@@ -169248,7 +169404,7 @@ L12:
 		p.reset(x27)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(0, v31)
 	p.stepWork()
 	x32 = p.isolate(p.pos)
@@ -169556,7 +169712,7 @@ func (p *parser) e1136() (*Node, bool) {
 			p.reset(x27)
 			break
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 		p.setCaptureOrdinary(0, v31)
 
 		x32 = p.isolate(p.pos)
@@ -169869,7 +170025,7 @@ L12:
 		p.reset(x27)
 		break
 	}
-	v31 = p.newNode(Node{kind: kindList, Start: int32(x24), End: int32(p.pos), Children: p.kids(x25), fresh: true})
+	v31 = p.newNode(Node{kind: kindList, start: int32(x24), end: int32(p.pos), children: p.kids(x25), fresh: true})
 	p.setCapture(0, v31)
 	p.stepWork()
 	x32 = p.isolate(p.pos)
@@ -170716,9 +170872,9 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L4_ordinary
 		}
-		v8 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v8 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x6 = append(x6, v8)
-		v9 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 		v2 = v10
 		goto L3_ordinary
@@ -170749,9 +170905,9 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L11_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x13 = append(x13, v15)
-		v16 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v16 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 		v2 = v17
 		goto L3_ordinary
@@ -170802,9 +170958,9 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L24_ordinary
 		}
-		v30 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v30 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		x26 = append(x26, v30)
-		v31 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x21.pos)
 		v22 = v32
 		goto L23_ordinary
@@ -170827,7 +170983,7 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L36_ordinary
 		}
-		v38 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v38 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		v22 = v38
 		goto L23_ordinary
 	L36_ordinary:
@@ -170844,7 +171000,7 @@ func (p *parser) e1141() (*Node, bool) {
 		goto L18_ordinary
 	L23_ordinary:
 		x20 = append(x20, v22)
-		v41 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v41 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v42, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v41, x1.pos)
 		v2 = v42
 		goto L3_ordinary
@@ -170895,9 +171051,9 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 			goto L49_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 		x51 = append(x51, v55)
-		v56 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x50), End: int32(p.pos), Children: x51, fresh: true})
+		v56 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x50), end: int32(p.pos), children: x51, fresh: true})
 		v57, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v56, x46.pos)
 		v47 = v57
 		goto L48_ordinary
@@ -170920,7 +171076,7 @@ func (p *parser) e1141() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 			goto L61_ordinary
 		}
-		v63 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+		v63 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 		v47 = v63
 		goto L48_ordinary
 	L61_ordinary:
@@ -170937,7 +171093,7 @@ func (p *parser) e1141() (*Node, bool) {
 		goto L43_ordinary
 	L48_ordinary:
 		x45 = append(x45, v47)
-		v66 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x44), End: int32(p.pos), Children: x45, fresh: true})
+		v66 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x44), end: int32(p.pos), children: x45, fresh: true})
 		v67, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v66, x1.pos)
 		v2 = v67
 		goto L3_ordinary
@@ -171031,9 +171187,9 @@ func (p *parser) e1141() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L4
 	}
-	v8 = p.newNode(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v8 = p.newNode(Node{kind: kindMatch, start: int32(x7), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x6 = append(x6, v8)
-	v9 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v9 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v10, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v9, x1.pos)
 	v2 = v10
 	goto L3
@@ -171064,9 +171220,9 @@ L4:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L11
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x13 = append(x13, v15)
-	v16 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+	v16 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 	v17, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v16, x1.pos)
 	v2 = v17
 	goto L3
@@ -171117,9 +171273,9 @@ L28:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L24
 	}
-	v30 = p.newNode(Node{kind: kindMatch, Start: int32(x29), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v30 = p.newNode(Node{kind: kindMatch, start: int32(x29), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	x26 = append(x26, v30)
-	v31 = p.newNode(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+	v31 = p.newNode(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v31, x21.pos)
 	v22 = v32
 	goto L23
@@ -171142,7 +171298,7 @@ L24:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L36
 	}
-	v38 = p.newNode(Node{kind: kindMatch, Start: int32(x37), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v38 = p.newNode(Node{kind: kindMatch, start: int32(x37), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	v22 = v38
 	goto L23
 L36:
@@ -171159,7 +171315,7 @@ L39:
 	goto L18
 L23:
 	x20 = append(x20, v22)
-	v41 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+	v41 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 	v42, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v41, x1.pos)
 	v2 = v42
 	goto L3
@@ -171210,9 +171366,9 @@ L53:
 	} else if _, ok = p.matchLiteral(lit418, "\"", 123, false); !ok {
 		goto L49
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "\"", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "\"", terminal: true, fresh: true})
 	x51 = append(x51, v55)
-	v56 = p.newNode(Node{kind: kindSeq, Start: int32(x50), End: int32(p.pos), Children: x51, fresh: true})
+	v56 = p.newNode(Node{kind: kindSeq, start: int32(x50), end: int32(p.pos), children: x51, fresh: true})
 	v57, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v56, x46.pos)
 	v47 = v57
 	goto L48
@@ -171235,7 +171391,7 @@ L49:
 	} else if _, ok = p.matchLiteral(lit416, "'", 120, false); !ok {
 		goto L61
 	}
-	v63 = p.newNode(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "'", terminal: true, fresh: true})
+	v63 = p.newNode(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "'", terminal: true, fresh: true})
 	v47 = v63
 	goto L48
 L61:
@@ -171252,7 +171408,7 @@ L64:
 	goto L43
 L48:
 	x45 = append(x45, v47)
-	v66 = p.newNode(Node{kind: kindSeq, Start: int32(x44), End: int32(p.pos), Children: x45, fresh: true})
+	v66 = p.newNode(Node{kind: kindSeq, start: int32(x44), end: int32(p.pos), children: x45, fresh: true})
 	v67, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v66, x1.pos)
 	v2 = v67
 	goto L3
@@ -171363,7 +171519,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -171395,7 +171551,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 			goto L13_ordinary
 		}
-		v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+		v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 		x15 = append(x15, v17)
 
 		if v18, ok = p.q266(); !ok {
@@ -171407,7 +171563,7 @@ func (p *parser) e1142() (*Node, bool) {
 			goto L13_ordinary
 		}
 		x15 = append(x15, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 		v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 		v6 = v21
 		goto L7_ordinary
@@ -171428,7 +171584,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 			goto L23_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 		x25 = append(x25, v27)
 
 		if v28, ok = p.q266(); !ok {
@@ -171450,7 +171606,7 @@ func (p *parser) e1142() (*Node, bool) {
 			goto L23_ordinary
 		}
 		x25 = append(x25, v31)
-		v32 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+		v32 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 		v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 		v6 = v33
 		goto L7_ordinary
@@ -171471,7 +171627,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 			goto L35_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 		x37 = append(x37, v39)
 
 		x40 = p.mark()
@@ -171495,7 +171651,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 			goto L46_ordinary
 		}
-		v50 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+		v50 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 		x48 = append(x48, v50)
 
 		if v51, ok = p.q266(); !ok {
@@ -171517,7 +171673,7 @@ func (p *parser) e1142() (*Node, bool) {
 			goto L46_ordinary
 		}
 		x48 = append(x48, v54)
-		v55 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 		v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 		v41 = v56
 		goto L42_ordinary
@@ -171538,7 +171694,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 			goto L58_ordinary
 		}
-		v62 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+		v62 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 		x60 = append(x60, v62)
 
 		if v63, ok = p.q266(); !ok {
@@ -171565,7 +171721,7 @@ func (p *parser) e1142() (*Node, bool) {
 			goto L58_ordinary
 		}
 		x60 = append(x60, v67)
-		v68 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+		v68 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 		v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 		v41 = v69
 		goto L42_ordinary
@@ -171575,7 +171731,7 @@ func (p *parser) e1142() (*Node, bool) {
 		goto L35_ordinary
 	L42_ordinary:
 		x37 = append(x37, v41)
-		v70 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+		v70 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 		v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 		v6 = v71
 		goto L7_ordinary
@@ -171596,7 +171752,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 			goto L73_ordinary
 		}
-		v77 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+		v77 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 		x75 = append(x75, v77)
 
 		x78, x79 = p.pos, len(p.kidStack)
@@ -171616,7 +171772,7 @@ func (p *parser) e1142() (*Node, bool) {
 			}
 			x83 = p.pos
 			p.pos += size
-			v84 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+			v84 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 			v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 			x80++
 			p.kidStack = append(p.kidStack, v85)
@@ -171632,7 +171788,7 @@ func (p *parser) e1142() (*Node, bool) {
 			p.dropKids(x79)
 			goto L73_ordinary
 		}
-		v86 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+		v86 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 		x75 = append(x75, v86)
 
 		x87 = p.pos
@@ -171641,9 +171797,9 @@ func (p *parser) e1142() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 			goto L73_ordinary
 		}
-		v88 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+		v88 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 		x75 = append(x75, v88)
-		v89 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+		v89 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 		v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 		v6 = v90
 		goto L7_ordinary
@@ -171667,7 +171823,7 @@ func (p *parser) e1142() (*Node, bool) {
 		}
 		x93 = p.pos
 		p.pos += size
-		v94 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+		v94 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 		v6 = v94
 		goto L7_ordinary
 	L92_ordinary:
@@ -171704,7 +171860,7 @@ func (p *parser) e1142() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v100 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v100 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v100, true
 	fail_ordinary:
 		return nil, false
@@ -171805,7 +171961,7 @@ func (p *parser) e1142() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit8, "\\", 9, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -171837,7 +171993,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit422, "x", 126, false); !ok {
 		goto L13
 	}
-	v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: "x", terminal: true, fresh: true})
+	v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: "x", terminal: true, fresh: true})
 	x15 = append(x15, v17)
 	p.stepWork()
 	if v18, ok = p.q266(); !ok {
@@ -171849,7 +172005,7 @@ L8:
 		goto L13
 	}
 	x15 = append(x15, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x14), End: int32(p.pos), Children: x15, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x14), end: int32(p.pos), children: x15, fresh: true})
 	v21, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v20, x5.pos)
 	v6 = v21
 	goto L7
@@ -171870,7 +172026,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit423, "u", 127, false); !ok {
 		goto L23
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 	x25 = append(x25, v27)
 	p.stepWork()
 	if v28, ok = p.q266(); !ok {
@@ -171892,7 +172048,7 @@ L12:
 		goto L23
 	}
 	x25 = append(x25, v31)
-	v32 = p.newNode(Node{kind: kindSeq, Start: int32(x24), End: int32(p.pos), Children: x25, fresh: true})
+	v32 = p.newNode(Node{kind: kindSeq, start: int32(x24), end: int32(p.pos), children: x25, fresh: true})
 	v33, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v32, x5.pos)
 	v6 = v33
 	goto L7
@@ -171913,7 +172069,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit424, "U", 128, false); !ok {
 		goto L35
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "U", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "U", terminal: true, fresh: true})
 	x37 = append(x37, v39)
 	p.stepWork()
 	x40 = p.mark()
@@ -171937,7 +172093,7 @@ L22:
 	} else if _, ok = p.matchLiteral(lit425, "0010", 129, false); !ok {
 		goto L46
 	}
-	v50 = p.newNode(Node{kind: kindMatch, Start: int32(x49), End: int32(p.pos), Text: "0010", terminal: true, fresh: true})
+	v50 = p.newNode(Node{kind: kindMatch, start: int32(x49), end: int32(p.pos), text: "0010", terminal: true, fresh: true})
 	x48 = append(x48, v50)
 	p.stepWork()
 	if v51, ok = p.q266(); !ok {
@@ -171959,7 +172115,7 @@ L22:
 		goto L46
 	}
 	x48 = append(x48, v54)
-	v55 = p.newNode(Node{kind: kindSeq, Start: int32(x47), End: int32(p.pos), Children: x48, fresh: true})
+	v55 = p.newNode(Node{kind: kindSeq, start: int32(x47), end: int32(p.pos), children: x48, fresh: true})
 	v56, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v55, x40.pos)
 	v41 = v56
 	goto L42
@@ -171980,7 +172136,7 @@ L45:
 	} else if _, ok = p.matchLiteral(lit426, "000", 130, false); !ok {
 		goto L58
 	}
-	v62 = p.newNode(Node{kind: kindMatch, Start: int32(x61), End: int32(p.pos), Text: "000", terminal: true, fresh: true})
+	v62 = p.newNode(Node{kind: kindMatch, start: int32(x61), end: int32(p.pos), text: "000", terminal: true, fresh: true})
 	x60 = append(x60, v62)
 	p.stepWork()
 	if v63, ok = p.q266(); !ok {
@@ -172007,7 +172163,7 @@ L45:
 		goto L58
 	}
 	x60 = append(x60, v67)
-	v68 = p.newNode(Node{kind: kindSeq, Start: int32(x59), End: int32(p.pos), Children: x60, fresh: true})
+	v68 = p.newNode(Node{kind: kindSeq, start: int32(x59), end: int32(p.pos), children: x60, fresh: true})
 	v69, _ = p.shapeSingle(shaper{elems: true, k: 6, mode: 2, tuple: true}, v68, x40.pos)
 	v41 = v69
 	goto L42
@@ -172017,7 +172173,7 @@ L57:
 	goto L35
 L42:
 	x37 = append(x37, v41)
-	v70 = p.newNode(Node{kind: kindSeq, Start: int32(x36), End: int32(p.pos), Children: x37, fresh: true})
+	v70 = p.newNode(Node{kind: kindSeq, start: int32(x36), end: int32(p.pos), children: x37, fresh: true})
 	v71, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v70, x5.pos)
 	v6 = v71
 	goto L7
@@ -172038,7 +172194,7 @@ L34:
 	} else if _, ok = p.matchLiteral(lit427, "N{", 131, false); !ok {
 		goto L73
 	}
-	v77 = p.newNode(Node{kind: kindMatch, Start: int32(x76), End: int32(p.pos), Text: "N{", terminal: true, fresh: true})
+	v77 = p.newNode(Node{kind: kindMatch, start: int32(x76), end: int32(p.pos), text: "N{", terminal: true, fresh: true})
 	x75 = append(x75, v77)
 	p.stepWork()
 	x78, x79 = p.pos, len(p.kidStack)
@@ -172058,7 +172214,7 @@ L34:
 		}
 		x83 = p.pos
 		p.pos += size
-		v84 = p.newNode(Node{kind: kindMatch, Start: int32(x83), End: int32(p.pos), Text: p.text(x83, p.pos), terminal: true, fresh: true})
+		v84 = p.newNode(Node{kind: kindMatch, start: int32(x83), end: int32(p.pos), text: p.text(x83, p.pos), terminal: true, fresh: true})
 		v85 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v84, x81.pos)
 		x80++
 		p.kidStack = append(p.kidStack, v85)
@@ -172074,7 +172230,7 @@ L34:
 		p.dropKids(x79)
 		goto L73
 	}
-	v86 = p.newNode(Node{kind: kindList, Start: int32(x78), End: int32(p.pos), Children: p.kids(x79), fresh: true})
+	v86 = p.newNode(Node{kind: kindList, start: int32(x78), end: int32(p.pos), children: p.kids(x79), fresh: true})
 	x75 = append(x75, v86)
 	p.stepWork()
 	x87 = p.pos
@@ -172083,9 +172239,9 @@ L34:
 	} else if _, ok = p.matchLiteral(lit223, "}", 80, false); !ok {
 		goto L73
 	}
-	v88 = p.newNode(Node{kind: kindMatch, Start: int32(x87), End: int32(p.pos), Text: "}", terminal: true, fresh: true})
+	v88 = p.newNode(Node{kind: kindMatch, start: int32(x87), end: int32(p.pos), text: "}", terminal: true, fresh: true})
 	x75 = append(x75, v88)
-	v89 = p.newNode(Node{kind: kindSeq, Start: int32(x74), End: int32(p.pos), Children: x75, fresh: true})
+	v89 = p.newNode(Node{kind: kindSeq, start: int32(x74), end: int32(p.pos), children: x75, fresh: true})
 	v90, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v89, x5.pos)
 	v6 = v90
 	goto L7
@@ -172109,7 +172265,7 @@ L72:
 	}
 	x93 = p.pos
 	p.pos += size
-	v94 = p.newNode(Node{kind: kindMatch, Start: int32(x93), End: int32(p.pos), Text: p.text(x93, p.pos), terminal: true, fresh: true})
+	v94 = p.newNode(Node{kind: kindMatch, start: int32(x93), end: int32(p.pos), text: p.text(x93, p.pos), terminal: true, fresh: true})
 	v6 = v94
 	goto L7
 L92:
@@ -172146,7 +172302,7 @@ L95:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v100 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v100 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v100, true
 fail:
 	return nil, false
@@ -172253,7 +172409,7 @@ func (p *parser) e1143() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x8 = append(x8, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 		p.setCaptureOrdinary(0, v12)
 
@@ -172422,7 +172578,7 @@ L5:
 	}
 	p.setCapture(1, v10)
 	x8 = append(x8, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 	p.setCapture(0, v12)
 	p.stepWork()
@@ -172595,7 +172751,7 @@ func (p *parser) e1144() (*Node, bool) {
 		}
 		p.setCaptureOrdinary(1, v10)
 		x8 = append(x8, v10)
-		v11 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 		v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 		p.setCaptureOrdinary(0, v12)
 
@@ -172764,7 +172920,7 @@ L5:
 	}
 	p.setCapture(1, v10)
 	x8 = append(x8, v10)
-	v11 = p.newNode(Node{kind: kindSeq, Start: int32(x7), End: int32(p.pos), Children: x8, fresh: true})
+	v11 = p.newNode(Node{kind: kindSeq, start: int32(x7), end: int32(p.pos), children: x8, fresh: true})
 	v12 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v11, x6)
 	p.setCapture(0, v12)
 	p.stepWork()
@@ -172865,14 +173021,14 @@ func (p *parser) e1145() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 		x2 = append(x2, v5)
 
 		if v6, ok = p.q14(); !ok {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v6)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -172904,14 +173060,14 @@ func (p *parser) e1145() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit48, "=", 33, false); !ok {
 		goto fail
 	}
-	v5 = p.newNode(Node{kind: kindMatch, Start: int32(x4), End: int32(p.pos), Text: "=", terminal: true, fresh: true})
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x4), end: int32(p.pos), text: "=", terminal: true, fresh: true})
 	x2 = append(x2, v5)
 	p.stepWork()
 	if v6, ok = p.q14(); !ok {
 		goto fail
 	}
 	x2 = append(x2, v6)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -172957,7 +173113,7 @@ func (p *parser) e1146() (*Node, bool) {
 			goto fail_ordinary
 		}
 		p.pos += size
-		v3 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x2), End: int32(p.pos), Text: p.text(x2, p.pos), terminal: true, fresh: true})
+		v3 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x2), end: int32(p.pos), text: p.text(x2, p.pos), terminal: true, fresh: true})
 		p.setCaptureOrdinary(0, v3)
 
 		x4 = p.mark()
@@ -173016,7 +173172,7 @@ func (p *parser) e1146() (*Node, bool) {
 		goto fail
 	}
 	p.pos += size
-	v3 = p.newNode(Node{kind: kindMatch, Start: int32(x2), End: int32(p.pos), Text: p.text(x2, p.pos), terminal: true, fresh: true})
+	v3 = p.newNode(Node{kind: kindMatch, start: int32(x2), end: int32(p.pos), text: p.text(x2, p.pos), terminal: true, fresh: true})
 	p.setCapture(0, v3)
 	p.stepWork()
 	x4 = p.mark()
@@ -173089,7 +173245,7 @@ func (p *parser) e1147() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 		p.setCaptureOrdinary(0, v9)
 		return nil, true
 	fail_ordinary:
@@ -173147,7 +173303,7 @@ func (p *parser) e1147() (*Node, bool) {
 		p.reset(x5)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x2), End: int32(p.pos), Children: p.kids(x3), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x2), end: int32(p.pos), children: p.kids(x3), fresh: true})
 	p.setCapture(0, v9)
 	return nil, true
 fail:
@@ -174253,7 +174409,7 @@ func (p *parser) e1154() (*Node, bool) {
 		}
 		x17 = p.pos
 		p.pos += size
-		v18 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x17), End: int32(p.pos), Text: p.text(x17, p.pos), terminal: true, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x17), end: int32(p.pos), text: p.text(x17, p.pos), terminal: true, fresh: true})
 		v14 = v18
 		goto L16_ordinary
 	L15_ordinary:
@@ -174261,7 +174417,7 @@ func (p *parser) e1154() (*Node, bool) {
 		v14 = nil
 	L16_ordinary:
 		x6 = append(x6, v14)
-		v19 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v20, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v19, x1.pos)
 		v2 = v20
 		goto L3_ordinary
@@ -174305,7 +174461,7 @@ func (p *parser) e1154() (*Node, bool) {
 		}
 		x33 = p.pos
 		p.pos += size
-		v34 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x33), End: int32(p.pos), Text: p.text(x33, p.pos), terminal: true, fresh: true})
+		v34 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x33), end: int32(p.pos), text: p.text(x33, p.pos), terminal: true, fresh: true})
 		v30 = v34
 		goto L32_ordinary
 	L31_ordinary:
@@ -174313,7 +174469,7 @@ func (p *parser) e1154() (*Node, bool) {
 		v30 = nil
 	L32_ordinary:
 		x26 = append(x26, v30)
-		v35 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x1.pos)
 		v2 = v36
 		goto L3_ordinary
@@ -174345,9 +174501,9 @@ func (p *parser) e1154() (*Node, bool) {
 		}
 		x42 = p.pos
 		p.pos += size
-		v43 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: p.text(x42, p.pos), terminal: true, fresh: true})
+		v43 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: p.text(x42, p.pos), terminal: true, fresh: true})
 		x40 = append(x40, v43)
-		v44 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+		v44 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 		v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 		v2 = v45
 		goto L3_ordinary
@@ -174466,7 +174622,7 @@ L11:
 	}
 	x17 = p.pos
 	p.pos += size
-	v18 = p.newNode(Node{kind: kindMatch, Start: int32(x17), End: int32(p.pos), Text: p.text(x17, p.pos), terminal: true, fresh: true})
+	v18 = p.newNode(Node{kind: kindMatch, start: int32(x17), end: int32(p.pos), text: p.text(x17, p.pos), terminal: true, fresh: true})
 	v14 = v18
 	goto L16
 L15:
@@ -174474,7 +174630,7 @@ L15:
 	v14 = nil
 L16:
 	x6 = append(x6, v14)
-	v19 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v19 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v20, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v19, x1.pos)
 	v2 = v20
 	goto L3
@@ -174518,7 +174674,7 @@ L4:
 	}
 	x33 = p.pos
 	p.pos += size
-	v34 = p.newNode(Node{kind: kindMatch, Start: int32(x33), End: int32(p.pos), Text: p.text(x33, p.pos), terminal: true, fresh: true})
+	v34 = p.newNode(Node{kind: kindMatch, start: int32(x33), end: int32(p.pos), text: p.text(x33, p.pos), terminal: true, fresh: true})
 	v30 = v34
 	goto L32
 L31:
@@ -174526,7 +174682,7 @@ L31:
 	v30 = nil
 L32:
 	x26 = append(x26, v30)
-	v35 = p.newNode(Node{kind: kindSeq, Start: int32(x25), End: int32(p.pos), Children: x26, fresh: true})
+	v35 = p.newNode(Node{kind: kindSeq, start: int32(x25), end: int32(p.pos), children: x26, fresh: true})
 	v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x1.pos)
 	v2 = v36
 	goto L3
@@ -174558,9 +174714,9 @@ L23:
 	}
 	x42 = p.pos
 	p.pos += size
-	v43 = p.newNode(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: p.text(x42, p.pos), terminal: true, fresh: true})
+	v43 = p.newNode(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: p.text(x42, p.pos), terminal: true, fresh: true})
 	x40 = append(x40, v43)
-	v44 = p.newNode(Node{kind: kindSeq, Start: int32(x39), End: int32(p.pos), Children: x40, fresh: true})
+	v44 = p.newNode(Node{kind: kindSeq, start: int32(x39), end: int32(p.pos), children: x40, fresh: true})
 	v45, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v44, x1.pos)
 	v2 = v45
 	goto L3
@@ -174650,7 +174806,7 @@ func (p *parser) e1155() (*Node, bool) {
 		v9 = nil
 	L11_ordinary:
 		x6 = append(x6, v9)
-		v13 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 		v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 		v2 = v14
 		goto L3_ordinary
@@ -174679,7 +174835,7 @@ func (p *parser) e1155() (*Node, bool) {
 			goto L18_ordinary
 		}
 		x20 = append(x20, v22)
-		v23 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 		v24, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v23, x1.pos)
 		v2 = v24
 		goto L3_ordinary
@@ -174766,7 +174922,7 @@ L10:
 	v9 = nil
 L11:
 	x6 = append(x6, v9)
-	v13 = p.newNode(Node{kind: kindSeq, Start: int32(x5), End: int32(p.pos), Children: x6, fresh: true})
+	v13 = p.newNode(Node{kind: kindSeq, start: int32(x5), end: int32(p.pos), children: x6, fresh: true})
 	v14, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v13, x1.pos)
 	v2 = v14
 	goto L3
@@ -174795,7 +174951,7 @@ L4:
 		goto L18
 	}
 	x20 = append(x20, v22)
-	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x19), End: int32(p.pos), Children: x20, fresh: true})
+	v23 = p.newNode(Node{kind: kindSeq, start: int32(x19), end: int32(p.pos), children: x20, fresh: true})
 	v24, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v23, x1.pos)
 	v2 = v24
 	goto L3
@@ -174890,7 +175046,7 @@ func (p *parser) e1156() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L7_ordinary
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x9 = append(x9, v12)
 
 		x13 = p.mark()
@@ -174905,7 +175061,7 @@ func (p *parser) e1156() (*Node, bool) {
 		v14 = nil
 	L16_ordinary:
 		x9 = append(x9, v14)
-		v18 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+		v18 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v19, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v18, x1.pos)
 		v2 = v19
 		goto L3_ordinary
@@ -174926,14 +175082,14 @@ func (p *parser) e1156() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 			goto L21_ordinary
 		}
-		v25 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x23 = append(x23, v25)
 
 		if v26, ok = p.q295(); !ok {
 			goto L21_ordinary
 		}
 		x23 = append(x23, v26)
-		v27 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 		v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1.pos)
 		v2 = v28
 		goto L3_ordinary
@@ -174999,7 +175155,7 @@ func (p *parser) e1156() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 		goto L7
 	}
-	v12 = p.newNode(Node{kind: kindMatch, Start: int32(x11), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v12 = p.newNode(Node{kind: kindMatch, start: int32(x11), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x9 = append(x9, v12)
 	p.stepWork()
 	x13 = p.mark()
@@ -175014,7 +175170,7 @@ L15:
 	v14 = nil
 L16:
 	x9 = append(x9, v14)
-	v18 = p.newNode(Node{kind: kindSeq, Start: int32(x8), End: int32(p.pos), Children: x9, fresh: true})
+	v18 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 	v19, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v18, x1.pos)
 	v2 = v19
 	goto L3
@@ -175035,14 +175191,14 @@ L6:
 	} else if _, ok = p.matchLiteral(lit92, ".", 50, false); !ok {
 		goto L21
 	}
-	v25 = p.newNode(Node{kind: kindMatch, Start: int32(x24), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v25 = p.newNode(Node{kind: kindMatch, start: int32(x24), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x23 = append(x23, v25)
 	p.stepWork()
 	if v26, ok = p.q295(); !ok {
 		goto L21
 	}
 	x23 = append(x23, v26)
-	v27 = p.newNode(Node{kind: kindSeq, Start: int32(x22), End: int32(p.pos), Children: x23, fresh: true})
+	v27 = p.newNode(Node{kind: kindSeq, start: int32(x22), end: int32(p.pos), children: x23, fresh: true})
 	v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1.pos)
 	v2 = v28
 	goto L3
@@ -175091,7 +175247,7 @@ func (p *parser) e1157() (*Node, bool) {
 		}
 		x3 = p.pos
 		p.pos += size
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -175108,7 +175264,7 @@ func (p *parser) e1157() (*Node, bool) {
 		}
 		x9 = p.pos
 		p.pos += size
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 		v6 = v10
 		goto L8_ordinary
 	L7_ordinary:
@@ -175121,7 +175277,7 @@ func (p *parser) e1157() (*Node, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v11)
-		v12 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v12, true
 	fail_ordinary:
 		return nil, false
@@ -175159,7 +175315,7 @@ func (p *parser) e1157() (*Node, bool) {
 	}
 	x3 = p.pos
 	p.pos += size
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -175176,7 +175332,7 @@ func (p *parser) e1157() (*Node, bool) {
 	}
 	x9 = p.pos
 	p.pos += size
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 	v6 = v10
 	goto L8
 L7:
@@ -175189,7 +175345,7 @@ L8:
 		goto fail
 	}
 	x2 = append(x2, v11)
-	v12 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v12 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v12, true
 fail:
 	return nil, false
@@ -175244,7 +175400,7 @@ func (p *parser) e1158() (*Node, bool) {
 			p.reset(x5)
 			break
 		}
-		v7 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -175297,7 +175453,7 @@ L3:
 		p.reset(x5)
 		break
 	}
-	v7 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v7 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -175381,7 +175537,7 @@ func (p *parser) e1160() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -175428,7 +175584,7 @@ func (p *parser) e1160() (*Node, bool) {
 		goto L10_ordinary
 	L20_ordinary:
 		x12 = append(x12, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -175487,7 +175643,7 @@ func (p *parser) e1160() (*Node, bool) {
 	}
 	x8 = p.pos
 	p.pos += size
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -175534,7 +175690,7 @@ L19:
 	goto L10
 L20:
 	x12 = append(x12, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -175596,7 +175752,7 @@ func (p *parser) e1161() (*Node, bool) {
 		}
 		x8 = p.pos
 		p.pos += size
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -175643,7 +175799,7 @@ func (p *parser) e1161() (*Node, bool) {
 		goto L10_ordinary
 	L20_ordinary:
 		x12 = append(x12, v21)
-		v22 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+		v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 		v2 = v23
 		goto L3_ordinary
@@ -175702,7 +175858,7 @@ func (p *parser) e1161() (*Node, bool) {
 	}
 	x8 = p.pos
 	p.pos += size
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: p.text(x8, p.pos), terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: p.text(x8, p.pos), terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -175749,7 +175905,7 @@ L19:
 	goto L10
 L20:
 	x12 = append(x12, v21)
-	v22 = p.newNode(Node{kind: kindSeq, Start: int32(x11), End: int32(p.pos), Children: x12, fresh: true})
+	v22 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 	v23, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v22, x1.pos)
 	v2 = v23
 	goto L3
@@ -175867,7 +176023,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit189, "False", 72, false); !ok {
 			goto L9_ordinary
 		}
-		v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "False", terminal: true, fresh: true})
+		v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "False", terminal: true, fresh: true})
 		v4 = v11
 		goto L5_ordinary
 	L9_ordinary:
@@ -175884,7 +176040,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit187, "None", 70, false); !ok {
 			goto L13_ordinary
 		}
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "None", terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "None", terminal: true, fresh: true})
 		v4 = v15
 		goto L5_ordinary
 	L13_ordinary:
@@ -175901,7 +176057,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit188, "True", 71, false); !ok {
 			goto L17_ordinary
 		}
-		v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "True", terminal: true, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "True", terminal: true, fresh: true})
 		v4 = v19
 		goto L5_ordinary
 	L17_ordinary:
@@ -175918,7 +176074,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit289, "and", 91, false); !ok {
 			goto L21_ordinary
 		}
-		v23 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x22), End: int32(p.pos), Text: "and", terminal: true, fresh: true})
+		v23 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x22), end: int32(p.pos), text: "and", terminal: true, fresh: true})
 		v4 = v23
 		goto L5_ordinary
 	L21_ordinary:
@@ -175933,7 +176089,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 			goto L25_ordinary
 		}
-		v27 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+		v27 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 		v4 = v27
 		goto L5_ordinary
 	L25_ordinary:
@@ -175948,7 +176104,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 			goto L29_ordinary
 		}
-		v31 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+		v31 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 		v4 = v31
 		goto L5_ordinary
 	L29_ordinary:
@@ -175965,7 +176121,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 			goto L33_ordinary
 		}
-		v35 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+		v35 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 		v4 = v35
 		goto L5_ordinary
 	L33_ordinary:
@@ -175980,7 +176136,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 			goto L37_ordinary
 		}
-		v39 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+		v39 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 		v4 = v39
 		goto L5_ordinary
 	L37_ordinary:
@@ -175995,7 +176151,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 			goto L41_ordinary
 		}
-		v43 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+		v43 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 		v4 = v43
 		goto L5_ordinary
 	L41_ordinary:
@@ -176010,7 +176166,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 			goto L45_ordinary
 		}
-		v47 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+		v47 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 		v4 = v47
 		goto L5_ordinary
 	L45_ordinary:
@@ -176025,7 +176181,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 			goto L49_ordinary
 		}
-		v51 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x50), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+		v51 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x50), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 		v4 = v51
 		goto L5_ordinary
 	L49_ordinary:
@@ -176042,7 +176198,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 			goto L53_ordinary
 		}
-		v55 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+		v55 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 		v4 = v55
 		goto L5_ordinary
 	L53_ordinary:
@@ -176059,7 +176215,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 			goto L57_ordinary
 		}
-		v59 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x58), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+		v59 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x58), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 		v4 = v59
 		goto L5_ordinary
 	L57_ordinary:
@@ -176076,7 +176232,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 			goto L61_ordinary
 		}
-		v63 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+		v63 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 		v4 = v63
 		goto L5_ordinary
 	L61_ordinary:
@@ -176093,7 +176249,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 			goto L65_ordinary
 		}
-		v67 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+		v67 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 		v4 = v67
 		goto L5_ordinary
 	L65_ordinary:
@@ -176108,7 +176264,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 			goto L69_ordinary
 		}
-		v71 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+		v71 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 		v4 = v71
 		goto L5_ordinary
 	L69_ordinary:
@@ -176123,7 +176279,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 			goto L73_ordinary
 		}
-		v75 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+		v75 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 		v4 = v75
 		goto L5_ordinary
 	L73_ordinary:
@@ -176140,7 +176296,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 			goto L77_ordinary
 		}
-		v79 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+		v79 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 		v4 = v79
 		goto L5_ordinary
 	L77_ordinary:
@@ -176157,7 +176313,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 			goto L81_ordinary
 		}
-		v83 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x82), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+		v83 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x82), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 		v4 = v83
 		goto L5_ordinary
 	L81_ordinary:
@@ -176172,7 +176328,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 			goto L85_ordinary
 		}
-		v87 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+		v87 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 		v4 = v87
 		goto L5_ordinary
 	L85_ordinary:
@@ -176189,7 +176345,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 			goto L89_ordinary
 		}
-		v91 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+		v91 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 		v4 = v91
 		goto L5_ordinary
 	L89_ordinary:
@@ -176204,7 +176360,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 			goto L93_ordinary
 		}
-		v95 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x94), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+		v95 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x94), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 		v4 = v95
 		goto L5_ordinary
 	L93_ordinary:
@@ -176221,7 +176377,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 			goto L97_ordinary
 		}
-		v99 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+		v99 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 		v4 = v99
 		goto L5_ordinary
 	L97_ordinary:
@@ -176238,7 +176394,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit306, "is", 103, false); !ok {
 			goto L101_ordinary
 		}
-		v103 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x102), End: int32(p.pos), Text: "is", terminal: true, fresh: true})
+		v103 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x102), end: int32(p.pos), text: "is", terminal: true, fresh: true})
 		v4 = v103
 		goto L5_ordinary
 	L101_ordinary:
@@ -176253,7 +176409,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 			goto L105_ordinary
 		}
-		v107 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x106), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+		v107 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x106), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 		v4 = v107
 		goto L5_ordinary
 	L105_ordinary:
@@ -176268,7 +176424,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 			goto L109_ordinary
 		}
-		v111 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x110), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+		v111 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x110), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 		v4 = v111
 		goto L5_ordinary
 	L109_ordinary:
@@ -176285,7 +176441,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit293, "not", 92, false); !ok {
 			goto L113_ordinary
 		}
-		v115 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x114), End: int32(p.pos), Text: "not", terminal: true, fresh: true})
+		v115 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x114), end: int32(p.pos), text: "not", terminal: true, fresh: true})
 		v4 = v115
 		goto L5_ordinary
 	L113_ordinary:
@@ -176302,7 +176458,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
 			goto L117_ordinary
 		}
-		v119 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x118), End: int32(p.pos), Text: "or", terminal: true, fresh: true})
+		v119 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x118), end: int32(p.pos), text: "or", terminal: true, fresh: true})
 		v4 = v119
 		goto L5_ordinary
 	L117_ordinary:
@@ -176319,7 +176475,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 			goto L121_ordinary
 		}
-		v123 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x122), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+		v123 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x122), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 		v4 = v123
 		goto L5_ordinary
 	L121_ordinary:
@@ -176334,7 +176490,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 			goto L125_ordinary
 		}
-		v127 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+		v127 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 		v4 = v127
 		goto L5_ordinary
 	L125_ordinary:
@@ -176349,7 +176505,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 			goto L129_ordinary
 		}
-		v131 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x130), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+		v131 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x130), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 		v4 = v131
 		goto L5_ordinary
 	L129_ordinary:
@@ -176366,7 +176522,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 			goto L133_ordinary
 		}
-		v135 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x134), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+		v135 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x134), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 		v4 = v135
 		goto L5_ordinary
 	L133_ordinary:
@@ -176381,7 +176537,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 			goto L137_ordinary
 		}
-		v139 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x138), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+		v139 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x138), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 		v4 = v139
 		goto L5_ordinary
 	L137_ordinary:
@@ -176398,7 +176554,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 			goto L141_ordinary
 		}
-		v143 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x142), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+		v143 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x142), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 		v4 = v143
 		goto L5_ordinary
 	L141_ordinary:
@@ -176413,7 +176569,7 @@ func (p *parser) e1162() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 			goto L145_ordinary
 		}
-		v147 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x146), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+		v147 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x146), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 		v4 = v147
 		goto L5_ordinary
 	L145_ordinary:
@@ -176435,7 +176591,7 @@ func (p *parser) e1162() (*Node, bool) {
 	L149_ordinary:
 		p.silent--
 		p.reset(x148)
-		v150 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v150 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v150, true
 	fail_ordinary:
 		return nil, false
@@ -176543,7 +176699,7 @@ func (p *parser) e1162() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit189, "False", 72, false); !ok {
 		goto L9
 	}
-	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: "False", terminal: true, fresh: true})
+	v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: "False", terminal: true, fresh: true})
 	v4 = v11
 	goto L5
 L9:
@@ -176560,7 +176716,7 @@ L8:
 	} else if _, ok = p.matchLiteral(lit187, "None", 70, false); !ok {
 		goto L13
 	}
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: "None", terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: "None", terminal: true, fresh: true})
 	v4 = v15
 	goto L5
 L13:
@@ -176577,7 +176733,7 @@ L12:
 	} else if _, ok = p.matchLiteral(lit188, "True", 71, false); !ok {
 		goto L17
 	}
-	v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "True", terminal: true, fresh: true})
+	v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "True", terminal: true, fresh: true})
 	v4 = v19
 	goto L5
 L17:
@@ -176594,7 +176750,7 @@ L16:
 	} else if _, ok = p.matchLiteral(lit289, "and", 91, false); !ok {
 		goto L21
 	}
-	v23 = p.newNode(Node{kind: kindMatch, Start: int32(x22), End: int32(p.pos), Text: "and", terminal: true, fresh: true})
+	v23 = p.newNode(Node{kind: kindMatch, start: int32(x22), end: int32(p.pos), text: "and", terminal: true, fresh: true})
 	v4 = v23
 	goto L5
 L21:
@@ -176609,7 +176765,7 @@ L20:
 	if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 		goto L25
 	}
-	v27 = p.newNode(Node{kind: kindMatch, Start: int32(x26), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+	v27 = p.newNode(Node{kind: kindMatch, start: int32(x26), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 	v4 = v27
 	goto L5
 L25:
@@ -176624,7 +176780,7 @@ L24:
 	if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 		goto L29
 	}
-	v31 = p.newNode(Node{kind: kindMatch, Start: int32(x30), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+	v31 = p.newNode(Node{kind: kindMatch, start: int32(x30), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 	v4 = v31
 	goto L5
 L29:
@@ -176641,7 +176797,7 @@ L28:
 	} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 		goto L33
 	}
-	v35 = p.newNode(Node{kind: kindMatch, Start: int32(x34), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+	v35 = p.newNode(Node{kind: kindMatch, start: int32(x34), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 	v4 = v35
 	goto L5
 L33:
@@ -176656,7 +176812,7 @@ L32:
 	if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 		goto L37
 	}
-	v39 = p.newNode(Node{kind: kindMatch, Start: int32(x38), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+	v39 = p.newNode(Node{kind: kindMatch, start: int32(x38), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 	v4 = v39
 	goto L5
 L37:
@@ -176671,7 +176827,7 @@ L36:
 	if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 		goto L41
 	}
-	v43 = p.newNode(Node{kind: kindMatch, Start: int32(x42), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+	v43 = p.newNode(Node{kind: kindMatch, start: int32(x42), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 	v4 = v43
 	goto L5
 L41:
@@ -176686,7 +176842,7 @@ L40:
 	if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 		goto L45
 	}
-	v47 = p.newNode(Node{kind: kindMatch, Start: int32(x46), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+	v47 = p.newNode(Node{kind: kindMatch, start: int32(x46), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 	v4 = v47
 	goto L5
 L45:
@@ -176701,7 +176857,7 @@ L44:
 	if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 		goto L49
 	}
-	v51 = p.newNode(Node{kind: kindMatch, Start: int32(x50), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+	v51 = p.newNode(Node{kind: kindMatch, start: int32(x50), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 	v4 = v51
 	goto L5
 L49:
@@ -176718,7 +176874,7 @@ L48:
 	} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 		goto L53
 	}
-	v55 = p.newNode(Node{kind: kindMatch, Start: int32(x54), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+	v55 = p.newNode(Node{kind: kindMatch, start: int32(x54), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 	v4 = v55
 	goto L5
 L53:
@@ -176735,7 +176891,7 @@ L52:
 	} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 		goto L57
 	}
-	v59 = p.newNode(Node{kind: kindMatch, Start: int32(x58), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+	v59 = p.newNode(Node{kind: kindMatch, start: int32(x58), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 	v4 = v59
 	goto L5
 L57:
@@ -176752,7 +176908,7 @@ L56:
 	} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 		goto L61
 	}
-	v63 = p.newNode(Node{kind: kindMatch, Start: int32(x62), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+	v63 = p.newNode(Node{kind: kindMatch, start: int32(x62), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 	v4 = v63
 	goto L5
 L61:
@@ -176769,7 +176925,7 @@ L60:
 	} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 		goto L65
 	}
-	v67 = p.newNode(Node{kind: kindMatch, Start: int32(x66), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+	v67 = p.newNode(Node{kind: kindMatch, start: int32(x66), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 	v4 = v67
 	goto L5
 L65:
@@ -176784,7 +176940,7 @@ L64:
 	if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 		goto L69
 	}
-	v71 = p.newNode(Node{kind: kindMatch, Start: int32(x70), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+	v71 = p.newNode(Node{kind: kindMatch, start: int32(x70), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 	v4 = v71
 	goto L5
 L69:
@@ -176799,7 +176955,7 @@ L68:
 	if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 		goto L73
 	}
-	v75 = p.newNode(Node{kind: kindMatch, Start: int32(x74), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+	v75 = p.newNode(Node{kind: kindMatch, start: int32(x74), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 	v4 = v75
 	goto L5
 L73:
@@ -176816,7 +176972,7 @@ L72:
 	} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 		goto L77
 	}
-	v79 = p.newNode(Node{kind: kindMatch, Start: int32(x78), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+	v79 = p.newNode(Node{kind: kindMatch, start: int32(x78), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 	v4 = v79
 	goto L5
 L77:
@@ -176833,7 +176989,7 @@ L76:
 	} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 		goto L81
 	}
-	v83 = p.newNode(Node{kind: kindMatch, Start: int32(x82), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+	v83 = p.newNode(Node{kind: kindMatch, start: int32(x82), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 	v4 = v83
 	goto L5
 L81:
@@ -176848,7 +177004,7 @@ L80:
 	if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 		goto L85
 	}
-	v87 = p.newNode(Node{kind: kindMatch, Start: int32(x86), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+	v87 = p.newNode(Node{kind: kindMatch, start: int32(x86), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 	v4 = v87
 	goto L5
 L85:
@@ -176865,7 +177021,7 @@ L84:
 	} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 		goto L89
 	}
-	v91 = p.newNode(Node{kind: kindMatch, Start: int32(x90), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+	v91 = p.newNode(Node{kind: kindMatch, start: int32(x90), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 	v4 = v91
 	goto L5
 L89:
@@ -176880,7 +177036,7 @@ L88:
 	if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 		goto L93
 	}
-	v95 = p.newNode(Node{kind: kindMatch, Start: int32(x94), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+	v95 = p.newNode(Node{kind: kindMatch, start: int32(x94), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 	v4 = v95
 	goto L5
 L93:
@@ -176897,7 +177053,7 @@ L92:
 	} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 		goto L97
 	}
-	v99 = p.newNode(Node{kind: kindMatch, Start: int32(x98), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+	v99 = p.newNode(Node{kind: kindMatch, start: int32(x98), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 	v4 = v99
 	goto L5
 L97:
@@ -176914,7 +177070,7 @@ L96:
 	} else if _, ok = p.matchLiteral(lit306, "is", 103, false); !ok {
 		goto L101
 	}
-	v103 = p.newNode(Node{kind: kindMatch, Start: int32(x102), End: int32(p.pos), Text: "is", terminal: true, fresh: true})
+	v103 = p.newNode(Node{kind: kindMatch, start: int32(x102), end: int32(p.pos), text: "is", terminal: true, fresh: true})
 	v4 = v103
 	goto L5
 L101:
@@ -176929,7 +177085,7 @@ L100:
 	if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 		goto L105
 	}
-	v107 = p.newNode(Node{kind: kindMatch, Start: int32(x106), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+	v107 = p.newNode(Node{kind: kindMatch, start: int32(x106), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 	v4 = v107
 	goto L5
 L105:
@@ -176944,7 +177100,7 @@ L104:
 	if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 		goto L109
 	}
-	v111 = p.newNode(Node{kind: kindMatch, Start: int32(x110), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+	v111 = p.newNode(Node{kind: kindMatch, start: int32(x110), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 	v4 = v111
 	goto L5
 L109:
@@ -176961,7 +177117,7 @@ L108:
 	} else if _, ok = p.matchLiteral(lit293, "not", 92, false); !ok {
 		goto L113
 	}
-	v115 = p.newNode(Node{kind: kindMatch, Start: int32(x114), End: int32(p.pos), Text: "not", terminal: true, fresh: true})
+	v115 = p.newNode(Node{kind: kindMatch, start: int32(x114), end: int32(p.pos), text: "not", terminal: true, fresh: true})
 	v4 = v115
 	goto L5
 L113:
@@ -176978,7 +177134,7 @@ L112:
 	} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
 		goto L117
 	}
-	v119 = p.newNode(Node{kind: kindMatch, Start: int32(x118), End: int32(p.pos), Text: "or", terminal: true, fresh: true})
+	v119 = p.newNode(Node{kind: kindMatch, start: int32(x118), end: int32(p.pos), text: "or", terminal: true, fresh: true})
 	v4 = v119
 	goto L5
 L117:
@@ -176995,7 +177151,7 @@ L116:
 	} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 		goto L121
 	}
-	v123 = p.newNode(Node{kind: kindMatch, Start: int32(x122), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+	v123 = p.newNode(Node{kind: kindMatch, start: int32(x122), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 	v4 = v123
 	goto L5
 L121:
@@ -177010,7 +177166,7 @@ L120:
 	if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 		goto L125
 	}
-	v127 = p.newNode(Node{kind: kindMatch, Start: int32(x126), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+	v127 = p.newNode(Node{kind: kindMatch, start: int32(x126), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 	v4 = v127
 	goto L5
 L125:
@@ -177025,7 +177181,7 @@ L124:
 	if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 		goto L129
 	}
-	v131 = p.newNode(Node{kind: kindMatch, Start: int32(x130), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+	v131 = p.newNode(Node{kind: kindMatch, start: int32(x130), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 	v4 = v131
 	goto L5
 L129:
@@ -177042,7 +177198,7 @@ L128:
 	} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 		goto L133
 	}
-	v135 = p.newNode(Node{kind: kindMatch, Start: int32(x134), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+	v135 = p.newNode(Node{kind: kindMatch, start: int32(x134), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 	v4 = v135
 	goto L5
 L133:
@@ -177057,7 +177213,7 @@ L132:
 	if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 		goto L137
 	}
-	v139 = p.newNode(Node{kind: kindMatch, Start: int32(x138), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+	v139 = p.newNode(Node{kind: kindMatch, start: int32(x138), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 	v4 = v139
 	goto L5
 L137:
@@ -177074,7 +177230,7 @@ L136:
 	} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 		goto L141
 	}
-	v143 = p.newNode(Node{kind: kindMatch, Start: int32(x142), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+	v143 = p.newNode(Node{kind: kindMatch, start: int32(x142), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 	v4 = v143
 	goto L5
 L141:
@@ -177089,7 +177245,7 @@ L140:
 	if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 		goto L145
 	}
-	v147 = p.newNode(Node{kind: kindMatch, Start: int32(x146), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+	v147 = p.newNode(Node{kind: kindMatch, start: int32(x146), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 	v4 = v147
 	goto L5
 L145:
@@ -177111,7 +177267,7 @@ L5:
 L149:
 	p.silent--
 	p.reset(x148)
-	v150 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v150 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v150, true
 fail:
 	return nil, false
@@ -177140,7 +177296,7 @@ func (p *parser) e1163() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177155,7 +177311,7 @@ func (p *parser) e1163() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177181,7 +177337,7 @@ func (p *parser) e1163() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit487, "as", 173, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "as", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "as", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177196,7 +177352,7 @@ func (p *parser) e1163() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177223,7 +177379,7 @@ func (p *parser) e1164() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177238,7 +177394,7 @@ func (p *parser) e1164() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177262,7 +177418,7 @@ func (p *parser) e1164() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit485, "assert", 29, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "assert", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "assert", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177277,7 +177433,7 @@ func (p *parser) e1164() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177304,7 +177460,7 @@ func (p *parser) e1165() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177319,7 +177475,7 @@ func (p *parser) e1165() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177343,7 +177499,7 @@ func (p *parser) e1165() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit486, "async", 59, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "async", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "async", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177358,7 +177514,7 @@ func (p *parser) e1165() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177385,7 +177541,7 @@ func (p *parser) e1166() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177400,7 +177556,7 @@ func (p *parser) e1166() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177424,7 +177580,7 @@ func (p *parser) e1166() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit488, "await", 174, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "await", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "await", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177439,7 +177595,7 @@ func (p *parser) e1166() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177466,7 +177622,7 @@ func (p *parser) e1167() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177481,7 +177637,7 @@ func (p *parser) e1167() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177505,7 +177661,7 @@ func (p *parser) e1167() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit489, "break", 22, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "break", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "break", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177520,7 +177676,7 @@ func (p *parser) e1167() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177549,7 +177705,7 @@ func (p *parser) e1168() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit516, "case", 179, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "case", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "case", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177564,7 +177720,7 @@ func (p *parser) e1168() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177590,7 +177746,7 @@ func (p *parser) e1168() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit516, "case", 179, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "case", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "case", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177605,7 +177761,7 @@ func (p *parser) e1168() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177632,7 +177788,7 @@ func (p *parser) e1169() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177647,7 +177803,7 @@ func (p *parser) e1169() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177671,7 +177827,7 @@ func (p *parser) e1169() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit490, "class", 175, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "class", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "class", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177686,7 +177842,7 @@ func (p *parser) e1169() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177713,7 +177869,7 @@ func (p *parser) e1170() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177728,7 +177884,7 @@ func (p *parser) e1170() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177752,7 +177908,7 @@ func (p *parser) e1170() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit491, "continue", 23, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "continue", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "continue", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177767,7 +177923,7 @@ func (p *parser) e1170() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177796,7 +177952,7 @@ func (p *parser) e1171() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177811,7 +177967,7 @@ func (p *parser) e1171() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177837,7 +177993,7 @@ func (p *parser) e1171() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit492, "def", 176, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "def", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "def", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177852,7 +178008,7 @@ func (p *parser) e1171() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177881,7 +178037,7 @@ func (p *parser) e1172() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177896,7 +178052,7 @@ func (p *parser) e1172() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -177922,7 +178078,7 @@ func (p *parser) e1172() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit493, "del", 28, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "del", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "del", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -177937,7 +178093,7 @@ func (p *parser) e1172() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -177966,7 +178122,7 @@ func (p *parser) e1173() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -177981,7 +178137,7 @@ func (p *parser) e1173() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178007,7 +178163,7 @@ func (p *parser) e1173() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit494, "elif", 177, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "elif", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "elif", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178022,7 +178178,7 @@ func (p *parser) e1173() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178051,7 +178207,7 @@ func (p *parser) e1174() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178066,7 +178222,7 @@ func (p *parser) e1174() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178092,7 +178248,7 @@ func (p *parser) e1174() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit477, "else", 166, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "else", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "else", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178107,7 +178263,7 @@ func (p *parser) e1174() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178134,7 +178290,7 @@ func (p *parser) e1175() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178149,7 +178305,7 @@ func (p *parser) e1175() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178173,7 +178329,7 @@ func (p *parser) e1175() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit495, "except", 63, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "except", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "except", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178188,7 +178344,7 @@ func (p *parser) e1175() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178215,7 +178371,7 @@ func (p *parser) e1176() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178230,7 +178386,7 @@ func (p *parser) e1176() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178254,7 +178410,7 @@ func (p *parser) e1176() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit496, "finally", 178, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "finally", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "finally", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178269,7 +178425,7 @@ func (p *parser) e1176() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178298,7 +178454,7 @@ func (p *parser) e1177() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178313,7 +178469,7 @@ func (p *parser) e1177() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178339,7 +178495,7 @@ func (p *parser) e1177() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit478, "for", 56, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "for", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "for", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178354,7 +178510,7 @@ func (p *parser) e1177() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178383,7 +178539,7 @@ func (p *parser) e1178() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178398,7 +178554,7 @@ func (p *parser) e1178() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178424,7 +178580,7 @@ func (p *parser) e1178() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit497, "from", 31, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "from", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "from", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178439,7 +178595,7 @@ func (p *parser) e1178() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178466,7 +178622,7 @@ func (p *parser) e1179() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178481,7 +178637,7 @@ func (p *parser) e1179() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178505,7 +178661,7 @@ func (p *parser) e1179() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit498, "global", 26, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "global", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "global", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178520,7 +178676,7 @@ func (p *parser) e1179() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178549,7 +178705,7 @@ func (p *parser) e1180() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178564,7 +178720,7 @@ func (p *parser) e1180() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178590,7 +178746,7 @@ func (p *parser) e1180() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit499, "if", 54, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "if", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "if", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178605,7 +178761,7 @@ func (p *parser) e1180() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178632,7 +178788,7 @@ func (p *parser) e1181() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178647,7 +178803,7 @@ func (p *parser) e1181() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178671,7 +178827,7 @@ func (p *parser) e1181() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit500, "import", 30, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "import", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "import", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178686,7 +178842,7 @@ func (p *parser) e1181() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178715,7 +178871,7 @@ func (p *parser) e1182() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178730,7 +178886,7 @@ func (p *parser) e1182() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178756,7 +178912,7 @@ func (p *parser) e1182() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit305, "in", 102, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "in", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "in", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178771,7 +178927,7 @@ func (p *parser) e1182() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178798,7 +178954,7 @@ func (p *parser) e1183() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178813,7 +178969,7 @@ func (p *parser) e1183() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178837,7 +178993,7 @@ func (p *parser) e1183() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit501, "lambda", 87, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "lambda", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "lambda", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178852,7 +179008,7 @@ func (p *parser) e1183() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178879,7 +179035,7 @@ func (p *parser) e1184() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit533, "match", 60, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "match", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "match", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178894,7 +179050,7 @@ func (p *parser) e1184() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178918,7 +179074,7 @@ func (p *parser) e1184() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit533, "match", 60, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "match", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "match", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -178933,7 +179089,7 @@ func (p *parser) e1184() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -178960,7 +179116,7 @@ func (p *parser) e1185() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -178975,7 +179131,7 @@ func (p *parser) e1185() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -178999,7 +179155,7 @@ func (p *parser) e1185() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit502, "nonlocal", 27, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "nonlocal", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "nonlocal", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179014,7 +179170,7 @@ func (p *parser) e1185() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179043,7 +179199,7 @@ func (p *parser) e1186() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179058,7 +179214,7 @@ func (p *parser) e1186() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179084,7 +179240,7 @@ func (p *parser) e1186() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit503, "pass", 21, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "pass", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "pass", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179099,7 +179255,7 @@ func (p *parser) e1186() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179126,7 +179282,7 @@ func (p *parser) e1187() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179141,7 +179297,7 @@ func (p *parser) e1187() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179165,7 +179321,7 @@ func (p *parser) e1187() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit504, "raise", 25, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "raise", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "raise", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179180,7 +179336,7 @@ func (p *parser) e1187() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179207,7 +179363,7 @@ func (p *parser) e1188() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179222,7 +179378,7 @@ func (p *parser) e1188() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179246,7 +179402,7 @@ func (p *parser) e1188() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit505, "return", 24, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "return", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "return", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179261,7 +179417,7 @@ func (p *parser) e1188() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179290,7 +179446,7 @@ func (p *parser) e1189() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179305,7 +179461,7 @@ func (p *parser) e1189() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179331,7 +179487,7 @@ func (p *parser) e1189() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit506, "try", 57, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "try", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "try", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179346,7 +179502,7 @@ func (p *parser) e1189() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179375,7 +179531,7 @@ func (p *parser) e1190() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit540, "type", 32, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "type", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "type", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179390,7 +179546,7 @@ func (p *parser) e1190() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179416,7 +179572,7 @@ func (p *parser) e1190() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit540, "type", 32, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "type", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "type", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179431,7 +179587,7 @@ func (p *parser) e1190() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179458,7 +179614,7 @@ func (p *parser) e1191() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179473,7 +179629,7 @@ func (p *parser) e1191() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179497,7 +179653,7 @@ func (p *parser) e1191() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit507, "while", 55, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "while", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "while", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179512,7 +179668,7 @@ func (p *parser) e1191() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179541,7 +179697,7 @@ func (p *parser) e1192() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179556,7 +179712,7 @@ func (p *parser) e1192() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179582,7 +179738,7 @@ func (p *parser) e1192() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit508, "with", 58, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "with", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "with", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179597,7 +179753,7 @@ func (p *parser) e1192() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -179624,7 +179780,7 @@ func (p *parser) e1193() (*Node, bool) {
 		if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -179639,7 +179795,7 @@ func (p *parser) e1193() (*Node, bool) {
 	L6_ordinary:
 		p.silent--
 		p.reset(x5)
-		v7 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v7 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -179663,7 +179819,7 @@ func (p *parser) e1193() (*Node, bool) {
 	if _, ok = p.matchLiteral(lit509, "yield", 89, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "yield", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "yield", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -179678,7 +179834,7 @@ func (p *parser) e1193() (*Node, bool) {
 L6:
 	p.silent--
 	p.reset(x5)
-	v7 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v7 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v7, true
 fail:
 	return nil, false
@@ -191580,7 +191736,7 @@ func (p *parser) e1372() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -191602,7 +191758,7 @@ func (p *parser) e1372() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // genexp
@@ -192430,7 +192586,7 @@ func (p *parser) e1422() (*Node, bool) {
 		if _, ok := p.e1420(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -192455,7 +192611,7 @@ func (p *parser) e1422() (*Node, bool) {
 	if _, ok := p.e1420(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // g:genexp &(ws t_lookahead)
@@ -192472,7 +192628,7 @@ func (p *parser) e1423() (*Node, bool) {
 		if _, ok := p.e1420(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -192486,7 +192642,7 @@ func (p *parser) e1423() (*Node, bool) {
 	if _, ok := p.e1420(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // c:call_args &(ws t_lookahead)
@@ -192503,7 +192659,7 @@ func (p *parser) e1424() (*Node, bool) {
 		if _, ok := p.e1420(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -192517,7 +192673,7 @@ func (p *parser) e1424() (*Node, bool) {
 	if _, ok := p.e1420(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // s:subscript &(ws t_lookahead)
@@ -192534,7 +192690,7 @@ func (p *parser) e1431() (*Node, bool) {
 		if _, ok := p.e1420(); !ok {
 			return nil, false
 		}
-		return p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 	}
 
 	p.stepWork()
@@ -192548,7 +192704,7 @@ func (p *parser) e1431() (*Node, bool) {
 	if _, ok := p.e1420(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // t_lookahead, called as by invokePlain

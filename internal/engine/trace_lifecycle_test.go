@@ -208,7 +208,7 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 					if r.closed {
 						t.Fatal("parser closed caller's reader")
 					}
-					if nodes[0].Field("k").(*Node).Text != "a" || nodes[0].Field("v").(*Node).Text != "1" {
+					if nodes[0].Field("k").(*Node).text != "a" || nodes[0].Field("v").(*Node).text != "1" {
 						t.Fatal("emitted fields changed")
 					}
 					if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*Node) error { return nil }, ParseOptions{Backend: b, Unit: u}); err != nil {

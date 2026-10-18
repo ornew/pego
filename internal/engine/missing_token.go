@@ -182,8 +182,8 @@ func missingLiteral(literal matcher, site int, expected string, build bool) matc
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindMissing, Start: int32(m0.pos), End: int32(m0.pos),
-			Fields: Fields{{"expected", expected}, {"message", p.recoveryErrorText(e)}}, terminal: true, fresh: true}), true
+		return p.newNode(Node{kind: kindMissing, start: int32(m0.pos), end: int32(m0.pos),
+			fields: Fields{{"expected", expected}, {"message", p.recoveryErrorText(e)}}, terminal: true, fresh: true}), true
 	}
 }
 

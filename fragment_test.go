@@ -37,7 +37,7 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 				if err != nil || r.Consumed != want || r.ConsumedBytes != 7 || recognize && r.Node != nil {
 					t.Fatalf("%v/%v/%v: %+v %v", b, unit, recognize, r, err)
 				}
-				if !recognize && (r.Node == nil || int(r.Node.End) >= r.Consumed) {
+				if !recognize && (r.Node == nil || int(r.Node.End()) >= r.Consumed) {
 					t.Fatalf("action span must differ: %+v", r)
 				}
 				n, err := p.WithStart("inner")

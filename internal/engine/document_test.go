@@ -124,7 +124,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pos := n.Children[0].Children[2].Children[0]
+	pos := n.children[0].children[2].children[0]
 	if pos.Type() != "Pos" || pos.Field("At") != 3 {
 		t.Errorf("got %s", pos)
 	}
@@ -700,14 +700,14 @@ rule line = x:[a-z]+ #atomic "\n"`)
 	if dump(t, snap, nil) != before {
 		t.Fatal("clone differs")
 	}
-	if l := snap.Children[0].Children[3]; l.Field("x") != l.Children[0] {
+	if l := snap.children[0].children[3]; l.Field("x") != l.children[0] {
 		t.Error("clone does not share the captured child")
 	}
 	doc.Edit(0, 0, "zz\n")
 	t2, _ := doc.Parse()
-	old, cur := t1.Children[0].Children[3], t2.Children[0].Children[4]
-	if old != cur || cur.Start != 12 || cur.Field("x").(*Node).Start != 12 {
-		t.Errorf("line 3 of the earlier tree: shared %v, at %d", old == cur, cur.Start)
+	old, cur := t1.children[0].children[3], t2.children[0].children[4]
+	if old != cur || cur.start != 12 || cur.Field("x").(*Node).start != 12 {
+		t.Errorf("line 3 of the earlier tree: shared %v, at %d", old == cur, cur.start)
 	}
 	if dump(t, snap, nil) != before {
 		t.Error("the clone changed")

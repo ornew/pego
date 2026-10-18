@@ -41,12 +41,21 @@ func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
 	return child
 }
 
+// elems returns the elements of the tuple or list n.
+func elems(n *pego.Node) []*pego.Node {
+	var out []*pego.Node
+	for _, e := range n.Elems() {
+		out = append(out, e)
+	}
+	return out
+}
+
 func sourceDefs(t *testing.T, n *pego.Node) []*pego.Node {
 	t.Helper()
 	if n == nil || n.Type() != "File" {
 		t.Fatalf("source root: %v", n)
 	}
-	return sourceField(t, n, "Defs").Children
+	return elems(sourceField(t, n, "Defs"))
 }
 
 func TestSourceGrammarMatchesDocumentation(t *testing.T) {
@@ -104,25 +113,25 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		}
 		defs := sourceDefs(t, n)
 		terminal := sourceField(t, defs[2], "Action")
-		if terminal.Type() != "TerminalConstructor" || len(sourceField(t, terminal, "Args").Children) != 1 {
+		if terminal.Type() != "TerminalConstructor" || len(elems(sourceField(t, terminal, "Args"))) != 1 {
 			t.Fatal("terminal source arguments lost")
 		}
 		empty := sourceField(t, defs[3], "Action")
-		if empty.Type() != "ListConstructor" || len(sourceField(t, empty, "Items").Children) != 0 {
+		if empty.Type() != "ListConstructor" || len(elems(sourceField(t, empty, "Items"))) != 0 {
 			t.Fatal("empty typed source list lost")
 		}
 		nested := sourceField(t, defs[4], "Action")
-		if sourceField(t, nested, "Elem").Type() != "ListType" || sourceField(t, nested, "Items").Children[0].Type() != "ListConstructor" {
+		if sourceField(t, nested, "Elem").Type() != "ListType" || elems(sourceField(t, nested, "Items"))[0].Type() != "ListConstructor" {
 			t.Fatal("nested typed source list lost")
 		}
-		if args := sourceField(t, sourceField(t, defs[5], "Action"), "Args"); len(args.Children) != 2 {
+		if args := sourceField(t, sourceField(t, defs[5], "Action"), "Args"); len(elems(args)) != 2 {
 			t.Fatal("invalid terminal arity must remain parseable")
 		}
 		index := sourceField(t, defs[6], "Action")
 		if index.Type() != "BinaryOp" || index.Field("Op") != "[]" || sourceField(t, index, "L").Type() != "BinaryOp" || sourceField(t, index, "R").Type() != "BinaryOp" {
 			t.Fatal("index structure lost")
 		}
-		lambda := sourceField(t, sourceField(t, defs[7], "Action"), "Args").Children[1]
+		lambda := elems(sourceField(t, sourceField(t, defs[7], "Action"), "Args"))[1]
 		if access := sourceField(t, lambda, "Body"); access.Type() != "CaptureAccess" || sourceField(t, access, "Capture").Type() != "CaptureRef" {
 			t.Fatal("capture access structure lost")
 		}
@@ -154,12 +163,12 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 			t.Fatalf("tuple alternatives: got %d", len(alts))
 		}
 		for i, w := range want {
-			if alts[i].Type() != w.typ || w.count >= 0 && len(sourceField(t, alts[i], "Types").Children) != w.count {
+			if alts[i].Type() != w.typ || w.count >= 0 && len(elems(sourceField(t, alts[i], "Types"))) != w.count {
 				t.Fatalf("tuple alternative %d: got %s", i, alts[i].Type())
 			}
 		}
-		app := sourceField(t, alts[3], "Types").Children[1]
-		if args := sourceField(t, app, "Args").Children; app.Type() != "TypeApp" || len(args) != 2 || args[1].Type() != "TupleType" {
+		app := elems(sourceField(t, alts[3], "Types"))[1]
+		if args := elems(sourceField(t, app, "Args")); app.Type() != "TypeApp" || len(args) != 2 || args[1].Type() != "TupleType" {
 			t.Fatal("type application structure lost")
 		}
 		if sourceField(t, alts[4], "Type").Type() != "TypeApp" {
@@ -167,10 +176,10 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		}
 		unnamed := sourceField(t, sourceField(t, defs[11], "Spec"), "Type")
 		empty, list := sourceField(t, unnamed, "L"), sourceField(t, unnamed, "R")
-		if empty.Type() != "StructType" || len(sourceField(t, empty, "Fields").Children) != 0 || list.Type() != "ListType" {
+		if empty.Type() != "StructType" || len(elems(sourceField(t, empty, "Fields"))) != 0 || list.Type() != "ListType" {
 			t.Fatal("unnamed struct structure lost")
 		}
-		fields := sourceField(t, sourceField(t, list, "Type"), "Fields").Children
+		fields := elems(sourceField(t, sourceField(t, list, "Type"), "Fields"))
 		if len(fields) != 2 || sourceField(t, fields[1], "Type").Type() != "StructType" {
 			t.Fatal("unnamed struct fields lost")
 		}
@@ -219,8 +228,8 @@ func TestSourceGrammarTree(t *testing.T) {
 				t.Fatal("original source lost")
 			}
 			pkg := sourceField(t, n, "Package")
-			cs := sourceField(t, pkg, "Comments").Children
-			if len(cs) != 1 || len(sourceField(t, cs[0], "Lines").Children) != 2 {
+			cs := elems(sourceField(t, pkg, "Comments"))
+			if len(cs) != 1 || len(elems(sourceField(t, cs[0], "Lines"))) != 2 {
 				t.Fatalf("line comment grouping lost: %v", cs)
 			}
 			defs := sourceDefs(t, n)
@@ -239,12 +248,12 @@ func TestSourceGrammarTree(t *testing.T) {
 			if attr.Type() != "Attributed" || sourceField(t, attr, "X").Type() != "Atomic" {
 				t.Fatal("postfix/capture precedence changed")
 			}
-			args := sourceField(t, sourceField(t, attr, "Attr"), "Args").Children
+			args := elems(sourceField(t, sourceField(t, attr, "Attr"), "Args"))
 			if len(args) != 2 || args[0] != nil || args[1].Type() != "True" {
 				t.Fatalf("positional slots: %v", args)
 			}
 			action := sourceField(t, defs[1], "Action")
-			if action.Type() != "Call" || sourceField(t, action, "Args").Children[1].Type() != "Lambda" {
+			if action.Type() != "Call" || elems(sourceField(t, action, "Args"))[1].Type() != "Lambda" {
 				t.Fatal("call/lambda structure lost")
 			}
 			group := sourceField(t, defs[2], "Expr")
@@ -252,17 +261,17 @@ func TestSourceGrammarTree(t *testing.T) {
 				t.Fatal("inline/default action structure lost")
 			}
 			ops := sourceField(t, defs[3], "Expr")
-			items := sourceField(t, ops, "Items").Children
-			if len(items) != 4 || items[2].Field("Name") != nil || sourceField(t, items[3], "Name").Text != "named" {
+			items := elems(sourceField(t, ops, "Items"))
+			if len(items) != 4 || items[2].Field("Name") != nil || sourceField(t, items[3], "Name").Text() != "named" {
 				t.Fatal("optional level names lost")
 			}
 			if sourceField(t, defs[3], "Action").Type() != "Constructor" {
 				t.Fatal("whole Operators Rule action lost")
 			}
-			if sourceField(t, sourceField(t, defs[4], "Expr"), "Name").Text != "_helper" {
+			if sourceField(t, sourceField(t, defs[4], "Expr"), "Name").Text() != "_helper" {
 				t.Fatal("reserved source name lost")
 			}
-			trailing := sourceField(t, n, "TrailingComments").Children
+			trailing := elems(sourceField(t, n, "TrailingComments"))
 			if len(trailing) != 1 || trailing[0] == nil {
 				t.Fatal("trailing comment lost")
 			}
@@ -305,10 +314,10 @@ func TestSourceGrammarRecovery(t *testing.T) {
 					t.Fatalf("%v: recovered definitions %d, want %d", backend, len(ds), tc.defs)
 				}
 				if tc.name == "broken multiline group" {
-					if ds[1].Type() != "RuleDef" || sourceField(t, ds[1], "Name").Text != "after" {
+					if ds[1].Type() != "RuleDef" || sourceField(t, ds[1], "Name").Text() != "after" {
 						t.Fatal("recovery lost following rule inside broken group")
 					}
-				} else if tc.defs > 1 && sourceField(t, ds[len(ds)-1], "Name").Text != "after" {
+				} else if tc.defs > 1 && sourceField(t, ds[len(ds)-1], "Name").Text() != "after" {
 					t.Fatal("recovery lost subsequent declaration")
 				}
 				b, _ := json.Marshal(n)
@@ -318,8 +327,8 @@ func TestSourceGrammarRecovery(t *testing.T) {
 					t.Fatalf("backend recovery differs for %v", backend)
 				}
 				if tc.name == "field" {
-					fs := sourceField(t, sourceField(t, ds[0], "Spec"), "Fields").Children
-					if len(fs) != 2 || fs[0].Type() != "Error" || sourceField(t, fs[1], "Name").Text != "Good" {
+					fs := elems(sourceField(t, sourceField(t, ds[0], "Spec"), "Fields"))
+					if len(fs) != 2 || fs[0].Type() != "Error" || sourceField(t, fs[1], "Name").Text() != "Good" {
 						t.Fatalf("field recovery: %v", fs)
 					}
 				}
@@ -398,12 +407,12 @@ func TestSource(t *testing.T){
   if ast==nil||gotErr!=f.Error{t.Fatalf("fixture %d: typed parse: %v",i,e)}
   if ast.Text!=f.Source||len(ast.Defs)!=f.Defs{t.Fatalf("fixture %d: typed fields lost",i)}
   for _,c:=range ast.Comments{if c==nil{t.Fatalf("fixture %d: nil comment",i)}}
-  defs:=n.Field("Defs").(*Node).Children
+  defs:=n.Field("Defs").(*Node)
   for j,d:=range ast.Defs{
    if x,ok:=d.(*TypeDef);ok{
-    span,ok:=defs[j].Field("SourceSpan").(*Node)
+    span,ok:=defs.Elem(j).Field("SourceSpan").(*Node)
     if !ok||span==nil||x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
-    if x.SourceSpan.Start!=int(span.Start)||x.SourceSpan.End!=int(span.End){t.Fatalf("fixture %d: typed type syntax span differs",i)}
+    if x.SourceSpan.Start!=span.Start()||x.SourceSpan.End!=span.End(){t.Fatalf("fixture %d: typed type syntax span differs",i)}
    }
   }
  }
@@ -437,7 +446,7 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		if err != nil {
 			t.Fatalf("source rejects %q: %v", src, err)
 		}
-		comments := sourceField(t, n, "Comments").Children
+		comments := elems(sourceField(t, n, "Comments"))
 		if strings.Contains(src, "/* inside */") && (len(comments) != 1 || comments[0].Type() != "InlineComment") {
 			t.Fatalf("expression comment lost: %v", comments)
 		}
@@ -477,7 +486,7 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 				t.Fatal("package error lost")
 			}
 			ds := sourceDefs(t, n)
-			if len(ds) != 1 || sourceField(t, ds[0], "Name").Text != "after" {
+			if len(ds) != 1 || sourceField(t, ds[0], "Name").Text() != "after" {
 				t.Fatal("package recovery lost next declaration")
 			}
 		}

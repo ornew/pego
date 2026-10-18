@@ -35,10 +35,10 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					return n
 				}
 				n := check()
-				if len(n.Children) != 1 || n.Children[0].Type() != TypeList || len(n.Children[0].Children) != 5000 {
+				if len(n.children) != 1 || n.children[0].Type() != TypeList || len(n.children[0].children) != 5000 {
 					t.Fatal("expected one list containing all input lines")
 				}
-				retained := append([]*Node(nil), n.Children[0].Children[:3]...)
+				retained := append([]*Node(nil), n.children[0].children[:3]...)
 				before := make([]string, len(retained))
 				for i, child := range retained {
 					before[i] = resultJSON(child, nil)
@@ -158,7 +158,7 @@ func TestDocumentVMValueStorageForEmptyInput(t *testing.T) {
 				}
 				for i := 0; i < 2; i++ {
 					n, err := doc.Parse()
-					if err != nil || n == nil || len(n.Children) != 2048 {
+					if err != nil || n == nil || len(n.children) != 2048 {
 						t.Fatalf("empty sequence: %v, %v", n, err)
 					}
 					if doc.vals != nil {

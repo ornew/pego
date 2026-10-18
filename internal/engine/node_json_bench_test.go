@@ -33,17 +33,17 @@ func benchmarkShallowJSONNode() *Node {
 	for i := range children {
 		children[i] = &Node{
 			kind:  kindOf("Token", "item"),
-			Start: int32(i * 3),
-			End:   int32(i*3 + 2),
-			Text:  "item<&>",
+			start: int32(i * 3),
+			end:   int32(i*3 + 2),
+			text:  "item<&>",
 		}
 	}
 	return &Node{
 		kind:     kindOf("Record", "entry"),
-		Start:    0,
-		End:      24,
-		Children: children,
-		Fields: Fields{
+		start:    0,
+		end:      24,
+		children: children,
+		fields: Fields{
 			{Name: "name", Value: "example"},
 			{Name: "count", Value: int64(len(children))},
 			{Name: "items", Value: []any{"one", int32(2), true}},
@@ -55,11 +55,11 @@ func benchmarkDeepJSONNode(depth int) *Node {
 	root := &Node{kind: kindOf("Tree", "branch")}
 	node := root
 	for i := 1; i < depth; i++ {
-		child := &Node{kind: kindOf("Tree", "branch"), Start: int32(i), End: int32(i + 1)}
-		node.Children = []*Node{child}
+		child := &Node{kind: kindOf("Tree", "branch"), start: int32(i), end: int32(i + 1)}
+		node.children = []*Node{child}
 		node = child
 	}
 	node.kind = kindOf("Token", "leaf")
-	node.Text = "end"
+	node.text = "end"
 	return root
 }

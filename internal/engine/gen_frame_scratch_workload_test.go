@@ -158,7 +158,7 @@ func TestFrameResults(t *testing.T) {
 func TestFrameAbortCleanup(t *testing.T) {
  var observed *parser
  r:=&rule{name:"abort-test",seen:-1,scope:[]string{"x"},body:func(p *parser,_ int)(*Node,bool){
-  observed=p;p.setCapture(0,p.newNode(Node{Text:"abandoned"}));p.saved=append(p.saved,p.frame.vals[0]);panic(fatal{fmt.Errorf("fixture abort")})
+  observed=p;p.setCapture(0,p.newNode(Node{text:"abandoned"}));p.saved=append(p.saved,p.frame.vals[0]);panic(fatal{fmt.Errorf("fixture abort")})
  }}
  if _,err:=parse(r,0,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
  frameCleared(t,observed)
@@ -166,7 +166,7 @@ func TestFrameAbortCleanup(t *testing.T) {
 func TestFrameDepthAbortCleanup(t *testing.T) {
  var observed *parser
  r:=&rule{name:"depth-abort",seen:-1,scope:[]string{"x"}}
- r.body=func(p *parser,_ int)(*Node,bool){observed=p;p.setCapture(0,p.newNode(Node{Text:"abandoned"}));p.depth=FRAME_DEPTH_LIMIT;return p.call(r,0)}
+ r.body=func(p *parser,_ int)(*Node,bool){observed=p;p.setCapture(0,p.newNode(Node{text:"abandoned"}));p.depth=FRAME_DEPTH_LIMIT;return p.call(r,0)}
  if _,err:=parse(r,0,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
  frameCleared(t,observed)
 }

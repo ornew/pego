@@ -108,7 +108,7 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 		if t.elem.kind == '_' {
 			return true
 		}
-		for _, c := range n.Children {
+		for _, c := range n.children {
 			p.stepWork()
 			if !p.fieldConforms(t.elem, c) {
 				return false

@@ -54,11 +54,11 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 						if unit == CodePoints {
 							wantText = string([]rune(tc.input))
 						}
-						if n.Children[0].Text != wantText {
-							t.Fatalf("literal text=%q want %q", n.Children[0].Text, wantText)
+						if n.children[0].text != wantText {
+							t.Fatalf("literal text=%q want %q", n.children[0].text, wantText)
 						}
-						if n.End != int32(wantEnd) {
-							t.Fatalf("end=%d want %d", n.End, wantEnd)
+						if n.end != int32(wantEnd) {
+							t.Fatalf("end=%d want %d", n.end, wantEnd)
 						}
 					}
 				})
@@ -102,8 +102,8 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 						if unit == Bytes {
 							width = len(item)
 						}
-						if n.Start != int32((count-1)*width) || n.End != int32(count*width) {
-							t.Errorf("element %d range [%d,%d)", count, n.Start, n.End)
+						if n.start != int32((count-1)*width) || n.end != int32(count*width) {
+							t.Errorf("element %d range [%d,%d)", count, n.start, n.end)
 						}
 						return nil
 					}, ParseOptions{Backend: backend, Unit: unit})
@@ -179,7 +179,7 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 					want.WriteString(resultJSON(n, err) + "\n")
 					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
 					if mode != "untyped" {
-						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=int(child.Start) || ast.T.End!=int(child.End) || ast.T.Value!=child.Text {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
+						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text()!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=child.Start() || ast.T.End!=child.End() || ast.T.Value!=child.Text() {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
 					}
 					harness.WriteString(`out:=map[string]any{"node":n};if err!=nil{out["err"]=err.Error()};data,_:=json.Marshal(out);fmt.Println(string(data))}` + "\n")
 				}
@@ -305,8 +305,8 @@ rule item = "�" "\n"`)
 						if unit == CodePoints {
 							width = utf8.RuneCountInString(input)
 						}
-						if n.End != int32(width) {
-							t.Fatalf("end=%d want %d", n.End, width)
+						if n.end != int32(width) {
+							t.Fatalf("end=%d want %d", n.end, width)
 						}
 					case <-time.After(time.Second):
 						t.Fatal("literal waited for future input or EOF")

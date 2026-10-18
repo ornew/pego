@@ -15,11 +15,11 @@ func TestBytePositions(t *testing.T) {
 	}
 	w := n.Field("w").(*Node)
 	x := n.Field("x").(*Node)
-	if w.Start != 0 || w.End != 6 || x.Start != 7 || x.End != 10 || x.Text != "語" {
-		t.Errorf("w [%d,%d) x [%d,%d) %q", w.Start, w.End, x.Start, x.End, x.Text)
+	if w.start != 0 || w.end != 6 || x.start != 7 || x.end != 10 || x.text != "語" {
+		t.Errorf("w [%d,%d) x [%d,%d) %q", w.start, w.end, x.start, x.end, x.text)
 	}
 	n, err = prog.ParseWith("main", "日本 語", ParseOptions{Unit: CodePoints})
-	if err != nil || n.Field("x").(*Node).Start != 3 {
+	if err != nil || n.Field("x").(*Node).start != 3 {
 		t.Errorf("codepoints: %v %v", n, err)
 	}
 	_, err = prog.ParseWith("main", "日本 ", ParseOptions{Unit: Bytes})
@@ -36,8 +36,8 @@ func TestInvalidUTF8(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if x := n.Field("x").(*Node); x.Start != 1 || x.End != 2 {
-		t.Errorf("x [%d,%d)", x.Start, x.End)
+	if x := n.Field("x").(*Node); x.start != 1 || x.end != 2 {
+		t.Errorf("x [%d,%d)", x.start, x.end)
 	}
 	checkUnits(t, prog, "main", "a\xffb", Closure)
 	checkUnits(t, prog, "main", "a\xffb", Bytecode)

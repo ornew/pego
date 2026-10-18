@@ -257,7 +257,7 @@ func TestBoundedCapacityAdmission(t *testing.T) {
  }
  a,b:=1,2
  for _,work:=range []int{3,4} {m:=boundedMarker();m.budget.work=work;astMarkCells(m,[]*int{&a,&b});if work==4 {if m.keepAll || len(m.live)!=2 || len(m.todo)!=2 {t.Fatal("exact cell work")}} else if !m.keepAll || len(m.todo)!=1 || cap(m.todo)>64 {t.Fatal("cell work over boundary")}}
- for _,root:=range []any{Fields(make([]NodeField,257)),&Node{Children:make([]*Node,257)}} {
+ for _,root:=range []any{Fields(make([]NodeField,257)),&Node{children:make([]*Node,257)}} {
   m:=boundedMarker();m.run(root,nil);if !m.keepAll || m.complete || cap(m.todo)>64 || len(m.live)>1 {t.Fatal("Fields/Children capacity queued a large view")}
  }
  m:=boundedMarker();m.budget.work=-1;if m.cells(0) || !m.keepAll {t.Fatal("negative remaining cell work")}

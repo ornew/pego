@@ -343,17 +343,17 @@ func TestWorkStreamCompactionChunks(t *testing.T) {
 func TestWorkStreamCommitReservations(t *testing.T) {
 	// The frame scan and suffix clear are separately counted; neither touches
 	// a Node already delivered to the caller.
-	node := &Node{Text: "delivered"}
+	node := &Node{text: "delivered"}
 	p := &parser{input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 1})}, frameSlab: make([]frame, 258)}
 	p.frame = &p.frameSlab[0]
 	p.frameSlab[1].vals = []*Node{node}
 	got := catchStreamPanic(func() { p.resetStreamFrames() })
-	if _, ok := got.(fatal); !ok || len(p.frameSlab) != 258 || p.frameSlab[1].vals[0] != node || node.Text != "delivered" {
+	if _, ok := got.(fatal); !ok || len(p.frameSlab) != 258 || p.frameSlab[1].vals[0] != node || node.text != "delivered" {
 		t.Fatalf("frame interruption=%v", got)
 	}
 	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 258})
 	p.resetStreamFrames()
-	if len(p.frameSlab) != 1 || p.control.stepsUsed != 258 || node.Text != "delivered" {
+	if len(p.frameSlab) != 1 || p.control.stepsUsed != 258 || node.text != "delivered" {
 		t.Fatal("frame retry changed ownership or count")
 	}
 
@@ -390,7 +390,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 			p.memo = fresh
 			p.control = newWorkControl(nil, WorkLimits{MaxSteps: 2000})
 			p.pruneStreamMemo(pos)
-			if fresh.base != pos || seed.node != node || node.Text != "delivered" || len(fresh.slots) != max(260-pos, 0) {
+			if fresh.base != pos || seed.node != node || node.text != "delivered" || len(fresh.slots) != max(260-pos, 0) {
 				t.Fatal("prune ownership/base differs")
 			}
 			if !all && fresh.slots[200-pos] != keep {
@@ -483,7 +483,7 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 	}
 	for _, phase := range []string{"trail", "values"} {
 		t.Run(phase, func(t *testing.T) {
-			node := &Node{Text: "owned"}
+			node := &Node{text: "owned"}
 			p := &parser{input: input{unit: Bytes, eof: true, bs: []byte(strings.Repeat("a", 3000)), baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, WorkLimits{MaxSteps: 953 + 128})}, memo: newMemoTable()}
 			if phase == "trail" {
 				p.trail = make([]undo, 0, 129)
@@ -495,7 +495,7 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 				}
 			}
 			got := catchStreamPanic(func() { p.commit(2048) })
-			if _, ok := got.(fatal); !ok || p.base != 2047 || p.pruned != 0 || node.Text != "owned" {
+			if _, ok := got.(fatal); !ok || p.base != 2047 || p.pruned != 0 || node.text != "owned" {
 				t.Fatalf("commit %s interruption=%v base=%d pruned=%d", phase, got, p.base, p.pruned)
 			}
 			if phase == "values" && (p.vals[0] != node || p.vals[:cap(p.vals)][129] != node) {

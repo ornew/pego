@@ -120,8 +120,8 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 								if err == nil {
 									// JSON replaces malformed strings, so compare raw match text too.
 									gotMatch, wantMatch := n.Field("T").(*Node), wn.Field("T").(*Node)
-									if gotMatch.Text != wantMatch.Text || gotMatch.Start != wantMatch.Start || gotMatch.End != wantMatch.End {
-										t.Errorf("%s %s/%s input=%x: match %x [%d,%d), want %x [%d,%d)", name, backend, unit, input, gotMatch.Text, gotMatch.Start, gotMatch.End, wantMatch.Text, wantMatch.Start, wantMatch.End)
+									if gotMatch.text != wantMatch.text || gotMatch.start != wantMatch.start || gotMatch.end != wantMatch.end {
+										t.Errorf("%s %s/%s input=%x: match %x [%d,%d), want %x [%d,%d)", name, backend, unit, input, gotMatch.text, gotMatch.start, gotMatch.end, wantMatch.text, wantMatch.start, wantMatch.end)
 									}
 									if got, w := resultJSON(n, nil), resultJSON(wn, nil); got != w {
 										t.Errorf("%s %s/%s input=%x\ngot %s\nwant %s", name, backend, unit, input, got, w)

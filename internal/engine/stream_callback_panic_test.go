@@ -100,7 +100,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 								if traced && (event.Rule != "main" || event.Depth != 1 || event.Pos != 0) {
 									t.Fatal("saved event metadata changed")
 								}
-								if nodes[0].Field("k").(*Node).Text != "a" || nodes[1].Field("v").(*Node).Text != "22" {
+								if nodes[0].Field("k").(*Node).text != "a" || nodes[1].Field("v").(*Node).text != "22" {
 									t.Fatal("delivered fields changed")
 								}
 								retryCount := 0

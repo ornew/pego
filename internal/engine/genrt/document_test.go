@@ -27,7 +27,7 @@ func documentTestRules() (*rule, *rule) {
 		if !p.atEnd() {
 			return nil, false
 		}
-		return &Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: children}, true
+		return &Node{kind: kindList, start: int32(start), end: int32(p.pos), children: children}, true
 	}
 	return main, item
 }
@@ -38,17 +38,17 @@ func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 		d := newDocumentState(main, "aa", unit)
 		o := parseOptions{unit: unit, maxDepth: defaultMaxDepth}
 		first, err := d.parse(o)
-		if err != nil || first == nil || len(first.Children) != 2 {
+		if err != nil || first == nil || len(first.children) != 2 {
 			t.Fatalf("unit %d: first parse = %v, %v", unit, first, err)
 		}
 		if err := d.edit(2, 2, "a"); err != nil {
 			t.Fatal(err)
 		}
 		second, err := d.parse(o)
-		if err != nil || second == nil || len(second.Children) != 3 || d.stats.Reused < 1 {
+		if err != nil || second == nil || len(second.children) != 3 || d.stats.Reused < 1 {
 			t.Fatalf("unit %d: edited parse = %v, %v; stats = %+v", unit, second, err, d.stats)
 		}
-		if first.Children[0] != second.Children[0] {
+		if first.children[0] != second.children[0] {
 			t.Fatalf("unit %d: safe prefix memo was not reused", unit)
 		}
 		if err := d.edit(0, 1, "b"); err != nil {
@@ -143,7 +143,7 @@ func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
 	r.body = func(p *parser, _ int) (*Node, bool) {
 		p.pos = 1
 		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
-		return &Node{kind: kindError, End: 1}, true
+		return &Node{kind: kindError, end: 1}, true
 	}
 	d := newDocumentState(r, "x", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
@@ -175,7 +175,7 @@ func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 			expected[i] = "original"
 		}
 		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: expected, Messages: []string{"original"}})
-		return &Node{kind: kindError, End: 1}, true
+		return &Node{kind: kindError, end: 1}, true
 	}
 	d := newDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}
@@ -227,7 +227,7 @@ func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
 	r.body = func(p *parser, _ int) (*Node, bool) {
 		p.pos = 1
 		p.recovered = append(p.recovered, &SyntaxError{Expected: make([]string, 2048)})
-		return &Node{kind: kindError, End: 1}, true
+		return &Node{kind: kindError, end: 1}, true
 	}
 	d := newDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}

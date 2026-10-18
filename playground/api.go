@@ -463,13 +463,13 @@ func measureTree(n *pego.Node) (count, depth int) {
 		stack = stack[:len(stack)-1]
 		count++
 		depth = max(depth, it.depth)
-		for _, c := range it.n.Children {
+		for _, c := range it.n.Elems() {
 			if c != nil {
 				stack = append(stack, item{c, it.depth + 1})
 			}
 		}
-		for _, f := range it.n.Fields {
-			if c, ok := f.Value.(*pego.Node); ok && c != nil {
+		for _, v := range it.n.Fields() {
+			if c, ok := v.(*pego.Node); ok && c != nil {
 				stack = append(stack, item{c, it.depth + 1})
 			}
 		}

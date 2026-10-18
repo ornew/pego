@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,14 +32,14 @@ const (
 type Node struct {
 	// kind holds the type and rule names (Type, Rule). Nodes share it: names are interned.
 	kind *nodeKind
-	// Start and End are the range in the input, in the parse's position unit (End is exclusive).
-	Start, End int32
-	// Text is the text of a terminal.
-	Text string
-	// Children are the children of Seq, List, and Operator nodes. Omitted elements are nil.
-	Children []*Node
-	// Fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
-	Fields Fields
+	// start and end are the range in the input, in the parse's position unit (end is exclusive).
+	start, end int32
+	// text is the text of a terminal.
+	text string
+	// children are the children of Seq, List, and Operator nodes. Omitted elements are nil.
+	children []*Node
+	// fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
+	fields Fields
 
 	// fresh reports that the node was created in the rule body currently being evaluated and has not
 	// yet been returned to any rule. That rule may freely modify a fresh node.
@@ -154,11 +155,11 @@ func unboxValue(v any) any {
 func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
-		return n.Text
+		return n.text
 	case n.kind.typeName() == TypeList:
-		return p.newNode(Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children})
+		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
-	return p.newNode(Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children})
+	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
 }
 
 var kinds sync.Map // [2]string → *nodeKind
@@ -293,19 +294,19 @@ func cloneNode(n *Node, seen map[*Node]*Node) *Node {
 	c := new(Node)
 	*c = *n
 	seen[n] = c
-	if n.Children != nil {
-		c.Children = make([]*Node, len(n.Children))
-		for i, ch := range n.Children {
-			c.Children[i] = cloneNode(ch, seen)
+	if n.children != nil {
+		c.children = make([]*Node, len(n.children))
+		for i, ch := range n.children {
+			c.children[i] = cloneNode(ch, seen)
 		}
 	}
-	if n.Fields != nil {
-		c.Fields = make(Fields, len(n.Fields))
-		for i, f := range n.Fields {
+	if n.fields != nil {
+		c.fields = make(Fields, len(n.fields))
+		for i, f := range n.fields {
 			if vn, ok := f.Value.(*Node); ok {
 				f.Value = cloneNode(vn, seen)
 			}
-			c.Fields[i] = f
+			c.fields[i] = f
 		}
 	}
 	return c
@@ -314,13 +315,160 @@ func cloneNode(n *Node, seen map[*Node]*Node) *Node {
 // IsTerminal reports whether the node is a terminal (Match or a terminal type).
 func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
 
-// Field returns the value of the field name.
-func (n *Node) Field(name string) any {
+// Kind is what a Node stands for in the value model.
+type Kind uint8
+
+const (
+	// KindString is a node whose value is a string, the text it matched: Text.
+	KindString Kind = iota
+	// KindTuple is a node whose value is a tuple: Len and Elem.
+	KindTuple
+	// KindList is a node whose value is a list: Len and Elem.
+	KindList
+	// KindError is an error value of recovery: Text is its message.
+	KindError
+	// KindStruct is a struct built by an action: Type and Field.
+	KindStruct
+	// KindTupleValue is a tuple built by an action, without a range: Len and Elem.
+	KindTupleValue
+	// KindListValue is a list built by an action, without a range: Len and Elem.
+	KindListValue
+	// KindValue is any other value built by an action, such as an int or a bool: Value.
+	KindValue
+)
+
+var kindNames = [...]string{"string", "tuple", "list", "error", "struct", "tuple value", "list value", "value"}
+
+func (k Kind) String() string {
+	if int(k) < len(kindNames) {
+		return kindNames[k]
+	}
+	return fmt.Sprintf("Kind(%d)", k)
+}
+
+// Kind returns what the node stands for.
+func (n *Node) Kind() Kind {
+	switch n.shape() {
+	case shapeString:
+		return KindString
+	case shapeTuple:
+		return KindTuple
+	case shapeList:
+		return KindList
+	case shapeError:
+		return KindError
+	case shapeBox:
+		return KindValue
+	case shapeTupleValue:
+		return KindTupleValue
+	case shapeListValue:
+		return KindListValue
+	}
+	return KindStruct
+}
+
+// Start returns the start of the range of the input that the node spans, in the position unit of
+// the parse.
+func (n *Node) Start() int { return int(n.start) }
+
+// End returns the end of the range of the input that the node spans (exclusive), in the position
+// unit of the parse.
+func (n *Node) End() int { return int(n.end) }
+
+// Text returns the string value of a KindString node, and the message of a KindError value; it
+// returns "" for other nodes and nil.
+func (n *Node) Text() string {
+	if n == nil {
+		return ""
+	}
+	switch n.shape() {
+	case shapeString:
+		return n.text
+	case shapeError:
+		msg, _ := n.fields.Get("message")
+		s, _ := msg.(string)
+		return s
+	}
+	return ""
+}
+
+// Len returns the number of elements of a tuple or a list (KindTuple, KindList, KindTupleValue,
+// KindListValue), and 0 for other nodes and nil.
+func (n *Node) Len() int {
+	if n == nil {
+		return 0
+	}
+	switch n.shape() {
+	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
+		return len(n.children)
+	}
+	return 0
+}
+
+// Elem returns the element i of a tuple or a list: a node, or nil for an optional that did not
+// match. It panics if i is out of the range [0, Len()).
+func (n *Node) Elem(i int) *Node {
+	if i < 0 || i >= n.Len() {
+		panic(fmt.Sprintf("pego: element %d of a node with %d elements", i, n.Len()))
+	}
+	return n.children[i]
+}
+
+// Elems returns the elements of a tuple or a list in order, as Elem does.
+func (n *Node) Elems() iter.Seq2[int, *Node] {
+	return func(yield func(int, *Node) bool) {
+		for i := range n.Len() {
+			if !yield(i, n.children[i]) {
+				return
+			}
+		}
+	}
+}
+
+// Value returns the value of a KindValue node (such as an int, a string or a bool) and the string
+// of a KindString node; it returns nil for other nodes and nil.
+func (n *Node) Value() any {
 	if n == nil {
 		return nil
 	}
-	v, _ := n.Fields.Get(name)
+	switch n.shape() {
+	case shapeBox:
+		return n.box
+	case shapeString:
+		return n.text
+	}
+	return nil
+}
+
+// Field returns the value of the field name of a struct, and, with source information, the value
+// of the capture name of a node: a *Node, an int, a string, a bool, or nil.
+func (n *Node) Field(name string) any {
+	if !n.fieldsVisible() {
+		return nil
+	}
+	v, _ := n.fields.Get(name)
 	return v
+}
+
+// fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
+// of a node with source information.
+func (n *Node) fieldsVisible() bool {
+	return n != nil && (n.labeled || n.shape() == shapeStruct)
+}
+
+// Fields returns the fields of a struct, and, with source information, the captures of a node,
+// in the order the action wrote them.
+func (n *Node) Fields() iter.Seq2[string, any] {
+	return func(yield func(string, any) bool) {
+		if !n.fieldsVisible() {
+			return
+		}
+		for _, f := range n.fields {
+			if !yield(f.Name, f.Value) {
+				return
+			}
+		}
+	}
 }
 
 // nodeShape is what a Node stands for in the value model.
@@ -374,7 +522,7 @@ type captureLocation struct {
 // tuples nested in it, nearest first; a capture that did not match is left out.
 func captureLocations(n *Node) []captureLocation {
 	var out []captureLocation
-	for _, f := range n.Fields.sorted() {
+	for _, f := range n.fields.sorted() {
 		v, ok := f.Value.(*Node)
 		if !ok || v == nil {
 			if f.Value != nil {
@@ -402,7 +550,7 @@ func findElement(n, x *Node) ([]int, bool) {
 	for len(queue) > 0 {
 		it := queue[0]
 		queue = queue[1:]
-		for i, c := range it.n.Children {
+		for i, c := range it.n.children {
 			if c == nil {
 				continue
 			}
@@ -458,13 +606,13 @@ func writeValue(b *strings.Builder, v any) {
 				f.v, f.enter = n.box, true
 				continue
 			case shapeString:
-				b.WriteString(strconv.Quote(n.Text))
+				b.WriteString(strconv.Quote(n.text))
 				f.close = ruleSuffix(n)
 				f.i = -1
 			case shapeError:
-				msg, _ := n.Fields.Get("message")
+				msg, _ := n.fields.Get("message")
 				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
-				if expected, ok := n.Fields.Get("expected"); ok {
+				if expected, ok := n.fields.Get("expected"); ok {
 					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
 				}
 				b.WriteString(")")
@@ -481,7 +629,7 @@ func writeValue(b *strings.Builder, v any) {
 						}
 						x := n
 						for _, i := range c.path {
-							x = x.Children[i]
+							x = x.children[i]
 						}
 						f.labels[x] = append(f.labels[x], c.name)
 					}
@@ -500,7 +648,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.Fields.sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -514,7 +662,7 @@ func writeValue(b *strings.Builder, v any) {
 			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
 			continue
 		}
-		if f.i == len(n.Children) {
+		if f.i == len(n.children) {
 			for j, c := range f.side {
 				if f.i > 0 || j > 0 {
 					b.WriteString(" ")
@@ -531,7 +679,7 @@ func writeValue(b *strings.Builder, v any) {
 		if f.i > 0 {
 			b.WriteString(" ")
 		}
-		c := n.Children[f.i]
+		c := n.children[f.i]
 		f.i++
 		labels := f.labels
 		for _, name := range labels[c] {
@@ -574,8 +722,8 @@ func writeScalar(b *strings.Builder, v any) {
 func (n *Node) clone() *Node {
 	c := *n
 	c.fresh = true
-	if n.Fields != nil {
-		c.Fields = append(Fields(nil), n.Fields...)
+	if n.fields != nil {
+		c.fields = append(Fields(nil), n.fields...)
 	}
 	return &c
 }

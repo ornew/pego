@@ -315,7 +315,7 @@ type listConv struct {
 var runtimeNames = map[string]bool{
 	"WalkTree": true, "WalkAction": true, "WalkContinue": true, "WalkSkip": true, "WalkStop": true,
 	"WalkVisit": true, "WalkEdge": true, "WalkEdgeKind": true, "WalkRoot": true, "WalkChild": true, "WalkField": true, "WalkListElement": true, "CycleError": true, "Cursor": true,
-	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true, "PositionUnit": true,
+	"Node": true, "NodeField": true, "Fields": true, "NodeKind": true, "KindString": true, "KindTuple": true, "KindList": true, "KindError": true, "KindStruct": true, "KindTupleValue": true, "KindListValue": true, "KindValue": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true, "PositionUnit": true,
 	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true, "TNode": true,
 }
 
@@ -609,7 +609,7 @@ func (t *typedGen) converters(b *strings.Builder) {
 	}
 	if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
 	v := astNew(&a.match)
-	*v = TNode[string]{%[1]s: %[1]s{int(n.Start), int(n.End)}, Value: n.Text}
+	*v = TNode[string]{%[1]s: %[1]s{int(n.start), int(n.end)}, Value: n.text}
 	a.remember(n, v)
 	return v
 }
@@ -624,10 +624,10 @@ func (a *astConv) toNode(n *Node) *TNode[any] {
 	if v, ok := a.values[n]; ok {
 		if v, ok := v.(*TNode[any]); ok { return v }
 	}
-	v := &TNode[any]{%[1]s: %[1]s{int(n.Start), int(n.End)}}
+	v := &TNode[any]{%[1]s: %[1]s{int(n.start), int(n.end)}}
 	a.remember(n, v)
 	if n.IsTerminal() {
-		v.Value = n.Text
+		v.Value = n.text
 	} else {
 		v.Value = a.elems(n)
 	}
@@ -636,8 +636,8 @@ func (a *astConv) toNode(n *Node) *TNode[any] {
 
 // elems converts the elements of a tuple or list.
 func (a *astConv) elems(n *Node) []any {
-	out := make([]any, len(n.Children))
-	for i, c := range n.Children {
+	out := make([]any, len(n.children))
+	for i, c := range n.children {
 		a.stepWork()
 		out[i] = a.anyValue(c)
 	}
@@ -652,7 +652,7 @@ func (a *astConv) toError(n *Node) *Error {
 	if v, ok := a.values[n]; ok { return v.(*Error) }
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
-	*v = Error{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	*v = Error{%[1]s: %[1]s{int(n.start), int(n.end)}, Text: n.text, Message: msg}
 	a.remember(n, v)
 	return v
 }
@@ -665,10 +665,10 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.terms {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.start), int(n.end)}, Text: n.text}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, span)
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.start), int(n.end)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
@@ -699,14 +699,14 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	// List converters and the helpers of value-model types (more may be added while writing them,
 	// for lists of lists).
-	b.WriteString("// nodeValue returns the Value of node n: its text, or its converted elements.\nfunc (a *astConv) nodeValue(n *Node) any {\n\tif n.IsTerminal() {\n\t\treturn n.Text\n\t}\n\treturn a.elems(n)\n}\n\n")
+	b.WriteString("// nodeValue returns the Value of node n: its text, or its converted elements.\nfunc (a *astConv) nodeValue(n *Node) any {\n\tif n.IsTerminal() {\n\t\treturn n.text\n\t}\n\treturn a.elems(n)\n}\n\n")
 	helpers := 0
 	for i := 0; ; {
 		for ; i < len(t.listOrder); i++ {
 			l := t.listOrder[i]
 			elem := t.goType(l.elem)
 			conv := t.conv(l.elem, "unboxNode(c)")
-			fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.Children))\n\tfor i, c := range n.Children {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
+			fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.children))\n\tfor i, c := range n.children {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
 		}
 		if !t.nodeHelpers(b, &helpers) && i == len(t.listOrder) {
 			break
@@ -730,9 +730,9 @@ func (a *astConv) stepWork() {
  if workControlsEnabled && a.control != nil { a.control.charge(0, 1) }
 }
 func (a *astConv) field(n *Node, name string) any {
- if !workControlsEnabled || a.control == nil { return n.Field(name) }
+ if !workControlsEnabled || a.control == nil { return n.field(name) }
  if n == nil { return nil }
- for _, f := range n.Fields {
+ for _, f := range n.fields {
   a.stepWork()
   if f.Name == name { return f.Value }
  }

@@ -52,22 +52,22 @@ func TestTypedNodeConstructors(t *testing.T) {
 					t.Fatalf("%s/%s differs: %s / %s", backend, unit, got, want)
 				}
 				items := n.Field("Items").(*Node)
-				if len(items.Children) != 2 || !items.Children[0].IsTerminal() || items.Children[0].Text != "0" || items.Children[1].Text != "😀" || items.Children[1].Type() != "Int" {
+				if len(items.children) != 2 || !items.children[0].IsTerminal() || items.children[0].text != "0" || items.children[1].text != "😀" || items.children[1].Type() != "Int" {
 					t.Fatal(got)
 				}
 				end := int32(1)
 				if unit == Bytes {
 					end = 4
 				}
-				if items.Start != 0 || items.End != end || items.Children[0].Start != 0 || items.Children[0].End != end {
+				if items.start != 0 || items.end != end || items.children[0].start != 0 || items.children[0].end != end {
 					t.Fatal(got)
 				}
 				maybe := n.Field("Maybe").(*Node)
-				if len(maybe.Children) != 2 || maybe.Children[0] != nil {
+				if len(maybe.children) != 2 || maybe.children[0] != nil {
 					t.Fatal(got)
 				}
 				empty := n.Field("Empty").(*Node)
-				if empty == nil || len(empty.Children) != 0 || empty.Start != 0 || empty.End != 0 {
+				if empty == nil || len(empty.children) != 0 || empty.start != 0 || empty.end != 0 {
 					t.Fatal(got)
 				}
 			}
@@ -258,7 +258,7 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 			if invalidValue != (err != nil) || invalidValue == (n != nil) {
 				t.Fatalf("%s/%s: %v / %v", action, backend, n, err)
 			}
-			if !invalidValue && (len(n.Children) != 1 || (n.Children[0] == nil) != (action == `[]Int{nil}`)) {
+			if !invalidValue && (len(n.children) != 1 || (n.children[0] == nil) != (action == `[]Int{nil}`)) {
 				t.Fatal(resultJSON(n, err))
 			}
 		}

@@ -217,7 +217,6 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	if opts.Stream {
 		rt = strings.Replace(rt, "\"bytes\"", "\"bufio\"\n\t\"bytes\"", 1)
-		rt = strings.Replace(rt, "\"io\"", "\"io\"\n\t\"iter\"", 1)
 	}
 	if opts.Observability {
 		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
@@ -1018,7 +1017,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	fmt.Fprintf(b, "\t\tcount++\n\t\tp.kidStack = append(p.kidStack, f.vals[%d])\n", slot)
 	b.WriteString("\t\tif p.pos == m0.pos {\n\t\t\tbreak\n\t\t}\n\t}\n")
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.dropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
-	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true\n",
 		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
 }
 
@@ -1049,7 +1048,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		for i, it := range e.Items {
 			switch {
 			case build && isElems(it):
-				fmt.Fprintf(&b, "\tif v, ok := p.%s(); !ok {\n\t\treturn nil, false\n\t} else {\n\t\tkids = append(kids, %s...)\n\t}\n", items[i], g.pick("v.Children", "asTval(v).tkids()"))
+				fmt.Fprintf(&b, "\tif v, ok := p.%s(); !ok {\n\t\treturn nil, false\n\t} else {\n\t\tkids = append(kids, %s...)\n\t}\n", items[i], g.pick("v.children", "asTval(v).tkids()"))
 			case build && valuedCount(it) == 1:
 				fmt.Fprintf(&b, "\tif v, ok := p.%s(); !ok {\n\t\treturn nil, false\n\t} else {\n\t\tkids = append(kids, v)\n\t}\n", items[i])
 			default:
@@ -1057,7 +1056,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 			}
 		}
 		if build {
-			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true\n",
 				"\treturn p.newNode(\"Seq\", start, p.pos, kids), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
@@ -1102,7 +1101,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		m := g.expr(e.Expr, s, false)
 		fmt.Fprintf(&b, "\tstart := p.pos\n\tif _, ok := p.%s(); !ok {\n\t\treturn nil, false\n\t}\n", m)
 		if build {
-			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true\n",
 				"\treturn p.newMatch(start, p.pos, p.text(start, p.pos), true), true\n"))
 		} else {
 			b.WriteString("\t_ = start\n\treturn nil, true\n")
@@ -1272,7 +1271,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		b.WriteString("\treturn nil, true\n")
 		return
 	}
-	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true\n",
 		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
 }
 

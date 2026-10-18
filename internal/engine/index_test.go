@@ -67,8 +67,8 @@ rule item = [a-z]`)
 		if err != nil {
 			t.Fatalf("%s: %v", backend, err)
 		}
-		if node.Text != "b" {
-			t.Fatalf("%s: indexed %q", backend, node.Text)
+		if node.text != "b" {
+			t.Fatalf("%s: indexed %q", backend, node.text)
 		}
 		_, err = program.ParseWith("main", "a", ParseOptions{Backend: backend})
 		if err == nil || !strings.Contains(err.Error(), "index 1 out of range for a list of 1 elements") {

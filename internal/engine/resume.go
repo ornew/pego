@@ -356,7 +356,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 	if !rs.build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
+	return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
 }
 
 // after reports whether every element examined only input from end on.
@@ -379,7 +379,7 @@ func (p *parser) moveValue(v *Node, shift int, base uint32) *Node {
 		p.moved = map[*Node]*Node{}
 	}
 	p.moveBase, p.baseShift = base, shift
-	if v.Start == v.End {
+	if v.start == v.end {
 		v = p.moveEmpty(v, shift)
 	} else if v.gen < p.gen {
 		p.moveTree(v, p.shiftOf(v))

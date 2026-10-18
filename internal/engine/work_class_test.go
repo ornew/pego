@@ -76,11 +76,11 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-				if n := workClassNode(t, positive, late, ParseOptions{Backend: backend, Unit: unit}); n.Text != late {
-					t.Fatalf("late class hit text=%q, want %q", n.Text, late)
+				if n := workClassNode(t, positive, late, ParseOptions{Backend: backend, Unit: unit}); n.text != late {
+					t.Fatalf("late class hit text=%q, want %q", n.text, late)
 				}
-				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); n.Text != gap {
-					t.Fatalf("negated class text=%q, want %q", n.Text, gap)
+				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); n.text != gap {
+					t.Fatalf("negated class text=%q, want %q", n.text, gap)
 				}
 				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, ErrWorkLimit) {
 					t.Fatalf("unlimited positive miss: node=%v err=%v", n, err)
@@ -137,8 +137,8 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				if observed.scratch != nil || observed.control != nil {
 					t.Fatalf("parser retained work state after interruption: scratch=%v control=%v", observed.scratch, observed.control)
 				}
-				if n := workClassNode(t, p, input, ParseOptions{Backend: backend, Unit: unit}); n.Text != input {
-					t.Fatalf("retry text=%q, want %q", n.Text, input)
+				if n := workClassNode(t, p, input, ParseOptions{Backend: backend, Unit: unit}); n.text != input {
+					t.Fatalf("retry text=%q, want %q", n.text, input)
 				}
 			})
 		}

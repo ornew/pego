@@ -31,26 +31,26 @@ func TestActionResultReleasesTracking(t *testing.T) {
 	}{
 		{"nil", nil, nil},
 		{"typed nil", (*Node)(nil), nil},
-		{"node", &Node{Start: 90, End: 91, fresh: true}, nil},
+		{"node", &Node{start: 90, end: 91, fresh: true}, nil},
 		{"error", nil, errors.New("action failed")},
 		{"boxed value", 1, nil},
 		{"invalid result", workActionFunc{params: 1}, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			prefix := &Node{Text: "keep"}
+			prefix := &Node{text: "keep"}
 			p := &parser{created: []*Node{prefix}}
 			ctx := &evalCtx{p: p, cbase: 1, start: 3, end: 4}
 			var panicked any
 			func() {
 				defer func() { panicked = recover() }()
 				n := p.actionResult(ctx, func(*evalCtx) (any, error) {
-					p.created = append(p.created, &Node{Text: "temporary"})
+					p.created = append(p.created, &Node{text: "temporary"})
 					if n, ok := c.value.(*Node); ok && n != nil {
 						p.created = append(p.created, n)
 					}
 					return c.value, c.err
 				}, "test")
-				if n != nil && (n.Start != 3 || n.End != 4 || n.fresh) {
+				if n != nil && (n.start != 3 || n.end != 4 || n.fresh) {
 					t.Errorf("returned node has wrong span/freshness: %+v", n)
 				}
 			}()

@@ -781,7 +781,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		if p.prog.sourceInfo {
 			kind = r.kinds.term
 		}
-		return p.newNode(Node{kind: kind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
+		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
 	}
 	v = r.value(p, v, start)
 	if len(r.scope.names) > 0 {
@@ -818,16 +818,16 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	if v.Fields == nil {
-		v.Fields = p.fields(len(s.names))
+	if v.fields == nil {
+		v.fields = p.fields(len(s.names))
 	}
 	v.labeled = p.prog.sourceInfo
 	for i, name := range s.names {
 		p.stepWork()
 		if f.vals[i] != nil {
-			p.setValueField(&v.Fields, name, f.vals[i])
+			p.setValueField(&v.fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -934,7 +934,7 @@ func (p *parser) moveResult(e *memoEntry) {
 	if p.moved == nil {
 		p.moved = map[*Node]*Node{}
 	}
-	if n.Start == n.End {
+	if n.start == n.end {
 		e.node = p.moveEmpty(n, p.baseShift)
 	} else if n.gen < p.gen {
 		p.moveTree(n, p.shiftOf(n))
@@ -953,7 +953,7 @@ func (p *parser) shiftOf(n *Node) int {
 	if d, ok := p.shifts[n.gen]; ok {
 		return d
 	}
-	s := int(n.Start)
+	s := int(n.start)
 	for _, ed := range p.edits[n.gen:p.gen] {
 		p.stepWork()
 		if s >= ed.end {
@@ -963,27 +963,27 @@ func (p *parser) shiftOf(n *Node) int {
 	if p.shifts == nil {
 		p.shifts = map[uint32]int{}
 	}
-	p.shifts[n.gen] = s - int(n.Start)
-	return s - int(n.Start)
+	p.shifts[n.gen] = s - int(n.start)
+	return s - int(n.start)
 }
 
 // moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
 func (p *parser) moveTree(n *Node, shift int) {
 	p.stepWork()
 	gen := n.gen
-	n.Start += int32(shift)
-	n.End += int32(shift)
+	n.start += int32(shift)
+	n.end += int32(shift)
 	n.gen = p.gen
-	for i, c := range n.Children {
+	for i, c := range n.children {
 		p.stepWork()
 		if c != nil && c.gen < p.gen {
-			n.Children[i] = p.moveChild(c, gen, shift)
+			n.children[i] = p.moveChild(c, gen, shift)
 		}
 	}
-	for i := range n.Fields {
+	for i := range n.fields {
 		p.stepWork()
-		if c, ok := n.Fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
-			n.Fields[i].Value = p.moveChild(c, gen, shift)
+		if c, ok := n.fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
+			n.fields[i].Value = p.moveChild(c, gen, shift)
 		}
 	}
 }
@@ -991,7 +991,7 @@ func (p *parser) moveTree(n *Node, shift int) {
 // moveChild moves the descendant c of a node of generation gen that moved by shift, and returns
 // it or its copy.
 func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
-	if c.Start != c.End {
+	if c.start != c.end {
 		if c.gen != gen {
 			shift = p.shiftOf(c)
 		}
@@ -1015,24 +1015,24 @@ func (p *parser) moveEmpty(n *Node, shift int) *Node {
 		return c
 	}
 	c := p.newNode(*n)
-	c.Start += int32(shift)
-	c.End += int32(shift)
+	c.start += int32(shift)
+	c.end += int32(shift)
 	p.moved[n] = c
-	if n.Children != nil {
-		c.Children = p.nodes(len(n.Children))
-		for i, ch := range n.Children {
+	if n.children != nil {
+		c.children = p.nodes(len(n.children))
+		for i, ch := range n.children {
 			p.stepWork()
-			c.Children[i] = p.moveDescendant(ch, n.gen, shift)
+			c.children[i] = p.moveDescendant(ch, n.gen, shift)
 		}
 	}
-	if n.Fields != nil {
-		c.Fields = p.fields(len(n.Fields))[:len(n.Fields)]
-		for i, f := range n.Fields {
+	if n.fields != nil {
+		c.fields = p.fields(len(n.fields))[:len(n.fields)]
+		for i, f := range n.fields {
 			p.stepWork()
 			if vn, ok := f.Value.(*Node); ok {
 				f.Value = p.moveDescendant(vn, n.gen, shift)
 			}
-			c.Fields[i] = f
+			c.fields[i] = f
 		}
 	}
 	return c
@@ -1043,7 +1043,7 @@ func (p *parser) moveDescendant(c *Node, gen uint32, shift int) *Node {
 	switch {
 	case c == nil:
 		return nil
-	case c.Start == c.End:
+	case c.start == c.end:
 		return p.moveEmpty(c, shift)
 	case c.gen < p.gen:
 		return p.moveChild(c, gen, shift)

@@ -44,15 +44,15 @@ func TestOperatorsRulePositions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n.Start != 1 || n.End != 10 {
-		t.Errorf("root [%d,%d)", n.Start, n.End)
+	if n.start != 1 || n.end != 10 {
+		t.Errorf("root [%d,%d)", n.start, n.end)
 	}
-	mul := n.Children[2]
-	if mul.Start != 5 || mul.End != 10 {
-		t.Errorf("mul [%d,%d)", mul.Start, mul.End)
+	mul := n.children[2]
+	if mul.start != 5 || mul.end != 10 {
+		t.Errorf("mul [%d,%d)", mul.start, mul.end)
 	}
-	if op := n.Children[1]; op.Start != 3 || op.End != 4 {
-		t.Errorf("op [%d,%d)", op.Start, op.End)
+	if op := n.children[1]; op.start != 3 || op.end != 4 {
+		t.Errorf("op [%d,%d)", op.start, op.end)
 	}
 }
 
@@ -109,11 +109,11 @@ func TestOperatorsRulePositionsWithActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n.Start != 0 || n.End != 9 {
-		t.Errorf("root [%d,%d)", n.Start, n.End)
+	if n.start != 0 || n.end != 9 {
+		t.Errorf("root [%d,%d)", n.start, n.end)
 	}
-	if l := n.Field("L").(*Node); l.Start != 0 || l.End != 5 {
-		t.Errorf("left [%d,%d)", l.Start, l.End)
+	if l := n.Field("L").(*Node); l.start != 0 || l.end != 5 {
+		t.Errorf("left [%d,%d)", l.start, l.end)
 	}
 }
 

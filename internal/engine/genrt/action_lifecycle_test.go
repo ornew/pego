@@ -6,7 +6,7 @@ func TestActionTrackingReleasesReferences(t *testing.T) {
 	// Any value but a function is a result: a value other than a node is boxed.
 	for _, name := range []string{"nil", "node", "value", "invalid", "error"} {
 		t.Run(name, func(t *testing.T) {
-			prefix := &Node{Text: "keep"}
+			prefix := &Node{text: "keep"}
 			made := &Node{fresh: true}
 			p := &parser{created: []*Node{prefix}}
 			c := &actx{p: p, cbase: 1, start: 3, end: 4}
@@ -35,7 +35,7 @@ func TestActionTrackingReleasesReferences(t *testing.T) {
 			if len(p.created) != 1 || p.created[0] != prefix || p.created[:cap(p.created)][1] != nil {
 				t.Fatal("tracking retains a discarded reference or changed its prefix")
 			}
-			if name == "node" && (got != made || got.Start != 3 || got.End != 4 || got.fresh) {
+			if name == "node" && (got != made || got.start != 3 || got.end != 4 || got.fresh) {
 				t.Fatal("returned node changed identity or has wrong span/freshness")
 			}
 		})

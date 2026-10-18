@@ -11,10 +11,10 @@ import (
 )
 
 func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
-	leaf := &Node{kind: kindOf(TypeMatch, "identifier"), terminal: true, Text: "hello"}
-	tuple := &Node{kind: kindTupleValue, Children: []*Node{leaf}}
-	list := &Node{kind: kindListValue, Children: []*Node{nil, leaf}}
-	root := &Node{kind: kindOf("Pair", ""), Fields: Fields{{"z", list}, {"a", leaf}, {"t", tuple}}}
+	leaf := &Node{kind: kindOf(TypeMatch, "identifier"), terminal: true, text: "hello"}
+	tuple := &Node{kind: kindTupleValue, children: []*Node{leaf}}
+	list := &Node{kind: kindListValue, children: []*Node{nil, leaf}}
+	root := &Node{kind: kindOf("Pair", ""), fields: Fields{{"z", list}, {"a", leaf}, {"t", tuple}}}
 	q, err := CompileStructuralQuery(QueryPattern{Rule: "identifier", Capture: "name", Value: &QueryPattern{Category: "string", Capture: "text"}}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -40,10 +40,10 @@ func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
 }
 
 func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
-	a := &Node{kind: kindMatch, terminal: true, Text: "a"}
+	a := &Node{kind: kindMatch, terminal: true, text: "a"}
 	b := &Node{kind: kindBox, box: 7}
-	look := &Node{kind: kindMatch, terminal: true, Text: "!"}
-	tuple := &Node{kind: kindSeq, Children: []*Node{a, b}, Fields: Fields{{"x", a}, {"y", look}}}
+	look := &Node{kind: kindMatch, terminal: true, text: "!"}
+	tuple := &Node{kind: kindSeq, children: []*Node{a, b}, fields: Fields{{"x", a}, {"y", look}}}
 	elements := QueryPattern{Category: "node", Elements: []QueryPattern{{Value: &QueryPattern{Category: "string"}, Capture: "first"}, {Category: "int", Capture: "second"}}}
 	value := QueryPattern{Value: &QueryPattern{Category: "tuple", Elements: []QueryPattern{{}, {Category: "int"}}, Capture: "value"}}
 	for name, tc := range map[string]struct {
@@ -69,7 +69,7 @@ func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
 		if name == "elements" && (got[0].Captures[0].Value != a || got[0].Captures[1].Value != 7) {
 			t.Fatalf("element values: %+v", got[0].Captures)
 		}
-		if v, ok := got[0].Captures[0].Value.(*Node); name == "value" && (!ok || v.shape() != shapeTupleValue || len(v.Children) != 2) {
+		if v, ok := got[0].Captures[0].Value.(*Node); name == "value" && (!ok || v.shape() != shapeTupleValue || len(v.children) != 2) {
 			t.Fatalf("node value: %+v", got[0].Captures[0])
 		}
 	}
@@ -133,7 +133,7 @@ rule item = [a-z]`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := q.Matches(&Node{kind: kindOf("S", ""), Fields: Fields{{"X", 1}}}, QueryOptions{}); err != nil || len(got) != 0 {
+	if got, err := q.Matches(&Node{kind: kindOf("S", ""), fields: Fields{{"X", 1}}}, QueryOptions{}); err != nil || len(got) != 0 {
 		t.Fatalf("struct without nodes: %+v %v", got, err)
 	}
 }
@@ -173,15 +173,15 @@ func TestStructuralQueryAllOrError(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := &Node{kind: kindSeq}
-	root.Children = []*Node{root}
+	root.children = []*Node{root}
 	got, err := q.Matches(root, QueryOptions{})
 	if got != nil || !errors.Is(err, ErrQueryCycle) {
 		t.Fatalf("cycle: %v %v", got, err)
 	}
 	list := &Node{kind: kindListValue}
-	list.Children = []*Node{list}
-	root.Children = nil
-	root.Fields = Fields{{"cycle", list}}
+	list.children = []*Node{list}
+	root.children = nil
+	root.fields = Fields{{"cycle", list}}
 	root.kind = kindOf("S", "")
 	got, err = q.Matches(root, QueryOptions{})
 	if got != nil || !errors.Is(err, ErrQueryCycle) {
@@ -211,8 +211,8 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := &Node{kind: kindSeq}
-	list := &Node{kind: kindListValue, Children: []*Node{root}}
-	root.Children = []*Node{list}
+	list := &Node{kind: kindListValue, children: []*Node{root}}
+	root.children = []*Node{list}
 	// The repeated node is rejected before its contents are reserved.
 	budget := &queryBudget{limits: WorkLimits{MaxSteps: 100}}
 	visits := 0
@@ -228,7 +228,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 		t.Fatalf("value cycle: %+v, %v", results, err)
 	}
 	// Go slices are not values of the value model.
-	results, err = q.Matches(&Node{kind: kindOf("S", ""), Fields: Fields{{"x", []any{1}}}}, QueryOptions{})
+	results, err = q.Matches(&Node{kind: kindOf("S", ""), fields: Fields{{"x", []any{1}}}}, QueryOptions{})
 	if results != nil || err == nil || !strings.Contains(err.Error(), "unsupported query value") {
 		t.Fatalf("Go slice: %+v, %v", results, err)
 	}
@@ -258,11 +258,11 @@ func TestStructuralQueryValidationAndRuntimeMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.Fields[0].Pattern.Category = "int"
-	got, err := q.Matches(&Node{kind: kindOf("Item", ""), Fields: Fields{{"Value", false}}}, QueryOptions{})
+	got, err := q.Matches(&Node{kind: kindOf("Item", ""), fields: Fields{{"Value", false}}}, QueryOptions{})
 	if err != nil || len(got) != 0 {
 		t.Fatalf("runtime mismatch: %v %v", got, err)
 	}
-	got, err = q.Matches(&Node{kind: kindOf("Item", ""), Fields: Fields{{"Value", "ok"}}}, QueryOptions{})
+	got, err = q.Matches(&Node{kind: kindOf("Item", ""), fields: Fields{{"Value", "ok"}}}, QueryOptions{})
 	if err != nil || len(got) != 1 {
 		t.Fatalf("pattern ownership: %v %v", got, err)
 	}
@@ -347,7 +347,7 @@ func TestStructuralQueryOptionalScalarFieldCategory(t *testing.T) {
 		if category == "nil" {
 			value = nil
 		}
-		matches, err := q.Matches(&Node{kind: kindOf("Item", ""), Fields: Fields{{"Value", value}}}, QueryOptions{})
+		matches, err := q.Matches(&Node{kind: kindOf("Item", ""), fields: Fields{{"Value", value}}}, QueryOptions{})
 		if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Category != category {
 			t.Fatalf("category %q at runtime: %+v, %v", category, matches, err)
 		}

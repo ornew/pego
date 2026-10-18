@@ -127,14 +127,14 @@ func cloneDocumentNode(n *Node, state *documentCloneState) *Node {
 	c := new(Node)
 	*c = *n
 	state.nodes[n] = c
-	if n.Children != nil {
-		c.Children = cloneDocumentValue(n.Children, state).([]*Node)
+	if n.children != nil {
+		c.children = cloneDocumentValue(n.children, state).([]*Node)
 	}
-	if n.Fields != nil {
-		c.Fields = make(Fields, len(n.Fields))
-		for i, field := range n.Fields {
+	if n.fields != nil {
+		c.fields = make(Fields, len(n.fields))
+		for i, field := range n.fields {
 			field.Value = cloneDocumentValue(field.Value, state)
-			c.Fields[i] = field
+			c.fields[i] = field
 		}
 	}
 	return c

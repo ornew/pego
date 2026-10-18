@@ -138,7 +138,7 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("items").(*Node).Children
+				want := whole.Field("items").(*Node).children
 				var retained []*Node
 				var snapshots [][]byte
 				err = prog.ParseStreamWith("main", strings.NewReader(input.String()), func(n *Node) error {
@@ -177,12 +177,12 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	}
 	p := newParser(compile(t, `rule main = "a"`), "a", CodePoints, false)
 	root := p.newFrame(1)
-	root.vals[0] = &Node{Text: "live root"}
+	root.vals[0] = &Node{text: "live root"}
 	p.frame = root
 	dead := p.newFrame(1)
-	dead.vals[0] = &Node{Text: "previous element"}
+	dead.vals[0] = &Node{text: "previous element"}
 	p.resetStreamFrames()
-	if root.vals[0].Text != "live root" || dead.vals != nil {
+	if root.vals[0].text != "live root" || dead.vals != nil {
 		t.Fatal("commit lost the live root or retained a dead capture frame")
 	}
 	if next := p.newFrame(1); next != dead || next.vals[0] != nil {
@@ -191,10 +191,10 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	// The root can remain in an older chunk after a large element. The current
 	// chunk is then entirely dead, while the older live root must survive.
 	for range nodeChunk + 7 {
-		p.newFrame(1).vals[0] = &Node{Text: "large element"}
+		p.newFrame(1).vals[0] = &Node{text: "large element"}
 	}
 	p.resetStreamFrames()
-	if len(p.frameSlab) != 0 || cap(p.frameSlab) != nodeChunk || root.vals[0].Text != "live root" {
+	if len(p.frameSlab) != 0 || cap(p.frameSlab) != nodeChunk || root.vals[0].text != "live root" {
 		t.Fatal("large element prevented scratch reuse or damaged the older root")
 	}
 	for _, f := range p.frameSlab[:cap(p.frameSlab)] {

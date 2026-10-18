@@ -121,13 +121,13 @@ type Word terminal`)
 				t.Fatal(err)
 			}
 			old, err := doc.Parse()
-			if err != nil || old.Text != prefix+"abcdef" {
+			if err != nil || old.text != prefix+"abcdef" {
 				t.Fatalf("cross-piece node text: %v, %v", old, err)
 			}
 			if err := doc.Edit(0, 0, "z"); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := doc.Parse(); err != nil || old.Text != prefix+"abcdef" {
+			if _, err := doc.Parse(); err != nil || old.text != prefix+"abcdef" {
 				t.Fatalf("retained node text changed: %v, %v", old, err)
 			}
 		})
@@ -244,7 +244,7 @@ type Word terminal`)
 				t.Fatal(err)
 			}
 			old, err := doc.Parse()
-			if err != nil || old.Text != initial {
+			if err != nil || old.text != initial {
 				t.Fatalf("initial parse: %v, %v", old, err)
 			}
 			for range 512 {
@@ -257,11 +257,11 @@ type Word terminal`)
 				t.Fatalf("expected compaction after 512 edits, got %d pieces", got)
 			}
 			current, err := doc.Parse()
-			if err != nil || current.Text != strings.Repeat("a", documentPieceMinSize+512) {
+			if err != nil || current.text != strings.Repeat("a", documentPieceMinSize+512) {
 				t.Fatalf("post-compaction parse: %v, %v", current, err)
 			}
-			if old.Text != initial {
-				t.Fatalf("retained node text changed: %q", old.Text)
+			if old.text != initial {
+				t.Fatalf("retained node text changed: %q", old.text)
 			}
 		})
 	}

@@ -21,9 +21,9 @@ func snapshotVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 }
 
 func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
-	leaf := &Node{kind: kindOf("Leaf", "leaf"), Start: 2, End: 3, Text: "x", terminal: true, Children: []*Node{}, Fields: Fields{}}
-	root := &Node{kind: kindSeq, Start: 1, End: 4, Children: []*Node{leaf, nil, leaf}}
-	root.Fields = Fields{{"self", root}, {"leaf", leaf}, {"typedNil", (*Node)(nil)}, {"nil", nil}, {"int", 42}, {"text", "hi"}, {"bool", true}}
+	leaf := &Node{kind: kindOf("Leaf", "leaf"), start: 2, end: 3, text: "x", terminal: true, children: []*Node{}, fields: Fields{}}
+	root := &Node{kind: kindSeq, start: 1, end: 4, children: []*Node{leaf, nil, leaf}}
+	root.fields = Fields{{"self", root}, {"leaf", leaf}, {"typedNil", (*Node)(nil)}, {"nil", nil}, {"int", 42}, {"text", "hi"}, {"bool", true}}
 	g, err := freezeSnapshotGraph(&parser{}, root)
 	if err != nil {
 		t.Fatal(err)
@@ -54,25 +54,25 @@ func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
 	if v, ok := n.Field("self"); !ok || v != n {
 		t.Fatal("field slice alias")
 	}
-	root.Start = 99
-	root.Children[0] = nil
-	root.Fields[0].Value = nil
-	leaf.Text = "changed"
+	root.start = 99
+	root.children[0] = nil
+	root.fields[0].Value = nil
+	leaf.text = "changed"
 	if n.Start() != 1 || n.Child(0).Text() != "x" {
 		t.Fatal("legacy alias")
 	}
 	a, b := s.Materialize(), s.Materialize()
-	if a == b || a.Children[0] == b.Children[0] || a.Children[0] != a.Children[2] || a.Children[1] != nil || a.Fields[0].Value != a {
+	if a == b || a.children[0] == b.children[0] || a.children[0] != a.children[2] || a.children[1] != nil || a.fields[0].Value != a {
 		t.Fatal("materialized graph")
 	}
-	if a.Children[0].Children == nil || a.Children[0].Fields == nil {
+	if a.children[0].children == nil || a.children[0].fields == nil {
 		t.Fatal("allocated empty lost")
 	}
-	if v, ok := a.Fields[2].Value.(*Node); !ok || v != nil {
+	if v, ok := a.fields[2].Value.(*Node); !ok || v != nil {
 		t.Fatal("materialized typed nil")
 	}
-	a.Children[0].Text = "mutated"
-	if n.Child(0).Text() != "x" || b.Children[0].Text != "x" {
+	a.children[0].text = "mutated"
+	if n.Child(0).Text() != "x" || b.children[0].text != "x" {
 		t.Fatal("materialized alias")
 	}
 	var z SnapshotNode
@@ -96,10 +96,10 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 	at := root
 	for i := 0; i < 20000; i++ {
 		next := &Node{}
-		at.Children = []*Node{next}
+		at.children = []*Node{next}
 		at = next
 	}
-	at.Fields = Fields{{"back", root}}
+	at.fields = Fields{{"back", root}}
 	g, err := freezeSnapshotGraph(&parser{}, root)
 	if err != nil || len(g.nodes) != 20001 {
 		t.Fatal("deep capture", err)
@@ -107,15 +107,15 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 	s := &Snapshot{graph: g}
 	at = s.Materialize()
 	for i := 0; i < 20000; i++ {
-		at = at.Children[0]
+		at = at.children[0]
 	}
-	if at.Fields[0].Value.(*Node).Children[0] == nil {
+	if at.fields[0].Value.(*Node).children[0] == nil {
 		t.Fatal("deep cycle")
 	}
 	type namedInt int
 	for _, value := range []any{namedInt(1), []int(nil), map[string]int(nil), (*int)(nil), (chan int)(nil), (func())(nil)} {
-		child := &Node{Fields: Fields{{"bad\"name", value}}}
-		root := &Node{Children: []*Node{child}, Fields: Fields{{"other", value}}}
+		child := &Node{fields: Fields{{"bad\"name", value}}}
+		root := &Node{children: []*Node{child}, fields: Fields{{"other", value}}}
 		_, err := freezeSnapshotGraph(&parser{}, root)
 		if err == nil || err.ValueType != reflect.TypeOf(value) || err.Path != `root.Children[0].Fields[0]("bad\"name")` {
 			t.Fatalf("rejection %v", err)
@@ -372,7 +372,7 @@ func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy.Fields = Fields{{"bad", []int{1}}}
+	legacy.fields = Fields{{"bad", []int{1}}}
 	s, err := d.SnapshotWith(ParseOptions{})
 	var capture *SnapshotCaptureError
 	if s != nil || !errors.As(err, &capture) || capture.ValueType != reflect.TypeOf([]int{}) || !strings.Contains(capture.Path, "bad") || capture.ParseError != nil {
@@ -381,7 +381,7 @@ func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
 	if d.Text() != "x" || d.Version().Sequence() != 1 {
 		t.Fatal("capture failure mutated document")
 	}
-	legacy.Fields = nil
+	legacy.fields = nil
 	if s, err := d.SnapshotWith(ParseOptions{}); s == nil || err != nil {
 		t.Fatal("retry", err)
 	}

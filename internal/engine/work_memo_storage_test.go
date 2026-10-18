@@ -36,7 +36,7 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 	}
 	oldHeader := table.slots
 	oldPointers := slotPointers(oldHeader)
-	newEntry := &memoEntry{node: &Node{Text: "published after retry"}}
+	newEntry := &memoEntry{node: &Node{text: "published after retry"}}
 	p := memoStorageParser(table, WorkLimits{MaxSteps: 130})
 	key := memoKey{rule: 7, pos: 512}
 

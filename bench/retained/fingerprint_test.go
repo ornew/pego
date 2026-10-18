@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
 )
 
 func TestFingerprintTerminalFlag(t *testing.T) {
@@ -24,7 +25,7 @@ func TestFingerprintTerminalFlag(t *testing.T) {
 	}
 	// These explicit records specify the encoding contract independently of
 	// fingerprint's node-header construction. Only Terminal differs.
-	record := `{"ID":0,"Type":"Match","Rule":"","Start":0,"End":1,"Text":"x","Children":0,"Fields":0,"NilKids":true,"NilFields":true,"Terminal":true}`
+	record := `{"ID":0,"Kind":"string","Type":"Match","Rule":"","Start":0,"End":1,"Text":"x","Elems":0,"Fields":0,"Terminal":true}`
 	reference := func(header string) string {
 		h := sha256.New()
 		for _, item := range []string{fingerprintFormat, "node", header} {
@@ -57,32 +58,32 @@ func TestFingerprintSharingAndNodeCycles(t *testing.T) {
 		}
 		return h
 	}
-	leaf := &pego.Node{Text: "x"}
-	shared := &pego.Node{Children: []*pego.Node{leaf, leaf}}
-	separate := &pego.Node{Children: []*pego.Node{{Text: "x"}, {Text: "x"}}}
+	leaf := stringNode("x")
+	shared := tupleNode(leaf, leaf)
+	separate := tupleNode(stringNode("x"), stringNode("x"))
 	if hash(shared) == hash(separate) {
 		t.Fatal("fingerprint loses node sharing")
 	}
-	cycle := &pego.Node{}
-	cycle.Children = []*pego.Node{cycle}
-	copyCycle := &pego.Node{}
-	copyCycle.Children = []*pego.Node{copyCycle}
+	cycle := tupleNode()
+	engine.SetNodeElems(cycle, []*pego.Node{cycle})
+	copyCycle := tupleNode()
+	engine.SetNodeElems(copyCycle, []*pego.Node{copyCycle})
 	if hash(cycle) != hash(copyCycle) {
 		t.Fatal("fingerprint depends on pointer addresses")
 	}
 }
 
 func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
-	leaf := &pego.Node{Text: "x"}
+	leaf := stringNode("x")
 	root := leaf
 	for range 20000 {
-		root = &pego.Node{Children: []*pego.Node{root}}
+		root = tupleNode(root)
 	}
 	before, err := fingerprint(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	leaf.Text = "changed"
+	engine.SetNodeText(leaf, "changed")
 	after, err := fingerprint(root)
 	if err != nil {
 		t.Fatal(err)
@@ -90,13 +91,8 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	if before == after {
 		t.Fatal("fingerprint omits deep descendants")
 	}
-	a, b := &pego.Node{}, &pego.Node{}
-	add := func(n *pego.Node, name string, value any) {
-		n.Fields = append(n.Fields, struct {
-			Name  string
-			Value any
-		}{name, value})
-	}
+	a, b := structNode(), structNode()
+	add := engine.SetNodeField
 	add(a, "a", []any{1, "x", nil})
 	add(a, "b", map[string]any{"x": 1, "y": true})
 	add(b, "b", map[string]any{"y": true, "x": 1})
@@ -112,7 +108,7 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	if x != y {
 		t.Fatal("field or map order changes fingerprint")
 	}
-	a.Fields[0].Value = []any{1, "different", nil}
+	engine.SetNodeField(a, "a", []any{1, "different", nil})
 	z, err := fingerprint(a)
 	if err != nil {
 		t.Fatal(err)
@@ -120,4 +116,16 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	if x == z {
 		t.Fatal("fingerprint omits field values")
 	}
+}
+
+func stringNode(text string) *pego.Node {
+	return engine.NewNode(pego.KindString, 0, len(text), text, nil, "", nil, nil)
+}
+
+func tupleNode(elems ...*pego.Node) *pego.Node {
+	return engine.NewNode(pego.KindTuple, 0, 0, "", elems, "", nil, nil)
+}
+
+func structNode() *pego.Node {
+	return engine.NewNode(pego.KindStruct, 0, 0, "", nil, "S", nil, nil)
 }

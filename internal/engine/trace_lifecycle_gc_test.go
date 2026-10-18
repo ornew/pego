@@ -126,7 +126,7 @@ func TestTraceLifecycleReleasesOwnersAfterGC(t *testing.T) {
 				if sr.Value() != nil {
 					t.Error("stream event retains callback sentinel")
 				}
-				if before != n.String() || n.Field("k").(*Node).Text != "a" {
+				if before != n.String() || n.Field("k").(*Node).text != "a" {
 					t.Fatal("emitted node changed")
 				}
 				runtime.KeepAlive(e)

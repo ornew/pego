@@ -67,13 +67,13 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 				t.Fatalf("missing nodes: %v", insertions)
 			}
 			m := insertions[0]
-			if m.Start != pos || m.End != pos || m.Text != "" || errs[0].Pos != int(pos) || errs[0].Col != int(pos)+1 {
+			if m.start != pos || m.end != pos || m.text != "" || errs[0].Pos != int(pos) || errs[0].Col != int(pos)+1 {
 				t.Fatal("fabricated source range/text or wrong unit", m, errs)
 			}
-			if expected, _ := m.Fields.Get("expected"); expected != ";" {
+			if expected, _ := m.fields.Get("expected"); expected != ";" {
 				t.Fatal(expected)
 			}
-			if message, _ := m.Fields.Get("message"); message != errs[0].Error() {
+			if message, _ := m.fields.Get("message"); message != errs[0].Error() {
 				t.Fatal(message, errs[0])
 			}
 			if _, err := prog.ParseWith("main", "é;", o); err != nil {
@@ -93,13 +93,13 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 	}
 	partial := compile(t, `rule main = "ab" #missing "a" $$`)
 	n, _ := requireInsertions(t, partial, "a", ParseOptions{MissingTokens: 2}, 1)
-	if m := missingNodes(t, n)[0]; m.Start != 0 || m.End != 0 {
+	if m := missingNodes(t, n)[0]; m.start != 0 || m.end != 0 {
 		t.Fatal("partial prefix was consumed", m)
 	}
 	invalid := compile(t, `rule main = . ";" #missing $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		n, errs := requireInsertions(t, invalid, "\xff", ParseOptions{Unit: unit, MissingTokens: 2}, 1)
-		if missingNodes(t, n)[0].Start != 1 || errs[0].Pos != 1 {
+		if missingNodes(t, n)[0].start != 1 || errs[0].Pos != 1 {
 			t.Fatal("invalid UTF-8 position")
 		}
 	}
@@ -132,7 +132,7 @@ rule token = ";" #missing`)
 	}
 	captures := compile(t, `rule main = (x:(";" #missing) "a" / ";" #missing "b") $$`)
 	n, _ := requireInsertions(t, captures, "b", ParseOptions{MissingTokens: 2}, 1)
-	if _, ok := n.Fields.Get("x"); ok {
+	if _, ok := n.fields.Get("x"); ok {
 		t.Fatal("abandoned capture survived")
 	}
 	cut := compile(t, `rule main = (";" #missing #cut "x" / "y") $$`)

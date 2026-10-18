@@ -82,7 +82,7 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 						t.Fatalf("%v/%v: incorrect next-owner presence: %v", unit, backend, n.Field("HasNext"))
 					}
 					var got []string
-					for _, c := range sourceField(t, n, "Detached").Children {
+					for _, c := range elems(sourceField(t, n, "Detached")) {
 						got = append(got, c.Field("Text").(string))
 					}
 					if !reflect.DeepEqual(got, tc.detached) {
@@ -107,7 +107,7 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 			element := sourceField(t, n, want.field)
 			comments := sourceField(t, element, "Comments")
 			var detached []string
-			for _, c := range sourceField(t, comments, "Detached").Children {
+			for _, c := range elems(sourceField(t, comments, "Detached")) {
 				detached = append(detached, c.Field("Text").(string))
 			}
 			if element.Field("Name") != want.name || comments.Field("Leading") != want.leading || comments.Field("Trailing") != want.trailing || !reflect.DeepEqual(detached, want.detached) {

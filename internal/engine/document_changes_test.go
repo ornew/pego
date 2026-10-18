@@ -273,39 +273,39 @@ func changeGraphSnapshot(t *testing.T, root *Node) *Snapshot {
 }
 
 func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
-	leaf := func() *Node { return &Node{kind: kindOf("Leaf", "leaf"), Start: 1, End: 2, terminal: true, Text: "x"} }
+	leaf := func() *Node { return &Node{kind: kindOf("Leaf", "leaf"), start: 1, end: 2, terminal: true, text: "x"} }
 	shared := leaf()
-	a := &Node{Children: []*Node{shared, shared, nil}}
-	a.Fields = Fields{{"self", a}, {"nil", (*Node)(nil)}, {"value", 4}, {"flag", true}}
+	a := &Node{children: []*Node{shared, shared, nil}}
+	a.fields = Fields{{"self", a}, {"nil", (*Node)(nil)}, {"value", 4}, {"flag", true}}
 	b := a.Clone()
 	if !equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("equal cyclic graph")
 	}
-	b.Children[1] = leaf()
+	b.children[1] = leaf()
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("changed alias topology omitted")
 	}
 	b = a.Clone()
-	b.Children[0].Start++
+	b.children[0].start++
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("position omitted")
 	}
 	b = a.Clone()
-	b.Fields[2].Value = 5
+	b.fields[2].Value = 5
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("scalar omitted")
 	}
 	b = a.Clone()
-	b.Fields[1].Value = nil
+	b.fields[1].Value = nil
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("typed nil omitted")
 	}
 	b = a.Clone()
-	b.Fields[2], b.Fields[3] = b.Fields[3], b.Fields[2]
+	b.fields[2], b.fields[3] = b.fields[3], b.fields[2]
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("field order omitted")
 	}
-	for _, pair := range [][2]*Node{{{}, {Children: []*Node{}}}, {{}, {Fields: Fields{}}}} {
+	for _, pair := range [][2]*Node{{{}, {children: []*Node{}}}, {{}, {fields: Fields{}}}} {
 		if equalChangeSnapshots(changeGraphSnapshot(t, pair[0]), changeGraphSnapshot(t, pair[1])) {
 			t.Fatal("nil versus empty omitted")
 		}
@@ -319,7 +319,7 @@ func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
 }
 
 func TestDocumentChangesComparisonUsesCumulativeBudget(t *testing.T) {
-	leaf := &Node{kind: kindOf("Leaf", "leaf"), terminal: true, Text: strings.Repeat("x", 8192)}
+	leaf := &Node{kind: kindOf("Leaf", "leaf"), terminal: true, text: strings.Repeat("x", 8192)}
 	a, b := changeGraphSnapshot(t, leaf), changeGraphSnapshot(t, leaf.Clone())
 	control := newWorkControl(nil, WorkLimits{MaxInputWork: 8192})
 	control.charge(4096, 1) // Work already spent by parsing/capture in this invocation.

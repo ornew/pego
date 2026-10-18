@@ -77,12 +77,12 @@ func TestGeneratedDocumentContract(t *testing.T) {
   first, err := d.Parse()
   if err != nil { t.Fatal(err) }
   clone := first.Clone()
-  if clone == first || clone.Children[0] == first.Children[0] { t.Fatal("clone retained document nodes") }
+  if clone == first || clone.children[0] == first.children[0] { t.Fatal("clone retained document nodes") }
   if err := d.Edit(2, 2, "a"); err != nil { t.Fatal(err) }
   second, err := d.Parse()
   if err != nil { t.Fatal(err) }
   if d.Stats().Reused == 0 || d.Stats().Evaluated == 0 { t.Fatalf("no rule accounting: %+v", d.Stats()) }
-  if len(clone.Children[0].Children) != 2 || len(second.Children[0].Children) != 3 { t.Fatal("clone changed after edit") }
+  if len(clone.children[0].children) != 2 || len(second.children[0].children) != 3 { t.Fatal("clone changed after edit") }
   before := d.Text()
   if err := d.Edit(-1, 0, "x"); err == nil || d.Text() != before { t.Fatal("invalid edit changed document") }
   if _, err := d.Parse(WithUnit(Bytes)); err == nil { t.Fatal("unit change accepted") }
@@ -101,15 +101,15 @@ func TestGeneratedDocumentByteBoundary(t *testing.T) {
   if d.Text() != "é" { t.Fatal("no-op edit changed text") }
 }
 func TestGeneratedDocumentCloneSharing(t *testing.T) {
-  n := &Node{Text: "a"}
-  parent := &Node{Children: []*Node{n,n}, Fields: Fields{{Name: "value", Value: []any{n}}}}
+  n := &Node{text: "a"}
+  parent := &Node{children: []*Node{n,n}, fields: Fields{{Name: "value", Value: []any{n}}}}
   copy := parent.Clone()
-  if copy.Children[0] != copy.Children[1] || copy.Children[0] == n { t.Fatal("shared children not cloned") }
-  value := copy.Fields[0].Value.([]any)[0].(*Node)
-  if value != copy.Children[0] { t.Fatal("field alias not preserved") }
+  if copy.children[0] != copy.children[1] || copy.children[0] == n { t.Fatal("shared children not cloned") }
+  value := copy.fields[0].Value.([]any)[0].(*Node)
+  if value != copy.children[0] { t.Fatal("field alias not preserved") }
 }
 func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
-  child := &Node{Text: "original"}
+  child := &Node{text: "original"}
   const backingCapacity = 1 << 16
   values := make([]any, 2, backingCapacity)
   values[0], values[1] = values, child
@@ -117,30 +117,30 @@ func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
   nodes[0] = child
   emptyValues := make([]any, 0, backingCapacity)
   emptyNodes := make([]*Node, 0, backingCapacity)
-  root := &Node{Children: nodes, Fields: Fields{
+  root := &Node{children: nodes, fields: Fields{
     {Name: "first", Value: values}, {Name: "second", Value: values},
     {Name: "nodes1", Value: nodes}, {Name: "nodes2", Value: nodes},
     {Name: "emptyValues", Value: emptyValues}, {Name: "emptyNodes", Value: emptyNodes},
   }}
   copy := root.Clone()
-  first := copy.Fields[0].Value.([]any)
-  second := copy.Fields[1].Value.([]any)
+  first := copy.fields[0].Value.([]any)
+  second := copy.fields[1].Value.([]any)
   if &first[0] == &values[0] || &first[0] != &second[0] { t.Fatal("shared slice was not copied once") }
   cycle := first[0].([]any)
   if &cycle[0] != &first[0] { t.Fatal("slice cycle was not preserved") }
-  if first[1].(*Node) != copy.Children[0] || copy.Children[0] == child { t.Fatal("node identity was not preserved") }
-  nodes1 := copy.Fields[2].Value.([]*Node)
-  nodes2 := copy.Fields[3].Value.([]*Node)
+  if first[1].(*Node) != copy.children[0] || copy.children[0] == child { t.Fatal("node identity was not preserved") }
+  nodes1 := copy.fields[2].Value.([]*Node)
+  nodes2 := copy.fields[3].Value.([]*Node)
   if cap(first) != len(first) || cap(nodes1) != len(nodes1) ||
-    cap(copy.Fields[4].Value.([]any)) != 0 || cap(copy.Fields[5].Value.([]*Node)) != 0 {
+    cap(copy.fields[4].Value.([]any)) != 0 || cap(copy.fields[5].Value.([]*Node)) != 0 {
     t.Fatal("clone retained oversized source capacity")
   }
-  if &nodes1[0] == &nodes[0] || &nodes1[0] != &nodes2[0] || &nodes1[0] != &copy.Children[0] || nodes1[0] != copy.Children[0] {
+  if &nodes1[0] == &nodes[0] || &nodes1[0] != &nodes2[0] || &nodes1[0] != &copy.children[0] || nodes1[0] != copy.children[0] {
     t.Fatal("shared node slice was not copied once")
   }
   values[1] = nil
   nodes[0] = nil
-  if first[1] != copy.Children[0] || nodes1[0] != copy.Children[0] { t.Fatal("clone retained source slice storage") }
+  if first[1] != copy.children[0] || nodes1[0] != copy.children[0] { t.Fatal("clone retained source slice storage") }
 }
 `,
 	} {

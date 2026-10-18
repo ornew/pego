@@ -44,7 +44,7 @@ func TestBackendsMatchOnStream(t *testing.T) {
 			for i, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				var got []string
 				err := prog.ParseStreamWith("main", strings.NewReader(in), func(n *Node) error {
-					got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.Start, n.End))
+					got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.start, n.end))
 					return nil
 				}, ParseOptions{Unit: u, Backend: b})
 				out[i] = fmt.Sprint(strings.Join(got, "\n"), " ", err)
@@ -76,7 +76,7 @@ rule x = operators {
 	defer debug.SetMaxStack(prev)
 	for _, in := range inputs {
 		n, err := prog.ParseWith("main", in, ParseOptions{Backend: BytecodeIterative})
-		if err != nil || int(n.End) != len(in) {
+		if err != nil || int(n.end) != len(in) {
 			t.Errorf("input %.10q...: %v", in, err)
 		}
 		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {
@@ -105,7 +105,7 @@ rule x = operators {
 		// Within the limit, the recursive backends parse such chains.
 		short := in[len(in)-2*(DefaultMaxDepth/4)-1:]
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(n.End) != len(short) {
+			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(n.end) != len(short) {
 				t.Errorf("%v, input %.10q...: %v", b, short, err)
 			}
 		}

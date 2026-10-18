@@ -45,7 +45,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 				}
 				for i, name := range []string{"a", "b", "c"} {
 					value, ok := n.Field(name).(*Node)
-					if !ok || value == nil || !value.IsTerminal() || value.Text != tc.text || value.Start != int32(i)*width || value.End != int32(i+1)*width {
+					if !ok || value == nil || !value.IsTerminal() || value.text != tc.text || value.start != int32(i)*width || value.end != int32(i+1)*width {
 						t.Fatalf("unit=%v capture=%s lost value or span: %v", unit, name, value)
 					}
 					wantType, wantRule := TypeMatch, "value"

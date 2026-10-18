@@ -508,7 +508,7 @@ rule other = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{"stream:", "streamInput", "func ParseStream", "\"bufio\"", "\"iter\"", "WithDiagnostic", "func Iterate", "StreamIterator"} {
+	for _, marker := range []string{"stream:", "streamInput", "func ParseStream", "\"bufio\"", "WithDiagnostic", "func Iterate", "StreamIterator"} {
 		if strings.Contains(string(plain), marker) {
 			t.Errorf("ordinary output contains %s", marker)
 		}

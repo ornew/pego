@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
 )
 
 func TestTraversalPublicFacade(t *testing.T) {
@@ -37,7 +38,7 @@ func TestTraversalPublicFacade(t *testing.T) {
 		if err := node.WriteJSON(&output); err != nil || output.Len() == 0 {
 			t.Fatal(err)
 		}
-		node.Children = []*pego.Node{node}
+		engine.SetNodeElems(node, []*pego.Node{node})
 		var cycle *pego.CycleError
 		if err := pego.Walk(node, func(pego.WalkVisit) (pego.WalkAction, error) { return pego.WalkContinue, nil }); !errors.As(err, &cycle) {
 			t.Fatalf("cycle = %v", err)

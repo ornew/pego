@@ -42,7 +42,7 @@ func TestClassMembershipBoundaries(t *testing.T) {
 					}{{tc.hit, !negated}, {tc.miss, negated}} {
 						for _, r := range c.runes {
 							n, err := p.ParseWith("main", string(r), ParseOptions{Backend: backend, Unit: unit})
-							if (err == nil) != c.want || (n != nil) != c.want || n != nil && n.Text != string(r) {
+							if (err == nil) != c.want || (n != nil) != c.want || n != nil && n.text != string(r) {
 								t.Fatalf("%s negated=%v %v/%v U+%04X: node=%v error type=%T, want match=%v", tc.name, negated, backend, unit, r, n, err, c.want)
 							}
 						}

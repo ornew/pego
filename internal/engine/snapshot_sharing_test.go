@@ -270,7 +270,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 		t.Fatal("different snapshot graphs must have distinct handles")
 	}
 	materialized := (&Snapshot{graph: g}).Materialize()
-	if materialized.Children[0] != materialized.Field("wide") || materialized.Children[0].Children[0] != materialized || materialized.Children[0].Children[1] != nil {
+	if materialized.children[0] != materialized.Field("wide") || materialized.children[0].children[0] != materialized || materialized.children[0].children[1] != nil {
 		t.Fatal("materialization lost sharing, cycle or nil identity")
 	}
 }
@@ -285,8 +285,8 @@ func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy.Children = []*Node{legacy, nil}
-	legacy.Fields = Fields{{"self", legacy}, {"typedNil", (*Node)(nil)}, {"int", 7}, {"text", "a"}}
+	legacy.children = []*Node{legacy, nil}
+	legacy.fields = Fields{{"self", legacy}, {"typedNil", (*Node)(nil)}, {"int", 7}, {"text", "a"}}
 	first, err := d.SnapshotWith(ParseOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -302,10 +302,10 @@ func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
 		t.Fatal("typed nil")
 	}
 	materialized := second.Materialize()
-	if materialized.Children[0] != materialized || materialized.Fields[0].Value != materialized {
+	if materialized.children[0] != materialized || materialized.fields[0].Value != materialized {
 		t.Fatal("materialized cycle")
 	}
-	legacy.Fields[3].Value = "changed"
+	legacy.fields[3].Value = "changed"
 	if first.Root().Fields()[3].Value != "a" || second.Root().Fields()[3].Value != "a" {
 		t.Fatal("legacy mutation reached snapshots")
 	}

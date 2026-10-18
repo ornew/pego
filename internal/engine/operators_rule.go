@@ -336,7 +336,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = int(lhs.Start)
+		start = int(lhs.start)
 	}
 	if a.op.kind == grammar.Postfix {
 		end = a.end
@@ -346,7 +346,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	// captures.
 	opv, ok := l.shape.single(p, l.single, a.v, a.start)
 	if !ok {
-		opv = p.newNode(Node{kind: kindSeq, Start: int32(a.start), End: int32(a.end)})
+		opv = p.newNode(Node{kind: kindSeq, start: int32(a.start), end: int32(a.end)})
 	}
 	if l.single == singleTuple && len(l.scope.names) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
@@ -396,5 +396,5 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	if p.prog.sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
-	return p.newNode(Node{kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, labeled: p.prog.sourceInfo})
+	return p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})
 }

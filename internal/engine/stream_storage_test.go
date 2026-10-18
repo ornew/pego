@@ -18,8 +18,8 @@ rule value = v:[a-z]+ #atomic ","`
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
 	p := newParser(compile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
-	live := &Node{Text: "live"}
-	dead := &Node{Text: "dead"}
+	live := &Node{text: "live"}
+	dead := &Node{text: "dead"}
 	root := p.newFrame(1)
 	root.vals[0] = live
 	p.frame = root
@@ -60,18 +60,18 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	root := p.newFrame(1)
 	p.frame = root
-	prefix := p.newNode(Node{Text: "prefix"})
+	prefix := p.newNode(Node{text: "prefix"})
 	root.vals[0] = prefix
 	if p.nodeSlab != nil || p.ptrSlab != nil || p.frameSlab != nil {
 		t.Fatal("prefix wasted or shared a bulk allocation")
 	}
 	p.startStreamChunks()
-	next := p.newNode(Node{Text: "element"})
+	next := p.newNode(Node{text: "element"})
 	element := p.newFrame(1)
 	if next == prefix || &element.vals[0] == &root.vals[0] || element == root {
 		t.Fatal("element allocation still shares live prefix chunks")
 	}
-	if p.frame != root || root.vals[0] != prefix || prefix.Text != "prefix" {
+	if p.frame != root || root.vals[0] != prefix || prefix.text != "prefix" {
 		t.Fatal("prefix isolation changed live root capture")
 	}
 }
@@ -83,7 +83,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	}
 	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	for range nodeChunk/8 + 4 {
-		p.newNode(Node{Text: "prefix"})
+		p.newNode(Node{text: "prefix"})
 	}
 	if len(p.nodeSlab) == 0 || p.nodeChunks != 1 {
 		t.Fatal("large prefix did not switch to bounded slab allocation")
@@ -92,7 +92,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	if p.nodeChunks != 0 || len(p.nodeSlab) != 0 {
 		t.Fatal("stream boundary did not seal large prefix storage")
 	}
-	p.newNode(Node{Text: "element"})
+	p.newNode(Node{text: "element"})
 	if p.nodeChunks != 1 || len(p.nodeSlab) != nodeChunk-1 {
 		t.Fatal("elements did not resume normal slab allocation")
 	}
@@ -133,7 +133,7 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 							t.Fatalf("got %d rows: %v", len(retained), err)
 						}
 						for _, n := range retained {
-							if n.Field("x").(*Node).Text != "x" {
+							if n.Field("x").(*Node).text != "x" {
 								t.Fatal("retained capture changed")
 							}
 						}
@@ -154,7 +154,7 @@ rule header = "#head\n" #atomic`)
 				input := "#head\n" + strings.Repeat("x", 1300)
 				count := 0
 				err := prog.ParseStreamWith("main", strings.NewReader(input), func(n *Node) error {
-					if n.Field("x").(*Node).Text != "x" {
+					if n.Field("x").(*Node).text != "x" {
 						t.Fatal("emitted capture changed")
 					}
 					count++

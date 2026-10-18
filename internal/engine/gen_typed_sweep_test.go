@@ -282,9 +282,9 @@ func TestSweepCyclicKnownGraph(t *testing.T) {
  a:=&astConv{}
  live:=astNew(&a.tToken); live.Text="live"
  dead:=astNew(&a.tToken); dead.Text="dead"
- n:=&Node{}; n.Children=[]*Node{n}; n.Fields=Fields{{Name:"value",Value:live},{Name:"cycle",Value:n}}
+ n:=&Node{}; n.children=[]*Node{n}; n.fields=Fields{{Name:"value",Value:live},{Name:"cycle",Value:n}}
  a.publish(n,nil)
- if live.Text!="live" || dead.Text!="" || n.Children[0]!=n || n.Fields[0].Value!=live {t.Fatal("cyclic CST graph")}
+ if live.Text!="live" || dead.Text!="" || n.children[0]!=n || n.fields[0].Value!=live {t.Fatal("cyclic CST graph")}
  branch:=&Branch{Left:live,Right:live}
  for i:=0;i<10000;i++ {branch=&Branch{Left:branch,Right:branch}}
  m:=&astOutputMark{live:make(map[any]struct{})}; m.run(branch,nil)
@@ -294,7 +294,7 @@ func TestSweepOpaqueFallback(t *testing.T) {
  for _,opaque:=range []func(*Token)any{func(v *Token)any{return map[string]any{"hidden":v}},func(v *Token)any{c:=make(chan *Token,1);c<-v;return c},func(v *Token)any{return func()*Token{return v}},func(v *Token)any{return struct{Hidden *Token}{v}}} {
   a:=&astConv{}; token:=astNew(&a.tToken); token.Text="preserve"
   known:=astNew(&a.tToken); known.Text="known"
-  n:=&Node{Fields:Fields{{Name:"known",Value:known},{Name:"opaque",Value:opaque(token)}}}
+  n:=&Node{fields:Fields{{Name:"known",Value:known},{Name:"opaque",Value:opaque(token)}}}
   a.publish(n,nil); if token.Text!="preserve" || known.Text!="known" {t.Fatal("partial clearing on opaque graph")}
  }
  // A typed nil never reaches the generic opaque fallback.

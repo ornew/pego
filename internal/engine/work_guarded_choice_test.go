@@ -48,16 +48,16 @@ func workGuardedChoiceSnapshot(n *Node) *Node {
 		return nil
 	}
 	copy := *n
-	if n.Children != nil {
-		copy.Children = make([]*Node, len(n.Children))
-		for i, child := range n.Children {
-			copy.Children[i] = workGuardedChoiceSnapshot(child)
+	if n.children != nil {
+		copy.children = make([]*Node, len(n.children))
+		for i, child := range n.children {
+			copy.children[i] = workGuardedChoiceSnapshot(child)
 		}
 	}
-	copy.Fields = append(Fields(nil), n.Fields...)
-	for i := range copy.Fields {
-		if child, ok := copy.Fields[i].Value.(*Node); ok {
-			copy.Fields[i].Value = workGuardedChoiceSnapshot(child)
+	copy.fields = append(Fields(nil), n.fields...)
+	for i := range copy.fields {
+		if child, ok := copy.fields[i].Value.(*Node); ok {
+			copy.fields[i].Value = workGuardedChoiceSnapshot(child)
 		}
 	}
 	return &copy

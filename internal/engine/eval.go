@@ -66,7 +66,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 		for _, c := range p.created[ctx.cbase:] {
 			p.stepWork()
 			if c == n {
-				n.Start, n.End = int32(ctx.start), int32(ctx.end)
+				n.start, n.end = int32(ctx.start), int32(ctx.end)
 				break
 			}
 		}
@@ -83,7 +83,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 			p.failAction(where, p.actionError("result must be a value, got a function"))
 		}
 		// A value other than a node travels boxed, with the range of the action's input.
-		return p.newNode(Node{kind: kindBox, box: v, Start: int32(ctx.start), End: int32(ctx.end)})
+		return p.newNode(Node{kind: kindBox, box: v, start: int32(ctx.start), end: int32(ctx.end)})
 	}
 	if n != nil {
 		// The value of an action is final: a node it returns from the rule body (=> $1) is not
@@ -299,9 +299,9 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return int(n.Start), nil
+			return int(n.start), nil
 		case "End":
-			return int(n.End), nil
+			return int(n.end), nil
 		case "Value":
 			return c.p.nodeValue(n), nil
 		}
@@ -311,21 +311,21 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 		if _, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok {
 			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
-		v, _ := c.p.valueField(n.Fields, capture)
+		v, _ := c.p.valueField(n.fields, capture)
 		return unboxValue(v), nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
-	v, _ := c.p.valueField(n.Fields, name)
+	v, _ := c.p.valueField(n.fields, name)
 	return v, nil
 }
 
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
 // nodes, or is the rule's range if there are none.
 func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, error) {
-	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), Fields: c.p.fields(len(names))})
+	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
 		c.p.stepWork()
@@ -333,19 +333,19 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 		if _, isFn := v.(function); isFn {
 			return nil, c.p.actionError("field ", name, ": cannot store a function")
 		}
-		c.p.setValueField(&n.Fields, name, v)
+		c.p.setValueField(&n.fields, name, v)
 		if child, ok := v.(*Node); ok && child != nil {
-			if first || child.Start < n.Start {
-				n.Start = child.Start
+			if first || child.start < n.start {
+				n.start = child.start
 			}
-			if first || child.End > n.End {
-				n.End = child.End
+			if first || child.end > n.end {
+				n.end = child.end
 			}
 			first = false
 		}
 	}
 	if first {
-		n.Start, n.End = int32(c.start), int32(c.end)
+		n.start, n.end = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n, nil
@@ -357,7 +357,7 @@ func (c *evalCtx) newTerminal(typ string, value any) (*Node, error) {
 	if !ok {
 		return nil, fmt.Errorf("terminal constructor requires a string, got %s", typeName(value))
 	}
-	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), terminal: true, Text: text, Start: int32(c.start), End: int32(c.end)})
+	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n, nil
 }
@@ -392,18 +392,18 @@ func (c *evalCtx) newList(items []*Node) *Node {
 // listNode returns a list value with the child slice kids (which it takes over). Its range,
 // which the value model does not show, covers the elements that are nodes.
 func (c *evalCtx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindListValue, Children: kids, Start: int32(c.start), End: int32(c.start)})
+	n := c.p.newNode(Node{kind: kindListValue, children: kids, start: int32(c.start), end: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
 		if it == nil {
 			continue
 		}
-		if first || it.Start < n.Start {
-			n.Start = it.Start
+		if first || it.start < n.start {
+			n.start = it.start
 		}
-		if first || it.End > n.End {
-			n.End = it.End
+		if first || it.end > n.end {
+			n.end = it.end
 		}
 		first = false
 	}
@@ -558,9 +558,9 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 				return 0, nil
 			}
 			if x.terminal {
-				return c.p.valueTextLen(x.Text), nil
+				return c.p.valueTextLen(x.text), nil
 			}
-			return len(x.Children), nil
+			return len(x.children), nil
 		case nil:
 			return 0, nil
 		}
@@ -634,9 +634,9 @@ func (c *evalCtx) textString(v any) (string, error) {
 			return "", nil
 		}
 		if v.terminal {
-			return v.Text, nil
+			return v.text, nil
 		}
-		return c.p.text(int(v.Start), int(v.End)), nil
+		return c.p.text(int(v.start), int(v.end)), nil
 	}
 	return "", c.p.actionError("text: invalid argument ", typeName(v))
 }
@@ -779,7 +779,7 @@ func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {
 		if x == nil {
 			return nil, nil
 		}
-		return x.Children, nil
+		return x.children, nil
 	}
 	if workControlsEnabled && p != nil && p.control != nil {
 		return nil, p.actionError(fn, ": expected a list, got ", typeName(v))

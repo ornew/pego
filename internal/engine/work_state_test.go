@@ -16,11 +16,11 @@ func stateWorkParser(limits WorkLimits) *parser {
 }
 
 func undoFixture(p *parser) (*frame, []*Node) {
-	old0 := &Node{Text: "old-zero", Fields: Fields{{Name: "keep", Value: "zero"}}}
-	first0 := &Node{Text: "first-zero"}
-	latest0 := &Node{Text: "latest-zero"}
-	old1 := &Node{Text: "old-one"}
-	last1 := &Node{Text: "last-one"}
+	old0 := &Node{text: "old-zero", fields: Fields{{Name: "keep", Value: "zero"}}}
+	first0 := &Node{text: "first-zero"}
+	latest0 := &Node{text: "latest-zero"}
+	old1 := &Node{text: "old-one"}
+	last1 := &Node{text: "last-one"}
 	f := &frame{vals: []*Node{latest0, old1}}
 	p.trail = []undo{{f: f, slot: 0, old: old0}, {f: f, slot: 0, old: first0}, {f: f, slot: 1, old: old1}, {f: f, slot: 1, old: last1}}
 	return f, []*Node{old0, first0, old1, last1, latest0}
@@ -31,7 +31,7 @@ func assertUndoRestored(t *testing.T, f *frame, nodes []*Node) {
 	if f.vals[0] != nodes[0] || f.vals[1] != nodes[2] {
 		t.Fatalf("restored slots = (%p,%p), want (%p,%p)", f.vals[0], f.vals[1], nodes[0], nodes[2])
 	}
-	if nodes[0].Text != "old-zero" || nodes[0].Fields[0].Value != "zero" || nodes[1].Text != "first-zero" || nodes[2].Text != "old-one" || nodes[3].Text != "last-one" {
+	if nodes[0].text != "old-zero" || nodes[0].fields[0].Value != "zero" || nodes[1].text != "first-zero" || nodes[2].text != "old-one" || nodes[3].text != "last-one" {
 		t.Fatal("undo changed a retained Node pointee")
 	}
 }
@@ -84,7 +84,7 @@ func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 			if f.vals[0] != nodes[4] || f.vals[1] != nodes[2] {
 				t.Fatalf("partial reverse restore slots=(%p,%p), want (%p,%p)", f.vals[0], f.vals[1], nodes[4], nodes[2])
 			}
-			if nodes[0].Text != "old-zero" || nodes[0].Fields[0].Value != "zero" {
+			if nodes[0].text != "old-zero" || nodes[0].fields[0].Value != "zero" {
 				t.Fatal("partial rollback mutated retained node data")
 			}
 		})
@@ -95,8 +95,8 @@ func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
 	p := stateWorkParser(WorkLimits{})
 	f := &frame{vals: make([]*Node, 257)}
 	for i := range f.vals {
-		old := &Node{Text: "old"}
-		f.vals[i] = &Node{Text: "new"}
+		old := &Node{text: "old"}
+		f.vals[i] = &Node{text: "new"}
 		p.trail = append(p.trail, undo{f: f, slot: i, old: old})
 	}
 	p.control = newWorkControl(newPollingContext(1), WorkLimits{})
@@ -108,78 +108,78 @@ func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
 		t.Fatalf("canceled reset truncated trail to %d", len(p.trail))
 	}
 	for i := range f.vals {
-		if f.vals[i] == nil || f.vals[i].Text != "old" && f.vals[i].Text != "new" {
+		if f.vals[i] == nil || f.vals[i].text != "old" && f.vals[i].text != "new" {
 			t.Fatalf("undo cancellation damaged slot %d: %#v", i, f.vals[i])
 		}
 	}
 }
 
 func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
-	retained := &Node{Text: "base", Fields: Fields{{Name: "existing", Value: "kept"}}}
+	retained := &Node{text: "base", fields: Fields{{Name: "existing", Value: "kept"}}}
 	allNil := &frame{vals: make([]*Node, 320)}
 	p := stateWorkParser(WorkLimits{MaxSteps: 100_000})
 	got := p.attachCaptures(retained, &scope{names: make([]string, len(allNil.vals))}, allNil, 2, 9)
-	if got != retained || len(retained.Fields) != 1 || retained.Fields[0].Value != "kept" {
+	if got != retained || len(retained.fields) != 1 || retained.fields[0].Value != "kept" {
 		t.Fatal("all-nil capture frame changed the base node")
 	}
 
 	fields := []string{"first", "duplicate", "third", "duplicate", "late_" + strings.Repeat("p", 80)}
 	values := []*Node{
-		{Text: "first-value"}, {Text: "old-duplicate"}, {Text: "third-value"}, {Text: "new-duplicate"}, {Text: "late-value"},
+		{text: "first-value"}, {text: "old-duplicate"}, {text: "third-value"}, {text: "new-duplicate"}, {text: "late-value"},
 	}
-	base := &Node{Text: "fresh-body", fresh: true}
+	base := &Node{text: "fresh-body", fresh: true}
 	result := p.attachCaptures(base, &scope{names: fields}, &frame{vals: values}, 0, 5)
 	if result != base {
 		t.Fatal("fresh body was unexpectedly wrapped")
 	}
 	wantNames := []string{"first", "duplicate", "third", fields[4]}
-	if len(result.Fields) != len(wantNames) {
-		t.Fatalf("capture field count = %d, want %d", len(result.Fields), len(wantNames))
+	if len(result.fields) != len(wantNames) {
+		t.Fatalf("capture field count = %d, want %d", len(result.fields), len(wantNames))
 	}
 	for i, name := range wantNames {
-		if result.Fields[i].Name != name {
-			t.Fatalf("field %d name = %q, want %q", i, result.Fields[i].Name, name)
+		if result.fields[i].Name != name {
+			t.Fatalf("field %d name = %q, want %q", i, result.fields[i].Name, name)
 		}
 	}
-	if result.Fields[1].Value != values[3] || result.Fields[3].Value != values[4] {
+	if result.fields[1].Value != values[3] || result.fields[3].Value != values[4] {
 		t.Fatal("capture overwrite/order semantics changed")
 	}
 }
 
 func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
-	child := &Node{Text: "retained-child"}
+	child := &Node{text: "retained-child"}
 	prior := Fields{{Name: "prior", Value: "unchanged"}}
-	shared := &Node{Text: "shared", Fields: append(Fields(nil), prior...)}
+	shared := &Node{text: "shared", fields: append(Fields(nil), prior...)}
 	p := stateWorkParser(WorkLimits{MaxSteps: 100_000})
 	wrapped := p.attachCaptures(shared, &scope{names: []string{"child"}}, &frame{vals: []*Node{child}}, 4, 7)
-	if wrapped == shared || len(wrapped.Children) != 1 || wrapped.Children[0] != shared {
+	if wrapped == shared || len(wrapped.children) != 1 || wrapped.children[0] != shared {
 		t.Fatal("nonfresh node was not wrapped before capture attachment")
 	}
-	if got, ok := wrapped.Fields.Get("child"); !ok || got != child {
+	if got, ok := wrapped.fields.Get("child"); !ok || got != child {
 		t.Fatalf("wrapped child capture = %v, %t", got, ok)
 	}
-	if !reflect.DeepEqual(shared.Fields, prior) || shared.Text != "shared" || child.Text != "retained-child" {
+	if !reflect.DeepEqual(shared.fields, prior) || shared.text != "shared" || child.text != "retained-child" {
 		t.Fatal("capture attachment modified a retained node")
 	}
 
-	self := &Node{Text: "self", fresh: true}
+	self := &Node{text: "self", fresh: true}
 	got := p.attachCaptures(self, &scope{names: []string{"self"}}, &frame{vals: []*Node{self}}, 1, 2)
-	if got == self || len(got.Children) != 1 || got.Children[0] != self {
+	if got == self || len(got.children) != 1 || got.children[0] != self {
 		t.Fatal("self-capture did not wrap the body node")
 	}
-	if value, ok := got.Fields.Get("self"); !ok || value != self || len(self.Fields) != 0 {
+	if value, ok := got.fields.Get("self"); !ok || value != self || len(self.fields) != 0 {
 		t.Fatal("self-capture fields or source node changed")
 	}
 }
 
 func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
-	base := &Node{Text: "retained", Fields: Fields{{Name: "prior", Value: "kept"}}}
+	base := &Node{text: "retained", fields: Fields{{Name: "prior", Value: "kept"}}}
 	wide := &frame{vals: make([]*Node, 320)}
 	p := stateWorkParser(WorkLimits{MaxSteps: 128})
 	if err := catchFatal(t, func() { _ = p.attachCaptures(base, &scope{names: make([]string, 320)}, wide, 0, 1) }); !errors.Is(err, ErrWorkLimit) {
 		t.Fatalf("all-nil discovery interruption = %v, want ErrWorkLimit", err)
 	}
-	if len(base.Fields) != 1 || base.Fields[0].Value != "kept" {
+	if len(base.fields) != 1 || base.fields[0].Value != "kept" {
 		t.Fatal("interrupted all-nil scan changed the retained node")
 	}
 
@@ -188,14 +188,14 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 	vals := make([]*Node, n)
 	for i := range names {
 		names[i] = fmt.Sprintf("capture_%03d_%s", i, strings.Repeat("common_prefix_", 12))
-		vals[i] = &Node{Text: fmt.Sprintf("value-%d", i)}
+		vals[i] = &Node{text: fmt.Sprintf("value-%d", i)}
 	}
-	retained := &Node{Text: "shared-retained", Fields: Fields{{Name: "existing", Value: "stable"}}}
+	retained := &Node{text: "shared-retained", fields: Fields{{Name: "existing", Value: "stable"}}}
 	p = stateWorkParser(WorkLimits{MaxSteps: 256})
 	if err := catchFatal(t, func() { _ = p.attachCaptures(retained, &scope{names: names}, &frame{vals: vals}, 3, 9) }); !errors.Is(err, ErrWorkLimit) {
 		t.Fatalf("capture field walk interruption = %v, want ErrWorkLimit", err)
 	}
-	if len(retained.Fields) != 1 || retained.Fields[0].Name != "existing" || retained.Fields[0].Value != "stable" || retained.Text != "shared-retained" {
+	if len(retained.fields) != 1 || retained.fields[0].Name != "existing" || retained.fields[0].Value != "stable" || retained.text != "shared-retained" {
 		t.Fatal("interrupted capture assembly modified the retained nonfresh node")
 	}
 }

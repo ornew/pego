@@ -7,15 +7,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"slices"
 	"sort"
 
 	"github.com/ornew/pego"
 )
 
-const fingerprintFormat = "cst-value-graph-v1"
+const fingerprintFormat = "cst-value-graph-v2"
 
 type frame string
+
+type field struct {
+	name  string
+	value any
+}
 
 // fingerprint visits every public node, field and value without recursively
 // marshaling subtrees. Deterministic node IDs preserve sharing and node cycles.
@@ -51,28 +55,35 @@ func fingerprint(root *pego.Node) (string, error) {
 			}
 			id := len(seen)
 			seen[x] = id
+			var fields []field
+			for name, value := range x.Fields() {
+				fields = append(fields, field{name, value})
+			}
 			header := struct {
-				ID                 int
-				Type, Rule         string
-				Start, End         int64
-				Text               string
-				Children, Fields   int
-				NilKids, NilFields bool
-				Terminal           bool
-			}{id, x.Type(), x.Rule(), int64(x.Start), int64(x.End), x.Text, len(x.Children), len(x.Fields), x.Children == nil, x.Fields == nil, x.IsTerminal()}
+				ID         int
+				Kind       string
+				Type, Rule string
+				Start, End int64
+				Text       string
+				Elems      int
+				Fields     int
+				Terminal   bool
+			}{id, x.Kind().String(), x.Type(), x.Rule(), int64(x.Start()), int64(x.End()), x.Text(), x.Len(), len(fields), x.IsTerminal()}
 			data, err := json.Marshal(header)
 			if err != nil {
 				return "", err
 			}
 			write([]byte("node"))
 			write(data)
-			fields := slices.Clone(x.Fields)
-			sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
+			sort.SliceStable(fields, func(i, j int) bool { return fields[i].name < fields[j].name })
 			for i := len(fields) - 1; i >= 0; i-- {
-				stack = append(stack, fields[i].Value, frame("field:"+fields[i].Name))
+				stack = append(stack, fields[i].value, frame("field:"+fields[i].name))
 			}
-			for i := len(x.Children) - 1; i >= 0; i-- {
-				stack = append(stack, x.Children[i])
+			for i := x.Len() - 1; i >= 0; i-- {
+				stack = append(stack, x.Elem(i))
+			}
+			if x.Kind() == pego.KindValue {
+				stack = append(stack, x.Value())
 			}
 			continue
 		}

@@ -150,15 +150,15 @@ rule num = -" "* n:[0-9]+ #atomic => $n`)
 	}
 	// The final result has the range of the whole rule; intermediate nodes have the ranges of their
 	// fields.
-	if n.Start != 0 || n.End != 9 {
-		t.Errorf("root [%d,%d)", n.Start, n.End)
+	if n.start != 0 || n.end != 9 {
+		t.Errorf("root [%d,%d)", n.start, n.end)
 	}
 	left := n.Field("Left").(*Node)
-	if left.Start != 1 || left.End != 7 {
-		t.Errorf("left [%d,%d)", left.Start, left.End)
+	if left.start != 1 || left.end != 7 {
+		t.Errorf("left [%d,%d)", left.start, left.end)
 	}
-	if r := left.Field("Right").(*Node); r.Start != 5 || r.End != 7 || r.Text != "22" {
-		t.Errorf("22 at [%d,%d) %q", r.Start, r.End, r.Text)
+	if r := left.Field("Right").(*Node); r.start != 5 || r.end != 7 || r.text != "22" {
+		t.Errorf("22 at [%d,%d) %q", r.start, r.end, r.text)
 	}
 }
 

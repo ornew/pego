@@ -57,10 +57,10 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 		}
 		switch x.shape() {
 		case shapeStruct:
-			if err := b.charge(uint64(len(x.Fields))); err != nil {
+			if err := b.charge(uint64(len(x.fields))); err != nil {
 				return err
 			}
-			fields := append(Fields(nil), x.Fields...)
+			fields := append(Fields(nil), x.fields...)
 			sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 			for i := len(fields) - 1; i >= 0; i-- {
 				if err := push(fields[i].Value, QueryEdge{Kind: "field", Name: fields[i].Name}); err != nil {
@@ -68,10 +68,10 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 				}
 			}
 		case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
-			if err := b.charge(uint64(len(x.Children) + len(x.Fields))); err != nil {
+			if err := b.charge(uint64(len(x.children) + len(x.fields))); err != nil {
 				return err
 			}
-			if x.shape() == shapeTuple && len(x.Fields) > 0 {
+			if x.shape() == shapeTuple && len(x.fields) > 0 {
 				locations := captureLocations(x)
 				for i := len(locations) - 1; i >= 0; i-- {
 					if c := locations[i]; c.side {
@@ -81,8 +81,8 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 					}
 				}
 			}
-			for i := len(x.Children) - 1; i >= 0; i-- {
-				if err := push(x.Children[i], QueryEdge{Kind: "element", Index: i}); err != nil {
+			for i := len(x.children) - 1; i >= 0; i-- {
+				if err := push(x.children[i], QueryEdge{Kind: "element", Index: i}); err != nil {
 					return err
 				}
 			}

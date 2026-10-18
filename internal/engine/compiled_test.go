@@ -109,7 +109,7 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 	}
 	var got []string
 	err = prog.ParseStream("main", strings.NewReader("#records\na=1\nb=2\n"), func(n *Node) error {
-		got = append(got, n.Field("k").(*Node).Text)
+		got = append(got, n.Field("k").(*Node).text)
 		return nil
 	})
 	if err != nil || strings.Join(got, ",") != "a,b" {

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"math"
 	"reflect"
 	"slices"
@@ -25,11 +26,11 @@ import (
 // captures.
 type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
-	Start    int32     // the range in the input, in the parse's position unit (End is exclusive)
-	End      int32
-	Text     string  // the text of a string node
-	Children []*Node // the elements of a tuple or list
-	Fields   Fields  // struct fields and captures
+	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
+	end      int32
+	text     string  // the text of a string node
+	children []*Node // the elements of a tuple or list
+	fields   Fields  // struct fields and captures
 
 	fresh    bool
 	terminal bool
@@ -130,11 +131,11 @@ func unboxValue(v any) any {
 func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
-		return n.Text
+		return n.text
 	case n.kind.typeName() == "List":
-		return p.newNode(Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children})
+		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
-	return p.newNode(Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children})
+	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
 }
 
 var kinds sync.Map // [2]string → *nodeKind
@@ -242,13 +243,168 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 // IsTerminal reports whether the node is a terminal.
 func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
 
-// Field returns the value of the field name.
-func (n *Node) Field(name string) any {
+// NodeKind is what a Node stands for in the value model.
+type NodeKind uint8
+
+const (
+	// KindString is a node whose value is a string, the text it matched: Text.
+	KindString NodeKind = iota
+	// KindTuple is a node whose value is a tuple: Len and Elem.
+	KindTuple
+	// KindList is a node whose value is a list: Len and Elem.
+	KindList
+	// KindError is an error value of recovery: Text is its message.
+	KindError
+	// KindStruct is a struct built by an action: Type and Field.
+	KindStruct
+	// KindTupleValue is a tuple built by an action, without a range: Len and Elem.
+	KindTupleValue
+	// KindListValue is a list built by an action, without a range: Len and Elem.
+	KindListValue
+	// KindValue is any other value built by an action, such as an int or a bool: Value.
+	KindValue
+)
+
+var nodeKindNames = [...]string{"string", "tuple", "list", "error", "struct", "tuple value", "list value", "value"}
+
+func (k NodeKind) String() string {
+	if int(k) < len(nodeKindNames) {
+		return nodeKindNames[k]
+	}
+	return fmt.Sprintf("NodeKind(%d)", k)
+}
+
+// Kind returns what the node stands for.
+func (n *Node) Kind() NodeKind {
+	switch n.shape() {
+	case shapeString:
+		return KindString
+	case shapeTuple:
+		return KindTuple
+	case shapeList:
+		return KindList
+	case shapeError:
+		return KindError
+	case shapeBox:
+		return KindValue
+	case shapeTupleValue:
+		return KindTupleValue
+	case shapeListValue:
+		return KindListValue
+	}
+	return KindStruct
+}
+
+// Start returns the start of the range of the input that the node spans, in the position unit of
+// the parse.
+func (n *Node) Start() int { return int(n.start) }
+
+// End returns the end of the range of the input that the node spans (exclusive), in the position
+// unit of the parse.
+func (n *Node) End() int { return int(n.end) }
+
+// Text returns the string value of a KindString node, and the message of a KindError value; it
+// returns "" for other nodes and nil.
+func (n *Node) Text() string {
+	if n == nil {
+		return ""
+	}
+	switch n.shape() {
+	case shapeString:
+		return n.text
+	case shapeError:
+		msg, _ := n.fields.Get("message")
+		s, _ := msg.(string)
+		return s
+	}
+	return ""
+}
+
+// Len returns the number of elements of a tuple or a list (KindTuple, KindList, KindTupleValue,
+// KindListValue), and 0 for other nodes and nil.
+func (n *Node) Len() int {
+	if n == nil {
+		return 0
+	}
+	switch n.shape() {
+	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
+		return len(n.children)
+	}
+	return 0
+}
+
+// Elem returns the element i of a tuple or a list: a node, or nil for an optional that did not
+// match. It panics if i is out of the range [0, Len()).
+func (n *Node) Elem(i int) *Node {
+	if i < 0 || i >= n.Len() {
+		panic(fmt.Sprintf("element %d of a node with %d elements", i, n.Len()))
+	}
+	return n.children[i]
+}
+
+// Elems returns the elements of a tuple or a list in order, as Elem does.
+func (n *Node) Elems() iter.Seq2[int, *Node] {
+	return func(yield func(int, *Node) bool) {
+		for i := range n.Len() {
+			if !yield(i, n.children[i]) {
+				return
+			}
+		}
+	}
+}
+
+// Value returns the value of a KindValue node (such as an int, a string or a bool) and the string
+// of a KindString node; it returns nil for other nodes and nil.
+func (n *Node) Value() any {
 	if n == nil {
 		return nil
 	}
-	v, _ := n.Fields.Get(name)
+	switch n.shape() {
+	case shapeBox:
+		return n.box
+	case shapeString:
+		return n.text
+	}
+	return nil
+}
+
+// Field returns the value of the field name of a struct, and, with source information, the value
+// of the capture name of a node: a *Node, an int, a string, a bool, or nil.
+func (n *Node) Field(name string) any {
+	if !n.fieldsVisible() {
+		return nil
+	}
+	return n.field(name)
+}
+
+// field returns the value of the field or capture name, whether or not it is public.
+func (n *Node) field(name string) any {
+	if n == nil {
+		return nil
+	}
+	v, _ := n.fields.Get(name)
 	return v
+}
+
+// fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
+// of a node with source information.
+func (n *Node) fieldsVisible() bool {
+	return n != nil && (n.labeled || n.shape() == shapeStruct)
+}
+
+// Fields returns the fields of a struct, and, with source information, the captures of a node,
+// in the order the action wrote them.
+func (n *Node) Fields() iter.Seq2[string, any] {
+	return func(yield func(string, any) bool) {
+		if !n.fieldsVisible() {
+			return
+		}
+		for _, f := range n.fields {
+			if !yield(f.Name, f.Value) {
+				return
+			}
+		}
+	}
 }
 
 // nodeShape is what a Node stands for in the value model.
@@ -300,7 +456,7 @@ type captureLocation struct {
 // captureLocations returns the locations of the captures of the tuple node n, in name order.
 func captureLocations(n *Node) []captureLocation {
 	var out []captureLocation
-	for _, f := range n.Fields.sorted() {
+	for _, f := range n.fields.sorted() {
 		v, ok := f.Value.(*Node)
 		if !ok || v == nil {
 			if f.Value != nil {
@@ -328,7 +484,7 @@ func findElement(n, x *Node) ([]int, bool) {
 	for len(queue) > 0 {
 		it := queue[0]
 		queue = queue[1:]
-		for i, c := range it.n.Children {
+		for i, c := range it.n.children {
 			if c == nil {
 				continue
 			}
@@ -383,13 +539,13 @@ func writeValue(b *strings.Builder, v any) {
 				f.v, f.enter = n.box, true
 				continue
 			case shapeString:
-				b.WriteString(strconv.Quote(n.Text))
+				b.WriteString(strconv.Quote(n.text))
 				f.close = ruleSuffix(n)
 				f.i = -1
 			case shapeError:
-				msg, _ := n.Fields.Get("message")
+				msg, _ := n.fields.Get("message")
 				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
-				if expected, ok := n.Fields.Get("expected"); ok {
+				if expected, ok := n.fields.Get("expected"); ok {
 					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
 				}
 				b.WriteString(")")
@@ -406,7 +562,7 @@ func writeValue(b *strings.Builder, v any) {
 						}
 						x := n
 						for _, i := range c.path {
-							x = x.Children[i]
+							x = x.children[i]
 						}
 						f.labels[x] = append(f.labels[x], c.name)
 					}
@@ -425,7 +581,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.Fields.sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -439,7 +595,7 @@ func writeValue(b *strings.Builder, v any) {
 			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
 			continue
 		}
-		if f.i == len(n.Children) {
+		if f.i == len(n.children) {
 			for j, c := range f.side {
 				if f.i > 0 || j > 0 {
 					b.WriteString(" ")
@@ -456,7 +612,7 @@ func writeValue(b *strings.Builder, v any) {
 		if f.i > 0 {
 			b.WriteString(" ")
 		}
-		c := n.Children[f.i]
+		c := n.children[f.i]
 		f.i++
 		labels := f.labels
 		for _, name := range labels[c] {
@@ -1830,7 +1986,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		if sourceInfo {
 			kind = r.kinds.term
 		}
-		return p.newNode(Node{kind: kind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
+		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -1866,16 +2022,16 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	if v.Fields == nil {
-		v.Fields = p.fields(len(names))
+	if v.fields == nil {
+		v.fields = p.fields(len(names))
 	}
 	v.labeled = sourceInfo
 	for i, name := range names {
 		p.stepWork()
 		if f.vals[i] != nil {
-			p.setValueField(&v.Fields, name, f.vals[i])
+			p.setValueField(&v.fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -1920,16 +2076,16 @@ func (p *parser) shapeTuple(s shaper, v *Node, start int) *Node {
 		kids = p.nodes(1)
 		kids[0] = v
 	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true})
+	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true})
 }
 
 // one returns the one element of the result v.
 func (s shaper) one(v *Node) *Node {
 	if s.elems {
-		if v == nil || len(v.Children) == 0 {
+		if v == nil || len(v.children) == 0 {
 			return nil
 		}
-		return v.Children[0]
+		return v.children[0]
 	}
 	return v
 }
@@ -1951,7 +2107,7 @@ func (p *parser) shapeSingle(s shaper, v *Node, start int) (*Node, bool) {
 func (p *parser) shapeCapture(s shaper, v *Node, start int) *Node {
 	v, ok := p.shapeSingle(s, v, start)
 	if !ok {
-		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), fresh: true})
 	}
 	return v
 }
@@ -1997,7 +2153,7 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 // matchReplacementLiteral is the cold path for raw-byte mismatches. An
@@ -2019,7 +2175,7 @@ func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, bui
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 func (p *parser) matchAny(build bool) (*Node, bool) {
@@ -2038,7 +2194,7 @@ func (p *parser) single(size int, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 func (p *parser) anchor(ok bool, desc expID) (*Node, bool) {
@@ -2138,7 +2294,7 @@ func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
+	return p.newNode(Node{kind: kindError, start: int32(m0.pos), end: int32(p.pos), text: p.text(m0.pos, p.pos), fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
 }
 
 // --- Actions and predicates ---
@@ -2199,12 +2355,12 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			c.p.evalErrorf("result must be a value, got a function")
 		}
 		// A value other than a node travels boxed, with the range of the action's input.
-		return c.p.newNode(Node{kind: kindBox, box: v, Start: int32(c.start), End: int32(c.end)})
+		return c.p.newNode(Node{kind: kindBox, box: v, start: int32(c.start), end: int32(c.end)})
 	}
 	for _, x := range c.p.created[c.cbase:] {
 		c.p.stepWork()
 		if x == n {
-			n.Start, n.End = int32(c.start), int32(c.end)
+			n.start, n.end = int32(c.start), int32(c.end)
 			break
 		}
 	}
@@ -2305,24 +2461,24 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	if k == nil {
 		k = kindOf(typ, "")
 	}
-	n := c.p.newNode(Node{kind: k, Fields: c.p.fields(len(kv) / 2)})
+	n := c.p.newNode(Node{kind: k, fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
 		c.p.stepWork()
 		v := kv[i+1]
-		c.p.setValueField(&n.Fields, kv[i].(string), v)
+		c.p.setValueField(&n.fields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
-			if first || child.Start < n.Start {
-				n.Start = child.Start
+			if first || child.start < n.start {
+				n.start = child.start
 			}
-			if first || child.End > n.End {
-				n.End = child.End
+			if first || child.end > n.end {
+				n.end = child.end
 			}
 			first = false
 		}
 	}
 	if first {
-		n.Start, n.End = int32(c.start), int32(c.end)
+		n.start, n.end = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n
@@ -2337,7 +2493,7 @@ func (c *actx) newTerminal(typ string, value any) any {
 	if k == nil {
 		k = kindOf(typ, "")
 	}
-	n := c.p.newNode(Node{kind: k, terminal: true, Text: text, Start: int32(c.start), End: int32(c.end)})
+	n := c.p.newNode(Node{kind: k, terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n
 }
@@ -2351,18 +2507,18 @@ func (c *actx) newList(items []*Node) *Node {
 // listNode returns a list value with the child list kids (which it takes over). Its range, which
 // the value model does not show, covers the elements that are nodes.
 func (c *actx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindListValue, Children: kids, Start: int32(c.start), End: int32(c.start)})
+	n := c.p.newNode(Node{kind: kindListValue, children: kids, start: int32(c.start), end: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
 		if it == nil {
 			continue
 		}
-		if first || it.Start < n.Start {
-			n.Start = it.Start
+		if first || it.start < n.start {
+			n.start = it.start
 		}
-		if first || it.End > n.End {
-			n.End = it.End
+		if first || it.end > n.end {
+			n.end = it.end
 		}
 		first = false
 	}
@@ -2377,9 +2533,9 @@ func (c *actx) member(x any, name string) any {
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return int(n.Start)
+			return int(n.start)
 		case "End":
-			return int(n.End)
+			return int(n.end)
 		case "Value":
 			return c.p.nodeValue(n)
 		}
@@ -2389,13 +2545,13 @@ func (c *actx) member(x any, name string) any {
 		if _, ok := structFields[n.Type()]; ok {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
-		v, _ := c.p.valueField(n.Fields, capture)
+		v, _ := c.p.valueField(n.fields, capture)
 		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	v, _ := c.p.valueField(n.Fields, name)
+	v, _ := c.p.valueField(n.fields, name)
 	return v
 }
 
@@ -2522,9 +2678,9 @@ func (c *actx) length(x any) any {
 			return 0
 		}
 		if x.terminal {
-			return c.p.unitLen(x.Text)
+			return c.p.unitLen(x.text)
 		}
-		return len(x.Children)
+		return len(x.children)
 	case nil:
 		return 0
 	}
@@ -2547,9 +2703,9 @@ func (c *actx) textStr(x any) string {
 			return ""
 		}
 		if x.terminal {
-			return x.Text
+			return x.text
 		}
-		return c.p.text(int(x.Start), int(x.End))
+		return c.p.text(int(x.start), int(x.end))
 	}
 	c.p.evalErrorf("text: invalid argument %s", typeName(x))
 	return ""
@@ -2563,7 +2719,7 @@ func listItems(fn string, v any) []*Node {
 		if x == nil {
 			return nil
 		}
-		return x.Children
+		return x.children
 	}
 	evalErrorf("%s: expected a list, got %s", fn, typeName(v))
 	return nil
@@ -2892,7 +3048,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = int(lhs.Start)
+		start = int(lhs.start)
 	}
 	if a.op.kind == "postfix" {
 		end = a.end
@@ -2902,7 +3058,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	// captures.
 	opv, ok := p.shapeSingle(l.value, a.v, a.start)
 	if !ok {
-		opv = p.newNode(Node{kind: kindSeq, Start: int32(a.start), End: int32(a.end)})
+		opv = p.newNode(Node{kind: kindSeq, start: int32(a.start), end: int32(a.end)})
 	}
 	if l.value.mode == singleTuple && len(l.scope) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
@@ -2941,7 +3097,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	if sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
-	return p.newNode(Node{kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, labeled: sourceInfo})
+	return p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: sourceInfo})
 }
 
 func rtUnaryWork(p *parser, op string, x any) any {
@@ -3033,7 +3189,7 @@ func listItemsWork(p *parser, fn string, v any) []*Node {
 		if x == nil {
 			return nil
 		}
-		return x.Children
+		return x.children
 	}
 	p.evalErrorf("%s: expected a list, got %s", fn, typeName(v))
 	return nil
@@ -3079,13 +3235,13 @@ func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
 	if err := out.raw(prefix); err != nil {
 		return err
 	}
-	if err := out.number(n.Start); err != nil {
+	if err := out.number(n.start); err != nil {
 		return err
 	}
 	if err := out.raw(`,"end":`); err != nil {
 		return err
 	}
-	return out.number(n.End)
+	return out.number(n.end)
 }
 
 type nodeJSONSliceID struct {
@@ -3190,7 +3346,7 @@ func writeJSONValue(w io.Writer, value any) error {
 						break
 					}
 					if shape == shapeString {
-						err = out.encoded(value.Text)
+						err = out.encoded(value.text)
 						frame.phase = nodeJSONFieldsStart
 						break
 					}
@@ -3200,11 +3356,11 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					msg, _ := value.Fields.Get("message")
+					msg, _ := value.fields.Get("message")
 					if err = out.raw(`,"error":`); err == nil {
 						err = out.encoded(msg)
 					}
-					if expected, ok := value.Fields.Get("expected"); ok && err == nil {
+					if expected, ok := value.fields.Get("expected"); ok && err == nil {
 						if err = out.raw(`,"expected":`); err == nil {
 							err = out.encoded(expected)
 						}
@@ -3220,18 +3376,18 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.Fields.sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
 			case nodeJSONChildren, nodeJSONSliceItems:
-				if frame.index < len(value.Children) {
+				if frame.index < len(value.children) {
 					if frame.index != 0 {
 						if err = out.raw(","); err != nil {
 							break
 						}
 					}
-					child := value.Children[frame.index]
+					child := value.children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
 					break
@@ -3256,7 +3412,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					}
 				}
 				frame.phase = nodeJSONExit
-				if !value.labeled || len(value.Fields) == 0 {
+				if !value.labeled || len(value.fields) == 0 {
 					break
 				}
 				frame.caps = captureLocations(value)
@@ -3516,12 +3672,12 @@ func WalkTree(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			fields := x.Fields.sorted()
+			fields := x.fields.sorted()
 			for i := len(fields) - 1; i >= 0; i-- {
 				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}
-			for i := len(x.Children) - 1; i >= 0; i-- {
-				push(x.Children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
+			for i := len(x.children) - 1; i >= 0; i-- {
+				push(x.children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
 			}
 		case []any:
 			for i := len(x) - 1; i >= 0; i-- {
@@ -3558,7 +3714,7 @@ func (c Cursor) At(position int32, visit func(WalkVisit) (WalkAction, error)) er
 		return err
 	}
 	return c.filter(visit, func(n *Node) bool {
-		return n.Start == n.End && n.Start == position || n.Start <= position && position < n.End
+		return n.start == n.end && n.start == position || n.start <= position && position < n.end
 	})
 }
 
@@ -3572,10 +3728,10 @@ func (c Cursor) Range(start, end int32, visit func(WalkVisit) (WalkAction, error
 		if start == end {
 			return false
 		}
-		if n.Start == n.End {
-			return start <= n.Start && n.Start < end
+		if n.start == n.end {
+			return start <= n.start && n.start < end
 		}
-		return n.Start < end && start < n.End
+		return n.start < end && start < n.end
 	})
 }
 
@@ -8131,7 +8287,7 @@ func (p *parser) e8() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -8208,7 +8364,7 @@ func (p *parser) e8() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -8473,7 +8629,7 @@ func (p *parser) e15() (*Node, bool) {
 			p.reset(x8)
 			break
 		}
-		v12 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+		v12 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 		p.setCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -8550,7 +8706,7 @@ func (p *parser) e15() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	v12 = p.newNode(Node{kind: kindList, Start: int32(x3), End: int32(p.pos), Children: p.kids(x4), fresh: true})
+	v12 = p.newNode(Node{kind: kindList, start: int32(x3), end: int32(p.pos), children: p.kids(x4), fresh: true})
 	p.setCapture(1, v12)
 	return nil, true
 fail:
@@ -8812,7 +8968,7 @@ func (p *parser) e22() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -8839,7 +8995,7 @@ func (p *parser) e22() (*Node, bool) {
 		}
 		x12 = p.pos
 		p.pos += size
-		v13 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: p.text(x12, p.pos), terminal: true, fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: p.text(x12, p.pos), terminal: true, fresh: true})
 		v6 = v13
 		goto L7_ordinary
 	L11_ordinary:
@@ -8859,7 +9015,7 @@ func (p *parser) e22() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit21, "u", 16, false); !ok {
 			goto L15_ordinary
 		}
-		v19 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 		x17 = append(x17, v19)
 
 		if v20, ok = p.r10(); !ok {
@@ -8881,7 +9037,7 @@ func (p *parser) e22() (*Node, bool) {
 			goto L15_ordinary
 		}
 		x17 = append(x17, v23)
-		v24 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+		v24 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v25, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v24, x5.pos)
 		v6 = v25
 		goto L7_ordinary
@@ -8891,7 +9047,7 @@ func (p *parser) e22() (*Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v26 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v26 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v26, true
 	fail_ordinary:
 		return nil, false
@@ -8934,7 +9090,7 @@ func (p *parser) e22() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit19, "\\", 14, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: "\\", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: "\\", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -8961,7 +9117,7 @@ func (p *parser) e22() (*Node, bool) {
 	}
 	x12 = p.pos
 	p.pos += size
-	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: p.text(x12, p.pos), terminal: true, fresh: true})
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x12), end: int32(p.pos), text: p.text(x12, p.pos), terminal: true, fresh: true})
 	v6 = v13
 	goto L7
 L11:
@@ -8981,7 +9137,7 @@ L10:
 	} else if _, ok = p.matchLiteral(lit21, "u", 16, false); !ok {
 		goto L15
 	}
-	v19 = p.newNode(Node{kind: kindMatch, Start: int32(x18), End: int32(p.pos), Text: "u", terminal: true, fresh: true})
+	v19 = p.newNode(Node{kind: kindMatch, start: int32(x18), end: int32(p.pos), text: "u", terminal: true, fresh: true})
 	x17 = append(x17, v19)
 	p.stepWork()
 	if v20, ok = p.r10(); !ok {
@@ -9003,7 +9159,7 @@ L10:
 		goto L15
 	}
 	x17 = append(x17, v23)
-	v24 = p.newNode(Node{kind: kindSeq, Start: int32(x16), End: int32(p.pos), Children: x17, fresh: true})
+	v24 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 	v25, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v24, x5.pos)
 	v6 = v25
 	goto L7
@@ -9013,7 +9169,7 @@ L14:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v26 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v26 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v26, true
 fail:
 	return nil, false
@@ -9043,7 +9199,7 @@ func (p *parser) e23() (*Node, bool) {
 		}
 		x1 = p.pos
 		p.pos += size
-		v2 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -9070,7 +9226,7 @@ func (p *parser) e23() (*Node, bool) {
 	}
 	x1 = p.pos
 	p.pos += size
-	v2 = p.newNode(Node{kind: kindMatch, Start: int32(x1), End: int32(p.pos), Text: p.text(x1, p.pos), terminal: true, fresh: true})
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
 	return v2, true
 fail:
 	return nil, false
@@ -9225,7 +9381,7 @@ func (p *parser) e27() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -9251,7 +9407,7 @@ func (p *parser) e27() (*Node, bool) {
 		}
 		x14 = p.pos
 		p.pos += size
-		v15 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: p.text(x14, p.pos), terminal: true, fresh: true})
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: p.text(x14, p.pos), terminal: true, fresh: true})
 		x13 = append(x13, v15)
 
 		x16, x17 = p.pos, len(p.kidStack)
@@ -9271,7 +9427,7 @@ func (p *parser) e27() (*Node, bool) {
 			}
 			x21 = p.pos
 			p.pos += size
-			v22 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: p.text(x21, p.pos), terminal: true, fresh: true})
+			v22 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: p.text(x21, p.pos), terminal: true, fresh: true})
 			v23 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v22, x19.pos)
 			x18++
 			p.kidStack = append(p.kidStack, v23)
@@ -9283,9 +9439,9 @@ func (p *parser) e27() (*Node, bool) {
 			p.reset(x19)
 			break
 		}
-		v24 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+		v24 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 		x13 = append(x13, v24)
-		v25 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+		v25 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v26, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v25, x1.pos)
 		v2 = v26
 		goto L3_ordinary
@@ -9345,7 +9501,7 @@ func (p *parser) e27() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit26, "0", 19, false); !ok {
 		goto L7
 	}
-	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "0", terminal: true, fresh: true})
+	v9 = p.newNode(Node{kind: kindMatch, start: int32(x8), end: int32(p.pos), text: "0", terminal: true, fresh: true})
 	v2 = v9
 	goto L3
 L7:
@@ -9371,7 +9527,7 @@ L6:
 	}
 	x14 = p.pos
 	p.pos += size
-	v15 = p.newNode(Node{kind: kindMatch, Start: int32(x14), End: int32(p.pos), Text: p.text(x14, p.pos), terminal: true, fresh: true})
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x14), end: int32(p.pos), text: p.text(x14, p.pos), terminal: true, fresh: true})
 	x13 = append(x13, v15)
 	p.stepWork()
 	x16, x17 = p.pos, len(p.kidStack)
@@ -9391,7 +9547,7 @@ L6:
 		}
 		x21 = p.pos
 		p.pos += size
-		v22 = p.newNode(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: p.text(x21, p.pos), terminal: true, fresh: true})
+		v22 = p.newNode(Node{kind: kindMatch, start: int32(x21), end: int32(p.pos), text: p.text(x21, p.pos), terminal: true, fresh: true})
 		v23 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v22, x19.pos)
 		x18++
 		p.kidStack = append(p.kidStack, v23)
@@ -9403,9 +9559,9 @@ L6:
 		p.reset(x19)
 		break
 	}
-	v24 = p.newNode(Node{kind: kindList, Start: int32(x16), End: int32(p.pos), Children: p.kids(x17), fresh: true})
+	v24 = p.newNode(Node{kind: kindList, start: int32(x16), end: int32(p.pos), children: p.kids(x17), fresh: true})
 	x13 = append(x13, v24)
-	v25 = p.newNode(Node{kind: kindSeq, Start: int32(x12), End: int32(p.pos), Children: x13, fresh: true})
+	v25 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 	v26, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v25, x1.pos)
 	v2 = v26
 	goto L3
@@ -9451,7 +9607,7 @@ func (p *parser) e29() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5, x6 = p.pos, len(p.kidStack)
@@ -9471,7 +9627,7 @@ func (p *parser) e29() (*Node, bool) {
 			}
 			x10 = p.pos
 			p.pos += size
-			v11 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+			v11 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 			v12 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, x8.pos)
 			x7++
 			p.kidStack = append(p.kidStack, v12)
@@ -9487,9 +9643,9 @@ func (p *parser) e29() (*Node, bool) {
 			p.dropKids(x6)
 			goto fail_ordinary
 		}
-		v13 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+		v13 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 		x2 = append(x2, v13)
-		v14 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v14 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -9524,7 +9680,7 @@ func (p *parser) e29() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit28, ".", 22, false); !ok {
 		goto fail
 	}
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: ".", terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: ".", terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5, x6 = p.pos, len(p.kidStack)
@@ -9544,7 +9700,7 @@ func (p *parser) e29() (*Node, bool) {
 		}
 		x10 = p.pos
 		p.pos += size
-		v11 = p.newNode(Node{kind: kindMatch, Start: int32(x10), End: int32(p.pos), Text: p.text(x10, p.pos), terminal: true, fresh: true})
+		v11 = p.newNode(Node{kind: kindMatch, start: int32(x10), end: int32(p.pos), text: p.text(x10, p.pos), terminal: true, fresh: true})
 		v12 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, x8.pos)
 		x7++
 		p.kidStack = append(p.kidStack, v12)
@@ -9560,9 +9716,9 @@ func (p *parser) e29() (*Node, bool) {
 		p.dropKids(x6)
 		goto fail
 	}
-	v13 = p.newNode(Node{kind: kindList, Start: int32(x5), End: int32(p.pos), Children: p.kids(x6), fresh: true})
+	v13 = p.newNode(Node{kind: kindList, start: int32(x5), end: int32(p.pos), children: p.kids(x6), fresh: true})
 	x2 = append(x2, v13)
-	v14 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v14 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v14, true
 fail:
 	return nil, false
@@ -9610,7 +9766,7 @@ func (p *parser) e30() (*Node, bool) {
 		}
 		x3 = p.pos
 		p.pos += size
-		v4 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+		v4 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 		x2 = append(x2, v4)
 
 		x5 = p.mark()
@@ -9627,7 +9783,7 @@ func (p *parser) e30() (*Node, bool) {
 		}
 		x9 = p.pos
 		p.pos += size
-		v10 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 		v6 = v10
 		goto L8_ordinary
 	L7_ordinary:
@@ -9653,7 +9809,7 @@ func (p *parser) e30() (*Node, bool) {
 			}
 			x16 = p.pos
 			p.pos += size
-			v17 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+			v17 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 			v18 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v17, x14.pos)
 			x13++
 			p.kidStack = append(p.kidStack, v18)
@@ -9669,9 +9825,9 @@ func (p *parser) e30() (*Node, bool) {
 			p.dropKids(x12)
 			goto fail_ordinary
 		}
-		v19 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+		v19 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 		x2 = append(x2, v19)
-		v20 = p.newNodeOrdinary(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+		v20 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 		return v20, true
 	fail_ordinary:
 		return nil, false
@@ -9716,7 +9872,7 @@ func (p *parser) e30() (*Node, bool) {
 	}
 	x3 = p.pos
 	p.pos += size
-	v4 = p.newNode(Node{kind: kindMatch, Start: int32(x3), End: int32(p.pos), Text: p.text(x3, p.pos), terminal: true, fresh: true})
+	v4 = p.newNode(Node{kind: kindMatch, start: int32(x3), end: int32(p.pos), text: p.text(x3, p.pos), terminal: true, fresh: true})
 	x2 = append(x2, v4)
 	p.stepWork()
 	x5 = p.mark()
@@ -9733,7 +9889,7 @@ func (p *parser) e30() (*Node, bool) {
 	}
 	x9 = p.pos
 	p.pos += size
-	v10 = p.newNode(Node{kind: kindMatch, Start: int32(x9), End: int32(p.pos), Text: p.text(x9, p.pos), terminal: true, fresh: true})
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x9), end: int32(p.pos), text: p.text(x9, p.pos), terminal: true, fresh: true})
 	v6 = v10
 	goto L8
 L7:
@@ -9759,7 +9915,7 @@ L8:
 		}
 		x16 = p.pos
 		p.pos += size
-		v17 = p.newNode(Node{kind: kindMatch, Start: int32(x16), End: int32(p.pos), Text: p.text(x16, p.pos), terminal: true, fresh: true})
+		v17 = p.newNode(Node{kind: kindMatch, start: int32(x16), end: int32(p.pos), text: p.text(x16, p.pos), terminal: true, fresh: true})
 		v18 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v17, x14.pos)
 		x13++
 		p.kidStack = append(p.kidStack, v18)
@@ -9775,9 +9931,9 @@ L8:
 		p.dropKids(x12)
 		goto fail
 	}
-	v19 = p.newNode(Node{kind: kindList, Start: int32(x11), End: int32(p.pos), Children: p.kids(x12), fresh: true})
+	v19 = p.newNode(Node{kind: kindList, start: int32(x11), end: int32(p.pos), children: p.kids(x12), fresh: true})
 	x2 = append(x2, v19)
-	v20 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	v20 = p.newNode(Node{kind: kindSeq, start: int32(x1), end: int32(p.pos), children: x2, fresh: true})
 	return v20, true
 fail:
 	return nil, false
@@ -9951,7 +10107,7 @@ func (p *parser) e36() (*Node, bool) {
 			}
 			x6 = p.pos
 			p.pos += size
-			v7 = p.newNodeOrdinary(Node{kind: kindMatch, Start: int32(x6), End: int32(p.pos), Text: p.text(x6, p.pos), terminal: true, fresh: true})
+			v7 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x6), end: int32(p.pos), text: p.text(x6, p.pos), terminal: true, fresh: true})
 			v8 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v7, x4.pos)
 			x3++
 			p.kidStack = append(p.kidStack, v8)
@@ -9963,7 +10119,7 @@ func (p *parser) e36() (*Node, bool) {
 			p.reset(x4)
 			break
 		}
-		v9 = p.newNodeOrdinary(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+		v9 = p.newNodeOrdinary(Node{kind: kindList, start: int32(x1), end: int32(p.pos), children: p.kids(x2), fresh: true})
 		return v9, true
 	}
 
@@ -10000,7 +10156,7 @@ func (p *parser) e36() (*Node, bool) {
 		}
 		x6 = p.pos
 		p.pos += size
-		v7 = p.newNode(Node{kind: kindMatch, Start: int32(x6), End: int32(p.pos), Text: p.text(x6, p.pos), terminal: true, fresh: true})
+		v7 = p.newNode(Node{kind: kindMatch, start: int32(x6), end: int32(p.pos), text: p.text(x6, p.pos), terminal: true, fresh: true})
 		v8 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v7, x4.pos)
 		x3++
 		p.kidStack = append(p.kidStack, v8)
@@ -10012,7 +10168,7 @@ func (p *parser) e36() (*Node, bool) {
 		p.reset(x4)
 		break
 	}
-	v9 = p.newNode(Node{kind: kindList, Start: int32(x1), End: int32(p.pos), Children: p.kids(x2), fresh: true})
+	v9 = p.newNode(Node{kind: kindList, start: int32(x1), end: int32(p.pos), children: p.kids(x2), fresh: true})
 	return v9, true
 }
 

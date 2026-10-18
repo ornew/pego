@@ -56,7 +56,7 @@ func TestMemoActionVariables(t *testing.T) {
 						opts := ParseOptions{Backend: backend, Unit: unit}
 						input := c.inputs[0]
 						n, err := prog.ParseWith("main", input, opts)
-						if err != nil || n == nil || len(n.Children) != 1 || n.Children[0].Field("N") != 4 {
+						if err != nil || n == nil || len(n.children) != 1 || n.children[0].Field("N") != 4 {
 							t.Errorf("memo disabled=%v, %v/%v: got %v, %v; want N=4", disable, backend, unit, n, err)
 						}
 						doc, err := prog.NewDocumentWith("main", input, opts)
@@ -65,7 +65,7 @@ func TestMemoActionVariables(t *testing.T) {
 						}
 						for i := 0; i < 2; i++ {
 							n, err := doc.Parse()
-							if err != nil || n == nil || len(n.Children) != 1 || n.Children[0].Field("N") != 4 {
+							if err != nil || n == nil || len(n.children) != 1 || n.children[0].Field("N") != 4 {
 								t.Errorf("Document parse %d, memo disabled=%v, %v/%v: got %v, %v; want N=4", i, disable, backend, unit, n, err)
 							}
 						}
@@ -93,7 +93,7 @@ rule r = "!" => V{N: n}`)
 				t.Fatal(err)
 			}
 			n, err := doc.Parse()
-			if err != nil || n == nil || n.Children[1].Field("N") != 2 {
+			if err != nil || n == nil || n.children[1].Field("N") != 2 {
 				t.Errorf("%v/%v: got %v, %v; want edited N=2", backend, unit, n, err)
 			}
 		}

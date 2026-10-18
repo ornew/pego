@@ -18,12 +18,12 @@ import (
 // Exercise the exported APIs against the same hand-built DAG, including nil,
 // nested lists and a shared value reached through different owning parents.
 func TestTreeRuntimeParity(t *testing.T) {
-	leaf := &Node{Text: "é<&>", Start: 1, End: 3}
-	gLeaf := &genrt.Node{Text: leaf.Text, Start: 1, End: 3}
-	child := &Node{Children: []*Node{leaf}, Fields: Fields{{"list", []any{leaf, nil, []byte{1, 2}}}}}
-	gChild := &genrt.Node{Children: []*genrt.Node{gLeaf}, Fields: genrt.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}}
-	root := &Node{Children: []*Node{child, nil, leaf}, Fields: Fields{{"z", true}, {"a", leaf}}}
-	gRoot := &genrt.Node{Children: []*genrt.Node{gChild, nil, gLeaf}, Fields: genrt.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}}
+	leaf := &Node{kind: kindMatch, terminal: true, text: "é<&>", start: 1, end: 3}
+	gLeaf := genrt.NewNode(genrt.KindString, 1, 3, leaf.text, nil, "", nil, nil)
+	child := &Node{children: []*Node{leaf}, fields: Fields{{"list", []any{leaf, nil, []byte{1, 2}}}}}
+	gChild := genrt.NewNode(genrt.KindStruct, 0, 0, "", []*genrt.Node{gLeaf}, "", genrt.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
+	root := &Node{children: []*Node{child, nil, leaf}, fields: Fields{{"z", true}, {"a", leaf}}}
+	gRoot := genrt.NewNode(genrt.KindStruct, 0, 0, "", []*genrt.Node{gChild, nil, gLeaf}, "", genrt.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
 	core, err := root.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -39,10 +39,10 @@ func TestTreeRuntimeParity(t *testing.T) {
 	ca := func(v WalkVisit) (WalkAction, error) {
 		n, p := "", ""
 		if v.Node != nil {
-			n = v.Node.Text
+			n = v.Node.text
 		}
 		if v.Parent != nil {
-			p = v.Parent.Text
+			p = v.Parent.text
 		}
 		a = append(a, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
 		return WalkContinue, nil
@@ -50,10 +50,10 @@ func TestTreeRuntimeParity(t *testing.T) {
 	cb := func(v genrt.WalkVisit) (genrt.WalkAction, error) {
 		n, p := "", ""
 		if v.Node != nil {
-			n = v.Node.Text
+			n = v.Node.Text()
 		}
 		if v.Parent != nil {
-			p = v.Parent.Text
+			p = v.Parent.Text()
 		}
 		b = append(b, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
 		return genrt.WalkContinue, nil
@@ -81,8 +81,8 @@ func TestTreeRuntimeParity(t *testing.T) {
 			}
 		}
 	}
-	root.Children = []*Node{root}
-	gRoot.Children = []*genrt.Node{gRoot}
+	root.children = []*Node{root}
+	genrt.SetNodeElems(gRoot, []*genrt.Node{gRoot})
 	var c *CycleError
 	var gc *genrt.CycleError
 	if !errors.As(Walk(root, ca), &c) || !errors.As(genrt.Walk(gRoot, cb), &gc) {

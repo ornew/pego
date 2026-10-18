@@ -187,7 +187,7 @@ func TestLongRecoveredMessage(t *testing.T){
  for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   retained,err:=Parse("!",WithUnit(unit));var recovered SyntaxErrors
   if !errors.As(err,&recovered)||len(recovered)!=1 || len(recovered[0].Messages)!=1 || recovered[0].Messages[0]!=message{t.Fatal("recovery label changed",err)}
-  want:=recovered[0].Error();captured,ok:=retained.Field("Text").(*Node);if !ok || captured.Field("message")!=want{t.Fatalf("recovered message changed: %v",retained)}
+  want:=recovered[0].Error();captured,ok:=retained.Field("Text").(*Node);if !ok || captured.Kind()!=KindError || captured.Text()!=want{t.Fatalf("recovered message changed: %v",retained)}
   for _,ast:=range []bool{false,true}{
    var v any
    opts:=[]ParseOption{WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:256})}
@@ -197,7 +197,7 @@ func TestLongRecoveredMessage(t *testing.T){
   // Recognition records the error but does not construct a node message.
   err=Recognize("!",WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:256}))
   if !errors.As(err,&recovered){t.Fatal("recognizer charged unconstructed node message",err)}
-  if captured.Field("message")!=want{t.Fatal("retained message overwritten")}
+  if captured.Text()!=want{t.Fatal("retained message overwritten")}
   if _,err:=ParseAST("!",WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:100000}));!errors.As(err,&recovered){t.Fatal("generous recovery retry",err)}
  }
 }

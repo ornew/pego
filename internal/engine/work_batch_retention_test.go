@@ -85,15 +85,15 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 						}
 						var before []byte
 						if node != nil {
-							if node.Type() != "Seq" || len(node.Children) != 3 || node.Children[1].Type() != "Entry" {
+							if node.Type() != "Seq" || len(node.children) != 3 || node.children[1].Type() != "Entry" {
 								t.Fatalf("unexpected result: %s", batchRetentionJSON(t, node))
 							}
-							entry := node.Children[1]
-							key, hasKey := entry.Fields.Get("Key")
-							value, hasValue := entry.Fields.Get("Value")
-							count, hasCount := entry.Fields.Get("Count")
+							entry := node.children[1]
+							key, hasKey := entry.fields.Get("Key")
+							value, hasValue := entry.fields.Get("Value")
+							count, hasCount := entry.fields.Get("Count")
 							valueNode, valueIsNode := value.(*Node)
-							if node.Children[0].Text != "!" || node.Children[2].Text != "?" || !hasKey || key != "alpha" || !hasValue || !valueIsNode || valueNode == nil || valueNode.Text != "123" || !hasCount || count != 3 {
+							if node.children[0].text != "!" || node.children[2].text != "?" || !hasKey || key != "alpha" || !hasValue || !valueIsNode || valueNode == nil || valueNode.text != "123" || !hasCount || count != 3 {
 								t.Fatalf("unexpected fields/terminals: %s", batchRetentionJSON(t, node))
 							}
 							before = batchRetentionJSON(t, node)
@@ -105,7 +105,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 
 						// A later parse reuses scratch; the caller-owned prior Node stays intact.
 						retry, retryErr, retryEvent := parse("!beta:45?", false)
-						if retryErr != nil || recognize && retry != nil || !recognize && (retry == nil || retry.Children[1].Field("Key") != "beta" || retry.Children[1].Field("Count") != 2) {
+						if retryErr != nil || recognize && retry != nil || !recognize && (retry == nil || retry.children[1].Field("Key") != "beta" || retry.children[1].Field("Count") != 2) {
 							t.Fatalf("retry node=%v err=%v", retry, retryErr)
 						}
 						assertTraceParserDetached(t, batchRetentionParser(t, retryEvent), false)

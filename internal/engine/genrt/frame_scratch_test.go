@@ -21,11 +21,11 @@ func TestNodeFrameScratchBoundaries(t *testing.T) {
 				t.Fatal("live capture frames or slots reused")
 			}
 		}
-		f.vals[size-1] = &Node{Text: "live"}
+		f.vals[size-1] = &Node{text: "live"}
 		frames = append(frames, f)
 	}
 	for _, f := range frames {
-		if f.vals[len(f.vals)-1].Text != "live" {
+		if f.vals[len(f.vals)-1].text != "live" {
 			t.Fatal("later allocation changed an earlier capture")
 		}
 	}
@@ -46,10 +46,10 @@ func TestNodeFrameScratchChunkStability(t *testing.T) {
 		f := p.newFrame(7)
 		if i == 0 {
 			first = f
-			f.vals[0] = &Node{Text: "first"}
+			f.vals[0] = &Node{text: "first"}
 		}
 	}
-	if first.vals[0].Text != "first" || len(p.captureScratch.frames) != 4 || len(p.captureScratch.slots) < 2 {
+	if first.vals[0].text != "first" || len(p.captureScratch.frames) != 4 || len(p.captureScratch.slots) < 2 {
 		t.Fatal("growing directories invalidated live frames")
 	}
 	p.captureScratch.reset()
@@ -61,7 +61,7 @@ func TestNodeFrameScratchChunkStability(t *testing.T) {
 func TestNodeFrameScratchReleaseOwnership(t *testing.T) {
 	p := &parser{}
 	f := p.newFrame(2)
-	captured := p.newNode(Node{kind: kindMatch, Text: "é", Start: 1, End: 2, terminal: true})
+	captured := p.newNode(Node{kind: kindMatch, text: "é", start: 1, end: 2, terminal: true})
 	f.vals[0] = captured
 	result := p.attachCaptures(nil, []string{"x", "missing"}, f, 0, 2)
 	before, err := json.Marshal(result)
@@ -91,10 +91,10 @@ func TestNodeFrameScratchReleaseOwnership(t *testing.T) {
 	}
 	// Use the arena directly: release returned p to its pool.
 	a := p.captureScratch
-	a.alloc(2).vals[0] = &Node{Text: "replacement"}
+	a.alloc(2).vals[0] = &Node{text: "replacement"}
 	defer a.reset()
 	after, err := json.Marshal(result)
-	if err != nil || string(before) != string(after) || captured.Text != "é" {
+	if err != nil || string(before) != string(after) || captured.text != "é" {
 		t.Fatal("scratch reuse changed a retained Node")
 	}
 }
@@ -109,7 +109,7 @@ func TestNodeFrameScratchCompleteBackingBound(t *testing.T) {
 		s[0] = slotChunk
 		a := frameScratch{frames: f, slots: s, frameN: 1, slotOff: 1}
 		frameChunk[0].vals = slotChunk[:1]
-		slotChunk[0] = &Node{Text: "old"}
+		slotChunk[0] = &Node{text: "old"}
 		a.reset()
 		if frameChunk[0].vals != nil || slotChunk[0] != nil {
 			t.Fatal("discard or reuse retained old values")

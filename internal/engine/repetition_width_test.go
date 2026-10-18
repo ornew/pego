@@ -178,7 +178,7 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					count := 0
 					err := p.ParseStreamWith("main", strings.NewReader("éé"), func(n *Node) error {
-						if n.Text != "é" {
+						if n.text != "é" {
 							t.Errorf("unexpected stream element: %s", resultJSON(n, nil))
 						}
 						count++

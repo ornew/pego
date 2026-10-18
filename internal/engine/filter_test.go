@@ -41,10 +41,10 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 			first := node.Field("First").(*Node)
 			kept := node.Field("Kept").(*Node)
 			empty := node.Field("Empty").(*Node)
-			if len(kept.Children) != 2 || kept.Children[0] != first || kept.Children[1] != first {
+			if len(kept.children) != 2 || kept.children[0] != first || kept.children[1] != first {
 				t.Fatalf("%s/%s: filter changed order or identity", backend, unit)
 			}
-			if empty == nil || len(empty.Children) != 0 {
+			if empty == nil || len(empty.children) != 0 {
 				t.Fatalf("%s/%s: nil input did not produce an empty list", backend, unit)
 			}
 		}

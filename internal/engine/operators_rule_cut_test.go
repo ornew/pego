@@ -254,10 +254,10 @@ func leafText(n *Node) string {
 		return ""
 	}
 	if n.shape() == shapeString {
-		return n.Text
+		return n.text
 	}
 	var b strings.Builder
-	for _, c := range n.Children {
+	for _, c := range n.children {
 		b.WriteString(leafText(c))
 	}
 	return b.String()

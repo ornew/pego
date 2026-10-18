@@ -30,16 +30,16 @@ func referenceJSON(n *Node) any {
 	}
 	switch n.shape() {
 	case shapeString:
-		return node{n.Start, n.End, n.Text, n.Rule()}
+		return node{n.start, n.end, n.text, n.Rule()}
 	case shapeTuple, shapeList:
-		elems := make([]any, len(n.Children))
-		for i, c := range n.Children {
+		elems := make([]any, len(n.children))
+		for i, c := range n.children {
 			elems[i] = referenceJSON(c)
 		}
-		return node{n.Start, n.End, elems, n.Rule()}
+		return node{n.start, n.end, elems, n.Rule()}
 	}
-	fields := make(map[string]any, len(n.Fields))
-	for _, field := range n.Fields {
+	fields := make(map[string]any, len(n.fields))
+	for _, field := range n.fields {
 		fields[field.Name] = referenceField(field.Value)
 	}
 	return structValue{n.Type(), fields}
@@ -64,19 +64,19 @@ func referenceField(value any) any {
 }
 
 func TestNodeWriteJSONMatchesReferenceShape(t *testing.T) {
-	child := &Node{kind: kindMatch, Start: 3, End: 5, Text: "<&>\xff"}
+	child := &Node{kind: kindMatch, start: 3, end: 5, text: "<&>\xff"}
 	record := &Node{
 		kind:  kindOf("Record", "entry"),
-		Start: 1,
-		End:   8,
-		Fields: Fields{
+		start: 1,
+		end:   8,
+		fields: Fields{
 			{Name: "z", Value: []any{"<tag>", []byte{0, 1, 255}, child}},
 			{Name: "a", Value: int64(9007199254740992)},
 			{Name: "nilList", Value: []any(nil)},
 			{Name: "emptyList", Value: []any{}},
 		},
 	}
-	tuple := &Node{kind: kindOf("Seq", "pair"), Start: 1, End: 8, Children: []*Node{child, nil, child}}
+	tuple := &Node{kind: kindOf("Seq", "pair"), start: 1, end: 8, children: []*Node{child, nil, child}}
 	for _, n := range []*Node{record, tuple} {
 		want, err := json.Marshal(referenceJSON(n))
 		if err != nil {
@@ -114,7 +114,7 @@ func TestNodeWriteJSONNilAndFields(t *testing.T) {
 		t.Fatalf("nil WriteJSON = %q, %v; want null, nil", streamed.String(), err)
 	}
 
-	fields := Fields{{Name: "child", Value: &Node{kind: kindMatch, Text: "x"}}, {Name: "bytes", Value: []byte{1, 2}}}
+	fields := Fields{{Name: "child", Value: &Node{kind: kindMatch, text: "x"}}, {Name: "bytes", Value: []byte{1, 2}}}
 	got, err = fields.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -130,8 +130,8 @@ func TestNodeWriteJSONNilAndFields(t *testing.T) {
 }
 
 func TestNodeWriteJSONSharedNodesAndCycles(t *testing.T) {
-	leaf := &Node{kind: kindMatch, Text: "shared"}
-	root := &Node{kind: kindSeq, Children: []*Node{leaf, leaf}}
+	leaf := &Node{kind: kindMatch, text: "shared"}
+	root := &Node{kind: kindSeq, children: []*Node{leaf, leaf}}
 	data, err := root.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -144,13 +144,13 @@ func TestNodeWriteJSONSharedNodesAndCycles(t *testing.T) {
 		name string
 		make func() *Node
 	}{
-		{"child", func() *Node { n := &Node{kind: kindSeq}; n.Children = []*Node{n}; return n }},
-		{"field", func() *Node { n := &Node{kind: kindOf("R", "")}; n.Fields = Fields{{Name: "self", Value: n}}; return n }},
+		{"child", func() *Node { n := &Node{kind: kindSeq}; n.children = []*Node{n}; return n }},
+		{"field", func() *Node { n := &Node{kind: kindOf("R", "")}; n.fields = Fields{{Name: "self", Value: n}}; return n }},
 		{"slice", func() *Node {
 			var values []any
 			values = append(values, nil)
 			values[0] = values
-			return &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "cycle", Value: values}}}
+			return &Node{kind: kindOf("R", ""), fields: Fields{{Name: "cycle", Value: values}}}
 		}},
 	} {
 		t.Run(makeCycle.name, func(t *testing.T) {
@@ -174,12 +174,12 @@ func (v failingJSONValue) MarshalJSON() ([]byte, error) { return nil, sentinelJS
 
 func TestNodeWriteJSONPreservesLeafErrors(t *testing.T) {
 	want := errors.New("leaf cause")
-	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "bad", Value: failingJSONValue{want}}}}
+	n := &Node{kind: kindOf("R", ""), fields: Fields{{Name: "bad", Value: failingJSONValue{want}}}}
 	for name, err := range map[string]error{
 		"WriteJSON":      n.WriteJSON(io.Discard),
 		"MarshalJSON":    func() error { _, err := n.MarshalJSON(); return err }(),
 		"json.Marshal":   func() error { _, err := json.Marshal(n); return err }(),
-		"Fields.Marshal": func() error { _, err := n.Fields.MarshalJSON(); return err }(),
+		"Fields.Marshal": func() error { _, err := n.fields.MarshalJSON(); return err }(),
 	} {
 		var marshalerErr *json.MarshalerError
 		var sentinel sentinelJSONError
@@ -195,7 +195,7 @@ func TestNodeWriteJSONDeepAndStandardLibraryLimit(t *testing.T) {
 	current := root
 	for i := 1; i < depth; i++ {
 		child := &Node{kind: kindSeq}
-		current.Children = []*Node{child}
+		current.children = []*Node{child}
 		current = child
 	}
 	var sink countingWriter
@@ -224,7 +224,7 @@ type countingWriter struct{ n int }
 func (w *countingWriter) Write(p []byte) (int, error) { w.n += len(p); return len(p), nil }
 
 func TestNodeWriteJSONShortWriter(t *testing.T) {
-	n := &Node{kind: kindMatch, Text: "x"}
+	n := &Node{kind: kindMatch, text: "x"}
 	err := n.WriteJSON(shortWriter{})
 	if !errors.Is(err, io.ErrShortWrite) {
 		t.Fatalf("WriteJSON short write error = %v, want io.ErrShortWrite", err)
@@ -241,7 +241,7 @@ func (shortWriter) Write(p []byte) (int, error) {
 }
 
 func TestNodeWriteJSONLargeScalarAcrossBufferBoundary(t *testing.T) {
-	n := &Node{kind: kindMatch, Text: strings.Repeat("x", 600)}
+	n := &Node{kind: kindMatch, text: strings.Repeat("x", 600)}
 	want, err := json.Marshal(referenceJSON(n))
 	if err != nil {
 		t.Fatal(err)
@@ -272,7 +272,7 @@ func (w *partialAfterFlushWriter) Write(p []byte) (int, error) {
 }
 
 func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
-	n := &Node{kind: kindMatch, Text: strings.Repeat("x", 600)}
+	n := &Node{kind: kindMatch, text: strings.Repeat("x", 600)}
 	wantErr := errors.New("writer failed")
 	w := &partialAfterFlushWriter{err: wantErr}
 	err := n.WriteJSON(w)
@@ -282,7 +282,7 @@ func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
 	if w.calls != 2 {
 		t.Fatalf("writer calls = %d, want prefix flush and partial scalar write", w.calls)
 	}
-	encoded, err := json.Marshal(n.Text)
+	encoded, err := json.Marshal(n.text)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
 }
 
 func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
-	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "bad", Value: math.NaN()}}}
+	n := &Node{kind: kindOf("R", ""), fields: Fields{{Name: "bad", Value: math.NaN()}}}
 	_, gotErr := n.MarshalJSON()
 	_, wantErr := json.Marshal(struct {
 		Type   string         `json:"type"`
@@ -309,7 +309,7 @@ func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
 
 func TestNodeJSONSliceIdentityAllowsRepeatedAcyclicEdges(t *testing.T) {
 	shared := []any{"ok"}
-	n := &Node{kind: kindOf("R", ""), Fields: Fields{{Name: "a", Value: shared}, {Name: "b", Value: shared}}}
+	n := &Node{kind: kindOf("R", ""), fields: Fields{{Name: "a", Value: shared}, {Name: "b", Value: shared}}}
 	got, err := n.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -322,7 +322,7 @@ func TestNodeJSONSliceIdentityAllowsRepeatedAcyclicEdges(t *testing.T) {
 func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
 	x := make([]any, 1, 2)
 	x[0] = x[:1:1]
-	root := &Node{Fields: Fields{{Name: "x", Value: x}}}
+	root := &Node{fields: Fields{{Name: "x", Value: x}}}
 	var prefix bytes.Buffer
 	err := root.WriteJSON(&prefix)
 	var cycle *json.UnsupportedValueError

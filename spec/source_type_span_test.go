@@ -57,10 +57,10 @@ func assertCanonicalTypeSpans(t *testing.T, p *pego.Parser, source string, expec
 				t.Fatal("canonical parser added a type declaration")
 			}
 			span := sourceField(t, def, "SourceSpan")
-			got = append(got, string([]rune(source)[int(span.Start):int(span.End)]))
+			got = append(got, string([]rune(source)[int(span.Start()):int(span.End())]))
 			want := manual.Types()[index].SourceInfo
 			adapted := want
-			if err := sourceast.NewPositions(source).SetSpan(&adapted, int(span.Start), int(span.End)); err != nil {
+			if err := sourceast.NewPositions(source).SetSpan(&adapted, int(span.Start()), int(span.End())); err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(adapted, want) {

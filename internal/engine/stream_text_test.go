@@ -135,7 +135,7 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("rows").(*Node).Children
+				want := whole.Field("rows").(*Node).children
 				var got []*Node
 				err = prog.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { got = append(got, n); return nil }, opts)
 				if err != nil || len(got) != len(want) {
@@ -165,7 +165,7 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("rows").(*Node).Children
+				want := whole.Field("rows").(*Node).children
 				var got []*Node
 				err = prog.ParseStreamWith("main", &snapshotOneByteReader{source: text}, func(n *Node) error { got = append(got, n); return nil }, opts)
 				if err != nil || len(got) != len(want) {

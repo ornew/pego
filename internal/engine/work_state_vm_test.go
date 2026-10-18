@@ -19,7 +19,7 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 		for _, limits := range []WorkLimits{{MaxSteps: 64}, {MaxSteps: 10000}} {
 			p := stateWorkParser(limits)
 			start := 3
-			retained := &Node{Text: "retained", Fields: Fields{{Name: "keep", Value: "unchanged"}}}
+			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
 			p.vals = append(p.vals, &start)
 			want := make([]*Node, 320)
 			for i := range want {
@@ -41,10 +41,10 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 				if !errors.Is(err, ErrWorkLimit) || result != nil || len(p.vals) != 321 {
 					t.Fatalf("%v assembly interruption err=%v result=%v stack=%d", op, err, result, len(p.vals))
 				}
-			} else if err != nil || result == nil || !reflect.DeepEqual(result.Children, want) || result.Start != 3 {
+			} else if err != nil || result == nil || !reflect.DeepEqual(result.children, want) || result.start != 3 {
 				t.Fatalf("%v assembled children/position differs: %v", op, err)
 			}
-			if retained.Text != "retained" || retained.Fields[0].Value != "unchanged" {
+			if retained.text != "retained" || retained.fields[0].Value != "unchanged" {
 				t.Fatal("assembly changed retained node")
 			}
 		}
@@ -100,7 +100,7 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 	for _, iterative := range []bool{false, true} {
 		for _, limit := range []uint64{128, 449, 10000} {
 			p := stateWorkParser(WorkLimits{MaxSteps: limit})
-			retained := &Node{Text: "retained", Fields: Fields{{Name: "keep", Value: "unchanged"}}}
+			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
 			before, _ := json.Marshal(retained)
 			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{names: make([]string, 320)}}}
 			setup := func(f *frame) {

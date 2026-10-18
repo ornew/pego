@@ -14,14 +14,14 @@ func (d *dgen) match(start, text string) string {
 	if d.g.table == "trules" {
 		return fmt.Sprintf("p.newMatch(%s, p.pos, %s, true)", start, text)
 	}
-	return fmt.Sprintf("p.newNode(Node{kind: kindMatch, Start: int32(%s), End: int32(p.pos), Text: %s, terminal: true, fresh: true})", start, text)
+	return fmt.Sprintf("p.newNode(Node{kind: kindMatch, start: int32(%s), end: int32(p.pos), text: %s, terminal: true, fresh: true})", start, text)
 }
 
 func (d *dgen) node(typ, start, kids string) string {
 	if d.g.table == "trules" {
 		return fmt.Sprintf("p.newNode(%q, %s, p.pos, %s)", typ, start, kids)
 	}
-	return fmt.Sprintf("p.newNode(Node{kind: kind%s, Start: int32(%s), End: int32(p.pos), Children: %s, fresh: true})", typ, start, kids)
+	return fmt.Sprintf("p.newNode(Node{kind: kind%s, start: int32(%s), end: int32(p.pos), children: %s, fresh: true})", typ, start, kids)
 }
 
 func (d *dgen) frameScope(s *dscope) *scope {

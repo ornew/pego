@@ -52,7 +52,7 @@ func TestCompileAST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n.Start != 0 || n.End != 2 || n.Rule() != "main" {
+	if n.Start() != 0 || n.End() != 2 || n.Rule() != "main" {
 		t.Errorf("got %+v", n)
 	}
 }
@@ -147,13 +147,13 @@ rule key = [a-z]+ #atomic`, "main", pego.WithSourceInfo())
 }
 
 func TestUnits(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "é" x:.`, "main")
+	p, err := pego.CompileSource(`rule main = "é" x:.`, "main", pego.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
-	for unit, want := range map[pego.PositionUnit]int32{pego.CodePoints: 1, pego.Bytes: 2} {
+	for unit, want := range map[pego.PositionUnit]int{pego.CodePoints: 1, pego.Bytes: 2} {
 		n, err := p.Parse("éa", pego.WithUnit(unit))
-		if err != nil || n.Field("x").(*pego.Node).Start != want {
+		if err != nil || n.Field("x").(*pego.Node).Start() != want {
 			t.Errorf("%v: %v %v", unit, n, err)
 		}
 	}
@@ -164,7 +164,7 @@ func TestUnits(t *testing.T) {
 	if err := doc.Edit(2, 3, "b"); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := doc.Parse(); err != nil || n.Field("x").(*pego.Node).Text != "b" {
+	if n, err := doc.Parse(); err != nil || n.Field("x").(*pego.Node).Text() != "b" {
 		t.Errorf("%v %v", n, err)
 	}
 }

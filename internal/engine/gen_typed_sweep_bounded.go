@@ -51,9 +51,9 @@ func (t *typedGen) outputBoundedSweep(b *strings.Builder, direct, conversion boo
 			}
 		case *Node:
 			if x == nil || !m.mark(x) { continue }
-			astMarkCells(m, x.Children)
+			astMarkCells(m, x.children)
 			if !m.canPush() { break }
-			m.push(x.Fields)
+			m.push(x.fields)
 `)
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n", t.names[name])

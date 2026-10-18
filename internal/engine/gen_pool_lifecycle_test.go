@@ -135,8 +135,8 @@ func TestUntypedPoolRetention(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if n.Type() != "A" || n.Text != "b" || n.Start != tc.start || n.End != tc.start+1 {
-				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.Start, n.End, n.Text)
+			if n.Type() != "A" || n.text != "b" || n.start != tc.start || n.end != tc.start+1 {
+				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.start, n.end, n.text)
 			}
 
 			p.release()
@@ -167,7 +167,7 @@ func TestUntypedPoolRetention(t *testing.T) {
 				t.Fatal("invalid small input accepted")
 			}
 			got, err := Parse(tc.retry, WithUnit(tc.unit))
-			if err != nil || got == nil || got.Type() != "A" || got.Text != "b" || got.Start != tc.retryStart || got.End != tc.retryStart+1 {
+			if err != nil || got == nil || got.Type() != "A" || got.text != "b" || got.start != tc.retryStart || got.end != tc.retryStart+1 {
 				t.Fatalf("small retry: node=%v error=%v", got, err)
 			}
 			after, err = json.Marshal(n)

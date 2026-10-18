@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
 )
 
 func TestDocumentSnapshotPublicContract(t *testing.T) {
@@ -26,7 +27,7 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 		if legacy == nil {
 			t.Fatal("materialize")
 		}
-		legacy.Start = 999
+		engine.SetNodeStart(legacy, 999)
 		if s.Root().Start() == 999 {
 			t.Fatal("snapshot aliases materialized result")
 		}

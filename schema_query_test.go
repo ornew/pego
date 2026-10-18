@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
 )
 
 func TestPublicOutputSchema(t *testing.T) {
@@ -112,7 +113,11 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	if partial, err := q.Matches(root, pego.WithQueryWorkLimits(pego.WorkLimits{MaxSteps: 1})); partial != nil || !errors.Is(err, pego.ErrWorkLimit) {
 		t.Fatalf("limited query: %+v, %v", partial, err)
 	}
-	root.Children = append(root.Children, root)
+	var kids []*pego.Node
+	for _, c := range root.Elems() {
+		kids = append(kids, c)
+	}
+	engine.SetNodeElems(root, append(kids, root))
 	if partial, err := q.Matches(root); partial != nil || !errors.Is(err, pego.ErrQueryCycle) {
 		t.Fatalf("cyclic query: %+v, %v", partial, err)
 	}
@@ -180,8 +185,12 @@ rule main = "a" => Item{Value: nil}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(root.Fields) != 1 || root.Fields[0].Name != "Value" {
-		t.Fatalf("unexpected result fields: %+v", root.Fields)
+	var names []string
+	for name := range root.Fields() {
+		names = append(names, name)
+	}
+	if len(names) != 1 || names[0] != "Value" {
+		t.Fatalf("unexpected result fields: %v", names)
 	}
 	check := func(q *pego.StructuralQuery, want int) {
 		t.Helper()
@@ -192,10 +201,10 @@ rule main = "a" => Item{Value: nil}`, "main")
 	}
 	check(nilQuery, 1)
 	check(stringQuery, 0)
-	root.Fields[0].Value = "ok"
+	engine.SetNodeField(root, "Value", "ok")
 	check(stringQuery, 1)
 	check(nilQuery, 0)
-	root.Fields[0].Value = false
+	engine.SetNodeField(root, "Value", false)
 	check(stringQuery, 0)
 	check(nilQuery, 0)
 }
@@ -234,7 +243,7 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 	if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Value != "a" {
 		t.Fatalf("scalar alias match: %+v, %v", matches, err)
 	}
-	root.Fields[0].Value = false
+	engine.SetNodeField(root, "Value", false)
 	matches, err = query.Matches(root)
 	if err != nil || len(matches) != 0 {
 		t.Fatalf("mutated scalar alias match: %+v, %v", matches, err)

@@ -92,7 +92,7 @@ func TestEnvironmentWalksAndAtomicBind(t *testing.T){
  }
 }
 func TestNodeMemoLookupWalk(t *testing.T){
- tail:=&memoEntry{rule:7,node:&Node{Text:"kept"},ok:true}
+ tail:=&memoEntry{rule:7,node:&Node{text:"kept"},ok:true}
  head:=tail;for i:=0;i<300;i++{head=&memoEntry{rule:8,next:head}}
  p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:32})};p.memo.slots=[]*memoEntry{head}
  r:=&rule{id:7,seen:-1,memo:true}

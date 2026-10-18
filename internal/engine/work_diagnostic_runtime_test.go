@@ -27,7 +27,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					records[i] = []*SyntaxError{a, b, a}[i%3]
 				}
 				before, _ := json.Marshal(records)
-				retained := &Node{Text: "retained", Fields: Fields{{Name: "keep", Value: "stable"}}}
+				retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "stable"}}}
 				p := diagnosticParser(WorkLimits{})
 				p.memo, p.recovered = newMemoTable(), []*SyntaxError{prefix}
 				p.memo.slots = make([]*memoEntry, 1)
@@ -152,7 +152,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					aborted()
 				}
 				after, _ := json.Marshal(records)
-				if string(before) != string(after) || records[0] != a || retained.Text != "retained" || retained.Fields[0].Value != "stable" {
+				if string(before) != string(after) || records[0] != a || retained.text != "retained" || retained.fields[0].Value != "stable" {
 					t.Fatal("copy changed retained errors, alias pointers or Node")
 				}
 			})

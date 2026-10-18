@@ -19,7 +19,7 @@ func TestParseStream(t *testing.T) {
 	prog := compile(t, records)
 	var got []string
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *Node) error {
-		got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.Start, n.End))
+		got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.start, n.end))
 		return nil
 	})
 	if err != nil {
@@ -58,7 +58,7 @@ func TestParseStreamIsIncremental(t *testing.T) {
 	done := make(chan error)
 	go func() {
 		done <- prog.ParseStream("main", pr, func(n *Node) error {
-			emitted <- n.Field("k").(*Node).Text
+			emitted <- n.Field("k").(*Node).text
 			return nil
 		})
 	}()

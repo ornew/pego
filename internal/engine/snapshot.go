@@ -242,7 +242,7 @@ func (s *Snapshot) Materialize() *Node {
 	for i := range nodes {
 		r := s.graph.at(i)
 		pos := s.graph.position(i, r)
-		nodes[i] = &Node{kind: r.kind, Start: pos.start, End: pos.end, Text: r.text, fresh: r.fresh, terminal: r.terminal, gen: pos.gen}
+		nodes[i] = &Node{kind: r.kind, start: pos.start, end: pos.end, text: r.text, fresh: r.fresh, terminal: r.terminal, gen: pos.gen}
 	}
 	node := func(id int) *Node {
 		if id == 0 {
@@ -255,25 +255,25 @@ func (s *Snapshot) Materialize() *Node {
 		n := nodes[i]
 		if r.childChunked {
 			chunks := s.graph.childChunks[r]
-			n.Children = make([]*Node, chunks.length)
+			n.children = make([]*Node, chunks.length)
 			for part, ids := range chunks.parts {
 				for j, id := range ids {
-					n.Children[part*snapshotChildChunkSize+j] = node(id)
+					n.children[part*snapshotChildChunkSize+j] = node(id)
 				}
 			}
 		} else if r.children != nil {
-			n.Children = make([]*Node, len(r.children))
+			n.children = make([]*Node, len(r.children))
 			for j, id := range r.children {
-				n.Children[j] = node(id)
+				n.children[j] = node(id)
 			}
 		}
 		if r.fields != nil {
-			n.Fields = make(Fields, len(r.fields))
+			n.fields = make(Fields, len(r.fields))
 			for j, f := range r.fields {
 				if id, ok := f.Value.(snapshotRef); ok {
 					f.Value = node(int(id))
 				}
-				n.Fields[j] = f
+				n.fields[j] = f
 			}
 		}
 	}
@@ -448,12 +448,12 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 			return id, false
 		}
 		p.stepWork()
-		r := snapshotRecord{kind: n.kind, start: n.Start, end: n.End, text: n.Text, fresh: n.fresh, terminal: n.terminal, gen: n.gen}
-		if n.Children != nil {
-			r.children = make([]int, len(n.Children))
+		r := snapshotRecord{kind: n.kind, start: n.start, end: n.end, text: n.text, fresh: n.fresh, terminal: n.terminal, gen: n.gen}
+		if n.children != nil {
+			r.children = make([]int, len(n.children))
 		}
-		if n.Fields != nil {
-			r.fields = make(Fields, len(n.Fields))
+		if n.fields != nil {
+			r.fields = make(Fields, len(n.fields))
 		}
 		g.nodes = growWork(p, g.nodes, 1)
 		g.nodes = append(g.nodes, r)
@@ -468,16 +468,16 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 		f := &stack[len(stack)-1]
 		var child *Node
 		var edge snapshotEdge
-		if f.next < len(f.node.Children) {
+		if f.next < len(f.node.children) {
 			edge = snapshotEdge{child: true, index: f.next}
-			child = f.node.Children[f.next]
+			child = f.node.children[f.next]
 		} else {
-			i := f.next - len(f.node.Children)
-			if i >= len(f.node.Fields) {
+			i := f.next - len(f.node.children)
+			if i >= len(f.node.fields) {
 				stack = stack[:len(stack)-1]
 				continue
 			}
-			field := f.node.Fields[i]
+			field := f.node.fields[i]
 			edge = snapshotEdge{index: i, name: field.Name}
 			var value any
 			switch v := field.Value.(type) {
@@ -493,7 +493,7 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 		id, fresh := register(child)
 		if edge.child {
 			g.nodes[f.id-1].children[edge.index] = id
-		} else if _, ok := f.node.Fields[edge.index].Value.(*Node); ok {
+		} else if _, ok := f.node.fields[edge.index].Value.(*Node); ok {
 			g.nodes[f.id-1].fields[edge.index].Value = snapshotRef(id)
 		}
 		f.next++

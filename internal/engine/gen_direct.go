@@ -455,7 +455,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			v := d.expr(it, s, build, fail)
 			switch {
 			case build && isElems(it):
-				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.Children", "asTval(%s).tkids()"), d.rd(v)))
+				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.children", "asTval(%s).tkids()"), d.rd(v)))
 			case build && valuedCount(it) == 1:
 				d.line("%s = append(%s, %s)", kids, d.rd(kids), d.rd(v))
 			}
