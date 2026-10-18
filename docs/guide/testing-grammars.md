@@ -580,7 +580,7 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 ```
 
 `pego edit-fuzz` and package `editfuzz` run the same check with undo, redo, invalid UTF-8, spans and every backend
-and unit, and save a failing edit sequence as a file that replays it ([fuzzing edits](incremental-editing.md#fuzzing-edits)).
+and unit, and save a failing edit sequence as a file that replays it ([fuzzing edits](sampling-and-fuzzing.md#fuzzing-edits)).
 
 **A compiled grammar** must behave like the grammar it was made from ([compiled grammars](compiled-grammars.md)). This
 test uses the form without the AST, which runs on the bytecode backend:

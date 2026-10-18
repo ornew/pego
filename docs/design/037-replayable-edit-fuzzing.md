@@ -35,7 +35,7 @@ Text and replacement payloads are base64-encoded raw bytes; edit offsets use the
 ## Implementation
 
 Package [`editfuzz`](../../editfuzz) and `pego edit-fuzz` implement this design; the guide is
-[fuzzing edits](../guide/incremental-editing.md#fuzzing-edits). The implementation settles the open names and refines some
+[fuzzing edits](../guide/sampling-and-fuzzing.md#fuzzing-edits). The implementation settles the open names and refines some
 rules:
 
 - The API is `editfuzz.Fuzz(src, Options)`, `Replay(src, *Sequence)`, `Minimize(src, *Sequence, maxAttempts)`,

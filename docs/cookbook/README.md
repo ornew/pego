@@ -56,6 +56,7 @@ times differ from machine to machine.
 |:--|:--|
 | [Tokenize source for syntax highlighting](highlighting.md) | A tokenizer that cannot fail, and HTML spans from the flat tree |
 | [Reparse a document on every keystroke](as-you-type.md) | `Document`, `Edit` and `Stats`; a grammar shaped so that edits reuse most of the last parse |
+| [Keep the last good tree while the user types](keep-last-good-tree.md) | An `Editor` around a `Document` that shows the last tree that parsed while a line is half typed, and what each keystroke costs |
 
 ## Ship, Reuse and Test
 

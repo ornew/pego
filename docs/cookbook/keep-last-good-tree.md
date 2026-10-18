@@ -1,16 +1,21 @@
-# Editor Loops and Edit Fuzzing
+# Keep the Last Good Tree While the User Types
 
-A `Document` is meant to be driven by an editor, and its one rule is that its result equals a fresh parse. This guide
-shows an editor loop that wraps a `Document`, and the tool that checks the rule for a grammar with random edits. It
-assumes the `Document` API of [Incremental Parsing](incremental.md).
+**Problem.** An editor shows something built from the tree of the text (an outline, highlighting, a list of symbols),
+and the tree is rebuilt after every keystroke. Most states of a half-typed line are syntax errors, which return no tree.
+You want to keep showing the last tree that parsed, and to see how little work each keystroke costs.
 
-## An Editor Loop
+Wrap a `Document` in a small `Editor` type. It applies each change, reparses, keeps the last tree that parsed, and
+reports what the parse cost. For a grammar that recovers from errors and returns a tree for every keystroke, see
+[Reparse a document on every keystroke](as-you-type.md) instead. The program here simulates a user who opens a blank
+line in the middle of a 1,000-line settings file and types a new setting one key at a time, with an error after almost
+every key, and then retypes a value:
 
 An `Editor` wraps a `Document`, applies each change, reparses, keeps the last tree that parsed, and reports what the
 parse cost. It simulates a user opening a blank line in the middle of a 1,000-line settings file and typing a new setting
 one key at a time, with an error after almost every key, and then retyping a value:
 
 ```go
+// main.go
 package main
 
 import (
@@ -137,7 +142,7 @@ func main() {
 }
 ```
 
-```
+```text
 (first parse)      evaluated 3003 reused    0  ok, 1000 entries
 "\n"               evaluated    4 reused 1001  ok, 1001 entries
 "t"                evaluated    3 reused  499  error at 500:2, keeping the last good tree
@@ -156,7 +161,7 @@ func main() {
 same as a fresh parse: true
 ```
 
-What to see in the output:
+## How It Works
 
 - Every keystroke is one `Edit` and one `Parse`. While the line is incomplete, `Parse` returns a `*SyntaxError` and no
   tree, so the editor keeps the last good tree. The first 499 settings are still reused (the parser stops at the first
@@ -165,7 +170,7 @@ What to see in the output:
 - The last line of the output checks the contract: the incremental tree equals a fresh parse of the same text (the
   comparison here is by JSON, which includes positions).
 
-Adapting it to a real editor:
+## Variations and Limits
 
 - Keep one `Document` per open file and one goroutine per `Document`, with the `Parser` shared.
 - Convert your editor's positions to the document's unit before `Edit`. In `Bytes` mode, a position inside a character
@@ -178,116 +183,5 @@ Adapting it to a real editor:
   was parsed from), keep `node.Clone()` instead.
 - If something looks wrong, compare with `Parser.Parse` on `doc.Text()`. The two must agree.
 
-## Fuzzing Edits
-
-That last rule can be checked mechanically for any grammar. `pego edit-fuzz` applies random sequences of edits, undos
-and redos to a `Document` and, at the initial text and at each checkpoint, compares its result with a fresh parse of
-`doc.Text()`: values with their full spans, and errors with their positions, expectations and messages. It runs
-every backend in both position units:
-
-```bash
-$ pego edit-fuzz -g examples/calculator/calc.pego -seed 1
-ok closure/codepoints: 100 sequences
-ok closure/bytes: 100 sequences
-ok bytecode/codepoints: 100 sequences
-ok bytecode/bytes: 100 sequences
-ok bytecode-iterative/codepoints: 100 sequences
-ok bytecode-iterative/bytes: 100 sequences
-```
-
-The initial texts are the empty text and inputs generated from the grammar (see
-[sampling inputs](sampling-and-fuzzing.md)), or the files given with `-corpus` (a file, or a directory read in name
-order). Replacements mix parts of those texts with partial and complete multibyte characters and random bytes, so
-edits split, join and break UTF-8 sequences. `-backend` and `-unit` take comma-separated lists to narrow the run;
-`-sequences` and `-operations` set its size.
-
-A seed is not a reproducer: generation may change between releases. With `-save-failures dir`, the first failing
-sequence is saved as JSON, and `-minimize` then shrinks it, keeping the same kind of failure, and saves the result
-next to it. Without `-save-failures`, the message includes the failing sequence as JSON. Here a deliberately broken
-`Document` fails:
-
-```bash
-$ pego edit-fuzz -g calc.pego -save-failures failures -minimize
-pego: calc.pego (seed 0): closure/codepoints: document result differs from a fresh parse at operation 21 (text "…") in error.error.col:
-document: 1
-fresh:    2
-saved to failures/editfuzz-0be4ccb60eadff90.json
-minimized to 4 operations in failures/editfuzz-9d0bcab55578f1b5.json
-$ pego edit-fuzz -g calc.pego -replay failures/editfuzz-9d0bcab55578f1b5.json
-pego: failures/editfuzz-9d0bcab55578f1b5.json: closure/codepoints: document result differs from a fresh parse at operation 3 (text " �6\t") in error.error.col:
-document: 1
-fresh:    2
-```
-
-The message names the first difference, here the column of the syntax error, with the two values there; the
-command exits with status 1. The minimized sequence starts from a tab, inserts `6` before it, checks, inserts a
-space and an invalid byte, and checks again:
-
-```json
-{
-  "version": 1,
-  "grammar_sha256": "f4ab154a3405db596d8950b251e7da79836105408eb0fbc56ec0cf6d3e9b272e",
-  "grammar_normalization": "none",
-  "start": "main",
-  "backend": "closure",
-  "unit": "codepoints",
-  "seed": 0,
-  "text_encoding": "base64",
-  "initial_base64": "CQ==",
-  "operations": [
-    { "kind": "edit", "start": 0, "end": 0, "text_base64": "Ng==" },
-    { "kind": "checkpoint" },
-    { "kind": "edit", "start": 0, "end": 0, "text_base64": "IKw=" },
-    { "kind": "checkpoint" }
-  ]
-}
-```
-
-`-replay file` runs a saved sequence, which records its start rule, backend and unit; with `-minimize`, it
-minimizes the sequence into the file's directory unless `-save-failures` is given. The file records the exact text
-and replacements in base64, so invalid UTF-8 survives, and the SHA-256 of the exact grammar source: replaying with
-another grammar, even one differing only in whitespace, is refused. A saved file is never replaced.
-
-Edit positions are in the sequence's unit and refer to the text just before the edit; in `bytes`, they must fall on
-character boundaries, as for `Document.Edit`. `undo` restores the text before the latest edit not yet undone and
-`redo` reapplies it; a new edit clears the redo history. Both edit the same `Document`: undo with the single edit
-that restores the earlier text. After every edit, undo and redo, the Document's text must be the edited text (in
-`codepoints`, with each invalid byte replaced by U+FFFD). A wrong text and a panic in an edit or a parse are
-failures too, reported in `text` and in `panic.edit`, `panic.document`, `panic.fresh` or `panic.both`. Some sequences start from generated texts joined into a few
-kilobytes, which `Document` stores differently from short texts; a `-corpus` of large files tests more of them.
-
-The same is available from Go in package `editfuzz`, for example in a test that keeps saved failures as regression
-cases:
-
-```go
-src, err := os.ReadFile("grammar.pego")
-if err != nil {
-	t.Fatal(err)
-}
-err = editfuzz.Fuzz(src, editfuzz.Options{Start: "main", Backend: pego.BytecodeIterative, Unit: pego.Bytes,
-	Seed: 1, SaveFailures: t.TempDir()})
-if err != nil {
-	t.Fatal(err) // a *editfuzz.Failure, with the saved path
-}
-paths, _ := filepath.Glob("testdata/editfuzz/*.json")
-for _, path := range paths {
-	seq, err := editfuzz.Load(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := editfuzz.Replay(src, seq); err != nil {
-		t.Errorf("%s: %v", path, err)
-	}
-}
-```
-
-`Replay` returns a `*editfuzz.Mismatch` for a failure and an `*editfuzz.InvalidError` for a sequence that does not
-apply; `Minimize` takes a failing sequence and an attempt limit. Callbacks of extensions may run a different
-number of times in the two parses; only results and errors are compared.
-
-## Related Topics
-
-- [Incremental Parsing](incremental.md): the model and the API.
-- [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md): generating inputs for a grammar.
-- [Error Messages](error-messages.md): `@error` and the shape of `SyntaxError`.
-- [Recovering from Errors](recovery.md): `#recover` and recovered errors.
+See [Incremental Parsing](../guide/incremental.md) for the `Document` API and
+[Incremental Parsing Performance](../guide/incremental-performance.md) for what reuse costs on other grammars.

@@ -275,7 +275,7 @@ Limits to keep in mind:
 - The whole text and memo table are in memory. The engine can discard reuse history with `ResetHistory`; generated
   Go's Node Document has no reset method.
 - `Parse` returns a complete tree each time. The engine Document can report conservative changes through
-  [opt-in notifications](incremental.md#change-notifications); generated Go's Node Document has no change-notification API.
+  [opt-in notifications](document-changes.md); generated Go's Node Document has no change-notification API.
 - The engine Document is unavailable with `RecognizeOnly` or [streams](streaming.md). Generated Go offers the
   smaller [`-document` API](generated-go-api.md#incremental-documents--document); `-types` adds
   `Document.ParseAST`, with direct matching for grammars eligible for batch typed parsing and Node conversion

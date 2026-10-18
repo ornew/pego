@@ -27,21 +27,20 @@ Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` 
 `#stream` has no effect on it, so the two do not combine.
 
 To observe edits and parse outcomes for downstream indexes or highlights, enable
-the opt-in [Document change notifications](incremental.md#change-notifications) before editing.
+the opt-in [Document change notifications](document-changes.md) before editing.
 
 The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md).
 
-The model, the API, change notifications and a walkthrough with `Stats` are below. Three more guides continue: [What
-Incremental Parsing Reuses](incremental-reuse.md) explains which results survive an edit and how to write grammars that
-keep more of them, [Incremental Parsing Performance](incremental-performance.md) gives measurements and limits, and
-[Editor Loops and Edit Fuzzing](incremental-editing.md) shows an editor loop and how to check a grammar against fresh
-parses.
+The model, the API and a walkthrough with `Stats` are below. Three more guides continue: [What Incremental Parsing
+Reuses](incremental-reuse.md) explains which results survive an edit and how to write grammars that keep more of them,
+[Incremental Parsing Performance](incremental-performance.md) gives measurements and limits, and [Document Change
+Notifications](document-changes.md) shows how a tool observes edits and parse outcomes. [Fuzzing
+Edits](sampling-and-fuzzing.md#fuzzing-edits) checks a grammar against fresh parses with random edits.
 
 - [The model](#the-model)
 - [The API](#the-api)
 - [Keeping a result while editing](#keeping-a-result-while-editing)
 - [Managing reuse history](#managing-reuse-history)
-- [Change notifications](#change-notifications)
 - [A walkthrough with `Stats`](#a-walkthrough-with-stats)
 
 ## The Model
@@ -203,34 +202,6 @@ _ = err
 
 `EstimatedBytes` excludes document text, caller-held result trees, shared strings, shared expectation/error/environment payloads, map buckets and allocator overhead. It is neither process heap use nor a memory cap. Inspection traverses the cache and should be done by the same owner that edits and parses the document. `Stats` describes the previous parse instead: `Reused` remains the sum of `MemoHits` and `ResumedElements` for that parse.
 
-## Change Notifications
-
-A tool that keeps derived data (an outline, an index, highlights) next to a `Document` can ask it to record what
-changed. Tracking is off by default; enable it before the edits and parses you want to observe:
-
-```go
-doc, err := parser.NewDocument(source)
-if err != nil {
-	return err
-}
-if err := doc.EnableChanges(64); err != nil {
-	return err
-}
-snapshot, parseErr := doc.Snapshot()
-changes := doc.DrainChanges()
-```
-
-The positive limit bounds the number of events, not the size of replacement strings or of the comparison `Snapshot`
-that tracking retains. `DrainChanges` transfers the recorded events and clears the queue. The events say that an edit
-was applied (`ChangeEdit`), what a parse or snapshot produced compared with the previous one (`ChangeOutcome`), or that
-the history overflowed and you must rebuild from the latest state (`ChangeFullRefresh`).
-
-A conservative consumer rebuilds its indexes from the latest `Snapshot` when it sees source invalidation, a changed or
-unavailable output, a gap in revisions or a full-refresh marker, and keeps the edit cursor separate from the version
-of the last displayed `Snapshot`. Notifications never promise a minimal difference between trees. The kinds of events,
-what counts as a change and how interruption is reported are defined in
-[Change Notifications](../../spec/documents.md#change-notifications).
-
 ## A Walkthrough With `Stats`
 
 ```go
@@ -357,5 +328,6 @@ tree while `Parse` runs.
 ## Related Topics
 
 - [What Incremental Parsing Reuses](incremental-reuse.md): which results survive an edit.
+- [Document Change Notifications](document-changes.md): observing edits and parse outcomes.
 - [Streaming](streaming.md): input too big to hold.
 - [Running Parsers](running-parsers.md): backends, position units and the other parse options.

@@ -125,14 +125,14 @@
             "docs/guide/incremental.md",
             "docs/guide/incremental-reuse.md",
             "docs/guide/incremental-performance.md",
-            "docs/guide/incremental-editing.md",
+            "docs/guide/document-changes.md",
             "docs/guide/streaming.md"
           ],
           "first": [
             "docs/guide/incremental.md",
             "docs/guide/incremental-reuse.md",
             "docs/guide/incremental-performance.md",
-            "docs/guide/incremental-editing.md",
+            "docs/guide/document-changes.md",
             "docs/guide/streaming.md"
           ]
         },
@@ -339,8 +339,8 @@
     "/docs/guide/working-with-trees/": "/docs/guide/reading-trees/",
     "/docs/guide/tree-traversal/": "/docs/guide/walking-trees/",
     "/docs/guide/output-schema-and-queries/": "/docs/guide/output-schemas-and-queries/",
-    "/docs/guide/document-changes/": "/docs/guide/incremental/",
     "/docs/guide/predicate-actions-and-filter/": "/docs/guide/context-sensitive/",
-    "/docs/guide/errors-and-recovery/": "/docs/guide/error-messages/"
+    "/docs/guide/errors-and-recovery/": "/docs/guide/error-messages/",
+    "/docs/guide/incremental-editing/": "/docs/guide/sampling-and-fuzzing/"
   }
 }

@@ -433,7 +433,129 @@ must not panic, must not loop, and must handle `SyntaxError` and `SyntaxErrors` 
 with `WithMaxLen`: the fuzzer works best on short inputs.
 
 To fuzz incremental parsing, use `pego edit-fuzz`, which starts from generated inputs too and edits them; see
-[fuzzing edits](incremental-editing.md#fuzzing-edits).
+[Fuzzing Edits](#fuzzing-edits).
+
+## Fuzzing Edits
+
+A `Document` has one rule: its result equals a fresh parse of its text. The rule can be checked mechanically for any grammar
+(see [Incremental Parsing](incremental.md)). `pego edit-fuzz` applies random sequences of edits, undos
+and redos to a `Document` and, at the initial text and at each checkpoint, compares its result with a fresh parse of
+`doc.Text()`: values with their full spans, and errors with their positions, expectations and messages. It runs
+every backend in both position units:
+
+```bash
+pego edit-fuzz -g examples/calculator/calc.pego -seed 1
+```
+
+```text
+ok closure/codepoints: 100 sequences
+ok closure/bytes: 100 sequences
+ok bytecode/codepoints: 100 sequences
+ok bytecode/bytes: 100 sequences
+ok bytecode-iterative/codepoints: 100 sequences
+ok bytecode-iterative/bytes: 100 sequences
+```
+
+The initial texts are the empty text and inputs generated from the grammar (see
+[sampling inputs](sampling-and-fuzzing.md)), or the files given with `-corpus` (a file, or a directory read in name
+order). Replacements mix parts of those texts with partial and complete multibyte characters and random bytes, so
+edits split, join and break UTF-8 sequences. `-backend` and `-unit` take comma-separated lists to narrow the run;
+`-sequences` and `-operations` set its size.
+
+A seed is not a reproducer: generation may change between releases. With `-save-failures dir`, the first failing
+sequence is saved as JSON, and `-minimize` then shrinks it, keeping the same kind of failure, and saves the result
+next to it. Without `-save-failures`, the message includes the failing sequence as JSON. Here a deliberately broken
+`Document` fails:
+
+```bash
+pego edit-fuzz -g calc.pego -save-failures failures -minimize
+```
+
+```text
+pego: calc.pego (seed 0): closure/codepoints: document result differs from a fresh parse at operation 21 (text "…") in error.error.col:
+document: 1
+fresh:    2
+saved to failures/editfuzz-0be4ccb60eadff90.json
+minimized to 4 operations in failures/editfuzz-9d0bcab55578f1b5.json
+```
+
+Replaying the minimized sequence fails the same way:
+
+```bash
+pego edit-fuzz -g calc.pego -replay failures/editfuzz-9d0bcab55578f1b5.json
+```
+
+```text
+pego: failures/editfuzz-9d0bcab55578f1b5.json: closure/codepoints: document result differs from a fresh parse at operation 3 (text " �6\t") in error.error.col:
+document: 1
+fresh:    2
+```
+
+The message names the first difference, here the column of the syntax error, with the two values there; the
+command exits with status 1. The minimized sequence starts from a tab, inserts `6` before it, checks, inserts a
+space and an invalid byte, and checks again:
+
+```json
+{
+  "version": 1,
+  "grammar_sha256": "f4ab154a3405db596d8950b251e7da79836105408eb0fbc56ec0cf6d3e9b272e",
+  "grammar_normalization": "none",
+  "start": "main",
+  "backend": "closure",
+  "unit": "codepoints",
+  "seed": 0,
+  "text_encoding": "base64",
+  "initial_base64": "CQ==",
+  "operations": [
+    { "kind": "edit", "start": 0, "end": 0, "text_base64": "Ng==" },
+    { "kind": "checkpoint" },
+    { "kind": "edit", "start": 0, "end": 0, "text_base64": "IKw=" },
+    { "kind": "checkpoint" }
+  ]
+}
+```
+
+`-replay file` runs a saved sequence, which records its start rule, backend and unit; with `-minimize`, it
+minimizes the sequence into the file's directory unless `-save-failures` is given. The file records the exact text
+and replacements in base64, so invalid UTF-8 survives, and the SHA-256 of the exact grammar source: replaying with
+another grammar, even one differing only in whitespace, is refused. A saved file is never replaced.
+
+Edit positions are in the sequence's unit and refer to the text just before the edit; in `bytes`, they must fall on
+character boundaries, as for `Document.Edit`. `undo` restores the text before the latest edit not yet undone and
+`redo` reapplies it; a new edit clears the redo history. Both edit the same `Document`: undo with the single edit
+that restores the earlier text. After every edit, undo and redo, the Document's text must be the edited text (in
+`codepoints`, with each invalid byte replaced by U+FFFD). A wrong text and a panic in an edit or a parse are
+failures too, reported in `text` and in `panic.edit`, `panic.document`, `panic.fresh` or `panic.both`. Some sequences start from generated texts joined into a few
+kilobytes, which `Document` stores differently from short texts; a `-corpus` of large files tests more of them.
+
+The same is available from Go in package `editfuzz`, for example in a test that keeps saved failures as regression
+cases:
+
+```go
+src, err := os.ReadFile("grammar.pego")
+if err != nil {
+	t.Fatal(err)
+}
+err = editfuzz.Fuzz(src, editfuzz.Options{Start: "main", Backend: pego.BytecodeIterative, Unit: pego.Bytes,
+	Seed: 1, SaveFailures: t.TempDir()})
+if err != nil {
+	t.Fatal(err) // a *editfuzz.Failure, with the saved path
+}
+paths, _ := filepath.Glob("testdata/editfuzz/*.json")
+for _, path := range paths {
+	seq, err := editfuzz.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := editfuzz.Replay(src, seq); err != nil {
+		t.Errorf("%s: %v", path, err)
+	}
+}
+```
+
+`Replay` returns a `*editfuzz.Mismatch` for a failure and an `*editfuzz.InvalidError` for a sequence that does not
+apply; `Minimize` takes a failing sequence and an attempt limit. Callbacks of extensions may run a different
+number of times in the two parses; only results and errors are compared.
 
 ## How It Works, and What It Cannot Do
 
