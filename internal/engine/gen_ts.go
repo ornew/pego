@@ -45,7 +45,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err := opts.validateMaxDepth(true); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo})
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,11 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 	}
 	out.WriteString(gen.vars.String())
 	fmt.Fprintf(&out, "\ndescs = %s;\n", tsStrings(gen.descs))
-	fmt.Fprintf(&out, "printRuns = %q;\n\n", tsPrintRuns())
+	fmt.Fprintf(&out, "printRuns = %q;\n", tsPrintRuns())
+	if prog.sourceInfo {
+		out.WriteString("sourceInfo = true;\n")
+	}
+	out.WriteString("\n")
 	out.WriteString(gen.init.String())
 	out.WriteString("\n")
 	out.WriteString(gen.methods.String())
@@ -230,7 +234,8 @@ function castValue(c: Actx, v: Value, t: FieldType): Value {
 // checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
 // type.
 function checkResult(p: Parser, v: Node | null, t: FieldType, rule: string): void {
-  if (!fieldConforms(p, t, v)) throw new Fatal(new Error(` + "`cannot use ${typeName(v)} as ${t.text} in result of rule ${rule}`" + `));
+  const u = unboxNode(v);
+  if (!fieldConforms(p, t, u)) throw new Fatal(new Error(` + "`cannot use ${typeName(u)} as ${t.text} in result of rule ${rule}`" + `));
 }
 `,
 }
@@ -240,12 +245,20 @@ function checkResult(p: Parser, v: Node | null, t: FieldType, rule: string): voi
 const tsFieldCheckSource = `
 // --- Run-time type checks ---
 
-type FieldType = { kind: string; name: string; elem: FieldType | null; alts: readonly FieldType[]; text: string };
+// A FieldType of kind N with terminal set is a named terminal type, whose values are string nodes.
+type FieldType = { kind: string; name: string; terminal: boolean; elem: FieldType | null; alts: readonly FieldType[]; text: string };
 
-// fieldConforms reports whether v is a value of type t, charging a step for each list element
-// it examines. Error nodes stand for any node type, and for an empty list.
+// fieldConforms reports whether v is a value of type t in the value model, charging a step for
+// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// and node every node, and Error error values; a list type takes a list value, not the node of a
+// repetition.
 function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
+  if (v instanceof Node && nodeShape(v) === shapeBox) {
+    return fieldConforms(p, t, v.box);
+  }
   switch (t.kind) {
+    case "_":
+      return true;
     case "i":
       return typeof v === "number" || typeof v === "bigint";
     case "s":
@@ -263,16 +276,30 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
       return false;
   }
   if (!(v instanceof Node)) return false;
-  if (v.type === "Error") return true;
+  const shape = nodeShape(v);
+  const valueNode = shape === shapeString || shape === shapeTuple || shape === shapeList;
   switch (t.kind) {
     case "n":
-      return true;
+      return valueNode;
     case "t":
-      return v.terminal;
+      return shape === shapeString;
     case "N":
-      return v.type === t.name;
+      switch (t.name) {
+        case "Match":
+          return shape === shapeString;
+        case "Seq":
+        case "List":
+        case "Operator":
+          return valueNode;
+        case "Error":
+        case "Missing":
+          return shape === shapeError;
+      }
+      if (t.terminal) return shape === shapeString;
+      return shape === shapeStruct && v.type === t.name;
     case "l":
-      if (v.type !== "List") return false;
+      if (shape !== shapeListValue) return false;
+      if (t.elem!.kind === "_") return true;
       for (const k of v.children) {
         p.stepWork();
         if (!fieldConforms(p, t.elem!, k)) return false;
@@ -324,7 +351,7 @@ func tsFieldType(t *fieldType) string {
 	for i, a := range t.alts {
 		alts[i] = tsFieldType(a)
 	}
-	return fmt.Sprintf("{ kind: %s, name: %s, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.kind))), tsString(t.name), elem, strings.Join(alts, ", "), tsString(t.text))
+	return fmt.Sprintf("{ kind: %s, name: %s, terminal: %v, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.kind))), tsString(t.name), t.terminal, elem, strings.Join(alts, ", "), tsString(t.text))
 }
 
 // tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
@@ -535,8 +562,12 @@ func (g *tsGen) rules() {
 	// Each rule is a constant, which the generated code refers to.
 	var vars []string
 	for _, r := range all {
-		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %v, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
-			r.id, tsString(r.name), tsStrings(scopes[r].names), r.bodyIsSeq, tsString(r.terminalType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
+		value := tsShaper(r.def.Expr)
+		if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
+			value = 0 // the lines build the rule's value
+		}
+		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
+			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.terminalType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
 		vars = append(vars, g.ruleVar(r))
 	}
 	if g.table == "rules" {
@@ -695,13 +726,17 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		for _, it := range e.Items {
 			items = append(items, g.expr(it, s, build))
 		}
+		// The value is the tuple node of the elements, flattened through nested sequences.
 		if build {
 			b.WriteString("  const start = p.pos;\n  const kids: (Node | null)[] = [];\n")
 		}
 		for i, it := range e.Items {
-			if build && visible(it) {
+			switch {
+			case build && isElems(it):
+				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  for (const k of (v%d as Node).children) {\n    kids.push(k);\n  }\n", i, items[i], i, i)
+			case build && valuedCount(it) == 1:
 				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  kids.push(v%d);\n", i, items[i], i, i)
-			} else {
+			default:
 				fmt.Fprintf(&b, "  if (%s === undefined) {\n    return undefined;\n  }\n", items[i])
 			}
 		}
@@ -715,6 +750,9 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		peeked := false
 		for _, alt := range e.Alts {
 			m := g.expr(alt, s, build)
+			if build {
+				m = g.singleMethod(alt, m, false)
+			}
 			if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
 				// An alternative whose first terminal does not match the next character is skipped,
 				// with the expectation it would record (see generator.first).
@@ -734,6 +772,9 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		g.repeat(&b, e, s, build)
 	case *grammar.Optional:
 		m := g.expr(e.Expr, s, build)
+		if build {
+			m = g.singleMethod(e.Expr, m, false)
+		}
 		fmt.Fprintf(&b, "%s  const prevCut = p.cut;\n  p.cut = false;\n  const v = %s;\n  const cut = p.cut;\n  p.cut = prevCut;\n"+
 			"  if (v !== undefined) {\n    return v;\n  }\n  %s\n  if (cut) {\n    return undefined;\n  }\n  return null;\n", tsMark("  "), m, tsReset)
 	case *grammar.And:
@@ -766,7 +807,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 			g.projectRepeat(&rb, e.Expr.(*grammar.Repeat), field)
 			m = g.method(describe(e.Expr)+" (projected to "+field+")", rb.String()) + "(p)"
 		} else {
-			m = g.expr(e.Expr, s, true)
+			m = g.singleMethod(e.Expr, g.expr(e.Expr, s, true), true)
 		}
 		fmt.Fprintf(&b, "  const v = %s;\n  if (v !== undefined) {\n    p.setCapture(%d, v);\n  }\n", m, slot)
 		if build {
@@ -777,11 +818,8 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 	case *grammar.Cut:
 		b.WriteString("  p.cut = true;\n  return null;\n")
 	case *grammar.Top:
-		if build {
-			b.WriteString("  return new Node(\"Match\", \"\", p.pos, p.pos, \"\", noNodes, noFields, true, true);\n")
-		} else {
-			b.WriteString("  return null;\n")
-		}
+		// _ matches the empty input and has no value.
+		b.WriteString("  return null;\n")
 	case *grammar.Bottom:
 		b.WriteString("  return undefined;\n")
 	case *grammar.BeginInput:
@@ -804,6 +842,33 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		panic(fmt.Sprintf("unsupported expression %T", e))
 	}
 	return g.method(describe(e), b.String()) + "(p)"
+}
+
+// tsShaper returns the runtime shaper of the expression e, its static shape (value_shape.go), packed
+// as the runtime's Shaper.
+func tsShaper(e grammar.Expr) int {
+	s := int(singleModeOf(e))<<2 | valuedCount(e)<<4
+	if isElems(e) {
+		s |= 1
+	}
+	if scopeTuple(e) {
+		s |= 2
+	}
+	return s
+}
+
+// singleMethod returns the call of the value of e where it takes one element (an alternative or
+// the operand of ?), from the building call m of e, as generator.singleMethod does; with capture,
+// that of a capture or a recovered expression.
+func (g *tsGen) singleMethod(e grammar.Expr, m string, capture bool) string {
+	if singleModeOf(e) == singlePass && !isElems(e) {
+		return m
+	}
+	shape := "shapeSingle"
+	if capture {
+		shape = "shapeCapture"
+	}
+	return g.method(describe(e), fmt.Sprintf("  const start = p.pos;\n  const v = %s;\n  if (v === undefined) {\n    return undefined;\n  }\n  return p.%s(%d, v, start);\n", m, shape, tsShaper(e))) + "(p)"
 }
 
 func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bool) {
@@ -842,6 +907,9 @@ func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bo
 		b.WriteString("        p.dropKids(base);\n")
 	}
 	b.WriteString("        return undefined;\n      }\n      break;\n    }\n")
+	if build {
+		fmt.Fprintf(b, "    v = p.scopeValue(%d, v, m0pos);\n", tsShaper(e.Expr))
+	}
 	if own && build {
 		fmt.Fprintf(b, "    v = p.attachCaptures(v, %s, f, m0pos, p.pos);\n", scopeVar)
 	}
@@ -898,7 +966,10 @@ func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)
-			m = g.method("#recover", fmt.Sprintf("  return p.recoverAttr(%s, %s, %v);\n", g.fn(m), g.fn(skip), build && visible(e.Expr))) + "(p)"
+			if build {
+				m = g.singleMethod(e.Expr, m, true)
+			}
+			m = g.method("#recover", fmt.Sprintf("  return p.recoverAttr(%s, %s, %v);\n", g.fn(m), g.fn(skip), build)) + "(p)"
 		}
 	}
 	return m
@@ -946,7 +1017,6 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
 	m := g.fn(g.expr(e, s, !g.cur.novalue && !leanLine(action, locals)))
-	_, isSeq := e.(*grammar.Seq)
 	act := "null"
 	if action != nil && !g.cur.novalue {
 		var locals map[string]string
@@ -959,7 +1029,7 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 	if f := g.tsResultCheck(g.cur, key); f != "" {
 		check = f
 	}
-	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, isSeq: %v, check: %s }", tsStrings(s.names), m, act, isSeq, check)
+	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, value: %d, check: %s }", tsStrings(s.names), m, act, tsShaper(e), check)
 }
 
 // tsInt returns the TypeScript value of the int v: a number when it is a safe integer, otherwise a
@@ -990,11 +1060,9 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 		return "null"
 	case *grammar.CaptureRef:
 		if l, ok := locals[t.Name]; ok {
-			return l
+			return "unboxValue(" + l + ")"
 		}
 		return fmt.Sprintf("c.cap(%d)", s.slots[t.Name])
-	case *grammar.IndexRef:
-		return fmt.Sprintf("c.item(%d)", t.Index)
 	case *grammar.VarRef:
 		return fmt.Sprintf("c.lookup(%s)", tsString(t.Name))
 	case *grammar.Member:

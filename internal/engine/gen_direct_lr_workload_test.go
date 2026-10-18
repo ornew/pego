@@ -123,7 +123,7 @@ func lrInput(n int) string { return "a,b,c," + strings.Repeat(";d,e,f,", n) }
 func TestLRWorkload(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		saved, err := ParseAST(lrInput(1), WithUnit(unit))
-		if err != nil || saved.N != 3 || len(saved.Items) != 3 || saved.Items[0].Text != "d" {
+		if err != nil || saved.N != 3 || len(saved.Items) != 3 || saved.Items[0].Value != "d" {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)

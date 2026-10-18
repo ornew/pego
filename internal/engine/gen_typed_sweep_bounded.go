@@ -26,8 +26,12 @@ func (t *typedGen) outputBoundedSweep(b *strings.Builder, direct, conversion boo
 			if x != nil { m.scalarRefs = true; m.mark(x) }
 		case *bool:
 			if x != nil { m.scalarRefs = true; m.mark(x) }
-		case *Match:
+		case *TNode[string]:
 			if x != nil { m.mark(x) }
+		case *TNode[any]:
+			if x == nil || !m.mark(x) { continue }
+			if !m.canPush() { break }
+			m.push(x.Value)
 		case *Error:
 			if x != nil { m.mark(x) }
 		case *SyntaxError:
@@ -134,7 +138,7 @@ func (t *typedGen) outputBoundedHolder(b *strings.Builder, holder string, lists 
 		fmt.Fprintf(b, "\t\tastSweepChunk(&a.%s, m.live)\n", field)
 	}
 	if direct {
-		b.WriteString("\t\tfor _, block := range p.matchBlocks {\n\t\t\tfor i := range block {\n\t\t\t\tif _, live := m.live[&block[i].Match]; !live { block[i] = tmatch{} }\n\t\t\t}\n\t\t}\n")
+		b.WriteString("\t\tfor _, block := range p.matchBlocks {\n\t\t\tfor i := range block {\n\t\t\t\tif _, live := m.live[&block[i].TNode]; !live { block[i] = tmatch{} }\n\t\t\t}\n\t\t}\n")
 	}
 	b.WriteString("\t}\n")
 	for _, field := range fields {

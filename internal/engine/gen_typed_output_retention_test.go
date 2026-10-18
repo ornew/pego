@@ -40,9 +40,9 @@ rule leaf Token = x:discarded x:small => $x
 rule match Match = discardedMatch y:"b" #atomic => $y
 rule discardedMatch Match = x:"é"+ #atomic => $x
 rule structure Pair = discardedPair y:small => Pair{Text: "b", Left: $y, Right: $y}
-rule list Values = discarded ys:small+ => Values{Items: $ys}
-rule slice SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ => SmallValues{Items: $xs}
-rule discardedHolder LargeValues = xs:largePair #repeat(1) => LargeValues{Items: $xs}
+rule list Values = discarded ys:small+ => Values{Items: $ys.Value}
+rule slice SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ => SmallValues{Items: $xs.Value}
+rule discardedHolder LargeValues = xs:largePair #repeat(1) => LargeValues{Items: $xs.Value}
 rule largePair Pair = x:"é"+ #atomic => Pair{Text: text($x)}
 rule filler Pair = "f" => Pair{Text: "f"}
 rule smallPair Pair = "b" => Pair{Text: "b"}
@@ -163,8 +163,8 @@ func cloneReachableText(value any) {
 	switch v := value.(type) {
 	case *Token:
 		v.Text = strings.Clone(v.Text)
-	case *Match:
-		v.Text = strings.Clone(v.Text)
+	case *TNode[string]:
+		v.Value = strings.Clone(v.Value)
 	case *Pair:
 		v.Text = strings.Clone(v.Text)
 		v.Left.Text = strings.Clone(v.Left.Text)
@@ -194,7 +194,7 @@ func controlResult(kind string, start int) any {
 	case "terminal":
 		return token(0)
 	case "match":
-		return &Match{Span: Span{Start: start, End: start + 1}, Text: "b"}
+		return &TNode[string]{Span: Span{Start: start, End: start + 1}, Value: "b"}
 	case "structure":
 		x := token(0)
 		return &Pair{Span: Span{Start: 0, End: start + 1}, Text: "b", Left: x, Right: x}
@@ -224,8 +224,8 @@ func TestTypedOutputOwnership(t *testing.T) {
 					if v.Text != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
 						t.Fatalf("terminal: %+v", v)
 					}
-				case *Match:
-					if v.Text != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
+				case *TNode[string]:
+					if v.Value != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
 						t.Fatalf("match: %+v", v)
 					}
 				case *Pair:

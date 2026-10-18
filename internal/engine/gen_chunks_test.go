@@ -20,8 +20,8 @@ func TestGeneratedTypedChunkOwnership(t *testing.T) {
 type Item = { Token Token }
 type Group = { Items []Item }
 type Root = { Groups []Group; Missing *Group }
-rule main = gs:group* $$ => Root{Groups: $gs}
-rule group = "[" xs:item* "]" => Group{Items: $xs}
+rule main = gs:group* $$ => Root{Groups: $gs.Value}
+rule group = "[" xs:item* "]" => Group{Items: $xs.Value}
 rule item = x:token => Item{Token: $x}
 rule token Token = "é"`)
 	if err != nil {

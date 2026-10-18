@@ -8,8 +8,9 @@ import (
 // The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
 // instead of Node trees: the value of an expression is an any holding a pointer to a struct or
-// terminal type, *Match, *Error, an int, string or bool, nil, or a *tnode for the CST values that
-// actions consume (Seq, List and Operator nodes). Every step mirrors runtime.go, so the result is
+// terminal type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
+// or a *tnode: a tuple node (Seq), a list node (List), or a tuple or list value. Values other than
+// nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
 //
 // tparser embeds the parser and redefines the methods that handle values; the generated
@@ -21,10 +22,13 @@ type Span struct{ Start, End int }
 func (s *Span) tspan() (int, int)       { return s.Start, s.End }
 func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 
-// Match is a terminal made by a literal, a character class, ., a #atomic or _.
-type Match struct {
+// TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
+// literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
+// elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
+// []any of the elements of a tuple or list.
+type TNode[T any] struct {
 	Span
-	Text string
+	Value T
 }
 
 // Error is input skipped by error recovery (#recover).
@@ -34,11 +38,11 @@ type Error struct {
 	Message string
 }
 
-// tmatch and terror are a Match and an Error while the typed runtime handles them: whether the
-// value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
-// result holds pointers to the embedded Match and Error (tpub).
+// tmatch and terror are a string node and an Error while the typed runtime handles them: whether
+// the value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
+// result holds pointers to the embedded TNode[string] and Error (tpub).
 type tmatch struct {
-	Match
+	TNode[string]
 	fresh bool
 }
 
@@ -47,20 +51,44 @@ type terror struct {
 	fresh bool
 }
 
-// tpub returns the public form of a value: *Match and *Error for tmatch and terror.
+// tpub returns the public form of a value: *TNode[string] and *Error for tmatch and terror, a
+// *TNode[any] for a tuple or list node and a []any for a tuple or list value, with the public
+// forms of their elements.
 func tpub(v any) any {
 	switch x := v.(type) {
 	case *tmatch:
-		return &x.Match
+		return &x.TNode
 	case *terror:
 		return &x.Error
+	case *tnode:
+		elems := make([]any, len(x.kids))
+		for i, k := range x.kids {
+			elems[i] = tpub(k)
+		}
+		if x.typ == typeTupleValue || x.typ == typeListValue {
+			return elems
+		}
+		return &TNode[any]{x.Span, elems}
 	}
 	return v
 }
 
-func tpubMatch(v any) *Match {
+// tpubNode returns the public form of a node of a statically unknown value.
+func tpubNode(v any) *TNode[any] {
+	switch x := v.(type) {
+	case *tmatch:
+		return &TNode[any]{x.Span, x.Value}
+	case *tnode:
+		if n, ok := tpub(x).(*TNode[any]); ok {
+			return n
+		}
+	}
+	return nil
+}
+
+func tpubMatch(v any) *TNode[string] {
 	if x, ok := v.(*tmatch); ok {
-		return &x.Match
+		return &x.TNode
 	}
 	return nil
 }
@@ -87,7 +115,7 @@ type tval interface {
 }
 
 func (m *tmatch) tname() string             { return "Match" }
-func (m *tmatch) ttext() (string, bool)     { return m.Text, true }
+func (m *tmatch) ttext() (string, bool)     { return m.Value, true }
 func (m *tmatch) tkids() []any              { return nil }
 func (m *tmatch) tfield(string) (any, bool) { return nil, true }
 func (m *tmatch) tstruct() bool             { return false }
@@ -106,7 +134,8 @@ func (e *terror) tfield(name string) (any, bool) {
 	return nil, true
 }
 
-// tnode is a Seq, List or Operator node of the typed runtime.
+// tnode is a tuple node (Seq), a list node (List), a tuple value (typeTupleValue) or a list value
+// (typeListValue) of the typed runtime. A tuple node's fields are its captures.
 type tnode struct {
 	Span
 	typ    string
@@ -152,6 +181,31 @@ func asTval(v any) tval {
 	return n
 }
 
+// tisNode reports whether n is a node of the value model (a string node, a tuple or list node,
+// or an error value) rather than a struct or a list or tuple value; see Node.isNode.
+func tisNode(n tval) bool {
+	if t, ok := n.(*tnode); ok {
+		return t.typ == "Seq" || t.typ == "List" || t.typ == "Operator"
+	}
+	return !n.tstruct()
+}
+
+// nodeValue returns the Value of the node n: its text for a string node or an error value, and a
+// tuple or list value sharing its elements otherwise (see parser.nodeValue).
+func (p *tparser) nodeValue(n tval) any {
+	if text, ok := n.ttext(); ok {
+		return text
+	}
+	s, e := n.tspan()
+	typ := typeTupleValue
+	if n.tname() == "List" {
+		typ = typeListValue
+	}
+	v := p.newNode(typ, s, e, n.tkids())
+	v.fresh = false
+	return v
+}
+
 // --- Rules ---
 
 // trule is a rule of the typed runtime: the rule's analysis results and its typed body.
@@ -187,6 +241,46 @@ func tptr[T any](p *T) any {
 	return p
 }
 
+// tback returns the value of a field of an open type (a string node, a tuple or list node, an
+// error value, a union, node, terminal or any) as a value of the typed runtime: the inverse of
+// tpub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
+func tback(v any) any {
+	switch x := v.(type) {
+	case *TNode[string]:
+		if x == nil {
+			return nil
+		}
+		return &tmatch{TNode: *x}
+	case *Error:
+		if x == nil {
+			return nil
+		}
+		return &terror{Error: *x}
+	case *TNode[any]:
+		if x == nil {
+			return nil
+		}
+		switch y := x.Value.(type) {
+		case string:
+			return &tmatch{TNode: TNode[string]{x.Span, y}}
+		case []any:
+			return &tnode{Span: x.Span, typ: "Seq", kids: tbackAll(y)}
+		}
+		return nil
+	case []any:
+		return &tnode{typ: typeTupleValue, kids: tbackAll(x)}
+	}
+	return v
+}
+
+func tbackAll(vs []any) []any {
+	out := make([]any, len(vs))
+	for i, v := range vs {
+		out[i] = tback(v)
+	}
+	return out
+}
+
 func tderef[T any](p *T) any {
 	if p == nil {
 		return nil
@@ -194,9 +288,9 @@ func tderef[T any](p *T) any {
 	return *p
 }
 
-// tlistOf returns a List node of kids, for reading a list field of a struct in an action.
+// tlistOf returns a list value of kids, for reading a list field of a struct in an action.
 func tlistOf(kids []any) any {
-	n := &tnode{typ: "List", kids: kids}
+	n := &tnode{typ: typeListValue, kids: kids}
 	first := true
 	for _, it := range kids {
 		t := asTval(it)
@@ -458,7 +552,7 @@ func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = tmatch{Match{Span{start, end}, text}, fresh}
+	*m = tmatch{TNode[string]{Span{start, end}, text}, fresh}
 	return m
 }
 
@@ -785,18 +879,12 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	}
 	if r.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		n := asTval(v)
-		if r.bodyIsSeq && n != nil {
-			c.items = n.tkids()
-		} else {
-			c.one[0] = n
-			c.items = c.one[:]
-		}
 		return c.result(r.action, r.name)
 	}
 	if r.terminalType != "" {
 		return r.term(p, start, p.pos, p.text(start, p.pos))
 	}
+	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f.vals, start, p.pos)
 	}
@@ -842,6 +930,63 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 		}
 	}
 	return t
+}
+
+// --- Shapes of values (see runtime.go) ---
+
+// shapeTuple returns the tuple node of the result v of a match of [start, p.pos).
+func (p *tparser) shapeTuple(s shaper, v any, start int) any {
+	if s.elems {
+		return v
+	}
+	var kids []any
+	if s.k == 1 {
+		kids = p.newVals(1)
+		kids[0] = v
+	}
+	return p.newNode("Seq", start, p.pos, kids)
+}
+
+// tone returns the one element of the result v.
+func tone(s shaper, v any) any {
+	if s.elems {
+		n, _ := v.(*tnode)
+		if n == nil || len(n.kids) == 0 {
+			return nil
+		}
+		return n.kids[0]
+	}
+	return v
+}
+
+// shapeSingle returns the value of the result v where the expression takes one element; ok is
+// false when it has no value.
+func (p *tparser) shapeSingle(s shaper, v any, start int) (any, bool) {
+	switch s.mode {
+	case singlePass:
+		return tone(s, v), true
+	case singleTuple:
+		return p.shapeTuple(s, v, start), true
+	}
+	return nil, false
+}
+
+// shapeCapture is shapeSingle for a capture or a recovered expression, whose value is the unit
+// node of the range matched when the expression has no value.
+func (p *tparser) shapeCapture(s shaper, v any, start int) any {
+	v, ok := p.shapeSingle(s, v, start)
+	if !ok {
+		v = p.newNode("Seq", start, p.pos, nil)
+	}
+	return v
+}
+
+// scopeValue returns the value of a scope whose body matched [start, p.pos) with the result v.
+func (p *tparser) scopeValue(s shaper, v any, start int) any {
+	if s.tuple {
+		return p.shapeTuple(s, v, start)
+	}
+	return tone(s, v)
 }
 
 // --- Terminals ---
@@ -942,11 +1087,9 @@ func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 type tctx struct {
 	p            *tparser
 	f            *tframe
-	items        []any
 	start, end   int
 	cbase        int
 	lhs, rhs, op any
-	one          [1]any
 }
 
 func (p *tparser) useCtx(c tctx) *tctx {
@@ -965,7 +1108,8 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 }
 
 // finish checks and finishes the value v of an action (see result): a struct the action made
-// takes the rule's range, and the value is no longer fresh.
+// takes the rule's range, and the value is no longer fresh. A value other than a node needs no
+// carrier here.
 func (c *tctx) finish(v any) any {
 	t := asTval(v)
 	if t != nil {
@@ -982,7 +1126,10 @@ func (c *tctx) finish(v any) any {
 		return nil
 	}
 	if t == nil {
-		c.p.evalErrorf("result must be a node, got %s", ttypeName(v))
+		if _, isFn := v.(func(...any) any); isFn {
+			c.p.evalErrorf("result must be a value, got a function")
+		}
+		return v
 	}
 	t.tsetFresh(false)
 	return t
@@ -1038,16 +1185,6 @@ func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 func tvalOrNil(v any) any { return v }
 
 func (c *tctx) cap(slot int) any { return tvalOrNil(c.f.vals[slot]) }
-
-func (c *tctx) item(n int) any {
-	if n == 0 {
-		return c.newList(c.items)
-	}
-	if n > len(c.items) {
-		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
-	}
-	return tvalOrNil(c.items[n-1])
-}
 
 func (c *tctx) lookup(name string) any {
 	if workControlsEnabled && c.p.control != nil {
@@ -1118,9 +1255,10 @@ func (c *tctx) newList(items []any) any {
 	return c.listNode(kids)
 }
 
-// listNode returns a List node with the child list kids (which it takes over).
+// listNode returns a list value with the child list kids (which it takes over). Its range, which
+// the value model does not show, covers the elements that are nodes.
 func (c *tctx) listNode(kids []any) *tnode {
-	n := c.p.newNode("List", c.start, c.start, kids)
+	n := c.p.newNode(typeListValue, c.start, c.start, kids)
 	n.fresh = false
 	first := true
 	for _, it := range kids {
@@ -1146,15 +1284,17 @@ func (c *tctx) member(x any, name string) any {
 	if n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
 	}
-	switch name {
-	case "startPos":
-		s, _ := n.tspan()
-		return s
-	case "endPos":
-		_, e := n.tspan()
-		return e
-	case "children":
-		return c.newList(n.tkids())
+	if tisNode(n) {
+		switch name {
+		case "Start":
+			s, _ := n.tspan()
+			return s
+		case "End":
+			_, e := n.tspan()
+			return e
+		case "Value":
+			return c.p.nodeValue(n)
+		}
 	}
 	if len(name) > 1 && name[0] == '$' {
 		capture := name[1:]
@@ -1428,8 +1568,10 @@ type toperatorsRuleLine struct {
 	scope  []string
 	m      tmatcher
 	action func(*tctx) any
-	isSeq  bool
-	check  func(p *tparser, v any) // checks the line's value against the rule's declared type
+	// value makes the value of an operand line without an action, and of an operator line's
+	// operator, from the value of the line's expression.
+	value shaper
+	check func(p *tparser, v any) // checks the line's value against the rule's declared type
 }
 
 type toperatorsRuleOp struct {
@@ -1615,15 +1757,9 @@ func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, 
 func (p *tparser) lineValue(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if l.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		n := asTval(v)
-		if l.isSeq && n != nil {
-			c.items = n.tkids()
-		} else {
-			c.one[0] = n
-			c.items = c.one[:]
-		}
 		return c.result(l.action, r.name)
 	}
+	v = p.scopeValue(l.value, v, start)
 	if len(l.scope) > 0 {
 		v = p.attachCaptures(v, l.scope, f.vals, start, p.pos)
 	}
@@ -1646,38 +1782,48 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 		end = a.end
 	}
 	l := a.op.line
+	// The operator's value is its one element, or the node of its tuple, which has the line's
+	// captures.
+	opv, ok := p.shapeSingle(l.value, a.v, a.start)
+	if !ok {
+		opv = p.newNode("Seq", a.start, a.end, nil)
+	}
+	if l.value.mode == singleTuple && len(l.scope) > 0 {
+		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
+	}
+	if n := asTval(opv); n != nil {
+		n.tsetFresh(false)
+	}
 	if l.action != nil {
-		op := p.newMatch(a.start, a.end, p.text(a.start, a.end), false)
 		c := p.useCtx(tctx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
-			op: op, lhs: tvalOrNil(lhs), rhs: tvalOrNil(rhs)})
+			op: opv, lhs: lhs, rhs: rhs})
 		v := c.result(l.action, r.name)
 		if l.check != nil {
 			l.check(p, v)
 		}
 		return v
 	}
-	opv := a.v
-	if len(l.scope) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
-	}
-	if n := asTval(opv); n != nil {
-		n.tsetFresh(false)
-	}
+	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
+	// kind, with those captures.
 	var kids []any
+	var fields []tfield
 	switch a.op.kind {
 	case "prefix":
 		kids = p.newVals(2)
-		kids[0], kids[1] = tvalOrNil(opv), tvalOrNil(rhs)
+		kids[0], kids[1] = opv, rhs
+		fields = []tfield{{"op", opv}, {"rhs", rhs}}
 	case "postfix":
 		kids = p.newVals(2)
-		kids[0], kids[1] = tvalOrNil(lhs), tvalOrNil(opv)
+		kids[0], kids[1] = lhs, opv
+		fields = []tfield{{"lhs", lhs}, {"op", opv}}
 	default:
 		kids = p.newVals(3)
-		kids[0], kids[1], kids[2] = tvalOrNil(lhs), tvalOrNil(opv), tvalOrNil(rhs)
+		kids[0], kids[1], kids[2] = lhs, opv, rhs
+		fields = []tfield{{"lhs", lhs}, {"op", opv}, {"rhs", rhs}}
 	}
-	n := p.newNode("Operator", start, end, kids)
+	n := p.newNode("Seq", start, end, kids)
 	n.fresh = false
-	n.fields = []tfield{{"operator", a.op.id}}
+	n.fields = fields
 	return n
 }
 
@@ -1755,7 +1901,7 @@ func (c *tctx) fold(fn string, right bool, acc, list any, f func(acc, item any) 
 // listField materializes a typed struct's list field during an action read.
 // The ordinary tfield path remains independent of a parser or work controller.
 func (p *tparser) listField(kids []any) any {
-	n := &tnode{typ: "List", kids: kids}
+	n := &tnode{typ: typeListValue, kids: kids}
 	first := true
 	for _, it := range kids {
 		p.stepWork()

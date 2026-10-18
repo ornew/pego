@@ -1035,7 +1035,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case ENil:
 			stack = append(stack, nil)
 		case ECap:
-			stack = append(stack, nodeOrNil(ctx.frame.vals[in.A]))
+			stack = append(stack, unboxNode(ctx.frame.vals[in.A]))
 		case EItem:
 			n := int(in.A)
 			if n == 0 {

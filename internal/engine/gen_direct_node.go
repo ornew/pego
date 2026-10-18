@@ -54,7 +54,7 @@ func (d *dgen) nodeCapture(e *grammar.Capture, s *dscope, build bool, fail strin
 	if field := g.proj[e.Name]; field != "" {
 		v = d.nodeRepeat(e.Expr.(*grammar.Repeat), s, true, fail, field)
 	} else {
-		v = d.expr(e.Expr, s, true, fail)
+		v = d.captured(e.Expr, s, fail)
 	}
 	d.line("p.setCapture(%d, %s)", slot, d.rd(v))
 	if !build {
@@ -104,6 +104,9 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	}
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build && field == "", f)
+	if build && field == "" {
+		v = d.scopeValue(e.Expr, v, m.pos)
+	}
 	if own {
 		d.line("p.frame = %s", d.rd(prev))
 		if build {

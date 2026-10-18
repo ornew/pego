@@ -34,29 +34,49 @@ export interface NodeField {
 const noNodes: readonly (Node | null)[] = Object.freeze([]);
 const noFields: readonly NodeField[] = Object.freeze([]);
 
-/** The JSON form of a node (Node.toJSON). */
-export interface NodeJSON {
-  type: string;
-  rule?: string;
+/**
+ * The JSON form of a value (Node.toJSON): an object for a node, an error value or a struct, an
+ * array for a tuple or list value, and the carried value for any other value.
+ */
+export type NodeJSON = unknown;
+
+// ValueNodeJSON and ErrorJSON are the JSON forms of a node and of an error value.
+interface ValueNodeJSON {
   start: number;
   end: number;
-  text?: string;
-  children?: readonly (Node | null)[];
-  fields?: { [name: string]: unknown };
+  value: unknown;
+  rule?: string;
+  captures?: { [name: string]: unknown };
 }
 
-/** A value produced by parsing: a CST node, a terminal, a list, or a struct built by an action. */
+interface ErrorJSON {
+  start: number;
+  end: number;
+  error: unknown;
+  expected?: unknown;
+}
+
+// Kinds of the value model that are not nodes. Their names cannot be type names.
+const typeBox = "(box)"; // a value other than a node, carried where a node is expected
+const typeTupleValue = "(tuple)"; // a tuple value: the Value of a tuple node
+const typeListValue = "(list)"; // a list value: the Value of a list node, or a list made by an action
+
+/**
+ * A value of a parse result: a node, whose value is a string, a tuple or a list, an error value of
+ * recovery, a struct built by an action, or a carrier of another value. In JSON a node is an object
+ * with the members start, end and value, and, with source information, rule and captures.
+ */
 export class Node {
-  /** The type name: Match, Seq, List, Operator, Error, or a type of the grammar. */
+  /** The type name: Match, Seq, List, Operator or Error for the kinds of nodes, or a type of the grammar. */
   type: string;
-  /** The name of the rule that produced the node, when it has no action. */
+  /** The name of the rule that produced the node, with source information. */
   rule: string;
   /** The range in the input, in the position unit (end is exclusive). */
   start: number;
   end: number;
-  /** The text of a terminal. */
+  /** The text of a string node. */
   text: string;
-  /** The children of Seq, List and Operator nodes. Omitted elements are null. */
+  /** The elements of a tuple or list. Omitted elements are null. */
   children: readonly (Node | null)[];
   /** The struct fields and captures, in the order they were set. */
   fields: readonly NodeField[];
@@ -64,6 +84,10 @@ export class Node {
   fresh: boolean;
   /** @internal The node is a terminal. */
   terminal: boolean;
+  /** @internal The captures in fields are output (source information). */
+  labeled = false;
+  /** @internal The value carried by a box. */
+  box: Value = null;
 
   constructor(
     type: string,
@@ -102,37 +126,131 @@ export class Node {
     return this.terminal;
   }
 
-  /** Formats the node as an S-expression-like string, as the engine's Node.String does. */
+  /**
+   * Renders the value as an S-expression of its shape, without positions, as the engine's
+   * Node.String does: a string is quoted, a tuple is ( ), a list [ ], null is nil, a struct is
+   * Name{Field: value}, and an error is error("message"). With source information, a node is
+   * followed by @rule, a captured element is preceded by name:, and a capture whose value is not an
+   * element is written after the elements as &name:value.
+   */
   toString(): string {
-    return print(this, writeValue);
+    return sexpr(this);
   }
 
   /**
-   * Returns the JSON form of the node, which JSON.stringify uses. Ints outside the safe integer range
-   * become (inexact) numbers; marshal encodes them exactly.
+   * Returns the JSON form of the value, which JSON.stringify uses. Ints outside the safe integer
+   * range become (inexact) numbers; marshal encodes them exactly.
    */
   toJSON(): NodeJSON {
-    // The keys in the order of the engine's JSON (objects keep the order of insertion).
-    const o: NodeJSON =
-      this.rule !== ""
-        ? { type: this.type, rule: this.rule, start: this.start, end: this.end }
-        : { type: this.type, start: this.start, end: this.end };
-    if (this.text !== "") {
-      o.text = this.text;
-    }
-    if (this.children.length > 0) {
-      o.children = this.children;
-    }
-    if (this.fields.length > 0) {
-      // Without a prototype, a field named __proto__ is a field like the others.
-      const fs: { [name: string]: unknown } = Object.create(null);
-      for (const f of sortedFields(this.fields)) {
-        fs[f.name] = typeof f.value === "bigint" ? Number(f.value) : f.value;
+    const shape = nodeShape(this);
+    switch (shape) {
+      case shapeBox:
+        return typeof this.box === "bigint" ? Number(this.box) : this.box;
+      case shapeString:
+      case shapeTuple:
+      case shapeList: {
+        // The keys in the order of the engine's JSON (objects keep the order of insertion).
+        const o: ValueNodeJSON = { start: this.start, end: this.end, value: shape === shapeString ? this.text : this.children };
+        if (this.rule !== "") {
+          o.rule = this.rule;
+        }
+        if (this.labeled && this.fields.length > 0) {
+          const caps: { [name: string]: unknown } = Object.create(null);
+          for (const c of captureLocations(this)) {
+            caps[c.name] = c.side ? { value: typeof c.value === "bigint" ? Number(c.value) : c.value } : { path: c.path };
+          }
+          o.captures = caps;
+        }
+        return o;
       }
-      o.fields = fs;
+      case shapeError: {
+        const o: ErrorJSON = { start: this.start, end: this.end, error: this.field("message") };
+        const expected = lookupField(this, "expected");
+        if (expected !== undefined) {
+          o.expected = expected;
+        }
+        return o;
+      }
+      case shapeTupleValue:
+      case shapeListValue:
+        return this.children;
     }
-    return o;
+    // Without a prototype, a field named __proto__ is a field like the others.
+    const fs: { [name: string]: unknown } = Object.create(null);
+    for (const f of sortedFields(this.fields)) {
+      fs[f.name] = typeof f.value === "bigint" ? Number(f.value) : f.value;
+    }
+    return { type: this.type, fields: fs };
   }
+}
+
+// Shapes of a Node: what it stands for in the value model.
+const shapeString = 0; // a node whose value is a string (text)
+const shapeTuple = 1; // a node whose value is a tuple (children)
+const shapeList = 2; // a node whose value is a list (children)
+const shapeError = 3; // an error value of recovery
+const shapeBox = 4; // a box carrying a value other than a node
+const shapeTupleValue = 5; // a tuple value (children)
+const shapeListValue = 6; // a list value (children)
+const shapeStruct = 7; // a struct value (fields)
+
+function nodeShape(n: Node): number {
+  switch (n.type) {
+    case "Match":
+      return shapeString;
+    case "Seq":
+    case "Operator":
+      return shapeTuple;
+    case "List":
+      return shapeList;
+    case "Error":
+      return shapeError;
+    case typeBox:
+      return shapeBox;
+    case typeTupleValue:
+      return shapeTupleValue;
+    case typeListValue:
+      return shapeListValue;
+  }
+  return n.terminal ? shapeString : shapeStruct;
+}
+
+// isValueNode reports whether n is a node of the value model (a string node, a tuple or list node,
+// or an error value) rather than a struct, a box or a list or tuple value.
+function isValueNode(n: Node): boolean {
+  switch (n.type) {
+    case "Match":
+    case "Seq":
+    case "List":
+    case "Operator":
+    case "Error":
+      return true;
+  }
+  return n.terminal;
+}
+
+// unboxNode returns the value that the carrier n stands for: the box's value for a box, and n
+// otherwise.
+function unboxNode(n: Node | null): Value {
+  if (n !== null && n.type === typeBox) {
+    return n.box;
+  }
+  return n;
+}
+
+// unboxValue is unboxNode for a value that may be a carrier.
+function unboxValue(v: Value): Value {
+  return v instanceof Node ? unboxNode(v) : v;
+}
+
+// lookupField returns the value of the field name of n, or undefined if n has none.
+function lookupField(n: Node, name: string): Value | undefined {
+  for (const f of n.fields) {
+    if (f.name === name) {
+      return f.value;
+    }
+  }
+  return undefined;
 }
 
 function sortedFields(fs: readonly NodeField[]): NodeField[] {
@@ -155,9 +273,62 @@ function setField(n: Node, name: string, v: Value, control: WorkControl | null =
   fs.push({ name, value: v });
 }
 
+// CaptureLocation is where a capture of a node is: a path of tuple indexes into the node's value,
+// or, for a capture whose value is not an element (one in a positive lookahead), its value.
+interface CaptureLocation {
+  name: string;
+  path: number[];
+  side: boolean;
+  value: Value;
+}
+
+// captureLocations returns the locations of the captures of the tuple node n, in name order.
+function captureLocations(n: Node): CaptureLocation[] {
+  const out: CaptureLocation[] = [];
+  for (const f of sortedFields(n.fields)) {
+    const v = f.value;
+    if (!(v instanceof Node)) {
+      if (v !== null) {
+        out.push({ name: f.name, path: [], side: true, value: v });
+      }
+      continue;
+    }
+    const path = findElement(n, v);
+    if (path !== null) {
+      out.push({ name: f.name, path, side: false, value: null });
+    } else {
+      out.push({ name: f.name, path: [], side: true, value: v });
+    }
+  }
+  return out;
+}
+
+// findElement returns the path of x among the elements of the tuple node n and of the tuple nodes
+// nested in it, breadth first, or null.
+function findElement(n: Node, x: Node): number[] | null {
+  const queue: [Node, number[]][] = [[n, []]];
+  for (let q = 0; q < queue.length; q++) {
+    const [m, path] = queue[q]!;
+    for (let i = 0; i < m.children.length; i++) {
+      const c = m.children[i]!;
+      if (c === null) {
+        continue;
+      }
+      const p = path.concat(i);
+      if (c === x) {
+        return p;
+      }
+      if (nodeShape(c) === shapeTuple && c.rule === "") {
+        queue.push([c, p]);
+      }
+    }
+  }
+  return null;
+}
+
 /**
- * Encodes a node (or null) as JSON exactly as Go's encoding/json encodes the engine's Node: the same
- * keys in the same order, field names sorted, and the same escapes (including <, > and &). Unlike
+ * Encodes a value (or null) as JSON exactly as the engine encodes it: the same members in the same
+ * order, names sorted, and the same escapes as Go's encoding/json (including <, > and &). Unlike
  * encoding/json, which fails beyond 10,000 levels, it encodes trees of any depth.
  */
 export function marshal(n: Node | null): string {
@@ -195,41 +366,78 @@ function print(v: Value, write: (v: Value, out: (string | Pending)[]) => void): 
   return b.join("");
 }
 
+function marshalElements(kids: readonly (Node | null)[], out: (string | Pending)[]): void {
+  out.push("[");
+  kids.forEach((c, i) => {
+    if (i > 0) {
+      out.push(",");
+    }
+    out.push(new Pending(c));
+  });
+  out.push("]");
+}
+
 function marshalValue(v: Value, out: (string | Pending)[]): void {
   if (v === null) {
     out.push("null");
-  } else if (v instanceof Node) {
-    out.push('{"type":' + quoteJSON(v.type));
-    if (v.rule !== "") {
-      out.push(',"rule":' + quoteJSON(v.rule));
-    }
-    out.push(',"start":' + v.start + ',"end":' + v.end);
-    if (v.text !== "") {
-      out.push(',"text":' + quoteJSON(v.text));
-    }
-    if (v.children.length > 0) {
-      out.push(',"children":[');
-      v.children.forEach((c, i) => {
-        if (i > 0) {
-          out.push(",");
-        }
-        out.push(new Pending(c));
-      });
-      out.push("]");
-    }
-    if (v.fields.length > 0) {
-      out.push(',"fields":{');
-      sortedFields(v.fields).forEach((f, i) => {
-        out.push((i > 0 ? "," : "") + quoteJSON(f.name) + ":", new Pending(f.value));
-      });
-      out.push("}");
-    }
-    out.push("}");
-  } else if (typeof v === "string") {
-    out.push(quoteJSON(v));
-  } else {
-    out.push(String(v));
+    return;
   }
+  if (!(v instanceof Node)) {
+    out.push(typeof v === "string" ? quoteJSON(v) : String(v));
+    return;
+  }
+  const shape = nodeShape(v);
+  switch (shape) {
+    case shapeBox:
+      // The box stands for its value.
+      out.push(new Pending(v.box));
+      return;
+    case shapeString:
+    case shapeTuple:
+    case shapeList:
+      out.push('{"start":' + v.start + ',"end":' + v.end + ',"value":');
+      if (shape === shapeString) {
+        out.push(quoteJSON(v.text));
+      } else {
+        marshalElements(v.children, out);
+      }
+      // Source information: the rule, and where the captures are.
+      if (v.rule !== "") {
+        out.push(',"rule":' + quoteJSON(v.rule));
+      }
+      if (v.labeled && v.fields.length > 0) {
+        out.push(',"captures":{');
+        captureLocations(v).forEach((c, i) => {
+          out.push((i > 0 ? "," : "") + quoteJSON(c.name));
+          if (c.side) {
+            out.push(':{"value":', new Pending(c.value), "}");
+          } else {
+            out.push(':{"path":[' + c.path.join(",") + "]}");
+          }
+        });
+        out.push("}");
+      }
+      out.push("}");
+      return;
+    case shapeError: {
+      out.push('{"start":' + v.start + ',"end":' + v.end + ',"error":', new Pending(v.field("message")));
+      const expected = lookupField(v, "expected");
+      if (expected !== undefined) {
+        out.push(',"expected":', new Pending(expected));
+      }
+      out.push("}");
+      return;
+    }
+    case shapeTupleValue:
+    case shapeListValue:
+      marshalElements(v.children, out);
+      return;
+  }
+  out.push('{"type":' + quoteJSON(v.type) + ',"fields":{');
+  sortedFields(v.fields).forEach((f, i) => {
+    out.push((i > 0 ? "," : "") + quoteJSON(f.name) + ":", new Pending(f.value));
+  });
+  out.push("}}");
 }
 
 const hex = "0123456789abcdef";
@@ -288,58 +496,151 @@ function quoteJSON(s: string): string {
   return out + s.slice(from) + '"';
 }
 
-// writeValue writes v as the engine's Node.String does (see print).
-function writeValue(v: Value, out: (string | Pending)[]): void {
-  if (v === null) {
-    out.push("nil");
-  } else if (v instanceof Node) {
-    writeNode(v, out);
-  } else if (typeof v === "string") {
-    out.push("`" + v + "`");
-  } else {
-    out.push(String(v));
-  }
+// SexprFrame is a step of sexpr, which keeps its own stack for deep trees.
+interface SexprFrame {
+  v: Value;
+  i: number;
+  enter: boolean;
+  labels: Map<Node, string[]> | null;
+  side: CaptureLocation[];
+  close: string;
 }
 
-function writeNode(n: Node, out: (string | Pending)[]): void {
-  if (n.type === "List") {
-    out.push("[");
-    n.children.forEach((c, i) => {
-      if (i > 0) {
-        out.push(" ");
+function sexprFrame(v: Value, labels: Map<Node, string[]> | null): SexprFrame {
+  return { v, i: 0, enter: true, labels, side: [], close: "" };
+}
+
+// sexpr writes v as the engine's Node.String does (see Node.toString).
+function sexpr(v: Value): string {
+  const b: string[] = [];
+  const stack: SexprFrame[] = [sexprFrame(v, null)];
+  while (stack.length > 0) {
+    const f = stack[stack.length - 1]!;
+    const n = f.v;
+    if (!(n instanceof Node)) {
+      b.push(sexprScalar(n));
+      stack.pop();
+      continue;
+    }
+    const sh = nodeShape(n);
+    if (f.enter) {
+      f.enter = false;
+      switch (sh) {
+        case shapeBox:
+          f.v = n.box;
+          f.enter = true;
+          continue;
+        case shapeString:
+          b.push(quoteGo(n.text));
+          f.close = ruleSuffix(n);
+          f.i = -1;
+          break;
+        case shapeError: {
+          b.push("error(" + quoteGo(String(n.field("message"))));
+          const expected = lookupField(n, "expected");
+          if (expected !== undefined) {
+            b.push(" expected " + quoteGo(String(expected)));
+          }
+          b.push(")");
+          f.i = -1;
+          break;
+        }
+        case shapeTuple:
+        case shapeTupleValue:
+          b.push("(");
+          f.close = ")" + ruleSuffix(n);
+          if (sh === shapeTuple && n.labeled) {
+            const labels = new Map<Node, string[]>();
+            for (const c of captureLocations(n)) {
+              if (c.side) {
+                f.side.push(c);
+                continue;
+              }
+              let x: Node = n;
+              for (const i of c.path) {
+                x = x.children[i]!;
+              }
+              const names = labels.get(x);
+              if (names === undefined) {
+                labels.set(x, [c.name]);
+              } else {
+                names.push(c.name);
+              }
+            }
+            f.labels = labels;
+          }
+          break;
+        case shapeList:
+        case shapeListValue:
+          b.push("[");
+          f.close = "]" + ruleSuffix(n);
+          break;
+        default:
+          b.push(n.type + "{");
+          f.close = "}";
       }
-      out.push(new Pending(c));
-    });
-    writeFields(n, n.children.length > 0, out);
-    out.push("]");
-  } else if (n.terminal) {
-    if (n.type !== "Match") {
-      out.push(n.type);
     }
-    out.push(quoteGo(n.text));
-    if (n.fields.length > 0) {
-      out.push("{");
-      writeFields(n, false, out);
-      out.push("}");
+    if (f.i < 0) {
+      b.push(f.close);
+      stack.pop();
+      continue;
     }
-  } else {
-    out.push("(" + n.type);
-    for (const c of n.children) {
-      out.push(" ", new Pending(c));
+    if (sh === shapeStruct) {
+      const fields = sortedFields(n.fields);
+      if (f.i === fields.length) {
+        b.push(f.close);
+        stack.pop();
+        continue;
+      }
+      if (f.i > 0) {
+        b.push(", ");
+      }
+      const field = fields[f.i]!;
+      b.push(field.name + ": ");
+      f.i++;
+      stack.push(sexprFrame(field.value, null));
+      continue;
     }
-    writeFields(n, true, out);
-    out.push(")");
+    if (f.i === n.children.length) {
+      f.side.forEach((c, j) => {
+        if (f.i > 0 || j > 0) {
+          b.push(" ");
+        }
+        b.push("&" + c.name + ":" + sexpr(c.value));
+      });
+      b.push(f.close);
+      stack.pop();
+      continue;
+    }
+    if (f.i > 0) {
+      b.push(" ");
+    }
+    const c = n.children[f.i]!;
+    f.i++;
+    const labels = f.labels;
+    if (labels !== null && c !== null) {
+      for (const name of labels.get(c) ?? []) {
+        b.push(name + ":");
+      }
+    }
+    // A tuple nested in the node's own tuple holds the node's captures too.
+    stack.push(sexprFrame(c, c !== null && nodeShape(c) === shapeTuple && c.rule === "" ? labels : null));
   }
-  if (n.rule !== "") {
-    out.push("@" + n.rule);
-  }
+  return b.join("");
 }
 
-function writeFields(n: Node, sep: boolean, out: (string | Pending)[]): void {
-  for (const f of sortedFields(n.fields)) {
-    out.push((sep ? " " : "") + f.name + "=", new Pending(f.value));
-    sep = true;
+function ruleSuffix(n: Node): string {
+  return n.rule !== "" ? "@" + n.rule : "";
+}
+
+function sexprScalar(v: Value): string {
+  if (v === null) {
+    return "nil";
   }
+  if (typeof v === "string") {
+    return quoteGo(v);
+  }
+  return String(v);
 }
 
 // printRuns is the table of the code points that Go's strconv.IsPrint accepts, which the generated
@@ -493,7 +794,7 @@ interface Rule {
   scope: string[]; // capture names of the rule body, in slot order
   body: (p: Parser, min: number) => R;
   action: Action | null;
-  bodyIsSeq: boolean;
+  value: Shaper; // makes the value of a body without an action (see scopeValue)
   terminalType: string;
   // memo means the rule's results are memoized. It is false for transient rules, whose entries
   // could never be reused.
@@ -512,6 +813,27 @@ interface Rule {
   check: ((p: Parser, v: Node | null) => void) | null;
 }
 
+// Shaper is the static shape of an expression that the runtime converts its matcher's result with,
+// packed in a number: shaperElems (the matcher returns the tuple node of its elements), shaperTuple
+// (the value of a scope is the node of its tuple, rather than its one element), how the expression
+// takes one element in bits 2 and 3 (singleNone, singlePass or singleTuple), and the number of
+// valued elements from bit 4.
+type Shaper = number;
+
+const shaperElems = 1;
+const shaperTuple = 2;
+const singleNone = 0; // no value
+const singlePass = 1; // the one element
+const singleTuple = 2; // the node of the tuple of the elements
+
+// shaperOne returns the one element of the result v.
+function shaperOne(s: Shaper, v: Node | null): Node | null {
+  if ((s & shaperElems) !== 0) {
+    return v === null || v.children.length === 0 ? null : v.children[0]!;
+  }
+  return v;
+}
+
 function failBody(): R {
   return undefined;
 }
@@ -520,7 +842,7 @@ function mkRule(
   id: number,
   name: string,
   scope: string[],
-  bodyIsSeq: boolean,
+  value: Shaper,
   terminalType: string,
   memo: boolean,
   leader: boolean,
@@ -534,7 +856,7 @@ function mkRule(
     scope,
     body: failBody,
     action: null,
-    bodyIsSeq,
+    value,
     terminalType,
     memo,
     leader,
@@ -545,6 +867,10 @@ function mkRule(
     check: null,
   };
 }
+
+// sourceInfo reports that values record source information: the rule that produced each node and
+// where its captures are. The generated code sets it.
+let sourceInfo = false;
 
 // descs maps expectation IDs to their descriptions; the generated code sets the whole table.
 let descs: string[] = [];
@@ -1800,17 +2126,12 @@ class Parser {
     }
     if (r.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
-      if (r.bodyIsSeq && v !== null) {
-        c.items = v.children;
-      } else {
-        c.one[0] = v;
-        c.items = c.one;
-      }
       return c.result(r.action, r.name);
     }
     if (r.terminalType !== "") {
-      return new Node(r.terminalType, r.name, start, this.pos, this.text(start, this.pos), noNodes, noFields, false, true);
+      return new Node(r.terminalType, sourceInfo ? r.name : "", start, this.pos, this.text(start, this.pos), noNodes, noFields, false, true);
     }
+    v = this.scopeValue(r.value, v, start);
     if (r.scope.length > 0) {
       v = this.attachCaptures(v, r.scope, f, start, this.pos);
     }
@@ -1818,7 +2139,7 @@ class Parser {
       return null;
     }
     if (v.fresh) {
-      if (v.rule === "") {
+      if (sourceInfo && v.rule === "") {
         v.rule = r.name;
       }
       v.fresh = false;
@@ -1847,6 +2168,7 @@ class Parser {
     if (wrap) {
       n = new Node("Seq", "", start, end, "", [v], noFields, true, false);
     }
+    n.labeled = sourceInfo;
     for (let i = 0; i < names.length; i++) {
       this.stepWork();
       const c = f[i]!;
@@ -1855,6 +2177,58 @@ class Parser {
       }
     }
     return n;
+  }
+
+  // --- Shapes of values ---
+  //
+  // A shaper (Shaper) converts the result of an expression's matcher to the value where the
+  // expression takes one element (an alternative, the operand of ?, a capture or a recovered
+  // expression) or is a scope (a rule body, a repetition element or an Operators Rule line).
+
+  // shapeTuple returns the tuple node of the result v of a match of [start, this.pos).
+  shapeTuple(s: Shaper, v: Node | null, start: number): Node {
+    if ((s & shaperElems) !== 0) {
+      return v as Node;
+    }
+    return new Node("Seq", "", start, this.pos, "", s >> 4 === 1 ? [v] : [], noFields, true, false);
+  }
+
+  // shapeSingle returns the value of the result v where the expression takes one element, or null
+  // when it has no value.
+  shapeSingle(s: Shaper, v: Node | null, start: number): Node | null {
+    switch ((s >> 2) & 3) {
+      case singlePass:
+        return shaperOne(s, v);
+      case singleTuple:
+        return this.shapeTuple(s, v, start);
+    }
+    return null;
+  }
+
+  // shapeCapture is shapeSingle for a capture or a recovered expression, whose value is the unit
+  // node of the range matched when the expression has no value.
+  shapeCapture(s: Shaper, v: Node | null, start: number): Node | null {
+    if (((s >> 2) & 3) === singleNone) {
+      return new Node("Seq", "", start, this.pos, "", [], noFields, true, false);
+    }
+    return this.shapeSingle(s, v, start);
+  }
+
+  // scopeValue returns the value of a scope whose body matched [start, this.pos) with the result v.
+  scopeValue(s: Shaper, v: Node | null, start: number): Node | null {
+    if ((s & shaperTuple) !== 0) {
+      return this.shapeTuple(s, v, start);
+    }
+    return shaperOne(s, v);
+  }
+
+  // nodeValue returns the Value of the node n: its text for a string node, and a tuple or list
+  // value sharing its elements otherwise.
+  nodeValue(n: Node): Value {
+    if (n.terminal) {
+      return n.text;
+    }
+    return new Node(n.type === "List" ? typeListValue : typeTupleValue, "", n.start, n.end, "", n.children, noFields, false, false);
   }
 
   // --- Terminals ---
@@ -2061,7 +2435,6 @@ class Parser {
   useCtx(f: Frame, start: number, end: number, lhs: Value, rhs: Value, op: Value): Actx {
     const c = this.ac;
     c.f = f;
-    c.items = noNodes;
     c.start = start;
     c.end = end;
     c.cbase = this.created.length;
@@ -2374,19 +2747,14 @@ class Parser {
   lineValue(r: Rule, l: OperatorsRuleLine, f: Frame, v: Node | null, start: number): Node | null {
     if (l.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
-      if (l.isSeq && v !== null) {
-        c.items = v.children;
-      } else {
-        c.one[0] = v;
-        c.items = c.one;
-      }
       return c.result(l.action, r.name);
     }
+    v = this.scopeValue(l.value, v, start);
     if (l.scope.length > 0) {
       v = this.attachCaptures(v, l.scope, f, start, this.pos);
     }
     if (v !== null && v.fresh) {
-      if (v.rule === "") {
+      if (sourceInfo && v.rule === "") {
         v.rule = r.name;
       }
       v.fresh = false;
@@ -2407,34 +2775,48 @@ class Parser {
       end = a.end;
     }
     const l = a.op.line;
+    // The operator's value is its one element, or the node of its tuple, which has the line's
+    // captures.
+    let opv: Node | null;
+    if (((l.value >> 2) & 3) === singleNone) {
+      opv = new Node("Seq", "", a.start, a.end, "", [], noFields, false, false);
+    } else {
+      opv = this.shapeSingle(l.value, a.v, a.start);
+    }
+    if (((l.value >> 2) & 3) === singleTuple && l.scope.length > 0) {
+      opv = this.attachCaptures(opv, l.scope, a.frame, a.start, a.end);
+    }
+    if (opv !== null) {
+      opv.fresh = false;
+    }
     if (l.action !== null) {
-      const op = new Node("Match", "", a.start, a.end, this.text(a.start, a.end), noNodes, noFields, false, true);
-      const c = this.useCtx(a.frame, start, end, lhs, rhs, op);
+      const c = this.useCtx(a.frame, start, end, unboxNode(lhs), unboxNode(rhs), unboxNode(opv));
       const v = c.result(l.action, r.name);
       if (l.check !== null) {
         l.check(this, v);
       }
       return v;
     }
-    let opv = a.v;
-    if (l.scope.length > 0) {
-      opv = this.attachCaptures(opv, l.scope, a.frame, a.start, a.end);
-    }
-    if (opv !== null) {
-      opv.fresh = false;
-    }
+    // Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
+    // kind, with those captures.
     let kids: (Node | null)[];
+    let fields: NodeField[];
     switch (a.op.kind) {
       case "prefix":
         kids = [opv, rhs];
+        fields = [{ name: "op", value: opv }, { name: "rhs", value: rhs }];
         break;
       case "postfix":
         kids = [lhs, opv];
+        fields = [{ name: "lhs", value: lhs }, { name: "op", value: opv }];
         break;
       default:
         kids = [lhs, opv, rhs];
+        fields = [{ name: "lhs", value: lhs }, { name: "op", value: opv }, { name: "rhs", value: rhs }];
     }
-    return new Node("Operator", r.name, start, end, "", kids, [{ name: "operator", value: a.op.id }], false, false);
+    const n = new Node("Seq", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
+    n.labeled = sourceInfo;
+    return n;
   }
 }
 
@@ -2473,14 +2855,12 @@ function evalError(msg: string): never {
 class Actx {
   p: Parser;
   f: Frame = emptyFrame;
-  items: readonly (Node | null)[] = noNodes;
   start = 0;
   end = 0;
   cbase = 0; // start of p.created made by this evaluation
   lhs: Value = null;
   rhs: Value = null;
   op: Value = null;
-  one: (Node | null)[] = [null]; // items for a single item
 
   constructor(p: Parser) {
     this.p = p;
@@ -2513,7 +2893,13 @@ class Actx {
         return null;
       }
       if (!(v instanceof Node)) {
-        return evalError(`result must be a node, got ${typeName(v)}`);
+        if (typeof (v as unknown) === "function") {
+          return evalError("result must be a value, got a function");
+        }
+        // A value other than a node travels boxed, with the range of the action's input.
+        const b = new Node(typeBox, "", this.start, this.end, "", noNodes, noFields, false, false);
+        b.box = v;
+        return b;
       }
       const n = v;
       const created = this.p.created;
@@ -2538,17 +2924,7 @@ class Actx {
   }
 
   cap(slot: number): Value {
-    return this.f[slot]!;
-  }
-
-  item(n: number): Value {
-    if (n === 0) {
-      return this.newList(this.items);
-    }
-    if (n > this.items.length) {
-      evalError(`$${n} is out of range (${this.items.length} elements)`);
-    }
-    return this.items[n - 1]!;
+    return unboxValue(this.f[slot]!);
   }
 
   lookup(name: string): Value {
@@ -2597,9 +2973,10 @@ class Actx {
     return n;
   }
 
-  // listNode returns a List node with the child list kids (which it takes over).
+  // listNode returns a list value with the child list kids (which it takes over). Its range, which
+  // the value model does not show, covers the elements that are nodes.
   listNode(kids: (Node | null)[]): Node {
-    const n = new Node("List", "", this.start, this.start, "", kids, noFields, false, false);
+    const n = new Node(typeListValue, "", this.start, this.start, "", kids, noFields, false, false);
     let first = true;
     for (const it of kids) {
       this.work();
@@ -2621,13 +2998,15 @@ class Actx {
     if (!(x instanceof Node)) {
       return evalError(`cannot access .${name} of ${typeName(x)}`);
     }
-    switch (name) {
-      case "startPos":
-        return x.start;
-      case "endPos":
-        return x.end;
-      case "children":
-        return this.newList(x.children);
+    if (isValueNode(x)) {
+      switch (name) {
+        case "Start":
+          return x.start;
+        case "End":
+          return x.end;
+        case "Value":
+          return this.p.nodeValue(x);
+      }
     }
     const fields = structFields.get(x.type);
     if (name.startsWith("$")) {
@@ -2635,7 +3014,7 @@ class Actx {
       if (fields !== undefined) {
         evalError(`${x.type} has no capture ${name.slice(1)}`);
       }
-      return getFieldWork(x, name.slice(1), this.p.control);
+      return unboxValue(getFieldWork(x, name.slice(1), this.p.control));
     }
     if (fields !== undefined && !fields.has(name)) {
       evalError(`${x.type} has no field ${name}`);
@@ -2694,7 +3073,7 @@ class Actx {
     const base = this.p.kidStack.length;
     for (const item of listItems("filter", list)) {
       this.work();
-      const value = f(item);
+      const value = f(unboxValue(item));
       if (typeof value !== "boolean") {
         evalError(`filter: predicate must produce a bool, got ${typeName(value)}`);
       }
@@ -2728,7 +3107,7 @@ class Actx {
     this.work();
     for (const it of listItems("map", list)) {
       this.work();
-      const v = asNode("map", f(it));
+      const v = asNode("map", f(unboxValue(it)));
       this.p.kidStack.push(v);
     }
   }
@@ -2798,7 +3177,7 @@ function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Va
   const items = listItems(fn, list);
   for (let i = 0; i < items.length; i++) {
     control?.charge(0, 1);
-    acc = f(acc, items[right ? items.length - 1 - i : i]!);
+    acc = f(acc, unboxValue(items[right ? items.length - 1 - i : i]!));
   }
   return acc;
 }
@@ -2876,7 +3255,7 @@ function rtBinary(op: string, l: Value, r: Value): Value {
       if (r < 0 || r >= items.length) {
         return evalError(`index ${r} out of range for a list of ${items.length} elements`);
       }
-      return items[Number(r)] ?? null;
+      return unboxValue(items[Number(r)] ?? null);
     }
   }
   if (isInt(l) && isInt(r)) {
@@ -2955,7 +3334,9 @@ interface OperatorsRuleLine {
   scope: string[];
   m: Matcher;
   action: Action | null;
-  isSeq: boolean;
+  // value makes the value of an operand line without an action, and of an operator line's
+  // operator, from the value of the line's expression.
+  value: Shaper;
   // check checks the line's value against the rule's declared type (null if it needs no check).
   check: ((p: Parser, v: Node | null) => void) | null;
 }

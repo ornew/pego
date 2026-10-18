@@ -13,7 +13,7 @@ func (c *evalCtx) pushFiltered(args []any) error {
 	}
 	for _, item := range items {
 		c.p.stepWork()
-		value, err := f.apply(nodeOrNil(item), nil)
+		value, err := f.apply(unboxNode(item), nil)
 		if err != nil {
 			return err
 		}

@@ -239,7 +239,8 @@ rule x = operators {
     level { infix right "^" }
     level { prefix "-" }
 }`, []string{strings.Repeat("-", 3*DefaultMaxDepth) + "x", strings.Repeat("x^", 3*DefaultMaxDepth) + "x", strings.Repeat("-", DefaultMaxDepth/4) + "x"}})
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+	t.Run("values", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
+	t.Run("source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
 }
 
 func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opts GenOptions) {
@@ -271,7 +272,8 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, g%[3]d.WithUnit(u)); return n, err },\n", i, i, i)
 		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
-		prog := compile(t, c.src, Options{noProjections: true}) // the generated code projects (project.go)
+		// The generated code projects (project.go), and records source information as asked.
+		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
 		for _, in := range c.inputs {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})

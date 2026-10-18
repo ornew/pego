@@ -47,7 +47,7 @@ rule atom Atom = "é"
 
 const typedRecoveryWorkloadTypes = `type Atom terminal
 type Post = { X Expr }
-type Expr ~ Atom | Post
+type Expr ~ Atom | Post | error
 type Doc = { Items []Expr; N int }
 rule main Doc = items:(e:expr -";")* $$ => Doc{Items: map($items, (x) => x.$e), N: len($items)}
 `

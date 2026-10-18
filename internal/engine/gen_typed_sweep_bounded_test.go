@@ -54,6 +54,9 @@ func TestGeneratedBoundedTypedOutputSweep(t *testing.T) {
 					t.Fatal("bounded-only selection omitted publication hooks")
 				}
 				whitebox := grammar.whitebox
+				if grammar.name == "open" && !conversion {
+					whitebox = "import \"testing\"\n" // the open whitebox inspects conversion owners
+				}
 				if grammar.name == "closed" {
 					whitebox += boundedSweepOwnerWhitebox(t, string(code), false)
 					if !conversion {
@@ -102,7 +105,7 @@ func boundedSweepOwnerWhitebox(t *testing.T, code string, direct bool) string {
 	t.Helper()
 	holder, fits, publish, name := "astConv", "a.outputFits()", "a.publish(root,err)", "Conversion"
 	promote := "a.promoteScalarOwners(m)"
-	matchSetup := `deadMatch:=astNew(&a.match);deadMatch.Text="discarded match"
+	matchSetup := `deadMatch:=astNew(&a.match);deadMatch.Value="discarded match"
  deadError:=astNew(&a.error);deadError.Text="discarded error"`
 	matchDirs, matchAssert := "", `if deadError.Text!="discarded error" {t.Fatal("partial error clearing")}`
 	if direct {
@@ -150,7 +153,7 @@ func TestBounded__NAME__InteriorPromotionFallback(t *testing.T) {
  if !m.keepAll || m.complete {t.Fatal("interior promotion must exhaust work atomically")}
  __PUBLISH__
  for i:=range tokens {if tokens[i].Text!="preserve" {t.Fatal("partial clearing after promotion fallback",i)}}
- if deadMatch.Text!="discarded match" {t.Fatal("Match cleared after promotion fallback")}
+ if deadMatch.Value!="discarded match" {t.Fatal("Match cleared after promotion fallback")}
  if a.tToken.blocks!=nil {t.Fatal("fallback retained ownership directory")}
 }
 func TestBounded__NAME__GeneratedFieldAdmission(t *testing.T) {
@@ -197,7 +200,7 @@ func TestBounded__NAME__AtomicFallback(t *testing.T) {
   dirs:=boundedDirectoryBackings(a)
   __MATCH_DIRS__
   __PUBLISH__
-  if dead.Text!="discarded token" || live.Text!="live token" || deadPair.Label!="discarded pair" || deadPair.Left!=dead || pair.Left!=live || cells[0]!=deadPair || cells[1]!=pair || deadMatch.Text!="discarded match" {t.Fatal("partial object/list/Match clearing",reason)}
+  if dead.Text!="discarded token" || live.Text!="live token" || deadPair.Label!="discarded pair" || deadPair.Left!=dead || pair.Left!=live || cells[0]!=deadPair || cells[1]!=pair || deadMatch.Value!="discarded match" {t.Fatal("partial object/list/Match clearing",reason)}
   if reason=="owned slots" && a.tToken.free[0].Text!="oversized owner" {t.Fatal("preflight wrote into declined owner")}
   boundedAssertDirectoriesDropped(t,a,dirs)
   __MATCH_ASSERT__

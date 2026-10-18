@@ -107,7 +107,7 @@ func checkLocal(v *Doc, err error, n int, rejected bool, unit Unit) bool {
     width := 1
     if unit == Bytes { width = 2 }
     for i, item := range v.Items {
-        if item.Text != "é" || item.Start != i*(width+1) || item.End != item.Start+width { return false }
+        if item.Value != "é" || item.Start != i*(width+1) || item.End != item.Start+width { return false }
     }
     return true
 }

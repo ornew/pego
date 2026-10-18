@@ -65,7 +65,7 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		saved, err := ParseAST(operatorsRuleInput(2), WithUnit(unit))
 		post, ok := saved.(*Post)
-		if err != nil || !ok || post.N != 3 || len(post.Items) != 3 || post.Items[0].Text != "b" {
+		if err != nil || !ok || post.N != 3 || len(post.Items) != 3 || post.Items[0].Value != "b" {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)

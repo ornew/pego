@@ -63,7 +63,7 @@ func outputLeaf(x ty) bool {
 func (t *typedGen) outputSweep(b *strings.Builder, direct, conversion bool) {
 	b.WriteString(astOutputSweepHelpers)
 	b.WriteString("func (m *astOutputMark) run(root any, err error) {\n\tm.todo = append(m.todo, root, err)\n\tfor len(m.todo) != 0 && !m.keepAll {\n\t\ti := len(m.todo)-1\n\t\tv := m.todo[i]\n\t\tm.todo[i] = nil\n\t\tm.todo = m.todo[:i]\n\t\tswitch x := v.(type) {\n")
-	b.WriteString("\t\tcase nil, int, string, bool:\n\t\tcase *int:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *string:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *bool:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *Match:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *Error:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *SyntaxError:\n\t\t\t// Diagnostic fields contain only positions and strings.\n\t\tcase SyntaxErrors:\n\t\t\tastMarkCells(m, x)\n\t\tcase Fields:\n\t\t\tfor i := range x[:cap(x)] { if m.mark(&x[:cap(x)][i]) { m.todo = append(m.todo, x[:cap(x)][i].Value) } }\n\t\tcase *Node:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tastMarkCells(m, x.Children)\n\t\t\tm.todo = append(m.todo, x.Fields)\n")
+	b.WriteString("\t\tcase nil, int, string, bool:\n\t\tcase *int:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *string:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *bool:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *TNode[string]:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *TNode[any]:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tm.todo = append(m.todo, x.Value)\n\t\tcase *Error:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *SyntaxError:\n\t\t\t// Diagnostic fields contain only positions and strings.\n\t\tcase SyntaxErrors:\n\t\t\tastMarkCells(m, x)\n\t\tcase Fields:\n\t\t\tfor i := range x[:cap(x)] { if m.mark(&x[:cap(x)][i]) { m.todo = append(m.todo, x[:cap(x)][i].Value) } }\n\t\tcase *Node:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tastMarkCells(m, x.Children)\n\t\t\tm.todo = append(m.todo, x.Fields)\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n", t.names[name])
 		for _, f := range t.info.fields[name] {
@@ -126,7 +126,7 @@ func (t *typedGen) outputHolder(b *strings.Builder, holder string, lists []listC
 		fmt.Fprintf(b, "\tif !m.keepAll { astSweepChunk(&a.%s, m.live) }\n\tastDropChunk(&a.%s)\n", field, field)
 	}
 	if direct {
-		b.WriteString("\tif !m.keepAll {\n\t\tfor _, block := range p.matchBlocks {\n\t\t\tfor i := range block {\n\t\t\t\tif _, live := m.live[&block[i].Match]; !live { block[i] = tmatch{} }\n\t\t\t}\n\t\t}\n\t}\n\tclear(p.matchBlocks)\n\tp.matchBlocks = nil\n")
+		b.WriteString("\tif !m.keepAll {\n\t\tfor _, block := range p.matchBlocks {\n\t\t\tfor i := range block {\n\t\t\t\tif _, live := m.live[&block[i].TNode]; !live { block[i] = tmatch{} }\n\t\t\t}\n\t\t}\n\t}\n\tclear(p.matchBlocks)\n\tp.matchBlocks = nil\n")
 	}
 	b.WriteString("}\n\n")
 	t.outputOwnerPromotion(b, holder, direct)
@@ -150,7 +150,7 @@ func (t *typedGen) outputOwnerPromotion(b *strings.Builder, holder string, direc
 	}
 	span := []string{t.span + ".Start", t.span + ".End"}
 	if !direct {
-		emit("a.match.blocks", "&block[i]", append(append([]string{}, span...), "Text"))
+		emit("a.match.blocks", "&block[i]", append(append([]string{}, span...), "Value"))
 		emit("a.error.blocks", "&block[i]", append(append([]string{}, span...), "Text", "Message"))
 	}
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
@@ -170,7 +170,7 @@ func (t *typedGen) outputOwnerPromotion(b *strings.Builder, holder string, direc
 		emit("a.t"+t.names[name]+".blocks", "&block[i]", fields)
 	}
 	if direct {
-		emit("p.matchBlocks", "&block[i].Match", append(append([]string{}, span...), "Text"))
+		emit("p.matchBlocks", "&block[i].TNode", append(append([]string{}, span...), "Value"))
 	}
 	b.WriteString("\t\tif len(m.live) == before { return }\n\t}\n}\n\n")
 }

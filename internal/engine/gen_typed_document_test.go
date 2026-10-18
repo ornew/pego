@@ -121,6 +121,7 @@ import (
  optional "typeddocument/optional"
  recovery "typeddocument/recovery"
 )
+func isRecoveryError(v any) bool { _, ok := v.(*recovery.Error); return ok }
 func TestNilAndRecovery(t *testing.T) {
  for _, unit := range []optional.Unit{optional.CodePoints, optional.Bytes} {
   d, err := optional.NewDocument("", optional.WithUnit(unit))
@@ -136,7 +137,7 @@ func TestNilAndRecovery(t *testing.T) {
   if err != nil { t.Fatal(err) }
   got, gotErr := d.ParseAST()
   want, wantErr := recovery.ParseAST("?", recovery.WithUnit(unit))
-  if _, ok := gotErr.(recovery.SyntaxErrors); !ok || !reflect.DeepEqual(got, want) || got == nil || got.T != nil || gotErr.Error() != wantErr.Error() {
+  if _, ok := gotErr.(recovery.SyntaxErrors); !ok || !reflect.DeepEqual(got, want) || got == nil || !isRecoveryError(got.T) || gotErr.Error() != wantErr.Error() {
    t.Fatalf("recovered result: %#v / %#v, %v / %v", got, want, gotErr, wantErr)
   }
   if err := d.Edit(0, 1, "é"); err != nil { t.Fatal(err) }

@@ -17,7 +17,7 @@ type Token terminal
 type ScalarOwner = { Active bool; Count int; Text string; Child *Token; Next *string }
 type Pair = { Left Token; Right Token; M Match; Label string }
 type Box = { Items []Pair; Nested [][]Token; S []string; N []int; B []bool; Opt *string; PI *int; PB *bool }
-type Tree ~ Branch | Token
+type Tree ~ Branch | Token | error
 type Branch = { Left Tree; Right Tree }
 type Expr ~ Bin | Token
 type Bin = { Left Expr; Right Expr; Op Match }
@@ -28,7 +28,7 @@ rule constructed Token = discarded "b" => Token{"b"}
 rule match Match = "b" #atomic
 rule discardedMatch Match = "é"+ #atomic
 rule matches Match = discardedMatch y:"b" #atomic => $y
-rule recovery []Tree = (recoverItem #recover(skip=([^;]+ ";")))*
+rule recovery []Tree = xs:(recoverItem #recover(skip=([^;]+ ";")))* => $xs.Value
 rule recoverItem Token = "b;"
 rule fold Tree = first:token rest:token* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})
 rule lr Tree = branch / token
@@ -46,8 +46,8 @@ rule nilValue = "n" => nil
 
 const typedSweepOpenGrammar = `
 type Token terminal
-type Choice ~ Token | Match
-type Mixed ~ Token | Match | int
+type Choice ~ Token | Match | error
+type Mixed ~ Token | Match | int | error
 type Record = { A any; Raw Seq; Items []Choice; M Mixed; O *string }
 rule main Record = x:"b" #atomic raw:("?" "?") => Record{A: $x, Raw: $raw, Items: []Choice{$x}, M: $x, O: "b"}
 rule token Token = "b"
@@ -118,7 +118,8 @@ func TestGeneratedTypedOutputSweep(t *testing.T) {
 						"options.json": metadata}
 					// Keep an explicit private-control label because JSON omits private options.
 					files["variant.json"] = []byte(`{"conversion":` + strconv.FormatBool(conversion) + `,"sweep":` + strconv.FormatBool(sweep) + `}`)
-					if sweep {
+					// The open whitebox inspects conversion owners, which the typed runtime does not use.
+					if sweep && (grammar.name != "open" || conversion) {
 						whitebox := grammar.whitebox
 						if grammar.name == "closed" && !conversion {
 							whitebox += typedSweepDirectWhitebox
@@ -166,10 +167,10 @@ func TestSweepPublic(t *testing.T) {
   if _,e:=ParseAST(input,WithUnit(unit),WithMaxDepth(1)); e==nil {t.Fatal("depth failure")}
   if _,e:=ParseRuleAST("actionError","b",WithUnit(unit)); e==nil || !strings.Contains(e.Error(),"action") {t.Fatal("action failure",e)}
   m,e:=ParseRuleAST("matches",input,WithUnit(unit)); if e!=nil {t.Fatal(e)}
-  match:=m.(*Match); if match.Text!="b" || match.Start!=300*width || match.End!=match.Start+1 {t.Fatal("Match owner")}
+  match:=m.(*TNode[string]); if match.Value!="b" || match.Start!=300*width || match.End!=match.Start+1 {t.Fatal("Match owner")}
   r,e:=ParseRuleAST("recovery","b;1;b;",WithUnit(unit)); if _,ok:=e.(SyntaxErrors); !ok {t.Fatal("recovery",e)}
   tree:=r.([]Tree); if len(tree)!=3 {t.Fatal("recovery list")}; if _,ok:=tree[1].(*Error); !ok {t.Fatal("recovered union")}
-  ex,e:=ParseRuleAST("expr","b+b+b",WithUnit(unit)); if e!=nil || ex.(*Bin).Op.Text!="+" || ex.(*Bin).Left==nil {t.Fatal("Operators Rule",e)}
+  ex,e:=ParseRuleAST("expr","b+b+b",WithUnit(unit)); if e!=nil || ex.(*Bin).Op.Value!="+" || ex.(*Bin).Left==nil {t.Fatal("Operators Rule",e)}
   for _,rule:=range []string{"fold","lr"} {
    count:=6000; if forceConversion {count=6}
    result,e:=ParseRuleAST(rule,strings.Repeat("b",count),WithUnit(unit)); if e!=nil {t.Fatal(rule,e)}
@@ -179,7 +180,7 @@ func TestSweepPublic(t *testing.T) {
    if levels!=count || result.(*Token).Text!="b" {t.Fatal("DAG traversal",levels)}
   }
   if _,e:=ParseAST("éb",WithUnit(unit)); e!=nil {t.Fatal(e)}
-  if *v.Items[0].Left!=before || terminal.Text!="b" || terminal.Start!=0 || terminal.End!=300*width+1 || match.Text!="b" || tree[0].(*Token).Text!="b;" || ex.(*Bin).Op.Text!="+" {t.Fatal("later parses mutated result")}
+  if *v.Items[0].Left!=before || terminal.Text!="b" || terminal.Start!=0 || terminal.End!=300*width+1 || match.Value!="b" || tree[0].(*Token).Text!="b;" || ex.(*Bin).Op.Value!="+" {t.Fatal("later parses mutated result")}
   calls:=0
   _,e=ParseRuleAST("main","éb",func(o *parseOptions){calls++; _,inner:=ParseAST("éb"); if inner!=nil {panic(inner)}; o.unit=unit})
   if e!=nil || calls!=1 {t.Fatal("options evaluated more than once")}
@@ -199,14 +200,14 @@ func TestSweepConversionInteriorPointers(t *testing.T) {
   tokens[0]=Token{Span:Span{4,9},Text:"live"};tokens[1].Text="next";tokens[2].Text="dead"
   owners:=make([]ScalarOwner,1);a.tScalarOwner.blocks=[][]ScalarOwner{owners}
   owners[0]=ScalarOwner{Active:true,Count:42,Text:"owner",Child:&tokens[0],Next:&tokens[1].Text}
-  matches:=make([]Match,1);a.match.blocks=[][]Match{matches};matches[0].Text="match"
+  matches:=make([]TNode[string],1);a.match.blocks=[][]TNode[string]{matches};matches[0].Value="match"
   errors:=make([]Error,1);a.error.blocks=[][]Error{errors};errors[0].Message="error"
   var root any
-  switch field {case "text":root=&tokens[0].Text;case "start":root=&tokens[0].Start;case "end":root=&tokens[0].End;case "bool":root=&owners[0].Active;case "count":root=&owners[0].Count;case "ownerText":root=&owners[0].Text;case "match":root=&matches[0].Text;case "error":root=&errors[0].Message}
+  switch field {case "text":root=&tokens[0].Text;case "start":root=&tokens[0].Start;case "end":root=&tokens[0].End;case "bool":root=&owners[0].Active;case "count":root=&owners[0].Count;case "ownerText":root=&owners[0].Text;case "match":root=&matches[0].Value;case "error":root=&errors[0].Message}
   a.publish(root,nil)
   switch field {case "text","start","end":if tokens[0].Text!="live" || tokens[0].Start!=4 || tokens[0].End!=9 {t.Fatal("terminal interior pointer",field)}
    case "bool","count","ownerText":if !owners[0].Active || owners[0].Count!=42 || owners[0].Text!="owner" || tokens[0].Text!="live" || tokens[1].Text!="next" {t.Fatal("parent and transitive promotion",field)}
-   case "match":if matches[0].Text!="match" {t.Fatal("match interior")};case "error":if errors[0].Message!="error" {t.Fatal("error interior")}}
+   case "match":if matches[0].Value!="match" {t.Fatal("match interior")};case "error":if errors[0].Message!="error" {t.Fatal("error interior")}}
   if tokens[2].Text!="" {t.Fatal("eligible discarded sibling not cleared",field)}
  }
 }
@@ -214,11 +215,11 @@ func TestSweepConversionOwners(t *testing.T) {
  a:=&astConv{}
  dead:=astNew(&a.tToken); dead.Text="dead"
  live:=astNew(&a.tToken); live.Text="live"
- deadMatch:=astNew(&a.match); deadMatch.Text="dead"
- keep:=astNew(&a.match); keep.Text="keep"
+ deadMatch:=astNew(&a.match); deadMatch.Value="dead"
+ keep:=astNew(&a.match); keep.Value="keep"
  pair:=astNew(&a.tPair); *pair=Pair{Left:live,Right:live,M:keep}
  a.publish(&Box{Items:[]*Pair{pair}},nil)
- if dead.Text!="" || deadMatch.Text!="" || live.Text!="live" || keep.Text!="keep" || pair.Left!=live || pair.M!=keep {t.Fatal("conversion owners")}
+ if dead.Text!="" || deadMatch.Value!="" || live.Text!="live" || keep.Value!="keep" || pair.Left!=live || pair.M!=keep {t.Fatal("conversion owners")}
 }
 `
 
@@ -230,14 +231,14 @@ func TestSweepDirectInteriorPointers(t *testing.T) {
   tokens[0]=Token{Span:Span{4,9},Text:"live"};tokens[1].Text="next";tokens[2].Text="dead"
   owners:=make([]ScalarOwner,1);a.tScalarOwner.blocks=[][]ScalarOwner{owners}
   owners[0]=ScalarOwner{Active:true,Count:42,Text:"owner",Child:&tokens[0],Next:&tokens[1].Text}
-  matches:=make([]tmatch,2);p.matchBlocks=[][]tmatch{matches};matches[0].Match=Match{Span:Span{2,7},Text:"match"};matches[1].Text="dead"
+  matches:=make([]tmatch,2);p.matchBlocks=[][]tmatch{matches};matches[0].TNode=TNode[string]{Span:Span{2,7},Value:"match"};matches[1].Value="dead"
   var root any
-  switch field {case "text":root=&tokens[0].Text;case "start":root=&tokens[0].Start;case "end":root=&tokens[0].End;case "bool":root=&owners[0].Active;case "count":root=&owners[0].Count;case "ownerText":root=&owners[0].Text;case "matchText":root=&matches[0].Text;case "matchStart":root=&matches[0].Start;case "matchEnd":root=&matches[0].End}
+  switch field {case "text":root=&tokens[0].Text;case "start":root=&tokens[0].Start;case "end":root=&tokens[0].End;case "bool":root=&owners[0].Active;case "count":root=&owners[0].Count;case "ownerText":root=&owners[0].Text;case "matchText":root=&matches[0].Value;case "matchStart":root=&matches[0].Start;case "matchEnd":root=&matches[0].End}
   a.publish(root,nil,p)
   switch field {case "text","start","end":if tokens[0].Text!="live" || tokens[0].Start!=4 || tokens[0].End!=9 {t.Fatal("terminal interior pointer",field)}
    case "bool","count","ownerText":if !owners[0].Active || owners[0].Count!=42 || owners[0].Text!="owner" || tokens[0].Text!="live" || tokens[1].Text!="next" {t.Fatal("parent and transitive promotion",field)}
-   default:if matches[0].Text!="match" || matches[0].Start!=2 || matches[0].End!=7 {t.Fatal("direct match interior",field)}}
-  if tokens[2].Text!="" || matches[1].Text!="" {t.Fatal("eligible discarded sibling not cleared",field)}
+   default:if matches[0].Value!="match" || matches[0].Start!=2 || matches[0].End!=7 {t.Fatal("direct match interior",field)}}
+  if tokens[2].Text!="" || matches[1].Value!="" {t.Fatal("eligible discarded sibling not cleared",field)}
  }
 }
 func TestSweepOwnedGraph(t *testing.T) {
@@ -247,11 +248,11 @@ func TestSweepOwnedGraph(t *testing.T) {
  pair:=astNew(&a.tPair); *pair=Pair{Left:live,Right:live,Label:"pair"}
  p:=&tparser{parser:&parser{}}
  deadMatch:=p.newMatch(0,100,"discarded match",true)
- keep:=p.newMatch(100,101,"m",true); pair.M=&keep.Match
+ keep:=p.newMatch(100,101,"m",true); pair.M=&keep.TNode
  root:=&Box{Items:[]*Pair{pair},Nested:[][]*Token{{live}}}
  a.publish(root,nil,p)
- if dead.Text!="" || deadMatch.Text!="" {t.Fatal("unreachable object/Match not cleared")}
- if live.Text!="live" || pair.Left!=live || pair.Right!=live || pair.M!=&keep.Match || keep.Text!="m" {t.Fatal("reachable alias cleared")}
+ if dead.Text!="" || deadMatch.Value!="" {t.Fatal("unreachable object/Match not cleared")}
+ if live.Text!="live" || pair.Left!=live || pair.Right!=live || pair.M!=&keep.TNode || keep.Value!="m" {t.Fatal("reachable alias cleared")}
  if len(a.tToken.blocks)!=0 || len(p.matchBlocks)!=0 {t.Fatal("ownership directories retained")}
 }
 `
@@ -309,12 +310,12 @@ import (
 func TestSweepOpenValues(t *testing.T) {
  for _,unit:=range []Unit{CodePoints,Bytes} {
   v,e:=ParseAST("b??",WithUnit(unit)); if e!=nil || v==nil || v.Raw==nil || v.O==nil || *v.O!="b" {t.Fatal("open root",e)}
-  if v.A.(*Match).Text!="b" || v.Items[0].(*Match).Text!="b" || v.M.(*Match).Text!="b" {t.Fatal("open conversion")}
+  if v.A.(*TNode[string]).Value!="b" || v.Items[0].(*TNode[string]).Value!="b" || v.M.(*TNode[string]).Value!="b" {t.Fatal("open conversion")}
   named,e:=ParseRuleAST("main","b??",WithUnit(unit)); if e!=nil || !reflect.DeepEqual(v,named) {t.Fatal("named conversion")}
   recovered,e:=ParseRuleAST("recovery","1;",WithUnit(unit)); if _,ok:=e.(SyntaxErrors); !ok {t.Fatal("open recovery",e)}
   r:=recovered.(*Record); if r.A.(*Error).Text!="1;" || r.M.(*Error).Text!="1;" || r.Items[0].(*Error).Text!="1;" {t.Fatal("open recovered values")}
   if _,e:=ParseAST("b",WithUnit(unit)); e==nil {t.Fatal("failed input")}
-  if v.A.(*Match).Text!="b" || v.Raw.Children[0].Text!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
+  if v.A.(*TNode[string]).Value!="b" || v.Raw.Value.([]any)[0].(*TNode[string]).Value!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
  }
 }
 `
@@ -323,10 +324,10 @@ const typedSweepOpenWhitebox = `
 import "testing"
 func TestSweepOpenCells(t *testing.T) {
  a:=&astConv{}; live:=astNew(&a.tToken); live.Text="live"; dead:=astNew(&a.tToken); dead.Text="dead"
- raw:=&Node{}; raw.Fields=Fields{{Name:"alias",Value:live},{Name:"cycle",Value:raw}}
+ raw:=&TNode[any]{}; raw.Value=[]any{live,raw}
  root:=&Record{A:live,Raw:raw,M:live,Items:[]Choice{live}}
  a.publish(root,nil)
- if dead.Text!="" || root.A!=live || root.M!=live || root.Items[0]!=live || raw.Fields[0].Value!=live || live.Text!="live" {t.Fatal("any/CST/union aliases")}
+ if dead.Text!="" || root.A!=live || root.M!=live || root.Items[0]!=live || raw.Value.([]any)[0]!=live || live.Text!="live" {t.Fatal("any/CST/union aliases")}
  for _,unknown:=range []func(*Token)any{func(v *Token)any{return map[string]any{"hidden":v}},func(v *Token)any{return struct{Hidden *Token}{v}}} {
   a:=&astConv{}; value:=astNew(&a.tToken); value.Text="must stay"
   known:=astNew(&a.tToken);known.Text="known"

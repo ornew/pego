@@ -312,7 +312,7 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
 		v, _ := c.p.valueField(n.Fields, capture)
-		return v, nil
+		return unboxValue(v), nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)
@@ -586,7 +586,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
 			}
-			if acc, err = f.apply(acc, nodeOrNil(it)); err != nil {
+			if acc, err = f.apply(acc, unboxNode(it)); err != nil {
 				return nil, err
 			}
 		}
@@ -658,7 +658,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		}
 		for _, it := range items {
 			c.p.stepWork()
-			v, err := f.apply(nodeOrNil(it), nil)
+			v, err := f.apply(unboxNode(it), nil)
 			if err != nil {
 				return err
 			}
@@ -764,7 +764,7 @@ func (p *parser) index(l, i any) (any, error) {
 	if n < 0 || n >= len(items) {
 		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for a list of ", strconv.Itoa(len(items)), " elements")
 	}
-	return nodeOrNil(items[n]), nil
+	return unboxNode(items[n]), nil
 }
 
 func listItems(fn string, v any) ([]*Node, error) {

@@ -19,38 +19,30 @@ import (
 	"unicode/utf8"
 )
 
-// Node is a value of a parse result.
-// In JSON it is an object with the members type, rule (if any), start, end, text (if any), children
-// (if any) and fields (if any).
+// Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
+// value of recovery, a struct built by an action, or a carrier of another value. In JSON a node is
+// an object with the members start, end and value, and, with source information, rule and
+// captures.
 type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
 	Start    int32     // the range in the input, in the parse's position unit (End is exclusive)
 	End      int32
-	Text     string  // the text of a terminal
-	Children []*Node // the children of Seq, List and Operator nodes
+	Text     string  // the text of a string node
+	Children []*Node // the elements of a tuple or list
 	Fields   Fields  // struct fields and captures
 
 	fresh    bool
 	terminal bool
+	labeled  bool // the captures in Fields are output (source information)
+	box      any  // the value carried by a box
 }
 
-// Type returns the node's type name: Match, Seq, List, Operator or Error for CST nodes, or the name
-// of a type of the grammar.
+// Type returns the node's type name: Match, Seq, List, Operator or Error for the kinds of nodes,
+// or the name of a type of the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
-// Rule returns the name of the rule that produced the node, if it was produced by a rule without an
-// action, or "".
+// Rule returns the name of the rule that produced the node, with source information, or "".
 func (n *Node) Rule() string { return n.kind.ruleName() }
-
-type nodeJSON struct {
-	Type     string  `json:"type"`
-	Rule     string  `json:"rule,omitempty"`
-	Start    int32   `json:"start"`
-	End      int32   `json:"end"`
-	Text     string  `json:"text,omitempty"`
-	Children []*Node `json:"children,omitempty"`
-	Fields   Fields  `json:"fields,omitempty"`
-}
 
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
@@ -82,7 +74,14 @@ func (k *nodeKind) ruleName() string {
 	return k.rule
 }
 
-var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error"}
+// Kinds of the value model that are not nodes. Their names cannot be type names.
+const (
+	typeBox        = "(box)"   // a value other than a node, carried where a node pointer is expected
+	typeTupleValue = "(tuple)" // a tuple value: the Value of a tuple node
+	typeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
+)
+
+var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error", typeBox, typeTupleValue, typeListValue}
 
 var (
 	kindMatch    = kindOf("Match", "")
@@ -90,7 +89,53 @@ var (
 	kindList     = kindOf("List", "")
 	kindOperator = kindOf("Operator", "")
 	kindError    = kindOf("Error", "")
+
+	kindBox        = kindOf(typeBox, "")
+	kindTupleValue = kindOf(typeTupleValue, "")
+	kindListValue  = kindOf(typeListValue, "")
 )
+
+// isNode reports whether n is a node of the value model (a string node, a tuple or list node, or
+// an error value) rather than a struct, a box or a list or tuple value.
+func (n *Node) isNode() bool {
+	switch n.kind.typeName() {
+	case "Match", "Seq", "List", "Operator", "Error":
+		return true
+	}
+	return n.terminal
+}
+
+// unboxNode returns the value that the carrier n stands for: the box's value for a box, nil for
+// nil, and n otherwise.
+func unboxNode(n *Node) any {
+	if n == nil {
+		return nil
+	}
+	if n.kind == kindBox {
+		return n.box
+	}
+	return n
+}
+
+// unboxValue is unboxNode for a value that may be a carrier.
+func unboxValue(v any) any {
+	if n, ok := v.(*Node); ok {
+		return unboxNode(n)
+	}
+	return v
+}
+
+// nodeValue returns the Value of the node n: its text for a string node, and a tuple or list
+// value sharing its elements otherwise.
+func (p *parser) nodeValue(n *Node) any {
+	switch {
+	case n.terminal:
+		return n.Text
+	case n.kind.typeName() == "List":
+		return p.newNode(Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children})
+	}
+	return p.newNode(Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children})
+}
 
 var kinds sync.Map // [2]string → *nodeKind
 
@@ -113,10 +158,11 @@ func kindOf(typ, rule string) *nodeKind {
 }
 
 // ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and its
-// terminal type.
+// terminal type with and without it.
 type ruleKinds struct {
-	reserved [len(reservedTypes)]*nodeKind
-	term     *nodeKind
+	reserved  [len(reservedTypes)]*nodeKind
+	term      *nodeKind
+	termValue *nodeKind
 }
 
 func newRuleKinds(rule, terminalType string) ruleKinds {
@@ -126,6 +172,7 @@ func newRuleKinds(rule, terminalType string) ruleKinds {
 	}
 	if terminalType != "" {
 		rk.term = kindOf(terminalType, rule)
+		rk.termValue = kindOf(terminalType, "")
 	}
 	return rk
 }
@@ -204,82 +251,247 @@ func (n *Node) Field(name string) any {
 	return v
 }
 
-// String formats the node as an S-expression-like string.
+// nodeShape is what a Node stands for in the value model.
+type nodeShape uint8
+
+const (
+	shapeString     nodeShape = iota // a node whose value is a string (Text)
+	shapeTuple                       // a node whose value is a tuple (Children)
+	shapeList                        // a node whose value is a list (Children)
+	shapeError                       // an error value of recovery
+	shapeBox                         // a box carrying a value other than a node
+	shapeTupleValue                  // a tuple value (Children)
+	shapeListValue                   // a list value (Children)
+	shapeStruct                      // a struct value (Fields)
+)
+
+func (n *Node) shape() nodeShape {
+	switch n.kind.typeName() {
+	case "Match":
+		return shapeString
+	case "Seq", "Operator":
+		return shapeTuple
+	case "List":
+		return shapeList
+	case "Error":
+		return shapeError
+	case typeBox:
+		return shapeBox
+	case typeTupleValue:
+		return shapeTupleValue
+	case typeListValue:
+		return shapeListValue
+	}
+	if n.terminal {
+		return shapeString
+	}
+	return shapeStruct
+}
+
+// captureLocation is where a capture of a node is: a path of tuple indexes into the node's
+// value, or, for a capture whose value is not an element (one in a positive lookahead), its value.
+type captureLocation struct {
+	name  string
+	path  []int
+	side  bool
+	value any
+}
+
+// captureLocations returns the locations of the captures of the tuple node n, in name order.
+func captureLocations(n *Node) []captureLocation {
+	var out []captureLocation
+	for _, f := range n.Fields.sorted() {
+		v, ok := f.Value.(*Node)
+		if !ok || v == nil {
+			if f.Value != nil {
+				out = append(out, captureLocation{name: f.Name, side: true, value: f.Value})
+			}
+			continue
+		}
+		if path, found := findElement(n, v); found {
+			out = append(out, captureLocation{name: f.Name, path: path})
+		} else {
+			out = append(out, captureLocation{name: f.Name, side: true, value: v})
+		}
+	}
+	return out
+}
+
+// findElement returns the path of x among the elements of the tuple node n and of the tuple nodes
+// nested in it, breadth first.
+func findElement(n, x *Node) ([]int, bool) {
+	type item struct {
+		n    *Node
+		path []int
+	}
+	queue := []item{{n, nil}}
+	for len(queue) > 0 {
+		it := queue[0]
+		queue = queue[1:]
+		for i, c := range it.n.Children {
+			if c == nil {
+				continue
+			}
+			path := append(append([]int{}, it.path...), i)
+			if c == x {
+				return path, true
+			}
+			if c.shape() == shapeTuple && c.Rule() == "" {
+				queue = append(queue, item{c, path})
+			}
+		}
+	}
+	return nil, false
+}
+
+// String renders the value as an S-expression of its shape, without positions: a string is
+// quoted, a tuple is ( ), a list [ ], nil is nil, a struct is Name{Field: value}, and an error is
+// error("message"). With source information, a node is followed by @rule, a captured element is
+// preceded by name:, and a capture whose value is not an element is written after the elements
+// as &name:value.
 func (n *Node) String() string {
 	var b strings.Builder
 	writeValue(&b, n)
 	return b.String()
 }
 
+// sexprFrame is a step of writeValue, which keeps its own stack for deep trees.
+type sexprFrame struct {
+	v      any
+	i      int
+	enter  bool
+	labels map[*Node][]string
+	side   []captureLocation
+	close  string
+}
+
 func writeValue(b *strings.Builder, v any) {
+	stack := []sexprFrame{{v: v, enter: true}}
+	for len(stack) > 0 {
+		f := &stack[len(stack)-1]
+		n, isNode := f.v.(*Node)
+		if !isNode || n == nil {
+			writeScalar(b, f.v)
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		sh := n.shape()
+		if f.enter {
+			f.enter = false
+			switch sh {
+			case shapeBox:
+				f.v, f.enter = n.box, true
+				continue
+			case shapeString:
+				b.WriteString(strconv.Quote(n.Text))
+				f.close = ruleSuffix(n)
+				f.i = -1
+			case shapeError:
+				msg, _ := n.Fields.Get("message")
+				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
+				if expected, ok := n.Fields.Get("expected"); ok {
+					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
+				}
+				b.WriteString(")")
+				f.i = -1
+			case shapeTuple, shapeTupleValue:
+				b.WriteString("(")
+				f.close = ")" + ruleSuffix(n)
+				if sh == shapeTuple && n.labeled {
+					f.labels = map[*Node][]string{}
+					for _, c := range captureLocations(n) {
+						if c.side {
+							f.side = append(f.side, c)
+							continue
+						}
+						x := n
+						for _, i := range c.path {
+							x = x.Children[i]
+						}
+						f.labels[x] = append(f.labels[x], c.name)
+					}
+				}
+			case shapeList, shapeListValue:
+				b.WriteString("[")
+				f.close = "]" + ruleSuffix(n)
+			case shapeStruct:
+				b.WriteString(n.Type() + "{")
+				f.close = "}"
+			}
+		}
+		if f.i < 0 {
+			b.WriteString(f.close)
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		if sh == shapeStruct {
+			fields := n.Fields.sorted()
+			if f.i == len(fields) {
+				b.WriteString(f.close)
+				stack = stack[:len(stack)-1]
+				continue
+			}
+			if f.i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(fields[f.i].Name + ": ")
+			f.i++
+			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
+			continue
+		}
+		if f.i == len(n.Children) {
+			for j, c := range f.side {
+				if f.i > 0 || j > 0 {
+					b.WriteString(" ")
+				}
+				b.WriteString("&" + c.name + ":")
+				var side strings.Builder
+				writeValue(&side, c.value)
+				b.WriteString(side.String())
+			}
+			b.WriteString(f.close)
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		if f.i > 0 {
+			b.WriteString(" ")
+		}
+		c := n.Children[f.i]
+		f.i++
+		labels := f.labels
+		for _, name := range labels[c] {
+			b.WriteString(name + ":")
+		}
+		next := sexprFrame{v: c, enter: true}
+		if c != nil && c.shape() == shapeTuple && c.Rule() == "" {
+			// A tuple nested in the node's own tuple holds the node's captures too.
+			next.labels = labels
+		}
+		stack = append(stack, next)
+	}
+}
+
+func ruleSuffix(n *Node) string {
+	if r := n.Rule(); r != "" {
+		return "@" + r
+	}
+	return ""
+}
+
+func writeScalar(b *strings.Builder, v any) {
 	switch v := v.(type) {
 	case nil:
 		b.WriteString("nil")
 	case *Node:
-		if v == nil {
-			b.WriteString("nil")
-			return
-		}
-		writeNode(b, v)
+		b.WriteString("nil")
 	case string:
-		b.WriteByte('`')
-		b.WriteString(v)
-		b.WriteByte('`')
+		b.WriteString(strconv.Quote(v))
 	case int:
 		b.WriteString(strconv.Itoa(v))
 	case bool:
 		b.WriteString(strconv.FormatBool(v))
 	default:
 		fmt.Fprintf(b, "%v", v)
-	}
-}
-
-func writeNode(b *strings.Builder, n *Node) {
-	switch {
-	case n.Type() == "List":
-		b.WriteString("[")
-		for i, c := range n.Children {
-			if i > 0 {
-				b.WriteString(" ")
-			}
-			writeValue(b, c)
-		}
-		writeFields(b, n, len(n.Children) > 0)
-		b.WriteString("]")
-	case n.terminal:
-		if n.Type() != "Match" {
-			b.WriteString(n.Type())
-		}
-		b.WriteString(strconv.Quote(n.Text))
-		if len(n.Fields) > 0 {
-			b.WriteString("{")
-			writeFields(b, n, false)
-			b.WriteString("}")
-		}
-	default:
-		b.WriteByte('(')
-		b.WriteString(n.Type())
-		for _, c := range n.Children {
-			b.WriteString(" ")
-			writeValue(b, c)
-		}
-		writeFields(b, n, true)
-		b.WriteString(")")
-	}
-	if n.Rule() != "" {
-		b.WriteString("@" + n.Rule())
-	}
-}
-
-func writeFields(b *strings.Builder, n *Node, sep bool) {
-	for _, f := range n.Fields.sorted() {
-		if sep {
-			b.WriteString(" ")
-		}
-		sep = true
-		b.WriteString(f.Name)
-		b.WriteByte('=')
-		writeValue(b, f.Value)
 	}
 }
 
@@ -327,7 +539,7 @@ type rule struct {
 	scope        []string // capture names of the rule body, in slot order
 	body         func(p *parser, min int) (*Node, bool)
 	action       func(c *actx) any
-	bodyIsSeq    bool
+	value        shaper // makes the rule's value from the value of its body, without an action
 	terminalType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
@@ -365,6 +577,10 @@ var structFields = map[string]map[string]bool{}
 
 // typeKinds holds the node kinds of the struct types.
 var typeKinds = map[string]*nodeKind{}
+
+// sourceInfo reports that values record source information: the rule that produced each node
+// and where its captures are.
+var sourceInfo bool
 
 func ruleByName(name string) *rule {
 	for _, r := range rules {
@@ -1681,17 +1897,16 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 	}
 	if r.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		if r.bodyIsSeq && v != nil {
-			c.items = v.Children
-		} else {
-			c.one[0] = v
-			c.items = c.one[:]
-		}
 		return c.result(r.action, r.name)
 	}
 	if r.terminalType != "" {
-		return p.newNode(Node{kind: r.kinds.term, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
+		kind := r.kinds.termValue
+		if sourceInfo {
+			kind = r.kinds.term
+		}
+		return p.newNode(Node{kind: kind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
 	}
+	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
@@ -1699,7 +1914,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		return nil
 	}
 	if v.fresh {
-		if v.kind.rule == "" {
+		if sourceInfo && v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
@@ -1730,6 +1945,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	if v.Fields == nil {
 		v.Fields = p.fields(len(names))
 	}
+	v.labeled = sourceInfo
 	for i, name := range names {
 		p.stepWork()
 		if f.vals[i] != nil {
@@ -1744,6 +1960,82 @@ func nodeOrNil(n *Node) any {
 		return nil
 	}
 	return n
+}
+
+// --- Shapes of values ---
+
+// singleMode is how an expression gives its value where it takes one element: an alternative,
+// the operand of ?, a capture or a recovered expression.
+type singleMode uint8
+
+const (
+	singleNone  singleMode = iota // no value
+	singlePass                    // the one element
+	singleTuple                   // the node of the tuple of the elements
+)
+
+// shaper converts the result of an expression's method to the value where the expression takes
+// one element or is a scope (a rule body, a repetition element or an Operators Rule line). The
+// generator fills it from the expression's static shape, as the engine does.
+type shaper struct {
+	elems bool       // the method returns the tuple node of its elements
+	k     int        // the number of valued elements
+	mode  singleMode // how the expression takes one element
+	tuple bool       // the value of a scope is the node of its tuple, rather than its one element
+}
+
+// shapeTuple returns the tuple node of the result v of a match of [start, p.pos).
+func (p *parser) shapeTuple(s shaper, v *Node, start int) *Node {
+	if s.elems {
+		return v
+	}
+	var kids []*Node
+	if s.k == 1 {
+		kids = p.nodes(1)
+		kids[0] = v
+	}
+	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true})
+}
+
+// one returns the one element of the result v.
+func (s shaper) one(v *Node) *Node {
+	if s.elems {
+		if v == nil || len(v.Children) == 0 {
+			return nil
+		}
+		return v.Children[0]
+	}
+	return v
+}
+
+// shapeSingle returns the value of the result v where the expression takes one element; ok is
+// false when it has no value.
+func (p *parser) shapeSingle(s shaper, v *Node, start int) (*Node, bool) {
+	switch s.mode {
+	case singlePass:
+		return s.one(v), true
+	case singleTuple:
+		return p.shapeTuple(s, v, start), true
+	}
+	return nil, false
+}
+
+// shapeCapture is shapeSingle for a capture or a recovered expression, whose value is the unit
+// node of the range matched when the expression has no value.
+func (p *parser) shapeCapture(s shaper, v *Node, start int) *Node {
+	v, ok := p.shapeSingle(s, v, start)
+	if !ok {
+		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), fresh: true})
+	}
+	return v
+}
+
+// scopeValue returns the value of a scope whose body matched [start, p.pos) with the result v.
+func (p *parser) scopeValue(s shaper, v *Node, start int) *Node {
+	if s.tuple {
+		return p.shapeTuple(s, v, start)
+	}
+	return s.one(v)
 }
 
 // --- Terminals ---
@@ -1962,11 +2254,9 @@ func rtIndex(p *parser, i any, n int, typeName func(any) string) int {
 type actx struct {
 	p            *parser
 	f            *frame
-	items        []*Node
 	start, end   int
 	cbase        int // start of p.created made by this evaluation
 	lhs, rhs, op any
-	one          [1]*Node // backing array of items for a single item
 }
 
 // useCtx places the evaluation context in the parser's single context and returns it.
@@ -1994,7 +2284,11 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	}
 	n, ok := v.(*Node)
 	if !ok {
-		c.p.evalErrorf("result must be a node, got %s", typeName(v))
+		if _, isFn := v.(func(...any) any); isFn {
+			c.p.evalErrorf("result must be a value, got a function")
+		}
+		// A value other than a node travels boxed, with the range of the action's input.
+		return c.p.newNode(Node{kind: kindBox, box: v, Start: int32(c.start), End: int32(c.end)})
 	}
 	for _, x := range c.p.created[c.cbase:] {
 		c.p.stepWork()
@@ -2056,17 +2350,7 @@ func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
 	return true
 }
 
-func (c *actx) cap(slot int) any { return nodeOrNil(c.f.vals[slot]) }
-
-func (c *actx) item(n int) any {
-	if n == 0 {
-		return c.newList(c.items)
-	}
-	if n > len(c.items) {
-		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
-	}
-	return nodeOrNil(c.items[n-1])
-}
+func (c *actx) cap(slot int) any { return unboxNode(c.f.vals[slot]) }
 
 func (c *actx) lookup(name string) any {
 	if workControlsEnabled && c.p.control != nil {
@@ -2153,9 +2437,10 @@ func (c *actx) newList(items []*Node) *Node {
 	return c.listNode(kids)
 }
 
-// listNode returns a List node with the child list kids (which it takes over).
+// listNode returns a list value with the child list kids (which it takes over). Its range, which
+// the value model does not show, covers the elements that are nodes.
 func (c *actx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
+	n := c.p.newNode(Node{kind: kindListValue, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
@@ -2178,13 +2463,15 @@ func (c *actx) member(x any, name string) any {
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
-	switch name {
-	case "startPos":
-		return int(n.Start)
-	case "endPos":
-		return int(n.End)
-	case "children":
-		return c.newList(n.Children)
+	if n.isNode() {
+		switch name {
+		case "Start":
+			return int(n.Start)
+		case "End":
+			return int(n.End)
+		case "Value":
+			return c.p.nodeValue(n)
+		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
@@ -2192,7 +2479,7 @@ func (c *actx) member(x any, name string) any {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.Fields, capture)
-		return v
+		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
@@ -2265,7 +2552,7 @@ func rtBinary(op string, l, r any) any {
 		return !rtEqual(l, r)
 	case "[]":
 		items := listItems("[]", l)
-		return nodeOrNil(items[rtIndex(nil, r, len(items), typeName)])
+		return unboxNode(items[rtIndex(nil, r, len(items), typeName)])
 	}
 	switch l := l.(type) {
 	case int:
@@ -2389,7 +2676,7 @@ func rtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any
 		if right {
 			it = items[len(items)-1-i]
 		}
-		acc = f(acc, nodeOrNil(it))
+		acc = f(acc, unboxNode(it))
 	}
 	return acc
 }
@@ -2408,7 +2695,7 @@ func (c *actx) filterList(list any, f func(item any) any) any {
 	base := len(c.p.kidStack)
 	for _, item := range c.listItems("filter", list) {
 		c.p.stepWork()
-		value := f(nodeOrNil(item))
+		value := f(unboxNode(item))
 		keep, ok := value.(bool)
 		if !ok {
 			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
@@ -2442,7 +2729,7 @@ func (c *actx) concat(args ...any) any {
 func (c *actx) pushMap(list any, f func(item any) any) {
 	for _, it := range c.listItems("map", list) {
 		c.p.stepWork()
-		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(nodeOrNil(it))))
+		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(unboxNode(it))))
 	}
 }
 
@@ -2475,8 +2762,10 @@ type operatorsRuleLine struct {
 	scope  []string
 	m      matcher
 	action func(*actx) any
-	isSeq  bool
-	check  func(p *parser, v *Node) // checks the line's value against the rule's declared type
+	// value makes the value of an operand line without an action, and of an operator line's
+	// operator, from the value of the line's expression.
+	value shaper
+	check func(p *parser, v *Node) // checks the line's value against the rule's declared type
 }
 
 type operatorsRuleOp struct {
@@ -2671,19 +2960,14 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 func (p *parser) lineValue(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if l.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		if l.isSeq && v != nil {
-			c.items = v.Children
-		} else {
-			c.one[0] = v
-			c.items = c.one[:]
-		}
 		return c.result(l.action, r.name)
 	}
+	v = p.scopeValue(l.value, v, start)
 	if len(l.scope) > 0 {
 		v = p.attachCaptures(v, l.scope, f, start, p.pos)
 	}
 	if v != nil && v.fresh {
-		if v.kind.rule == "" {
+		if sourceInfo && v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
@@ -2703,36 +2987,50 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		end = a.end
 	}
 	l := a.op.line
+	// The operator's value is its one element, or the node of its tuple, which has the line's
+	// captures.
+	opv, ok := p.shapeSingle(l.value, a.v, a.start)
+	if !ok {
+		opv = p.newNode(Node{kind: kindSeq, Start: int32(a.start), End: int32(a.end)})
+	}
+	if l.value.mode == singleTuple && len(l.scope) > 0 {
+		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
+	}
+	if opv != nil {
+		opv.fresh = false
+	}
 	if l.action != nil {
-		op := p.newNode(Node{kind: kindMatch, Start: int32(a.start), End: int32(a.end), Text: p.text(a.start, a.end), terminal: true})
 		c := p.useCtx(actx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
-			op: op, lhs: nodeOrNil(lhs), rhs: nodeOrNil(rhs)})
+			op: unboxNode(opv), lhs: unboxNode(lhs), rhs: unboxNode(rhs)})
 		v := c.result(l.action, r.name)
 		if l.check != nil {
 			l.check(p, v)
 		}
 		return v
 	}
-	opv := a.v
-	if len(l.scope) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
-	}
-	if opv != nil {
-		opv.fresh = false
-	}
+	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
+	// kind, with those captures.
 	var kids []*Node
+	var fields Fields
 	switch a.op.kind {
 	case "prefix":
 		kids = p.nodes(2)
 		kids[0], kids[1] = opv, rhs
+		fields = Fields{{"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	case "postfix":
 		kids = p.nodes(2)
 		kids[0], kids[1] = lhs, opv
+		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}}
 	default:
 		kids = p.nodes(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
+		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
-	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
+	kind := kindSeq
+	if sourceInfo {
+		kind = r.kinds.named(kindSeq, r.name)
+	}
+	return p.newNode(Node{kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, labeled: sourceInfo})
 }
 
 func rtUnaryWork(p *parser, op string, x any) any {
@@ -2766,7 +3064,7 @@ func rtBinaryWork(p *parser, op string, l, r any) any {
 		return !rtEqual(l, r)
 	case "[]":
 		items := listItemsWork(p, "[]", l)
-		return nodeOrNil(items[rtIndex(p, r, len(items), typeName)])
+		return unboxNode(items[rtIndex(p, r, len(items), typeName)])
 	}
 	switch l := l.(type) {
 	case int:
@@ -2846,9 +3144,13 @@ func asNodeWork(p *parser, fn string, v any) *Node {
 type nodeJSONFrame struct {
 	value  any
 	fields Fields
+	caps   []captureLocation
 	index  int
 	phase  uint8
 	slice  nodeJSONSliceID
+	// closeSide reports that the value of a capture beside the tuple was written and its object
+	// needs closing.
+	closeSide bool
 }
 
 const (
@@ -2858,7 +3160,22 @@ const (
 	nodeJSONFields
 	nodeJSONExit
 	nodeJSONSliceItems
+	nodeJSONCaptures
 )
+
+// writeJSONRange writes prefix and the members start and end of n.
+func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
+	if err := out.raw(prefix); err != nil {
+		return err
+	}
+	if err := out.number(n.Start); err != nil {
+		return err
+	}
+	if err := out.raw(`,"end":`); err != nil {
+		return err
+	}
+	return out.number(n.End)
+}
 
 type nodeJSONSliceID struct {
 	ptr uintptr
@@ -2949,45 +3266,54 @@ func writeJSONValue(w io.Writer, value any) error {
 					break
 				}
 				activeNodes[value] = struct{}{}
-				if err = out.raw(`{"type":`); err != nil {
-					break
-				}
-				if err = out.encoded(value.Type()); err != nil {
-					break
-				}
-				if value.Rule() != "" {
-					if err = out.raw(`,"rule":`); err != nil {
+				switch shape := value.shape(); shape {
+				case shapeBox:
+					// The box stands for its value.
+					delete(activeNodes, value)
+					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
+				case shapeString, shapeTuple, shapeList:
+					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					if err = out.encoded(value.Rule()); err != nil {
+					if err = out.raw(`,"value":`); err != nil {
 						break
 					}
-				}
-				if err = out.raw(`,"start":`); err != nil {
-					break
-				}
-				if err = out.number(value.Start); err != nil {
-					break
-				}
-				if err = out.raw(`,"end":`); err != nil {
-					break
-				}
-				if err = out.number(value.End); err != nil {
-					break
-				}
-				if value.Text != "" {
-					if err = out.raw(`,"text":`); err != nil {
+					if shape == shapeString {
+						err = out.encoded(value.Text)
+						frame.phase = nodeJSONFieldsStart
 						break
 					}
-					if err = out.encoded(value.Text); err != nil {
+					err = out.raw("[")
+					frame.phase = nodeJSONChildren
+				case shapeError:
+					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
+					msg, _ := value.Fields.Get("message")
+					if err = out.raw(`,"error":`); err == nil {
+						err = out.encoded(msg)
+					}
+					if expected, ok := value.Fields.Get("expected"); ok && err == nil {
+						if err = out.raw(`,"expected":`); err == nil {
+							err = out.encoded(expected)
+						}
+					}
+					frame.phase = nodeJSONExit
+				case shapeTupleValue, shapeListValue:
+					err = out.raw("[")
+					frame.phase = nodeJSONSliceItems
+				default: // a struct
+					if err = out.raw(`{"type":`); err == nil {
+						err = out.encoded(value.Type())
+					}
+					if err == nil {
+						err = out.raw(`,"fields":{`)
+					}
+					frame.fields = value.Fields.sorted()
+					frame.index = 0
+					frame.phase = nodeJSONFields
 				}
-				frame.phase = nodeJSONChildren
-				if len(value.Children) != 0 {
-					err = out.raw(`,"children":[`)
-				}
-			case nodeJSONChildren:
+			case nodeJSONChildren, nodeJSONSliceItems:
 				if frame.index < len(value.Children) {
 					if frame.index != 0 {
 						if err = out.raw(","); err != nil {
@@ -2997,22 +3323,70 @@ func writeJSONValue(w io.Writer, value any) error {
 					child := value.Children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
-				} else {
-					if len(value.Children) != 0 {
-						if err = out.raw("]"); err != nil {
-							break
-						}
-					}
-					frame.phase = nodeJSONFieldsStart
+					break
 				}
+				if err = out.raw("]"); err != nil {
+					break
+				}
+				if frame.phase == nodeJSONSliceItems {
+					delete(activeNodes, value)
+					stack = stack[:len(stack)-1]
+					break
+				}
+				frame.phase = nodeJSONFieldsStart
 			case nodeJSONFieldsStart:
-				if len(value.Fields) != 0 {
-					frame.fields = value.Fields.sorted()
-					frame.index = 0
-					frame.phase = nodeJSONFields
-					err = out.raw(`,"fields":{`)
-				} else {
+				// Source information: the rule, and where the captures are.
+				if r := value.Rule(); r != "" {
+					if err = out.raw(`,"rule":`); err != nil {
+						break
+					}
+					if err = out.encoded(r); err != nil {
+						break
+					}
+				}
+				frame.phase = nodeJSONExit
+				if !value.labeled || len(value.Fields) == 0 {
+					break
+				}
+				frame.caps = captureLocations(value)
+				frame.index = 0
+				frame.phase = nodeJSONCaptures
+				err = out.raw(`,"captures":{`)
+			case nodeJSONCaptures:
+				if frame.closeSide {
+					frame.closeSide = false
+					if err = out.raw("}"); err != nil {
+						break
+					}
+				}
+				if frame.index == len(frame.caps) {
+					err = out.raw("}")
 					frame.phase = nodeJSONExit
+					break
+				}
+				c := frame.caps[frame.index]
+				if frame.index != 0 {
+					if err = out.raw(","); err != nil {
+						break
+					}
+				}
+				frame.index++
+				if err = out.encoded(c.name); err != nil {
+					break
+				}
+				if c.side {
+					if err = out.raw(`:{"value":`); err != nil {
+						break
+					}
+					frame.closeSide = true
+					stack = append(stack, nodeJSONFrame{value: c.value})
+					break
+				}
+				if err = out.raw(`:{"path":`); err == nil {
+					err = out.encoded(c.path)
+				}
+				if err == nil {
+					err = out.raw("}")
 				}
 			case nodeJSONFields:
 				if frame.index < len(frame.fields) {

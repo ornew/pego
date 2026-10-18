@@ -18,7 +18,7 @@ func TestGeneratedTypedCutWorkload(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Row = { Key Match; Value Match }
 type Doc = { Rows []Row }
-rule main Doc = rows:row+ $$ => Doc{Rows: $rows}
+rule main Doc = rows:row+ $$ => Doc{Rows: $rows.Value}
 rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}
 `)
 	if err != nil {
@@ -96,7 +96,7 @@ func cutInput(n int) string { return strings.Repeat("let alpha:123;var beta:456;
 func TestCutWorkload(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		saved, err := ParseAST(cutInput(1), WithUnit(unit))
-		if err != nil || len(saved.Rows) != 2 || saved.Rows[0].Key.Text != "alpha" || saved.Rows[1].Value.Text != "456" {
+		if err != nil || len(saved.Rows) != 2 || saved.Rows[0].Key.Value != "alpha" || saved.Rows[1].Value.Value != "456" {
 			t.Fatalf("typed rows: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)

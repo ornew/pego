@@ -446,19 +446,17 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.Seq:
 		var start, kids string
 		if build {
-			nvis := 0
-			for _, it := range e.Items {
-				if visible(it) {
-					nvis++
-				}
-			}
 			start, kids = d.decl("x", "int"), d.decl("x", g.pick("[]*Node", "[]any"))
 			d.line("%s = p.pos", start)
-			d.line("%s = p.%s(%d)[:0]", kids, g.pick("nodes", "newVals"), nvis)
+			d.line("%s = p.%s(%d)[:0]", kids, g.pick("nodes", "newVals"), valuedCount(e))
 		}
+		// The value is the tuple node of the elements, flattened through nested sequences.
 		for _, it := range e.Items {
 			v := d.expr(it, s, build, fail)
-			if build && visible(it) {
+			switch {
+			case build && isElems(it):
+				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.Children", "asTval(%s).tkids()"), d.rd(v)))
+			case build && valuedCount(it) == 1:
 				d.line("%s = append(%s, %s)", kids, d.rd(kids), d.rd(v))
 			}
 		}
@@ -481,7 +479,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		f, done := d.label(), d.label()
 		x, cut := d.cutExpr(e.Expr, s, build, f)
 		if build {
-			d.line("%s = %s", v, d.rd(x))
+			d.line("%s = %s", v, d.rd(d.shapeOne(e.Expr, x, m.pos, false)))
 		}
 		if d.used[f] {
 			d.jump(done)
@@ -564,7 +562,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if field := g.proj[e.Name]; field != "" {
 			v = d.projectRepeat(e.Expr.(*grammar.Repeat), field, fail)
 		} else {
-			v = d.expr(e.Expr, s, true, fail)
+			v = d.captured(e.Expr, s, fail)
 		}
 		d.line("%s = %s", k, d.rd(v))
 		if !build {
@@ -572,12 +570,8 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		}
 		return v
 	case *grammar.Top:
-		if !build {
-			return "nil"
-		}
-		v := d.decl("v", d.g.valType())
-		d.line("%s = %s", v, d.match("p.pos", `""`))
-		return v
+		// _ matches the empty input and has no value.
+		return "nil"
 	case *grammar.Bottom:
 		d.jump(fail)
 		return "nil"
@@ -709,7 +703,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 		f := d.label()
 		x, cut := d.cutExpr(alt, s, build, f)
 		if build {
-			d.line("%s = %s", v, d.rd(x))
+			d.line("%s = %s", v, d.rd(d.shapeOne(alt, x, m.pos, false)))
 		}
 		d.jump(done)
 		d.place(f)
@@ -773,6 +767,9 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	}
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build, f)
+	if build {
+		v = d.scopeValue(e.Expr, v, m.pos)
+	}
 	if own && build {
 		attached := d.decl("v", d.g.valType())
 		d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), d.scopeVar(es), d.vals(es), d.rd(m.pos))
@@ -808,6 +805,37 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	list := d.decl("v", d.g.valType())
 	d.line("%s = %s", list, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return list
+}
+
+// shapeOne writes the conversion of the value x of e, matched from start, to its value where it
+// takes one element (an alternative or the operand of ?); with capture, where it is captured or
+// recovered (see singleMethod).
+func (d *dgen) shapeOne(e grammar.Expr, x, start string, capture bool) string {
+	if singleModeOf(e) == singlePass && !isElems(e) {
+		return x
+	}
+	v := d.decl("v", d.g.valType())
+	if capture {
+		d.line("%s = p.shapeCapture(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+	} else {
+		d.line("%s, _ = p.shapeSingle(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+	}
+	return v
+}
+
+// captured writes the expression e of a capture and returns its captured value.
+func (d *dgen) captured(e grammar.Expr, s *dscope, fail string) string {
+	start := d.decl("x", "int")
+	d.line("%s = p.pos", start)
+	return d.shapeOne(e, d.expr(e, s, true, fail), start, true)
+}
+
+// scopeValue writes the conversion of the value x of the scope body e (a repetition element),
+// matched from start, to the scope's value.
+func (d *dgen) scopeValue(e grammar.Expr, x, start string) string {
+	v := d.decl("v", d.g.valType())
+	d.line("%s = p.scopeValue(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+	return v
 }
 
 // clearScope sets the captures of the element e in its own scope es to nil (a new frame).
@@ -1214,13 +1242,6 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 			return false, false
 		}
 		d.line("c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})")
-		if usesItems(r.action) {
-			if r.bodyIsSeq {
-				d.line("if n := asTval(%s); n != nil {\nc.items = n.tkids()\n} else {\nc.one[0] = nil\nc.items = c.one[:]\n}", d.rd(body))
-			} else {
-				d.line("c.one[0] = %s\nc.items = c.one[:]", d.rd(body))
-			}
-		}
 		// The action's errors are reported with the rule's name (see tctx.result). Keep that
 		// context on panic for the parse-level evalError handler; restore it after normal return.
 		g.caps, g.final = caps, r.action
@@ -1253,11 +1274,10 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.line("v = trules[%d].term(p, start, p.pos, p.text(start, p.pos))", r.id)
 		return true, false
 	default:
+		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.def.Expr), d.rd(body))
+		start = true
 		if len(s.names) > 0 {
-			d.line("v = p.attachCaptures(%s, %s, %s, start, p.pos)", d.rd(body), d.scopeVar(s), d.vals(s))
-			start = true
-		} else {
-			d.line("v = %s", d.rd(body))
+			d.line("v = p.attachCaptures(v, %s, %s, start, p.pos)", d.scopeVar(s), d.vals(s))
 		}
 		d.line("if n := asTval(v); n != nil {\nn.tsetFresh(false)\n}")
 	}
@@ -1364,7 +1384,7 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 	}
 	inner := d.attr(e, i-1, s, build, f)
 	if build {
-		d.line("%s = %s", v, d.rd(inner))
+		d.line("%s = %s", v, d.rd(d.shapeOne(e.Expr, inner, m.pos, true)))
 	}
 	d.line("%s, %s = p.unisolate(%s)", far, expected, d.rd(mark))
 	d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(expected))
@@ -1381,7 +1401,7 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 		err := d.decl("x", "*SyntaxError")
 		d.line("%s = p.makeError(%s, %s)", err, d.rd(far), d.rd(expected))
 		d.line("p.recovered = append(p.recovered, %s)", d.rd(err))
-		if build && visible(e.Expr) {
+		if build {
 			d.line("%s = &terror{Error{%s: %s{%s, p.pos}, Text: p.text(%s, p.pos), Message: p.recoveryErrorText(%s)}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
 		} else if build {
 			d.line("%s = nil", v)

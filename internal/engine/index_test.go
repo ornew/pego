@@ -126,6 +126,33 @@ func TestIndexTypeErrors(t *testing.T) {
 	}
 }
 
+// Elements and captures that hold values other than nodes read as those values, not as the
+// carriers that hold them in the tree. Until the checker admits such action results, they are
+// made without type checks.
+func TestIndexValueElements(t *testing.T) {
+	for _, tc := range []struct {
+		src    string
+		inputs map[string]int
+	}{
+		{"rule main = x:(n n) $$ => $x[0] + $x[1]\nrule n = [0-9] => 1", map[string]int{"12": 2}},
+		{"rule main = xs:n+ $$ => foldl(0, $xs, (a, x) => a + x)\nrule n = [0-9] => 2", map[string]int{"123": 6}},
+		{"rule main = x:p $$ => $x.$v + 1\nrule p = v:n \"!\"\nrule n = [0-9] => 1", map[string]int{"1!": 2}},
+	} {
+		program := compile(t, tc.src, Options{NoTypeCheck: true})
+		for input, want := range tc.inputs {
+			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+				node, err := program.ParseWith("main", input, ParseOptions{Backend: backend})
+				if err != nil {
+					t.Fatalf("%s %q: %v\n%s", backend, input, err, tc.src)
+				}
+				if got := unboxNode(node); got != want {
+					t.Fatalf("%s %q: got %v, want %d\n%s", backend, input, got, want, tc.src)
+				}
+			}
+		}
+	}
+}
+
 // Indexing is written directly after the indexed value; with a space before it, "[" begins a
 // character class.
 func TestIndexSyntax(t *testing.T) {

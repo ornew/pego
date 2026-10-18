@@ -127,7 +127,8 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀",
 			}
 		}
 	}
-	testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+	t.Run("values", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{}) })
+	t.Run("source info", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{SourceInfo: true}) })
 }
 
 func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts GenOptions) {
@@ -162,7 +163,8 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 		write(name, string(code))
 		files = append(files, name)
 		var in []input
-		prog := compile(t, c.src, Options{noProjections: true}) // the generated code projects (project.go)
+		// The generated code projects (project.go), and records source information as asked.
+		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
 		for _, s := range c.inputs {
 			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
 			for _, unit := range []Unit{CodePoints, Bytes} {
@@ -296,61 +298,20 @@ func TestGenerateTSErrors(t *testing.T) {
 }
 
 // deepResultJSON returns resultJSON(n, err), also for trees nested too deeply for encoding/json
-// (which fails beyond 10,000 levels, and then resultJSON returns ""): it writes the node itself,
-// encoding only strings and leaves with encoding/json, and checks that it agrees with resultJSON
-// where that succeeds.
+// (which fails beyond 10,000 levels, and then resultJSON returns ""): it writes the node with
+// WriteJSON, which keeps its own stack, and checks that it agrees with resultJSON where that
+// succeeds.
 func deepResultJSON(t *testing.T, n *Node, err error) string {
 	var b strings.Builder
-	var value func(v any)
-	value = func(v any) {
-		x, ok := v.(*Node)
-		if !ok || x == nil {
-			data, err := json.Marshal(v)
-			if err != nil {
-				t.Fatal(err)
-			}
-			b.Write(data)
-			return
-		}
-		str := func(s string) string { data, _ := json.Marshal(s); return string(data) }
-		b.WriteString(`{"type":` + str(x.Type()))
-		if x.Rule() != "" {
-			b.WriteString(`,"rule":` + str(x.Rule()))
-		}
-		fmt.Fprintf(&b, `,"start":%d,"end":%d`, x.Start, x.End)
-		if x.Text != "" {
-			b.WriteString(`,"text":` + str(x.Text))
-		}
-		if len(x.Children) > 0 {
-			b.WriteString(`,"children":[`)
-			for i, c := range x.Children {
-				if i > 0 {
-					b.WriteByte(',')
-				}
-				value(c)
-			}
-			b.WriteByte(']')
-		}
-		if len(x.Fields) > 0 {
-			b.WriteString(`,"fields":{`)
-			for i, f := range x.Fields.sorted() {
-				if i > 0 {
-					b.WriteByte(',')
-				}
-				b.WriteString(str(f.Name) + ":")
-				value(f.Value)
-			}
-			b.WriteByte('}')
-		}
-		b.WriteByte('}')
-	}
 	if err != nil {
 		e, _ := json.Marshal(err.Error())
 		b.WriteString(`{"err":` + string(e) + `,"node":`)
 	} else {
 		b.WriteString(`{"node":`)
 	}
-	value(n)
+	if err := n.WriteJSON(&b); err != nil {
+		t.Fatal(err)
+	}
 	b.WriteByte('}')
 	if std := resultJSON(n, err); std != "" && std != b.String() {
 		t.Fatalf("deepResultJSON differs from resultJSON:\n %s\n %s", b.String(), std)

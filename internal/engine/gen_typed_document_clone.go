@@ -15,17 +15,27 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 	clone = func(x ty, value string) string {
 		switch x := x.(type) {
 		case basicTy:
-			return value
+			if x == tyInt || x == tyString || x == tyBool {
+				return value
+			}
+			return "c.toOpen(" + value + ")"
+		case recordTy:
+			return "c.toNode(" + value + ")"
 		case namedTy:
 			name := t.names[x.name]
 			if x == tyMatch {
 				name = "Match"
 			} else if x == tyError {
 				name = "Error"
+			} else if x.kind == 'c' {
+				name = "Node"
 			}
 			return "c.to" + name + "(" + value + ")"
 		case unionTy:
-			return "c.to" + t.unions[x.String()] + "(" + value + ")"
+			if name, ok := t.unions[x.String()]; ok {
+				return "c.to" + name + "(" + value + ")"
+			}
+			return "c.toOpen(" + value + ")"
 		case optTy:
 			if scalar, ok := x.elem.(basicTy); ok && (scalar == tyInt || scalar == tyString || scalar == tyBool) {
 				return "typedDocumentClonePointer(c, " + value + ")"
@@ -44,29 +54,34 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		panic("unrepresentable typed Document clone")
 	}
 	publication := clone(result, "value")
-	terminals := []struct{ name, chunk string }{{"Match", "match"}, {"Error", "error"}}
+	// Terminals are copied whole: a string node (method Match, type TNode[string]), Error and the
+	// terminal types.
+	terminals := []struct{ name, goType, chunk string }{{"Match", "TNode[string]", "match"}, {"Error", "Error", "error"}}
 	for _, name := range t.terms {
-		terminals = append(terminals, struct{ name, chunk string }{t.names[name], "t" + t.names[name]})
+		terminals = append(terminals, struct{ name, goType, chunk string }{t.names[name], t.names[name], "t" + t.names[name]})
 	}
 	for _, terminal := range terminals {
-		goName, chunk := terminal.name, terminal.chunk
-		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[1]s) *%[1]s {
+		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[3]s) *%[3]s {
  c.step(1)
  if v == nil { return nil }
  if old, ok := c.seen%[1]s[v]; ok { return old }
  out := astNew(&c.%[2]s)
  *out = *v
- if c.seen%[1]s == nil { c.seen%[1]s = make(map[*%[1]s]*%[1]s) }; c.seen%[1]s[v] = out
+ if c.seen%[1]s == nil { c.seen%[1]s = make(map[*%[3]s]*%[3]s) }; c.seen%[1]s[v] = out
  return out
 }
-`, goName, chunk)
+`, terminal.name, terminal.chunk, terminal.goType)
 	}
 	var containsStruct func(ty) bool
 	containsStruct = func(x ty) bool {
 		switch x := x.(type) {
+		case basicTy:
+			return x != tyInt && x != tyString && x != tyBool // an open value may hold one
+		case recordTy:
+			return true
 		case namedTy:
 			_, ok := t.info.fields[x.name]
-			return ok
+			return ok || x.kind == 'c'
 		case optTy:
 			return containsStruct(x.elem)
 		case listTy:
@@ -113,14 +128,49 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			continue
 		}
 		fmt.Fprintf(&methods, "func (c *typedDocumentClone) to%s(v %s) %s {\n c.step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", t.names[name], t.names[name], t.names[name])
+		seen := map[string]bool{"*Error": true}
 		for _, alternative := range u.alts {
-			if alternative == tyError {
-				continue
+			goType := t.goType(alternative)
+			if seen[goType] {
+				continue // Seq, List and Operator are all *TNode[any]
 			}
-			fmt.Fprintf(&methods, " case %s: return %s\n", t.goType(alternative), clone(alternative, "v"))
+			seen[goType] = true
+			fmt.Fprintf(&methods, " case %s: return %s\n", goType, clone(alternative, "v"))
 		}
 		methods.WriteString(" }\n return nil\n}\n")
 	}
+	// Values of open types (node, any, unions without a Go type of their own) are cloned by
+	// their dynamic types.
+	methods.WriteString(`func (c *typedDocumentClone) toOpen(v any) any {
+ c.step(1)
+ switch v := v.(type) {
+ case *TNode[string]: return c.toMatch(v)
+ case *TNode[any]: return c.toNode(v)
+ case *Error: return c.toError(v)
+ case []any: return c.toElems(v)
+`)
+	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+		fmt.Fprintf(&methods, " case *%[1]s: return c.to%[1]s(v)\n", t.names[name])
+	}
+	methods.WriteString(` }
+ return v
+}
+func (c *typedDocumentClone) toNode(v *TNode[any]) *TNode[any] {
+ c.step(1)
+ if v == nil { return nil }
+ if old, ok := c.values[v]; ok { return old.(*TNode[any]) }
+ out := &TNode[any]{` + t.span + `: v.` + t.span + `}
+ c.remember(v, out)
+ if elems, ok := v.Value.([]any); ok { out.Value = c.toElems(elems) } else { out.Value = v.Value }
+ return out
+}
+func (c *typedDocumentClone) toElems(v []any) []any {
+ c.step(uint64(len(v)))
+ out := make([]any, len(v))
+ for i, x := range v { out[i] = c.toOpen(x) }
+ return out
+}
+`)
 	for i := 0; i < len(lists); i++ {
 		list := lists[i]
 		elem := t.goType(list.elem)
@@ -145,17 +195,20 @@ type typedDocumentClone struct {
  values map[any]any
  slices map[documentSliceKey]any
  tasks []typedDocumentCloneTask
- match astChunk[Match]
+ match astChunk[TNode[string]]
  error astChunk[Error]
 `)
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, " t%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, name := range append([]string{"Match", "Error"}, append(t.terms, t.structs...)...) {
+		goType := name
 		if g, ok := t.names[name]; ok {
-			name = g
+			name, goType = g, g
+		} else if name == "Match" {
+			goType = "TNode[string]"
 		}
-		fmt.Fprintf(b, " seen%s map[*%s]*%s\n", name, name, name)
+		fmt.Fprintf(b, " seen%s map[*%s]*%s\n", name, goType, goType)
 	}
 	for _, list := range lists {
 		fmt.Fprintf(b, " %sChunk astChunk[%s]\n", list.name, t.goType(list.elem))

@@ -14,14 +14,15 @@ import (
 // function ParseAST that parses like Parse and converts the resulting tree into those types:
 //
 //   - a struct type T becomes a struct T with the same fields and an embedded Span (its range);
-//   - a terminal type T becomes a struct T{Span; Text string}, and the reserved Match and Error
-//     node types become Match and Error;
-//   - a union type U = A | B becomes an interface U that A, B and Error implement (and Node, if
-//     the union has CST members);
+//   - a terminal type T becomes a struct T{Span; Text string}, a string node (Match) a
+//     TNode[string] and an error value Error;
+//   - a union type U = A | B becomes an interface U that A, B and Error implement (and TNode, if
+//     the union has other node members);
 //   - []T becomes a slice, *T a pointer (or the nil value of an interface), and int, string and
 //     bool stay as they are;
-//   - CST node types (Seq, List, Operator) stay *Node, and node, terminal and any become any
-//     (holding the converted value).
+//   - tuple and list nodes (Seq, List, Operator) become TNode[any], whose Value is a []any of the
+//     elements, and node, terminal and any become any (holding the converted value, with tuple
+//     and list values as []any).
 //
 // An Error node (left by #recover) where a struct or terminal type is expected becomes nil; it is
 // reported among the SyntaxErrors anyway.
@@ -306,7 +307,7 @@ var runtimeNames = map[string]bool{
 	"WalkTree": true, "WalkAction": true, "WalkContinue": true, "WalkSkip": true, "WalkStop": true,
 	"WalkVisit": true, "WalkEdge": true, "WalkEdgeKind": true, "WalkRoot": true, "WalkChild": true, "WalkField": true, "WalkListElement": true, "CycleError": true, "Cursor": true,
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
-	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true,
+	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true, "TNode": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
@@ -412,11 +413,11 @@ func (t *typedGen) goType(x ty) string {
 	case namedTy:
 		switch {
 		case x == tyMatch:
-			return "*Match"
+			return "*TNode[string]"
 		case x == tyError:
 			return "*Error"
 		case x.kind == 'c':
-			return "*Node"
+			return "*TNode[any]"
 		}
 		return "*" + t.names[x.name]
 	case listTy:
@@ -432,7 +433,7 @@ func (t *typedGen) goType(x ty) string {
 		}
 		return "any"
 	case recordTy:
-		return "*Node"
+		return "*TNode[any]"
 	}
 	return "any"
 }
@@ -458,7 +459,7 @@ func (t *typedGen) conv(x ty, v string) string {
 		case x == tyError:
 			return "a.toError(astNode(" + v + "))"
 		case x.kind == 'c':
-			return "astNode(" + v + ")"
+			return "a.toNode(astNode(" + v + "))"
 		}
 		return "a.to" + t.names[x.name] + "(astNode(" + v + "))"
 	case listTy:
@@ -481,7 +482,7 @@ func (t *typedGen) conv(x ty, v string) string {
 		}
 		return "a.anyValue(" + v + ")"
 	case recordTy:
-		return "astNode(" + v + ")"
+		return "a.toNode(astNode(" + v + "))"
 	}
 	return "a.anyValue(" + v + ")"
 }
@@ -489,7 +490,7 @@ func (t *typedGen) conv(x ty, v string) string {
 // decls writes the type declarations.
 func (t *typedGen) decls(b *strings.Builder) {
 	span := t.span
-	b.WriteString("// --- Typed values (pego gen -types; Span, Match and Error are in the typed runtime above) ---\n\n")
+	b.WriteString("// --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---\n\n")
 	for _, name := range t.terms {
 		fmt.Fprintf(b, "// %s is the terminal type %s.\n", t.names[name], name)
 		fmt.Fprintf(b, "type %s struct {\n\t%s\n\tText string\n}\n\n", t.names[name], span)
@@ -518,14 +519,14 @@ func (t *typedGen) decls(b *strings.Builder) {
 			if n, ok := a.(namedTy); ok {
 				switch {
 				case n == tyMatch:
-					members["Match"] = true
+					members["TNode"] = true
 				case n.kind == 's' || n.kind == 't':
 					members[t.names[n.name]] = true
 				}
 			}
 		}
 		if cstUnion(u) {
-			members["Node"] = true
+			members["TNode"] = true
 		}
 		for m := range members {
 			impl[m] = append(impl[m], goName)
@@ -540,6 +541,10 @@ func (t *typedGen) decls(b *strings.Builder) {
 		markers := impl[m]
 		sort.Strings(markers)
 		for _, u := range markers {
+			if m == "TNode" {
+				fmt.Fprintf(b, "func (*TNode[T]) is%s() {}\n", u)
+				continue
+			}
 			fmt.Fprintf(b, "func (*%s) is%s() {}\n", m, u)
 		}
 	}
@@ -550,16 +555,46 @@ func (t *typedGen) decls(b *strings.Builder) {
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
-	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
+	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *TNode[string] {
 	a.stepWork()
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
-	if v, ok := a.values[n]; ok { return v.(*Match) }
+	if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
 	v := astNew(&a.match)
-	*v = Match{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text}
+	*v = TNode[string]{%[1]s: %[1]s{int(n.Start), int(n.End)}, Value: n.Text}
 	a.remember(n, v)
 	return v
+}
+
+// toNode converts a node of a statically unknown value: its Value is the text of a string node,
+// and a []any of the converted elements of a tuple or list node.
+func (a *astConv) toNode(n *Node) *TNode[any] {
+	a.stepWork()
+	if n == nil || n.Type() == "Error" {
+		return nil
+	}
+	if v, ok := a.values[n]; ok {
+		if v, ok := v.(*TNode[any]); ok { return v }
+	}
+	v := &TNode[any]{%[1]s: %[1]s{int(n.Start), int(n.End)}}
+	a.remember(n, v)
+	if n.IsTerminal() {
+		v.Value = n.Text
+	} else {
+		v.Value = a.elems(n)
+	}
+	return v
+}
+
+// elems converts the elements of a tuple or list.
+func (a *astConv) elems(n *Node) []any {
+	out := make([]any, len(n.Children))
+	for i, c := range n.Children {
+		a.stepWork()
+		out[i] = a.anyValue(c)
+	}
+	return out
 }
 
 func (a *astConv) toError(n *Node) *Error {
@@ -576,8 +611,8 @@ func (a *astConv) toError(n *Node) *Error {
 }
 
 `, span)
-	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (CST\n// nodes stay *Node).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok || n == nil {\n\t\treturn v\n\t}\n\tswitch n.Type() {\n")
-	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n")
+	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
+	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n\tcase \"Seq\", \"List\", \"Operator\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(unboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
@@ -610,7 +645,7 @@ func (a *astConv) toError(n *Node) *Error {
 			}
 		}
 		if cstUnion(u) {
-			b.WriteString("\t}\n\treturn n\n}\n\n")
+			b.WriteString("\t}\n\treturn a.toNode(n)\n}\n\n")
 		} else {
 			b.WriteString("\t}\n\treturn nil\n}\n\n")
 		}
@@ -624,7 +659,7 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
-	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tvalues map[*Node]any // preserve aliases when one node appears in multiple fields or lists\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
+	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tvalues map[*Node]any // preserve aliases when one node appears in multiple fields or lists\n\tmatch astChunk[TNode[string]]\n\terror astChunk[Error]\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
@@ -721,20 +756,23 @@ func (t *typedGen) readsFields() bool {
 	return found
 }
 
+// representable reports whether the typed runtime can build values of type x and read them back
+// from a field (back): every type of a value, but not a function.
 func (t *typedGen) representable(x ty) bool {
 	switch x := x.(type) {
 	case basicTy:
-		return x == tyInt || x == tyString || x == tyBool
-	case namedTy:
-		return x == tyMatch || x == tyError || x.kind == 's' || x.kind == 't'
+		switch x {
+		case tyInt, tyString, tyBool, tyNode, tyTerminal, tyAny:
+			return true
+		}
+		return false
+	case namedTy, recordTy:
+		return true
 	case listTy:
 		return t.representable(x.elem)
 	case optTy:
 		return t.representable(x.elem)
 	case unionTy:
-		if _, ok := t.unions[x.String()]; !ok || cstUnion(x) {
-			return false
-		}
 		for _, a := range x.alts {
 			if !t.representable(a) {
 				return false
@@ -787,11 +825,17 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 func (t *typedGen) back(x ty, v string) string {
 	switch x := x.(type) {
 	case basicTy:
-		return "any(" + v + ")"
+		if x == tyInt || x == tyString || x == tyBool {
+			return "any(" + v + ")"
+		}
+		return "tback(" + v + ")"
 	case namedTy:
-		return "tptr(" + v + ")"
-	case unionTy:
-		return "any(" + v + ")"
+		if x.kind == 's' || x.kind == 't' {
+			return "tptr(" + v + ")"
+		}
+		return "tback(" + v + ")"
+	case recordTy, unionTy:
+		return "tback(" + v + ")"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "tderef(" + v + ")"
@@ -830,15 +874,23 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		case tyBool:
 			return "astBool(" + v + ")"
 		}
+		return "tpub(" + v + ")"
+	case recordTy:
+		return "tpubNode(" + v + ")"
 	case namedTy:
-		switch x {
-		case tyMatch:
+		switch {
+		case x == tyMatch:
 			return "tpubMatch(" + v + ")"
-		case tyError:
+		case x == tyError:
 			return "tpubError(" + v + ")"
+		case x.kind == 'c':
+			return "tpubNode(" + v + ")"
 		}
 		return "tAs[" + t.goType(x) + "](" + v + ")"
 	case unionTy:
+		if _, ok := t.unions[x.String()]; !ok {
+			return "tpub(" + v + ")"
+		}
 		return "tAs[" + t.goType(x) + "](tpub(" + v + "))"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
