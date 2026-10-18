@@ -681,11 +681,10 @@ pego: operand-lr.pego:2:9: operand of e calls e at its start (left recursion); u
 
 Write `!` as a postfix operator instead.
 
-**A cut can prevent prefix-to-operand fallback.** If no prefix part matches and a candidate failed after `#cut`,
-the Operators Rule fails. For example, `prefix "-" #cut "z"` does not fall back to `operand "-x"` on `-x`.
-An ordinary mismatch before a cut still allows fallback. A different successfully matching prefix candidate is
-selected by the usual longest-match rule; that candidate's own cut controls a later RHS failure. See the
-[backtracking rules](../../spec/operators-rule.md#parsing-rules) for candidate and cut scopes.
+**A cut can prevent prefix-to-operand fallback.** If no prefix part matches and a candidate failed after `#cut`, the
+Operators Rule fails: `prefix "-" #cut "z"` does not fall back to `operand "-x"` on `-x`. A mismatch before a cut still
+allows fallback. The [parsing rules](../../spec/operators-rule.md#parsing-rules) define the scopes of candidates and
+cuts.
 
 **`skip` is not inserted inside an operator part or an operand, and trailing whitespace is not consumed.** In
 `infix right "?" t:expr ":"` the `":"` must directly follow the end of `t`; write `ws` before it. Otherwise the operator
