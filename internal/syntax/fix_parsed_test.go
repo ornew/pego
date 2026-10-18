@@ -5,11 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// Fix rewrites positional captures to named captures that produce the same results.
+// Fix rewrites positional captures to named captures that produce the same results. The engine
+// no longer runs positional captures, so the rewrite is checked by its text, and by its results
+// where the earlier source still runs.
 func TestFixPositional(t *testing.T) {
 	for _, tc := range []struct {
 		in, want string
@@ -65,20 +68,35 @@ func TestFixPositional(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}
-		pb, err := engine.Compile(before, engine.Options{})
-		if err != nil {
-			t.Fatalf("%q: %v", tc.in, err)
-		}
+		pb := compileLegacy(t, tc.in, before)
 		pa, err := engine.Compile(after, engine.Options{})
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}
 		for _, input := range tc.inputs {
+			if pb == nil {
+				break
+			}
 			if b, a := run(pb, input), run(pa, input); b != a {
 				t.Errorf("%q on %q:\nbefore %s\nafter  %s", got, input, b, a)
 			}
 		}
 	}
+}
+
+// compileLegacy compiles g, parsed from the earlier syntax src. It returns nil when g uses a
+// form that the value model removed (positional captures, a capture read as a field, startPos
+// and endPos): such a grammar no longer runs, so the rewrite is checked by its text alone.
+func compileLegacy(t *testing.T, src string, g *grammar.Grammar) *engine.Program {
+	t.Helper()
+	p, err := engine.Compile(g, engine.Options{})
+	if err != nil {
+		if msg := err.Error(); strings.Contains(msg, "is removed") || strings.Contains(msg, "read the capture with .$") {
+			return nil
+		}
+		t.Fatalf("%q: %v", src, err)
+	}
+	return p
 }
 
 func run(p *engine.Program, input string) string {
@@ -123,7 +141,8 @@ func TestFixLambdaParams(t *testing.T) {
 		// A capture read as a member is read with .$; fields and the node members stay.
 		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"", "abab"}},
 		{"rule main = xs:(y:\"a\" \"b\")+ => $xs[0].y", "rule main = xs:(y:\"a\" \"b\")+ => $xs[0].$y", []string{"abab"}},
-		{"rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.y), (j) => j.endPos > 1)", "rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.$y), (j) => j.endPos > 1)", []string{"abab"}},
+		{"rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.y), (j) => j.endPos > 1)", "rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.$y), (j) => j.End > 1)", []string{"abab"}},
+		{"rule main = x:\"a\" {$x.startPos == 0 && $x.endPos == 1}", "rule main = x:\"a\" {$x.Start == 0 && $x.End == 1}", []string{"a"}},
 		{"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
 		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"ab"}},
 		// Positional captures and parameters in one lambda.
@@ -149,15 +168,15 @@ func TestFixLambdaParams(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}
-		pb, err := engine.Compile(before, engine.Options{})
-		if err != nil {
-			t.Fatalf("%q: %v", tc.in, err)
-		}
+		pb := compileLegacy(t, tc.in, before)
 		pa, err := engine.Compile(after, engine.Options{})
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}
 		for _, input := range tc.inputs {
+			if pb == nil {
+				break
+			}
 			if b, a := run(pb, input), run(pa, input); b != a {
 				t.Errorf("%q on %q:\nbefore %s\nafter  %s", got, input, b, a)
 			}

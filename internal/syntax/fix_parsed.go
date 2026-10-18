@@ -86,9 +86,18 @@ func fixParsed(src string, positional bool) (string, error) {
 	}
 	edits = append(edits, params...)
 	inspectAST(g, func(n any) {
-		if m, ok := n.(*grammar.Member); ok && captureMember(m.Name) {
-			start := o.at(m.Diagnostic()) // the name
+		m, ok := n.(*grammar.Member)
+		if !ok {
+			return
+		}
+		start := o.at(m.Diagnostic()) // the name
+		switch {
+		case captureMember(m.Name):
 			edits = append(edits, fixEdit{start, start, "$"})
+		case m.Name == "startPos":
+			edits = append(edits, fixEdit{start, start + len(m.Name), "Start"})
+		case m.Name == "endPos":
+			edits = append(edits, fixEdit{start, start + len(m.Name), "End"})
 		}
 	})
 	if len(edits) == 0 {

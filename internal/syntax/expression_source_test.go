@@ -160,7 +160,7 @@ func TestExpressionSourceDefaultCST(t *testing.T) {
 		}
 		trees = append(trees, n.String())
 	}
-	if trees[0] != trees[1] || !strings.Contains(trees[0], "Seq") {
+	if trees[0] != trees[1] || trees[0] != `("a" "b")` {
 		t.Fatalf("default CST differs: %v", trees)
 	}
 }

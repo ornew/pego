@@ -21,7 +21,8 @@ import (
 //   - a lambda parameter "$x" is written "x";
 //   - a capture read as a member "x.y" is read "x.$y". Since field names start with an uppercase
 //     letter, a member with another name reads a capture, except the node members startPos,
-//     endPos and children, and the members expected and message of Missing.
+//     endPos and children, and the members expected and message of Missing;
+//   - the node members startPos and endPos become Start and End.
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
