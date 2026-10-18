@@ -269,12 +269,12 @@ func TestMismatch(t *testing.T) {
 		path, print string
 	}{
 		{func(tree map[string]any) {
-			tree["value"].(map[string]any)["children"].([]any)[0].(map[string]any)["children"].([]any)[1].(map[string]any)["end"] = 9
-		}, "value.children[0].children[1].end", "value bytecode bytes value.children[].children[].end"},
+			tree["value"].(map[string]any)["value"].([]any)[0].(map[string]any)["value"].([]any)[1].(map[string]any)["end"] = 9
+		}, "value.value[0].value[1].end", "value bytecode bytes value.value[].value[].end"},
 		{func(tree map[string]any) { tree["error"] = errorTree(errors.New("lost")) }, "error", "error bytecode bytes error"},
 		{func(tree map[string]any) {
-			tree["value"].(map[string]any)["children"] = append(tree["value"].(map[string]any)["children"].([]any), nil)
-		}, "value.children[1]", "value bytecode bytes value.children[]"},
+			tree["value"].(map[string]any)["value"] = append(tree["value"].(map[string]any)["value"].([]any), nil)
+		}, "value.value[1]", "value bytecode bytes value.value[]"},
 	} {
 		corruptDocumentResult = func(text string, tree map[string]any) {
 			if text == "abc" {
@@ -349,14 +349,15 @@ func TestErrorsCompareByFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	a, _ := result(func() (*pego.Node, error) { return p.Parse("let a=1;let =2;let c=x;") })
-	b, _ := result(func() (*pego.Node, error) { return p.Parse("let a=1;let =2;let c=y;") })
+	// The recovered errors are the same; a name beside them differs.
+	b, _ := result(func() (*pego.Node, error) { return p.Parse("let b=1;let =2;let c=x;") })
 	expand(a)
 	expand(b)
 	errs := a["error"].(map[string]any)
 	if errs["kind"] != "syntax errors" || len(errs["errors"].([]any)) != 2 {
 		t.Fatalf("recovered errors: %v", errs)
 	}
-	if path, _, _ := firstDifference("", a, b); !strings.HasPrefix(path, "value.") || !strings.HasSuffix(path, ".text") {
+	if path, _, _ := firstDifference("", a, b); !strings.HasPrefix(path, "value.") || !strings.HasSuffix(path, ".value") {
 		t.Fatalf("difference at %q", path)
 	}
 	c, _ := result(func() (*pego.Node, error) { return p.Parse("let") })

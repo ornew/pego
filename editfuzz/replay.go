@@ -25,7 +25,7 @@ type Mismatch struct {
 	// Text is the Document's text at a checkpoint, or its text before the operation that changed it
 	// wrongly or panicked.
 	Text string
-	// Path is the first differing location in the compared results, such as "value.children[1].end" or
+	// Path is the first differing location in the compared results, such as "value.value[1].end" or
 	// "error.errors[0].expected" ("value_invalid_utf8[i]" for strings that are not valid UTF-8); "text" for
 	// a wrong text or an undo or redo that the Document rejected; or "panic.edit", "panic.document",
 	// "panic.fresh" or "panic.both" for a panic in an operation, the Document parse, the fresh parse or both.
