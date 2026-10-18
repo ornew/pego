@@ -69,6 +69,39 @@ func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*Struct
 	return &StructuralQuery{query: q}, nil
 }
 
+// QuerySchema is an output schema validated once for compiling many queries.
+// It owns a copy of the schema it was prepared from, so later changes to that
+// schema do not affect it. It is immutable and safe for concurrent use. Obtain
+// one from PrepareQuerySchema: a nil or zero QuerySchema holds no schema and
+// defers type and field checks until evaluation.
+type QuerySchema struct{ schema *engine.QuerySchema }
+
+// PrepareQuerySchema validates and copies schema. Compiling a query with the
+// result performs the same checks as CompileStructuralQuery with schema, but
+// does not validate the schema again.
+func PrepareQuerySchema(schema *OutputSchema) (*QuerySchema, error) {
+	s, err := engine.PrepareQuerySchema(schema)
+	if err != nil {
+		return nil, err
+	}
+	return &QuerySchema{schema: s}, nil
+}
+
+// CompileStructuralQuery validates and copies a pattern, rejecting known
+// impossibilities in the prepared schema. A nil or zero QuerySchema defers type
+// and field checks until evaluation, as a nil OutputSchema does.
+func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQuery, error) {
+	var es *engine.QuerySchema
+	if s != nil {
+		es = s.schema
+	}
+	q, err := es.CompileStructuralQuery(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return &StructuralQuery{query: q}, nil
+}
+
 // QueryOption configures one query evaluation.
 type QueryOption func(*engine.QueryOptions)
 

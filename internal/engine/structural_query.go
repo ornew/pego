@@ -49,23 +49,16 @@ var ErrQueryCycle = errors.New("structural query graph cycle")
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
 // predicates, highlighting and generated-runtime adapters are not implemented.
 func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*StructuralQuery, error) {
+	var s *QuerySchema
 	if schema != nil {
 		if err := schema.Validate(); err != nil {
 			return nil, fmt.Errorf("invalid query schema: %w", err)
 		}
+		s = indexQuerySchema(schema)
 	}
-	copy, err := copyQueryPattern(pattern, schema, 0)
-	if err != nil {
-		return nil, err
-	}
-	if schema != nil {
-		if err := checkQueryShapes(&copy, schema); err != nil {
-			return nil, err
-		}
-	}
-	return &StructuralQuery{pattern: copy}, nil
+	return s.CompileStructuralQuery(pattern)
 }
-func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern, error) {
+func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, error) {
 	if depth >= 256 {
 		return p, fmt.Errorf("query pattern nesting exceeds prototype limit 256")
 	}
@@ -79,48 +72,42 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 	}
 	if s != nil {
 		if p.Rule != "" {
-			found := false
-			for _, r := range s.Rules {
-				found = found || r.Name == p.Rule
-			}
-			if !found {
+			if !s.rules[p.Rule] {
 				return p, fmt.Errorf("unknown query rule %q", p.Rule)
 			}
 		}
 		if p.Type != "" {
 			found := false
-			for _, t := range s.Types {
-				if t.Name == p.Type && t.Origin != "inferred" {
-					found = true
-					for _, f := range p.Fields {
-						if t.Origin == "cst" && recoveryHasField(t.Name, f.Name) {
-							continue
-						}
-						if !schemaMayHaveField(t.Shape, f.Name, s, map[string]bool{}) {
-							return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
-						}
-						for _, known := range t.Shape.Fields {
-							if known.Name == f.Name {
-								shape := schemaDeclaredQueryAlias(known.Shape, s)
-								nilAllowed := false
-								if shape.Kind == "optional" && shape.Element != nil && shape.Element.Kind == "scalar" {
-									shape = *shape.Element
-									nilAllowed = true
+			for t := range s.named(p.Type) {
+				found = true
+				for _, f := range p.Fields {
+					if t.Origin == "cst" && recoveryHasField(t.Name, f.Name) {
+						continue
+					}
+					if !schemaMayHaveField(t.Shape, f.Name, s, map[string]bool{}) {
+						return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
+					}
+					for _, known := range t.Shape.Fields {
+						if known.Name == f.Name {
+							shape := schemaDeclaredQueryAlias(known.Shape, s)
+							nilAllowed := false
+							if shape.Kind == "optional" && shape.Element != nil && shape.Element.Kind == "scalar" {
+								shape = *shape.Element
+								nilAllowed = true
+							}
+							if shape.Kind != "scalar" {
+								continue
+							}
+							category := f.Pattern.Category
+							if f.Pattern.Type != "" || f.Pattern.Rule != "" || len(f.Pattern.Fields) > 0 || len(f.Pattern.Children) > 0 {
+								category = "node"
+							}
+							if category != "" && category != shape.Scalar && !(nilAllowed && category == "nil") {
+								allowed := shape.Scalar
+								if nilAllowed {
+									allowed += " or nil"
 								}
-								if shape.Kind != "scalar" {
-									continue
-								}
-								category := f.Pattern.Category
-								if f.Pattern.Type != "" || f.Pattern.Rule != "" || len(f.Pattern.Fields) > 0 || len(f.Pattern.Children) > 0 {
-									category = "node"
-								}
-								if category != "" && category != shape.Scalar && !(nilAllowed && category == "nil") {
-									allowed := shape.Scalar
-									if nilAllowed {
-										allowed += " or nil"
-									}
-									return p, fmt.Errorf("field %s.%s is %s, incompatible with %s pattern", p.Type, f.Name, allowed, category)
-								}
+								return p, fmt.Errorf("field %s.%s is %s, incompatible with %s pattern", p.Type, f.Name, allowed, category)
 							}
 						}
 					}
@@ -162,11 +149,11 @@ func recoveryHasField(typ, name string) bool {
 	return false
 }
 
-func schemaMayHaveField(shape SchemaShape, name string, s *OutputSchema, active map[string]bool) bool {
+func schemaMayHaveField(shape SchemaShape, name string, s *QuerySchema, active map[string]bool) bool {
 	return schemaMayHaveFieldAt(&shape, name, s, active, make(map[*SchemaShape]bool))
 }
 
-func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *OutputSchema, active map[string]bool, completed map[*SchemaShape]bool) bool {
+func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *QuerySchema, active map[string]bool, completed map[*SchemaShape]bool) bool {
 	if completed[shape] {
 		return false
 	}
@@ -192,11 +179,8 @@ func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *OutputSchema, acti
 	if shape.Ref != "" && !active[shape.Ref] {
 		active[shape.Ref] = true
 		found := false
-		for _, t := range s.Types {
-			if t.ID == shape.Ref {
-				found = schemaMayHaveFieldAt(&t.Shape, name, s, active, completed)
-				break
-			}
+		if t := s.byID[shape.Ref]; t != nil {
+			found = schemaMayHaveFieldAt(&t.Shape, name, s, active, completed)
 		}
 		delete(active, shape.Ref)
 		if found {
@@ -211,24 +195,18 @@ func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *OutputSchema, acti
 
 // schemaDeclaredQueryAlias follows declared type references only. Unknown or
 // cyclic references remain unresolved, so query compilation stays conservative.
-func schemaDeclaredQueryAlias(shape SchemaShape, s *OutputSchema) SchemaShape {
+func schemaDeclaredQueryAlias(shape SchemaShape, s *QuerySchema) SchemaShape {
 	if shape.Kind != "ref" {
 		return shape
 	}
 	seen := map[string]bool{}
 	for shape.Kind == "ref" && !seen[shape.Ref] {
 		seen[shape.Ref] = true
-		found := false
-		for _, typ := range s.Types {
-			if typ.ID == shape.Ref && typ.Origin == "declared" {
-				shape = typ.Shape
-				found = true
-				break
-			}
-		}
-		if !found {
+		typ := s.byID[shape.Ref]
+		if typ == nil || typ.Origin != "declared" {
 			break
 		}
+		shape = typ.Shape
 	}
 	return shape
 }

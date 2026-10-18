@@ -81,7 +81,11 @@ The syntax and initial text-predicate set need implementation review; recommenda
 ## Implemented Go API
 
 `CompileStructuralQuery(QueryPattern, *OutputSchema)` accepts a programmatic
-pattern rather than adopting the illustrative text syntax. Patterns
+pattern rather than adopting the illustrative text syntax. Validating the schema
+dominates its cost, so `PrepareQuerySchema` validates a schema once into an
+immutable handle that owns a deep copy, keeping inline DAGs shared, and indexes
+rules and types by name and ID; its `CompileStructuralQuery` method performs the
+same pattern checks without validating again. Patterns
 may constrain type, producing rule, runtime category, named fields, and an
 ordered child prefix. Required fields must exist; extra fields and children are
 allowed. A capture binds the value at that pattern. Node patterns always check
@@ -132,9 +136,10 @@ sort comparisons. Full edge paths currently incur quadratic copying on a deep
 chain, and these copies are charged before construction. No speed or allocation
 claims are made.
 
-The public Go facade exposes `CompileStructuralQuery`, `QueryPattern`, capture/path
-types, `StructuralQuery.Matches`, and context/work-limit options. It preserves
-per-edge results and all-or-error behavior. The implemented pattern language is
+The public Go facade exposes `CompileStructuralQuery`, `PrepareQuerySchema`,
+`QueryPattern`, capture/path types, `StructuralQuery.Matches`, and
+context/work-limit options. It preserves per-edge results and all-or-error
+behavior. The implemented pattern language is
 programmatic; text syntax, text predicates, position/range queries, highlighting,
 TypeScript parity, and direct snapshot evaluation remain deferred. Discarded
 punctuation and comments cannot be recovered from Node values.

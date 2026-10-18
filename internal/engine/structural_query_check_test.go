@@ -39,6 +39,10 @@ func field(name string, p QueryPattern) QueryFieldPattern {
 // schema can match it where it is applied, through unions, optional values, lists and nesting.
 func TestStructuralQueryNestedShapes(t *testing.T) {
 	s := queryShapeSchema(t)
+	prepared, err := PrepareQuerySchema(s)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tc := range []struct {
 		name    string
 		pattern QueryPattern
@@ -69,6 +73,9 @@ func TestStructuralQueryNestedShapes(t *testing.T) {
 			case tc.err != "" && (err == nil || !strings.Contains(err.Error(), tc.err)):
 				t.Fatalf("error %v, want %q", err, tc.err)
 			}
+			if _, perr := prepared.CompileStructuralQuery(tc.pattern); fmt.Sprint(perr) != fmt.Sprint(err) {
+				t.Fatalf("prepared schema: error %v, want %v", perr, err)
+			}
 		})
 	}
 }
@@ -97,6 +104,10 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 			continue
 		}
 		schemas++
+		prepared, err := PrepareQuerySchema(s)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
 		for _, in := range c.inputs {
 			// Recovered parses report errors with their trees.
 			root, _ := prog.ParseWith(start, in, ParseOptions{MissingTokens: 3})
@@ -120,6 +131,9 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 				}
 				if m, err := q.Matches(n, QueryOptions{}); err != nil || len(m) == 0 {
 					t.Errorf("%s %q: pattern of %s does not match it: %v", c.name, in, n, err)
+				}
+				if _, err := prepared.CompileStructuralQuery(p); err != nil {
+					t.Errorf("%s %q: pattern of %s rejected with the prepared schema: %v", c.name, in, n, err)
 				}
 				return nil
 			})

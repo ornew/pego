@@ -34,9 +34,7 @@ type queryShapeKey struct {
 }
 
 type queryShapeChecker struct {
-	s *OutputSchema
-	// types indexes the schema's types by ID once a reference needs it.
-	types map[string]*SchemaType
+	s *QuerySchema
 	// done holds the results of checks already made, so shared shapes are checked once per
 	// pattern.
 	done map[queryShapeKey]error
@@ -59,10 +57,10 @@ func recoveryFields(name string) []SchemaField {
 
 // checkQueryShapes reports a pattern of p, a compiled copy, that matches no value the schema s
 // admits where it is applied.
-func checkQueryShapes(p *QueryPattern, s *OutputSchema) error {
+func checkQueryShapes(p *QueryPattern, s *QuerySchema) error {
 	k := &queryShapeChecker{s: s, done: map[queryShapeKey]error{}}
-	for i := range s.Types {
-		if t := &s.Types[i]; t.Origin == "cst" && recoveryFields(t.Name) != nil {
+	for i := range s.s.Types {
+		if t := &s.s.Types[i]; t.Origin == "cst" && recoveryFields(t.Name) != nil {
 			k.recovery = append(k.recovery, k.typeAtom(t))
 		}
 	}
@@ -159,13 +157,7 @@ func (k *queryShapeChecker) atoms(shape *SchemaShape, out []queryAtom, active ma
 }
 
 func (k *queryShapeChecker) typeByID(id string) *SchemaType {
-	if k.types == nil {
-		k.types = make(map[string]*SchemaType, len(k.s.Types))
-		for i := range k.s.Types {
-			k.types[k.s.Types[i].ID] = &k.s.Types[i]
-		}
-	}
-	return k.types[id]
+	return k.s.byID[id]
 }
 
 // typeAtom returns the atom of the nodes of the struct, terminal or reserved type t.
@@ -192,11 +184,9 @@ func (k *queryShapeChecker) cstAtom(name string, shape *SchemaShape) queryAtom {
 // patternAtom returns the atom of the nodes of the type a pattern names, where nothing else is
 // known about the value.
 func (k *queryShapeChecker) patternAtom(name string) queryAtom {
-	for i := range k.s.Types {
-		if t := &k.s.Types[i]; t.Name == name && t.Origin != "inferred" {
-			if t.Origin == "cst" || t.Shape.Kind == "struct" || t.Shape.Kind == "terminal" {
-				return k.typeAtom(t)
-			}
+	for t := range k.s.named(name) {
+		if t.Origin == "cst" || t.Shape.Kind == "struct" || t.Shape.Kind == "terminal" {
+			return k.typeAtom(t)
 		}
 	}
 	return queryAtom{kind: "node"}

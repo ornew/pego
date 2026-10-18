@@ -240,3 +240,46 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 		t.Fatalf("mutated scalar alias match: %+v, %v", matches, err)
 	}
 }
+
+func TestPublicPreparedQuerySchema(t *testing.T) {
+	p, err := pego.CompileSource(`rule main = x:"a" "b"`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := p.OutputSchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+	prepared, err := pego.PrepareQuerySchema(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := p.Parse("ab")
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := prepared.CompileStructuralQuery(pego.QueryPattern{Type: "Match", Capture: "token"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := q.Matches(root); err != nil || len(got) != 3 {
+		t.Fatalf("matches: %+v, %v", got, err)
+	}
+	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Rule: "missing"}); err == nil {
+		t.Fatal("accepted an unknown rule")
+	}
+	s.Rules = nil
+	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Rule: "main"}); err != nil {
+		t.Fatalf("prepared schema followed its changed source: %v", err)
+	}
+	if _, err := pego.PrepareQuerySchema(s); err == nil {
+		t.Fatal("prepared an invalid schema")
+	}
+	var none *pego.QuerySchema
+	if _, err := none.CompileStructuralQuery(pego.QueryPattern{Rule: "missing"}); err != nil {
+		t.Fatalf("nil QuerySchema checked the rule: %v", err)
+	}
+	if _, err := new(pego.QuerySchema).CompileStructuralQuery(pego.QueryPattern{Rule: "missing"}); err != nil {
+		t.Fatalf("zero QuerySchema checked the rule: %v", err)
+	}
+}

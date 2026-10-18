@@ -62,6 +62,26 @@ are treated equivalently. `CompileStructuralQuery` validates a supplied schema
 before using it. This checks schema structure and canonical relationships; it
 does not prove source or binary compatibility between grammars.
 
+Validation takes most of the time of compiling a query with a schema. To compile
+many queries against one schema, validate it once with
+`pego.PrepareQuerySchema(schema)` and compile with the result's
+`CompileStructuralQuery(pattern)` method, which performs the same pattern checks.
+The prepared schema owns a copy of the schema, so later changes to the original do
+not affect it, and it is safe for concurrent use:
+
+```go
+prepared, err := pego.PrepareQuerySchema(schema)
+if err != nil { log.Fatal(err) }
+query, err := prepared.CompileStructuralQuery(pego.QueryPattern{
+	Type: "Match", Rule: "name", Capture: "name",
+})
+```
+
+With a 128-type schema, compiling a query takes about 80 µs without preparation
+and under 1 µs with it, while preparing takes about as long as one unprepared
+compilation and the prepared schema retains about 1.3 times the memory of the
+schema.
+
 `pego.DiffOutputSchemas(before, after)` validates both complete operands, then
 compares version-1 schema contents by type ID and rule name. It returns sorted
 added, removed, and changed entries; unchanged schemas have empty `Types` and
