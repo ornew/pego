@@ -1470,7 +1470,7 @@ rule jsxSelfClosingElement JsxSelfClosingElement = (
 rule jsxElement JsxElement = (
     &("<" -ws on:jsxElementName) o:jsxOpeningElement cs:jsxChild*
     &("</" -ws cn:jsxElementName) c:jsxClosingElement {text($on) == text($cn)}
-) => JsxElement{OpeningElement: $o, Children: $cs, ClosingElement: $c}
+) => JsxElement{OpeningElement: $o, Children: $cs.Value, ClosingElement: $c}
 rule jsxOpeningElement JsxOpeningElement = (
     "<" -ws n:jsxElementName (-ws t:typeArguments)? -ws a:jsxAttributes
     -ws ">"
@@ -1478,7 +1478,7 @@ rule jsxOpeningElement JsxOpeningElement = (
 rule jsxClosingElement JsxClosingElement = "</" -ws n:jsxElementName -ws ">" => JsxClosingElement{TagName: $n}
 rule jsxFragment JsxFragment = (
     o:jsxOpeningFragment cs:jsxChild* c:jsxClosingFragment
-) => JsxFragment{OpeningFragment: $o, Children: $cs, ClosingFragment: $c}
+) => JsxFragment{OpeningFragment: $o, Children: $cs.Value, ClosingFragment: $c}
 rule jsxOpeningFragment JsxOpeningFragment = "<" -ws ">"
 rule jsxClosingFragment JsxClosingFragment = "</" -ws ">"
 

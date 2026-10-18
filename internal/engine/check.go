@@ -425,6 +425,8 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyNever
 	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
 		return namedTy{name, 'c'}
+	case "error": // the value of recovery: a recovered error or a missing token
+		return union(namedTy{TypeError, 'c'}, namedTy{TypeMissing, 'c'})
 	}
 	switch spec := k.prog.types[name].(type) {
 	case *grammar.StructSpec:

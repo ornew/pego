@@ -11,7 +11,7 @@ type File = { Records []Record }
 type Record = { Fields []Field }
 type Field terminal // the raw field: a quoted field keeps its quotes and doubled ""
 
-rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs}
+rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs.Value}
 
 // A record's span includes its line break (its fields end at the End of the last one): a rule that
 // leaves the line break out (`!$$ r:record eol -> $r`) makes ParseAST about 7% slower.

@@ -124,13 +124,13 @@ type Lambda = { Params []Ident; Body ActionExpr }
 // declaration and item lists keep physical newlines as statement boundaries.
 rule main File = f:file => $f
 rule file File = (
-  &cs:source_comments f:file_contents
+  &cs:source_comments &src:(.* #atomic) f:file_contents
 ) => File{
   Package: $f.Package,
   Defs: $f.Defs,
   Comments: $cs,
   TrailingComments: $f.TrailingComments,
-  Text: text($f),
+  Text: text($src),
 }
 rule file_contents File = (
   {ml := false}
@@ -491,7 +491,7 @@ rule string String = "\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic
 rule char_class CharClass = (
   "[" not:"^"? items:(char_class_rng / char_class_chr)+
   -("]" @error(message="expected closing bracket for character class"))
-) => CharClass{Not: $not != nil, Items: $items}
+) => CharClass{Not: $not != nil, Items: $items.Value}
 rule char_class_rng CharRng = start:char_class_chr "-" !"]" end:char_class_chr => CharRng{Start: $start, End: $end}
 rule char_class_chr Char = ("\\" escape_char / [^\]\\\n]) #atomic
 rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab0] / [^a-zA-Z0-9]

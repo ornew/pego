@@ -1,1 +1,1 @@
-[(Item Children=[(Item Children=[] Text="apple"@line) (Item Children=[(Item Children=[] Text="lemon"@line) (Item Children=[] Text="lime"@line)] Text="citrus"@line)] Text="fruits"@line) (Item Children=[(Item Children=[] Text="carrot"@line)] Text="vegetables"@line)]
+[Item{Children: [Item{Children: [], Text: "apple"} Item{Children: [Item{Children: [], Text: "lemon"} Item{Children: [], Text: "lime"}], Text: "citrus"}], Text: "fruits"} Item{Children: [Item{Children: [], Text: "carrot"}], Text: "vegetables"}]

@@ -12,7 +12,7 @@ type Return = { Value *Expr }
 type Func = { Name Ident; Params []Ident; Body Block }
 type ExprStmt = { X Expr }
 type Block = { Body []Stmt }
-type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block
+type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error
 
 // --- Expressions ---
 type Ident terminal

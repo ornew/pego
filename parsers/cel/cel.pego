@@ -53,7 +53,7 @@ rule expr Expr = operators {
     level { infix right "?" ws then:level(expr, or) ws ":" => Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
     level or { infix left "||" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { infix left "&&" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" ![A-Za-z0-9_] => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / ("in" ![A-Za-z0-9_]) #atomic => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { infix left "*" / "/" / "%" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }

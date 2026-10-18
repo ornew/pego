@@ -582,14 +582,14 @@ rule expr Expr = operators {
     // a -> b and a ->> b. As a token, ->> has the lowest precedence (an expression on its left side is complete),
     // but its rule has the precedence of Op, so its right side is an operand of the arithmetic operators.
     level lv_arrow {
-        infix left &"-" op_arrow => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &"-" o:op_arrow => Binary{Left: $lhs, Op: $o, Right: $rhs}
         postfix &"-" o:op_darrow ws r:level(expr, lv_add) => Binary{Left: $lhs, Op: $o, Right: $r}
     }
     level lv_or {
-        infix left &[oO] OR => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &[oO] o:(OR #atomic) => Binary{Left: $lhs, Op: $o, Right: $rhs}
     }
     level lv_and {
-        infix left &[aA] AND => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &[aA] o:(AND #atomic) => Binary{Left: $lhs, Op: $o, Right: $rhs}
     }
     level lv_not {
         prefix NOT => Not{X: $rhs}
@@ -620,13 +620,13 @@ rule expr Expr = operators {
         postfix &[+\-*/<>=~!@\^&|`%oO] o:qual_op !(ws AT) !(ws qual_op) => PostfixOp{X: $lhs, Op: $o}
     }
     level lv_add {
-        infix left &[+\-] op_plus / op_minus => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &[+\-] o:(op_plus / op_minus) => Binary{Left: $lhs, Op: $o, Right: $rhs}
     }
     level lv_mul {
-        infix left &[*/%] op_star / op_slash / op_idiv / op_percent => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &[*/%] o:(op_star / op_slash / op_idiv / op_percent) => Binary{Left: $lhs, Op: $o, Right: $rhs}
     }
     level lv_pow {
-        infix left &[*\^] op_caret / op_pow => Binary{Left: $lhs, Op: $op, Right: $rhs}
+        infix left &[*\^] o:(op_caret / op_pow) => Binary{Left: $lhs, Op: $o, Right: $rhs}
     }
     level lv_at {
         postfix &[aA] AT ws TIME ws ZONE ws z:level(expr, lv_collate) => AtTimeZone{X: $lhs, Zone: $z}

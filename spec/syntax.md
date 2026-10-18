@@ -35,7 +35,7 @@ package pego
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
 rule main = file
-rule file = &source_comments file_contents
+rule file = &source_comments &.* #atomic file_contents
 rule file_contents = (
     {ml := false}
     package_entry?

@@ -63,7 +63,7 @@ rule l_any_document Document = l_directive_document / l_explicit_document / l_ba
 // [209] l-directive-document ::= l-directive+ l-explicit-document
 rule l_directive_document Document = (
     ds:l_directive+ m:c_directives_end r:explicit_root e:document_end?
-) => Document{Directives: $ds, Start: $m, Root: $r, End: $e}
+) => Document{Directives: $ds.Value, Start: $m, Root: $r, End: $e}
 // [208] l-explicit-document ::= c-directives-end ( l-bare-document | ( e-node s-l-comments ) )
 rule l_explicit_document Document = (
     m:c_directives_end r:explicit_root e:document_end?

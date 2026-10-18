@@ -479,7 +479,7 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	case ftNamed:
 		return typ == t.name
 	case ftList:
-		if typ != TypeList {
+		if typ != TypeList && typ != typeListValue {
 			return false
 		}
 		for _, c := range n.Children {

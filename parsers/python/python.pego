@@ -915,12 +915,12 @@ rule fstring = (
     ([rR] [fF] {lv := lv % 512 + 4096} / [fF] [rR] {lv := lv % 512 + 4096} / [fF] {lv := lv % 512})
     ("'''" {lv := lv + 3 * 512} / "\"\"\"" {lv := lv + 4 * 512} / "'" {lv := lv + 512} / "\"" {lv := lv + 2 * 512})
     ps:fpart* fclose @error(message="unterminated f-string literal")
-) => $ps
+) => $ps.Value
 rule tstring = (
     ([rR] [tT] {lv := lv % 512 + 4096} / [tT] [rR] {lv := lv % 512 + 4096} / [tT] {lv := lv % 512})
     ("'''" {lv := lv + 3 * 512} / "\"\"\"" {lv := lv + 4 * 512} / "'" {lv := lv + 512} / "\"" {lv := lv + 2 * 512})
     ps:tpart* fclose @error(message="unterminated t-string literal")
-) => $ps
+) => $ps.Value
 rule fclose = {lv / 512 % 8 == 1} "'" / {lv / 512 % 8 == 2} "\"" / {lv / 512 % 8 == 3} "'''" / {lv / 512 % 8 == 4} "\"\"\""
 rule fpart StrPart = fraw_text / ftext / ffield
 rule tpart StrPart = fraw_text / ftext / tfield
@@ -953,7 +953,7 @@ rule fdebug = ws "=" ws
 // The conversion character must follow the '!' immediately.
 rule fconv = -ws "!" c:[sra] #atomic !idcont => $c
 // A format spec: literal text (no doubled braces) and replacement fields.
-rule fspec JoinedStr = ":" {lv := lv + 8192} ps:fspec_part* => JoinedStr{Values: $ps}
+rule fspec JoinedStr = ":" {lv := lv + 8192} ps:fspec_part* => JoinedStr{Values: $ps.Value}
 rule fspec_part StrPart = fspec_raw_text / fspec_text / ffield
 rule fspec_text FStringMiddle = {lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / fesc)+
 rule fspec_raw_text FStringRawMiddle = {lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / frawesc)+
