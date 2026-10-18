@@ -35,7 +35,7 @@ type Config = {
     Entries []Entry
 }
 
-rule main Config = -ws es:entry* $$ => Config{Entries: $es}
+rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
@@ -55,15 +55,15 @@ pego parse -g config.pego -f sexpr < example.conf
 ```
 
 ```text
-(Config Entries=[(Entry Key=Key"host"@key Value=String"\"localhost\""@string) (Entry Key=Key"port"@key Value=Number"8080"@number) (Entry Key=Key"debug"@key Value=Bool"true"@bool)])
+Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: "port", Value: "8080"} Entry{Key: "debug", Value: "true"}]}
 ```
 
 What is new:
 
 - `package config` is optional; it names the grammar's package and is used by the code generator
   (see [Shipping a Parser](shipping.md)). It must be the first item in the file.
-- `type Key terminal` declares a **terminal type**: a node type for leaves of the tree. A rule declared with a terminal
-  type (`rule key Key = [a-z_]+`) produces a single terminal of that type holding the matched text, so there is no
+- `type Key terminal` declares a **terminal type**: a type for the leaves of the tree. A rule declared with a terminal
+  type (`rule key Key = [a-z_]+`) produces a single string node of that type holding the matched text, so there is no
   need for `#atomic`. The text of a `String` includes its quotes, since it is the text the rule matched.
 - `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
@@ -71,7 +71,8 @@ What is new:
   lists (`[]Entry`), optional values (`*T`), or unions.
 - `rule name [Type] = expression` states the optional type of a rule. You can omit it and PEGO infers the type from the body, but
   declaring the types of the rules that build your tree documents them and keeps mistakes close to where they happen.
-- `es:entry*` captures the whole list of entries, and `Config{Entries: $es}` stores it in the `Config` node.
+- `es:entry*` captures the whole list of entries. `$es` is a node, so `$es.Value` is its value, the list that
+  `Config{Entries: $es.Value}` stores in the `Config` struct. Every node has the members `.Start`, `.End` and `.Value`.
 
 The compiler rejects ill-typed grammars with a position in the grammar file. In a copy of `config.pego`, swapping the
 arguments in the `entry` action:
@@ -138,10 +139,10 @@ func main() {
 	}
 
 	entries := cfg.Field("Entries").(*pego.Node)
-	for _, e := range entries.Children {
+	for _, e := range entries.Elems() {
 		key := e.Field("Key").(*pego.Node)
 		value := e.Field("Value").(*pego.Node)
-		fmt.Printf("%-6s %-7s %s\n", key.Text, value.Type(), value.Text)
+		fmt.Printf("%-6s %-7s %s\n", key.Text(), value.Type(), value.Text())
 	}
 }
 ```
@@ -156,9 +157,10 @@ port   Number  8080
 debug  Bool    true
 ```
 
-`node.Field(name)` returns the value of a struct field or capture, as an `any`: a `*pego.Node` for node values, or an
-`int`, `string` or `bool`. A list is a node of type `List` whose `Children` are the elements. `value.Type()` tells you
-which member of the `Value` union you got, so a `switch` on it is how you walk a union.
+`node.Field(name)` returns the value of a struct field as an `any`: a `*pego.Node` for node values, lists, tuples and
+structs, or an `int`, `string` or `bool`. A list is a node whose elements `Len()`, `Elem(i)` and `Elems()` give.
+`node.Text()` is the text of a string node. `value.Type()` tells you which member of the `Value` union you got, so a
+`switch` on it is how you walk a union.
 
 ## Next Steps
 

@@ -3,7 +3,7 @@
 **Problem.** Your program reads a small configuration file of `key = value` lines, with comments, strings, integers,
 booleans and arrays, and wants a Go struct. A wrong type or an unknown key should be reported with its line.
 
-The grammar describes the syntax and keeps each kind of value as a node type. Go turns the nodes into a struct.
+The grammar describes the syntax and keeps each kind of value as a type. Go turns the values into a struct.
 
 ```pego
 // config.pego
@@ -18,7 +18,7 @@ type Value ~ Int | Str | Bool | Array
 type Entry = { Key Key; Value Value }
 type Config = { Entries []Entry }
 
-rule main Config = -ws es:entry* $$ => Config{Entries: $es}
+rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
@@ -64,21 +64,21 @@ func asString(v *pego.Node) (string, error) {
 	if v.Type() != "Str" {
 		return "", fmt.Errorf("want a string, got %s", strings.ToLower(v.Type()))
 	}
-	return strconv.Unquote(v.Text)
+	return strconv.Unquote(v.Text())
 }
 
 func asInt(v *pego.Node) (int, error) {
 	if v.Type() != "Int" {
 		return 0, fmt.Errorf("want an integer, got %s", strings.ToLower(v.Type()))
 	}
-	return strconv.Atoi(v.Text)
+	return strconv.Atoi(v.Text())
 }
 
 func asBool(v *pego.Node) (bool, error) {
 	if v.Type() != "Bool" {
 		return false, fmt.Errorf("want true or false, got %s", strings.ToLower(v.Type()))
 	}
-	return v.Text == "true", nil
+	return v.Text() == "true", nil
 }
 
 func asStrings(v *pego.Node) ([]string, error) {
@@ -86,7 +86,7 @@ func asStrings(v *pego.Node) ([]string, error) {
 		return nil, fmt.Errorf("want an array, got %s", strings.ToLower(v.Type()))
 	}
 	var out []string
-	for _, item := range v.Field("Items").(*pego.Node).Children {
+	for _, item := range v.Field("Items").(*pego.Node).Elems() {
 		s, err := asString(item)
 		if err != nil {
 			return nil, err
@@ -99,13 +99,13 @@ func asStrings(v *pego.Node) ([]string, error) {
 // Load parses src and copies the entries into a Config.
 func Load(p *pego.Parser, src string) (Config, error) {
 	var c Config
-	// Bytes, so that Start is an offset into src.
+	// Bytes, so that Start() is an offset into src.
 	tree, err := p.Parse(src, pego.WithUnit(pego.Bytes))
 	if err != nil {
 		return c, err
 	}
-	for _, e := range tree.Field("Entries").(*pego.Node).Children {
-		key := e.Field("Key").(*pego.Node).Text
+	for _, e := range tree.Field("Entries").(*pego.Node).Elems() {
+		key := e.Field("Key").(*pego.Node).Text()
 		v := e.Field("Value").(*pego.Node)
 		switch key {
 		case "name":
@@ -120,7 +120,7 @@ func Load(p *pego.Parser, src string) (Config, error) {
 			err = errors.New("unknown key")
 		}
 		if err != nil {
-			line := 1 + strings.Count(src[:e.Start], "\n")
+			line := 1 + strings.Count(src[:e.Start()], "\n")
 			return c, fmt.Errorf("line %d: %s: %w", line, key, err)
 		}
 	}
@@ -160,12 +160,12 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 ## How It Works
 
 - **Syntax in the grammar, meaning in Go.** The grammar says what a file looks like and tells the kinds of value apart
-  by type: `Int`, `Str`, `Bool` and `Array` are different node types, so Go can switch on `v.Type()`. Actions have no
+  by type: `Int`, `Str`, `Bool` and `Array` are different types, so Go can switch on `v.Type()`. Actions have no
   function that turns text into a number, so `strconv` does that in the `as...` helpers.
-- **The tree is what the grammar declares.** `main` returns a `Config` node whose `Entries` field is a list of `Entry`
-  nodes. `Field("Entries")` and `Children` walk it, as described in
+- **The tree is what the grammar declares.** `main` returns a `Config` struct whose `Entries` field is a list of `Entry`
+  structs. `Field("Entries")` and `Elems` walk it, as described in
   [Shaping Trees](../guide/shaping-trees.md).
-- **`pego.WithUnit(pego.Bytes)`** makes `Start` and `End` offsets into the Go string, so `src[:e.Start]` is the text
+- **`pego.WithUnit(pego.Bytes)`** makes `Start()` and `End()` offsets into the Go string, so `src[:e.Start()]` is the text
   before an entry, and counting its line feeds gives the line. By default positions count code points, which are not
   string indexes when the text has non-ASCII characters.
 - **Two kinds of error.** A file that is not in the format fails in `Parse` with a `*pego.SyntaxError` (the last line of
@@ -176,7 +176,7 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 
 - The syntax error lists every token that could have come next. [Report an error with its source line and a
   caret](error-carets.md) shows how to replace it with a message such as `expected a value`.
-- To get typed Go values without writing the `Field` and `Children` code, generate a parser with `pego gen -types`; see
+- To get typed Go values without writing the `Field` and `Elems` code, generate a parser with `pego gen -types`; see
   [Ship a parser and keep it up to date](ship-a-parser.md).
 - Sections (`[server]`), a trailing comma rule or `key: value` lines are changes to `entry` and `main`. Keep every rule
   that skips white space in one place (`ws` here), so that the grammar says where white space may appear.

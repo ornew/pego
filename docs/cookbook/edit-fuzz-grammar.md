@@ -104,7 +104,7 @@ func TestEditsMatchFreshParses(t *testing.T) {
 	}{{"closure", pego.Closure}, {"bytecode", pego.Bytecode}, {"bytecode-iterative", pego.BytecodeIterative}}
 	units := []struct {
 		name string
-		unit pego.Unit
+		unit pego.PositionUnit
 	}{{"codepoints", pego.CodePoints}, {"bytes", pego.Bytes}}
 	for _, b := range backends {
 		for _, u := range units {

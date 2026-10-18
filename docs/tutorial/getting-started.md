@@ -53,36 +53,32 @@ pego parse -g hello.pego -i 'hello world'
 
 ```json
 {
-  "type": "Seq",
-  "rule": "main",
   "start": 0,
   "end": 11,
-  "children": [
+  "value": [
     {
-      "type": "Match",
       "start": 0,
       "end": 5,
-      "text": "hello"
+      "value": "hello"
     },
     {
-      "type": "Match",
       "start": 5,
       "end": 6,
-      "text": " "
+      "value": " "
     },
     {
-      "type": "Match",
       "start": 6,
       "end": 11,
-      "text": "world"
+      "value": "world"
     }
   ]
 }
 ```
 
-The result is a **tree of nodes**. Each node has a `type`, a range in the input (`start` inclusive, `end` exclusive,
-counted in Unicode code points), and either `text` (for a terminal) or `children`. Here the sequence of three literals
-became a `Seq` node, labeled `"rule": "main"` because the rule `main` created it, with three `Match` terminals under it.
+The result is a **tree of nodes**. Each node has a range in the input (`start` inclusive, `end` exclusive, counted in
+Unicode code points) and a `value`. The value of a literal is the text it matched. A sequence has a tuple of the values of
+its elements, which is a JSON array, so the sequence of three literals became a node whose value holds three nodes, one
+per literal.
 
 The JSON form is complete but long. `-f sexpr` prints the same tree as a compact S-expression, which is what the rest
 of this tutorial uses:
@@ -92,19 +88,32 @@ pego parse -g hello.pego -f sexpr -i 'hello world'
 ```
 
 ```text
-(Seq "hello" " " "world")@main
+("hello" " " "world")
 ```
 
 How to read it:
 
 | Syntax | Meaning |
 |:--|:--|
-| `"abc"` | a terminal (a `Match` node) holding the text `abc` |
-| `Name"abc"` | a terminal of the user-defined terminal type `Name` |
-| `(Seq a b)` | a `Seq` node (the value of a sequence) with children `a` and `b` |
-| `[a b]` | a `List` node (the value of a repetition) |
-| `(Pair Key=a Value=b)` | a node of a struct type with fields (and captures) `Key` and `Value` |
-| `x@rule` | the node was created by the rule `rule` |
+| `"abc"` | a node whose value is the text `abc` |
+| `( a b )` | a node whose value is a tuple (the value of a sequence) with elements `a` and `b` |
+| `[ a b ]` | a node whose value is a list (the value of a repetition) |
+| `nil` | an optional that did not match |
+| `Pair{Key: a, Value: b}` | a struct built by an action, with fields `Key` and `Value` |
+
+An S-expression shows only values, not positions. Rule and capture names are source information, which `pego parse` leaves
+out unless you ask for it with `-source-info`:
+
+```bash
+pego parse -g hello.pego -f sexpr -source-info -i 'hello world'
+```
+
+```text
+("hello" " " "world")@main
+```
+
+Here `@main` says that the rule `main` created the node. Captures appear as `name:` labels in front of their elements, as
+later lessons show.
 
 The start rule must match the **whole input**. If it matches only a prefix, that is a syntax error, and so is input
 that does not match at all. Both are reported with a position and what was expected there:
@@ -153,9 +162,9 @@ func main() {
 	}
 
 	fmt.Println(node) // the S-expression form
-	fmt.Println(node.Type(), node.Rule(), node.Start, node.End)
-	for _, c := range node.Children {
-		fmt.Printf("%s %q [%d,%d)\n", c.Type(), c.Text, c.Start, c.End)
+	fmt.Println(node.Kind(), node.Start(), node.End())
+	for _, c := range node.Elems() {
+		fmt.Printf("%q [%d,%d)\n", c.Text(), c.Start(), c.End())
 	}
 
 	data, _ := json.Marshal(node)
@@ -171,20 +180,21 @@ go run .
 ```
 
 ```text
-(Seq "hello" " " "world")@main
-Seq main 0 11
-Match "hello" [0,5)
-Match " " [5,6)
-Match "world" [6,11)
-{"type":"Seq","rule":"main","start":0,"end":11,"children":[{"type":"Match","start":0,"end":5,"text":"hello"},{"type":"Match","start":5,"end":6,"text":" "},{"type":"Match","start":6,"end":11,"text":"world"}]}
+("hello" " " "world")
+tuple 0 11
+"hello" [0,5)
+" " [5,6)
+"world" [6,11)
+{"start":0,"end":11,"value":[{"start":0,"end":5,"value":"hello"},{"start":5,"end":6,"value":" "},{"start":6,"end":11,"value":"world"}]}
 1:7: syntax error: expected "world"
 ```
 
 - `pego.CompileSource(grammarSource, startRule)` parses and type-checks the grammar and returns a `*pego.Parser`. It
   fails with an error that has the line and column in the grammar source if the grammar is wrong. Compile once and reuse
   the parser; it can be used from several goroutines.
-- `p.Parse(input)` returns a `*pego.Node`. Nodes expose `Type()`, `Rule()`, `Start`, `End`, `Text`, `Children`
-  and `Fields`, and encode to JSON as shown.
+- `p.Parse(input)` returns a `*pego.Node`. `Kind()` tells what the value is (here a tuple), `Start()` and `End()` give the
+  range, `Text()` is the text of a string node, and `Elems()` iterates over the elements of a tuple or list. Nodes encode
+  to JSON as shown.
 - When the input does not match, `Parse` returns a `*pego.SyntaxError` (see [Reporting Errors](errors.md)).
 
 ## Next Steps

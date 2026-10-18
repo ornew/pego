@@ -52,8 +52,8 @@ printf 'host = "localhost"\nport = 8080\ndebug = maybe\n' | pego parse -g stream
 ```
 
 ```text
-(Entry Key=Key"host"@key Value=String"\"localhost\""@string)
-(Entry Key=Key"port"@key Value=Number"8080"@number)
+Entry{Key: "host", Value: "\"localhost\""}
+Entry{Key: "port", Value: "8080"}
 pego: 3:9: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 
@@ -91,7 +91,7 @@ func main() {
 	input := "host = \"localhost\"\nport = 8080\ndebug = true\n"
 	err = sp.ParseStream(strings.NewReader(input), func(n *pego.Node) error {
 		key := n.Field("Key").(*pego.Node)
-		fmt.Printf("[%d,%d) %s\n", n.Start, n.End, key.Text)
+		fmt.Printf("[%d,%d) %s\n", n.Start(), n.End(), key.Text())
 		return nil
 	})
 	if err != nil {
@@ -122,7 +122,7 @@ func main() {
 	}
 	st := doc.Stats()
 	fmt.Println("after the edit: evaluated", st.Evaluated, "reused", st.Reused)
-	fmt.Println(cfg.Field("Entries").(*pego.Node).Children[1].Field("Value").(*pego.Node).Text)
+	fmt.Println(cfg.Field("Entries").(*pego.Node).Elem(1).Field("Value").(*pego.Node).Text())
 }
 ```
 

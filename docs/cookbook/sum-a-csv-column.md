@@ -44,13 +44,13 @@ func main() {
 		if rows == 1 {
 			return nil
 		}
-		fields := rec.Field("Fields").(*pego.Node).Children
-		if len(fields) != 3 {
-			return fmt.Errorf("record %d (offset %d): want 3 fields, got %d", rows, rec.Start, len(fields))
+		fields := rec.Field("Fields").(*pego.Node)
+		if fields.Len() != 3 {
+			return fmt.Errorf("record %d (offset %d): want 3 fields, got %d", rows, rec.Start(), fields.Len())
 		}
-		v, err := strconv.ParseFloat(fields[2].Text, 64)
+		v, err := strconv.ParseFloat(fields.Elem(2).Text(), 64)
 		if err != nil {
-			return fmt.Errorf("record %d (offset %d): %w", rows, rec.Start, err)
+			return fmt.Errorf("record %d (offset %d): %w", rows, rec.Start(), err)
 		}
 		total += v
 		return nil
@@ -68,7 +68,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		for _, rec := range tree.Field("Records").(*pego.Node).Children {
+		for _, rec := range tree.Field("Records").(*pego.Node).Elems() {
 			if err := sum(rec); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -124,13 +124,13 @@ record 3 (offset 23): strconv.ParseFloat: parsing "oops": invalid syntax
 4:1: syntax error: expected "\"", "\"\"", [^"]
 ```
 
-The record number counts the header. The callback's error is wrapped with the record's `Start` offset; the parser's error
+The record number counts the header. The callback's error is wrapped with the record's `Start()` offset; the parser's error
 says the quoted field never ended.
 ## How It Works
 
 - The first record is the header: `sum` skips it by counting. `ParseStream` does not return it separately.
 - The callback validates each record. Its error stops the stream and `ParseStream` returns it unchanged, so the program
-  wraps it with the record's `Start` offset.
+  wraps it with the record's `Start()` offset.
 - A record that the grammar cannot read (here, a quoted field that never ends) is a `*pego.SyntaxError` with the line and
   column in the whole input, after the records before it were delivered.
 

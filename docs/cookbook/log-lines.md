@@ -31,7 +31,7 @@ type Line = {
 }
 type Log = { Lines []Line }
 
-rule main Log = ls:line* $$ => Log{Lines: $ls}
+rule main Log = ls:line* $$ => Log{Lines: $ls.Value}
 
 rule line Line = (
     t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
@@ -167,11 +167,11 @@ and inputs; measure your own grammar and input (see [Debugging and Profiling](..
 - **Several formats.** Put each in its own grammar and package, or use `ParseRule` of the generated parser to start at
   another rule.
 - **Lines you do not want to fail on.** Parse each line separately (a grammar whose `main` is one `line`), or add
-  [error recovery](several-errors.md) so that a bad line becomes an `Error` node and parsing goes on.
+  [error recovery](several-errors.md) so that a bad line becomes an `error` value and parsing goes on.
 - **More input than memory.** The generated parser needs the whole input in memory; use the engine and
   [`#stream`](big-files.md).
 - **Without a generated file.** `p.Parse(text, pego.RecognizeOnly())` is the engine's recognition mode, and the typed
-  structs can be replaced by the `Field` and `Children` of `*pego.Node`.
+  structs can be replaced by the `Field` and `Elems` of `*pego.Node`.
 
 See [Code generation](../guide/code-generation.md) for what generated parsers support and
 [Running parsers](../guide/running-parsers.md) for recognition mode.

@@ -3,7 +3,7 @@
 **Problem.** A script has statements and blocks that contain statements. A mistake in one statement, even deep inside a
 block, must not hide the others: you want every error, and the statements that were fine, at every level.
 
-Put `#recover` on the statement rule, which every block body uses. A bad statement becomes an `Error` node in the list
+Put `#recover` on the statement rule, which every block body uses. A bad statement becomes an `error` value in the list
 that holds it, the recovery happens in the innermost block that contains the mistake, and the blocks around it are
 unaffected. The one rule to keep is that the skip must not eat a brace, or it would swallow the end of the block.
 
@@ -15,7 +15,7 @@ type Name terminal
 type Num terminal
 type Set = { Name Name; Value Num }
 type Block = { Cond Name; Body []Stmt }
-type Stmt ~ Set | Block
+type Stmt ~ Set | Block | error
 type Script = { Body []Stmt }
 
 rule main Script = -ws body:stmts -ws $$ => Script{Body: $body}
@@ -86,15 +86,17 @@ func main() {
 	// The outline: how many statements were read at each level, and where the bad ones are.
 	var outline func(n *pego.Node, indent string)
 	outline = func(list *pego.Node, indent string) {
-		for _, n := range list.Children {
+		for _, n := range list.Elems() {
+			if n.Kind() == pego.KindError {
+				fmt.Printf("%sERROR %q\n", indent, strings.TrimSpace(source[n.Start():n.End()]))
+				continue
+			}
 			switch n.Type() {
 			case "Set":
-				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*pego.Node).Text)
+				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*pego.Node).Text())
 			case "Block":
-				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*pego.Node).Text)
+				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*pego.Node).Text())
 				outline(n.Field("Body").(*pego.Node), indent+"  ")
-			case "Error":
-				fmt.Printf("%sERROR %q\n", indent, strings.TrimSpace(n.Text))
 			}
 		}
 	}

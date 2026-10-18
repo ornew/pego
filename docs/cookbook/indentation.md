@@ -55,14 +55,14 @@ import (
 var grammar string
 
 // toMap turns entries into nested maps: an entry with children becomes a map, any other a string.
-func toMap(entries []*pego.Node) map[string]any {
+func toMap(entries *pego.Node) map[string]any {
 	m := map[string]any{}
-	for _, e := range entries {
-		key := e.Field("Key").(*pego.Node).Text
-		if kids := e.Field("Children").(*pego.Node).Children; len(kids) > 0 {
+	for _, e := range entries.Elems() {
+		key := e.Field("Key").(*pego.Node).Text()
+		if kids := e.Field("Children").(*pego.Node); kids.Len() > 0 {
 			m[key] = toMap(kids)
 		} else if v, ok := e.Field("Value").(*pego.Node); ok {
-			m[key] = v.Text
+			m[key] = v.Text()
 		} else {
 			m[key] = ""
 		}
@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	out, _ := json.MarshalIndent(toMap(tree.Children), "", "  ")
+	out, _ := json.MarshalIndent(toMap(tree), "", "  ")
 	fmt.Println(string(out))
 }
 ```

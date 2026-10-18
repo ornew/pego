@@ -16,7 +16,7 @@ type Number terminal
 type Unit terminal
 type Quantity = { Value Number; Unit Unit }
 
-rule duration []Quantity = qs:quantity+ $$ => $qs
+rule duration []Quantity = qs:quantity+ $$ => $qs.Value
 rule size Quantity = q:quantity $$ => $q
 
 rule quantity Quantity = v:number u:unit => Quantity{Value: $v, Unit: $u}
@@ -121,9 +121,9 @@ func main() {
 The results are printed in the order of the jobs, whatever order the goroutines finish in. Run `go run .` and `go test -race`:
 
 ```text
-duration "1h30m"  [(Quantity Unit=Unit"h"@unit Value=Number"1"@number) (Quantity Unit=Unit"m"@unit Value=Number"30"@number)]
-size     "10MiB"  (Quantity Unit=Unit"MiB"@unit Value=Number"10"@number)
-duration "250ms"  [(Quantity Unit=Unit"ms"@unit Value=Number"250"@number)]
+duration "1h30m"  [Quantity{Unit: "h", Value: "1"} Quantity{Unit: "m", Value: "30"}]
+size     "10MiB"  Quantity{Unit: "MiB", Value: "10"}
+duration "250ms"  [Quantity{Unit: "ms", Value: "250"}]
 size     "10 MiB" error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 duration "90"     error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 ```

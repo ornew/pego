@@ -12,11 +12,12 @@ is half typed is not valid, so the grammar recovers from errors, and every keyst
 ```pego
 // settings.pego
 type Setting = { Key Match; Value Match }
+type Item ~ Setting | error
 
 rule main = -ws (setting -ws)* $$
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
-rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
+rule setting Item = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
 rule entry Setting = (
     k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
@@ -147,7 +148,7 @@ The unit of reuse is the rule call, so:
   repetition (`line*`). A grammar written as one big rule has little to reuse.
 - **Use a repetition for a list, not recursion.** With `lines = line lines?`, every call before the edit looks at
   everything after it, so all of them run again.
-- **Avoid lookahead that can reach the end of the text** and positions stored in values (`startPos` in an action); both
+- **Avoid lookahead that can reach the end of the text** and positions stored in values (`.Start` or `.End` in an action); both
   make the rules that use them run again after every edit.
 - **Check with `Stats`** as above: a good grammar evaluates a handful of rule bodies per keystroke.
 

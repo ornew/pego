@@ -11,12 +11,13 @@ syntax problem, and the tool adds its own checks on top of the values that were 
 ```pego
 // settings.pego
 type Setting = { Key Match; Value Match }
-type File = { Settings []Setting }
+type Item ~ Setting | error
+type File = { Settings []Item }
 
 rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => x.$s)}
 
 // A setting that does not parse is skipped up to the next ";" (but not past a line end).
-rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
+rule setting Item = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
 rule entry Setting = (
     k:name #atomic -ws "=" @error(message="expected '='") -ws v:num @error(message="expected a number")
@@ -72,17 +73,18 @@ if (error instanceof SyntaxErrors) {
 }
 
 for (const s of value?.Settings ?? []) {
-  // A setting that was recovered is null; its error is reported above.
-  const setting: Setting | null = s;
-  if (setting === null || setting.Key === null || setting.Value === null) continue;
-  const limit = limits[setting.Key.text];
-  if (limit !== undefined && Number(setting.Value.text) > limit) {
-    console.log(`${lineCol(source, setting.Value.start)}: ${setting.Key.text} must be at most ${limit}`);
+  // A setting that was recovered is an error value; its error is reported above.
+  if (s === null || s.type !== "Setting") continue;
+  const setting = s as Setting;
+  if (setting.Key === null || setting.Value === null) continue;
+  const limit = limits[setting.Key.value];
+  if (limit !== undefined && Number(setting.Value.value) > limit) {
+    console.log(`${lineCol(source, setting.Value.start)}: ${setting.Key.value} must be at most ${limit}`);
     problems++;
   }
 }
 
-const read = (value?.Settings ?? []).filter((s) => s !== null).length;
+const read = (value?.Settings ?? []).filter((s) => s !== null && s.type === "Setting").length;
 console.log(`${problems} problems, ${read} settings read`);
 ```
 
@@ -103,15 +105,16 @@ node check.ts
 
 The two syntax errors come from the parser, and a Go program using the same grammar would report the same two (see
 [Report several errors in one run](several-errors.md) for the Go side). The limit is the tool's own check, and it was
-found in a setting that parsed. Four settings were read, and the two that could not be read are `null` in the list.
+found in a setting that parsed. Four settings were read, and the two that could not be read are error values in the list.
 
 ## How It Works
 
 - `parseAST` returns `{ value, error }` instead of throwing. When `#recover` skipped something, `error` is a
   `SyntaxErrors` and `value` is still the tree of what was read, so the tool can report both the syntax errors and its
   own findings in one run. Any other `error` is a failure with no tree.
-- `-types` gives every grammar type an interface (`Setting`, `File`), so `setting.Key.text` is checked by the compiler.
-  Fields are nullable because a setting that was recovered, or a field that did not match, is `null`.
+- `-types` gives every grammar type an interface (`Setting`, `File`), so `setting.Key.value` is checked by the compiler.
+  The items of `Settings` are a union, because a setting that was recovered is an error value, and a field that did not
+  match is `null`.
 - Positions count code points, like the Go engine, not UTF-16 units. `lineCol` counts code points for that reason; the
   `line` and `col` of a syntax error are already computed the same way.
 - The module does not depend on Node.js: the same `settings.ts` runs in a browser, where the check can run on every

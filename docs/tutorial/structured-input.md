@@ -35,15 +35,15 @@ pego parse -g kv.pego -f sexpr -i 'port=8080'
 ```
 
 ```text
-(Seq ["p" "o" "r" "t"]@key "=" ["8" "0" "8" "0"]@value)@main
+(["p" "o" "r" "t"] "=" ["8" "0" "8" "0"])
 ```
 
-It works, but the tree is noisy: a repetition produces a `List` with one child per iteration, so `key` is a list of
-single-letter terminals.
+It works, but the tree is noisy: a repetition produces a list with one element per iteration, so `key` is a list of
+single-letter strings.
 
 ### Atomic: `#atomic`
 
-`expr #atomic` matches `expr` and produces one terminal holding all of the matched text, without building a node for each
+`expr #atomic` matches `expr` and produces one string node holding all of the matched text, without building a node for each
 part. `[a-z]+ #atomic` applies atomic construction suppression to the repeated character class:
 
 ```pego
@@ -53,7 +53,7 @@ rule value = [0-9]+ #atomic
 ```
 
 ```text
-(Seq "port"@key "=" "8080"@value)@main
+("port" "=" "8080")
 ```
 
 ### Discard: `-`
@@ -68,13 +68,14 @@ rule value = [0-9]+ #atomic
 ```
 
 ```text
-(Seq "port"@key "8080"@value)@main
+("port" "8080")
 ```
 
 ### Captures: `name:`
 
-A **capture** `name:expr` gives the value of `expr` a name. Named values are attached to the node as fields, and, as the
-next step shows, actions refer to them as `$name`:
+A **capture** `name:expr` gives the value of `expr` a name. The tree is unchanged, because the value stays where it is in
+the sequence, but actions refer to it as `$name`, as the next step shows. The names appear in the output when you ask for
+source information with `-source-info`:
 
 ```pego
 rule main = k:key "=" v:value
@@ -83,14 +84,22 @@ rule value = [0-9]+ #atomic
 ```
 
 ```text
-(Seq "port"@key "=" "8080"@value k="port"@key v="8080"@value)@main
+("port" "=" "8080")
+```
+
+```bash
+pego parse -g kv.pego -f sexpr -source-info -i 'port=8080'
+```
+
+```text
+(k:"port"@key "=" v:"8080"@value)@main
 ```
 
 The label and the colon must be written together (`k:key`, not `k :key`).
 
 ### Value Actions and Struct Types: `=>`
 
-An **action** builds the value of a rule yourself. It is written after `=>` inside the rule body, and can create a node of a struct type
+An **action** builds the value of a rule yourself. It is written after `=>` inside the rule body, and can create a value of a struct type
 declared with `type`. This is the grammar from the README (`kv.pego`, final version):
 
 ```pego
@@ -104,10 +113,10 @@ pego parse -g kv.pego -f sexpr -i 'abc=12'
 ```
 
 ```text
-(Pair Key="abc" Value="12")
+Pair{Key: "abc", Value: "12"}
 ```
 
-`Pair{...}` creates a `Pair` node, and `$k` and `$v` refer to the captures. The literal `=` has no name, so it is
+`Pair{...}` creates a `Pair` struct, and `$k` and `$v` refer to the captures. The literal `=` has no name, so it is
 simply left out of the result. The tree now contains exactly what the language is about, and nothing else.
 
 Two things worth knowing at this point:
@@ -140,7 +149,7 @@ debug = true
 EOF
 ```
 
-Save the following grammar as `config-cst.pego`. It produces plain syntax-tree nodes; the next lesson adds types.
+Save the following grammar as `config-cst.pego`. It produces plain syntax-tree nodes, with no actions; the next lesson adds types.
 
 ```pego
 rule main = -ws entry* $$
@@ -163,7 +172,7 @@ pego parse -g config-cst.pego -f sexpr < example.conf
 ```
 
 ```text
-(Seq [(Seq "host"@key "\"localhost\""@string k="host"@key v="\"localhost\""@string)@entry (Seq "port"@key "8080"@number k="port"@key v="8080"@number)@entry (Seq "debug"@key "true"@bool k="debug"@key v="true"@bool)@entry])@main
+([("host" "\"localhost\"") ("port" "8080") ("debug" "true")])
 ```
 
 Without `-i`, `pego parse` reads the input from standard input. The new pieces:
@@ -194,8 +203,8 @@ Without `-i`, `pego parse` reads the input from standard input. The new pieces:
 - **`$$` is the end of input.** It matches without consuming anything and has no value. The start rule must consume the
   whole input anyway, so `$$` is optional here, but writing it makes the intent clear. (`^^` is the beginning of the
   input.)
-- **`entry*` is a repetition.** The whole file is a `Seq` holding one `List` of entries. An empty file is valid and
-  gives `(Seq [])@main`.
+- **`entry*` is a repetition.** The whole file is a tuple holding one list of entries. An empty file is valid and
+  gives `([])`.
 
 ## Next Steps
 

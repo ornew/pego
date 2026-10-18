@@ -59,8 +59,8 @@ func main() {
 	// Every node of one kind, with its depth.
 	err = pego.Walk(root, func(v pego.WalkVisit) (pego.WalkAction, error) {
 		if v.Node != nil && v.Node.Type() == "Call" {
-			name := v.Node.Field("Name").(*pego.Node).Text
-			fmt.Printf("call %-5s [%2d,%2d) depth %d\n", name, v.Node.Start, v.Node.End, v.Depth)
+			name := v.Node.Field("Name").(*pego.Node).Text()
+			fmt.Printf("call %-5s [%2d,%2d) depth %d\n", name, v.Node.Start(), v.Node.End(), v.Depth)
 		}
 		return pego.WalkContinue, nil
 	})
@@ -86,8 +86,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("at %d: innermost node %s %q, innermost call %s\n", pos, innermost.Type(), innermost.Text,
-		innermostCall.Field("Name").(*pego.Node).Text)
+	fmt.Printf("at %d: innermost node %s %q, innermost call %s\n", pos, innermost.Type(), innermost.Text(),
+		innermostCall.Field("Name").(*pego.Node).Text())
 }
 ```
 

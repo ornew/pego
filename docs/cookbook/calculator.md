@@ -68,11 +68,11 @@ var funcs = map[string]struct {
 func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
-		return strconv.ParseFloat(n.Text, 64)
+		return strconv.ParseFloat(n.Text(), 64)
 	case "Name":
-		v, ok := vars[n.Text]
+		v, ok := vars[n.Text()]
 		if !ok {
-			return 0, fmt.Errorf("undefined variable %q", n.Text)
+			return 0, fmt.Errorf("undefined variable %q", n.Text())
 		}
 		return v, nil
 	case "Neg":
@@ -87,7 +87,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		switch op := n.Field("Op").(*pego.Node).Text; op {
+		switch op := n.Field("Op").(*pego.Node).Text(); op {
 		case "+":
 			return l + r, nil
 		case "-":
@@ -105,17 +105,17 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	case "Call":
-		name := n.Field("Fn").(*pego.Node).Text
+		name := n.Field("Fn").(*pego.Node).Text()
 		fn, ok := funcs[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined function %q", name)
 		}
-		argNodes := n.Field("Args").(*pego.Node).Children
-		if len(argNodes) != fn.arity {
-			return 0, fmt.Errorf("%s takes %d arguments, got %d", name, fn.arity, len(argNodes))
+		argNodes := n.Field("Args").(*pego.Node)
+		if argNodes.Len() != fn.arity {
+			return 0, fmt.Errorf("%s takes %d arguments, got %d", name, fn.arity, argNodes.Len())
 		}
-		args := make([]float64, len(argNodes))
-		for i, a := range argNodes {
+		args := make([]float64, argNodes.Len())
+		for i, a := range argNodes.Elems() {
 			v, err := eval(a, vars)
 			if err != nil {
 				return 0, err

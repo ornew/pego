@@ -86,10 +86,10 @@ func main() {
 	var lines, errors, totalMs int
 	count := func(e *pego.Node) error {
 		lines++
-		if e.Field("Level").(*pego.Node).Text == "ERROR" {
+		if e.Field("Level").(*pego.Node).Text() == "ERROR" {
 			errors++
 		}
-		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Text)
+		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Text())
 		totalMs += ms
 		return nil
 	}
@@ -100,8 +100,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// Parse collects the elements in a list.
-		for _, e := range tree.Children[0].Children {
+		// Parse collects the elements in a list, the only element of the tuple of main.
+		for _, e := range tree.Elem(0).Elems() {
 			count(e)
 		}
 	} else if err := p.ParseStream(&logFile{n: *n}, count); err != nil {
@@ -151,15 +151,15 @@ memory figures vary by a few MiB from run to run.)
   stop early; `ParseStream` returns it unchanged.
 - **The trailing `$$`** turns input that is not a sequence of entries into an error. Without it, the stream would end
   quietly at the first line that does not match.
-- **Positions and memory.** `Start` and `End` of a record count from the start of the whole input. The parser keeps the
+- **Positions and memory.** `Start()` and `End()` of a record count from the start of the whole input. The parser keeps the
   record it is matching and a few more, so one huge record defeats streaming: keep records small.
 
 ## Variations and Limits
 
 - **Cancel on a quiet connection.** `ParseStream` blocks in `Read`. To stop it from outside, make `Read` fail (close the
   connection or the write end of a pipe); see [Stop a stream when the caller gives up](cancel-a-stream.md).
-- **Skip bad records.** Add [`#recover`](several-errors.md) inside the record rule. The bad record becomes an `Error`
-  node that your function receives, and `ParseStream` returns the recorded errors at the end.
+- **Skip bad records.** Add [`#recover`](several-errors.md) inside the record rule. The bad record becomes an `error`
+  value (`Kind()` is `pego.KindError`) that your function receives, and `ParseStream` returns the recorded errors at the end.
 - **Do not hold on to nodes.** The record is reachable only through your function; if you keep it (in a slice, say),
   memory grows again.
 - **CSV.** [Sum a column of a big CSV file](sum-a-csv-column.md) streams the grammar of [parsers/csv](../../parsers/csv/).

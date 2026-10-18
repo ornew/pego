@@ -79,7 +79,7 @@ type Config = {
     Entries []Entry
 }
 
-rule main Config = -ws es:entry* $$ => Config{Entries: $es}
+rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = (k:key -ws -"=" -ws v:value -ws) #recover(skip=[^\n]* "\n"?) -ws => Entry{Key: $k, Value: $v}
 
@@ -99,7 +99,7 @@ printf 'host = "localhost"\nport == 8080\ndebug = tru\n' | pego parse -g robust.
 ```
 
 ```text
-(Config Entries=[(Entry Key=Key"host"@key Value=String"\"localhost\""@string) (Entry Key=nil Value=nil) (Entry Key=nil Value=nil)])
+Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: nil, Value: nil} Entry{Key: nil, Value: nil}]}
 ```
 
 The tree contains the good entry and one placeholder per skipped entry (their fields are `nil`). The errors go to
@@ -154,11 +154,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for _, e := range cfg.Field("Entries").(*pego.Node).Children {
+	for _, e := range cfg.Field("Entries").(*pego.Node).Elems() {
 		if e.Field("Key") == nil {
 			continue // an entry that was skipped
 		}
-		fmt.Println("entry:", e.Field("Key").(*pego.Node).Text)
+		fmt.Println("entry:", e.Field("Key").(*pego.Node).Text())
 	}
 }
 ```

@@ -4,7 +4,7 @@
 to read the header and process the records one at a time without loading the file.
 
 `ParseStream` does not return what comes before the repetition. Make the header an element of the repetition, and tell the
-kinds of element apart by the type of the node in the callback.
+kinds of element apart by the type of the value in the callback.
 
 ```go
 // main.go
@@ -41,9 +41,9 @@ func main() {
 	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *pego.Node) error {
 		switch n.Type() {
 		case "Header":
-			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text)
+			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text())
 		case "Pair":
-			fmt.Println("pair", n.Field("Key").(*pego.Node).Text, "=", n.Field("Value").(*pego.Node).Text)
+			fmt.Println("pair", n.Field("Key").(*pego.Node).Text(), "=", n.Field("Value").(*pego.Node).Text())
 		}
 		return nil
 	})
@@ -62,7 +62,7 @@ err: <nil>
 
 ## How It Works
 
-- `item = header / pair` is the repeated element, so the callback receives a `Header` or a `Pair` node and switches on
+- `item = header / pair` is the repeated element, so the callback receives a `Header` or a `Pair` struct and switches on
   `n.Type()`.
 - Everything outside the repetition is parsed and checked but not returned, which is why the header cannot stay outside.
 

@@ -4,17 +4,18 @@
 next. You also want the lines that were fine, so that the rest of the program can still use them.
 
 Mark the unit that can go wrong (here a setting) with `#recover`. When it fails, the parser records the error, skips
-to a place where parsing can go on, and puts an `Error` node where the setting would have been.
+to a place where parsing can go on, and puts an `error` value where the setting would have been.
 
 ```pego
 // settings.pego
 type Setting = { Key Match; Value Match }
-type File = { Settings []Setting }
+type Item ~ Setting | error
+type File = { Settings []Item }
 
 rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => x.$s)}
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
-rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
+rule setting Item = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
 rule entry Setting = (
     k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
@@ -67,7 +68,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tree, err := p.Parse(string(src))
+	// Bytes positions index src directly.
+	tree, err := p.Parse(string(src), pego.WithUnit(pego.Bytes))
 
 	// With recovery, err is not nil even though there is a tree: SyntaxErrors holds every error that was recovered
 	// from. Any other error means that there is no tree.
@@ -79,13 +81,13 @@ func main() {
 		fmt.Printf("app.conf:%d:%d: %s\n", e.Line, e.Col, e.Message())
 	}
 
-	// The tree has the settings that parsed, and an Error node where one did not.
-	for _, s := range tree.Field("Settings").(*pego.Node).Children {
-		if s.Type() == "Error" {
-			fmt.Printf("skipped %q\n", s.Text)
+	// The tree has the settings that parsed, and an error value where one did not.
+	for _, s := range tree.Field("Settings").(*pego.Node).Elems() {
+		if s.Kind() == pego.KindError {
+			fmt.Printf("skipped %q\n", src[s.Start():s.End()])
 			continue
 		}
-		fmt.Printf("%s = %s\n", s.Field("Key").(*pego.Node).Text, s.Field("Value").(*pego.Node).Text)
+		fmt.Printf("%s = %s\n", s.Field("Key").(*pego.Node).Text(), s.Field("Value").(*pego.Node).Text())
 	}
 	if len(errs) > 0 {
 		os.Exit(1)
@@ -111,15 +113,17 @@ The program exits with status 1, because there were errors.
 
 - **`#recover(skip=e)`** is attached to an expression like `@error`. If the expression fails, the error is recorded, the
   parser goes back to where the expression *started*, and matches `e` there. The input `e` matches is skipped, and the
-  expression's value is an `Error` node over it. If `e` fails or matches nothing, there is no recovery, so a recovery in
+  expression's value is an `error` value over it. If `e` fails or matches nothing, there is no recovery, so a recovery in
   a repetition cannot loop forever.
 - **`skip` starts at the start of the setting**, not where the error was found. It says "the rest of this setting": any
   characters up to a `;` or the end of the line, and the `;`. A setting that is missing its `;` is skipped to the end
   of its line, and the next setting is read from the next line. (The error is then reported on that next line, at
   the first token that did not fit: `name = 5` followed by `host = 1;` gives `3:1: expected ';'` in the file
   `port = 1;`, `name = 5`, `host = 1;`.)
-- **Types.** `Error` is assignable to every node type, so the `Setting` rule and the `[]Setting` field can hold it. Go sees
-  `s.Type() == "Error"`, with the skipped text in `s.Text` and the message, with its position (`2:8: expected ...`), in `s.Field("message")`.
+- **Types.** `error` is a built-in type that only recovery produces, and `a #recover(...)` has the type `A | error`.
+  That is why `setting` is declared `Item`, the union `Setting | error`, and the `Settings` field is a list of `Item`.
+  Go sees `s.Kind() == pego.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
+  position (`2:8: expected ...`), in `s.Text()`.
 - **`pego.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a
   `pego.SyntaxErrors` (a slice of `*pego.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
   `if err != nil { return err }` first: that throws the tree away. `errors.As` needs a variable of the slice type, not a

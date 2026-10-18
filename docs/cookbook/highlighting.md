@@ -20,7 +20,7 @@ type Token ~ Comment | Keyword | Ident | Number | String | Punct | Space | Unkno
 type Tokens = { Items []Token }
 
 // Every character belongs to a token, so tokenizing never fails, however broken the input is.
-rule main Tokens = ts:token* $$ => Tokens{Items: $ts}
+rule main Tokens = ts:token* $$ => Tokens{Items: $ts.Value}
 
 rule token Token = comment / string / number / keyword / ident / punct / space / unknown
 
@@ -65,8 +65,8 @@ func Highlight(p *pego.Parser, src string) (string, error) {
 		return "", err
 	}
 	var b strings.Builder
-	for _, tok := range tree.Field("Items").(*pego.Node).Children {
-		text := html.EscapeString(tok.Text)
+	for _, tok := range tree.Field("Items").(*pego.Node).Elems() {
+		text := html.EscapeString(tok.Text())
 		if c, ok := class[tok.Type()]; ok {
 			fmt.Fprintf(&b, `<span class="%s">%s</span>`, c, text)
 		} else {
@@ -108,7 +108,7 @@ func main() {
 - **Spans are text.** Every token is a terminal with its text, and the tokens, joined, are exactly the input, so
   `strings.Join` of the texts gives the source back. `html.EscapeString` keeps `<` and `&` of the source from becoming
   markup.
-- **Positions.** Each token has `Start` and `End`. For an editor, send those (they are code points by default; `pego.WithUnit`
+- **Positions.** Each token has `Start()` and `End()`. For an editor, send those (they are code points by default; `pego.WithUnit`
   changes that) instead of HTML.
 
 ## Variations and Limits

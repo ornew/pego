@@ -30,11 +30,11 @@ pego parse -g names.pego -f sexpr -i 'alpha,beta,verylongname'
 ```
 
 ```text
-(Seq (Seq "alpha" n="alpha")@name [(Seq "," (Seq "beta" n="beta")@name)])@main
+(("alpha") [("," ("beta"))])
 pego: 1:24: a name has at most 8 letters
 ```
 
-The predicate is evaluated after `[a-z]+` matched, so the error is at the position after the name. A predicate that
+A predicate has no value, so each `name` is a tuple with a single element, the text of the name. The predicate is evaluated after `[a-z]+` matched, so the error is at the position after the name. A predicate that
 fails records no expected item of its own, which is why the grammar attaches `@error` to it; without the label the
 message would be a bare `syntax error`.
 
@@ -54,7 +54,7 @@ type Content ~ Element | Chars
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
-rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs}
+rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
 rule content Content = element / chars
 rule chars Chars = [^<]+
 
@@ -71,7 +71,7 @@ pego parse -g tags.pego -f sexpr -i '<a><a>x</a>'
 ```
 
 ```text
-(Element Children=[(Element Children=[Chars"x"@chars] Name=Name"b"@name) (Element Children=[Chars"y"@chars] Name=Name"c"@name)] Name=Name"a"@name)
+Element{Children: [Element{Children: ["x"], Name: "b"} Element{Children: ["y"], Name: "c"}], Name: "a"}
 pego: 1:11: mismatched end tag
 pego: 1:12: syntax error: expected "<", "</", [^<]
 ```

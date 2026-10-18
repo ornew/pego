@@ -25,8 +25,8 @@ rule expr Expr = operators {
     operand bool
     operand field
     operand "(" e:expr ws ")" => $e
-    level { infix left "or" !wordchar => Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "and" !wordchar => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left ("or" !wordchar) #atomic => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left ("and" !wordchar) #atomic => Binary{Left: $lhs, Op: $op, Right: $rhs} }
     level { prefix "not" !wordchar => Not{X: $rhs} }
     level {
         infix none "=" / "!=" / "<=" / ">=" / "<" / ">" / "~" => Binary{Left: $lhs, Op: $op, Right: $rhs}
@@ -71,23 +71,23 @@ type value func(Record) any
 func compile(n *pego.Node) value {
 	switch n.Type() {
 	case "Num":
-		v, _ := strconv.ParseFloat(n.Text, 64)
+		v, _ := strconv.ParseFloat(n.Text(), 64)
 		return func(Record) any { return v }
 	case "Str":
-		s, _ := strconv.Unquote(n.Text)
+		s, _ := strconv.Unquote(n.Text())
 		return func(Record) any { return s }
 	case "Bool":
-		b := n.Text == "true"
+		b := n.Text() == "true"
 		return func(Record) any { return b }
 	case "Field":
-		name := n.Text
+		name := n.Text()
 		return func(r Record) any { return r[name] }
 	case "Not":
 		x := compile(n.Field("X").(*pego.Node))
 		return func(r Record) any { return x(r) != true }
 	}
 	// Binary
-	op := n.Field("Op").(*pego.Node).Text
+	op := n.Field("Op").(*pego.Node).Text()
 	l := compile(n.Field("Left").(*pego.Node))
 	r := compile(n.Field("Right").(*pego.Node))
 	switch op {
@@ -196,8 +196,8 @@ age > 30 and                                     error: 1:13: syntax error: expe
 ## How It Works
 
 - **Word operators.** `"and" !wordchar` is the operator `and` only when no letter or digit follows, so a field named
-  `android` is not read as `and` followed by `roid`. The `!wordchar` is a lookahead: it consumes nothing, so `$op` is
-  just `and`. `field` excludes the keywords with `!keyword`, so `and` cannot be a field name.
+  `android` is not read as `and` followed by `roid`. The `!wordchar` is a lookahead: it consumes nothing, and `#atomic` makes
+  the operator one string node, so `$op` is just `and`. Without `#atomic`, `$op` would be a tuple holding the literal. `field` excludes the keywords with `!keyword`, so `and` cannot be a field name.
 - **Precedence from the table.** Loosest first: `or`, `and`, `not`, and the comparisons. `not admin = true` is
   `not (admin = true)`, and `a = b = c` is rejected, because `infix none` does not chain.
 - **Closures.** `compile` walks the tree once and returns a function for each node; the predicate then calls closures
@@ -206,7 +206,7 @@ age > 30 and                                     error: 1:13: syntax error: expe
   Decide that in `compare`; it is Go code, not grammar.
 - **Reject bad filters early.** Everything the grammar can check is checked by `Compile`: a filter with a syntax
   error never becomes a predicate. Checks that need your schema (does the field exist? is `age` a number?) belong in
-  `compile`, where you can return an error with the position of the node (`n.Start`).
+  `compile`, where you can return an error with the position of the node (`n.Start()`).
 
 ## Variations and Limits
 

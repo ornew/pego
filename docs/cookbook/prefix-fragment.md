@@ -55,11 +55,11 @@ var grammar string
 func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
-		return strconv.ParseFloat(n.Text, 64)
+		return strconv.ParseFloat(n.Text(), 64)
 	case "Name":
-		v, ok := vars[n.Text]
+		v, ok := vars[n.Text()]
 		if !ok {
-			return 0, fmt.Errorf("unknown name %q", n.Text)
+			return 0, fmt.Errorf("unknown name %q", n.Text())
 		}
 		return v, nil
 	}
@@ -71,7 +71,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	switch n.Field("Op").(*pego.Node).Text {
+	switch n.Field("Op").(*pego.Node).Text() {
 	case "+":
 		return l + r, nil
 	case "-":

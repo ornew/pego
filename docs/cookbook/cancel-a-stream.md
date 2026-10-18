@@ -48,7 +48,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 	err = parseContext(ctx, p, pr, func(err error) { pw.CloseWithError(err) }, func(n *pego.Node) error {
-		fmt.Println("line", n.Children[0].Text)
+		fmt.Println("line", n.Elem(0).Text())
 		return nil
 	})
 	fmt.Println("err:", err, errors.Is(err, context.DeadlineExceeded))

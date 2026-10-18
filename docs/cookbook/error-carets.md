@@ -142,7 +142,7 @@ app.conf:1:11: expected ';'
 ## Variations and Limits
 
 - **Colors, ranges, context lines**: all of it is string formatting; the error gives only the position of the farthest
-  failure. To underline a range, you need the node that failed, which a recovered `Error` node has (see [Report several
+  failure. To underline a range, you need the node that failed, which a recovered `error` value has, with its `Start()` and `End()` (see [Report several
   errors in one run](several-errors.md)).
 - **Where the message points.** A missing `;` at the end of a line is reported at the first token that did not fit, which
   can be on the next line, because the rule for white space reads past line ends. [Error

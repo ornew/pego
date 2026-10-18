@@ -70,7 +70,7 @@ func (e *Editor) Apply(start, end int, text string) error {
 	var status string
 	switch {
 	case err == nil:
-		status = fmt.Sprintf("ok, %d entries", len(node.Children[0].Children))
+		status = fmt.Sprintf("ok, %d entries", node.Elem(0).Len())
 	default:
 		var se *pego.SyntaxError
 		if errors.As(err, &se) {
@@ -104,7 +104,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("%-18s evaluated %4d reused %4d  ok, %d entries\n", "(first parse)", doc.Stats().Evaluated, doc.Stats().Reused, len(node.Children[0].Children))
+	fmt.Printf("%-18s evaluated %4d reused %4d  ok, %d entries\n", "(first parse)", doc.Stats().Evaluated, doc.Stats().Reused, node.Elem(0).Len())
 	ed := &Editor{doc: doc, last: node}
 
 	// Open a blank line before line 500, then type a new setting into it, one keystroke at a time.
