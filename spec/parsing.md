@@ -134,8 +134,13 @@ Each malformed UTF-8 byte counts as one replacement code point in `Consumed`,
 while `ConsumedBytes` still refers to the original bytes. Positions inside `Node`
 are local to `input`; a caller that passes a slice of a larger source adds the
 slice's starting byte offset to `ConsumedBytes` to find the endpoint in the
-source. A zero-width success returns zero consumption, and a nil `Node` does not
-imply failure.
+source. Both consumption fields come from the parser's cursor and are
+independent of the span of `Node`: a rule whose action returns a smaller node, or
+`nil`, still reports everything it consumed. With the `Bytes` unit, node spans and
+both consumption fields are in bytes. A node span in code points is converted to
+bytes before a base offset is added. A zero-width success returns zero
+consumption, and a nil `Node` does not imply failure. Only the runtime `Parser`
+provides `ParsePrefix`; generated parsers do not.
 
 Outcomes:
 
