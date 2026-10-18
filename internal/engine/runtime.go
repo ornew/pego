@@ -201,7 +201,7 @@ type memoEntry struct {
 	// provisional reports that this result depends on a growing LR seed. It may be reused
 	// during this parse generation, but its input range alone cannot validate an edit.
 	provisional bool
-	// positional reports that the result depends on position values (startPos, endPos). It cannot
+	// positional reports that the result depends on position values (.Start, .End). It cannot
 	// be shifted past an edit.
 	positional bool
 	shifted    bool

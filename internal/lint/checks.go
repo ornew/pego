@@ -1082,7 +1082,7 @@ func (l *linter) positions(start string) {
 			callers = fmt.Sprintf(" (nor those of the %d rules that call it)", n)
 		}
 		l.report(CheckPositions, Hint, p, "take positions from the tree instead (Node.Start and Node.End are shifted for you)",
-			"rule %s reads startPos or endPos and is used repeatedly: a Document cannot move its results past an edit%s, "+
+			"rule %s reads .Start or .End and is used repeatedly: a Document cannot move its results past an edit%s, "+
 				"so it evaluates them again after every edit before them", r.Name, callers)
 	})
 }
@@ -1115,7 +1115,7 @@ func reachesControlled(from, to string, edges map[string][]string, control *lint
 	return false
 }
 
-// positionReadControlled returns the position of the first startPos or endPos that the rule's actions or
+// positionReadControlled returns the position of the first .Start or .End that the rule's actions or
 // predicates read (the zero Pos if it is unknown), and whether there is one.
 func positionReadControlled(r *grammar.RuleDef, control *lintControl) (grammar.Pos, bool) {
 	var terms []grammar.Term
@@ -1150,7 +1150,7 @@ func positionReadControlled(r *grammar.RuleDef, control *lintControl) (grammar.P
 		var found *grammar.Member
 		walkTerm(t, func(x grammar.Term) {
 			control.poll()
-			if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") && found == nil {
+			if m, ok := x.(*grammar.Member); ok && (m.Name == "Start" || m.Name == "End") && found == nil {
 				found = m
 			}
 		})

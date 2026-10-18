@@ -253,12 +253,12 @@ func TestRightRecursion(t *testing.T) {
 func TestPositions(t *testing.T) {
 	const at = "type At = { Pos int; Text Match }\n"
 	runCases(t, []lintCase{
-		{name: "repeated", src: at + "rule main = num*\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}",
+		{name: "repeated", src: at + "rule main = num*\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}",
 			want: []string{"3:46 hint positions"}, msg: "nor those of the 1 rule that calls it"},
-		{name: "callers only", src: at + "rule main = num* other\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}\n" +
-			"rule other At = t:\"x\" => At{Pos: $t.endPos, Text: $t}",
+		{name: "callers only", src: at + "rule main = num* other\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}\n" +
+			"rule other At = t:\"x\" => At{Pos: $t.End, Text: $t}",
 			want: []string{"3:46 hint positions"}, msg: "nor those of the 1 rule that calls it"},
-		{name: "once", src: at + "rule main = num\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}"},
+		{name: "once", src: at + "rule main = num\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}"},
 	})
 }
 
@@ -326,7 +326,7 @@ func TestDeprecatedAny(t *testing.T) {
 	runCases(t, []lintCase{
 		{name: "fields and casts", src: "type Box = { V any; L []any }\nrule main Box = x:\"x\" => Box{V: $x.(any), L: list($x)}",
 			want: []string{"1:16 warning deprecated-any", "1:25 warning deprecated-any", "2:37 warning deprecated-any"},
-			msg: "use _, the top type"},
+			msg:  "use _, the top type"},
 		{name: "top type", src: "type Box = { V _ }\nrule main Box = x:\"x\" => Box{V: $x}"},
 	})
 }

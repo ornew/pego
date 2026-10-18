@@ -18,7 +18,7 @@ type analysis struct {
 	leaders map[string]bool
 	// cyclic are the rules that belong to a left-recursion cycle (including leaders).
 	cyclic map[string]bool
-	// positional are the rules whose actions or predicates read positions (startPos, endPos),
+	// positional are the rules whose actions or predicates read positions (.Start, .End),
 	// directly or through callees. Their results may contain position values, so incremental
 	// parsing cannot shift them past an edit.
 	positional map[string]bool

@@ -17,8 +17,9 @@ var soundnessGrammars = flag.Int("soundness", 3000, "number of random grammars T
 
 // TestSoundness checks the findings that claim certainty against the engine. It generates random
 // grammars, lints them, and checks each such finding in two ways, by changing the grammar and
-// comparing the inputs it accepts, and the trees it builds, on every input of up to inputLen
-// characters from the alphabet of the grammars:
+// comparing the inputs it accepts, and the values it builds where the change keeps the value
+// type of every rule, on every input of up to inputLen characters from the alphabet of the
+// grammars:
 //
 //   - The claim: a change that is equivalent exactly when the claim holds, and that keeps the
 //     cuts and the left calls of the grammar. What can never match is followed by _|_ (x becomes
@@ -64,8 +65,19 @@ func TestSoundness(t *testing.T) {
 				if err != nil {
 					t.Fatalf("grammar %d: the change for %v does not compile: %v\n%s", n, f, err, src)
 				}
+				// A change can change the value type of a rule: removing an alternative can leave
+				// a choice without a value (nil next to alternatives with one, () alone), and x?
+				// is a node of its own where a group x adds its elements to the sequence around
+				// it. Such a change keeps what the grammar accepts, not what it builds.
+				typed := sameRuleTypes(prog, prog2, g)
+				if typed {
+					checked["values"]++
+				}
 				for i, in := range inputs {
 					got, want := result(prog2, in), want[i]
+					if !typed {
+						got, want = outcome(prog2, in), outcome(prog, in)
+					}
 					if fix {
 						// A dead alternative still adds what it expected to syntax errors.
 						got, want = errorMessage.ReplaceAllString(got, ""), errorMessage.ReplaceAllString(want, "")
@@ -79,15 +91,15 @@ func TestSoundness(t *testing.T) {
 		}
 	}
 	t.Logf("checked findings: %v", checked)
-	for _, c := range []string{CheckShadowedAlt, CheckShadowedAlt + " (fix)", CheckUselessLookahead, CheckRedundantOptional, CheckNeverMatches} {
+	for _, c := range []string{CheckShadowedAlt, CheckShadowedAlt + " (fix)", CheckUselessLookahead, CheckRedundantOptional, CheckNeverMatches, "values"} {
 		if checked[c] < 20 {
 			t.Errorf("only %d findings of %s were checked; the generator should produce more", checked[c], c)
 		}
 	}
 }
 
-// errorMessage matches the message of an Error node in Node.String.
-var errorMessage = regexp.MustCompile("\\{message=`[^`]*`\\}")
+// errorMessage matches the message of an error value in Node.String.
+var errorMessage = regexp.MustCompile(`error\("(?:[^"\\]|\\.)*"\)`)
 
 func allInputs(alphabet string, n int) []string {
 	out := []string{""}
@@ -115,6 +127,24 @@ func result(prog *engine.Program, in string) string {
 		s += fmt.Sprintf(" %T", err) // a failure, or recovered errors
 	}
 	return s
+}
+
+// outcome is the result of parsing in without the value: whether the parse fails or recovers.
+func outcome(prog *engine.Program, in string) string {
+	_, err := prog.ParseWith("main", in, engine.ParseOptions{})
+	return fmt.Sprintf("%T", err)
+}
+
+// sameRuleTypes reports whether every rule of g has the same value type in a and b.
+func sameRuleTypes(a, b *engine.Program, g *grammar.Grammar) bool {
+	for _, r := range g.Rules() {
+		ta, _ := a.ValueType(r.Name)
+		tb, _ := b.ValueType(r.Name)
+		if ta != tb {
+			return false
+		}
+	}
+	return true
 }
 
 // randomGrammar returns the source of a random grammar of three rules over the characters a, b

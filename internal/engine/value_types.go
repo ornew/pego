@@ -199,6 +199,17 @@ func (p *Program) valueTypes() map[string]ty {
 	return p.typed.values
 }
 
+// ValueType returns the type of the value that the rule name builds in the value model (for
+// example "node[(*node[string],)]"). It reports false if the program has no such rule or its
+// types were not checked.
+func (p *Program) ValueType(name string) (string, bool) {
+	t, ok := p.valueTypes()[name]
+	if !ok {
+		return "", false
+	}
+	return t.String(), true
+}
+
 // valueErrors returns the errors of actions in the value model of a type-checked program.
 func (p *Program) valueErrors() ErrorList {
 	if p.valueTypes() == nil {

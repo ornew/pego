@@ -116,7 +116,7 @@ var Checks = []Check{
 	{CheckUnreachableRule, Warning, "a rule that the start rule never calls"},
 	{CheckDeprecatedAny, Warning, "the type any, which is deprecated in favor of _ and casts"},
 	{CheckRightRecursion, Hint, "a list written as right recursion instead of a repetition"},
-	{CheckPositions, Hint, "startPos or endPos in a rule used repeatedly, which blocks reuse in incremental parsing"},
+	{CheckPositions, Hint, ".Start or .End in a rule used repeatedly, which blocks reuse in incremental parsing"},
 	{CheckLongLookahead, Hint, "a lookahead that can examine input across lines, which blocks reuse in incremental parsing"},
 	{CheckDirective, Warning, "a lint:ignore comment that names an unknown check or suppresses nothing"},
 }
