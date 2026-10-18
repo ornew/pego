@@ -364,7 +364,7 @@ With `-recognize` (`pego.WithRecognize()`), the generated package also has
 func Recognize(input string, opts ...ParseOption) error
 ```
 
-It is the engine's [`RecognizeOnly`](backends.md#recognition-mode) in generated form: the grammar is compiled once more
+It is the engine's [`RecognizeOnly`](recognition-mode.md) in generated form: the grammar is compiled once more
 with no rule building a value (except those whose values predicates read), into a second rule table in the same file.
 Actions whose values are not needed by predicates are skipped. Actions needed by predicates still run and can report runtime errors. On the benchmark workloads it
 takes about half the time of `Parse` (JSON 8.8 → 4.9 ms on a 262 KB input, CSV 4.0 → 1.8 ms), and it is the fastest

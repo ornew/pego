@@ -21,7 +21,9 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | Guide | Contents |
 |:--|:--|
 | [Running Parsers](running-parsers.md) | The Go API: the pipeline from source to parser, compiling, start rules, results and errors, concurrency, choosing a feature |
-| [Backends](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit, recognition mode, memoization |
+| [Backends](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit |
+| [Recognition Mode](recognition-mode.md) | `RecognizeOnly`: checking input without building a tree, what it still evaluates and where it does not apply |
+| [Memoization](memoization.md) | What the packrat memo table remembers, when, and what it means for memory, streaming and incremental parsing |
 | [Cancellation and Work Limits](cancellation-and-limits.md) | `WithContext` and `WithWorkLimits`: stopping a parse and what it returns |
 | [Position Units](position-units.md) | Code points or bytes: what the unit changes, how to choose it, invalid UTF-8 |
 | [Parsing a Prefix](prefix-parsing.md) | `ParsePrefix`: parsing a fragment of a larger text and reading how much it consumed |

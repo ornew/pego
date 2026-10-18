@@ -88,6 +88,8 @@
           "match": [
             "docs/guide/running-parsers.md",
             "docs/guide/backends.md",
+            "docs/guide/recognition-mode.md",
+            "docs/guide/memoization.md",
             "docs/guide/cancellation-and-limits.md",
             "docs/guide/position-units.md",
             "docs/guide/prefix-parsing.md",
@@ -96,6 +98,8 @@
           "first": [
             "docs/guide/running-parsers.md",
             "docs/guide/backends.md",
+            "docs/guide/recognition-mode.md",
+            "docs/guide/memoization.md",
             "docs/guide/cancellation-and-limits.md",
             "docs/guide/position-units.md",
             "docs/guide/prefix-parsing.md",
