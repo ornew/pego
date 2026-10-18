@@ -80,9 +80,17 @@ func linkAllowed(from, to string) bool {
 	case kindSpec:
 		return to == kindSpec
 	case kindGuide:
-		return to != kindTutorial && to != kindCookbook
+		switch to {
+		case kindSpec, kindGuide, kindDesign, kindOptim, kindPerf, kindOther:
+			return true
+		}
+		return false
 	case kindCookbook:
-		return to != kindTutorial
+		switch to {
+		case kindSpec, kindGuide, kindCookbook, kindOther:
+			return true
+		}
+		return false
 	}
 	return true
 }
@@ -327,8 +335,9 @@ func docLinkViolations(t *testing.T, repo string) []string {
 }
 
 // TestDocumentLinkDirections enforces the reading order of the documentation: the
-// specification links only to the specification, guides never link to the tutorial
-// or the cookbook, and the cookbook never links to the tutorial.
+// specification links only to the specification (and to standards), guides and recipes
+// link neither to project documents nor to the tutorial, guides never link to the
+// cookbook, and the cookbook links only to guides, the specification and code.
 func TestDocumentLinkDirections(t *testing.T) {
 	for _, p := range docLinkViolations(t, "..") {
 		t.Error(p)
@@ -351,12 +360,18 @@ func TestLinkAllowed(t *testing.T) {
 		{kindGuide, kindDesign, true},
 		{kindGuide, kindOptim, true},
 		{kindGuide, kindPerf, true},
-		{kindGuide, kindProject, true},
+		{kindGuide, kindProject, false},
+		{kindGuide, kindOther, true},
 		{kindGuide, kindCookbook, false},
 		{kindGuide, kindTutorial, false},
 		{kindCookbook, kindGuide, true},
 		{kindCookbook, kindSpec, true},
 		{kindCookbook, kindCookbook, true},
+		{kindCookbook, kindOther, true},
+		{kindCookbook, kindDesign, false},
+		{kindCookbook, kindOptim, false},
+		{kindCookbook, kindPerf, false},
+		{kindCookbook, kindProject, false},
 		{kindCookbook, kindTutorial, false},
 		{kindTutorial, kindSpec, true},
 		{kindTutorial, kindCookbook, true},
