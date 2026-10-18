@@ -35,13 +35,15 @@ const (
 var externalAllowlist = []string{"www.rfc-editor.org", "rfc-editor.org"}
 
 var (
-	refLinkRe    = regexp.MustCompile(`(?m)^\s{0,3}\[[^\]]+\]:\s*(<[^>]*>|\S+)`)
-	autolinkRe   = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9+.-]*:[^<>\s]+)>`)
-	htmlHrefRe   = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
-	fenceOpenRe  = regexp.MustCompile("^\\s*(`{3,}|~{3,})")
-	githubBlobRe = regexp.MustCompile(`(?i)^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
-	siteURLRe    = regexp.MustCompile(`(?i)^https?://pego\.ornew\.net(/[^?#]*)?`)
-	urlSchemeRe     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+	refLinkRe      = regexp.MustCompile(`(?m)^\s{0,3}\[[^\]]+\]:\s*(<[^>]*>|\S+)`)
+	autolinkRe     = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9+.-]*:[^<>\s]+)>`)
+	htmlHrefRe     = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
+	fenceOpenRe    = regexp.MustCompile("^\\s*(`{3,}|~{3,})")
+	githubBlobRe   = regexp.MustCompile(`(?i)^https://github\.com/ornew/pego/(?:blob|tree)/[^/]+/(.*)$`)
+	siteURLRe      = regexp.MustCompile(`(?i)^https?://pego\.ornew\.net(/[^?#]*)?`)
+	urlSchemeRe    = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+	opaqueSchemeRe = regexp.MustCompile(`(?i)^(?:mailto|tel|sms|data|javascript|urn):`)
+	listItemRe     = regexp.MustCompile(`^\s*(?:[-*+]|\d{1,9}[.)])(?:\s|$)`)
 )
 
 // under reports whether rel is dir or lies below it.
@@ -96,10 +98,15 @@ func linkAllowed(from, to string) bool {
 }
 
 // isExternal reports whether dest names a resource outside the repository: it has a URL
-// scheme in any letter case, or it is a protocol-relative URL.
+// scheme in any letter case followed by "//" or one of the schemes without an authority
+// (mailto and the like), or it is a protocol-relative URL. A file name that contains a
+// colon, such as "foo:bar.md", is a path.
 func isExternal(dest string) bool {
 	dest = strings.TrimPrefix(dest, "<")
-	return urlSchemeRe.MatchString(dest) || strings.HasPrefix(dest, "//")
+	if m := urlSchemeRe.FindString(dest); m != "" {
+		return strings.HasPrefix(dest[len(m):], "//") || opaqueSchemeRe.MatchString(dest)
+	}
+	return strings.HasPrefix(dest, "//")
 }
 
 // externalAllowed reports whether the specification may link to the external dest.
@@ -152,6 +159,7 @@ func linkTarget(rel, dest string) (string, bool) {
 func maskCode(lines []string) []string {
 	out := make([]string, len(lines))
 	var fence string
+	inList, prevBlank, prevCode := false, true, false
 	for i, text := range lines {
 		if fence != "" {
 			trimmed := strings.TrimSpace(text)
@@ -160,26 +168,65 @@ func maskCode(lines []string) []string {
 			}
 			continue
 		}
+		blank := strings.TrimSpace(text) == ""
+		indent := indentOf(text)
+		if !blank {
+			if listItemRe.MatchString(text) {
+				inList = true
+			} else if indent == 0 {
+				inList = false
+			}
+		}
+		// An indented block outside a list is indented code, in which a fence is text.
+		if !blank && indent >= 4 && !inList && (prevBlank || prevCode) {
+			prevCode, prevBlank = true, false
+			continue
+		}
+		if !blank {
+			prevCode = false
+		}
+		prevBlank = blank
 		if m := fenceOpenRe.FindStringSubmatch(text); m != nil {
 			fence = m[1]
 			continue
 		}
 		out[i] = text
 	}
+	// Code spans do not cross a table row or the start of a list item.
 	for i := 0; i < len(out); {
 		if strings.TrimSpace(out[i]) == "" {
 			i++
 			continue
 		}
-		j := i
-		for j < len(out) && strings.TrimSpace(out[j]) != "" {
-			j++
+		j := i + 1
+		if !isTableRow(out[i]) {
+			for j < len(out) && strings.TrimSpace(out[j]) != "" && !isTableRow(out[j]) && !listItemRe.MatchString(out[j]) {
+				j++
+			}
 		}
 		copy(out[i:j], strings.Split(stripInlineCode(strings.Join(out[i:j], "\n")), "\n"))
 		i = j
 	}
 	return out
 }
+
+// indentOf returns the width of the leading white space of text, with tabs to multiples of four.
+func indentOf(text string) int {
+	n := 0
+	for _, c := range text {
+		switch c {
+		case ' ':
+			n++
+		case '\t':
+			n += 4 - n%4
+		default:
+			return n
+		}
+	}
+	return n
+}
+
+func isTableRow(text string) bool { return strings.HasPrefix(strings.TrimSpace(text), "|") }
 
 // stripInlineCode removes code spans: a run of n backticks up to the next run of
 // exactly n backticks. An unmatched run is ordinary text. The line breaks inside a
@@ -477,17 +524,48 @@ func TestDocumentDestinations(t *testing.T) {
 		"",
 		"a span `over",
 		"[no](two-lines.md)` and [yes](end.md)",
+		"",
+		"| `odd | [row1](row1.md) |",
+		"| even` | [row2](row2.md) |",
+		"",
+		"- `odd [item1](item1.md)",
+		"- tick` [item2](item2.md)",
+		"",
+		"text",
+		"",
+		"    ```text",
+		"    [no](indented-code.md)",
+		"",
+		"after [yes](after-code.md)",
+		"",
+		"[colon](foo:bar.md) and [mail](mailto:a@b.c) and [url](https://example.com/x.md)",
 	}
 	doc := strings.Join(maskCode(lines), "\n")
 	var got []string
 	for _, d := range documentDestinations(doc) {
 		got = append(got, d.dest)
 	}
-	want := []string{"x.md", "y z.md", "f(1).md", "spaced.md", "https://pego.ornew.net/docs/guide/", "../tutorial/x.md", "bare.md", "ok.md", "stray.md", "after.md", "<r s.md>", "next-line.md", "end.md"}
+	want := []string{"x.md", "y z.md", "f(1).md", "spaced.md", "https://pego.ornew.net/docs/guide/", "../tutorial/x.md", "bare.md", "ok.md", "stray.md", "after.md", "<r s.md>", "next-line.md", "end.md", "row1.md", "row2.md", "item1.md", "item2.md", "after-code.md", "foo:bar.md", "mailto:a@b.c", "https://example.com/x.md"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("destinations = %q, want %q", got, want)
 	}
 	if n := strings.Count(doc, "\n"); n != len(lines)-1 {
 		t.Errorf("masking changed the number of lines: %d, want %d", n+1, len(lines))
+	}
+}
+
+func TestIsExternal(t *testing.T) {
+	for dest, want := range map[string]bool{
+		"https://example.com/x.md": true,
+		"HTTP://example.com":       true,
+		"//example.com/x":          true,
+		"mailto:a@b.c":             true,
+		"foo:bar.md":               false,
+		"../guide/foo:bar.md":      false,
+		"x.md":                     false,
+	} {
+		if got := isExternal(dest); got != want {
+			t.Errorf("isExternal(%q) = %v, want %v", dest, got, want)
+		}
 	}
 }
