@@ -10,10 +10,6 @@ reports what the parse cost. For a grammar that recovers from errors and returns
 line in the middle of a 1,000-line settings file and types a new setting one key at a time, with an error after almost
 every key, and then retypes a value:
 
-An `Editor` wraps a `Document`, applies each change, reparses, keeps the last tree that parsed, and reports what the
-parse cost. It simulates a user opening a blank line in the middle of a 1,000-line settings file and typing a new setting
-one key at a time, with an error after almost every key, and then retyping a value:
-
 ```go
 // main.go
 package main
