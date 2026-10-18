@@ -289,4 +289,5 @@ number of times in the two parses; only results and errors are compared.
 
 - [Incremental Parsing](incremental.md): the model and the API.
 - [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md): generating inputs for a grammar.
-- [Errors and Recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
+- [Error Messages](error-messages.md): `@error` and the shape of `SyntaxError`.
+- [Recovering from Errors](recovery.md): `#recover` and recovered errors.

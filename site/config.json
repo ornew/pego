@@ -69,7 +69,8 @@
             "docs/guide/actions.md",
             "docs/guide/operators-rule.md",
             "docs/guide/context-sensitive.md",
-            "docs/guide/errors-and-recovery.md"
+            "docs/guide/error-messages.md",
+            "docs/guide/recovery.md"
           ],
           "first": [
             "docs/guide/rule-expressions.md",
@@ -78,7 +79,8 @@
             "docs/guide/actions.md",
             "docs/guide/operators-rule.md",
             "docs/guide/context-sensitive.md",
-            "docs/guide/errors-and-recovery.md"
+            "docs/guide/error-messages.md",
+            "docs/guide/recovery.md"
           ]
         },
         {
@@ -332,6 +334,7 @@
     "/docs/guide/tree-traversal/": "/docs/guide/walking-trees/",
     "/docs/guide/output-schema-and-queries/": "/docs/guide/output-schemas-and-queries/",
     "/docs/guide/document-changes/": "/docs/guide/incremental/",
-    "/docs/guide/predicate-actions-and-filter/": "/docs/guide/context-sensitive/"
+    "/docs/guide/predicate-actions-and-filter/": "/docs/guide/context-sensitive/",
+    "/docs/guide/errors-and-recovery/": "/docs/guide/error-messages/"
   }
 }

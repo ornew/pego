@@ -216,7 +216,7 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error)
 |:--|:--|
 | `node, nil` | The input matched. |
 | `nil, *pego.SyntaxError` | The input does not match. The error holds the farthest position reached and what was expected there. |
-| `node, pego.SyntaxErrors` | The input matched after recovering from errors with `#recover`. The tree contains `Error` nodes. See [Errors and Recovery](errors-and-recovery.md). |
+| `node, pego.SyntaxErrors` | The input matched after recovering from errors with `#recover`. The tree contains `Error` nodes. See [Recovering from Errors](recovery.md). |
 | `nil, error` | Anything else that stops the parse: a run-time error in an action (such as `action in main: division by zero`), or exceeding the [nesting limit](backends.md#deep-nesting-and-withmaxdepth). These are plain errors, not syntax errors, and they are not subject to backtracking. |
 
 ```go
@@ -272,4 +272,5 @@ kept and lost, sizes, embedding, versions and loading files you did not produce.
 - [Cancellation and Work Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
   Units](position-units.md) and [Backends](backends.md): the options of a parse.
 - [Reading Trees](reading-trees.md): what to do with the result.
-- [Errors and Recovery](errors-and-recovery.md): reporting and recovering from syntax errors.
+- [Error Messages](error-messages.md): reporting syntax errors.
+- [Recovering from Errors](recovery.md): parsing on after a syntax error.

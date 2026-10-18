@@ -49,7 +49,7 @@ log.rotate(7 size);
 ## 2. Why Does an Input Fail?
 
 A PEG parser backtracks, so a syntax error does not come from one place: it lists everything that was expected at the
-farthest position any alternative reached (see [errors-and-recovery.md](errors-and-recovery.md#1-what-a-syntax-error-is)).
+farthest position any alternative reached (see [error messages](error-messages.md#what-a-syntax-error-is)).
 When the list is long or surprising, `pego explain` tells you which rule calls contributed each item, and from where
 they were called:
 
@@ -90,7 +90,7 @@ Some things to know:
 - An entry says `matched ..., then expected` when the call succeeded but tried to go further; repetitions and optional
   parts always do. Such items are why error messages mention white space: here `[ \t\n]` comes from `ws`. Writing
   `ws` as `(&[ \t\n] .)*` keeps it out of the lists (see
-  [writing readable messages](errors-and-recovery.md#3-writing-readable-messages)).
+  [writing readable messages](error-messages.md#writing-readable-messages)).
 - `[memo]` marks a call answered from the memo: its expectations were recorded when the rule was first evaluated at
   that position, perhaps for another caller.
 - Calls inside a lookahead (`&`, `!`) record no expectations, so they never appear.

@@ -144,7 +144,7 @@ Some advice on choosing the cases:
   characters a class allows (`a`, `z`, and the character before and after them).
 - **What must not match.** Test the things a lookahead or an ordered choice is there to exclude, such as a keyword that
   must not be read as an identifier.
-- **Errors.** `SyntaxError` has `Line`, `Col`, `Pos` and `Expected`; the [errors guide](errors-and-recovery.md) shows how
+- **Errors.** `SyntaxError` has `Line`, `Col`, `Pos` and `Expected`; the [error messages guide](error-messages.md) shows how
   to shape them. Asserting on `Expected` ties the test to the grammar's details (the first case above includes the
   whitespace class, because `ws` comes first), so do it for the errors you took care to make good, and check only the
   position for the rest.
@@ -656,7 +656,7 @@ Fuzz for longer on a schedule rather than on every commit.
 ## See Also
 
 - [Sampling inputs and fuzzing](sampling-and-fuzzing.md): the generator, coverage and near-miss inputs in detail.
-- [Errors and recovery](errors-and-recovery.md): shaping the errors that these tests check.
+- [Error messages](error-messages.md): shaping the errors that these tests check.
 - [Linting grammars](linting.md), [code generation](code-generation.md) and
   [compiled grammars](compiled-grammars.md): keeping the other artifacts honest.
 - [Debugging and profiling](debugging.md): when a test fails and you need to know why (`pego explain`, `pego trace`).

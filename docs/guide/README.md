@@ -13,7 +13,8 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | [Actions](actions.md) | Actions, built-in functions and lambdas, positions of constructed nodes, recipes (`foldl`, flattening lists) |
 | [Operators Rule](operators-rule.md) | Operator expressions: Operators Rule Definition Statements, left-recursive rules and precedence chains compared, level-restricted calls, operator forms and associativity, pitfalls, a larger example |
 | [Context-Sensitive Parsing](context-sensitive.md) | Predicates, variables, lookahead and attributes; matching tags, indentation blocks, here-documents and other recipes; the cost of variables |
-| [Errors and Recovery](errors-and-recovery.md) | How syntax errors are reported, getting them out on the command line and in Go, readable messages with `@error`, cuts, recovering with `#recover`, inserting missing literals, recipes |
+| [Error Messages](error-messages.md) | How syntax errors are reported, getting them out on the command line and in Go, readable messages with `@error`, cuts |
+| [Recovering from Errors](recovery.md) | Recovering with `#recover`, what happens to the errors, handling them in Go, inserting missing literals, recipes |
 
 ## Running Parsers
 

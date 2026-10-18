@@ -410,7 +410,7 @@ if errors.As(err, &se) {
 
 `Line` and `Col` are 1-based, `Pos` is the offset, `Expected` lists the tokens that would have been accepted at the
 farthest position reached, and `Message()` is the text without the position. These are the same fields as the engine's
-(see [errors and recovery](errors-and-recovery.md)); the parsers report the first error and do not recover from it.
+(see [error messages](error-messages.md#in-go)); the parsers report the first error and do not recover from it.
 
 Some parsers return other errors as well, for what the grammar cannot decide: `yaml.SemanticError` (anchors, tags,
 `Load`), `csv.FieldCountError` (a record of `Table` with another number of fields than the header), and the errors of the
@@ -445,7 +445,7 @@ Limits to plan for:
 - **Memory.** A tree holds every node of the document. For input of many megabytes, parse in pieces yourself (a log
   file by lines, a JSON stream by documents), or use the engine's streaming below.
 - **No recovery.** A parse stops at the first syntax error. For an editor, which needs a tree of the text as it is being
-  typed, use the grammar with the engine and `#recover` ([errors and recovery](errors-and-recovery.md)).
+  typed, use the grammar with the engine and `#recover` ([recovering from errors](recovery.md)).
 
 ## Using the Grammar with the Engine
 
@@ -488,5 +488,5 @@ licence file). [Code generation](code-generation.md) turns a grammar of your own
 
 - [parsers/README.md](../../parsers/README.md): the list of parsers with the specification and the checks of each.
 - [Code generation](code-generation.md): how these parsers are made and what their API is.
-- [Errors and recovery](errors-and-recovery.md), [running parsers](running-parsers.md) and
+- [Error messages](error-messages.md), [recovering from errors](recovery.md), [running parsers](running-parsers.md) and
   [testing grammars](testing-grammars.md).

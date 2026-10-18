@@ -185,6 +185,6 @@ pego: config.pego: start rule nosuch is not defined
 ## Next Steps
 
 [Parsing Context-Sensitive Input](context.md) parses input that depends on what came before. The guide
-[Errors and Recovery](../guide/errors-and-recovery.md) covers labels, cuts, recovery and the error types in depth, and the
+[Error Messages](../guide/error-messages.md) and [Recovering from Errors](../guide/recovery.md) cover labels, cuts, recovery and the error types in depth, and the
 [cookbook](../cookbook/README.md) has recipes for [error carets](../cookbook/error-carets.md) and [reporting several
 errors](../cookbook/several-errors.md).

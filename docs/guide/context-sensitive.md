@@ -9,7 +9,7 @@ here-documents and similar constructs.
 
 It complements the normative text in [Predicates and Variables](../../spec/predicates.md), [Parsing
 Expressions](../../spec/parser-expressions.md) (captures, lookahead) and [Attributes](../../spec/attributes.md) and [Pragmas](../../spec/pragmas.md). For
-error messages and recovery, see the [error guide](errors-and-recovery.md).
+error messages and recovery, see [Error Messages](error-messages.md) and [Recovering from Errors](recovery.md).
 
 Contents:
 
@@ -90,7 +90,7 @@ pego parse -g identity.pego -s by_text -f sexpr -i '<a></a>'
 ```
 
 The first command shows the third consequence: **a failed predicate says nothing**. The farthest-failure rule of the
-[error guide](errors-and-recovery.md#what-is-not-in-the-list) records no expected item for it, so the message points at
+[error guide](error-messages.md#what-is-not-in-the-list) records no expected item for it, so the message points at
 whatever else failed furthest (here, the name rule looking for one more letter). Put `@error(message="...")` on the
 predicate, as in the recipes below.
 
@@ -282,7 +282,7 @@ Three attributes matter here:
 - `#recover(skip=e)` restores the variables to the values they had where the expression began, so definitions made
   inside the failed expression are gone after the recovery. The `skip` expression is matched in that restored context,
   so it can read variables: a `skip` can skip the rest of a broken line **and the more deeply indented lines
-  after it** by comparing indentation ([see the error guide](errors-and-recovery.md#skip-to-the-next-statement-or-line-and-continue)).
+  after it** by comparing indentation ([see the recovery guide](recovery.md#skip-to-the-next-statement-or-line-and-continue)).
 - `#stream` repetitions see the variables defined before them: with `rule main =  { mode := 1 } rs:rec* #stream $$ ` and
   `rule rec = { mode == 1 } . . .`, every streamed element reads `mode`.
 

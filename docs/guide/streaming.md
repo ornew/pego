@@ -399,7 +399,7 @@ recovered errors:
    recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. By default all recovered
    errors are kept until the end, so a very large input with an error on every line holds one `SyntaxError` per line.
-   See [Errors and recovery](errors-and-recovery.md).
+   See [Recovering from Errors](recovery.md).
 
 Use `pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error { ... })` with
 `ParseStream` or `Iterate` to receive each committed recovery immediately before
@@ -821,6 +821,7 @@ err: context deadline exceeded true
 
 - [Incremental parsing](incremental.md): reparsing a text after edits.
 - [spec/pragmas.md](../../spec/pragmas.md#stream): the `#stream` behavioral pragma.
-- [Errors and recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
+- [Error Messages](error-messages.md): `@error` and the shape of `SyntaxError`.
+- [Recovering from Errors](recovery.md): `#recover` and recovered errors.
 - [Runtime](running-parsers.md): backends, position units and the other parse options.
 - [Design record 007](../design/007-streaming-and-incremental-parsing.md).

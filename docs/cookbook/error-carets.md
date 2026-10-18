@@ -145,8 +145,8 @@ app.conf:1:11: expected ';'
   failure. To underline a range, you need the node that failed, which a recovered `Error` node has (see [Report several
   errors in one run](several-errors.md)).
 - **Where the message points.** A missing `;` at the end of a line is reported at the first token that did not fit, which
-  can be on the next line, because the rule for white space reads past line ends. [Errors and
-  recovery](../guide/errors-and-recovery.md) explains this and how to place labels.
+  can be on the next line, because the rule for white space reads past line ends. [Error
+  Messages](../guide/error-messages.md) explains this and how to place labels.
 - **Find out why a grammar reports what it does** with `pego explain -g settings.pego < app.conf`; see
   [Debugging and profiling](../guide/debugging.md).
 - **Editors**: [`pego lsp`](../guide/editor-support.md) shows the same errors as you type.

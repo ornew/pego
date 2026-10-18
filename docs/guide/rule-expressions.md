@@ -174,7 +174,7 @@ decides how good that report is:
 - Give a failed predicate or lookahead a label, because they record no expected item and otherwise leave only
   `syntax error`.
 
-[Errors and Recovery](errors-and-recovery.md) covers labels, cuts, recovery and the other tools in detail.
+[Error Messages](error-messages.md) covers labels and cuts, and [Recovering from Errors](recovery.md) covers recovery.
 
 ## Pitfalls
 
@@ -194,5 +194,6 @@ decides how good that report is:
 - [Operators Rule](operators-rule.md): operator expressions and precedence.
 - [Context-Sensitive Parsing](context-sensitive.md): predicates, variables and lookahead for context-dependent
   syntax.
-- [Errors and Recovery](errors-and-recovery.md): labels, cuts and recovery for readable errors.
+- [Error Messages](error-messages.md): labels and cuts for readable errors.
+- [Recovering from Errors](recovery.md): reporting several errors in one run.
 - [Linting Grammars](linting.md): finding unreachable alternatives and other likely mistakes.

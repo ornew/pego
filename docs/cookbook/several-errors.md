@@ -135,7 +135,7 @@ The program exits with status 1, because there were errors.
   unit can fail, and test it with inputs that are wrong in different ways (see [Test hand-written code against a
   grammar](test-with-samples.md) for generating them).
 - **Unclosed constructs.** Errors recovered inside a block that is never closed are lost when the block fails at the
-  end of the input, and only the missing closing token is reported. The [guide](../guide/errors-and-recovery.md)
+  end of the input, and only the missing closing token is reported. The [guide](../guide/recovery.md#what-happens-to-the-errors)
   explains why.
 - **The skip is a guess** about where the next unit begins. A `skip` that is too eager swallows good input, and one that
   stops too soon produces a second, bogus error.
@@ -146,7 +146,7 @@ The program exits with status 1, because there were errors.
 - **Several error formats.** Show each error with a caret, using `report` of [Report an error with its source line and a
   caret](error-carets.md) on each element of `errs`.
 - **Recovery inside a block.** Put `#recover` on the statement rule of the block body, with a `skip` that does not eat the
-  closing brace; [Errors and recovery](../guide/errors-and-recovery.md) has the recipe.
+  closing brace; [Recovering from Errors](../guide/recovery.md) has the recipe.
 - **Streams.** `ParseStream` reports recovered errors in the same way; see [Process a file that does not fit in
   memory](big-files.md).
 - **Editors.** A language server needs exactly this: errors with positions and a tree of what could be read.

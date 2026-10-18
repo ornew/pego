@@ -891,7 +891,7 @@ rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest
   wrapper's message applies only where a whole expression is expected.
 - The language has no comma operator, so call arguments are plain `expr` calls and no level name is needed.
 - Statements such as `let` and `while` are PEG rules that call `expr`. Together with the `#recover` pragma on `stmt`,
-  a bad expression only loses its own statement. See [Errors and recovery](errors-and-recovery.md).
+  a bad expression only loses its own statement. See [Recovering from Errors](recovery.md).
 
 Parsing a few statements with the real grammar:
 
