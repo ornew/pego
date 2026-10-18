@@ -254,6 +254,17 @@ and every guide. Saved bytecode and schema formats need new versions.
   kept. A `pego fix` rewrite handles the mechanical parts (struct definitions,
   `--` to `#cut`, positional to named captures, lambda parameters), and the
   repository grammars and `parsers/` are migrated with it.
+- **Terminal types become one-field structs.** A terminal type names the kind
+  of a token, and unions of them, such as `Number | String | Bool`, tell the
+  kinds apart, which `node[string]` cannot do. `pego fix` rewrites
+  `type T terminal` to `type T = { Text string }`, a rule `rule r T = e`
+  without an action to `rule r T = t:(e) #atomic => T{Text: text($t)}`
+  (without `#atomic` when `e` has captures, which predicates may read), and a
+  positional constructor `T{s}` to `T{Text: s}`. The struct keeps the range of
+  the rule, and a generated Go `*T` keeps its `Span` and `Text`. The reserved
+  names are rewritten to the value types they stand for: `Match` and
+  `terminal` to `node[string]`, `Seq`, `List` and `Operator` to `node`, and
+  `Error` to `error`.
 
 - **Subtyping is minimal.** `_|_ <= T <= _`, `T <= *T`, `nil <= *T`, and
   each union argument is below its union. `[]T`, `*T` and `node[T, C]` are
