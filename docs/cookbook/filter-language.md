@@ -1,4 +1,4 @@
-# Compile a Filter Language into a Go Predicate
+# Compile a Filter Language Into a Go Predicate
 
 **Problem.** Users of your tool write filters such as `age > 30 and name ~ "a*"` in a query box or a configuration
 file. You want a `func(Record) bool` that is cheap to call on every record.

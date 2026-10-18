@@ -1,4 +1,4 @@
-# Generating Parsers with `pego gen`
+# Generating Parsers With `pego gen`
 
 `pego gen` turns a grammar into a source file: a parser you commit to your repository, build with your program, and
 call like any other package. The generated Go code depends only on the standard library. It does not import PEGO, and
@@ -279,7 +279,7 @@ Notes:
 - Using a stream grammar with the generator is fine: `Parse` treats the `#stream` pragma as an ordinary repetition, so
   the same grammar file serves both streaming and whole-input parsing.
 
-## Keeping Generated Code up to Date
+## Keeping Generated Code Up to Date
 
 Generated code is source: commit it, review its diffs, and regenerate it whenever the grammar changes **or you upgrade
 PEGO** (the embedded runtime comes from the version of `pego` that generated it). Three habits keep it honest.

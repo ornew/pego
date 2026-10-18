@@ -107,7 +107,7 @@ so no node is created for the parentheses.
 The `skip` item is a convenience of Operators Rule syntax only. It is not inserted *inside* an operator or operand, which is
 why the parenthesized operand writes `ws` before `")"` itself, and why `main` has a trailing `ws`.
 
-### The Same Language with Left Recursion
+### The Same Language With Left Recursion
 
 A rule that starts by calling itself is **left recursive**, and PEGO accepts it. Precedence then comes from having one
 rule per level, each defined in terms of the next tighter one:

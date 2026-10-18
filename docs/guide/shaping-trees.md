@@ -247,7 +247,7 @@ rule main Expr = e:expr $$ => $e
 
 This is the idiom of the calculator example.
 
-## Using the Tree from Go
+## Using the Tree From Go
 
 `Parser.Parse` returns a `*pego.Node` that mirrors the JSON keys above: the methods `Type()` and `Rule()`, the fields
 `Start` and `End`, `Text`, `Children` and `Fields`, and `Field(name)` for a struct field or capture. Reading fields

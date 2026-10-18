@@ -307,7 +307,7 @@ Num"2"@num
 The repetition is greedy and does not backtrack, but it is still correct here: it consumes `2 ^` and `3 ^`, then
 `4` fails to be followed by `^`, so the repetition stops and `last` matches `4`.
 
-### Member Chains with a Union Accumulator
+### Member Chains With a Union Accumulator
 
 The same fold builds `a.b.c`. The accumulator is first an `Ident` and then a `Member`, so declare the union and use it
 for the rule type and the field:

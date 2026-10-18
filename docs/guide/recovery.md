@@ -1,4 +1,4 @@
-# Recovering from Errors
+# Recovering From Errors
 
 This guide shows how to keep parsing after a syntax error, so that one run reports every problem in a file and returns a
 tree that is complete except at the broken places. It builds on [Error Messages](error-messages.md) and is a companion
@@ -226,7 +226,7 @@ The stray `}` stops every recovery in this grammar, because `skip` refuses to ea
 for a block-structured language, but if you want to report stray closing braces too, the top-level rule has to handle
 them.
 
-## Using the Errors from Go
+## Using the Errors From Go
 
 The following program parses three inputs with the finished `toy.pego` and handles each outcome. Run it in the directory
 that contains `toy.pego` (the module that contains it must depend on `github.com/ornew/pego`).

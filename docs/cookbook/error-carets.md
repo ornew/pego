@@ -1,4 +1,4 @@
-# Report an Error with Its Source Line and a Caret
+# Report an Error With Its Source Line and a Caret
 
 **Problem.** When a user's file does not parse, you want a message like those of a compiler: the file, the line and
 the column, a message that says what is wrong, the line of the source, and a caret under the place.

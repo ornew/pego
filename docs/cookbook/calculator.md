@@ -1,4 +1,4 @@
-# Evaluate Arithmetic with Variables and Functions
+# Evaluate Arithmetic With Variables and Functions
 
 **Problem.** A program lets users type formulas such as `max(x, 2) * 3 ^ 2 - -y / 4`, with the usual precedence, and
 evaluates them for many values of `x` and `y`.

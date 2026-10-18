@@ -375,7 +375,7 @@ pego: 1:3: syntax error: expected "d"
 For `ax` the first alternative fails at the `b` (column 2) and its message is the only thing recorded there. For `acx`
 the second alternative gets to column 3, and the label of the first one is gone.
 
-### Labels on Predicate Actions and On `_|_`
+### Labels on Predicate Actions and on `_|_`
 
 A [predicate](../../spec/predicates.md) that fails records nothing, so a failed check shows up as a bare
 `syntax error`. Attach `@error` to it. The same goes for a rule that exists only to report a message: `_|_` always

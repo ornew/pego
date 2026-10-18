@@ -1,4 +1,4 @@
-# Read a Configuration File into Go Structs
+# Read a Configuration File Into Go Structs
 
 **Problem.** Your program reads a small configuration file of `key = value` lines, with comments, strings, integers,
 booleans and arrays, and wants a Go struct. A wrong type or an unknown key should be reported with its line.

@@ -447,7 +447,7 @@ Limits to plan for:
 - **No recovery.** A parse stops at the first syntax error. For an editor, which needs a tree of the text as it is being
   typed, use the grammar with the engine and `#recover` ([recovering from errors](recovery.md)).
 
-## Using the Grammar with the Engine
+## Using the Grammar With the Engine
 
 The generated Go code gives up what the engine offers: streaming, incremental reparsing, the choice of backend and
 the tools (`pego trace`, `pego profile`, `pego sample`). The grammar each parser is generated from, `<language>.pego`, is

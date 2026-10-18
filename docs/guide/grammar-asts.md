@@ -128,7 +128,7 @@ processing layout and keyword ordering, and constructing output. Individual
 allocations, concatenations and string comparisons can finish before a check,
 so these functions do not guarantee a wall-clock deadline.
 
-## Collect Metadata with Cancellation
+## Collect Metadata With Cancellation
 
 For large grammar ASTs, use the context-aware collection methods:
 

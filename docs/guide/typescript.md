@@ -498,7 +498,7 @@ Everything `pego gen` supports for Go, except typed values:
 | Cancellation and work limits | `signal`, `maxInputWork`, `maxSteps` in the options-aware entry points |
 | Per-call depth | `maxDepth` in the options-aware entry points; generated default is configurable, and the host stack still bounds nesting |
 
-## Keeping Generated Code up to Date
+## Keeping Generated Code Up to Date
 
 As with Go, generated code is source: commit it, and regenerate it when the grammar changes or you upgrade PEGO (the
 embedded runtime comes from the version of `pego` that generated it). In a Go module, a `go:generate` line next to

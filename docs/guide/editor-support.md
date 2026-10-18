@@ -85,7 +85,7 @@ When enabled, lint findings appear only after the grammar parses and compiles su
 
 Explanations are tied to the document version and analysis that produced the diagnostic; the extension rechecks them before display and drops stale requests. The setting also enables responsive analysis: newer document versions can replace pending analysis and supersede stale results. Cancellation is cooperative, and some parsing, compilation, lint, and request-processing phases do not yet check for cancellation internally, so an already-running phase may need to finish before the server responds.
 
-## Setting up an Editor
+## Setting Up an Editor
 
 The examples below start `pego lsp` for files ending in `.pego`.
 

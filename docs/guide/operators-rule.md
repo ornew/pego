@@ -109,7 +109,7 @@ pego parse -g calc.pego -f sexpr -i '1 +'
 pego: 1:4: syntax error: expected "(", "+", "-", [0-9]
 ```
 
-## 2. The Same Language with Left Recursion
+## 2. The Same Language With Left Recursion
 
 A PEG rule may call itself in leftmost position, directly or through other rules. PEGO detects such cycles and parses
 them by growing a seed: it first matches the non-recursive alternatives, then repeatedly tries again with the result so
@@ -595,7 +595,7 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 pego: raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Num
 ```
 
-### Captures And Operators
+### Captures and Operators
 
 Operator actions refer to their operands as `$lhs`, `$rhs` and `$op`, and to the captures in the operator part. Operand
 actions use the captures of their line:

@@ -95,7 +95,7 @@ pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
 pego: bad-field.pego:20:69: Entry has no field Valu
 ```
 
-### Using the Tree from Go
+### Using the Tree From Go
 
 The typed tree is what your program consumes. Put `config.pego` and an `example.conf` next to this `main.go`, which
 embeds the grammar and prints the entries:
