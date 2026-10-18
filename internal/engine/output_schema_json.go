@@ -30,14 +30,16 @@ const (
 	schemaJSONRule
 	schemaJSONShape
 	schemaJSONField
+	schemaJSONCapture
 )
 
 var outputSchemaJSONFields = [...][]string{
-	{"format", "version", "start", "positionUnitIndependent", "types", "rules"},
+	{"format", "version", "start", "positionUnitIndependent", "sourceInfo", "types", "rules"},
 	{"id", "name", "origin", "shape"},
 	{"name", "origin", "result"},
-	{"kind", "ref", "scalar", "element", "alternatives", "fields", "children"},
-	{"name", "origin", "shape"},
+	{"kind", "ref", "scalar", "element", "elements", "alternatives", "fields", "value", "captures"},
+	{"name", "shape"},
+	{"name", "paths", "side", "shape"},
 }
 
 type outputSchemaJSONKeys struct {
@@ -133,18 +135,24 @@ func (s *outputSchemaJSONKeys) object(kind schemaJSONObject) error {
 		s.at++ // :
 		s.space()
 		switch {
-		case kind == schemaJSONEnvelope && field == 4:
-			err = s.array(schemaJSONType)
 		case kind == schemaJSONEnvelope && field == 5:
+			err = s.array(schemaJSONType)
+		case kind == schemaJSONEnvelope && field == 6:
 			err = s.array(schemaJSONRule)
 		case kind == schemaJSONType && field == 3,
-			(kind == schemaJSONRule || kind == schemaJSONField) && field == 2,
-			kind == schemaJSONShape && (field == 3 || field == 6):
+			kind == schemaJSONRule && field == 2,
+			kind == schemaJSONField && field == 1,
+			kind == schemaJSONCapture && field == 3,
+			kind == schemaJSONShape && (field == 3 || field == 7):
 			err = s.object(schemaJSONShape)
-		case kind == schemaJSONShape && field == 4:
+		case kind == schemaJSONShape && (field == 4 || field == 5):
 			err = s.array(schemaJSONShape)
-		case kind == schemaJSONShape && field == 5:
+		case kind == schemaJSONShape && field == 6:
 			err = s.array(schemaJSONField)
+		case kind == schemaJSONShape && field == 8:
+			err = s.array(schemaJSONCapture)
+		case kind == schemaJSONCapture && field == 1:
+			s.numbers()
 		default:
 			err = s.scalar()
 		}
@@ -154,6 +162,27 @@ func (s *outputSchemaJSONKeys) object(kind schemaJSONObject) error {
 		s.space()
 		if s.data[s.at] == ',' {
 			s.at++
+		}
+	}
+}
+
+// numbers skips a value made of arrays and numbers, such as capture paths.
+func (s *outputSchemaJSONKeys) numbers() {
+	depth := 0
+	for s.at < len(s.data) {
+		switch s.data[s.at] {
+		case '[':
+			depth++
+		case ']':
+			depth--
+		case ',', '}':
+			if depth == 0 {
+				return
+			}
+		}
+		s.at++
+		if depth == 0 && s.data[s.at-1] == ']' {
+			return
 		}
 	}
 }

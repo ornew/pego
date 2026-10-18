@@ -7,13 +7,14 @@ import (
 )
 
 // OutputSchema describes possible grammar outputs independently of a parse.
-// Validate checks its v1 envelope and shape graph, including schemas built in
+// Validate checks its version 2 envelope and shape graph, including schemas built in
 // memory. Decoding it with encoding/json performs the same check.
 type OutputSchema = engine.OutputSchema
 type SchemaType = engine.SchemaType
 type SchemaRule = engine.SchemaRule
 type SchemaShape = engine.SchemaShape
 type SchemaField = engine.SchemaField
+type SchemaCapture = engine.SchemaCapture
 
 // ErrSchemaUnavailable reports that checked grammar metadata is unavailable.
 // In particular, a parser loaded from a compiled file cannot export a schema.
@@ -31,7 +32,7 @@ func WithAllSchemaRules() SchemaOption {
 }
 
 // OutputSchema exports checked grammar metadata. It does not inspect parse
-// results, change parsing, or describe exact CST child positions.
+// results or change parsing.
 func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
 	if p == nil || p.prog == nil {
 		return nil, ErrSchemaUnavailable
@@ -44,16 +45,21 @@ func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
 }
 
 // QueryPattern is a programmatic structural pattern. Empty constraints match
-// any value of the applicable category. Children form an ordered prefix;
-// required fields must be present, while extra children and fields are allowed.
+// any value of the applicable category. Elements form an ordered prefix of a
+// tuple, a list or a node's value; required fields must be present, while extra
+// elements and fields are allowed.
 type QueryPattern = engine.QueryPattern
 type QueryFieldPattern = engine.QueryFieldPattern
 type QueryEdge = engine.QueryEdge
 type QueryCapture = engine.QueryCapture
 type QueryMatch = engine.QueryMatch
 
-// ErrQueryCycle reports a cycle on the active path through a Node or []any list.
+// ErrQueryCycle reports a cycle on the active path through the values.
 var ErrQueryCycle = engine.ErrQueryCycle
+
+// ErrQueryNoSourceInfo reports a query with a rule constraint on values that
+// record no rules, because the grammar was compiled without source information.
+var ErrQueryNoSourceInfo = engine.ErrQueryNoSourceInfo
 
 // StructuralQuery is an immutable compiled programmatic pattern.
 type StructuralQuery struct{ query *engine.StructuralQuery }

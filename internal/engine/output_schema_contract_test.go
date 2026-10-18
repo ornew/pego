@@ -22,20 +22,36 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{Kind: "nil"}})
 			s.Rules[0].Result.Ref = "inferred/other"
 		}, "must reference"},
-		{"unknown CST identity", func(s *OutputSchema) {
-			s.Types = append(s.Types, SchemaType{ID: "cst/Other", Name: "Other", Origin: "cst", Shape: SchemaShape{Kind: "terminal"}})
-		}, "reserved"},
-		{"CST terminal fields", func(s *OutputSchema) {
-			s.Types = append(s.Types, SchemaType{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: SchemaShape{Kind: "struct"}})
-		}, "reserved"},
-		{"CST missing children", func(s *OutputSchema) {
-			s.Types = append(s.Types, SchemaType{ID: "cst/Seq", Name: "Seq", Origin: "cst", Shape: SchemaShape{Kind: "cst"}})
-		}, "reserved"},
-		{"CST wrong child cardinality", func(s *OutputSchema) {
-			shape, _ := reservedOutputSchemaShape(TypeSeq)
-			shape.Children.Element = &SchemaShape{Kind: "node"}
-			s.Types = append(s.Types, SchemaType{ID: "cst/Seq", Name: "Seq", Origin: "cst", Shape: shape})
-		}, "reserved"},
+		{"CST namespace", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: SchemaShape{Kind: "node", Value: &SchemaShape{Kind: "scalar", Scalar: "string"}}})
+		}, "identity"},
+		{"declared non-struct", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "declared/Alias", Name: "Alias", Origin: "declared", Shape: SchemaShape{Kind: "any"}})
+		}, "must be a struct"},
+		{"node without value", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{Kind: "node"}})
+		}, "node value"},
+		{"capture without location", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{
+				Kind: "node", Value: &SchemaShape{Kind: "nil"}, Captures: []SchemaCapture{{Name: "x", Shape: SchemaShape{Kind: "nil"}}},
+			}})
+		}, "no location"},
+		{"duplicate capture", func(s *OutputSchema) {
+			c := SchemaCapture{Name: "x", Side: true, Shape: SchemaShape{Kind: "nil"}}
+			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{
+				Kind: "node", Value: &SchemaShape{Kind: "nil"}, Captures: []SchemaCapture{c, c},
+			}})
+		}, "duplicate"},
+		{"negative capture index", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{
+				Kind: "node", Value: &SchemaShape{Kind: "tuple"}, Captures: []SchemaCapture{{Name: "x", Paths: [][]int{{-1}}, Shape: SchemaShape{Kind: "nil"}}},
+			}})
+		}, "negative"},
+		{"members of another kind", func(s *OutputSchema) {
+			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{
+				Kind: "tuple", Value: &SchemaShape{Kind: "nil"},
+			}})
+		}, "unexpected"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := validInMemoryOutputSchema()
@@ -58,23 +74,30 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 	}
 
 	s := validInMemoryOutputSchema()
-	for _, name := range reservedTypes {
-		shape, _ := reservedOutputSchemaShape(name)
-		shape.Fields, shape.Alternatives = []SchemaField{}, []SchemaShape{}
-		s.Types = append(s.Types, SchemaType{ID: "cst/" + name, Name: name, Origin: "cst", Shape: shape})
+	for i, kind := range []string{"nil", "any", "error", "tuple", "union", "struct"} {
+		name := fmt.Sprintf("empty%d", i)
+		shape := SchemaShape{Kind: kind, Fields: []SchemaField{}, Alternatives: []SchemaShape{}, Elements: []SchemaShape{}, Captures: []SchemaCapture{}}
+		if kind == "struct" {
+			s.Types = append(s.Types, SchemaType{ID: "declared/" + name, Name: name, Origin: "declared", Shape: shape})
+			continue
+		}
+		s.Types = append(s.Types, SchemaType{ID: "inferred/" + name, Name: name, Origin: "inferred", Shape: shape})
 	}
 	if err := s.Validate(); err != nil {
-		t.Fatalf("reserved shapes with empty omitted members: %v", err)
+		t.Fatalf("shapes with empty omitted members: %v", err)
 	}
 }
 
 func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Origin: "declared", Shape: SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+	s.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "union", Alternatives: []SchemaShape{
 		{Kind: "scalar", Scalar: "string"}, {Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "bool"}},
 	}}}}
-	shape, _ := reservedOutputSchemaShape(TypeSeq)
-	s.Types = append(s.Types, SchemaType{ID: "cst/Seq", Name: "Seq", Origin: "cst", Shape: shape})
+	s.Types = append(s.Types, SchemaType{ID: "inferred/pair", Name: "pair", Origin: "inferred", Shape: SchemaShape{
+		Kind:  "node",
+		Value: &SchemaShape{Kind: "tuple", Elements: []SchemaShape{{Kind: "scalar", Scalar: "int"}, {Kind: "nil"}}},
+		Captures: []SchemaCapture{{Name: "x", Paths: [][]int{{0}}, Shape: SchemaShape{Kind: "scalar", Scalar: "int"}}},
+	}})
 	data, err := json.Marshal(s)
 	if err != nil {
 		t.Fatal(err)
@@ -91,7 +114,11 @@ func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 		{"field", `"fields":[{"name":"Value"`, "name", `"Value"`},
 		{"alternative", `"alternatives":[{"kind":"scalar"`, "kind", `"scalar"`},
 		{"element", `"element":{"kind":"scalar"`, "kind", `"scalar"`},
-		{"children", `"children":{"kind":"list"`, "kind", `"list"`},
+		{"source info", `"sourceInfo":false`, "sourceInfo", `false`},
+		{"node value", `"value":{"kind":"tuple"`, "kind", `"tuple"`},
+		{"elements", `"elements":[{"kind":"scalar"`, "kind", `"scalar"`},
+		{"capture", `"captures":[{"name":"x"`, "name", `"x"`},
+		{"paths", `"paths":[[0]]`, "paths", `[[0]]`},
 	} {
 		key := `"` + spot.key + `"`
 		escaped := fmt.Sprintf(`"\u%04x%s"`, spot.key[0], spot.key[1:])

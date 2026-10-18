@@ -47,6 +47,20 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 	}
 }
 
+// A value of a terminal type is a string node, with the members of a node.
+func TestNodeMembersOfTerminalTypes(t *testing.T) {
+	program := compile(t, `type Num terminal
+type Out = { S int; E int; V string }
+rule main = "-" n:num $$ => Out{S: $n.Start, E: $n.End, V: $n.Value}
+rule num Num = [0-9]+ #atomic`)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
+		if err != nil || n.String() != `Out{E: 3, S: 1, V: "12"}` {
+			t.Fatalf("%s: %v %v", backend, n, err)
+		}
+	}
+}
+
 // On capture nodes x.$y and x.y read the same capture, and both project a repetition.
 func TestCaptureAccessMatchesField(t *testing.T) {
 	access := compile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)

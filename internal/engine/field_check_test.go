@@ -150,7 +150,8 @@ func TestConstructedFieldChecks(t *testing.T) {
 				}
 				name := value
 				if strings.HasPrefix(value, "[]") || strings.HasPrefix(value, "empty ") {
-					name = "List"
+					// Lists built by actions are list values.
+					name = typeListValue
 				}
 				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
 				switch {

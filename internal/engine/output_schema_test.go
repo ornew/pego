@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -47,9 +48,6 @@ rule unused = "z"`)
 	}
 	fields := make(map[string]SchemaShape, len(item.Shape.Fields))
 	for _, field := range item.Shape.Fields {
-		if field.Origin != "declared" {
-			t.Fatalf("declared field origin: %+v", field)
-		}
 		fields[field.Name] = field.Shape
 	}
 	if fields["Value"].Kind != "scalar" || fields["Value"].Scalar != "string" ||
@@ -60,8 +58,9 @@ rule unused = "z"`)
 	if next := fields["Next"]; next.Kind != "optional" || next.Element == nil || next.Element.Kind != "ref" || next.Element.Ref != "declared/Item" {
 		t.Fatalf("recursive optional field: %+v", next)
 	}
-	if values := fields["Values"]; values.Kind != "list" || values.Element == nil || values.Element.Kind != "ref" || values.Element.Ref != "cst/Match" {
-		t.Fatalf("CST list field: %+v", values)
+	if values := fields["Values"]; values.Kind != "list" || values.Element == nil || values.Element.Kind != "node" ||
+		values.Element.Value == nil || values.Element.Value.Kind != "scalar" || values.Element.Value.Scalar != "string" {
+		t.Fatalf("string node list field: %+v", values)
 	}
 	if inferred := byID["inferred/item"].Shape; inferred.Kind != "ref" || inferred.Ref != "declared/Item" {
 		t.Fatalf("inferred rule identity: %+v", byID["inferred/item"])
@@ -91,8 +90,11 @@ rule unused = "z"`)
 	if !bytes.Equal(first, roundtrip) {
 		t.Fatal("schema roundtrip")
 	}
-	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":2}`), &decoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":3}`), &decoded); err == nil {
 		t.Fatal("accepted future version")
+	}
+	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":1}`), &decoded); err == nil {
+		t.Fatal("accepted version 1")
 	}
 	all, err := p.OutputSchemaPrototype("main", true)
 	if err != nil || len(all.Rules) != 3 {
@@ -117,38 +119,19 @@ rule unused = "z"`)
 }
 
 func TestOutputSchemaEmptyUnionRoundTrip(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "a"`)
+	// A field cannot have a type without values, but a rule can: one that never succeeds.
+	if message := compileError(t, `type Holder = { Never _|_ }
+rule main = "a"`); !strings.Contains(message, "no values") {
+		t.Fatalf("field without values: %s", message)
+	}
+	empty, err := schemaValue(tyBottom)
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.Statements = append([]grammar.Statement{&grammar.TypeDef{
-		Name: "Empty", Spec: &grammar.AliasSpec{Type: &grammar.UnionType{}},
-	}}, g.Statements...)
-	if err := grammar.Validate(g); err != nil {
-		t.Fatalf("valid empty union grammar: %v", err)
-	}
-	p, err := Compile(g, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	schema, err := p.OutputSchemaPrototype("main", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var found bool
-	for _, typ := range schema.Types {
-		if typ.ID == "declared/Empty" {
-			found = true
-			if typ.Shape.Kind != "union" || len(typ.Shape.Alternatives) != 0 {
-				t.Fatalf("empty union shape: %+v", typ.Shape)
-			}
-		}
-	}
-	if !found {
-		t.Fatal("all-rules schema omitted declared empty union")
-	}
+	schema := validInMemoryOutputSchema()
+	schema.Types[1].Shape = empty
 	if err := schema.Validate(); err != nil {
-		t.Fatalf("valid exported schema: %v", err)
+		t.Fatalf("valid empty union schema: %v", err)
 	}
 	data, err := json.Marshal(schema)
 	if err != nil {
@@ -158,20 +141,29 @@ func TestOutputSchemaEmptyUnionRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("decode valid empty union: %v", err)
 	}
-	if !reflect.DeepEqual(schema, &decoded) {
-		t.Fatalf("empty union round trip changed schema: before=%+v after=%+v", schema, &decoded)
+	if !reflect.DeepEqual(schema, decoded) || decoded.Types[1].Shape.Kind != "union" || len(decoded.Types[1].Shape.Alternatives) != 0 {
+		t.Fatalf("empty union round trip changed schema: before=%+v after=%+v", schema, decoded)
 	}
 }
 
 func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
-	shape, err := schemaInferred(recordTy{fields: map[string]ty{"z": tyAny, "a": optTy{listTy{tyString}}}})
+	shape, err := schemaValue(nodeTy{
+		value: tupleTy{[]ty{tyStringNode, tyTop, optTy{listTy{tyString}}}},
+		caps: []capIndex{
+			{name: "z", paths: [][]int{{1}}, t: tyTop},
+			{name: "a", paths: [][]int{{2}, {0}}, t: optTy{listTy{tyString}}},
+			{name: "s", side: true, t: tyStringNode},
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shape.Kind != "cst" || shape.Fields[0].Name != "a" || shape.Fields[1].Shape.Kind != "any" || shape.Fields[1].Origin != "capture" {
+	if shape.Kind != "node" || shape.Value.Kind != "tuple" || len(shape.Value.Elements) != 3 || shape.Value.Elements[1].Kind != "any" ||
+		len(shape.Captures) != 3 || shape.Captures[0].Name != "z" || shape.Captures[0].Shape.Kind != "any" ||
+		!reflect.DeepEqual(shape.Captures[1].Paths, [][]int{{0}, {2}}) || !shape.Captures[2].Side || shape.Captures[2].Paths != nil {
 		t.Fatalf("shape %+v", shape)
 	}
-	unionShape, err := schemaInferred(unionTy{[]ty{tyString, tyInt}})
+	unionShape, err := schemaValue(unionTy{[]ty{tyString, tyInt}})
 	if err != nil || len(unionShape.Alternatives) != 2 {
 		t.Fatalf("union %+v %v", unionShape, err)
 	}
@@ -179,20 +171,30 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 
 func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 	p := &Program{types: map[string]grammar.TypeSpec{"Known": &grammar.TerminalSpec{}}}
+	// The checker reports undefined names, which resolve to _ so that checking can go on; a
+	// checked program has none. *_ is _, since _ includes nil.
 	for _, expr := range []grammar.TypeExpr{
 		&grammar.TypeRef{Name: "UnknownShape"},
 		&grammar.ListType{Elem: &grammar.OptionalType{Elem: &grammar.TypeRef{Name: "UnknownShape"}}},
 		&grammar.UnionType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "UnknownShape"}}},
 		&grammar.TypeGroup{},
 	} {
-		if shape, err := p.schemaDeclared(expr); err == nil {
-			t.Errorf("accepted unresolved declared shape %T: %+v", expr, shape)
+		shape, err := p.schemaDeclared(expr)
+		if err != nil || shape.Kind != "any" && (shape.Kind != "list" || shape.Element.Kind != "any") {
+			data, _ := json.Marshal(shape)
+			t.Errorf("unresolved declared shape %T: %s %v", expr, data, err)
 		}
 	}
-	for _, inferred := range []ty{tyNever, basicTy("unknown"), namedTy{name: "Known", kind: '?'}, (*listTy)(nil)} {
-		if shape, err := schemaInferred(inferred); err == nil {
+	if message := compileError(t, "type T = { F UnknownShape }\nrule main = \"a\""); !strings.Contains(message, "UnknownShape") {
+		t.Errorf("undefined field type: %s", message)
+	}
+	for _, inferred := range []ty{basicTy("unknown"), namedTy{name: "Known", kind: '?'}, (*listTy)(nil)} {
+		if shape, err := schemaValue(inferred); err == nil {
 			t.Errorf("accepted unresolved inferred shape %T: %+v", inferred, shape)
 		}
+	}
+	if shape, err := schemaValue(tyBottom); err != nil || shape.Kind != "union" || len(shape.Alternatives) != 0 {
+		t.Errorf("_|_ is not the empty union: %+v %v", shape, err)
 	}
 }
 
@@ -215,13 +217,14 @@ rule main = (-"a")*`)
 	for _, typ := range s.Types {
 		byID[typ.ID] = typ
 	}
-	if got := byID["declared/Open"].Shape; got.Kind != "any" {
-		t.Fatalf("any alias: %+v", got)
+	if got, ok := byID["declared/Open"]; ok {
+		t.Fatalf("exported the alias Open as a type: %+v", got)
 	}
 	if got := byID["declared/Bag"].Shape.Fields[0].Shape; got.Kind != "list" || got.Element == nil || got.Element.Kind != "any" {
 		t.Fatalf("any list field: %+v", got)
 	}
-	if got := byID["inferred/main"].Shape; got.Kind != "list" || got.Element == nil || got.Element.Kind != "nil" {
-		t.Fatalf("value-free repeat: %+v", got)
+	if got := byID["inferred/main"].Shape; got.Kind != "node" || got.Value.Kind != "list" || got.Value.Element.Kind != "node" || got.Value.Element.Value.Kind != "tuple" || len(got.Value.Element.Value.Elements) != 0 {
+		data, _ := json.Marshal(got)
+		t.Fatalf("value-free repeat: %s", data)
 	}
 }

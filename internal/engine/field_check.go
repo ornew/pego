@@ -477,7 +477,8 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	case ftTerminal:
 		return n.IsTerminal()
 	case ftNamed:
-		return typ == t.name
+		// Until the value checker replaces this check, List also names list values.
+		return typ == t.name || t.name == TypeList && typ == typeListValue
 	case ftList:
 		if typ != TypeList && typ != typeListValue {
 			return false

@@ -23,13 +23,18 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 		},
 		{
 			name: "unknown shape kind",
-			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"mystery"}}]`,
+			body: `"types":[{"id":"inferred/item","name":"item","origin":"inferred","shape":{"kind":"mystery"}}]`,
 			want: "unknown",
 		},
 		{
 			name: "unknown scalar",
-			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"scalar","scalar":"float"}}]`,
+			body: `"types":[{"id":"inferred/item","name":"item","origin":"inferred","shape":{"kind":"scalar","scalar":"float"}}]`,
 			want: "unknown",
+		},
+		{
+			name: "declared type that is not a struct",
+			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"scalar","scalar":"int"}}]`,
+			want: "must be a struct",
 		},
 		{
 			name: "invalid type namespace",
@@ -38,27 +43,27 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 		},
 		{
 			name: "duplicate struct field",
-			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","origin":"declared","shape":{"kind":"scalar","scalar":"string"}},{"name":"Value","origin":"declared","shape":{"kind":"scalar","scalar":"int"}}]}}]`,
+			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","shape":{"kind":"scalar","scalar":"string"}},{"name":"Value","shape":{"kind":"scalar","scalar":"int"}}]}}]`,
 			want: "duplicate",
 		},
 		{
-			name: "wrong struct field origin",
-			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","origin":"capture","shape":{"kind":"scalar","scalar":"string"}}]}}]`,
-			want: "field origin",
+			name: "struct field origin",
+			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Value","origin":"declared","shape":{"kind":"scalar","scalar":"string"}}]}}]`,
+			want: "unknown field",
 		},
 		{
-			name: "wrong capture field origin",
-			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"cst","fields":[{"name":"value","origin":"declared","shape":{"kind":"any"}}]}}]`,
-			want: "field origin",
+			name: "capture without location",
+			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple"},"captures":[{"name":"value","shape":{"kind":"any"}}]}}]`,
+			want: "no location",
 		},
 		{
-			name: "duplicate capture field",
-			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"cst","fields":[{"name":"value","origin":"capture","shape":{"kind":"scalar","scalar":"string"}},{"name":"value","origin":"capture","shape":{"kind":"any"}}]}}]`,
+			name: "duplicate capture",
+			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"any"}]},"captures":[{"name":"value","paths":[[0]],"shape":{"kind":"scalar","scalar":"string"}},{"name":"value","side":true,"shape":{"kind":"any"}}]}}]`,
 			want: "duplicate",
 		},
 		{
 			name: "scalar carrying a node reference",
-			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"terminal"}},{"id":"declared/Text","name":"Text","origin":"declared","shape":{"kind":"scalar","scalar":"string","ref":"declared/Item"}}]`,
+			body: `"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct"}},{"id":"inferred/text","name":"text","origin":"inferred","shape":{"kind":"scalar","scalar":"string","ref":"declared/Item"}}]`,
 			want: "unexpected",
 		},
 	}
@@ -71,7 +76,7 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 			if !strings.Contains(body, `"rules":`) {
 				body += `,"rules":[]`
 			}
-			data := []byte(`{"format":"pego-output-schema","version":1,"start":"main","positionUnitIndependent":true,` + body + `}`)
+			data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,` + body + `}`)
 			original := OutputSchema{Format: "sentinel"}
 			got := original
 			if err := json.Unmarshal(data, &got); err == nil || !strings.Contains(err.Error(), tt.want) {
@@ -86,7 +91,7 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 
 func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) {
 	schema := validInMemoryOutputSchema()
-	schema.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Origin: "declared", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}}}
+	schema.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}}}
 	encoded, err := json.Marshal(schema)
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +109,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 		{"unknown envelope field", `"start":"main",`, `"start":"main","unexpected":true,`, "unknown field"},
 		{"unknown type field", `"id":"declared/Item",`, `"id":"declared/Item","unexpected":true,`, "unknown field"},
 		{"unknown struct shape field", `"kind":"struct","fields"`, `"kind":"struct","unexpected":true,"fields"`, "unknown field"},
-		{"unknown field entry", `"name":"Value","origin"`, `"name":"Value","unexpected":true,"origin"`, "unknown field"},
+		{"unknown field entry", `"name":"Value","shape"`, `"name":"Value","unexpected":true,"shape"`, "unknown field"},
 		{"unknown scalar shape field", `"scalar":"string"`, `"scalar":"string","unexpected":true`, "unknown field"},
 		{"unknown nested element field", `"kind":"scalar","scalar":"string"`, `"kind":"list","element":{"kind":"scalar","scalar":"string","unexpected":true}`, "unknown field"},
 		{"unknown rule field", `"rules":[{"name":"main","origin"`, `"rules":[{"name":"main","unexpected":true,"origin"`, "unknown field"},
@@ -133,19 +138,20 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 	}
 }
 
-func TestOutputSchemaDecodeAcceptsCSTCaptureShape(t *testing.T) {
-	data := []byte(`{"format":"pego-output-schema","version":1,"start":"main","positionUnitIndependent":true,"types":[{"id":"cst/Seq","name":"Seq","origin":"cst","shape":{"kind":"cst","children":{"kind":"list","element":{"kind":"optional","element":{"kind":"node"}}}}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"cst","ref":"cst/Seq","children":{"kind":"list","element":{"kind":"optional","element":{"kind":"node"}}},"fields":[{"name":"value","origin":"capture","shape":{"kind":"scalar","scalar":"string"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
+func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
+	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"any"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
 	var got OutputSchema
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Types[1].Shape.Ref != "cst/Seq" || len(got.Types[1].Shape.Fields) != 1 {
-		t.Fatalf("CST capture shape: %+v", got.Types[1].Shape)
+	shape := got.Types[0].Shape
+	if !got.SourceInfo || len(shape.Captures) != 2 || !reflect.DeepEqual(shape.Captures[0].Paths, [][]int{{0}, {1, 2}}) || !shape.Captures[1].Side || len(shape.Value.Elements) != 2 {
+		t.Fatalf("node capture shape: %+v", shape)
 	}
 }
 
 func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
-	data := []byte(`{"format":"pego-output-schema","version":1,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Next","origin":"declared","shape":{"kind":"optional","element":{"kind":"ref","ref":"declared/Item"}}}]}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"ref","ref":"declared/Item"}}],"rules":[{"name":"main","origin":"declared","result":{"kind":"ref","ref":"inferred/main"}}]}`)
+	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Next","shape":{"kind":"optional","element":{"kind":"ref","ref":"declared/Item"}}}]}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"ref","ref":"declared/Item"}}],"rules":[{"name":"main","origin":"declared","result":{"kind":"ref","ref":"inferred/main"}}]}`)
 	var got OutputSchema
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
@@ -157,7 +163,7 @@ func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
 
 func validInMemoryOutputSchema() OutputSchema {
 	return OutputSchema{
-		Format: "pego-output-schema", Version: 1, Start: "main", PositionUnitIndependent: true,
+		Format: "pego-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,
 		Types: []SchemaType{
 			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: SchemaShape{Kind: "struct"}},
 			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: SchemaShape{Kind: "ref", Ref: "declared/Item"}},
@@ -185,7 +191,7 @@ func TestOutputSchemaValidateInMemory(t *testing.T) {
 		{"inline cycle", func(s *OutputSchema) {
 			shape := &SchemaShape{Kind: "optional"}
 			shape.Element = shape
-			s.Types[0].Shape = *shape
+			s.Types[1].Shape = *shape
 		}, "cyclic inline"},
 	}
 	for _, tt := range tests {
@@ -203,8 +209,8 @@ func TestOutputSchemaValidateAllowsNamedRecursionAndSharedInlineShape(t *testing
 	s := validInMemoryOutputSchema()
 	shared := &SchemaShape{Kind: "ref", Ref: "declared/Item"}
 	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{
-		{Name: "Left", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: shared}},
-		{Name: "Right", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: shared}},
+		{Name: "Left", Shape: SchemaShape{Kind: "optional", Element: shared}},
+		{Name: "Right", Shape: SchemaShape{Kind: "optional", Element: shared}},
 	}}
 	if err := s.Validate(); err != nil {
 		t.Fatal(err)
@@ -220,7 +226,7 @@ func TestOutputSchemaValidateLayeredSharedDAG(t *testing.T) {
 			{Kind: "optional", Element: shared},
 		}}
 	}
-	s.Types[0].Shape = *shared
+	s.Types[1].Shape = *shared
 	if err := s.Validate(); err != nil {
 		t.Fatal(err)
 	}

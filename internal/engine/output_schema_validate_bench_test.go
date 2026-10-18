@@ -26,8 +26,8 @@ func outputSchemaValidationBenchmarkValue(typeCount int) OutputSchema {
 			Name:   fmt.Sprintf("Item%03d", i),
 			Origin: "declared",
 			Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-				{Name: "Name", Origin: "declared", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}},
-				{Name: "Next", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "ref", Ref: next}}},
+				{Name: "Name", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}},
+				{Name: "Next", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "ref", Ref: next}}},
 			}},
 		}
 		rules[i] = SchemaRule{
@@ -44,7 +44,7 @@ func outputSchemaValidationBenchmarkValue(typeCount int) OutputSchema {
 	}
 	return OutputSchema{
 		Format:                  "pego-output-schema",
-		Version:                 1,
+		Version:                 2,
 		Start:                   "parseItem000",
 		PositionUnitIndependent: true,
 		Types:                   types,

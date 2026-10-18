@@ -2,9 +2,9 @@
 
 `Parser.OutputSchema` describes the possible values of a checked grammar. By default the schema holds the start rule, the
 rules it calls and the types their output references; `pego.WithAllSchemaRules()` also includes unreachable rules and all
-declared types. A structural query searches the nodes of an
-actual parse result. Together they let a tool inspect the shape of a grammar and find nodes without generating code or
-serializing a tree. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
+declared types. A structural query searches the values of an
+actual parse result. Together they let a tool inspect the shape of a grammar and find values without generating code or
+serializing a result. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
 [Output Schemas and Structural Queries](../../spec/schemas-and-queries.md).
 
 ```go
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	query, err := pego.CompileStructuralQuery(pego.QueryPattern{
-		Type: "Match", Rule: "name", Capture: "name",
+		Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "name",
 	}, schema)
 	if err != nil {
 		log.Fatal(err)
@@ -61,7 +61,7 @@ if err != nil {
 	return err
 }
 query, err := prepared.CompileStructuralQuery(pego.QueryPattern{
-	Type: "Match", Rule: "name", Capture: "name",
+	Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "name",
 })
 ```
 
@@ -84,8 +84,10 @@ Keep in mind:
   separately if a consumer needs it later.
 - A query sees only what the tree retains. Actions and discard operators remove punctuation and comments, and a query
   does not recover them or interpret source positions.
-- A pattern's `list` category means an explicit `[]any` field value. A repetition is a `Node` of type `List`; match it
-  with `Type: "List"`.
+- `Elements` sees through nodes: on a node it matches the elements of the node's value, as `x[i]` does in an action.
+  `Value` matches the value itself.
+- A `Rule` constraint needs a parser compiled with source information. Against a schema without it, the query does not
+  compile.
 - Generated parsers and TypeScript do not expose this API.
 
 ## Related Topics

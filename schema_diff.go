@@ -3,6 +3,7 @@ package pego
 import (
 	"cmp"
 	"fmt"
+	"slices"
 	"sort"
 )
 
@@ -40,10 +41,11 @@ type OutputSchemaDiff struct {
 	Rules []SchemaRuleChange
 }
 
-// DiffOutputSchemas compares version-1 type and rule contents. Type and rule
-// array order, field order, and union alternative order are insignificant;
-// child order and named references are preserved. Both inputs must satisfy the
-// complete version-1 schema contract checked by OutputSchema.Validate.
+// DiffOutputSchemas compares version-2 type and rule contents. Type and rule
+// array order, field order, capture order, capture path order and union
+// alternative order are insignificant; tuple element order and named
+// references are preserved. Both inputs must satisfy the complete version-2
+// schema contract checked by OutputSchema.Validate.
 func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
 	canonical := &schemaCanonicalizer{copies: make(map[*SchemaShape]canonicalSchemaCopy), comparisons: make(map[schemaShapePair]int)}
 	left, err := indexOutputSchema(before, canonical)
@@ -160,8 +162,15 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 	if out.Element, err = copyChild(shape.Element, 1); err != nil {
 		return nil, 0, err
 	}
-	if out.Children, err = copyChild(shape.Children, 1); err != nil {
+	if out.Value, err = copyChild(shape.Value, 1); err != nil {
 		return nil, 0, err
+	}
+	for i := range shape.Elements {
+		element, err := copyChild(&shape.Elements[i], 2)
+		if err != nil {
+			return nil, 0, err
+		}
+		out.Elements = append(out.Elements, *element)
 	}
 	alternatives := make([]*SchemaShape, len(shape.Alternatives))
 	for i := range shape.Alternatives {
@@ -179,9 +188,23 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 		if err != nil {
 			return nil, 0, err
 		}
-		out.Fields = append(out.Fields, SchemaField{Name: field.Name, Origin: field.Origin, Shape: *value})
+		out.Fields = append(out.Fields, SchemaField{Name: field.Name, Shape: *value})
 	}
 	sort.Slice(out.Fields, func(i, j int) bool { return out.Fields[i].Name < out.Fields[j].Name })
+	for i := range shape.Captures {
+		capture := &shape.Captures[i]
+		value, err := copyChild(&capture.Shape, 3)
+		if err != nil {
+			return nil, 0, err
+		}
+		paths := make([][]int, len(capture.Paths))
+		for j, path := range capture.Paths {
+			paths[j] = append([]int{}, path...)
+		}
+		sort.Slice(paths, func(i, j int) bool { return slices.Compare(paths[i], paths[j]) < 0 })
+		out.Captures = append(out.Captures, SchemaCapture{Name: capture.Name, Paths: paths, Side: capture.Side, Shape: *value})
+	}
+	sort.Slice(out.Captures, func(i, j int) bool { return out.Captures[i].Name < out.Captures[j].Name })
 	c.copies[shape] = canonicalSchemaCopy{shape: out, height: height}
 	return out, height, nil
 }
@@ -217,15 +240,41 @@ func (c *schemaCanonicalizer) compareContents(left, right *SchemaShape) int {
 	if order := c.compare(left.Element, right.Element); order != 0 {
 		return order
 	}
-	if order := c.compare(left.Children, right.Children); order != 0 {
+	if order := c.compare(left.Value, right.Value); order != 0 {
+		return order
+	}
+	for i := range min(len(left.Elements), len(right.Elements)) {
+		if order := c.compare(&left.Elements[i], &right.Elements[i]); order != 0 {
+			return order
+		}
+	}
+	if order := cmp.Compare(len(left.Elements), len(right.Elements)); order != 0 {
+		return order
+	}
+	for i := range min(len(left.Captures), len(right.Captures)) {
+		a, b := &left.Captures[i], &right.Captures[i]
+		if order := cmp.Compare(a.Name, b.Name); order != 0 {
+			return order
+		}
+		if order := slices.CompareFunc(a.Paths, b.Paths, slices.Compare[[]int]); order != 0 {
+			return order
+		}
+		if a.Side != b.Side {
+			if a.Side {
+				return 1
+			}
+			return -1
+		}
+		if order := c.compare(&a.Shape, &b.Shape); order != 0 {
+			return order
+		}
+	}
+	if order := cmp.Compare(len(left.Captures), len(right.Captures)); order != 0 {
 		return order
 	}
 	for i := range min(len(left.Fields), len(right.Fields)) {
 		a, b := &left.Fields[i], &right.Fields[i]
 		if order := cmp.Compare(a.Name, b.Name); order != 0 {
-			return order
-		}
-		if order := cmp.Compare(a.Origin, b.Origin); order != 0 {
 			return order
 		}
 		if order := c.compare(&a.Shape, &b.Shape); order != 0 {

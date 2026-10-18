@@ -37,7 +37,7 @@ func diffSchema(types []pego.SchemaType, rules []pego.SchemaRule) *pego.OutputSc
 		rule.Result = pego.SchemaShape{Kind: "ref", Ref: id}
 	}
 	return &pego.OutputSchema{
-		Format: "pego-output-schema", Version: 1, Start: start,
+		Format: "pego-output-schema", Version: 2, Start: start,
 		PositionUnitIndependent: true, Types: types, Rules: rules,
 	}
 }
@@ -47,15 +47,25 @@ func TestDiffOutputSchemasIgnoresUnorderedEntries(t *testing.T) {
 	boolShape := pego.SchemaShape{Kind: "scalar", Scalar: "bool"}
 	item := pego.SchemaType{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: pego.SchemaShape{
 		Kind: "struct", Fields: []pego.SchemaField{
-			{Name: "Z", Origin: "declared", Shape: stringShape},
-			{Name: "A", Origin: "declared", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{stringShape, boolShape}}},
+			{Name: "Z", Shape: stringShape},
+			{Name: "A", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{stringShape, boolShape}}},
 		},
 	}}
+	item.Shape.Fields = append(item.Shape.Fields, pego.SchemaField{Name: "N", Shape: pego.SchemaShape{
+		Kind: "node", Value: &pego.SchemaShape{Kind: "tuple", Elements: []pego.SchemaShape{stringShape, stringShape}},
+		Captures: []pego.SchemaCapture{
+			{Name: "y", Paths: [][]int{{1}, {0}}, Shape: stringShape},
+			{Name: "x", Side: true, Shape: boolShape},
+		},
+	}})
 	other := pego.SchemaType{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: pego.SchemaShape{Kind: "ref", Ref: item.ID}}
 	rule := pego.SchemaRule{Name: "main", Origin: "inferred", Result: pego.SchemaShape{Kind: "ref", Ref: other.ID}}
 	left := diffSchema([]pego.SchemaType{item, other}, []pego.SchemaRule{rule, {Name: "other", Origin: "inferred", Result: stringShape}})
 	itemReordered := item
-	itemReordered.Shape.Fields = []pego.SchemaField{item.Shape.Fields[1], item.Shape.Fields[0]}
+	node := item.Shape.Fields[2].Shape
+	node.Captures = []pego.SchemaCapture{node.Captures[1], node.Captures[0]}
+	node.Captures[1].Paths = [][]int{{0}, {1}}
+	itemReordered.Shape.Fields = []pego.SchemaField{item.Shape.Fields[1], {Name: "N", Shape: node}, item.Shape.Fields[0]}
 	itemReordered.Shape.Fields[0].Shape.Alternatives = []pego.SchemaShape{boolShape, stringShape}
 	right := diffSchema([]pego.SchemaType{left.Types[2], other, itemReordered}, []pego.SchemaRule{left.Rules[1], rule})
 	right.Start = "other" // Envelope metadata is outside the entry diff.
@@ -66,22 +76,33 @@ func TestDiffOutputSchemasIgnoresUnorderedEntries(t *testing.T) {
 	if len(diff.Types) != 0 || len(diff.Rules) != 0 {
 		t.Fatalf("reordering changed semantic contents: %+v", diff)
 	}
+	// Tuple elements are ordered.
+	node.Value = &pego.SchemaShape{Kind: "tuple", Elements: []pego.SchemaShape{stringShape, boolShape}}
+	itemReordered.Shape.Fields[1].Shape = node
+	right = diffSchema([]pego.SchemaType{left.Types[2], other, itemReordered}, []pego.SchemaRule{left.Rules[1], rule})
+	if diff, err = pego.DiffOutputSchemas(left, right); err != nil || len(diff.Types) != 1 || diff.Types[0].ID != "declared/Item" {
+		t.Fatalf("element change: %+v %v", diff, err)
+	}
 }
 
 func TestDiffOutputSchemasReportsSortedEntryChanges(t *testing.T) {
 	ref := pego.SchemaShape{Kind: "ref", Ref: "declared/Recursive"}
+	empty := pego.SchemaShape{Kind: "struct"}
+	next := func(ref *pego.SchemaShape) pego.SchemaShape {
+		return pego.SchemaShape{Kind: "struct", Fields: []pego.SchemaField{{Name: "Next", Shape: pego.SchemaShape{Kind: "optional", Element: ref}}}}
+	}
 	old := diffSchema([]pego.SchemaType{
-		{ID: "declared/Z", Name: "Z", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}},
-		{ID: "declared/Recursive", Name: "Recursive", Origin: "declared", Shape: pego.SchemaShape{Kind: "optional", Element: &ref}},
+		{ID: "declared/Z", Name: "Z", Origin: "declared", Shape: empty},
+		{ID: "declared/Recursive", Name: "Recursive", Origin: "declared", Shape: next(&ref)},
 	}, []pego.SchemaRule{
 		{Name: "z", Origin: "inferred", Result: ref},
 		{Name: "m", Origin: "inferred", Result: pego.SchemaShape{Kind: "nil"}},
 	})
 	newRef := pego.SchemaShape{Kind: "ref", Ref: "declared/Changed"}
 	newer := diffSchema([]pego.SchemaType{
-		{ID: "declared/Recursive", Name: "Recursive", Origin: "declared", Shape: pego.SchemaShape{Kind: "optional", Element: &newRef}},
-		{ID: "declared/A", Name: "A", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}},
-		{ID: "declared/Changed", Name: "Changed", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}},
+		{ID: "declared/Recursive", Name: "Recursive", Origin: "declared", Shape: next(&newRef)},
+		{ID: "declared/A", Name: "A", Origin: "declared", Shape: empty},
+		{ID: "declared/Changed", Name: "Changed", Origin: "declared", Shape: empty},
 	}, []pego.SchemaRule{
 		{Name: "a", Origin: "inferred", Result: ref},
 		{Name: "m", Origin: "declared", Result: pego.SchemaShape{Kind: "nil"}},
@@ -98,7 +119,7 @@ func TestDiffOutputSchemasReportsSortedEntryChanges(t *testing.T) {
 		diff.Types[5].ID != "inferred/z" || diff.Types[5].Kind != pego.SchemaRemoved {
 		t.Fatalf("type changes: %+v", diff.Types)
 	}
-	if diff.Types[2].Before.Shape.Element.Ref != "declared/Recursive" || diff.Types[2].After.Shape.Element.Ref != "declared/Changed" {
+	if diff.Types[2].Before.Shape.Fields[0].Shape.Element.Ref != "declared/Recursive" || diff.Types[2].After.Shape.Fields[0].Shape.Element.Ref != "declared/Changed" {
 		t.Fatalf("named recursion was expanded or lost: %+v", diff.Types[2])
 	}
 	if len(diff.Rules) != 3 || diff.Rules[0].ID != "a" || diff.Rules[0].Kind != pego.SchemaAdded ||
@@ -130,12 +151,13 @@ func TestDiffOutputSchemasRejectsMalformedIdentities(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, "nil output schema"},
-		{"version", &pego.OutputSchema{Format: "pego-output-schema", Version: 2}, "unsupported output schema"},
-		{"empty type ID", diffSchema([]pego.SchemaType{{Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}}}, nil), "empty output schema type ID"},
-		{"wrong namespace", diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}}}, nil), "type identity"},
-		{"duplicate type ID", diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}}, {ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "terminal"}}}, nil), "duplicate"},
+		{"version", &pego.OutputSchema{Format: "pego-output-schema", Version: 3}, "unsupported output schema"},
+		{"empty type ID", diffSchema([]pego.SchemaType{{Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "struct"}}}, nil), "empty output schema type ID"},
+		{"wrong namespace", diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "struct"}}}, nil), "type identity"},
+		{"duplicate type ID", diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "struct"}}, {ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "struct"}}}, nil), "duplicate"},
 		{"empty rule ID", diffSchema(nil, []pego.SchemaRule{{Origin: "inferred", Result: pego.SchemaShape{Kind: "nil"}}}), "empty output schema rule"},
 		{"duplicate rule ID", diffSchema(nil, []pego.SchemaRule{{Name: "main", Origin: "inferred", Result: pego.SchemaShape{Kind: "nil"}}, {Name: "main", Origin: "inferred", Result: pego.SchemaShape{Kind: "nil"}}}), "duplicate"},
+		{"declared non-struct", diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "nil"}}}, nil), "must be a struct"},
 		{"empty ref", diffSchema(nil, []pego.SchemaRule{{Name: "main", Origin: "inferred", Result: pego.SchemaShape{Kind: "ref"}}}), "empty output schema reference"},
 	}
 	for _, tc := range cases {
@@ -147,7 +169,7 @@ func TestDiffOutputSchemasRejectsMalformedIdentities(t *testing.T) {
 	}
 	cycle := &pego.SchemaShape{Kind: "optional"}
 	cycle.Element = cycle
-	bad := diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: *cycle}}, nil)
+	bad := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: *cycle}}, nil)
 	if diff, err := pego.DiffOutputSchemas(bad, valid); diff != nil || err == nil || !strings.Contains(err.Error(), "cyclic inline") {
 		t.Fatalf("cyclic shape: diff=%+v, err=%v", diff, err)
 	}
@@ -158,7 +180,7 @@ func TestDiffOutputSchemasRejectsValueSliceCycles(t *testing.T) {
 	alternatives := make([]pego.SchemaShape, 1)
 	alternatives[0] = pego.SchemaShape{Kind: "union", Alternatives: alternatives}
 	fields := make([]pego.SchemaField, 1)
-	fields[0] = pego.SchemaField{Name: "Self", Origin: "declared", Shape: pego.SchemaShape{Kind: "struct", Fields: fields}}
+	fields[0] = pego.SchemaField{Name: "Self", Shape: pego.SchemaShape{Kind: "struct", Fields: fields}}
 	for _, tc := range []struct {
 		name  string
 		shape pego.SchemaShape
@@ -167,7 +189,7 @@ func TestDiffOutputSchemasRejectsValueSliceCycles(t *testing.T) {
 		{"fields", fields[0].Shape},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			bad := diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: tc.shape}}, nil)
+			bad := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: tc.shape}}, nil)
 			if diff, err := pego.DiffOutputSchemas(bad, valid); diff != nil || err == nil || !strings.Contains(err.Error(), "cyclic inline") {
 				t.Fatalf("value-slice cycle: diff=%+v, err=%v", diff, err)
 			}
@@ -177,7 +199,7 @@ func TestDiffOutputSchemasRejectsValueSliceCycles(t *testing.T) {
 	// Reusing an acyclic slice in separate branches is a DAG, not a cycle.
 	shared := []pego.SchemaShape{{Kind: "scalar", Scalar: "string"}}
 	branch := pego.SchemaShape{Kind: "union", Alternatives: shared}
-	dag := diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{branch, branch}}}}, nil)
+	dag := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{branch, branch}}}}, nil)
 	if diff, err := pego.DiffOutputSchemas(valid, dag); err != nil || diff == nil || len(diff.Types) != 1 {
 		t.Fatalf("acyclic sharing: diff=%+v, err=%v", diff, err)
 	}
@@ -188,7 +210,7 @@ func TestDiffOutputSchemasRejectsUnencodableDepth(t *testing.T) {
 	for i := 0; i < 10001; i++ {
 		shape = &pego.SchemaShape{Kind: "optional", Element: shape}
 	}
-	deep := diffSchema([]pego.SchemaType{{ID: "declared/T", Name: "T", Origin: "declared", Shape: *shape}}, nil)
+	deep := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: *shape}}, nil)
 	if diff, err := pego.DiffOutputSchemas(diffSchema(nil, nil), deep); diff != nil || err == nil || !strings.Contains(err.Error(), "encode canonical entry") {
 		t.Fatalf("unencodable depth: diff=%+v, err=%v", diff, err)
 	}
@@ -202,7 +224,7 @@ func TestDiffOutputSchemasValidatesBothInputs(t *testing.T) {
 		{"missing start", func(s *pego.OutputSchema) { s.Start = "absent" }},
 		{"unresolved reference", func(s *pego.OutputSchema) { s.Types[0].Shape = pego.SchemaShape{Kind: "ref", Ref: "declared/Missing"} }},
 		{"noncanonical result", func(s *pego.OutputSchema) { s.Rules[0].Result = pego.SchemaShape{Kind: "nil"} }},
-		{"reserved shape", func(s *pego.OutputSchema) {
+		{"retired namespace", func(s *pego.OutputSchema) {
 			s.Types = append(s.Types, pego.SchemaType{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: pego.SchemaShape{Kind: "struct"}})
 		}},
 	} {
@@ -231,7 +253,7 @@ func sharedDAGSchema(depth int, scalar string, reverse bool) (*pego.OutputSchema
 		}
 		shape = &pego.SchemaShape{Kind: "union", Alternatives: alternatives}
 	}
-	return diffSchema([]pego.SchemaType{{ID: "declared/DAG", Name: "DAG", Origin: "declared", Shape: *shape}}, nil), leaf
+	return diffSchema([]pego.SchemaType{{ID: "inferred/DAG", Name: "DAG", Origin: "inferred", Shape: *shape}}, nil), leaf
 }
 
 func TestDiffOutputSchemasPreservesSharedDAGs(t *testing.T) {
@@ -270,8 +292,8 @@ func TestDiffOutputSchemasRejectsDeepSharedReuse(t *testing.T) {
 	// The shallow entry primes the canonical-copy cache. Reusing its subtree
 	// under a deeper path must still enforce the encoding depth limit.
 	s := diffSchema([]pego.SchemaType{
-		{ID: "declared/A", Name: "A", Origin: "declared", Shape: *shared},
-		{ID: "declared/B", Name: "B", Origin: "declared", Shape: *deep},
+		{ID: "inferred/A", Name: "A", Origin: "inferred", Shape: *shared},
+		{ID: "inferred/B", Name: "B", Origin: "inferred", Shape: *deep},
 	}, nil)
 	if got, err := pego.DiffOutputSchemas(s, diffSchema(nil, nil)); got != nil || err == nil || !strings.Contains(err.Error(), "encode canonical entry") {
 		t.Fatalf("deep shared reuse: diff=%+v err=%v", got, err)

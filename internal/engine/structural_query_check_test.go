@@ -14,7 +14,7 @@ type Pair = { Key Name; Value *(Int | Name | Pair); Items []Int }
 type Box = { Inner *Pair }
 rule main = b:box $$ => $b
 rule box Box = "[" p:pair? "]" => Box{Inner: $p}
-rule pair Pair = k:name "=" v:value i:int* => Pair{Key: $k, Value: $v, Items: $i}
+rule pair Pair = k:name "=" v:value i:int* => Pair{Key: $k, Value: $v, Items: $i.Value}
 rule value *(Int | Name | Pair) = int / name / nested / none
 rule none *Int = "_" => nil
 rule nested Pair = "(" p:pair ")" => $p
@@ -35,6 +35,9 @@ func field(name string, p QueryPattern) QueryFieldPattern {
 	return QueryFieldPattern{Name: name, Pattern: p}
 }
 
+// stringNode matches a node whose value is a string, such as a value of a terminal type.
+var stringNode = QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}}
+
 // TestStructuralQueryNestedShapes checks that a pattern compiles if, and only if, some value of the
 // schema can match it where it is applied, through unions, optional values, lists and nesting.
 func TestStructuralQueryNestedShapes(t *testing.T) {
@@ -48,22 +51,25 @@ func TestStructuralQueryNestedShapes(t *testing.T) {
 		pattern QueryPattern
 		err     string // "" if the pattern compiles
 	}{
-		{"union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Int"})}}, ""},
-		{"nested union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Fields: []QueryFieldPattern{field("Key", QueryPattern{Type: "Name"})}})}}, ""},
+		{"union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}}, ""},
+		{"nested union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Fields: []QueryFieldPattern{field("Key", stringNode)}})}}, ""},
 		{"nil alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Category: "nil"})}}, ""},
 		{"through optional", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Items", QueryPattern{})}})}}, ""},
-		{"list element", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Type: "List", Children: []QueryPattern{{Type: "Int"}}})}}, ""},
-		{"deep", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Name"})}})}})}}, ""},
+		{"list element", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Category: "list", Elements: []QueryPattern{stringNode}})}}, ""},
+		{"deep", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}})}})}}, ""},
 		{"untyped root", QueryPattern{Fields: []QueryFieldPattern{field("Anything", QueryPattern{Category: "int"})}}, ""},
+		{"rule result elements", QueryPattern{Category: "node", Elements: []QueryPattern{{Type: "Box"}}}, ""},
 
 		{"type outside union", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Box"})}}, "alternatives matches"},
 		{"field no alternative has", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Fields: []QueryFieldPattern{field("Inner", QueryPattern{})}})}}, "alternatives matches"},
 		{"scalar category in node union", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Category: "string"})}}, "alternatives matches"},
-		{"wrong type", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Type: "Int"})}}, "value is Pair, not Int"},
-		{"nested wrong field", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Inner", QueryPattern{})}})}}, "Pair has no field Inner"},
-		{"terminal has no fields", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{})}})}}, "Name has no field X"},
-		{"list element type", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Children: []QueryPattern{{Type: "Name"}}})}}, "child 0 of List"},
-		{"named type below unknown", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Type: "Int"})}})}}, "field Pair.Key"},
+		{"wrong type", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Type: "Box"})}}, "value is a struct Pair, not Box"},
+		{"nested wrong field", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Inner", QueryPattern{})}})}}, "a struct Pair has no field Inner"},
+		{"terminal has no fields", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{})}})}}, "value is a node, which has no fields"},
+		{"terminal value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Value: &QueryPattern{Category: "int"}})}}, "node value: value is string, not int"},
+		{"list element type", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Elements: []QueryPattern{{Category: "int"}}})}}, "element 0"},
+		{"terminal has no elements", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Elements: []QueryPattern{{}}})}}, "has no elements"},
+		{"named type below unknown", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Category: "int"})}})}}, "field Key"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := CompileStructuralQuery(tc.pattern, s)
@@ -94,7 +100,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, Options{SourceInfo: true})
 		if err != nil {
 			continue
 		}
@@ -121,7 +127,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 				}
 				p := describeQueryValue(n, 3)
 				patterns++
-				if n.Type() == TypeError || n.Type() == TypeMissing {
+				if n.shape() == shapeError {
 					recovered++
 				}
 				q, err := CompileStructuralQuery(p, s)
@@ -150,7 +156,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 // queryRecoveryCases put Error and Missing nodes where declared types expect other nodes.
 var queryRecoveryCases = []genCase{
 	{"query recovery in terminal field", `type Num terminal
-type P = { V Num; W Num }
+type P = { V Num | error; W Num }
 rule main = "(" v:(num #recover(skip=[^),]+)) "," w:num ")" $$ => P{V: $v, W: $w}
 rule num Num = [0-9]`, []string{"(1,2)", "(x,2)", "(1,y)"}},
 	{"query recovery in list field", `type Num terminal
@@ -158,7 +164,7 @@ type P = { L []Num }
 rule main = "(" l:(nums #recover(skip=[^)]+)) ")" $$ => P{L: $l}
 rule nums []Num = (num #recover(skip=[a-z]))+
 rule num Num = [0-9]`, []string{"(12)", "(x)", "(1a2)"}},
-	{"query missing token", `type P = { S Match }
+	{"query missing token", `type P = { S Match | error }
 rule main = "(" s:semi ")" $$ => P{S: $s}
 rule semi = ";" #missing`, []string{"(;)", "()"}},
 }
@@ -178,7 +184,7 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := QueryPattern{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "Error", Fields: []QueryFieldPattern{field("message", QueryPattern{Category: "string"})}})}}
+	ok := QueryPattern{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "error", Fields: []QueryFieldPattern{field("message", QueryPattern{Category: "string"})}})}}
 	q, err := CompileStructuralQuery(ok, s)
 	if err != nil {
 		t.Fatal(err)
@@ -187,13 +193,20 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 	if m, err := q.Matches(root, QueryOptions{}); err != nil || len(m) != 1 {
 		t.Fatalf("matches %v %v", m, err)
 	}
-	if _, err := CompileStructuralQuery(QueryPattern{Type: "Error", Fields: []QueryFieldPattern{field("message", QueryPattern{})}}, s); err != nil {
-		t.Fatalf("Error message field: %v", err)
+	for _, good := range []QueryPattern{
+		{Type: "error", Fields: []QueryFieldPattern{field("message", QueryPattern{})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Category: "error", Fields: []QueryFieldPattern{field("expected", QueryPattern{Category: "string"})}})}},
+	} {
+		if _, err := CompileStructuralQuery(good, s); err != nil {
+			t.Errorf("rejected %+v: %v", good, err)
+		}
 	}
 	for _, bad := range []QueryPattern{
-		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "Error", Fields: []QueryFieldPattern{field("message", QueryPattern{Category: "int"})}})}},
-		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "Error", Fields: []QueryFieldPattern{field("expected", QueryPattern{})}})}},
-		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Children: []QueryPattern{{}}})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "error", Fields: []QueryFieldPattern{field("message", QueryPattern{Category: "int"})}})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Type: "error", Fields: []QueryFieldPattern{field("other", QueryPattern{})}})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Category: "error", Fields: []QueryFieldPattern{field("other", QueryPattern{})}})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("V", QueryPattern{Elements: []QueryPattern{{}}})}},
+		{Type: "P", Fields: []QueryFieldPattern{field("W", QueryPattern{Type: "error", Rule: "num"})}},
 	} {
 		if _, err := CompileStructuralQuery(bad, s); err == nil {
 			t.Errorf("accepted %+v", bad)
@@ -226,21 +239,36 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 
 // describeQueryValue returns a pattern that matches v, describing it to the given depth.
 func describeQueryValue(v any, depth int) QueryPattern {
+	v = unboxValue(v)
 	category, _ := queryCategory(v)
 	p := QueryPattern{Category: category}
 	n, ok := v.(*Node)
 	if !ok || n == nil || depth == 0 {
 		return p
 	}
-	p.Type, p.Rule = n.Type(), n.Rule()
-	for _, f := range n.Fields {
-		p.Fields = append(p.Fields, QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
+	switch category {
+	case "struct":
+		p.Type = n.Type()
+	case "error":
+		p.Type = "error"
+	case "node":
+		p.Rule = n.Rule()
+		value := describeQueryValue(queryNodeValue(n), depth-1)
+		value.Elements = nil
+		p.Value = &value
 	}
-	for i, c := range n.Children {
-		if i == 2 {
-			break
+	if category == "struct" || category == "error" {
+		for _, f := range n.Fields {
+			p.Fields = append(p.Fields, QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
 		}
-		p.Children = append(p.Children, describeQueryValue(c, depth-1))
+	}
+	if queryHasElements(n) {
+		for i, c := range n.Children {
+			if i == 2 {
+				break
+			}
+			p.Elements = append(p.Elements, describeQueryValue(c, depth-1))
+		}
 	}
 	return p
 }

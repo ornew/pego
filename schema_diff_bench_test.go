@@ -10,7 +10,7 @@ import (
 var schemaDiffBenchmarkSink *pego.OutputSchemaDiff
 
 func schemaDiffBenchmarkInput(count int, changed bool) *pego.OutputSchema {
-	s := &pego.OutputSchema{Format: "pego-output-schema", Version: 1, Start: "parseItem000", PositionUnitIndependent: true}
+	s := &pego.OutputSchema{Format: "pego-output-schema", Version: 2, Start: "parseItem000", PositionUnitIndependent: true}
 	for i := range count {
 		name := fmt.Sprintf("Item%03d", i)
 		rule := fmt.Sprintf("parseItem%03d", i)
@@ -20,7 +20,7 @@ func schemaDiffBenchmarkInput(count int, changed bool) *pego.OutputSchema {
 		}
 		s.Types = append(s.Types,
 			pego.SchemaType{ID: "declared/" + name, Name: name, Origin: "declared", Shape: pego.SchemaShape{Kind: "struct", Fields: []pego.SchemaField{
-				{Name: "Value", Origin: "declared", Shape: pego.SchemaShape{Kind: "scalar", Scalar: scalar}},
+				{Name: "Value", Shape: pego.SchemaShape{Kind: "scalar", Scalar: scalar}},
 			}}},
 			pego.SchemaType{ID: "inferred/" + rule, Name: rule, Origin: "inferred", Shape: pego.SchemaShape{Kind: "ref", Ref: "declared/" + name}},
 		)
@@ -55,7 +55,7 @@ func BenchmarkDiffOutputSchemas(b *testing.B) {
 						{Kind: "optional", Element: shape}, {Kind: "list", Element: shape},
 					}}
 				}
-				s.Types[0].Shape = *shape
+				s.Types[0].Shape.Fields[0].Shape = *shape
 				return s
 			}
 			before, after := makeInput(), makeInput()

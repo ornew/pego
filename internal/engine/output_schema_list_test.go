@@ -9,9 +9,12 @@ import (
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
-	token := QueryPattern{Type: "Token", Capture: "value"}
+	token := QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}, Capture: "value"}
 	list := func(child QueryPattern) QueryPattern {
-		return QueryPattern{Type: TypeList, Children: []QueryPattern{child}}
+		return QueryPattern{Category: "list", Elements: []QueryPattern{child}}
+	}
+	listNode := func(child QueryPattern) QueryPattern {
+		return QueryPattern{Category: "node", Elements: []QueryPattern{child}}
 	}
 	holder := func(value QueryPattern) QueryPattern {
 		return QueryPattern{Type: "Holder", Fields: []QueryFieldPattern{{Name: "Values", Pattern: value}}}
@@ -20,14 +23,14 @@ func TestOutputSchemaListQueries(t *testing.T) {
 		name, source, input string
 		pattern             QueryPattern
 	}{
-		{"repetition", `rule main = "x"*`, "x", list(QueryPattern{Type: TypeMatch, Capture: "value"})},
-		{"empty repetition", `rule main = "x"*`, "", QueryPattern{Type: TypeList, Capture: "value"}},
+		{"repetition", `rule main = "x"*`, "x", listNode(token)},
+		{"empty repetition", `rule main = "x"*`, "", QueryPattern{Category: "node", Value: &QueryPattern{Category: "list"}, Capture: "value"}},
 		{"typed field", `type Token terminal
 type Holder = { Values []Token }
 rule main = "x" => Holder{Values: []Token{Token{"one"}}}`, "x", holder(list(token))},
 		{"empty typed field", `type Token terminal
 type Holder = { Values []Token }
-rule main = "x" => Holder{Values: []Token{}}`, "x", holder(QueryPattern{Type: TypeList, Capture: "value"})},
+rule main = "x" => Holder{Values: []Token{}}`, "x", holder(QueryPattern{Category: "list", Capture: "value"})},
 		{"aliased field", `type Token terminal
 type Tokens ~ []Token
 type Holder = { Values Tokens }

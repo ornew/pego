@@ -208,7 +208,8 @@ func TestRuleResultChecks(t *testing.T) {
 				}
 				name := value
 				if strings.HasPrefix(value, "[]") || strings.HasPrefix(value, "empty ") {
-					name = "List"
+					// Lists built by actions are list values.
+					name = typeListValue
 				}
 				msg := fmt.Sprintf("cannot use %s as %s in result of rule %s", name, declared, rule)
 				switch {

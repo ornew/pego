@@ -118,14 +118,15 @@ var (
 	kindListValue  = kindOf(typeListValue, "")
 )
 
-// isNode reports whether n is a node of the value model (a string, tuple, list or error node)
-// rather than a struct, a box or a list or tuple value.
+// isNode reports whether n is a node of the value model (a string node, including one of a
+// terminal type, a tuple or list node, or an error value) rather than a struct, a box or a list or
+// tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
 	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
 		return true
 	}
-	return false
+	return n.terminal
 }
 
 // unboxNode returns the value that the carrier n stands for: the box's value for a box, nil for

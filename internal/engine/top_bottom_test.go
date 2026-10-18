@@ -251,14 +251,21 @@ func TestTopBottomSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"name":"A","origin":"declared","shape":{"kind":"any"`, `"name":"B","origin":"declared","shape":{"kind":"ref","ref":"cst/Match"`, `"id":"declared/U","name":"U","origin":"declared","shape":{"kind":"any"`} {
+	for _, want := range []string{`{"name":"A","shape":{"kind":"any"}}`, `{"name":"B","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`, `{"name":"C","shape":{"kind":"any"}}`} {
 		if !strings.Contains(string(data), want) {
 			t.Fatalf("schema lacks %s:\n%s", want, data)
 		}
 	}
+	if strings.Contains(string(data), `"declared/U"`) {
+		t.Fatalf("schema exports the alias U:\n%s", data)
+	}
+	// Aliases are not exported, and a field cannot have a type without values.
 	for _, src := range []string{"type B ~ _|_\nrule main = \"a\"", "type B ~ int & string\nrule main = \"a\"", "type B ~ *(int & string)\nrule main = \"a\""} {
-		if _, err := compile(t, src).OutputSchemaPrototype("main", false); err == nil || !strings.Contains(err.Error(), "_|_ has no values") {
+		if _, err := compile(t, src).OutputSchemaPrototype("main", false); err != nil {
 			t.Fatalf("%q schema: %v", src, err)
+		}
+		if message := compileError(t, strings.Replace(src, "rule main", "type T = { F B }\nrule main", 1)); !strings.Contains(message, "no values") {
+			t.Fatalf("%q field: %s", src, message)
 		}
 	}
 	// _|_ adds nothing to a union.
@@ -267,7 +274,7 @@ func TestTopBottomSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data, _ := json.Marshal(schema); !strings.Contains(string(data), `{"name":"A","origin":"declared","shape":{"kind":"ref","ref":"cst/Match"}}`) {
+	if data, _ := json.Marshal(schema); !strings.Contains(string(data), `{"name":"A","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`) {
 		t.Fatalf("bottom union schema:\n%s", data)
 	}
 }

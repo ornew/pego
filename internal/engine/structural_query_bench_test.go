@@ -59,8 +59,8 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 					{Kind: "optional", Element: shared},
 				}}
 			}
-			sharedSchema.Types[0].Shape = *shared
-			absent := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Absent"}}}
+			sharedSchema.Types[0].Shape.Fields = append(sharedSchema.Types[0].Shape.Fields, SchemaField{Name: "Deep", Shape: *shared})
+			absent := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Deep", Pattern: QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}}}}
 			b.Run("SharedDAGAbsentField", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {

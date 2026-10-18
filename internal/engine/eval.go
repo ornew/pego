@@ -389,9 +389,10 @@ func (c *evalCtx) newList(items []*Node) *Node {
 	return c.listNode(kids)
 }
 
-// listNode returns a List node with the child slice kids (which it takes over).
+// listNode returns a list value with the child slice kids (which it takes over). Its range,
+// which the value model does not show, covers the elements that are nodes.
 func (c *evalCtx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
+	n := c.p.newNode(Node{kind: kindListValue, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()

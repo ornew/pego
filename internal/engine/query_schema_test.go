@@ -22,7 +22,7 @@ func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
 // even into an invalid one, changes nothing for the prepared schema.
 func TestQuerySchemaOwnsCopy(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{{Name: "Value", Origin: "declared", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "string"}}}}}
+	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "string"}}}}}
 	q, err := PrepareQuerySchema(&s)
 	if err != nil {
 		t.Fatal(err)
@@ -60,20 +60,20 @@ func TestQuerySchemaCopySharesDAG(t *testing.T) {
 			{Kind: "optional", Element: shared},
 		}}
 	}
-	s.Types[0].Shape = *shared
+	s.Types[1].Shape = *shared
 	// A slice shared by two shapes is shared in the copy as well.
 	alts := []SchemaShape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
 	s.Types = append(s.Types, SchemaType{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-		{Name: "A", Origin: "declared", Shape: SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "union", Alternatives: alts}}},
-		{Name: "B", Origin: "declared", Shape: SchemaShape{Kind: "union", Alternatives: alts}},
+		{Name: "A", Shape: SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "union", Alternatives: alts}}},
+		{Name: "B", Shape: SchemaShape{Kind: "union", Alternatives: alts}},
 	}}})
 
 	q, err := PrepareQuerySchema(&s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := &q.s.Types[0].Shape
-	if c.Alternatives[0].Element != c.Alternatives[1].Element || c.Alternatives[0].Element == s.Types[0].Shape.Alternatives[0].Element {
+	c := &q.s.Types[1].Shape
+	if c.Alternatives[0].Element != c.Alternatives[1].Element || c.Alternatives[0].Element == s.Types[1].Shape.Alternatives[0].Element {
 		t.Fatal("the copy does not share the DAG's shapes")
 	}
 	fields := q.s.Types[2].Shape.Fields
@@ -105,8 +105,8 @@ func TestQuerySchemaConcurrentCompile(t *testing.T) {
 		t.Fatal(err)
 	}
 	patterns := []QueryPattern{
-		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Int"})}},
-		{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Name"})}})}})}},
+		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}},
+		{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}})}})}},
 		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Box"})}},
 	}
 	var wg sync.WaitGroup
@@ -125,28 +125,22 @@ func TestQuerySchemaConcurrentCompile(t *testing.T) {
 	wg.Wait()
 }
 
-// TestQuerySchemaRepeatedName checks that a name with several types yields all
-// of them in schema order, as the scan the index replaced did.
-func TestQuerySchemaRepeatedName(t *testing.T) {
+// TestQuerySchemaIndexesDeclaredNames checks that query types name declared
+// struct types only: a rule's inferred type of the same name is not a type.
+func TestQuerySchemaIndexesDeclaredNames(t *testing.T) {
 	s := &OutputSchema{Types: []SchemaType{
 		{ID: "declared/A", Name: "A", Origin: "declared"},
 		{ID: "inferred/Error", Name: "Error", Origin: "inferred"},
 		{ID: "declared/Error", Name: "Error", Origin: "declared"},
-		{ID: "cst/Error", Name: "Error", Origin: "cst"},
+		{ID: "inferred/B", Name: "B", Origin: "inferred"},
 	}}
-	for _, types := range [][]SchemaType{s.Types, s.Types[:3]} {
-		q := indexQuerySchema(&OutputSchema{Types: types})
-		var want, got []string
-		for i := range types {
-			if types[i].Name == "Error" && types[i].Origin != "inferred" {
-				want = append(want, types[i].ID)
-			}
-		}
-		for typ := range q.named("Error") {
-			got = append(got, typ.ID)
-		}
-		if !reflect.DeepEqual(got, want) || q.repeated != (len(want) > 1) {
-			t.Fatalf("named(Error) = %v (repeated %v), want %v", got, q.repeated, want)
+	q := indexQuerySchema(s)
+	if q.byName["A"] != &s.Types[0] || q.byName["Error"] != &s.Types[2] || q.byName["B"] != nil || len(q.byName) != 2 {
+		t.Fatalf("byName = %v", q.byName)
+	}
+	for id, i := range map[string]int{"declared/A": 0, "inferred/Error": 1, "declared/Error": 2, "inferred/B": 3} {
+		if q.byID[id] != &s.Types[i] {
+			t.Fatalf("byID[%s] = %v", id, q.byID[id])
 		}
 	}
 }

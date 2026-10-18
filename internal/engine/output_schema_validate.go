@@ -2,7 +2,7 @@ package engine
 
 import "fmt"
 
-// validateOutputSchemaGraph checks v1 identities and inline shapes. Named-reference
+// validateOutputSchemaGraph checks version 2 identities and inline shapes. Named-reference
 // cycles are valid recursion; the traversal deliberately does not expand them.
 func validateOutputSchemaGraph(s OutputSchema) error {
 	ids := make(map[string]bool, len(s.Types))
@@ -12,14 +12,11 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			return fmt.Errorf("duplicate or empty output schema type ID %q", t.ID)
 		}
 		ids[t.ID] = true
-		if t.Name == "" || (t.Origin != "declared" && t.Origin != "inferred" && t.Origin != "cst") || t.ID != t.Origin+"/"+t.Name {
+		if t.Name == "" || (t.Origin != "declared" && t.Origin != "inferred") || t.ID != t.Origin+"/"+t.Name {
 			return fmt.Errorf("invalid output schema type identity %q", t.ID)
 		}
-		if t.Origin == "cst" {
-			expected, ok := reservedOutputSchemaShape(t.Name)
-			if !ok || !matchesReservedSchemaShape(&t.Shape, &expected) {
-				return fmt.Errorf("invalid reserved output schema CST type %q", t.ID)
-			}
+		if t.Origin == "declared" && t.Shape.Kind != "struct" {
+			return fmt.Errorf("declared output schema type %q must be a struct", t.ID)
 		}
 	}
 	type shapeFrame struct {
@@ -30,15 +27,17 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 	active := make(map[*SchemaShape]bool)
 	// Shared inline DAGs are valid. Rechecking them by path can take exponential work.
 	completed := make(map[*SchemaShape]bool)
-	seenFields := make(map[string]bool)
+	seenNames := make(map[string]bool)
 	check := func(root *SchemaShape, ownerKind, ownerName string) error {
 		const (
 			memberRef = 1 << iota
 			memberScalar
 			memberElement
+			memberElements
 			memberAlternatives
 			memberFields
-			memberChildren
+			memberValue
+			memberCaptures
 		)
 		stack = append(stack[:0], shapeFrame{shape: root})
 		for len(stack) > 0 {
@@ -69,14 +68,20 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			if shape.Element != nil {
 				members |= memberElement
 			}
+			if len(shape.Elements) != 0 {
+				members |= memberElements
+			}
 			if len(shape.Alternatives) != 0 {
 				members |= memberAlternatives
 			}
 			if len(shape.Fields) != 0 {
 				members |= memberFields
 			}
-			if shape.Children != nil {
-				members |= memberChildren
+			if shape.Value != nil {
+				members |= memberValue
+			}
+			if len(shape.Captures) != 0 {
+				members |= memberCaptures
 			}
 			allowed := 0
 			switch shape.Kind {
@@ -95,15 +100,18 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 					return fmt.Errorf("missing output schema %s element in %s %s", shape.Kind, ownerKind, ownerName)
 				}
 				allowed = memberElement
+			case "tuple":
+				allowed = memberElements
 			case "union":
 				allowed = memberAlternatives
 			case "struct":
 				allowed = memberFields
-			case "cst":
-				// Inferred capture records include a Seq reference, ordered
-				// children and capture fields on the same shape.
-				allowed = memberRef | memberFields | memberChildren
-			case "node", "terminal", "any", "nil":
+			case "node":
+				if shape.Value == nil {
+					return fmt.Errorf("missing output schema node value in %s %s", ownerKind, ownerName)
+				}
+				allowed = memberValue | memberCaptures
+			case "any", "nil", "error":
 			default:
 				return fmt.Errorf("unknown output schema shape kind %q in %s %s", shape.Kind, ownerKind, ownerName)
 			}
@@ -113,34 +121,44 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			if shape.Ref != "" && !ids[shape.Ref] {
 				return fmt.Errorf("unresolved output schema reference %q in %s %s", shape.Ref, ownerKind, ownerName)
 			}
-			if shape.Element != nil {
-				stack = append(stack, shapeFrame{shape: shape.Element})
+			for _, sub := range []*SchemaShape{shape.Element, shape.Value} {
+				if sub != nil {
+					stack = append(stack, shapeFrame{shape: sub})
+				}
 			}
-			if shape.Children != nil {
-				stack = append(stack, shapeFrame{shape: shape.Children})
+			for i := range shape.Elements {
+				stack = append(stack, shapeFrame{shape: &shape.Elements[i]})
 			}
 			for i := range shape.Alternatives {
 				stack = append(stack, shapeFrame{shape: &shape.Alternatives[i]})
 			}
-			if len(shape.Fields) > 2 {
-				clear(seenFields)
-			}
+			clear(seenNames)
 			for i := range shape.Fields {
 				field := &shape.Fields[i]
-				duplicate := i == 1 && field.Name == shape.Fields[0].Name
-				if len(shape.Fields) > 2 {
-					duplicate = seenFields[field.Name]
-				}
-				if field.Name == "" || duplicate {
+				if field.Name == "" || seenNames[field.Name] {
 					return fmt.Errorf("duplicate or empty output schema field %q in %s %s", field.Name, ownerKind, ownerName)
 				}
-				if len(shape.Fields) > 2 {
-					seenFields[field.Name] = true
-				}
-				if (shape.Kind == "struct" && field.Origin != "declared") || (shape.Kind == "cst" && field.Origin != "capture") {
-					return fmt.Errorf("invalid output schema field origin %q for %s %s.%s", field.Origin, ownerKind, ownerName, field.Name)
-				}
+				seenNames[field.Name] = true
 				stack = append(stack, shapeFrame{shape: &field.Shape})
+			}
+			clear(seenNames)
+			for i := range shape.Captures {
+				c := &shape.Captures[i]
+				if c.Name == "" || seenNames[c.Name] {
+					return fmt.Errorf("duplicate or empty output schema capture %q in %s %s", c.Name, ownerKind, ownerName)
+				}
+				seenNames[c.Name] = true
+				if len(c.Paths) == 0 && !c.Side {
+					return fmt.Errorf("output schema capture %q in %s %s has no location", c.Name, ownerKind, ownerName)
+				}
+				for _, path := range c.Paths {
+					for _, index := range path {
+						if index < 0 {
+							return fmt.Errorf("negative output schema capture index for %q in %s %s", c.Name, ownerKind, ownerName)
+						}
+					}
+				}
+				stack = append(stack, shapeFrame{shape: &c.Shape})
 			}
 		}
 		return nil
@@ -172,32 +190,4 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 		return fmt.Errorf("output schema start rule %q is not in rules", s.Start)
 	}
 	return nil
-}
-
-func reservedOutputSchemaShape(name string) (SchemaShape, bool) {
-	known := false
-	for _, reserved := range reservedTypes {
-		known = known || name == reserved
-	}
-	if !known {
-		return SchemaShape{}, false
-	}
-	if name == TypeSeq || name == TypeList || name == TypeOperator {
-		element := SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "node"}}
-		return SchemaShape{Kind: "cst", Children: &SchemaShape{Kind: "list", Element: &element}}, true
-	}
-	return SchemaShape{Kind: "terminal"}, true
-}
-
-// The expected reserved shape has bounded depth and no fields/alternatives.
-// Empty and omitted slices have the same schema meaning.
-func matchesReservedSchemaShape(shape, expected *SchemaShape) bool {
-	if shape == nil || expected == nil {
-		return shape == expected
-	}
-	return shape.Kind == expected.Kind && shape.Ref == expected.Ref &&
-		shape.Scalar == expected.Scalar && len(shape.Fields) == 0 &&
-		len(shape.Alternatives) == 0 &&
-		matchesReservedSchemaShape(shape.Element, expected.Element) &&
-		matchesReservedSchemaShape(shape.Children, expected.Children)
 }

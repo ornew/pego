@@ -4,19 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
+	"strings"
 )
 
-// QueryPattern is the experimental programmatic structural pattern model.
-// Empty Type, Rule and Category are unconstrained. Categories are node, int,
-// string, bool, list and nil; Fields and Children require node values.
+// QueryPattern is the experimental programmatic structural pattern model. Empty Type, Rule and
+// Category are unconstrained. Categories are node, struct, tuple, list, int, string, bool, nil
+// and error. Type names a struct type, or error for the values of error recovery. Rule requires
+// a node produced by the rule, which only grammars compiled with source information record.
+// Fields require a struct or error value. Elements match the first elements of a tuple or list,
+// and see through a node to its value as the language's x[i] does; Value matches the value of a
+// node.
 type QueryPattern struct {
 	Type     string
 	Rule     string
 	Category string
 	Capture  string
 	Fields   []QueryFieldPattern
-	Children []QueryPattern
+	Value    *QueryPattern
+	Elements []QueryPattern
 }
 type QueryFieldPattern struct {
 	Name    string
@@ -29,8 +36,10 @@ type QueryEdge struct {
 	Index int
 }
 
-// QueryCapture borrows Value and Parent from the graph. Path identifies the
-// incoming edge from the root, so shared node occurrences remain distinct.
+// QueryCapture borrows Value and Parent from the graph. Path identifies the edges from the root:
+// "element" (Index) into a tuple, a list or a node's value, "field" (Name) into a struct or
+// error, "capture" (Name) to a node's capture that is not an element, and "value" from a node to
+// its value. Shared occurrences remain distinct.
 type QueryCapture struct {
 	Name, Category string
 	Value          any
@@ -44,6 +53,12 @@ type QueryOptions struct {
 }
 
 var ErrQueryCycle = errors.New("structural query graph cycle")
+
+// ErrQueryNoSourceInfo reports a query with a rule constraint on values without rule names.
+var ErrQueryNoSourceInfo = errors.New("structural query: rule constraints need values with source information; compile the grammar with source information")
+
+// queryCategories lists the categories of query values.
+var queryCategories = [...]string{"node", "struct", "tuple", "list", "int", "string", "bool", "nil", "error"}
 
 // CompileStructuralQuery copies a programmatic pattern and checks known schema
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
@@ -62,59 +77,37 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 	if depth >= 256 {
 		return p, fmt.Errorf("query pattern nesting exceeds prototype limit 256")
 	}
-	switch p.Category {
-	case "", "node", "int", "string", "bool", "list", "nil":
-	default:
+	if p.Category != "" && !slices.Contains(queryCategories[:], p.Category) {
 		return p, fmt.Errorf("unknown query category %q", p.Category)
 	}
-	if (p.Type != "" || p.Rule != "" || len(p.Fields) > 0 || len(p.Children) > 0) && p.Category != "" && p.Category != "node" {
-		return p, fmt.Errorf("node constraint on %s pattern", p.Category)
+	if err := checkQueryConstraints(&p); err != nil {
+		return p, err
 	}
 	if s != nil {
 		if p.Rule != "" {
+			if !s.s.SourceInfo {
+				return p, fmt.Errorf("query rule %q: the schema has no source information, so values record no rules", p.Rule)
+			}
 			if !s.rules[p.Rule] {
 				return p, fmt.Errorf("unknown query rule %q", p.Rule)
 			}
 		}
-		if p.Type != "" {
-			found := false
-			for t := range s.named(p.Type) {
-				found = true
-				for _, f := range p.Fields {
-					if t.Origin == "cst" && recoveryHasField(t.Name, f.Name) {
-						continue
-					}
-					if !schemaMayHaveField(t.Shape, f.Name, s, map[string]bool{}) {
-						return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
-					}
-					for _, known := range t.Shape.Fields {
-						if known.Name == f.Name {
-							shape := schemaDeclaredQueryAlias(known.Shape, s)
-							nilAllowed := false
-							if shape.Kind == "optional" && shape.Element != nil && shape.Element.Kind == "scalar" {
-								shape = *shape.Element
-								nilAllowed = true
-							}
-							if shape.Kind != "scalar" {
-								continue
-							}
-							category := f.Pattern.Category
-							if f.Pattern.Type != "" || f.Pattern.Rule != "" || len(f.Pattern.Fields) > 0 || len(f.Pattern.Children) > 0 {
-								category = "node"
-							}
-							if category != "" && category != shape.Scalar && !(nilAllowed && category == "nil") {
-								allowed := shape.Scalar
-								if nilAllowed {
-									allowed += " or nil"
-								}
-								return p, fmt.Errorf("field %s.%s is %s, incompatible with %s pattern", p.Type, f.Name, allowed, category)
-							}
-						}
-					}
+		if p.Type != "" && p.Type != "error" {
+			t := s.byName[p.Type]
+			if t == nil {
+				return p, fmt.Errorf("unknown query type %q", p.Type)
+			}
+			for _, f := range p.Fields {
+				if !slices.ContainsFunc(t.Shape.Fields, func(known SchemaField) bool { return known.Name == f.Name }) {
+					return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
 				}
 			}
-			if !found {
-				return p, fmt.Errorf("unknown query type %q", p.Type)
+		}
+	}
+	if p.Type == "error" {
+		for _, f := range p.Fields {
+			if f.Name != "message" && f.Name != "expected" {
+				return p, fmt.Errorf("type error has no field %s", f.Name)
 			}
 		}
 	}
@@ -130,85 +123,80 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 		}
 		p.Fields[i].Pattern = c
 	}
-	p.Children = append([]QueryPattern(nil), p.Children...)
-	for i := range p.Children {
-		c, err := copyQueryPattern(p.Children[i], s, depth+1)
+	if p.Value != nil {
+		c, err := copyQueryPattern(*p.Value, s, depth+1)
 		if err != nil {
 			return p, err
 		}
-		p.Children[i] = c
+		p.Value = &c
+	}
+	p.Elements = append([]QueryPattern(nil), p.Elements...)
+	for i := range p.Elements {
+		c, err := copyQueryPattern(p.Elements[i], s, depth+1)
+		if err != nil {
+			return p, err
+		}
+		p.Elements[i] = c
 	}
 	return p, nil
 }
-func recoveryHasField(typ, name string) bool {
-	for _, f := range recoveryFields(typ) {
-		if f.Name == name {
-			return true
-		}
-	}
-	return false
-}
 
-func schemaMayHaveField(shape SchemaShape, name string, s *QuerySchema, active map[string]bool) bool {
-	return schemaMayHaveFieldAt(&shape, name, s, active, make(map[*SchemaShape]bool))
-}
-
-func schemaMayHaveFieldAt(shape *SchemaShape, name string, s *QuerySchema, active map[string]bool, completed map[*SchemaShape]bool) bool {
-	if completed[shape] {
-		return false
+// checkQueryConstraints reports constraints of p that no value can satisfy together.
+func checkQueryConstraints(p *QueryPattern) error {
+	type constraint struct {
+		name       string
+		on         bool
+		categories []string
 	}
-	for _, f := range shape.Fields {
-		if f.Name == name {
-			return true
-		}
+	typeCategory := "struct"
+	if p.Type == "error" {
+		typeCategory = "error"
 	}
-	switch shape.Kind {
-	case "any", "node", "cst":
-		return true
-	case "optional":
-		if shape.Element != nil && schemaMayHaveFieldAt(shape.Element, name, s, active, completed) {
-			return true
+	constraints := []constraint{
+		{"category " + p.Category, p.Category != "", []string{p.Category}},
+		{"type", p.Type != "", []string{typeCategory}},
+		{"rule", p.Rule != "", []string{"node"}},
+		{"value", p.Value != nil, []string{"node"}},
+		{"fields", len(p.Fields) > 0, []string{"struct", "error"}},
+		{"elements", len(p.Elements) > 0, []string{"node", "tuple", "list"}},
+	}
+	allowed := queryCategories[:]
+	var names []string
+	for _, c := range constraints {
+		if !c.on {
+			continue
 		}
-	case "union":
-		for i := range shape.Alternatives {
-			if schemaMayHaveFieldAt(&shape.Alternatives[i], name, s, active, completed) {
-				return true
+		names = append(names, c.name)
+		var next []string
+		for _, a := range allowed {
+			if slices.Contains(c.categories, a) {
+				next = append(next, a)
 			}
 		}
-	}
-	if shape.Ref != "" && !active[shape.Ref] {
-		active[shape.Ref] = true
-		found := false
-		if t := s.byID[shape.Ref]; t != nil {
-			found = schemaMayHaveFieldAt(&t.Shape, name, s, active, completed)
+		if len(next) == 0 {
+			return fmt.Errorf("query pattern constraints %s match no value", strings.Join(names, ", "))
 		}
-		delete(active, shape.Ref)
-		if found {
+		allowed = next
+	}
+	return nil
+}
+
+// usesRule reports whether p or a pattern in it has a rule constraint.
+func (p *QueryPattern) usesRule() bool {
+	if p.Rule != "" || (p.Value != nil && p.Value.usesRule()) {
+		return true
+	}
+	for i := range p.Fields {
+		if p.Fields[i].Pattern.usesRule() {
 			return true
 		}
 	}
-	// A completed nonmatch can be skipped on another path through the same
-	// inline shape. Named-reference back edges remain bounded by active.
-	completed[shape] = true
-	return false
-}
-
-// schemaDeclaredQueryAlias follows declared type references only. Unknown or
-// cyclic references remain unresolved, so query compilation stays conservative.
-func schemaDeclaredQueryAlias(shape SchemaShape, s *QuerySchema) SchemaShape {
-	if shape.Kind != "ref" {
-		return shape
-	}
-	seen := map[string]bool{}
-	for shape.Kind == "ref" && !seen[shape.Ref] {
-		seen[shape.Ref] = true
-		typ := s.byID[shape.Ref]
-		if typ == nil || typ.Origin != "declared" {
-			break
+	for i := range p.Elements {
+		if p.Elements[i].usesRule() {
+			return true
 		}
-		shape = typ.Shape
 	}
-	return shape
+	return false
 }
 
 type queryBudget struct {
@@ -230,8 +218,10 @@ func (b *queryBudget) charge(n uint64) error {
 	return nil
 }
 
-// Matches returns all results or an error, never partial results. Structural
-// matching inspects no source text and therefore consumes no input-work units.
+// Matches returns all results or an error, never partial results. Structural matching inspects
+// no source text and therefore consumes no input-work units. Every node, struct, tuple, list and
+// error value is a candidate. A query with a rule constraint reports ErrQueryNoSourceInfo when
+// the graph has nodes but none records a rule.
 func (q *StructuralQuery) Matches(root *Node, opts QueryOptions) ([]QueryMatch, error) {
 	if q == nil {
 		return nil, fmt.Errorf("nil structural query")
@@ -241,9 +231,15 @@ func (q *StructuralQuery) Matches(root *Node, opts QueryOptions) ([]QueryMatch, 
 		return nil, err
 	}
 	results := []QueryMatch{}
+	sawNode, sawRule := false, false
 	err := visitQueryGraph(root, b, func(v queryVisit) error {
-		if _, ok := v.value.(*Node); !ok || v.value == (*Node)(nil) {
+		n, ok := v.value.(*Node)
+		if !ok || n == nil {
 			return nil
+		}
+		if category, _ := queryCategory(n); category == "node" {
+			sawNode = true
+			sawRule = sawRule || n.Rule() != ""
 		}
 		captures, ok, err := q.match(v, b)
 		if err != nil {
@@ -260,6 +256,9 @@ func (q *StructuralQuery) Matches(root *Node, opts QueryOptions) ([]QueryMatch, 
 	})
 	if err != nil {
 		return nil, err
+	}
+	if sawNode && !sawRule && q.pattern.usesRule() {
+		return nil, ErrQueryNoSourceInfo
 	}
 	if err := b.charge(0); err != nil {
 		return nil, err
@@ -282,6 +281,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 		task := tasks[len(tasks)-1]
 		tasks = tasks[:len(tasks)-1]
 		p, v := task.pattern, task.visit
+		v.value = unboxValue(v.value)
 		category, err := queryCategory(v.value)
 		if err != nil {
 			return nil, false, err
@@ -290,26 +290,28 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			return nil, false, nil
 		}
 		n, _ := v.value.(*Node)
-		if p.Type != "" && (n == nil || n.Type() != p.Type) {
-			return nil, false, nil
-		}
-		if p.Rule != "" && (n == nil || n.Rule() != p.Rule) {
-			return nil, false, nil
-		}
-		if len(p.Fields) > 0 || len(p.Children) > 0 {
-			if n == nil || len(n.Children) < len(p.Children) {
+		if p.Type != "" {
+			if p.Type == "error" {
+				if category != "error" {
+					return nil, false, nil
+				}
+			} else if category != "struct" || n.Type() != p.Type {
 				return nil, false, nil
 			}
-			if err := b.charge(uint64(len(p.Fields) + len(p.Children) + len(n.Fields))); err != nil {
-				return nil, false, err
+		}
+		if p.Rule != "" && (category != "node" || n.Rule() != p.Rule) {
+			return nil, false, nil
+		}
+		if len(p.Fields) > 0 {
+			if category != "struct" && category != "error" {
+				return nil, false, nil
 			}
-			fields := make(map[string]any, len(n.Fields))
-			for _, f := range n.Fields {
-				fields[f.Name] = f.Value
+			if err := b.charge(uint64(len(p.Fields) + len(n.Fields))); err != nil {
+				return nil, false, err
 			}
 			for i := len(p.Fields) - 1; i >= 0; i-- {
 				f := &p.Fields[i]
-				value, ok := fields[f.Name]
+				value, ok := n.Fields.Get(f.Name)
 				if !ok {
 					return nil, false, nil
 				}
@@ -318,11 +320,28 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 				}
 				tasks = append(tasks, queryMatchTask{&f.Pattern, queryVisit{value, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
 			}
-			for i := len(p.Children) - 1; i >= 0; i-- {
+		}
+		if p.Value != nil {
+			if category != "node" {
+				return nil, false, nil
+			}
+			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
+				return nil, false, err
+			}
+			tasks = append(tasks, queryMatchTask{p.Value, queryVisit{queryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
+		}
+		if len(p.Elements) > 0 {
+			if !queryHasElements(n) || len(n.Children) < len(p.Elements) {
+				return nil, false, nil
+			}
+			if err := b.charge(uint64(len(p.Elements))); err != nil {
+				return nil, false, err
+			}
+			for i := len(p.Elements) - 1; i >= 0; i-- {
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&p.Children[i], queryVisit{n.Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "child", Index: i})}})
+				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{n.Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
 			}
 		}
 		if p.Capture != "" {
@@ -334,12 +353,39 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 	}
 	return captures, true, nil
 }
+
+// queryHasElements reports whether n is a tuple or list, or a node whose value is one.
+func queryHasElements(n *Node) bool {
+	if n == nil {
+		return false
+	}
+	switch n.shape() {
+	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
+		return true
+	}
+	return false
+}
+
+// queryNodeValue returns the value of the node n: its text, or a tuple or list value sharing its
+// elements.
+func queryNodeValue(n *Node) any {
+	switch n.shape() {
+	case shapeTuple:
+		return &Node{kind: kindTupleValue, Start: n.Start, End: n.End, Children: n.Children}
+	case shapeList:
+		return &Node{kind: kindListValue, Start: n.Start, End: n.End, Children: n.Children}
+	}
+	return n.Text
+}
+
 func appendQueryPath(path []QueryEdge, e QueryEdge) []QueryEdge {
 	p := make([]QueryEdge, len(path)+1)
 	copy(p, path)
 	p[len(path)] = e
 	return p
 }
+
+// queryCategory returns the category of an unboxed value.
 func queryCategory(v any) (string, error) {
 	switch v := v.(type) {
 	case nil:
@@ -348,15 +394,24 @@ func queryCategory(v any) (string, error) {
 		if v == nil {
 			return "nil", nil
 		}
-		return "node", nil
+		switch v.shape() {
+		case shapeString, shapeTuple, shapeList:
+			return "node", nil
+		case shapeError:
+			return "error", nil
+		case shapeTupleValue:
+			return "tuple", nil
+		case shapeListValue:
+			return "list", nil
+		case shapeStruct:
+			return "struct", nil
+		}
 	case int:
 		return "int", nil
 	case string:
 		return "string", nil
 	case bool:
 		return "bool", nil
-	case []any:
-		return "list", nil
 	}
 	return "", fmt.Errorf("unsupported query value %T", v)
 }

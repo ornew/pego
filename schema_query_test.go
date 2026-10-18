@@ -26,7 +26,7 @@ rule unused = "z"`, "main")
 	if _, err := pego.CompileStructuralQuery(pego.QueryPattern{Type: "Missing"}, s); err == nil {
 		t.Fatal("accepted a type absent from the supplied schema")
 	}
-	if s.Format != "pego-output-schema" || s.Version != 1 || s.Start != "main" || len(s.Rules) != 2 {
+	if s.Format != "pego-output-schema" || s.Version != 2 || s.Start != "main" || len(s.Rules) != 2 {
 		t.Fatalf("default schema: %+v", s)
 	}
 	first, err := json.Marshal(s)
@@ -54,7 +54,7 @@ rule unused = "z"`, "main")
 	if got, _ := json.Marshal(&decoded); !bytes.Equal(first, got) {
 		t.Fatalf("round trip changed schema: %s", got)
 	}
-	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":2}`), &decoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":3}`), &decoded); err == nil {
 		t.Fatal("accepted a future schema version")
 	}
 	data, err := p.MarshalBinary()
@@ -71,7 +71,7 @@ rule unused = "z"`, "main")
 }
 
 func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = x:"a" "b"`, "main")
+	p, err := pego.CompileSource(`rule main = x:"a" "b" => list($x, $x)`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,8 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := pego.CompileStructuralQuery(pego.QueryPattern{Type: "Match", Capture: "token"}, s)
+	token := pego.QueryPattern{Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "token"}
+	q, err := pego.CompileStructuralQuery(token, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,16 +92,16 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 3 {
+	if len(got) != 2 {
 		t.Fatalf("matches: %+v", got)
 	}
-	want := [][]pego.QueryEdge{{{Kind: "child", Index: 0}}, {{Kind: "child", Index: 1}}, {{Kind: "field", Name: "x"}}}
+	want := [][]pego.QueryEdge{{{Kind: "element", Index: 0}}, {{Kind: "element", Index: 1}}}
 	for i, match := range got {
 		if len(match.Captures) != 1 || match.Captures[0].Parent != root || !reflect.DeepEqual(match.Captures[0].Path, want[i]) {
 			t.Fatalf("match %d: %+v", i, match)
 		}
 	}
-	if got[0].Captures[0].Value != got[2].Captures[0].Value {
+	if got[0].Captures[0].Value != got[1].Captures[0].Value {
 		t.Fatal("shared node was not reported on both incoming edges")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -117,7 +118,7 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	}
 }
 
-func TestPublicSchemaQueryMatchesUncapturedCSTChild(t *testing.T) {
+func TestPublicSchemaQueryMatchesUncapturedElements(t *testing.T) {
 	p, err := pego.CompileSource(`rule main = "a" "b"`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -126,17 +127,16 @@ func TestPublicSchemaQueryMatchesUncapturedCSTChild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	foundMatch := false
-	for _, typ := range s.Types {
-		if typ.ID == "cst/Match" {
-			foundMatch = true
-			break
+	var main *pego.SchemaShape
+	for i := range s.Types {
+		if s.Types[i].ID == "inferred/main" {
+			main = &s.Types[i].Shape
 		}
 	}
-	if !foundMatch {
-		t.Fatal("schema omits Match behind a generic CST child")
+	if main == nil || main.Kind != "node" || main.Value.Kind != "tuple" || len(main.Value.Elements) != 2 || main.Value.Elements[1].Kind != "node" {
+		t.Fatalf("schema omits the elements of main: %+v", s.Types)
 	}
-	q, err := pego.CompileStructuralQuery(pego.QueryPattern{Type: "Match", Capture: "token"}, s)
+	q, err := pego.CompileStructuralQuery(pego.QueryPattern{Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "token"}, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func TestPublicSchemaQueryMatchesUncapturedCSTChild(t *testing.T) {
 	}
 	matches, err := q.Matches(root)
 	if err != nil || len(matches) != 2 {
-		t.Fatalf("uncaptured children: %+v, %v", matches, err)
+		t.Fatalf("uncaptured elements: %+v, %v", matches, err)
 	}
 }
 
@@ -242,7 +242,8 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 }
 
 func TestPublicPreparedQuerySchema(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = x:"a" "b"`, "main")
+	p, err := pego.CompileSource(`type Item = { Value Match }
+rule main = x:"a" "b" => Item{Value: $x}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -258,18 +259,22 @@ func TestPublicPreparedQuerySchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := prepared.CompileStructuralQuery(pego.QueryPattern{Type: "Match", Capture: "token"})
+	q, err := prepared.CompileStructuralQuery(pego.QueryPattern{Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "token"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := q.Matches(root); err != nil || len(got) != 3 {
+	if got, err := q.Matches(root); err != nil || len(got) != 1 {
 		t.Fatalf("matches: %+v, %v", got, err)
 	}
-	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Rule: "missing"}); err == nil {
-		t.Fatal("accepted an unknown rule")
+	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Type: "Missing"}); err == nil {
+		t.Fatal("accepted an unknown type")
 	}
-	s.Rules = nil
-	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Rule: "main"}); err != nil {
+	// Rule constraints need a schema with source information.
+	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Rule: "main"}); err == nil {
+		t.Fatal("accepted a rule constraint without source information")
+	}
+	s.Types = nil
+	if _, err := prepared.CompileStructuralQuery(pego.QueryPattern{Type: "Item"}); err != nil {
 		t.Fatalf("prepared schema followed its changed source: %v", err)
 	}
 	if _, err := pego.PrepareQuerySchema(s); err == nil {
