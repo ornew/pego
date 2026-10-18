@@ -220,8 +220,8 @@ rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (
 rule term Expr = number / name / group
 rule group Expr = "(" ws e:expr ws ")" => $e
 
-rule name Name = t:([a-z]+ #atomic) => Name{Text: text($t)}
-rule number Num = t:([0-9]+ #atomic) => Num{Text: text($t)}
+rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
+rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
 rule ws = [ \t\r\n]*
 ```
 

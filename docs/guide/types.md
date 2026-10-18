@@ -47,6 +47,30 @@ and `bool`.
 An alias is only another name: with `type Binding ~ Assign`, `Binding{...}` produces an `Assign`. Chained aliases and
 unions reduced to one member follow the same rule; an alias does not create a distinct type.
 
+## Text Types
+
+A leaf of the tree that should have a type of its own and keep the text it matched is a struct with one `Text` field:
+
+```pego
+// text-type.pego
+type Identifier = { Text string }
+
+rule ident Identifier = t:([a-z]+) #atomic => Identifier{Text: text($t)}
+```
+
+```bash
+pego parse -g text-type.pego -s ident -f sexpr -i 'abc'
+```
+
+```text
+Identifier{Text: "abc"}
+```
+
+The capture `t:(...) #atomic` reads the text of the whole parenthesized expression, and the action only wraps it. PEGO
+builds exactly this form directly, without running the action, so a text type costs about as much as the plain match.
+Use the field in other actions as `$ident.Text`, and in Go as `Field("Text")` (or the `Text` field of a generated type).
+`pego fix` rewrites the earlier `type T terminal` declaration to this form.
+
 ## Optional and List Fields
 
 A field type can be `*T` (a `T` or `nil`) or `[]T` (a `List` whose elements are `T`). Both are checked at compile time:

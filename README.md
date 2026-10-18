@@ -20,8 +20,8 @@ the same everywhere.
 
 ```pego
 // calc.pego
-type Num terminal
-type Bin = { Left Expr; Op Match; Right Expr }
+type Num = { Text string }
+type Bin = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Bin | Num
 
 rule main Expr = operators {
@@ -33,7 +33,7 @@ rule main Expr = operators {
     level power { infix right "^" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-rule num Num = [0-9]+
+rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}
 ```
 
 ```bash
@@ -41,7 +41,7 @@ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
 ```
 
 ```text
-Bin{Left: "1", Op: "+", Right: Bin{Left: "2", Op: "*", Right: Bin{Left: "3", Op: "^", Right: "2"}}}
+Bin{Left: Num{Text: "1"}, Op: "+", Right: Bin{Left: Num{Text: "2"}, Op: "*", Right: Bin{Left: Num{Text: "3"}, Op: "^", Right: Num{Text: "2"}}}}
 ```
 
 ```bash
@@ -80,7 +80,7 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 - **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
   suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
-- **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
+- **Types all the way down.** Declare struct and union types and build them in actions. Rule types are
   inferred and checked when the grammar compiles. `pego gen -types` emits matching Go values directly; TypeScript
   `parseAST` converts its Node tree into typed values (see the [guide](docs/guide/typescript.md#typed-values)).
 - **Precedence without the pain.** Operators are declared by binding level in an Operators Rule, not a ladder of rules. Left recursion, direct or
