@@ -20,10 +20,10 @@ grammar and construct them with actions. Save as `config.pego`:
 ```pego
 package config
 
-type Key terminal
-type Number terminal
-type String terminal
-type Bool terminal
+type Key = { Text string }
+type Number = { Text string }
+type String = { Text string }
+type Bool = { Text string }
 type Value ~ Number | String | Bool
 
 type Entry = {
@@ -40,10 +40,10 @@ rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
 rule value Value = number / string / bool
-rule key Key = [a-z_]+
-rule number Number = [0-9]+
-rule string String = "\"" [^"]* "\""
-rule bool Bool = "true" / "false"
+rule key Key = t:([a-z_]+) #atomic => Key{Text: text($t)}
+rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule string String = t:("\"" [^"]* "\"") #atomic => String{Text: text($t)}
+rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
 
 rule ws = (blank / comment)*
 rule blank = [ \t\r\n]+
@@ -55,16 +55,17 @@ pego parse -g config.pego -f sexpr < example.conf
 ```
 
 ```text
-Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: "port", Value: "8080"} Entry{Key: "debug", Value: "true"}]}
+Config{Entries: [Entry{Key: Key{Text: "host"}, Value: String{Text: "\"localhost\""}} Entry{Key: Key{Text: "port"}, Value: Number{Text: "8080"}} Entry{Key: Key{Text: "debug"}, Value: Bool{Text: "true"}}]}
 ```
 
 What is new:
 
 - `package config` is optional; it names the grammar's package and is used by the code generator
   (see [Shipping a Parser](shipping.md)). It must be the first item in the file.
-- `type Key terminal` declares a **terminal type**: a type for the leaves of the tree. A rule declared with a terminal
-  type (`rule key Key = [a-z_]+`) produces a single string node of that type holding the matched text, so there is no
-  need for `#atomic`. The text of a `String` includes its quotes, since it is the text the rule matched.
+- `type Key = { Text string }` declares a **text type**: a struct with one `Text` field, for the leaves of the tree. A rule
+  of that type reads the text it matched with `t:(...) #atomic` and builds the value with
+  `Key{Text: text($t)}`. PEGO builds this exact form directly, without running the action, so it is as cheap as a plain
+  match. The text of a `String` includes its quotes, since it is the text the rule matched.
 - `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be
@@ -142,7 +143,7 @@ func main() {
 	for _, e := range entries.Elems() {
 		key := e.Field("Key").(*pego.Node)
 		value := e.Field("Value").(*pego.Node)
-		fmt.Printf("%-6s %-7s %s\n", key.Text(), value.Type(), value.Text())
+		fmt.Printf("%-6s %-7s %s\n", key.Field("Text"), value.Type(), value.Field("Text"))
 	}
 }
 ```
@@ -159,11 +160,11 @@ debug  Bool    true
 
 `node.Field(name)` returns the value of a struct field as an `any`: a `*pego.Node` for node values, lists, tuples and
 structs, or an `int`, `string` or `bool`. A list is a node whose elements `Len()`, `Elem(i)` and `Elems()` give.
-`node.Text()` is the text of a string node. `value.Type()` tells you which member of the `Value` union you got, so a
+A text struct keeps its text in the `Text` field, so `Field("Text")` reads it. `value.Type()` tells you which member of the `Value` union you got, so a
 `switch` on it is how you walk a union.
 
 ## Next Steps
 
 [Parsing Expressions](expressions.md) builds a calculator. The guides [Declaring Types](../guide/types.md) and
-[Actions](../guide/actions.md) cover struct, union and terminal types, the built-in functions and positions, and
+[Actions](../guide/actions.md) cover struct and union types, the built-in functions and positions, and
 [Reading Trees](../guide/reading-trees.md) covers reading a tree in Go.

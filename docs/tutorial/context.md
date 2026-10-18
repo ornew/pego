@@ -46,22 +46,22 @@ defines its own `tag`, and the definition disappears when the rule returns, so n
 as `tags.pego`:
 
 ```pego
-type Name terminal
-type Chars terminal
+type Name = { Text string }
+type Chars = { Text string }
 type Element = { Name Name; Children []Content }
 type Content ~ Element | Chars
 
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
-rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
+rule element Element = "<" n:name ">" {tag := $n.Text} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
 rule content Content = element / chars
-rule chars Chars = [^<]+
+rule chars Chars = t:([^<]+) #atomic => Chars{Text: text($t)}
 
 // The close tag is parsed by another rule: it finds the name in `tag`.
-rule close_tag = "</" n:name {text($n) == tag} @error(message="mismatched end tag") ">"
+rule close_tag = "</" n:name {$n.Text == tag} @error(message="mismatched end tag") ">"
 
-rule name Name = [a-z]+
+rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
 ```
 
 ```bash
@@ -71,7 +71,7 @@ pego parse -g tags.pego -f sexpr -i '<a><a>x</a>'
 ```
 
 ```text
-Element{Children: [Element{Children: ["x"], Name: "b"} Element{Children: ["y"], Name: "c"}], Name: "a"}
+Element{Children: [Element{Children: [Chars{Text: "x"}], Name: Name{Text: "b"}} Element{Children: [Chars{Text: "y"}], Name: Name{Text: "c"}}], Name: Name{Text: "a"}}
 pego: 1:11: mismatched end tag
 pego: 1:12: syntax error: expected "<", "</", [^<]
 ```

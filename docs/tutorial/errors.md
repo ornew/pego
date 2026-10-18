@@ -64,10 +64,10 @@ and continue. Here a bad entry skips the rest of its line. Save as `robust.pego`
 wrapped in `#recover`, and with the message of the previous section on `value`:
 
 ```pego
-type Key terminal
-type Number terminal
-type String terminal
-type Bool terminal
+type Key = { Text string }
+type Number = { Text string }
+type String = { Text string }
+type Bool = { Text string }
 type Value ~ Number | String | Bool
 
 type Entry = {
@@ -84,10 +84,10 @@ rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 rule entry Entry = (k:key -ws -"=" -ws v:value -ws) #recover(skip=[^\n]* "\n"?) -ws => Entry{Key: $k, Value: $v}
 
 rule value Value = (number / string / bool) @error(message="expected a number, a string or true/false")
-rule key Key = [a-z_]+
-rule number Number = [0-9]+
-rule string String = "\"" [^"]* "\""
-rule bool Bool = "true" / "false"
+rule key Key = t:([a-z_]+) #atomic => Key{Text: text($t)}
+rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule string String = t:("\"" [^"]* "\"") #atomic => String{Text: text($t)}
+rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
 
 rule ws = (blank / comment)*
 rule blank = [ \t\r\n]+
@@ -99,7 +99,7 @@ printf 'host = "localhost"\nport == 8080\ndebug = tru\n' | pego parse -g robust.
 ```
 
 ```text
-Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: nil, Value: nil} Entry{Key: nil, Value: nil}]}
+Config{Entries: [Entry{Key: Key{Text: "host"}, Value: String{Text: "\"localhost\""}} Entry{Key: nil, Value: nil} Entry{Key: nil, Value: nil}]}
 ```
 
 The tree contains the good entry and one placeholder per skipped entry (their fields are `nil`). The errors go to
@@ -158,7 +158,7 @@ func main() {
 		if e.Field("Key") == nil {
 			continue // an entry that was skipped
 		}
-		fmt.Println("entry:", e.Field("Key").(*pego.Node).Text())
+		fmt.Println("entry:", e.Field("Key").(*pego.Node).Field("Text"))
 	}
 }
 ```

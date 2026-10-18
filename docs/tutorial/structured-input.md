@@ -103,7 +103,7 @@ An **action** builds the value of a rule yourself. It is written after `=>` insi
 declared with `type`. This is the grammar from the README (`kv.pego`, final version):
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```

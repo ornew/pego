@@ -18,10 +18,10 @@ Mark a repetition at the top level of the start rule with `#stream` and each ele
 forgotten, so memory depends on the size of one element and not on the size of the file. Save as `stream.pego`:
 
 ```pego
-type Key terminal
-type Number terminal
-type String terminal
-type Bool terminal
+type Key = { Text string }
+type Number = { Text string }
+type String = { Text string }
+type Bool = { Text string }
 type Value ~ Number | String | Bool
 
 type Entry = {
@@ -34,10 +34,10 @@ rule main = -ws entry* #stream $$
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
 rule value Value = number / string / bool
-rule key Key = [a-z_]+
-rule number Number = [0-9]+
-rule string String = "\"" [^"]* "\""
-rule bool Bool = "true" / "false"
+rule key Key = t:([a-z_]+) #atomic => Key{Text: text($t)}
+rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule string String = t:("\"" [^"]* "\"") #atomic => String{Text: text($t)}
+rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
 
 rule ws = (blank / comment)*
 rule blank = [ \t\r\n]+
@@ -52,8 +52,8 @@ printf 'host = "localhost"\nport = 8080\ndebug = maybe\n' | pego parse -g stream
 ```
 
 ```text
-Entry{Key: "host", Value: "\"localhost\""}
-Entry{Key: "port", Value: "8080"}
+Entry{Key: Key{Text: "host"}, Value: String{Text: "\"localhost\""}}
+Entry{Key: Key{Text: "port"}, Value: Number{Text: "8080"}}
 pego: 3:9: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 
@@ -91,7 +91,7 @@ func main() {
 	input := "host = \"localhost\"\nport = 8080\ndebug = true\n"
 	err = sp.ParseStream(strings.NewReader(input), func(n *pego.Node) error {
 		key := n.Field("Key").(*pego.Node)
-		fmt.Printf("[%d,%d) %s\n", n.Start(), n.End(), key.Text())
+		fmt.Printf("[%d,%d) %s\n", n.Start(), n.End(), key.Field("Text"))
 		return nil
 	})
 	if err != nil {
@@ -122,7 +122,7 @@ func main() {
 	}
 	st := doc.Stats()
 	fmt.Println("after the edit: evaluated", st.Evaluated, "reused", st.Reused)
-	fmt.Println(cfg.Field("Entries").(*pego.Node).Elem(1).Field("Value").(*pego.Node).Text())
+	fmt.Println(cfg.Field("Entries").(*pego.Node).Elem(1).Field("Value").(*pego.Node).Field("Text"))
 }
 ```
 
