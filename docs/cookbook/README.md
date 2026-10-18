@@ -38,6 +38,7 @@ times differ from machine to machine.
 | [Read a header and then records](header-and-records.md) | A stream whose first element is a header: telling the kinds of element apart in the callback |
 | [Stop a stream when the caller gives up](cancel-a-stream.md) | `WithContext` plus a reader that fails from outside, for a producer that goes quiet |
 | [Parse indentation-based input](indentation.md) | Nested entries as nested Go maps, with a variable for the indentation and an error for inconsistent indentation |
+| [Parse an expression embedded in text](prefix-fragment.md) | `ParsePrefix`: a `{{ expression }}` template renderer that parses the fragment where it starts and learns where it ends |
 
 ## Evaluate and Query
 
@@ -45,6 +46,7 @@ times differ from machine to machine.
 |:--|:--|
 | [Evaluate arithmetic with variables and functions](calculator.md) | An Operators Rule with precedence, associativity and calls, and an evaluator that runs the same tree for many inputs |
 | [Compile a filter language into a Go predicate](filter-language.md) | `age > 30 and name ~ "a*"` as closures, with word operators that do not collide with field names |
+| [Find nodes in a tree and at a position](find-nodes.md) | `Walk` for every call with its span and depth, and a `Cursor` for the innermost node at an offset |
 
 ## Report Problems
 
@@ -52,6 +54,8 @@ times differ from machine to machine.
 |:--|:--|
 | [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*pego.SyntaxError`, printed like a compiler |
 | [Report several errors in one run](several-errors.md) | `#recover`: a tree of what could be read, the errors, and what to watch for in the `skip` |
+| [Keep going after a bad statement in nested blocks](recover-statements.md) | Recovery at the statement rule shared by every block: errors from all levels and the statements that were fine |
+| [Find out why a grammar is slow](slow-grammar.md) | `pego profile` on a 20,000-line input: which rule wastes input, the change that fixes it, and the profile that proves it |
 
 ## Build Tools
 
@@ -65,6 +69,7 @@ times differ from machine to machine.
 
 | Recipe | What it shows |
 |:--|:--|
+| [Embed a grammar in a program and share the parser](embed-grammar.md) | `go:embed`, one compiled parser used from many goroutines with `WithStart`, and a `-race` test |
 | [Ship a parser and keep it up to date](ship-a-parser.md) | `pego gen` with `go generate`, a test that fails when the generated file is stale, and `.pegoc` for grammars that stay data |
 | [Validate a YAML file and point at the problem](ready-made-parsers.md) | A ready-made parser of [parsers/](../../parsers/README.md): syntax errors with positions, and your own checks with the positions of the typed tree |
 | [Test hand-written code against a grammar](test-with-samples.md) | Inputs and near misses generated from the grammar, a differential test and a fuzz test |
