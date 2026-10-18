@@ -19,12 +19,23 @@ rule deeper_indent = s:spaces { len($s) > indent } { indent := len($s) }
 ```
 
 A nonempty Predicate Action block may contain statements separated by
-semicolons or hard newlines. They execute in source order, like adjacent
-Predicate Actions at the same Rule Expression position. An assignment updates
-the current invocation's variable environment; a term fails the predicate if
-it evaluates to `false` or errors. Evaluation stops at the first failure.
-The block adds no variable, capture, rollback, memoization or recovery scope.
-An empty block is a compile-time error.
+semicolons or hard newlines. It is shorthand for adjacent Predicate Actions at
+the same Rule Expression position, so these two rules behave alike:
+
+```pego
+rule item = { count := 1; count == 1 } "a"
+rule item = { count := 1 } { count == 1 } "a"
+```
+
+The statements execute in source order. An assignment updates the current
+invocation's variable environment, and a term fails the predicate if it
+evaluates to `false` or errors. Evaluation stops at the first failure, and an
+assignment is visible to the later statements and rolled back like an adjacent
+Predicate Action. The block consumes no input and adds no variable, capture,
+rollback, memoization or recovery scope. In a sequence it expands to adjacent
+actions; in a single-expression position it behaves like the grouped adjacent
+sequence, including the existing CST result for a sequence of valueless
+predicates. An empty block is a compile-time error.
 
 The expression has the same operators and built-in functions as a
 [Value Action](actions.md#operators-and-functions). Capture visibility follows the enclosing
@@ -67,27 +78,10 @@ Nodes created while evaluating a predicate are discarded after evaluation.
 
 ## Interaction with Memoization
 
-A rule that reads variables in Predicate Actions or Value Actions, directly or through a
-called rule, depends on their values when it is called. Memoized results are
-reused only for the same relevant variable values. Memoization does not change
-the result of parsing, only its cost.
-
-Variable values are restricted to `int`, `string`, and `bool`. A variable may
-be read only after its definition has executed; reading an undefined variable
-is an evaluation error and makes the predicate fail. Each rule invocation has
-its own scope. A rule can read definitions from its callers, with the nearest
-definition taking precedence. Defining an already visible name creates an
-immutable shadow; definitions in a called rule do not change or become visible
-in its caller. Backtracking undoes definitions made after the restored point.
-These rules apply across directly and indirectly called rules. A rule that
-reads variables in Predicate Actions or Value Actions, including Operators Rule operand
-and operator actions, is memoized per combination of relevant variable values;
-definitions made inside it are undone when it returns.
-
-Predicate Actions support the same operators and built-in functions
-as [Value Actions](actions.md), including `len` and `text`. Values created by node
-constructors during predicate evaluation are discarded. Named captures made
-earlier in the same expression scope are available. Within a repetition element, only
-captures from that iteration are visible, not captures from the enclosing
-rule body. Bind an outside value to a variable before the repetition when it
-must be compared with each element.
+A rule that reads variables in Predicate Actions or Value Actions, directly or
+through a called rule, depends on their values when it is called. Memoized
+results are reused only for the same relevant variable values, so such a rule,
+including an Operators Rule operand or operator with an action that reads
+variables, is memoized per combination of the variable values that it reads.
+Definitions made inside it are undone when it returns. Memoization does not
+change the result of parsing, only its cost.

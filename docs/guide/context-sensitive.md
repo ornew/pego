@@ -120,7 +120,7 @@ A nonempty block `{ a; b; c }` is shorthand for adjacent Predicate Actions at th
 right and stop at the first false result or error. Assignments are visible to later statements and follow the usual
 backtracking rules. A block creates no variable or capture scope, consumes no input and adds no rule boundary. Empty
 blocks are compile-time errors, and Value Actions have no block form: they use the single term after `=>`. The
-[Actions](../../spec/actions.md#predicate-action-blocks) chapter defines blocks.
+[Predicates and Variables](../../spec/predicates.md#predicate-actions) chapter defines blocks.
 
 ### Variables
 

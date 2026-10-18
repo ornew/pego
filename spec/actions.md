@@ -11,15 +11,8 @@ is accepted only when it selects the existing default CST behavior; omitting
 it or writing the explicit `=> ...` default form preserves that behavior. Any
 other declaration-level action on an Operators Rule is a compile-time error.
 
-A Predicate Action block may contain multiple statements separated by
-semicolons or hard newlines. Its statements execute in source order as adjacent
-Predicate Actions would: an assignment updates the current invocation's
-variable environment, and a term succeeds unless it evaluates to false or
-errors. Evaluation stops at the first failure. The block creates no variable,
-capture, rollback, memoization or recovery scope. Empty blocks are compile-time
-errors. In a sequence the statements become adjacent Predicate Actions; in a
-single-expression position they retain the grouped adjacent-sequence behavior
-of the existing CST.
+A Predicate Action block may contain several statements; its semantics are
+defined in [Predicate Actions](predicates.md#predicate-actions).
 
 Value Action blocks remain unsupported and are rejected during compilation;
 their statements do not execute. Inline Value Action forms are also recognized
@@ -41,30 +34,6 @@ or `nil` and must fit the declared or inferred rule type. It applies to the
 whole body, including every alternative. Predicate Actions use the same value
 operators and built-in functions described below, but their result controls
 whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-actions).
-
-## Predicate Action Blocks
-
-A nonempty block is shorthand for adjacent Predicate Actions at the same
-Rule Expression position:
-
-```pego
-rule item = { count := 1; count == 1 } "a"
-```
-
-This has the same behavior as:
-
-```pego
-rule item = { count := 1 } { count == 1 } "a"
-```
-
-Assignments and tests run left to right, stopping at the first false result or
-evaluation error. Assignment bindings are visible to later statements and
-follow the same rollback behavior as adjacent Predicate Actions. A block does
-not introduce a variable or capture scope, consume input, or add a rule,
-memoization or recovery boundary. Within a sequence it expands to adjacent
-actions; in a single-expression position it behaves like the grouped adjacent
-sequence, including the existing CST result for a sequence of valueless
-predicates. Empty blocks are compile-time errors.
 
 ## Whole-Rule Value Actions
 
