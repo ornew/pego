@@ -181,7 +181,7 @@ M3 Max):
 
 The standard library has no YAML parser; decoding the same values from JSON with `encoding/json` takes a quarter of
 the time of `LoadAll`. `Recognize` builds nothing but is slower than `ParseAST`, whose rules the generator compiles
-into direct code (see the [code generation guide](../../docs/guide/code-generation.md#typed-values--types)). The
+into direct code (see the [code generation guide](../../docs/guide/generated-go-api.md#typed-values--types)). The
 first version of the grammar, which tried every alternative of the specification in order, took 39 ms for
 `ParseAST`; most of the difference is calls that could not match and the memoization they caused.
 

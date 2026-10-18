@@ -50,7 +50,8 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | Guide | Contents |
 |:--|:--|
 | [Compiled Grammars](compiled-grammars.md) | Saving a grammar as a `.pegoc` file and loading it: what a file without the AST cannot do, sizes and load times, `go:embed`, versions, untrusted data, and when to use it instead of generated code |
-| [Generated Go Parsers](code-generation.md) | Standalone Go parsers with `pego gen`: the generated API, typed values, documents, streams, recognition, keeping generated code up to date, trade-offs |
+| [Generating Parsers](code-generation.md) | Standalone parsers with `pego gen`: why generate, the command and its options, what is supported, keeping generated code up to date, trade-offs |
+| [The Generated Go API](generated-go-api.md) | The Go package `pego gen` writes: `Parse`, typed values, incremental documents, streams, recognition |
 | [Generated TypeScript Parsers](typescript.md) | Standalone TypeScript modules with `pego gen -lang ts`: the generated API, positions, strings and ints in JavaScript, errors, deep nesting and the JavaScript stack |
 | [Using the Ready-Made Parsers](ready-made-parsers.md) | The parsers of `parsers/` (CEL, CSV, CUE, DuckDB SQL, Go, JSON, Python, TypeScript, XML, YAML) in a program: the API they share, choosing an entry point, typed trees, positions and units, errors, conformance and limits |
 

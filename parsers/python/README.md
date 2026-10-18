@@ -147,7 +147,7 @@ Choices that measurably help, each commented in the grammar:
   of the grammar are computed with multiplications (the bytecode backends truncate integer literals of 2^31 and more).
 
 `ParseAST` builds its values directly, since every value has a Go type of its own, which the generator compiles into
-direct code (see the [code generation guide](../../docs/guide/code-generation.md#typed-values--types)).
+direct code (see the [code generation guide](../../docs/guide/generated-go-api.md#typed-values--types)).
 
 ## Performance
 

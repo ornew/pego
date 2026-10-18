@@ -277,7 +277,7 @@ Limits to keep in mind:
 - `Parse` returns a complete tree each time. The engine Document can report conservative changes through
   [opt-in notifications](incremental.md#change-notifications); generated Go's Node Document has no change-notification API.
 - The engine Document is unavailable with `RecognizeOnly` or [streams](streaming.md). Generated Go offers the
-  smaller [`-document` API](code-generation.md#incremental-documents--document); `-types` adds
+  smaller [`-document` API](generated-go-api.md#incremental-documents--document); `-types` adds
   `Document.ParseAST`, with direct matching for grammars eligible for batch typed parsing and Node conversion
   otherwise. It does not include the history, batch-edit or snapshot APIs of [Incremental Parsing](incremental.md).
 - With `-observability`, generated Go Documents can trace and profile each `Parse` or `ParseAST` invocation. Constructor options are retained defaults; per-call options override only that invocation. Events report actual calls, including a memo hit without replaying nested calls, and per-invocation profile increases in `Evals` and `MemoHits` match `Stats().Evaluated` and `.Reused` after completed parses. Same-Document operations from a callback are unsupported; see [generated Document tracing](debugging.md#tracing-and-profiling-generated-go-documents).

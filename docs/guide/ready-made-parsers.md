@@ -39,7 +39,7 @@ cold build cache (with other builds running), the Go one about 11. They are the 
 ## What Every Parser Offers
 
 All ten have the API of a parser generated with `pego gen -types -recognize`
-([code generation](code-generation.md#the-generated-api)):
+([code generation](generated-go-api.md#the-generated-api)):
 
 | | |
 |:--|:--|

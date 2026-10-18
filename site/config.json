@@ -137,12 +137,14 @@
           "match": [
             "docs/guide/compiled-grammars.md",
             "docs/guide/code-generation.md",
+            "docs/guide/generated-go-api.md",
             "docs/guide/typescript.md",
             "docs/guide/ready-made-parsers.md"
           ],
           "first": [
             "docs/guide/compiled-grammars.md",
             "docs/guide/code-generation.md",
+            "docs/guide/generated-go-api.md",
             "docs/guide/typescript.md",
             "docs/guide/ready-made-parsers.md"
           ]

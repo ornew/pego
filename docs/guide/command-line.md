@@ -17,7 +17,7 @@ is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything 
 | `parse` | Parse input and print the tree, or only check it | [Parse](#parse) |
 | `fmt`, `fix`, `convert` | Format grammar source, rewrite old syntax, convert between source and JSON | [Fmt](#fmt) |
 | `compile` | Save a compiled grammar | [Compiled Grammars](compiled-grammars.md) |
-| `gen` | Generate a Go or TypeScript parser | [Generated Go Parsers](code-generation.md), [Generated TypeScript Parsers](typescript.md) |
+| `gen` | Generate a Go or TypeScript parser | [Generating Parsers](code-generation.md), [Generated TypeScript Parsers](typescript.md) |
 | `test` | Run a fixture suite | [Testing Grammars](testing-grammars.md) |
 | `lint` | Find likely mistakes in a grammar | [Linting Grammars](linting.md) |
 | `explain`, `trace`, `profile` | Find out why an input fails or a parse is slow | [Debugging and Profiling](debugging.md) |
@@ -227,6 +227,6 @@ prints near-miss inputs that it rejects instead. See [sampling-and-fuzzing.md](s
 ## Related Topics
 
 - [Running Parsers](running-parsers.md): the Go API behind `parse`.
-- [Compiled Grammars](compiled-grammars.md), [Generated Go Parsers](code-generation.md) and
+- [Compiled Grammars](compiled-grammars.md), [Generating Parsers](code-generation.md) and
   [Generated TypeScript Parsers](typescript.md): the commands that ship a grammar.
 - [Testing Grammars](testing-grammars.md) and [Debugging and Profiling](debugging.md): the commands that check one.

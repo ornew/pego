@@ -28,7 +28,7 @@ ast, err := json.ParseAST(src)                                      // typed val
 ```
 
 Every parser has the API of a parser generated with `pego gen -types -recognize` (see
-[code generation](../docs/guide/code-generation.md#the-generated-api)), plus functions written for its language:
+[code generation](../docs/guide/generated-go-api.md#the-generated-api)), plus functions written for its language:
 
 | | |
 |:--|:--|

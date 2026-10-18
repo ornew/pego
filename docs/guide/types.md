@@ -171,4 +171,4 @@ use it.
 
 - [Shaping Trees](shaping-trees.md): the default tree and captures.
 - [Actions](actions.md): building typed nodes.
-- [Generated Go Parsers](code-generation.md): the Go types generated from declared types.
+- [Generating Parsers](code-generation.md): the Go types generated from declared types.

@@ -235,7 +235,7 @@ The benchmarks of the synthetic source need nothing; the others read the typescr
 are left out without it. The parser is 1.5 to 2.5 times slower than the compiler's hand-written parser on declaration
 files and 3 to 4.5 times on code (the synthetic source, dense in generics and types, is the slowest per byte).
 `Recognize` builds nothing but is slower than `ParseAST`, whose rules the generator compiles into direct code (see the
-[code generation guide](../../docs/guide/code-generation.md#typed-values--types)); `Parse` builds the generic tree.
+[code generation guide](../../docs/guide/generated-go-api.md#typed-values--types)); `Parse` builds the generic tree.
 
 The first version of the grammar, which followed the compiler's order of alternatives, took about 110 ms, 10 ms, 110 ms,
 60 ms and 1.55 s for `ParseAST` on these files. The optimizations are commented in the grammar; what paid was

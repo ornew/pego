@@ -226,7 +226,7 @@ type is first used, about 115 KB for each small expression; with chunks of 8 and
 took 22% less time on one CPU (547 µs instead of 703 µs; the time of a long expression does not change). `Recognize`
 builds nothing, but it takes as long as `ParseAST` on a long expression: the generator compiles the rules of the typed
 parser into direct code, and not those of `Recognize` (see the
-[code generation guide](../../docs/guide/code-generation.md#typed-values--types)).
+[code generation guide](../../docs/guide/generated-go-api.md#typed-values--types)).
 
 ## Development
 

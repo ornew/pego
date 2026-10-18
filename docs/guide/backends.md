@@ -96,7 +96,7 @@ Two things to know:
 
 Generated parsers have the same default of 100,000. `pego.WithGeneratedMaxDepth` or `pego gen -max-depth` sets a
 generated default; generated Go `WithMaxDepth` and TypeScript options-aware entry points override it per invocation
-(see [code generation](code-generation.md#invocation-options-and-migration) and
+(see [code generation](generated-go-api.md#invocation-options-and-migration) and
 [TypeScript depth options](typescript.md#deep-nesting-and-the-javascript-stack)). Their recursive host stacks still
 bound acceptance even when the configured limit is higher.
 
@@ -162,5 +162,5 @@ What this means for you:
 
 - [Running Parsers](running-parsers.md): compiling and calling a parser.
 - [Compiled Grammars](compiled-grammars.md): saving a parser and loading it again.
-- [Generated Go Parsers](code-generation.md): the fastest backend for a fixed grammar.
+- [Generating Parsers](code-generation.md): the fastest backend for a fixed grammar.
 - [Debugging](debugging.md): finding why a parse is slow.

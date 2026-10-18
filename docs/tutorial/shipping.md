@@ -54,7 +54,7 @@ library. `config.ParseRule(name, input)` starts at another rule. The generated e
 options: `config.Parse(input, config.WithUnit(config.Bytes), config.WithMaxDepth(600_000))`.
 `pego gen -max-depth 600000` sets the generated default; omitted or zero keeps 100,000. Existing raw unit arguments
 migrate to `WithUnit`, including function-value and slice consumers (see the
-[migration notes](../guide/code-generation.md#invocation-options-and-migration)).
+[migration notes](../guide/generated-go-api.md#invocation-options-and-migration)).
 
 ## Backends and Compiled Grammars
 
@@ -80,7 +80,7 @@ The [Running Parsers](../guide/running-parsers.md) guide describes the backends 
 ## Next Steps
 
 [Handling Big and Live Input](big-and-live-input.md) covers input that does not fit in memory and text that is edited
-while parsed. The guides [Generated Go Parsers](../guide/code-generation.md), [Generated TypeScript
+while parsed. The guides [Generating Parsers](../guide/code-generation.md), [Generated TypeScript
 Parsers](../guide/typescript.md), [Compiled Grammars](../guide/compiled-grammars.md) and [Using the Ready-Made
 Parsers](../guide/ready-made-parsers.md) go further, and the cookbook recipe [Ship a Parser and Keep It Up to
 Date](../cookbook/ship-a-parser.md) shows how to keep generated code in step with the grammar.
