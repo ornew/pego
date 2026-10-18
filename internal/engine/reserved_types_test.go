@@ -50,7 +50,8 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"type A ~ (B, C)\ntype B terminal\ntype C terminal\nrule main = \"a\"", "1:10: tuple types are not supported yet"},
 		{"rule main () = \"a\"", "1:11: tuple types are not supported yet"},
 		{"type T = { F (int,) }\nrule main = \"a\"", "1:14: tuple types are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[Match])", "type arguments of node are not supported yet"},
+		{"rule main = x:\"a\" => $x.(node[Match])", "type arguments of node other than node[string] are not supported yet"},
+		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] are not supported yet"},
 		{"rule main = \"a\" => [](Match, Seq){}", "tuple types are not supported yet"},
 		{"type B terminal\nrule main B[Match] = \"a\"", "type B takes no type arguments"},
 		{"rule main int[Match] = \"a\"", "type int takes no type arguments"},
@@ -95,6 +96,54 @@ func TestReservedTypeSyntax(t *testing.T) {
 				t.Fatalf("%q (NoTypeCheck %v): got %v", src, opts.NoTypeCheck, err)
 			}
 		}
+	}
+}
+
+// node[string] is the type of a string node, in fields, rules and casts, and is checked like one.
+func TestNodeStringType(t *testing.T) {
+	for _, src := range []string{
+		"type P = { K node[string] }\nrule main P = k:[a-z]+ #atomic => P{K: $k}",
+		"rule main node[string] = \"a\"",
+		"rule main = x:\"a\" => $x.(node[string])",
+		"type W = { V int }\ntype T ~ node[string] | W\nrule main T = \"a\"",
+	} {
+		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+			g, err := syntax.Parse(src)
+			if err != nil {
+				t.Fatalf("%q: %v", src, err)
+			}
+			p, err := Compile(g, opts)
+			if err != nil {
+				t.Fatalf("%q (NoTypeCheck %v): %v", src, opts.NoTypeCheck, err)
+			}
+			if _, err := p.Parse("main", "a"); err != nil {
+				t.Fatalf("%q (NoTypeCheck %v): parse: %v", src, opts.NoTypeCheck, err)
+			}
+		}
+	}
+	// A value that is not a string node does not fit: statically, and in a cast at run time.
+	for _, tc := range []struct{ src, want string }{
+		{"type P = { K node[string] }\nrule main P = k:(\"a\" \"b\") => P{K: $k}", "cannot use"},
+		{"rule main node[string] = \"a\" \"b\"", "not assignable"},
+	} {
+		g, err := syntax.Parse(tc.src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
+		}
+	}
+	g, err := syntax.Parse("rule main = k:(\"a\" \"b\") => $k.(node).(node[string])")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Parse("main", "ab"); err == nil {
+		t.Fatal("a tuple node was accepted as node[string] at run time")
 	}
 }
 

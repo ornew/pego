@@ -16,6 +16,7 @@ offending construct.
 | `string` | A string. `len` measures its length in the [position unit](parsing.md#positions). |
 | `bool` | A boolean. |
 | `node` | Any node. |
+| `node[string]` | A string node: the node of a literal, a character class, `.` or an atomic expression. |
 | `terminal` | Any string node: a `Match` node or a node of a terminal type. |
 | `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a `List`, whose list is its `.Value`. |
 | `*T` | A `T` or `nil`. |
@@ -67,7 +68,8 @@ do not compile, also when types are otherwise not checked:
   it.
 - A type application `T[U, ...]` applies a type to type arguments, as in
   `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
-  is reserved to take type arguments; any other type takes none.
+  takes type arguments, and of its applications only `node[string]` is
+  supported; any other type takes none.
 - An unnamed struct type is written with the braces and fields of a struct
   definition, as in `type T ~ { Key Match; Value Match }` or a field of type
   `{ Line int }`. `type T = {...}` remains the way to define a struct type.

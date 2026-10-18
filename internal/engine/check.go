@@ -227,7 +227,11 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 		return tyAny
 	case *grammar.TypeApp:
 		if t.Name == "node" {
-			k.unsupported(t, t.Diagnostic(), "type arguments of node are not supported yet")
+			// node[string] is a string node. Other type arguments wait for tuple types.
+			if len(t.Args) == 1 && k.resolve(t.Args[0]) == tyString {
+				return tyMatch
+			}
+			k.unsupported(t, t.Diagnostic(), "type arguments of node other than node[string] are not supported yet")
 		} else if k.defined(t.Name) {
 			k.resolveNamed(t.Name, t.Diagnostic()) // reports an alias that refers to itself
 			k.unsupported(t, t.Diagnostic(), "type %s takes no type arguments", t.Name)
