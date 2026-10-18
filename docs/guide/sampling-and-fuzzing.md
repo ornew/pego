@@ -261,7 +261,7 @@ if err != nil {
 }
 inputs, err := sample.Generate(p, 5, sample.WithSeed(1))
 if err != nil {
-	log.Fatal(err) // sample.ErrNoInput if nothing was found
+	log.Fatal(err) // wraps sample.ErrNoInput (test with errors.Is) if nothing was found
 }
 for _, in := range inputs {
 	fmt.Printf("%q\n", in)
