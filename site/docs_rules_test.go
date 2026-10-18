@@ -70,7 +70,7 @@ func docKind(rel string) string {
 		return kindOptim
 	case rel == "docs/performance.md", rel == "docs/benchmarks.md":
 		return kindPerf
-	case under(rel, "docs"), rel == "README.md":
+	case under(rel, "docs"), path.Dir(rel) == "." && path.Ext(rel) == ".md":
 		return kindProject
 	}
 	return kindOther
@@ -478,6 +478,10 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 		{"spec/testdata/x.pego", kindOther},
 		{"examples/x.pego", kindOther},
 		{"README.md", kindProject},
+		{"AGENTS.md", kindProject},
+		{"CONTRIBUTING.md", kindProject},
+		{"go.mod", kindOther},
+		{"parsers/README.md", kindOther},
 	} {
 		if got := docKind(c.rel); got != c.want {
 			t.Errorf("docKind(%q) = %s, want %s", c.rel, got, c.want)
