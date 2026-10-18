@@ -29,7 +29,7 @@ func main() {
 
 	err = pego.Walk(root, func(v pego.WalkVisit) (pego.WalkAction, error) {
 		if v.Node != nil {
-			fmt.Printf("%s [%d,%d) depth=%d\n", v.Node.Type(), v.Node.Start, v.Node.End, v.Depth)
+			fmt.Printf("%s [%d,%d) depth=%d\n", v.Node.Kind(), v.Node.Start(), v.Node.End(), v.Depth)
 		}
 		return pego.WalkContinue, nil
 	})
@@ -39,7 +39,7 @@ func main() {
 
 	cursor := pego.Cursor{Root: root, Unit: pego.CodePoints}
 	err = cursor.Range(0, 1, func(v pego.WalkVisit) (pego.WalkAction, error) {
-		fmt.Printf("overlap: %s [%d,%d)\n", v.Node.Type(), v.Node.Start, v.Node.End)
+		fmt.Printf("overlap: %s [%d,%d)\n", v.Node.Kind(), v.Node.Start(), v.Node.End())
 		return pego.WalkContinue, nil
 	})
 	if err != nil {
@@ -54,12 +54,12 @@ func main() {
 ```
 
 ```text
-Seq [0,2) depth=0
-Match [0,1) depth=1
-Match [1,2) depth=1
-overlap: Seq [0,2)
-overlap: Match [0,1)
-{"type":"Seq","rule":"start","start":0,"end":2,"children":[{"type":"Match","start":0,"end":1,"text":"a"},{"type":"Match","start":1,"end":2,"text":"b"}]}
+tuple [0,2) depth=0
+string [0,1) depth=1
+string [1,2) depth=1
+overlap: tuple [0,2)
+overlap: string [0,1)
+{"start":0,"end":2,"value":[{"start":0,"end":1,"value":"a"},{"start":1,"end":2,"value":"b"}]}
 ```
 
 The visit gives you the value reached by the current edge, the node when that value is a node, its parent, its depth
@@ -74,6 +74,6 @@ Use `Node.WriteJSON` instead of `json.Marshal` for very deep results: it writes 
 
 ## Related Topics
 
-- [Reading Trees](reading-trees.md): fields, positions, printing and JSON.
+- [Reading Trees](reading-trees.md): values, positions, printing and JSON.
 - [Output Schemas and Structural Queries](output-schemas-and-queries.md): finding nodes by their shape.
 - [Incremental Parsing](incremental.md): snapshots keep a stable tree while a document changes.

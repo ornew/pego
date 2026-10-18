@@ -466,9 +466,9 @@ printf 'id,name\n1,alice\n2,"bob, jr"\n' | pego parse -g "$csv" -stream -f sexpr
 ```
 
 ```text
-(Record Fields=[Field"id"@field Field"name"@field])
-(Record Fields=[Field"1"@field Field"alice"@field])
-(Record Fields=[Field"2"@field Field"\"bob, jr\""@field])
+Record{Fields: ["id" "name"]}
+Record{Fields: ["1" "alice"]}
+Record{Fields: ["2" "\"bob, jr\""]}
 ```
 
 The same grammar works with `NewDocument` for incremental parsing of an edited text

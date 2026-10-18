@@ -6,7 +6,7 @@ it and what invalid UTF-8 does.
 The examples use `pairs.pego` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -15,15 +15,15 @@ rule value = [0-9]+ #atomic
 rule ws = [ \t\n]*
 ```
 
-Positions can count **Unicode code points** (the default) or **UTF-8 bytes**. The unit affects node `Start` and `End`,
-the `Pos` and `Col` of syntax errors, `startPos` and `endPos` in actions, the `len` builtin, and the ranges of
+Positions can count **Unicode code points** (the default) or **UTF-8 bytes**. The unit affects node `Start()` and `End()`,
+the `Pos` and `Col` of syntax errors, `.Start` and `.End` in actions, the `len` builtin, and the ranges of
 `Document.Edit`. It never changes what matches: matching always proceeds by code point.
 
 ```go
 n, _ := p.Parse("あい=3")
-fmt.Println(n.Children[0].Field("Key").(*pego.Node).End) // 2
+fmt.Println(n.Elem(0).Field("Key").(*pego.Node).End()) // 2
 n, _ = p.Parse("あい=3", pego.WithUnit(pego.Bytes))
-fmt.Println(n.Children[0].Field("Key").(*pego.Node).End) // 6
+fmt.Println(n.Elem(0).Field("Key").(*pego.Node).End()) // 6
 ```
 
 Syntax errors follow the unit, too (the same `あい=x` input, with the error at the `x`):
@@ -46,12 +46,12 @@ pego: 1:8: syntax error: expected [0-9]
 
 Choosing:
 
-- Use **bytes** when you index into the Go string (`input[n.Start:n.End]`), pass positions to other byte-oriented
+- Use **bytes** when you index into the Go string (`input[n.Start():n.End()]`), pass positions to other byte-oriented
   tools, or want to avoid converting offsets. Bytes is the natural unit for Go.
 - Use **code points** (the default) when positions are shown to people as character counts, or are exchanged with a
   system that counts characters (editors and language servers often count UTF-16 units, which neither unit matches).
 - Invalid UTF-8 is read as one U+FFFD character per invalid byte, so positions stay well defined; the decoding rules
-  and their effect on `Match.Text` are in [Positions](../../spec/parsing.md#positions).
+  and their effect on the text of string nodes are in [Positions](../../spec/parsing.md#positions).
 
 The [benchmarks](../benchmarks.md#parsing-time-position-unit-bytes) show almost no speed difference between the units.
 The CLI flag is `-unit codepoints|bytes`.

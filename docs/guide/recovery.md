@@ -7,7 +7,7 @@ to the normative text on [pragmas](../../spec/pragmas.md) (`#recover` and `#miss
 
 Contents:
 
-- [Recovering at the Statement Level](#recovering-at-the-statement-level): `#recover`, `Error` nodes, attribute order
+- [Recovering at the Statement Level](#recovering-at-the-statement-level): `#recover`, error values, attribute order
 - [What Happens to the Errors](#what-happens-to-the-errors): where they go, when they are dropped
 - [Using the Errors from Go](#using-the-errors-from-go): a program that handles every outcome
 - [Do Not Let the Skip Eat the Closer](#do-not-let-the-skip-eat-the-closer)
@@ -33,14 +33,12 @@ it under that name:
 // toy.pego
 package toy
 
-type Name terminal
-type Num terminal
-type Let = { Name Name; Value Expr }
+type Let = { Name node; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
 type Sum = { Left Expr; Right Expr }
-type Expr ~ Name | Num | Sum
-type Stmt ~ Let | Print | Block
+type Expr ~ node | Sum
+type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
@@ -58,8 +56,8 @@ rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (
 rule term Expr = (number / name) @error(message="expected an expression") / group
 rule group Expr = "(" ws e:expr ws ")" @error(message="expected ')'") => $e
 
-rule name Name = [a-z]+
-rule number Num = [0-9]+
+rule name = [a-z]+ #atomic
+rule number = [0-9]+ #atomic
 rule ws = (&[ \t\r\n] .)*
 ```
 
@@ -72,7 +70,7 @@ problems in a file needs the parser to continue. `#recover(skip=e)` turns a fail
 2. If it fails, the syntax error is **recorded** (what would have been the error of the whole parse).
 3. The parser goes back to where the expression **started** and matches `e` there. The input matched by `e` is
    skipped.
-4. The value of the expression becomes an `Error` node that covers the skipped input, and parsing continues after it.
+4. The value of the expression becomes an `error` value that covers the skipped input and holds the recorded message, and parsing continues after it.
 
 If `e` fails, or matches nothing, there is no recovery and the expression fails as usual (so a `#recover` in a
 repetition cannot loop forever on empty skips).
@@ -91,16 +89,17 @@ pego parse -g toy.pego -f sexpr -i $'let a = 1;\nlet = 2;\nprint (a +);\nprint a
 ```
 
 ```text
-(Program Body=[(Let Name=Name"a"@name Value=Num"1"@number) Error"let = 2;"{message=`2:5: expected a name`} Error"print (a +);"{message=`3:11: expected an expression`} Error"print a"{message=`5:1: expected ';'`} (Let Name=Name"b"@name Value=(Sum Left=Name"a"@name Right=Num"1"@number)) (Block Body=[Error"print 1 let c = ;"{message=`6:11: expected ';'`} (Print Value=Num"2"@number)]) (Print Value=Name"b"@name)])
+Program{Body: [Let{Name: "a", Value: "1"} error("2:5: expected a name") error("3:11: expected an expression") error("5:1: expected ';'") Let{Name: "b", Value: Sum{Left: "a", Right: "1"}} Block{Body: [error("6:11: expected ';'") Print{Value: "2"}]} Print{Value: "b"}]}
 pego: 2:5: expected a name
 3:11: expected an expression
 5:1: expected ';'
 6:11: expected ';'
 ```
 
-Four errors are reported from one run, and the tree is complete except at the broken statements, which are `Error`
-nodes in the `Body` list. The type of `stmt` is `Stmt` plus `Error`; `Error` is assignable to every node type, which is
-why `Body []Stmt` can hold it. In JSON, the default output format, an `Error` node looks like this:
+Four errors are reported from one run, and the tree is complete except at the broken statements, which are `error`
+values in the `Body` list. `error` is a built-in type that only recovery produces: the type of `stmt` is
+`Stmt | error`, so the union `Stmt` of this grammar lists `error`, which is why `Body []Stmt` can hold it. In JSON, the
+default output format, an error value looks like this:
 
 ```bash
 pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
@@ -109,45 +108,30 @@ pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
 ```text
 {
   "type": "Program",
-  "start": 0,
-  "end": 18,
   "fields": {
-    "Body": {
-      "type": "List",
-      "start": 0,
-      "end": 17,
-      "children": [
-        {
-          "type": "Error",
-          "start": 0,
-          "end": 8,
-          "text": "let = 2;",
-          "fields": {
-            "message": "1:5: expected a name"
-          }
-        },
-        {
-          "type": "Print",
-          "start": 9,
-          "end": 17,
-          "fields": {
-            "Value": {
-              "type": "Num",
-              "rule": "number",
-              "start": 15,
-              "end": 16,
-              "text": "1"
-            }
+    "Body": [
+      {
+        "start": 0,
+        "end": 8,
+        "error": "1:5: expected a name"
+      },
+      {
+        "type": "Print",
+        "fields": {
+          "Value": {
+            "start": 15,
+            "end": 16,
+            "value": "1"
           }
         }
-      ]
-    }
+      }
+    ]
   }
 }
 pego: 1:5: expected a name
 ```
 
-`start`/`end` delimit the skipped text, and `message` is the recorded error, with its position, as a string.
+`start`/`end` delimit the skipped text, and `error` is the recorded message, with its position, as a string.
 
 Details worth knowing:
 
@@ -174,7 +158,7 @@ pego parse -g order.pego -s good -f sexpr -i 'a;b;a;'
 ```
 
 ```text
-(Seq [(Seq "a" ";")@stmt Error"b;"{message=`1:3: bad statement`} (Seq "a" ";")@stmt])@good
+([("a" ";") error("1:3: bad statement") ("a" ";")])
 pego: 1:3: bad statement
 ```
 
@@ -183,7 +167,7 @@ pego parse -g order.pego -s bad -f sexpr -i 'a;b;a;'
 ```
 
 ```text
-(Seq [(Seq "a" ";")@stmt Error"b;"{message=`1:3: syntax error: expected "a"`} (Seq "a" ";")@stmt])@bad
+([("a" ";") error("1:3: syntax error: expected \"a\"") ("a" ";")])
 pego: 1:3: syntax error: expected "a"
 ```
 
@@ -243,20 +227,22 @@ import (
 	"github.com/ornew/pego"
 )
 
-// errorNodes collects the Error nodes of a tree.
+// errorNodes collects the error values of a tree.
 func errorNodes(n *pego.Node, out *[]*pego.Node) {
 	if n == nil {
 		return
 	}
-	if n.Type() == "Error" {
+	switch n.Kind() {
+	case pego.KindError:
 		*out = append(*out, n)
-		return
-	}
-	for _, c := range n.Children {
-		errorNodes(c, out)
-	}
-	for _, f := range n.Fields {
-		if child, ok := f.Value.(*pego.Node); ok {
+	case pego.KindStruct:
+		for _, v := range n.Fields() {
+			if child, ok := v.(*pego.Node); ok {
+				errorNodes(child, out)
+			}
+		}
+	case pego.KindTuple, pego.KindList, pego.KindTupleValue, pego.KindListValue:
+		for _, child := range n.Elems() {
 			errorNodes(child, out)
 		}
 	}
@@ -296,8 +282,7 @@ func main() {
 			var nodes []*pego.Node
 			errorNodes(node, &nodes)
 			for _, n := range nodes {
-				msg, _ := n.Fields.Get("message")
-				fmt.Printf("  Error node [%d,%d) %q: %v\n", n.Start, n.End, n.Text, msg)
+				fmt.Printf("  error value [%d,%d): %s\n", n.Start(), n.End(), n.Text())
 			}
 		case errors.As(err, &failed):
 			// The parse failed: there is no tree, only the last error.
@@ -312,13 +297,13 @@ func main() {
 
 ```text
 --- "print 1;\n"
-ok: (Program Body=[(Print Value=Num"1"@number)])
+ok: Program{Body: [Print{Value: "1"}]}
 --- "let = 2;\nprint (a +);\nprint 3;\n"
-recovered from 2 error(s); tree: (Program Body=[Error"let = 2;"{message=`1:5: expected a name`} Error"print (a +);"{message=`2:11: expected an expression`} (Print Value=Num"3"@number)])
+recovered from 2 error(s); tree: Program{Body: [error("1:5: expected a name") error("2:11: expected an expression") Print{Value: "3"}]}
   line 1, column 5 (offset 4): expected a name
   line 2, column 11 (offset 19): expected an expression
-  Error node [0,8) "let = 2;": 1:5: expected a name
-  Error node [9,21) "print (a +);": 2:11: expected an expression
+  error value [0,8): 1:5: expected a name
+  error value [9,21): 2:11: expected an expression
 --- "print 1;\n}\n"
 failed: 2:1: syntax error: expected "let", "print", "{", [^;{}\n], end of input (node is nil: true)
   expected=["\"let\"" "\"print\"" "\"{\"" "[^;{}\\n]" "end of input"] messages=[]
@@ -334,13 +319,11 @@ what the `toy.pego` statement rule does if `{}` is not excluded from the skip:
 // toy_greedy.pego
 package toy
 
-type Name terminal
-type Num terminal
-type Let = { Name Name; Value Expr }
+type Let = { Name node; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
-type Expr ~ Name | Num
-type Stmt ~ Let | Print | Block
+type Expr ~ node
+type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
 rule main Program = body:stmts ws $$ => Program{Body: $body}
@@ -352,8 +335,8 @@ rule print Print = "print" ws v:expr ws ";" => Print{Value: $v}
 rule block Block = "{" body:stmts ws "}" @error(message="expected '}'") => Block{Body: $body}
 
 rule expr Expr = number / name
-rule name Name = [a-z]+
-rule number Num = [0-9]+
+rule name = [a-z]+ #atomic
+rule number = [0-9]+ #atomic
 rule ws = (&[ \t\r\n] .)*
 ```
 
@@ -362,7 +345,7 @@ pego parse -g toy_greedy.pego -f sexpr -i $'{ print 1; }\nprint 2;\n'
 ```
 
 ```text
-(Program Body=[Error"{ print 1;"{message=`3:1: expected '}'`} Error"}"{message=`1:12: syntax error: expected "let", "print", "{"`} (Print Value=Num"2"@number)])
+Program{Body: [error("3:1: expected '}'") error("1:12: syntax error: expected \"let\", \"print\", \"{\"") Print{Value: "2"}]}
 pego: 3:1: expected '}'
 1:12: syntax error: expected "let", "print", "{"
 ```
@@ -380,16 +363,18 @@ Use `#missing` on a nonempty literal when an editor needs a tree even though tha
 token is absent. In a Closure whole-input parse, `pego.WithMissingTokens(n)`
 enables up to `n` insertion attempts for that call. Without the option, the
 literal remains strict. For example, `rule main = "name" ";" #missing $$`
-parses `name` with a zero-width `Missing` node at EOF and returns a recovered
-`SyntaxErrors` value. Its `expected` field holds `;`; its `message` field holds
-the diagnostic. The node's `Text` is empty because no semicolon was read.
+parses `name` with a zero-width `error` value at EOF and returns a recovered
+`SyntaxErrors` value. The value records the expected token `;` and the
+diagnostic, and its `Text()` returns the diagnostic message. A literal with
+`#missing` has the type `A | error`, where `A` is the type of the literal, so no
+semicolon was read and the value is not a string.
 
 The limit counts abandoned attempts too. Exhaustion returns
 `*pego.MissingTokenLimitError` with no tree. VM backends, generated parsers,
 Document, streams and compiled grammar serialization do not support this
 initial feature. The budget includes abandoned attempts and left-recursion seed
 replay, so a limit of 16 does not guarantee acceptance of a tree with 16 missing
-nodes. `Missing` is a reserved type name. The [pragma
+nodes. The [pragma
 specification](../../spec/pragmas.md#missing) defines the full contract.
 
 ## Recipes
@@ -412,11 +397,11 @@ pego parse -g toy.pego -f sexpr -i $'let x = (1 + 2;\nprint x;\n'
 ```
 
 ```text
-(Program Body=[Error"let x = (1 + 2;"{message=`1:15: expected ')'`} (Print Value=Name"x"@name)])
+Program{Body: [error("1:15: expected ')'") Print{Value: "x"}]}
 pego: 1:15: expected ')'
 ```
 
-The same holds inside a block: the broken statement becomes an `Error` node, and the statements after it, up to the
+The same holds inside a block: the broken statement becomes an `error` value, and the statements after it, up to the
 block's own `}`, are parsed normally.
 
 ```bash
@@ -424,7 +409,7 @@ pego parse -g toy.pego -f sexpr -i $'{ print (1; let y = 2;\n  print 3;\n}\n'
 ```
 
 ```text
-(Program Body=[(Block Body=[Error"print (1;"{message=`1:11: expected ')'`} (Let Name=Name"y"@name Value=Num"2"@number) (Print Value=Num"3"@number)])])
+Program{Body: [Block{Body: [error("1:11: expected ')'") Let{Name: "y", Value: "2"} Print{Value: "3"}]}]}
 pego: 1:11: expected ')'
 ```
 
@@ -469,11 +454,9 @@ grammar has assignments and `if` blocks:
 // blocks.pego
 package blocks
 
-type Name terminal
-type Num terminal
-type Assign = { Name Name; Value Num }
-type If = { Test Name; Body []Stmt }
-type Stmt ~ Assign | If
+type Assign = { Name node; Value node }
+type If = { Test node; Body []Stmt }
+type Stmt ~ Assign | If | error
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
 rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => x.$s)
@@ -491,8 +474,8 @@ rule skip_line = [^\n]+ deeper_line*
 rule deeper_line = "\n" blank* s:spaces {len($s) > indent} [^\n]+
 
 rule spaces = " "* #atomic
-rule name Name = [a-z]+ #atomic
-rule num Num = [0-9]+ #atomic
+rule name = [a-z]+ #atomic
+rule num = [0-9]+ #atomic
 rule eol = "\n" / $$
 rule blank = [ \t]* "\n"
 ```
@@ -502,11 +485,11 @@ pego parse -g blocks.pego -f sexpr -i $'if x:\n    y = 1\n    z = = 2\n        w
 ```
 
 ```text
-[(If Body=[(Assign Name=Name"y"@name Value=Num"1"@num) Error"z = = 2\n        w = 3"{message=`3:9: syntax error: expected [0-9]`} (Assign Name=Name"v"@name Value=Num"4"@num)] Test=Name"x"@name) (Assign Name=Name"u"@name Value=Num"5"@num)]
+[If{Body: [Assign{Name: "y", Value: "1"} error("3:9: syntax error: expected [0-9]") Assign{Name: "v", Value: "4"}], Test: "x"} Assign{Name: "u", Value: "5"}]
 pego: 3:9: syntax error: expected [0-9]
 ```
 
-The broken line and its more indented continuation became one `Error` node; `v = 4` and `u = 5` were parsed normally,
+The broken line and its more indented continuation became one `error` value; `v = 4` and `u = 5` were parsed normally,
 each in its own block. A broken header takes its body with it:
 
 ```bash
@@ -514,7 +497,7 @@ pego parse -g blocks.pego -f sexpr -i $'if x\n    y = 1\nu = 5\n'
 ```
 
 ```text
-[Error"if x\n    y = 1"{message=`1:5: syntax error: expected ":", [a-z]`} (Assign Name=Name"u"@name Value=Num"5"@num)]
+[error("1:5: syntax error: expected \":\", [a-z]") Assign{Name: "u", Value: "5"}]
 pego: 1:5: syntax error: expected ":", [a-z]
 ```
 
@@ -530,8 +513,8 @@ and let `skip` stop in front of the separator and the closing bracket, so that n
 // list.pego
 package nums
 
-type Num terminal
-type Numbers = { Items []Num }
+type Item ~ node | error
+type Numbers = { Items []Item }
 
 rule main Numbers = ws l:list ws $$ => $l
 
@@ -539,9 +522,9 @@ rule list Numbers = "[" ws xs:items? ws "]" @error(message="expected ',' or ']'"
 rule items = first:item rest:(-ws "," -ws i:item)* => concat(list($first), map($rest, (r) => r.$i))
 
 // A bad element is skipped up to (not including) the next "," or "]".
-rule item Num = n:number @error(message="expected a number") #recover(skip=[^,\]\n]+) => $n
+rule item Item = n:number @error(message="expected a number") #recover(skip=[^,\]\n]+) => $n
 
-rule number Num = [0-9]+
+rule number = [0-9]+ #atomic
 rule ws = (&[ \t\n] .)*
 ```
 
@@ -550,7 +533,7 @@ pego parse -g list.pego -f sexpr -i '[1, x, 3, y z]'
 ```
 
 ```text
-(Numbers Items=[Num"1"@number Error"x"{message=`1:5: expected a number`} Num"3"@number Error"y z"{message=`1:11: expected a number`}])
+Numbers{Items: ["1" error("1:5: expected a number") "3" error("1:11: expected a number")]}
 pego: 1:5: expected a number
 1:11: expected a number
 ```

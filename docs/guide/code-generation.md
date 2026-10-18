@@ -45,7 +45,7 @@ change what your code sees. The test suite checks this for every grammar in `exa
 A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -119,14 +119,14 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(node)
-	for _, pair := range node.Children {
+	for _, pair := range node.Elems() {
 		key := pair.Field("Key").(*pairsparser.Node)
-		fmt.Printf("%s %q at %d-%d\n", pair.Type(), key.Text, key.Start, key.End)
+		fmt.Printf("%s %q at %d-%d\n", pair.Type(), key.Text(), key.Start(), key.End())
 	}
 
 	// Positions in UTF-8 bytes.
 	node, _ = pairsparser.Parse("あい=3", pairsparser.WithUnit(pairsparser.Bytes))
-	fmt.Println(node.Children[0].End)
+	fmt.Println(node.Elem(0).End())
 
 	// Any rule can be the start rule.
 	node, err = pairsparser.ParseRule("key", "abc")
@@ -145,14 +145,14 @@ func main() {
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 Pair "abc" at 0-3
 Pair "あい" at 8-10
 8
-"abc"@key <nil>
+"abc" <nil>
 rule nope is not defined
 true 1 5 [[0-9]] 1:5: syntax error: expected [0-9]
-{"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
+{"start":0,"end":3,"value":"abc"}
 ```
 
 The output is exactly what the engine prints for the same grammar and input.
@@ -371,7 +371,7 @@ and inputs that exercise each feature of your grammar.
 
 - **Speed.** In the current [benchmark results](../benchmarks.md), generated Go takes 0.41–0.60× closure time in
   CodePoints and 0.47–0.62× in Bytes across eight workloads. Direct `ParseAST` values take 0.63–1.02× generated
-  `Parse` time; conversion workloads that include CST nodes can take longer. Standard-library comparisons produce
+  `Parse` time; conversion workloads that include generic nodes can take longer. Standard-library comparisons produce
   different outputs and remain faster where they apply. These measurements are from one machine and commit; run
   `go run ./bench/report` to measure yours.
 - **Binary and repository size.** Each generated parser adds tens of kilobytes of source (see the sizes above) that
@@ -432,10 +432,10 @@ func Pairs(input string) ([]Pair, error) {
 		return nil, err
 	}
 	var out []Pair
-	for _, n := range node.Children {
+	for _, n := range node.Elems() {
 		out = append(out, Pair{
-			Key:   n.Field("Key").(*pairsparser.Node).Text,
-			Value: n.Field("Value").(*pairsparser.Node).Text,
+			Key:   n.Field("Key").(*pairsparser.Node).Text(),
+			Value: n.Field("Value").(*pairsparser.Node).Text(),
 		})
 	}
 	return out, nil

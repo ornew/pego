@@ -9,7 +9,7 @@ can write a grammar; the [language specification](../../spec/README.md) defines 
 All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs separated by optional semicolons:
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -80,7 +80,7 @@ func main() {
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
 Embedding the grammar with `go:embed` keeps it in a real `.pego` file that `pego fmt` and `pego parse` can also use.
@@ -149,7 +149,7 @@ fmt.Println(n, err)
 rule main =  word $$
 
 rule word =  [a-z]+ #atomic
-(Seq "hello"@word)@main <nil>
+("hello") <nil>
 ```
 
 `grammar.Format` prints an AST as PEGO source, which is a quick way to check what you built. A hand-built grammar goes
@@ -216,7 +216,7 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error)
 |:--|:--|
 | `node, nil` | The input matched. |
 | `nil, *pego.SyntaxError` | The input does not match. The error holds the farthest position reached and what was expected there. |
-| `node, pego.SyntaxErrors` | The input matched after recovering from errors with `#recover`. The tree contains `Error` nodes. See [Recovering from Errors](recovery.md). |
+| `node, pego.SyntaxErrors` | The input matched after recovering from errors with `#recover`. The tree contains `error` values. See [Recovering from Errors](recovery.md). |
 | `nil, error` | Anything else that stops the parse: a run-time error in an action (such as `action in main: division by zero`), or exceeding the [nesting limit](backends.md#deep-nesting-and-withmaxdepth). These are plain errors, not syntax errors, and they are not subject to backtracking. |
 
 ```go

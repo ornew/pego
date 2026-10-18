@@ -46,7 +46,7 @@ the byte endpoint still refers to the original source.
 
 The example's action returns only `é😀`, but the rule consumes the following
 `!` too. The consumption fields come from the parser cursor, independently of
-`Node.Start` and `Node.End`. Actions can return nil, and recognition builds no
+`Node.Start()` and `Node.End()`. Actions can return nil, and recognition builds no
 node. Neither implies that parsing failed or consumed zero input. A nullable
 rule can succeed with zero consumption.
 

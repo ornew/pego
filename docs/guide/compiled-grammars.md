@@ -21,7 +21,7 @@ it costs and saves, how files stay compatible between releases, and when to use 
 The examples use the grammar `pairs.pego` of the [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -40,7 +40,7 @@ pego parse -g pairs.pegoc -f sexpr -i 'abc=12; あい=3'
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
 The start rule is saved with the grammar (`-s` chooses a rule other than `main`), and `pego parse`, `pego compile` and
@@ -52,7 +52,7 @@ pego parse -g pair.pegoc -f sexpr -i 'abc=12'
 ```
 
 ```text
-(Pair Key="abc"@key Value="12"@value)
+Pair{Key: "abc", Value: "12"}
 ```
 
 ```bash
@@ -60,7 +60,7 @@ pego parse -g pair.pegoc -s main -f sexpr -i 'abc=12; x=1'
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="x"@key Value="1"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "x", Value: "1"}]
 ```
 
 In Go, `Parser.MarshalBinary` returns the bytes and `pego.LoadParser` restores the parser, with the saved start rule:
@@ -71,7 +71,7 @@ data, err := p.MarshalBinary() // bytecode, grammar AST and start rule
 
 q, err := pego.LoadParser(data)
 node, err := q.Parse("abc=12")
-fmt.Println(node, err) // [(Pair Key="abc"@key Value="12"@value)] <nil>
+fmt.Println(node, err) // [Pair{Key: "abc", Value: "12"}] <nil>
 ```
 
 A few more facts:
@@ -153,7 +153,7 @@ n, err := q.Parse("abc=12", pego.RecognizeOnly()) // a version 3 file carries a 
 fmt.Println(n, err) // <nil> <nil>
 
 node, err := q.Parse("abc=12") // runs on the bytecode backend
-fmt.Println(node, err)         // [(Pair Key="abc"@key Value="12"@value)] <nil>
+fmt.Println(node, err)         // [Pair{Key: "abc", Value: "12"}] <nil>
 ```
 
 ## Size and Load Time
@@ -293,7 +293,7 @@ go run .
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
 `go:embed` needs the file to exist when the package is built, so commit the `.pegoc`. Because a `.pegoc` is binary,
@@ -359,7 +359,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 13 | The bytecode of the value model. Every module and recognition bundle declares it. |
+| Instruction-set version | 13 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
 
 The consequences:
 

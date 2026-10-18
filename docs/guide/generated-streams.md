@@ -8,7 +8,7 @@ fails. This adds a Go `ParseStream` beside the ordinary `Parse`, which still tre
 
 ```go
 err := parser.ParseStream(r, func(n *parser.Node) error {
-	fmt.Println(n.Kind(), n.Text)
+	fmt.Println(n.Kind(), n.Start(), n.End())
 	return nil
 }, parser.WithUnit(parser.Bytes))
 ```
@@ -65,15 +65,15 @@ func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) //
 ```
 
 `ParseStreamAST` behaves like `ParseStream` but passes each element as the value its expression has in the
-[Go type mapping](generated-typed-values.md#mapping-grammar-types-to-go) — a rule's declared type, a union, a list, `*Match`, or `*Node` for a record of
-captures — and the zero value for an element without a value. `StreamValue` is the type of the repeated element,
+[Go type mapping](generated-typed-values.md#mapping-grammar-types-to-go) — a rule's declared type, a union, a list, a `*TNode[T]` or a tuple — and the zero value for an element without a value. `StreamValue` is the type of the repeated element,
 not of the start rule:
 
 ```go
 // rule main = item* #stream
-// rule item Pair = k:[a-z]+ "=" v:[0-9]+ "\n" => Pair{Key: $k, Value: $v}
+// type Pair = { Key string; Value string }
+// rule item Pair = k:[a-z]+ "=" v:[0-9]+ "\n" => Pair{Key: text($k), Value: text($v)}
 err := parser.ParseStreamAST(r, func(p *parser.Pair) error {
-	fmt.Println(p.Key.Text, p.Value.Text)
+	fmt.Println(p.Key, p.Value)
 	return nil
 })
 ```

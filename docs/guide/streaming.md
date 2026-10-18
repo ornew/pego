@@ -46,15 +46,13 @@ function one element at a time, and forgotten.
 ```pego
 package kv
 
-type Pair = { Key Key; Value Value }
-type Key terminal
-type Value terminal
+type Pair = { Key node; Value node }
 
 rule main = pair* #stream $$
 
 rule pair Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
-rule key Key = [a-z_]+ #atomic
-rule value Value = [0-9]+ #atomic
+rule key = [a-z_]+ #atomic
+rule value = [0-9]+ #atomic
 ```
 
 From the command line, `pego parse -stream` prints one line per element (JSON by default, `-f sexpr` for
@@ -65,8 +63,8 @@ printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
 ```
 
 ```text
-{"type":"Pair","start":0,"end":4,"fields":{"Key":{"type":"Key","rule":"key","start":0,"end":1,"text":"a"},"Value":{"type":"Value","rule":"value","start":2,"end":3,"text":"1"}}}
-{"type":"Pair","start":4,"end":10,"fields":{"Key":{"type":"Key","rule":"key","start":4,"end":6,"text":"bb"},"Value":{"type":"Value","rule":"value","start":7,"end":9,"text":"22"}}}
+{"type":"Pair","fields":{"Key":{"start":0,"end":1,"value":"a"},"Value":{"start":2,"end":3,"value":"1"}}}
+{"type":"Pair","fields":{"Key":{"start":4,"end":6,"value":"bb"},"Value":{"start":7,"end":9,"value":"22"}}}
 pego: 3:5: syntax error: expected [0-9]
 ```
 
@@ -84,15 +82,13 @@ import (
 
 const grammar = `package kv
 
-type Pair = { Key Key; Value Value }
-type Key terminal
-type Value terminal
+type Pair = { Key node; Value node }
 
-rule main =  pair* #stream $$
+rule main = pair* #stream $$
 
-rule pair Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
-rule key Key =  [a-z_]+ #atomic
-rule value Value =  [0-9]+ #atomic `
+rule pair Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key = [a-z_]+ #atomic
+rule value = [0-9]+ #atomic `
 
 func main() {
 	p, err := pego.CompileSource(grammar, "main")
@@ -103,7 +99,7 @@ func main() {
 	err = p.ParseStream(os.Stdin, func(n *pego.Node) error {
 		key := n.Field("Key").(*pego.Node)
 		value := n.Field("Value").(*pego.Node)
-		fmt.Printf("[%d,%d) %s = %s\n", n.Start, n.End, key.Text, value.Text)
+		fmt.Printf("[%d,%d) %s = %s\n", n.Start(), n.End(), key.Text(), value.Text())
 		return nil
 	})
 	if err != nil {
@@ -154,16 +150,16 @@ The example assumes `p`, `reader` and `consume` are in scope. Repeated calls to 
 ## What Is Emitted, and When
 
 - **One element per iteration.** The element is the value one iteration of the repetition contributes to the `List` of
-  an ordinary parse: a struct node if the element is a rule with an action, a CST node (`Seq`, `Match`, ...) otherwise.
-  If the element has no value (for example `(-"a")* #stream`) your function receives a `nil` node, so check for `nil`
-  if your elements can be value-free.
+  an ordinary parse: a struct if the element is a rule with an action, a node of the element's value (a tuple, a list, a
+  string, ...) otherwise. If the element has no value (for example `(-"a")* #stream`) your function receives a node whose
+  value is the empty tuple `()`, so check `Len()` if your elements can be value-free.
 - **As soon as it matches.** The callback runs in the middle of the parse, before the parser tries the next element.
   A slow callback slows the parse, and it also stops reading: nothing is read from the `io.Reader` while your function
   runs.
 - **Only the elements.** `ParseStream` returns just an `error`: there is no tree, and the elements are not collected
   into the repetition's `List`. The values of whatever comes before or after the repetition (a header, a footer) are
   parsed and checked, but thrown away. To see a header, make it an element of the
-  repetition and tell the kinds of element apart by the type of the node in the callback.
+  repetition and tell the kinds of element apart by the `Kind()` and `Type()` of the node in the callback.
 - **An element is final.** Once the callback has seen an element, the parser never goes back before it. This is why the
   grammar must say where the cut points are with `#stream`: PEG backtracks, and without such a promise no part of the
   result is final until the end of the input. The corollary is that **what you receive is provisional until
@@ -209,7 +205,7 @@ func run(grammar string, chunks ...string) {
 		pw.Close()
 	}()
 	err = p.ParseStream(pr, func(n *pego.Node) error {
-		fmt.Printf("%4dms  element [%d,%d)\n", time.Since(start).Milliseconds()/100*100, n.Start, n.End)
+		fmt.Printf("%4dms  element [%d,%d)\n", time.Since(start).Milliseconds()/100*100, n.Start(), n.End())
 		return nil
 	})
 	fmt.Println("        err:", err)
@@ -276,14 +272,14 @@ Misplaced `#stream` pragmas are compile errors; the specification lists them und
 
 ## Positions and Text
 
-`Node.Start` and `Node.End`, `startPos` and `endPos` in actions, `SyntaxError.Pos`, `Line` and `Col` all count from the
+`Node.Start()` and `Node.End()`, `.Start` and `.End` in actions, `SyntaxError.Pos`, `Line` and `Col` all count from the
 start of the whole input, whichever part has been dropped (the parser keeps a running line and column for the dropped
 part). `WithUnit(pego.Bytes)` switches all of them to bytes: the `!` in `éé!` is at column 3 counted in code points and at
 column 5 counted in bytes.
 
-The parser does not keep text for you. Terminal nodes (`Match`, terminal types, `(...) #atomic`) carry their text in `Node.Text`;
-structural nodes (`Seq`, `List`) do not, and by the time your callback runs the input of an element is already being
-discarded. If you need the raw text of an element, capture it as a terminal in the grammar. For the same reason,
+The parser does not keep text for you. String nodes (literals, character classes, `(...) #atomic`) carry their text, which
+`Node.Text()` returns; tuple and list nodes do not, and by the time your callback runs the input of an element is already
+being discarded. If you need the raw text of an element, make it a string node in the grammar, for example with `#atomic`. For the same reason,
 `text(...)` in an action of the start rule, which runs after the elements have gone, returns only the part of the
 node's input that is still held (possibly `""`).
 
@@ -327,7 +323,7 @@ func main() {
 	lines := compile(`rule main =  line* #stream $$
 rule line =  [a-z0-9]+ #atomic "\n" `)
 	print := func(n *pego.Node) error {
-		fmt.Printf("  element [%d,%d)\n", n.Start, n.End)
+		fmt.Printf("  element [%d,%d)\n", n.Start(), n.End())
 		return nil
 	}
 
@@ -388,10 +384,10 @@ reader error:
   element [3,6)
   errors.Is(err, errReset): true
 recovered errors:
-  element (Seq "a"@name "=" "1"@num "\n")@entry
-  element Error"b=x\n"{message=`2:3: syntax error: expected [0-9]`}@entry
-  element (Seq "c"@name "=" "3"@num "\n")@entry
-  element Error"d\n"{message=`4:2: syntax error: expected "=", [a-z]`}@entry
+  element ("a" "=" "1" "\n")
+  element error("2:3: syntax error: expected [0-9]")
+  element ("c" "=" "3" "\n")
+  element error("4:2: syntax error: expected \"=\", [a-z]")
   recovered: 2:3: syntax error: expected [0-9]
   recovered: 4:2: syntax error: expected "=", [a-z]
 ```
@@ -406,7 +402,7 @@ recovered errors:
 3. **The reader fails.** Any error from `Read` other than `io.EOF` is returned as it is. Elements completed before it are
    delivered; an element cut in two by the failure is not.
 4. **Recovered errors.** With [`#recover`](../../spec/pragmas.md#recover) inside the element, a bad element becomes
-   an `Error` node (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
+   an error value (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
    recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. By default all recovered
    errors are kept until the end, so a very large input with an error on every line holds one `SyntaxError` per line.
@@ -466,8 +462,8 @@ time for memory, and the memory is bounded by the working set rather than by the
 The nodes handed to you are allocated in chunks, and a chunk stays reachable while anything in it is. The parser starts
 new chunks at element boundaries from time to time, so the elements you drop do not stay reachable through chunks shared
 with later ones. To check the working set of your own grammar, count what is still reachable after a forced garbage
-collection. This program does that for two grammars over the same input: one whose elements are CST nodes with
-captures, and one whose element rule has an action:
+collection. This program does that for two grammars over the same input: one whose element rule has no action and
+builds a tuple node, and one whose element rule has an action:
 
 ```go
 package main
@@ -481,17 +477,15 @@ import (
 	"github.com/ornew/pego"
 )
 
-// Two grammars for the same input: the elements are either CST nodes or struct nodes built by an action.
+// Two grammars for the same input: the elements are either tuple nodes or structs built by an action.
 var grammars = map[string]string{
 	"cst": `rule main =  item* #stream $$
 rule item =  ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" `,
-	"action": `type Pair = { Key Key; Value Value }
-type Key terminal
-type Value terminal
-rule main =  item* #stream $$
-rule item Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
-rule key Key =  [a-z]+ #atomic
-rule value Value =  [0-9]+ #atomic `,
+	"action": `type Pair = { Key node; Value node }
+rule main = item* #stream $$
+rule item Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic `,
 }
 
 // repeat is an io.Reader that yields n copies of line without holding them in memory.

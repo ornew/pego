@@ -41,8 +41,8 @@ grammars use direct typed matching with a private memo and fresh invocation aren
 cloned so later parses cannot overwrite prior results and caller mutation cannot change private memo values or
 later results. Results preserve cycles, aliases and repeated references to the same slice view, but not slice
 capacity or arbitrary overlapping views. Other grammars use the existing Node Document and convert its final
-result on each call; CST `Node` members may share the mutable Document graph, so call `Node.Clone` when a detached
-tree is needed. The conversion fallback applies to `any`/CST results, struct fields requiring PEGO nodes, or actions
+result on each call; generic `Node` members may share the mutable Document graph, so call `Node.Clone` when a detached
+tree is needed. The conversion fallback applies to `any` and node results, struct fields requiring PEGO nodes, or actions
 and predicates that read struct fields.
 
 ## Diagnostics, Limits and Combinations

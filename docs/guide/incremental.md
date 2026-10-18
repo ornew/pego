@@ -18,7 +18,7 @@ An engine `Document` works with every backend ([Runtime](running-parsers.md)) an
 not work with `RecognizeOnly` (`NewDocument` returns an error). Standalone generated Go parsers support an opt-in
 Document with the [`-document` option](generated-documents.md). With `-types`, they
 also expose `Document.ParseAST`: eligible grammars use direct typed incremental matching, while other results use
-the existing Node conversion path. Returned typed values belong to that invocation, though CST Node members may
+the existing Node conversion path. Returned typed values belong to that invocation, though Node members may
 share the mutable Document graph. The model, history APIs, performance examples and recipes in these guides describe the engine
 Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` and `Node.Clone`, without the engine's
 `EditBatch`, `Version`, `Unit`, `Snapshot`, `CacheStats` or `ResetHistory` controls. Its `Stats` exposes only
@@ -111,7 +111,7 @@ node, err := doc.Parse()
 The example assumes `doc` and the `pego` import are already in scope. The insertion at 3 is interpreted against the original text, even though the earlier replacement is also in the batch.
 
 Piece-backed storage is internal to `Document`; batch parsing and streaming keep
-their contiguous input paths. `Document.Text()` and `Node.Text` keep their
+their contiguous input paths. `Document.Text()` and `Node.Text()` keep their
 existing meanings. CodePoints initialization decodes and normalizes input, so
 that inspected work is charged. For Bytes, a large immutable input may be kept
 as an original string-backed piece without scanning or copying it; zero
@@ -251,11 +251,11 @@ func main() {
 ```
 
 ```text
-first parse                  {Evaluated:5 Reused:0}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["c" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
-parse again                  {Evaluated:0 Reused:1}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["c" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
-edit inside line 2           {Evaluated:2 Reused:3}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
-insert a line at the start   {Evaluated:2 Reused:4}  (Seq [(Seq ["z" "z"] "\n")@line (Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
-delete it again              {Evaluated:0 Reused:1}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
+first parse                  {Evaluated:5 Reused:0}  ([(["a" "b"] "\n") (["c" "d"] "\n") (["e" "f"] "\n")])
+parse again                  {Evaluated:0 Reused:1}  ([(["a" "b"] "\n") (["c" "d"] "\n") (["e" "f"] "\n")])
+edit inside line 2           {Evaluated:2 Reused:3}  ([(["a" "b"] "\n") (["x" "d"] "\n") (["e" "f"] "\n")])
+insert a line at the start   {Evaluated:2 Reused:4}  ([(["z" "z"] "\n") (["a" "b"] "\n") (["x" "d"] "\n") (["e" "f"] "\n")])
+delete it again              {Evaluated:0 Reused:1}  ([(["a" "b"] "\n") (["x" "d"] "\n") (["e" "f"] "\n")])
 break line 1                 {Evaluated:2 Reused:0}  error: 1:2: syntax error: expected "\n", [a-z]
 ```
 
@@ -305,8 +305,8 @@ rule line =  [a-z]+ "\n" `, "main")
 	before := js(t1)
 	d.Edit(0, 0, "zzzz\n")
 	t2, _ := d.Parse()
-	l1, l2 := t1.Children[0].Children, t2.Children[0].Children
-	fmt.Println("line 50 shared:", l1[50] == l2[51], "now starts at", l2[51].Start)
+	l1, l2 := t1.Elem(0), t2.Elem(0)
+	fmt.Println("line 50 shared:", l1.Elem(50) == l2.Elem(51), "now starts at", l2.Elem(51).Start())
 	fmt.Println("earlier tree unchanged:", js(t1) == before)
 	fmt.Println("snapshot unchanged:", js(snapshot) == before)
 }
@@ -318,7 +318,7 @@ earlier tree unchanged: false
 snapshot unchanged: true
 ```
 
-Pointer comparison tells which nodes the new tree reused from the old one (`l1[50] == l2[51]`); compare `Start`, `End`
+Pointer comparison tells which nodes the new tree reused from the old one (`l1.Elem(50) == l2.Elem(51)`); compare `Start()`, `End()`
 and content to see what else is the same. After the next `Parse`, an earlier tree is a mix: the nodes the new tree
 reused are at their new positions, the others at their old ones, so a child can even lie outside its parent's range.
 Use it only for such comparisons, or keep a `Clone`, which copies the whole tree (keeping subtrees shared within it

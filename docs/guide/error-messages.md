@@ -162,7 +162,7 @@ input is read.
 |:--|:--|:--|
 | The input matches | the tree | `nil` |
 | The input does not match | `nil` | a `*pego.SyntaxError` |
-| The parse recovered with `#recover` or an enabled `#missing` | the tree, with `Error` or `Missing` nodes | `pego.SyntaxErrors`, a list of `*pego.SyntaxError` |
+| The parse recovered with `#recover` or an enabled `#missing` | the tree, with `error` values | `pego.SyntaxErrors`, a list of `*pego.SyntaxError` |
 | An action failed at run time (for example, reading a field the node does not have) | `nil` | an ordinary error, not a syntax error |
 
 The last row is not subject to backtracking or recovery: it aborts the parse. A `*SyntaxError` has these fields:
@@ -183,7 +183,7 @@ Things to keep in mind:
 - With recovery, `err != nil` does **not** mean that there is no tree. A caller that does `if err != nil { return err }`
   throws the tree away; check for `SyntaxErrors` first if you want the tree.
 - `SyntaxErrors` is a slice type, so `errors.As` needs a variable of that type, not a pointer type.
-- The `message` field of an `Error` or `Missing` node is the formatted string `line:col: text`. The structured data (`Line`, `Col`,
+- The message of an `error` value (`Node.Text()`) is the formatted string `line:col: text`. The structured data (`Line`, `Col`,
   `Expected`) is only in the `SyntaxErrors` that `Parse` returns.
 - `Parser.ParseStream` and `Document.Parse` report consuming recovery errors in the same way; `#missing` is not supported
   by those entry points. With the `RecognizeOnly` option there is no
@@ -198,8 +198,8 @@ and improves its errors step by step. The first version has the usual whitespace
 // toy.pego
 package toy
 
-type Name terminal
-type Num terminal
+type Name = { Text string }
+type Num = { Text string }
 type Let = { Name Name; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
@@ -220,8 +220,8 @@ rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (
 rule term Expr = number / name / group
 rule group Expr = "(" ws e:expr ws ")" => $e
 
-rule name Name = [a-z]+
-rule number Num = [0-9]+
+rule name Name = t:([a-z]+ #atomic) => Name{Text: text($t)}
+rule number Num = t:([0-9]+ #atomic) => Num{Text: text($t)}
 rule ws = [ \t\r\n]*
 ```
 
@@ -230,7 +230,7 @@ pego parse -g toy.pego -f sexpr -i 'let x = 1 + 2;'
 ```
 
 ```text
-(Program Body=[(Let Name=Name"x"@name Value=(Sum Left=Num"1"@number Right=Num"2"@number))])
+Program{Body: [Let{Name: Name{Text: "x"}, Value: Sum{Left: Num{Text: "1"}, Right: Num{Text: "2"}}}]}
 ```
 
 ```bash

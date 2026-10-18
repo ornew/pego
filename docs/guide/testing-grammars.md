@@ -36,7 +36,7 @@ The examples use `pairs.pego` of the [Running Parsers](running-parsers.md), whic
 semicolons and whitespace:
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -96,9 +96,9 @@ var parser = func() *pego.Parser {
 
 func TestAccepts(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"a=1", `[(Pair Key="a"@key Value="1"@value)]`},
-		{"abc=12; あい=3", `[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]`},
-		{" \n a=1 \n b=2", `[(Pair Key="a"@key Value="1"@value) (Pair Key="b"@key Value="2"@value)]`},
+		{"a=1", `[Pair{Key: "a", Value: "1"}]`},
+		{"abc=12; あい=3", `[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]`},
+		{" \n a=1 \n b=2", `[Pair{Key: "a", Value: "1"} Pair{Key: "b", Value: "2"}]`},
 	} {
 		node, err := parser.Parse(tc.in)
 		if err != nil {
@@ -223,7 +223,7 @@ cat testdata/basic.golden testdata/error.golden
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 error: 2:3: syntax error: expected [0-9]
 ```
 
@@ -234,14 +234,14 @@ A change that matters shows up as a failure, here after narrowing the `key` rule
     --- FAIL: TestGolden/basic (0.00s)
         golden_test.go:43: testdata/basic.txt differs from testdata/basic.golden (go test -update rewrites it; review the diff)
              got: error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
-            want: [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+            want: [Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
 Notes:
 
 - Golden tests are only as good as the review of `-update`. Read the diff: a golden file that is regenerated without
   looking proves nothing.
-- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and the
+- Print what you care about. `node.String()` has no positions; `json.MarshalIndent(node, "", "  ")` has them (and, when the parser is compiled with `pego.WithSourceInfo()`, the
   rule of each node), at the price of larger files. A grammar with `#recover` should also print the recovered errors
   (`var recovered pego.SyntaxErrors; errors.As(err, &recovered)`): a parse can return a tree and an error together.
 - Keep a few inputs that **fail**, with the error in the golden file. Error messages are part of a parser's interface.
@@ -303,7 +303,7 @@ Backend overrides inherit optional goldens from `expect`. Use `clear` to suppres
 
 ```json
 {
-  "expect": {"outcome": "rejected", "node": {"type": "Root"}, "start": 0, "end": 1},
+  "expect": {"outcome": "rejected", "node": {"start": 0, "end": 1, "value": "a"}, "start": 0, "end": 1},
   "byBackend": {"bytecode": {"clear": ["node", "start", "end"]}}
 }
 ```
@@ -359,24 +359,30 @@ func checkInput(t testing.TB, in string) {
 	checkNode(t, in, node, 0, len(in))
 }
 
-// checkNode checks that a node lies within its parent and that a terminal's text is the input it covers.
+// checkNode checks that a node lies within its parent and that a string node's text is the input it covers.
 func checkNode(t testing.TB, in string, n *pego.Node, lo, hi int) {
 	t.Helper()
 	if n == nil {
 		return
 	}
-	if int(n.Start) < lo || n.Start > n.End || int(n.End) > hi {
-		t.Fatalf("%q: node %s covers [%d,%d), outside [%d,%d)", in, n, n.Start, n.End, lo, hi)
+	switch n.Kind() {
+	case pego.KindTupleValue, pego.KindListValue, pego.KindValue:
+		// Built by an action, without a range of its own: the elements lie in the enclosing range.
+	default:
+		if n.Start() < lo || n.Start() > n.End() || n.End() > hi {
+			t.Fatalf("%q: node %s covers [%d,%d), outside [%d,%d)", in, n, n.Start(), n.End(), lo, hi)
+		}
+		lo, hi = n.Start(), n.End()
 	}
-	if n.IsTerminal() && n.Text != in[n.Start:n.End] {
-		t.Fatalf("%q: terminal %s has text %q, but [%d,%d) is %q", in, n, n.Text, n.Start, n.End, in[n.Start:n.End])
+	if n.Kind() == pego.KindString && n.Text() != in[n.Start():n.End()] {
+		t.Fatalf("%q: string node %s has text %q, but [%d,%d) is %q", in, n, n.Text(), n.Start(), n.End(), in[n.Start():n.End()])
 	}
-	for _, c := range n.Children {
-		checkNode(t, in, c, int(n.Start), int(n.End))
+	for _, c := range n.Elems() {
+		checkNode(t, in, c, lo, hi)
 	}
-	for _, f := range n.Fields {
-		if c, ok := f.Value.(*pego.Node); ok {
-			checkNode(t, in, c, int(n.Start), int(n.End))
+	for _, v := range n.Fields() {
+		if c, ok := v.(*pego.Node); ok {
+			checkNode(t, in, c, lo, hi)
 		}
 	}
 }
@@ -396,10 +402,10 @@ Each check came from a kind of bug:
 | All backends return the same tree and error | A bug in one of the three engines, or an action that depends on something other than its inputs (the three are specified to agree: see the [Choosing a Backend](backends.md)) |
 | `RecognizeOnly` agrees with `Parse` | Recognition and a full parse that diverge: a bug in one of them, or an action that fails at run time (recognition does not run actions) |
 | The error position lies inside the input | Off-by-one positions of errors, most often at the end of input |
-| Every node lies inside its parent, and a terminal's `Text` is the input at its position | Wrong `Start` and `End`, such as a rule that consumes trailing space but reports a range without it |
+| Every node lies inside its parent, and a string node's `Text()` is the input at its position | Wrong `Start` and `End`, such as a rule that consumes trailing space but reports a range without it |
 
 Add the properties of your own grammar. Typical ones: formatting the tree back to text and parsing it again gives the
-same tree; a tree's children come in order of position; every identifier of the tree is a word, not a keyword.
+same tree; the elements of a tree come in order of position; every identifier of the tree is a word, not a keyword.
 
 `RecognizeOnly` does not run actions. If an action can fail at run time (`division by zero`), `Parse` fails and
 recognition succeeds, and the check above fails for the right reason. For such a grammar, compare only the syntax

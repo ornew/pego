@@ -42,7 +42,7 @@ the other side would have built.
 The grammar, `pairs.pego`, is the one of the Go guide:
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -99,15 +99,15 @@ node main.ts   # Node.js 22.18 or later runs TypeScript directly
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 Pair "abc" at 0-3
 Pair "あい" at 8-10
 8
-"abc"@key null
+"abc" null
 rule nope is not defined
 1 5 [ '[0-9]' ] 1:5: syntax error: expected [0-9]
-{"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
-{"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
+{"start":0,"end":3,"value":"abc"}
+{"start":0,"end":3,"value":"abc"}
 ```
 
 Apart from the formatting of `console.log`, this is what the Go program of the [Go guide](code-generation.md#quick-start)
@@ -220,13 +220,23 @@ project settings. Exclude it from linters and formatters: it starts with `/* esl
 
 ## Typed Values
 
-Add `-types` to generation to export a declaration for every grammar struct,
-terminal and alias, plus `parseAST` and `parseASTWithOptions`. They parse the
+Add `-types` to generation to export a declaration for every grammar struct
+and alias, plus `parseAST` and `parseASTWithOptions`. They parse the
 configured start rule once, then convert its completed Node result. `parse`,
 `parseRule`, recognition and `marshal` retain their existing APIs. Named typed
 parsing is outside this API.
 
-For the quick-start grammar, generate and consume typed values:
+For a variant of the quick-start grammar whose fields are strings, generate and consume typed values:
+
+```pego
+type Pair = { Key string; Value string }
+
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: text($k), Value: text($v)}
+rule key = [a-zあ-ん]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
+```
 
 ```bash
 pego gen -lang ts -types -g pairs.pego -o pairs.ts
@@ -240,37 +250,44 @@ const { value, error } = parseAST("abc=12; あい=3");
 if (error !== null) throw error;
 for (const pair of value ?? []) {
   const p: Pair | null = pair;
-  if (p === null || p.Key === null) continue;
-  console.log(p.type, p.Key.text, p.Key.start, p.Key.end);
+  if (p === null) continue;
+  console.log(p.type, p.Key, p.Value, p.start, p.end);
 }
 const bytes = parseASTWithOptions("あい=3", { unit: Bytes, maxDepth: 0 });
 console.log(bytes.value?.[0]?.end);
 ```
 
+```text
+Pair abc 12 0 8
+Pair あい 3 8 12
+8
+```
+
 The result has `{ value, error }`, with `value` statically inferred from the
 start rule. A successful nil result has null value and null error. Failure
 returns null value with the original error. Recovery keeps the converted value
-and `SyntaxErrors`; a recovered Error in a specific struct/terminal field
+and `SyntaxErrors`; a recovered error in a specific struct field
 converts to null, while a declared node union retains a `RecoveredError` value.
 Check `error`, rather than interpreting null value alone as failure. Options
 are read and validated once; zero `maxDepth` selects the generated default.
 
 Converted values are plain objects with readonly fields, lowercase `type`
 discriminators and `start`/`end` spans. Grammar field spelling is unchanged.
-Terminal values also have `text`; recovered Errors have `text` and `message`.
+String nodes (`Match`, a `TNode<string>`) have `value`; recovered errors have `text` and `message`.
 `readonly` is a type-checking contract; the objects are not frozen.
 
 | Grammar type | Generated value |
 | --- | --- |
-| struct/terminal | interface; nullable where an absent or incompatible recovered value becomes nil |
+| struct | interface; nullable where an absent or incompatible recovered value becomes nil |
 | `[]T` | readonly array of converted elements, or null; null differs from an empty array |
 | `*T` | nullable target, including nullable scalar fields |
 | `int` | `number \| bigint`, preserving signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; absent nonoptional scalar fields use `""` and `false` (`int` uses `0`) |
-| declared aliases | complete target type, preserving optional/list/CST representations |
-| canonical declared pure node union | member interfaces plus `RecoveredError` and null; CST members retain `Node` |
-| mixed/open or undeclared union, `any`, `node`, `terminal` | conservative `TypedValue`, following Go's any-conversion semantics |
-| CST/record | existing `Node` |
+| declared aliases | complete target type, preserving optional, list and node representations |
+| `node[T]` | `TNode<T>`; text is a `Match`, a `TNode<string>` |
+| canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
+| mixed/open or undeclared union, `any`, `node` | conservative `TypedValue`, following Go's any-conversion semantics |
+| tuple, list node, `Node` | existing `Node` |
 
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted
 Error even when the normal rule produces no value.
@@ -279,8 +296,8 @@ The broad `TypedValue` union covers converted declarations, `Match`,
 `RecoveredError`, Node and action scalars/null. Mixed unions can preserve
 recovered or dynamically typed values beyond their written members, so they
 are not exported with an unsound narrow type. In dynamically typed conversion,
-a List remains Node; a statically known list becomes an array. A pure node
-union with CST members can retain unmatched Nodes, as the Go converter does.
+a list node remains Node; a statically known list becomes an array. A pure node
+union with node members can retain unmatched Nodes, as the Go converter does.
 Use `instanceof Node` first when narrowing a union containing Node, whose
 `type` property is a general string. Top-level scalar-producing rules remain
 rejected by the existing type checker; scalar fields and aliases are supported.
@@ -299,7 +316,7 @@ canonical conversion representation. Deep fold/LR output does not add recursive
 JS calls, and repeated captures share converted objects instead of duplicating
 all DAG paths. Different representations of the same Error or list remain
 separate. Returned values survive subsequent and reentrant parses; no conversion
-cache is pooled across calls. CST Nodes retain their existing mutable class
+cache is pooled across calls. Nodes retain their existing mutable class
 representation. Object identity is not promised to match Go pointer identity.
 
 Text and spans copy the Node values exactly: code-point/byte offsets are not
@@ -314,7 +331,7 @@ const json = JSON.stringify(value, (_key, v: unknown) =>
 ```
 
 This convention preserves large integer digits but is not the Node `marshal`
-format. If transporting raw byte-unit terminal text, preserve its surrogate
+format. If transporting raw byte-unit text, preserve its surrogate
 escapes explicitly. For example, in Node.js:
 
 ```ts
@@ -338,7 +355,7 @@ validation gates.
 ## Input, Positions and Units
 
 JavaScript strings are UTF-16, but positions count Unicode code points (the default) or UTF-8 bytes (`Bytes`), as in
-the engine. The parser decodes the input first, so positions, columns, `len` and `startPos`/`endPos` in actions are
+the engine. The parser decodes the input first, so positions, columns, `len` and `.Start`/`.End` in actions are
 the engine's:
 
 - A **string** is parsed as its UTF-8 encoding would be. A lone surrogate (which UTF-8 cannot encode) becomes U+FFFD,
@@ -356,7 +373,7 @@ the engine's:
   JSON value). Valid input never contains these surrogates.
 
 Node `start` and `end` are positions in the chosen unit, **not** indexes into the JavaScript string. To slice the input,
-use `node.text` (terminals) or keep the positions in code points and convert: `Array.from(input).slice(n.start,
+use `node.text` (string nodes) or keep the positions in code points and convert: `Array.from(input).slice(n.start,
 n.end).join("")`.
 
 Strings in actions behave as Go strings do: `+` concatenates, `<` and the other comparisons order by code point (Go's
@@ -406,7 +423,7 @@ console.log(recognize("let a;"));
 ```
 
 ```text
-(Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected [a-z]`} (Seq "let" " " "b"@name ";")])@main
+([("let" " " "a" ";") error("1:11: syntax error: expected [a-z]") ("let" " " "b" ";")])
 1 11 syntax error: expected [a-z]
 1:11: syntax error: expected [a-z]
 null

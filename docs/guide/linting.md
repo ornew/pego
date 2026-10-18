@@ -159,7 +159,7 @@ fail.
 | [`unreachable-rule`](#unreachable-rule) | warning | Rules the start rule never calls |
 | [`deprecated-any`](#deprecated-any) | warning | Uses of the deprecated type `any` |
 | [`right-recursion`](#right-recursion) | hint | Lists written as right recursion |
-| [`positions`](#positions) | hint | `startPos` and `endPos` in rules used repeatedly |
+| [`positions`](#positions) | hint | `.Start` and `.End` in rules used repeatedly |
 | [`long-lookahead`](#long-lookahead) | hint | Lookaheads that scan any character |
 | [`lint-directive`](#suppressing-findings) | warning | `lint:ignore` comments that name an unknown check or suppress nothing |
 
@@ -269,13 +269,12 @@ A capture is reported when nothing can read its value:
 ```pego
 rule ret = "return" v:(ws x:expr)? => Return{Value: $x} // v: is never read
 rule kv = k:key "=" v:value => $k // v: is never read
-rule num Number = d:[0-9]+ #atomic // a terminal type keeps no captures
 rule all = (x:item)* => nil // the list of the repetition is discarded
 ```
 
 The first is the most common: the captures inside the optional group belong to the rule itself, so the outer `v:` is
 not needed. A capture counts as read when the action or a predicate of its scope refers to it (a `map` or `foldl`
-parameter, which is written without `$`, is not a capture), or, in a rule without an action, as a field of the rule's value.
+parameter, which is written without `$`, is not a capture), or, in a rule without an action, as a capture of the rule's node.
 
 ### `duplicate-capture`
 
@@ -329,9 +328,9 @@ binary operator written this way is; a hint, not a mistake.
 
 ### `positions`
 
-A rule that reads `startPos` or `endPos` and is used repeatedly (in the element of a repetition, or on a recursion
+A rule that reads `.Start` or `.End` in an action and is used repeatedly (in the element of a repetition, or on a recursion
 cycle): a `Document` cannot shift its results past an edit, nor those of the rules that call it, so it evaluates them
-again after every edit before them. Take positions from the tree instead (`Node.Start` and `Node.End` are shifted for
+again after every edit before them. Take positions from the tree instead (`Node.Start()` and `Node.End()` are shifted for
 you).
 
 ### `long-lookahead`

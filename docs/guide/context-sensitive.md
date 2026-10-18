@@ -50,7 +50,7 @@ pego parse -g truthy.pego -s lenonly -f sexpr -i 'a'
 ```
 
 ```text
-(Seq "" "a" s="")@lenonly
+("" "a")
 ```
 
 `{ len($s) }` is the integer 0 here, and the rule matches anyway. The comparison fails as intended:
@@ -86,7 +86,7 @@ pego parse -g identity.pego -s by_text -f sexpr -i '<a></a>'
 ```
 
 ```text
-(Seq "<" "a"@name "></" "a"@name ">" a="a"@name b="a"@name)@by_text
+("<" "a" "></" "a" ">")
 ```
 
 The first command shows the third consequence: **a failed predicate says nothing**. The farthest-failure rule of the
@@ -362,22 +362,20 @@ itself, because each `element` invocation defines its own `tag` and the definiti
 // tags.pego
 package tags
 
-type Name terminal
-type Chars terminal
-type Element = { Name Name; Children []Content }
-type Content ~ Element | Chars
+type Element = { Name node; Children []Content }
+type Content ~ Element | node
 
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
-rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs}
+rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
 rule content Content = element / chars
-rule chars Chars = [^<]+
+rule chars = [^<]+ #atomic
 
 // The close tag is parsed by another rule: it finds the name in `tag`.
 rule close_tag = "</" n:name {text($n) == tag} @error(message="mismatched end tag") ">"
 
-rule name Name = [a-z]+
+rule name = [a-z]+ #atomic
 ```
 
 ```bash
@@ -385,7 +383,7 @@ pego parse -g tags.pego -f sexpr -i '<a><b>x</b><c>y</c></a>'
 ```
 
 ```text
-(Element Children=[(Element Children=[Chars"x"@chars] Name=Name"b"@name) (Element Children=[Chars"y"@chars] Name=Name"c"@name)] Name=Name"a"@name)
+Element{Children: [Element{Children: ["x"], Name: "b"} Element{Children: ["y"], Name: "c"}], Name: "a"}
 ```
 
 ```bash
@@ -416,7 +414,7 @@ pego: 1:12: syntax error: expected "<", "</", [^<]
 package outline
 
 type Item = {
-    Text     Match
+    Text     node
     Children []Item
 }
 
@@ -443,7 +441,7 @@ pego parse -g outline.pego -f sexpr -i $'fruits\n  apple\n  citrus\n    lemon\nv
 ```
 
 ```text
-[(Item Children=[(Item Children=[] Text="apple"@line) (Item Children=[(Item Children=[] Text="lemon"@line)] Text="citrus"@line)] Text="fruits"@line) (Item Children=[] Text="vegetables"@line)]
+[Item{Children: [Item{Children: [], Text: "apple"} Item{Children: [Item{Children: [], Text: "lemon"}], Text: "citrus"}], Text: "fruits"} Item{Children: [], Text: "vegetables"}]
 ```
 
 How it works. `indent` is the width of the block being read; there is no INDENT/DEDENT token and no stack:
@@ -497,7 +495,7 @@ pego parse -g outline.pego -f sexpr -i $'a\n b\n  c\n d\n'
 ```
 
 ```text
-[(Item Children=[(Item Children=[(Item Children=[] Text="c"@line)] Text="b"@line) (Item Children=[] Text="d"@line)] Text="a"@line)]
+[Item{Children: [Item{Children: [Item{Children: [], Text: "c"}], Text: "b"} Item{Children: [], Text: "d"}], Text: "a"}]
 ```
 
 The label does not make valid input fail: at a normal block end, `item` fails at the same predicate, but that only
@@ -586,10 +584,8 @@ so it needs a variable:
 // heredoc.pego
 package doc
 
-type Word terminal
-type Line terminal
-type Heredoc = { Tag Word; Lines []Line }
-type Command = { Words []Word; Doc *Heredoc }
+type Heredoc = { Tag node; Lines []node }
+type Command = { Words []node; Doc *Heredoc }
 
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => x.$c)
 
@@ -602,8 +598,8 @@ rule heredoc Heredoc = (
     body:(l:line {text($l) != delim} "\n")* end:line {text($end) == delim} @error(message="unterminated here-document")
 ) => Heredoc{Tag: $tag, Lines: map($body, (x) => x.$l)}
 
-rule word Word = [a-zA-Z0-9_./\-]+
-rule line Line = [^\n]*
+rule word = [a-zA-Z0-9_./\-]+ #atomic
+rule line = [^\n]* #atomic
 rule eol = "\n" / $$
 rule sp = [ \t]*
 rule ws = [ \t\r\n]*
@@ -614,7 +610,7 @@ pego parse -g heredoc.pego -f sexpr -i $'echo a\ncat <<END\nline EOF\nEOF\nEND\n
 ```
 
 ```text
-[(Command Doc=nil Words=[Word"echo"@word Word"a"@word]) (Command Doc=(Heredoc Lines=[Line"line EOF"@line Line"EOF"@line] Tag=Word"END"@word) Words=[Word"cat"@word]) (Command Doc=nil Words=[Word"echo"@word Word"b"@word])]
+[Command{Doc: nil, Words: ["echo" "a"]} Command{Doc: Heredoc{Lines: ["line EOF" "EOF"], Tag: "END"}, Words: ["cat"]} Command{Doc: nil, Words: ["echo" "b"]}]
 ```
 
 The line `EOF` inside the document is just text, because the delimiter is `END`. The structure of `heredoc` is the whole
@@ -640,7 +636,7 @@ pego parse -g scope_bad.pego -i 'a,b'
 ```
 
 ```text
-pego: scope_bad.pego:2:49: undefined capture $t
+pego: scope_bad.pego:2:50: capture $t is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition
 ```
 
 A variable crosses scopes (it is visible to everything below the rule that defines it, including repetition bodies),
@@ -674,7 +670,7 @@ pego parse -g longstr.pego -f sexpr -i '[==[a]]b]=]c]==]'
 ```
 
 ```text
-(Seq (Seq "[" "==" "[" "a]]b]=]c" (Seq "]" "==" "]" e="==")@long_close body="a]]b]=]c" eq="==")@long_string)@main
+(("[" "==" "[" "a]]b]=]c" ("]" "==" "]")))
 ```
 
 ```bash
@@ -725,7 +721,7 @@ pego: 1:5: nested too deeply
 | A predicate that is not a comparison, such as `{ len($s) }` | Any value other than `false` succeeds, so the check never fails | Compare: `{ len($s) > 0 }` |
 | `{ $a == $b }` on captures | Compares node identity; always false for two captures | `{ text($a) == text($b) }` |
 | A misspelled variable name | The predicate fails silently; no error is reported | Check the names; the failed predicate gives only a bare `syntax error` |
-| `$label` of the rule body used in a repetition's predicate | `undefined capture` at compile time | Copy it into a variable (`{ v := text($label) }`) before the repetition |
+| `$label` of the rule body used in a repetition's predicate | A compile error: the capture is not visible in a repetition element | Copy it into a variable (`{ v := text($label) }`) before the repetition |
 | Expecting a callee's `{ x := ... }` to be visible after it returns | It is not; the caller sees its own `x` | Return data in the tree (capture and action) |
 | Expecting `{ n := n + 1 }` to count siblings | It defines a new `n` in this invocation, from the caller's value | Count with captures and `len`, or keep the count in the tree |
 | A failed predicate without `@error` | `syntax error` with no expected items, or an unrelated message | Label it |

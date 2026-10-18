@@ -27,20 +27,19 @@ below.
 // calc.pego
 package calc
 
-type Number terminal
 
 type Binary = {
     Left  Expr
-    Op    Match
+    Op    node
     Right Expr
 }
 
 type Unary = {
-    Op Match
+    Op node
     X  Expr
 }
 
-type Expr ~ Number | Binary | Unary
+type Expr ~ node | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -54,7 +53,7 @@ rule expr Expr = operators {
     level power { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-rule number Number = [0-9]+ ("." [0-9]+)?
+rule number = ([0-9]+ ("." [0-9]+)?) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -68,12 +67,12 @@ pego parse -g calc.pego -f sexpr -i '(1 + 2) * 3'
 ```
 
 ```text
-(Binary Left=Number"1"@number Op="+" Right=(Binary Left=Number"2"@number Op="*" Right=Number"3"@number))
-(Binary Left=(Binary Left=Number"1"@number Op="-" Right=Number"2"@number) Op="-" Right=Number"3"@number)
-(Binary Left=Number"2"@number Op="^" Right=(Binary Left=Number"3"@number Op="^" Right=Number"2"@number))
-(Unary Op="-" X=(Binary Left=Number"2"@number Op="^" Right=Number"2"@number))
-(Binary Left=Number"2"@number Op="^" Right=(Unary Op="-" X=Number"1"@number))
-(Binary Left=(Binary Left=Number"1"@number Op="+" Right=Number"2"@number) Op="*" Right=Number"3"@number)
+Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}
+Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}
+Binary{Left: "2", Op: "^", Right: Binary{Left: "3", Op: "^", Right: "2"}}
+Unary{Op: "-", X: Binary{Left: "2", Op: "^", Right: "2"}}
+Binary{Left: "2", Op: "^", Right: Unary{Op: "-", X: "1"}}
+Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "*", Right: "3"}
 ```
 
 Here is how to read an Operators Rule Definition Statement.
@@ -92,7 +91,7 @@ Here is how to read an Operators Rule Definition Statement.
   and `none` operators do not chain ([Operator Forms and Associativity](#operator-forms-and-associativity)).
 - **An operator part** (`"+" / "-"`) is an ordinary Rule Expression. It may be several tokens, call other rules, or
   contain captures ([Level-Restricted Calls](#level-restricted-calls)).
-- **Actions** see `$lhs`, `$rhs` (the operands) and `$op` (the text the operator part matched, as a `Match` node). In
+- **Actions** see `$lhs`, `$rhs` (the operands) and `$op` (the value of the operator part: a string node for a plain token, a tuple if the part is a sequence). In
   a rule with a declared type, `$lhs` and `$rhs` have that type, which is what lets the `Binary` fields be `Expr`.
 
 The unary minus is declared in a level **tighter than `*` but looser than `^`**: `-2 ^ 2` is `-(2 ^ 2)`, while `2 ^ -1`
@@ -120,20 +119,19 @@ notation, in linear time and without any rewriting:
 // calc_lr.pego
 package calc
 
-type Number terminal
 
 type Binary = {
     Left  Expr
-    Op    Match
+    Op    node
     Right Expr
 }
 
 type Unary = {
-    Op Match
+    Op node
     X  Expr
 }
 
-type Expr ~ Number | Binary | Unary
+type Expr ~ node | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -153,7 +151,7 @@ rule pow Expr = l:primary ws op:"^" r:unary => Binary{Left: $l, Op: $op, Right: 
 rule primary Expr = ws p:(number / group) => $p
 rule group Expr = "(" e:expr ws ")" => $e
 
-rule number Number = [0-9]+ ("." [0-9]+)?
+rule number = ([0-9]+ ("." [0-9]+)?) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -167,12 +165,12 @@ pego parse -g calc_lr.pego -f sexpr -i '(1 + 2) * 3'
 ```
 
 ```text
-(Binary Left=Number"1"@number Op="+" Right=(Binary Left=Number"2"@number Op="*" Right=Number"3"@number))
-(Binary Left=(Binary Left=Number"1"@number Op="-" Right=Number"2"@number) Op="-" Right=Number"3"@number)
-(Binary Left=Number"2"@number Op="^" Right=(Binary Left=Number"3"@number Op="^" Right=Number"2"@number))
-(Unary Op="-" X=(Binary Left=Number"2"@number Op="^" Right=Number"2"@number))
-(Binary Left=Number"2"@number Op="^" Right=(Unary Op="-" X=Number"1"@number))
-(Binary Left=(Binary Left=Number"1"@number Op="+" Right=Number"2"@number) Op="*" Right=Number"3"@number)
+Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}
+Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}
+Binary{Left: "2", Op: "^", Right: Binary{Left: "3", Op: "^", Right: "2"}}
+Unary{Op: "-", X: Binary{Left: "2", Op: "^", Right: "2"}}
+Binary{Left: "2", Op: "^", Right: Unary{Op: "-", X: "1"}}
+Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "*", Right: "3"}
 ```
 
 The trees are identical, because both grammars build the same typed AST through actions. What differs is how the
@@ -223,7 +221,7 @@ pego parse -g lr-order.pego -s bad -f sexpr -i '1+2+3'
 ```
 
 ```text
-(Seq (Seq (Seq "1"@term "+" "2"@term)@expr "+" "3"@term)@expr)@good
+((("1" "+" "2") "+" "3"))
 pego: 1:2: syntax error: expected [0-9], end of input
 ```
 
@@ -248,7 +246,7 @@ pego parse -g lr-ops.pego -s rel2 -f sexpr -i '1<=2'
 
 ```text
 pego: 1:3: syntax error: expected [0-9]
-(Seq "1"@num "<=" "2"@num l="1"@num op="<=" r="2"@num)@rel2
+("1" "<=" "2")
 ```
 
 ## The Precedence Chain
@@ -259,10 +257,9 @@ the next level, followed by any number of operator-operand pairs, and `foldl` bu
 
 ```pego
 // chain.pego
-type Number terminal
-type Binary = { Left Expr; Op Match; Right Expr }
-type Unary = { Op Match; X Expr }
-type Expr ~ Number | Binary | Unary
+type Binary = { Left Expr; Op node; Right Expr }
+type Unary = { Op node; X Expr }
+type Expr ~ node | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -279,7 +276,7 @@ rule pow Expr = l:primary ws op:"^" r:unary => Binary{Left: $l, Op: $op, Right: 
 
 rule primary Expr = ws p:(number / group) => $p
 rule group Expr = "(" e:expr ws ")" => $e
-rule number Number = [0-9]+ ("." [0-9]+)?
+rule number = ([0-9]+ ("." [0-9]+)?) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -290,9 +287,9 @@ pego parse -g chain.pego -f sexpr -i '-2 ^ 2'
 ```
 
 ```text
-(Binary Left=(Binary Left=Number"1"@number Op="-" Right=Number"2"@number) Op="-" Right=Number"3"@number)
-(Binary Left=Number"2"@number Op="^" Right=(Binary Left=Number"3"@number Op="^" Right=Number"2"@number))
-(Unary Op="-" X=(Binary Left=Number"2"@number Op="^" Right=Number"2"@number))
+Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}
+Binary{Left: "2", Op: "^", Right: Binary{Left: "3", Op: "^", Right: "2"}}
+Unary{Op: "-", X: Binary{Left: "2", Op: "^", Right: "2"}}
 ```
 
 Left-associative levels use the repetition and `foldl`; right-associative ones recurse on the right. It works in any
@@ -304,9 +301,8 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 
 ```pego
 // chain-cmp.pego
-type Num terminal
-type Bin = { L E; Op Match; R E }
-type E ~ Num | Bin
+type Bin = { L E; Op node; R E }
+type E ~ node | Bin
 
 rule main E = e:cmp ws $$ => $e
 
@@ -316,7 +312,7 @@ rule cmp E = l:add rest:(ws op:("<=" / ">=" / "<" / ">" / "==" / "!=") #atomic r
 rule add E = l:atom rest:(ws op:("+" / "-") #atomic r:atom)* => foldl($l, $rest, (acc, i) => Bin{L: acc, Op: i.$op, R: i.$r})
 
 rule atom E = ws n:num => $n
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 rule ws = " "*
 ```
 
@@ -326,7 +322,7 @@ pego parse -g chain-cmp.pego -f sexpr -i '1 < 2 < 3'
 ```
 
 ```text
-(Bin L=(Bin L=Num"1"@num Op="+" R=Num"2"@num) Op="<=" R=Num"3"@num)
+Bin{L: Bin{L: "1", Op: "+", R: "2"}, Op: "<=", R: "3"}
 pego: 1:7: syntax error: expected " ", "+", "-", end of input
 ```
 
@@ -348,17 +344,15 @@ The grammar below is the one from the specification: it has every kind of operat
 
 ```pego
 // js.pego
-type Num terminal
-type Ident terminal
 type Comma = { L Expr; R Expr }
 type Assign = { L Expr; R Expr }
 type Cond = { Cond Expr; Then Expr; Else Expr }
-type Bin = { L Expr; Op Match; R Expr }
-type Unary = { Op Match; X Expr }
+type Bin = { L Expr; Op node; R Expr }
+type Unary = { Op node; X Expr }
 type Call = { Fn Expr; Args []Expr }
 type Index = { X Expr; Index Expr }
-type Member = { X Expr; Name Ident }
-type Expr ~ Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
+type Member = { X Expr; Name node }
+type Expr ~ node | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
     skip ws
@@ -383,8 +377,8 @@ rule expr Expr = operators {
 
 rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => r.$x))
 
-rule number Num = [0-9]+
-rule ident Ident = [a-z]+
+rule number = [0-9]+ #atomic
+rule ident = [a-z]+ #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -398,12 +392,12 @@ pego parse -g js.pego -s expr -f sexpr -i '2 ** -1'
 ```
 
 ```text
-(Comma L=Ident"x"@ident R=Ident"y"@ident)
-(Member Name=Ident"x"@ident X=(Index Index=Num"3"@number X=(Call Args=[Num"2"@number] Fn=(Call Args=[(Assign L=Ident"a"@ident R=Num"1"@number) Ident"b"@ident] Fn=Ident"f"@ident))))
-(Assign L=Ident"a"@ident R=(Assign L=Ident"b"@ident R=Ident"c"@ident))
-(Cond Cond=Ident"a"@ident Else=(Cond Cond=Ident"c"@ident Else=Ident"e"@ident Then=Ident"d"@ident) Then=Ident"b"@ident)
-(Unary Op="-" X=(Bin L=Ident"a"@ident Op="**" R=Ident"b"@ident))
-(Bin L=Num"2"@number Op="**" R=(Unary Op="-" X=Num"1"@number))
+Comma{L: "x", R: "y"}
+Member{Name: "x", X: Index{Index: "3", X: Call{Args: ["2"], Fn: Call{Args: [Assign{L: "a", R: "1"} "b"], Fn: "f"}}}}
+Assign{L: "a", R: Assign{L: "b", R: "c"}}
+Cond{Cond: "a", Else: Cond{Cond: "c", Else: "e", Then: "d"}, Then: "b"}
+Unary{Op: "-", X: Bin{L: "a", Op: "**", R: "b"}}
+Bin{L: "2", Op: "**", R: Unary{Op: "-", X: "1"}}
 ```
 
 Things to notice:
@@ -449,12 +443,10 @@ level, so you choose how tightly it binds:
 
 ```pego
 // apply.pego
-type Id terminal
-type Num terminal
-type Bin = { L E; Op Match; R E }
+type Bin = { L E; Op node; R E }
 type App = { Fn E; Arg E }
 type Neg = { X E }
-type E ~ Id | Num | Bin | App | Neg
+type E ~ node | Bin | App | Neg
 
 rule e E = operators {
     skip ws
@@ -465,8 +457,8 @@ rule e E = operators {
     level application { infix left _ => App{Fn: $lhs, Arg: $rhs} }
     level prefix { prefix "-" => Neg{X: $rhs} }
 }
-rule num Num = [0-9]+
-rule id Id = [a-z]+
+rule num = [0-9]+ #atomic
+rule id = [a-z]+ #atomic
 rule ws = " "*
 ```
 
@@ -478,10 +470,10 @@ pego parse -g apply.pego -s e -f sexpr -i 'f (-1)'
 ```
 
 ```text
-(App Arg=Id"y"@id Fn=(App Arg=Id"x"@id Fn=Id"f"@id))
-(Bin L=(App Arg=Id"x"@id Fn=Id"f"@id) Op="+" R=(App Arg=Id"y"@id Fn=Id"g"@id))
-(Bin L=Id"f"@id Op="-" R=Num"1"@num)
-(App Arg=(Neg X=Num"1"@num) Fn=Id"f"@id)
+App{Arg: "y", Fn: App{Arg: "x", Fn: "f"}}
+Bin{L: App{Arg: "x", Fn: "f"}, Op: "+", R: App{Arg: "y", Fn: "g"}}
+Bin{L: "f", Op: "-", R: "1"}
+App{Arg: Neg{X: "1"}, Fn: "f"}
 ```
 
 The last two lines show the catch of juxtaposition: `f -1` is a subtraction, because at that position both `-` and
@@ -493,10 +485,9 @@ in a tighter level if you want `-(3!)`.
 
 ```pego
 // same-level.pego
-type Num terminal
 type Neg = { X E }
 type Fact = { X E }
-type E ~ Num | Neg | Fact
+type E ~ node | Neg | Fact
 
 rule same E = operators {
     operand num
@@ -511,7 +502,7 @@ rule tighter E = operators {
     level prefix { prefix "-" => Neg{X: $rhs} }
     level postfix { postfix "!" => Fact{X: $lhs} }
 }
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 ```
 
 ```bash
@@ -520,17 +511,17 @@ pego parse -g same-level.pego -s tighter -f sexpr -i '-3!'
 ```
 
 ```text
-(Fact X=(Neg X=Num"3"@num))
-(Neg X=(Fact X=Num"3"@num))
+Fact{X: Neg{X: "3"}}
+Neg{X: Fact{X: "3"}}
 ```
 
 ## The Tree of an Operators Rule
 
-### Typed Rules and the `Operator` Node
+### Operators Without Actions
 
-When an operator has no action, it produces a node of the reserved type `Operator`. Its children are `[lhs, op, rhs]`
-for infix, `[op, rhs]` for prefix and `[lhs, op]` for postfix operators, its label is the rule, and its `operator` field
-is the index of the operator in declaration order across all levels. Operands without an action appear unchanged:
+When an operator has no action, it produces a tuple of its parts: `(lhs, op, rhs)` for infix, `(op, rhs)` for prefix and
+`(lhs, op)` for postfix operators. Operands without an action appear unchanged. With source information, the tuple
+carries the rule name and the captures `lhs`, `op` and `rhs`:
 
 ```pego
 // raw.pego
@@ -549,11 +540,11 @@ pego parse -g raw.pego -s e -f sexpr -i '1+2+3'
 ```
 
 ```text
-(Operator (Operator "-" "1"@e operator=2)@e "+" (Operator "2"@e "*" (Operator "3"@e "!" operator=3)@e operator=1)@e operator=0)@e
-(Operator (Operator "1"@e "+" "2"@e operator=0)@e "+" "3"@e operator=0)@e
+(("-" "1") "+" ("2" "*" ("3" "!")))
+(("1" "+" "2") "+" "3")
 ```
 
-Here `+` is operator 0, `*` is 1, `-` is 2 and `!` is 3; the input is `(-1) + (2 * (3!))`. The tree is as deep as the
+The input is `(-1) + (2 * (3!))`. The tree is as deep as the
 expression, not as deep as the number of levels. Compare the tree of a rule chain without actions, where even a bare
 number passes through every level:
 
@@ -570,21 +561,22 @@ pego parse -g raw.pego -s e -f sexpr -i '7'
 ```
 
 ```text
-(Seq (Seq "7"@factor [])@term [])@expr
-"7"@e
+(("7" []) [])
+"7"
 ```
 
 The default Operators Rule tree is a good starting point (nothing to write), but note the consequence for typed rules: if the
-rule has a declared type that does not include `Operator`, **every operator needs an action**:
+rule has a declared struct type, **every operator needs an action**, because the tuple is not assignable to a struct. A
+declared union that includes `node` accepts the tuples, as `type E ~ node | Bin` does:
 
 ```pego
 // raw-typed.pego
-type Num terminal
-rule t Num = operators {
+type Bin = { L node; Op node; R node }
+rule t Bin = operators {
     operand num
     level additive { infix left "+" }
 }
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 ```
 
 ```bash
@@ -592,7 +584,8 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 ```
 
 ```text
-pego: raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Num
+pego: raw-typed.pego:3:1: operatorsRule t produces Match, which is not assignable to Bin
+raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Bin
 ```
 
 ### Captures and Operators
@@ -602,15 +595,14 @@ actions use the captures of their line:
 
 ```pego
 // operand-captures.pego
-type Num terminal
 type Paren = { X E }
-type E ~ Num | Paren
+type E ~ node | Paren
 
 rule e E = operators {
     operand num
     operand "(" e:e ")" => Paren{X: $e}
 }
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 ```
 
 ```bash
@@ -618,7 +610,7 @@ pego parse -g operand-captures.pego -s e -f sexpr -i '((1))'
 ```
 
 ```text
-(Paren X=(Paren X=Num"1"@num))
+Paren{X: Paren{X: "1"}}
 ```
 
 ## Choosing Between the Three
@@ -676,7 +668,7 @@ pego parse -g operand-lr.pego -s e -i '1'
 ```
 
 ```text
-pego: operand-lr.pego:2:9: operand of e calls e at its start (left recursion); use infix or postfix instead
+pego: operand-lr.pego:2:20: operand of e calls e at its start (left recursion); use infix or postfix instead
 ```
 
 Write `!` as a postfix operator instead.
@@ -694,10 +686,8 @@ consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 
 ```pego
 // skip.pego
-type Num terminal
-type Id terminal
 type Cond = { C E; T E; F E }
-type E ~ Num | Id | Cond
+type E ~ node | Cond
 
 rule loose E = operators {
     skip ws
@@ -711,8 +701,8 @@ rule tight E = operators {
     operand id
     level conditional { infix right "?" t:tight ws ":" => Cond{C: $lhs, T: $t, F: $rhs} }
 }
-rule num Num = [0-9]+
-rule id Id = [a-z]+
+rule num = [0-9]+ #atomic
+rule id = [a-z]+ #atomic
 rule ws = " "*
 ```
 
@@ -724,8 +714,8 @@ pego parse -g skip.pego -s tight -f sexpr -i 'a ? b : c'
 
 ```text
 pego: 1:7: syntax error: expected "?"
-(Cond C=Id"a"@id F=Id"c"@id T=Id"b"@id)
-(Cond C=Id"a"@id F=Id"c"@id T=Id"b"@id)
+Cond{C: "a", F: "c", T: "b"}
+Cond{C: "a", F: "c", T: "b"}
 ```
 
 **Operators are chosen by longest match, before precedence is considered.** At each position the parser picks, among
@@ -741,11 +731,10 @@ syntactically possible:
 
 ```pego
 // munch.pego
-type Num terminal
-type Bin = { L E; Op Match; R E }
-type Un = { Op Match; X E }
-type Post = { X E; Op Match }
-type E ~ Num | Bin | Un | Post
+type Bin = { L E; Op node; R E }
+type Un = { Op node; X E }
+type Post = { X E; Op node }
+type E ~ node | Bin | Un | Post
 
 rule main E = e:e $$ => $e
 
@@ -756,7 +745,7 @@ rule e E = operators {
     level prefix { prefix "+" => Un{Op: $op, X: $rhs} }
     level postfix { postfix "++" => Post{X: $lhs, Op: $op} }
 }
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 rule ws = " "*
 ```
 
@@ -767,9 +756,9 @@ pego parse -g munch.pego -f sexpr -i '1 ++'
 ```
 
 ```text
-(Bin L=Num"1"@num Op="+" R=(Un Op="+" X=Num"2"@num))
+Bin{L: "1", Op: "+", R: Un{Op: "+", X: "2"}}
 pego: 1:5: syntax error: expected "+", "++", end of input
-(Post Op="++" X=Num"1"@num)
+Post{Op: "++", X: "1"}
 ```
 
 As in C, write `1 + +2` with a space between the operators.
@@ -779,10 +768,9 @@ operator part with a negative lookahead, and exclude the keywords from identifie
 
 ```pego
 // words.pego
-type Id terminal
-type Bin = { L E; Op Match; R E }
+type Bin = { L E; Op node; R E }
 type Not = { X E }
-type E ~ Id | Bin | Not
+type E ~ node | Bin | Not
 
 rule e E = operators {
     skip ws
@@ -791,7 +779,7 @@ rule e E = operators {
     level logical_and { infix left "and" !idchar => Bin{L: $lhs, Op: $op, R: $rhs} }
     level prefix { prefix "not" !idchar => Not{X: $rhs} }
 }
-rule id Id = !kw [a-z]+
+rule id = (!kw [a-z]+) #atomic
 rule kw = ("or" / "and" / "not") !idchar
 rule idchar = [a-z]
 rule ws = " "*
@@ -803,8 +791,8 @@ pego parse -g words.pego -s e -f sexpr -i 'notable or a'
 ```
 
 ```text
-(Bin L=Id"a"@id Op="or" R=(Bin L=Id"b"@id Op="and" R=(Not X=Id"c"@id)))
-(Bin L=Id"notable"@id Op="or" R=Id"a"@id)
+Bin{L: "a", Op: ("or"), R: Bin{L: "b", Op: ("and"), R: Not{X: "c"}}}
+Bin{L: "notable", Op: ("or"), R: "a"}
 ```
 
 **A matched operator whose right operand fails is not applied, unless you cut.** The parser backs up to before the
@@ -814,9 +802,8 @@ quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 
 ```pego
 // cut.pego
-type Num terminal
-type Bin = { L E; Op Match; R E }
-type E ~ Num | Bin
+type Bin = { L E; Op node; R E }
+type E ~ node | Bin
 
 rule plain E = operators {
     skip ws
@@ -831,7 +818,7 @@ rule committed E = operators {
 
 rule m1 = plain ws "+" ws "x" $$
 rule m2 = committed ws "+" ws "x" $$
-rule num Num = [0-9]+
+rule num = [0-9]+ #atomic
 rule ws = " "*
 ```
 
@@ -841,7 +828,7 @@ pego parse -g cut.pego -s m2 -f sexpr -i '1 + x'
 ```
 
 ```text
-(Seq Num"1"@num [" "]@ws "+" [" "]@ws "x")@m1
+("1" [" "] "+" [" "] "x")
 pego: 1:5: syntax error: expected [0-9]
 ```
 
@@ -901,7 +888,7 @@ pego parse -g examples/minilang/minilang.pego -f sexpr -i 'let z = -f(x) * 2;'
 ```
 
 ```text
-(Program Body=[(Let Name=Ident"x"@ident Value=(Binary Left=Ident"a"@ident Op="+" Right=(Binary Left=Ident"b"@ident Op="*" Right=Ident"c"@ident)))])
-(Program Body=[(ExprStmt X=(Member Name=Ident"x"@ident X=(Index Index=Number"3"@number X=(Call Args=[Number"2"@number] Fn=(Call Args=[Number"1"@number] Fn=Ident"f"@ident)))))])
-(Program Body=[(Let Name=Ident"z"@ident Value=(Binary Left=(Unary Op="-" X=(Call Args=[Ident"x"@ident] Fn=Ident"f"@ident)) Op="*" Right=Number"2"@number))])
+Program{Body: [Let{Name: "x", Value: Binary{Left: "a", Op: "+", Right: Binary{Left: "b", Op: "*", Right: "c"}}}]}
+Program{Body: [ExprStmt{X: Member{Name: "x", X: Index{Index: "3", X: Call{Args: ["2"], Fn: Call{Args: ["1"], Fn: "f"}}}}}]}
+Program{Body: [Let{Name: "z", Value: Binary{Left: Unary{Op: "-", X: Call{Args: ["x"], Fn: "f"}}, Op: "*", Right: "2"}}]}
 ```

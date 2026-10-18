@@ -14,21 +14,44 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 
 ## An Example
 
-For the JSON grammar ([parsers/json](../../parsers/json/json.pego)), whose start rule has the type `Value`, the
-generated types are:
+For a JSON grammar whose start rule has the type `Value`:
+
+```pego
+type Object = { Members []Member }
+type Member = { Key Text; Value Value }
+type Array = { Elements []Value }
+type Text = { Value string }
+type Value ~ Object | Array | Text
+
+rule main Value = ws v:value ws $$ => $v
+rule value Value = object / array / string / number
+rule object Object = "{" ws ms:members? ws "}" => Object{Members: concat($ms)}
+rule members = (
+    first:member rest:(-ws -"," -ws m:member)*
+) => concat(list($first), map($rest, (r) => r.$m))
+rule member Member = k:string ws ":" ws v:value => Member{Key: $k, Value: $v}
+rule array Array = "[" ws es:elements? ws "]" => Array{Elements: concat($es)}
+rule elements = (
+    first:value rest:(-ws -"," -ws v:value)*
+) => concat(list($first), map($rest, (r) => r.$v))
+rule string Text = "\"" s:([a-z ]* #atomic) "\"" => Text{Value: text($s)}
+rule number Text = n:([0-9]+ #atomic) => Text{Value: text($n)}
+rule ws = [ \t\r\n]*
+```
+
+the generated types are:
 
 ```go
 type Span struct{ Start, End int }
 
-type String struct {
+type Text struct {
 	Span
-	Text string
+	Value string
 }
-// ... Number, Bool and Null likewise (terminal types)
 
 type Member struct {
 	Span
-	Key   *String
+	Key   *Text
 	Value Value
 }
 
@@ -36,9 +59,9 @@ type Object struct {
 	Span
 	Members []*Member
 }
-// ... Array likewise (struct types)
+// ... Array likewise
 
-// Value is the union type Value = Object | Array | String | Number | Bool | Null.
+// Value is the union type Value ~ Object | Array | Text.
 type Value interface{ isValue() }
 
 func ParseAST(input string, opts ...ParseOption) (Value, error)
@@ -54,19 +77,17 @@ if err != nil {
 for _, m := range v.(*jsonparser.Object).Members {
 	switch x := m.Value.(type) {
 	case *jsonparser.Array:
-		fmt.Println(m.Key.Text, "array of", len(x.Elements))
-	case *jsonparser.Number:
-		fmt.Println(m.Key.Text, "number", x.Text, "at", x.Start)
-	case *jsonparser.String:
-		fmt.Println(m.Key.Text, "string", x.Text)
+		fmt.Println(m.Key.Value, "array of", len(x.Elements))
+	case *jsonparser.Text:
+		fmt.Println(m.Key.Value, "text", x.Value)
 	}
 }
 ```
 
 ```text
-name string pego
+name text pego
 tags array of 2
-stars number 42 at 49
+stars text 42
 ```
 
 ## Mapping Grammar Types to Go
@@ -75,30 +96,29 @@ stars number 42 at 49
 |:--|:--|
 | `int`, `string`, `bool` | the same |
 | struct type `T` | `*T`: the same fields, plus an embedded `Span` with the value's range |
-| terminal type `T` | `*T`: `Span` and `Text` |
-| `Match` | `*Match`: `Span` and `Text` |
-| `Error` (left by `#recover`) | `*Error`: `Span`, `Text` and `Message` |
-| union `U ~ A \| B` of node types | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*Node` if a member is a CST type) |
+| `node[T]`: what a literal, class, `.`, `#atomic` or an action-free rule matches | `*TNode[T']`: `Span` and `Value`, with `T'` the Go type of `T`; `*TNode[string]` for text |
+| tuple `(A, B, ...)` | `TupleN[A', B', ...]`: the fields `E0`, `E1`, ... |
+| unit `()` | `Unit` |
+| `error` (left by `#recover`) | `*Error`: `Span`, `Text` and `Message` |
+| union `U ~ A \| B` | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*TNode` if a member is a node type) |
 | `[]T` | a slice; an empty list is an empty slice, not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| `Seq`, `List`, `Operator` and records | `*Node`, as from `Parse` |
-| `node`, `terminal`, `any`, unions with basic members | `any`, holding the converted value |
+| `node`, `any`, unions with basic members | `any`, holding the converted value |
 | alias `Alias ~ T` | a Go alias to the value type of `T`; for example, `Alias ~ Word` becomes `type Alias = *Word` |
 
 ## Details
 
 - **Names.** Go types have the names of the grammar types. A name that the generated runtime already uses (`Node`,
-  `Match`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
+  `TNode`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
   is renamed the same way if a type or field is called `Span`.
-- **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and CST aliases. Node
+- **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and node aliases. Node
   unions with the same normalized representation share one generated interface; additional names are Go aliases
   to it. Aliases preserve assignment compatibility and add no new runtime value kind. Regenerate existing parsers
   to receive previously omitted alias names.
 - **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a union type stays
-  in the list as `*Error`; where a struct or terminal type is expected it becomes `nil` (it is among the returned
+  in the list as `*Error`; where a struct type is expected it becomes `nil` (it is among the returned
   `SyntaxErrors` anyway).
-- **Speed.** When every value `ParseAST` can return has a Go type of its own (no `Seq`, `List`, `Operator`, records,
-  `node`, `terminal` or `any`, also in struct fields) and no action reads a field of a struct value, the generated
+- **Speed.** When no action reads a field of a struct value, the generated
   parser builds the values directly, without the
   nodes `Parse` makes: on the benchmarks `ParseAST` then takes a half to two thirds of the time of `Parse` and a quarter
   to a third of the memory (JSON 6.7 → 3.1 ms and 10.4 → 2.4 MB on a 262 KB input, less than `Recognize`; XML, the
@@ -119,7 +139,7 @@ stars number 42 at 49
   This includes plain nil for `any`, `node` and union-interface results; legacy `ParseAST` keeps its
   existing conversion mapping, which can box a nil `*Node` in an `any` result.
   Recovery and conversion follow `ParseAST`, including `Error` values in unions and nil where
-  a struct or terminal is expected. Direct typed execution uses the same full grammar guard as
+  a struct is expected. Direct typed execution uses the same full grammar guard as
   `ParseAST`; unsupported result or struct-field types and field-reading actions use Node conversion.
   Rules still must produce nodes; scalar aliases and scalar fields do not enable scalar rule results.
   `ParseRule` continues to return `*Node`, and `ParseAST` continues to use the configured start rule.

@@ -29,7 +29,7 @@ pego parse -g choice.pego -s m2 -f sexpr -i '<='
 
 ```text
 pego: 1:2: syntax error: expected end of input
-(Seq "<="@good)@m2
+("<=")
 ```
 
 `bad` matches `<` and succeeds, so the `=` is left over. Put the longer alternative first, or the more specific one,
@@ -68,7 +68,7 @@ pego parse -g until.pego -s b -f sexpr -i 'abcy'
 ```
 
 ```text
-(Seq [(Seq "a") (Seq "b") (Seq "c")] "y")@b
+([("a") ("b") ("c")] "y")
 ```
 
 `&a` is the positive form: it requires `a` to match at the position and consumes nothing. Lookahead leaves no value
@@ -95,7 +95,7 @@ pego parse -g cut.pego -s m4 -f sexpr -i 'if x'
 ```
 
 ```text
-(Seq (Seq "if" [" "]@ws "x")@nocut)@m3
+(("if" [" "] "x"))
 pego: 1:4: syntax error: expected "(", [ \t]
 ```
 
@@ -124,11 +124,11 @@ pego parse -g list.pego -s list -f sexpr -i '[1, 2,]'
 ```
 
 ```text
-(Seq "[" []@ws (Seq "1"@item [(Seq []@ws "," [" "]@ws "2"@item) (Seq []@ws "," []@ws "3"@item)]) []@ws "]")@list
+("[" [] ("1" [([] "," [" "] "2") ([] "," [] "3")]) [] "]")
 pego: 1:7: syntax error: expected [ \t], [0-9]
 ```
 
-Mark the rules that read a token as `#atomic` so that the token is one terminal and not a sequence of characters, and
+Mark the rules that read a token as `#atomic` so that the token is one string node and not a list of characters, and
 discard white space with `-` when it should not appear in the tree (see [Shaping Trees](shaping-trees.md)).
 White space inside a tree is only noise for the program that reads it.
 
@@ -153,9 +153,9 @@ pego parse -g keyword.pego -s kwgood -f sexpr -i 'in index'
 ```
 
 ```text
-(Seq "in" []@ws "dex"@id)@kwbad
+("in" [] "dex")
 pego: 1:1: syntax error
-(Seq "in" [" "]@ws "index"@id)@kwgood
+("in" [" "] "index")
 ```
 
 Check the boundary with a negative lookahead `!idc` after the keyword. Do the reverse for identifiers: an identifier

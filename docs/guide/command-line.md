@@ -27,7 +27,7 @@ is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything 
 The examples use the grammar `pairs.pego`:
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -40,7 +40,7 @@ rule ws = [ \t\n]*
 
 ```bash
 pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
-           [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative]
+           [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info]
 ```
 
 | Flag | Default | Meaning |
@@ -52,6 +52,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-check` | off | Recognition only: print `ok`, or the syntax error |
 | `-unit` | `codepoints` | Position unit |
 | `-backend` | chosen for the grammar | `closure`, `bytecode` or `bytecode-iterative` |
+| `-source-info` | off | Record the rule of each node and the names of captures, and print them |
 | `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
 
 ```bash
@@ -59,7 +60,7 @@ pego parse -g pairs.pego -f sexpr -i 'abc=12; あい=3'
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
 ```bash
@@ -67,7 +68,7 @@ printf 'abc=12; def=3\n' | pego parse -g pairs.pego -f sexpr
 ```
 
 ```text
-[(Pair Key="abc"@key Value="12"@value) (Pair Key="def"@key Value="3"@value)]
+[Pair{Key: "abc", Value: "12"} Pair{Key: "def", Value: "3"}]
 ```
 
 ```bash
@@ -75,7 +76,7 @@ pego parse -g pairs.pego -s key -f sexpr -i 'abc'
 ```
 
 ```text
-"abc"@key
+"abc"
 ```
 
 ```bash
@@ -95,28 +96,45 @@ pego: 1:5: syntax error: expected [0-9]
 exit 1
 ```
 
-Without `-f sexpr` the tree is printed as JSON, for instance (shortened) for `abc=12`:
+Without `-f sexpr` the value is printed as JSON, for `abc=12`:
 
 ```json
 {
-  "type": "List",
   "start": 0,
   "end": 6,
-  "children": [
+  "value": [
     {
       "type": "Pair",
-      "start": 0,
-      "end": 6,
       "fields": {
-        "Key": { "type": "Match", "rule": "key", "start": 0, "end": 3, "text": "abc" },
-        "Value": { "type": "Match", "rule": "value", "start": 4, "end": 6, "text": "12" }
+        "Key": {
+          "start": 0,
+          "end": 3,
+          "value": "abc"
+        },
+        "Value": {
+          "start": 4,
+          "end": 6,
+          "value": "12"
+        }
       }
     }
   ]
 }
 ```
 
-(The tool prints the nested objects over several lines.) When the parse recovered from errors with `#recover`, the tree is
+A node is an object with `start`, `end` and `value`; a struct is an object with `type` and `fields`. The tree has no rule names
+or capture names unless you ask for them with `-source-info`, which adds a `rule` to each node (and `captures` to a tuple that
+has them) in JSON, and `@rule` suffixes and `name:` labels in S-expressions:
+
+```bash
+pego parse -g pairs.pego -source-info -f sexpr -i 'abc=12'
+```
+
+```text
+[Pair{Key: "abc"@key, Value: "12"@value}]
+```
+
+When the parse recovered from errors with `#recover`, the tree is
 printed first and then the errors, with exit status 1, so you can still inspect the tree.
 
 ## `fmt`
@@ -183,12 +201,13 @@ also want canonical formatting. The flags and standard-input behavior are those 
 result, `-w` rewrites the files in place, and `-l` lists the files that need rewriting. It rewrites:
 
 - the old cut `--` to `#cut`;
+- the node members `startPos` and `endPos` to `Start` and `End`;
 - the struct declaration `type T struct {...}` to `type T = {...}`, and the alias `type T = U` to `type T ~ U`;
 - positional captures `$1`, `$2`, ... to named ones, labeling the element each refers to (with the name of the rule it
   calls when that name is free, and `v1`, `v2`, ... otherwise), and `$0` to a `list(...)` of the labeled elements;
 - a lambda parameter written `$p` in the lambda body to `p`;
 - a capture read `x.y` to `x.$y`, for every member whose name does not begin with an uppercase letter and is not a
-  built-in field;
+  built-in member;
 - the deprecated type `any` to `_`, where the grammar still compiles with `_`. A value of type `_` needs a cast before
   it is used as another type, so a use that would need one keeps `any`, as does a rule type or cast that must produce
   a node; `pego lint` reports them.
@@ -234,11 +253,11 @@ pego convert -to pego pairs.pegoc                  # recover the source of a com
 ## `compile`
 
 ```bash
-pego compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
+pego compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] -o <file.pegoc>
 ```
 
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
-the file, and `-no-ast` omits the AST. When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
+the file, `-no-ast` omits the AST, and `-source-info` makes the parser record the rule of each node and the names of captures. When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
 AST-less input without it rather than implying that the missing AST was restored. A version 3 recognition bundle is
 preserved when re-saving with `-no-ast`. Both `-g` and `-o` are required.
 
@@ -248,13 +267,13 @@ writes no output. The option preserves bytecode-only form; it cannot restore sou
 ## `gen`
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-source-info]
 pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
 ```
 
 Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript
 module (see [typescript.md](typescript.md)). `-g` is required, and `-pkg` for Go; without `-o` the code goes to
-standard output.
+standard output. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
 
 ## `explain`, `trace` and `profile`
 

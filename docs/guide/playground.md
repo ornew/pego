@@ -19,7 +19,7 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 |:--|:--|
 | **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Operators Rule and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
 | **Start** | The start rule (`pego parse -s`). The default is `main`, or the first rule if the grammar has no `main` (where `pego parse` without `-s` would report that `main` is not defined). A start rule that the grammar does not define, after an edit or in a shared link, stays selected and is reported as an error |
-| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
+| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree) and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `pego parse` leaves out by default). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **WASM compiler** | Go is the default. Sites built in dual mode also offer TinyGo. The selection stays in the shared URL's `compiler` query parameter; a TinyGo link on a Go-only site shows an unavailable message |
 | **Format** | Formats the grammar like `pego fmt`, keeping comments. The change can be undone |
 | **Share** | Copies a link that holds the grammar, the input and the options (see [shared links](#shared-links)) |
@@ -30,7 +30,7 @@ The result panel has six tabs:
 
 | Tab | Contents |
 |:--|:--|
-| **Tree** | The tree as a collapsible outline: the node type, the rule (`@rule`) of nodes produced by rules without an action, the text of terminals, the fields of struct nodes, and the span `start–end` in the chosen unit. Hovering a node highlights its span in the input, clicking selects it, and double-clicking (or Enter) selects the text in the input editor. Moving the caret in the input reveals the deepest node under it |
+| **Tree** | The tree as a collapsible outline: a string node's text, a tuple or list node with its number of elements, an error value with its message, a struct with its type and fields, the span `start–end` of each node in the chosen unit, and, with **Source info**, the rule (`@rule`) of each node and the capture names that label its elements. Hovering a node highlights its span in the input, clicking selects it, and double-clicking (or Enter) selects the text in the input editor. Moving the caret in the input reveals the deepest node under it |
 | **JSON** | The tree exactly as `pego parse` prints it |
 | **S-expression** | The tree as `pego parse -f sexpr` prints it |
 | **Rules & types** | The rules with their declared types, and the types of the grammar. Click a name to jump to its definition, or "parse from here" to make the rule the start rule |
@@ -105,14 +105,14 @@ page or Node:
 | Method | Request | Response |
 |:--|:--|:--|
 | `compile` | `{grammar}` | `{ok, package, rules: [{name, type, line, col}], types: [{name, kind, spec, line, col}], start, diagnostics: [{line, col, message}]}` |
-| `parse` | `{grammar, input, start, unit, backend, recognize, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
+| `parse` | `{grammar, input, start, unit, backend, recognize, sourceInfo, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
 | `format` | `{grammar}` | `{formatted, diagnostics}` |
 | `generate` | `{grammar, language, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |
 
 `matched` is true when the parse succeeded, including a start rule that matches without producing a value (then
 `json` is empty) and a parse that recovered from errors (then `recovered` is true and `errors` lists them); a syntax
-error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (without the final newline), and
+error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (with `-source-info` when `sourceInfo` is true, without the final newline), and
 `message` is the description of an error as the command prints it after `line:col:`. `maxDepth` overrides the [nesting limit](#nesting-limits) (for any backend); `nodes` and `depth` are the number of
 nodes of the tree and how deeply they nest. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
 define is reported as the error `start rule X is not defined` (in `error` for `parse`, in `diagnostics` for

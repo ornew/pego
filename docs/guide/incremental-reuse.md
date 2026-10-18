@@ -29,7 +29,7 @@ Consequences, all of which can be read off the numbers in the next section:
 - **Shifting is lazy and cheap.** `Edit` touches only the entries at the edited positions; every other entry is
   brought up to date (kept, shifted or dropped by the rules above, edit by edit) when it is next looked up.
 - **Positional values block shifting.** A node's `Start` and `End` can be moved, but a position stored in an `int`
-  field (`startPos`, `endPos` in an action or predicate) cannot. The rules that use them, and the rules that call those
+  field (`.Start`, `.End` in an action or predicate) cannot. The rules that use them, and the rules that call those
   rules, are re-evaluated whenever they lie after an edit.
 - **Recovered errors block shifting.** An entry that contains a recovered error is dropped when it lies after the edit,
   because the error message contains its position. It is one entry per bad line.
@@ -105,11 +105,11 @@ rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
-	{"startPos in an action", `type At = { Pos int; Text Match }
+	{".Start in an action", `type At = { Pos int; Text node }
 rule main =  (line / blank)* $$
 rule line =  name " = " n:num "\n"
 rule name =  [a-z_]+ #atomic
-rule num At =  t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}
+rule num At =  t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}
 rule blank =  "\n" `, lines(-1)},
 
 	{"right-recursive list", `rule main =  lines $$
@@ -170,7 +170,7 @@ grammar                      first parse          after editing line 500
 one rule per line            evaluated 3003     evaluated 3     reused 1001
 line start anchor ^          evaluated 3003     evaluated 3     reused 1001
 variable read in each line   evaluated 3003     evaluated 3     reused 1001
-startPos in an action        evaluated 3003     evaluated 1004  reused 1001
+.Start in an action          evaluated 3003     evaluated 1004  reused 1001
 right-recursive list         evaluated 4004     evaluated 503   reused 501
 lookahead to the end of text evaluated 3003     evaluated 502   reused 1500
 #recover, bad line 900       evaluated 3002     evaluated 4     reused 1001
@@ -184,8 +184,8 @@ everything in one rule       evaluated 1        evaluated 1     reused 999
   list flat, and only the one rule that contains the repetition runs again.
 - `^`, variables and `#recover` cost nothing noticeable (`#recover` costs one extra evaluation for a bad line after the
   edit).
-- **Avoid `startPos` and `endPos` in rules that appear in every line.** Here the edit made every `line` after it, and
-  its `num`, run again (1,004 evaluations). Take positions from the nodes instead (`Node.Start`, `Node.End`, shifted
+- **Avoid `.Start` and `.End` in rules that appear in every line.** Here the edit made every `line` after it, and
+  its `num`, run again (1,004 evaluations). Take positions from the nodes instead (`Node.Start()`, `Node.End()`, shifted
   for you) when you walk the tree.
 - **Avoid lookahead that can reach the end of the text.** Here every line examines up to the end of the document, so
   every line before the edit is dropped (502 evaluations, half the document).

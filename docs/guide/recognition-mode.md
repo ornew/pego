@@ -6,7 +6,7 @@
 The example uses `pairs.pego` and a parser `p` compiled as in [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key Match; Value Match }
+type Pair = { Key node; Value node }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
