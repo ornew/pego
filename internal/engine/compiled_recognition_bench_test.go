@@ -45,6 +45,40 @@ func marshalRecognitionV2(prog *Program, start string, omitAST bool) []byte {
 	return out.Bytes()
 }
 
+// marshalRecognitionV3AST writes the rejected AST-bearing version 3 layout:
+// the AST together with a recognition bundle. MarshalBinary keeps AST-bearing
+// saves on version 2, so the benchmark of that alternative writes the layout
+// itself. Like MarshalBinary, it caches the encoded bundle on prog.
+func marshalRecognitionV3AST(prog *Program, start string) ([]byte, error) {
+	recognition, err := prog.recognizer()
+	if err != nil {
+		return nil, err
+	}
+	m := prog.Module()
+	w := &encoder{strs: map[string]int{}}
+	for i, s := range m.Strings {
+		w.strs[s] = i
+		w.list = append(w.list, s)
+	}
+	w.str(start)
+	w.str(prog.Grammar.Package)
+	w.module(m)
+	prog.recognitionBytesOnce.Do(func() {
+		prog.recognitionBytes = encodeRecognition(recognition)
+	})
+	w.bool(true)
+	w.uint(len(prog.recognitionBytes))
+	w.body.Write(prog.recognitionBytes)
+	w.bool(true)
+	w.statements(prog, 3, m.instructionSetVersion() >= 9)
+	var out bytes.Buffer
+	out.WriteString(compiledMagic)
+	out.WriteByte(3)
+	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
+	w.finish(&out)
+	return out.Bytes(), nil
+}
+
 func compiledRecognitionBenchmarkGrammar(b *testing.B, ruleCount int) (*grammar.Grammar, *Program) {
 	b.Helper()
 	var src strings.Builder
@@ -170,7 +204,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 				b.Fatal(err)
 			}
 			v2Data := marshalRecognitionV2(v2Program, "main", false)
-			v3Data, err := v3Program.MarshalBinary("main")
+			v3Data, err := marshalRecognitionV3AST(v3Program, "main")
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -212,7 +246,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 						var data []byte
 						var err error
 						if tc.v3 {
-							data, err = v3Program.MarshalBinary("main")
+							data, err = marshalRecognitionV3AST(v3Program, "main")
 						} else {
 							data = marshalRecognitionV2(v2Program, "main", false)
 						}
@@ -237,7 +271,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 						}
 						var data []byte
 						if tc.v3 {
-							data, err = fresh.MarshalBinary("main")
+							data, err = marshalRecognitionV3AST(fresh, "main")
 						} else {
 							data = marshalRecognitionV2(fresh, "main", false)
 						}

@@ -203,7 +203,9 @@ variation within measurement noise. An independent five-pair alternating 128-rul
 measured v2/v3 medians of 557,708/944,768 ns for first compile plus save (+69.4%) and 240,047/300,357 ns for
 load (+25.1%); version 3 was slower in each pair. These results are limited to synthetic grammars and do not
 establish costs for application grammars. The benchmark source is
-`internal/engine/compiled_recognition_bench_test.go`; raw result files remain outside the repository.
+`internal/engine/compiled_recognition_bench_test.go`; raw result files remain outside the repository. Because
+`MarshalBinary` writes AST-bearing saves as version 2, the benchmark writes the rejected version 3 layout with a
+test-only encoder.
 
 Reproduce the AST-less serialization matrix with:
 
