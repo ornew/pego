@@ -103,7 +103,7 @@ AST-bearing files and legacy AST-less files do not carry one. What you keep and 
 | `RecognizeOnly()`, `pego parse -check` | yes | yes on bytecode backends when a version 3 recognition bundle is present; legacy files without a bundle return an error |
 | `Parser.Grammar()` | the grammar, without source positions | `nil` |
 | `pego.Lint`, `pego lint` | yes | no |
-| `pego.GenerateGo`, `pego.GenerateTS`, `pego gen` | yes (the output is the same as from source) | no |
+| `pego.GenerateGo`, `pego.GenerateTypeScript`, `pego gen` | yes (the output is the same as from source) | no |
 | `pego convert` back to `.pego` or `.json` | yes, without comments or layout | no: `the compiled grammar omits the AST` |
 | `pego sample` | yes | no: `the parser has no grammar AST` |
 | `pego explain`, `pego trace`, `pego profile` | yes | yes |
@@ -344,7 +344,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 1–6, 8, 9 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 diagnostic-label mode, and version 9 run-time checks of dynamically typed struct field values and rule results. A version 3 recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own. |
+| Instruction-set version | 1–6 and 8–12 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 diagnostic-label mode, version 9 run-time checks of dynamically typed struct field values and rule results, version 10 the indexing operator `[]`, version 11 member names that start with `$` (capture access) and version 12 casts. A version 3 recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own. |
 
 The consequences:
 

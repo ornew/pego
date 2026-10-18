@@ -147,7 +147,13 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 // With -recognize: checks the input without building a tree; null if it matches.
 export function recognize(input: string | Uint8Array, unit?: Unit): Error | null;
 
-export interface ParseOptions { unit?: Unit; maxDepth?: number }
+export interface ParseOptions {
+  unit?: Unit;
+  maxDepth?: number;
+  signal?: CancellationSignal | null;
+  maxInputWork?: number;
+  maxSteps?: number;
+}
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult;
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult;
 // With -recognize:
@@ -403,6 +409,25 @@ console.log(recognize("let a;"));
 null
 ```
 
+## Cancellation and Work Limits
+
+The options-aware entry points accept `signal`, `maxInputWork` and `maxSteps` to stop a parse of input you do not
+control. `signal` is any object with `aborted` and an optional `reason`, so an `AbortSignal` fits; the limits are
+nonnegative safe integers, and zero means unlimited. An interrupted parse returns no tree and a
+`ParseInterruptionError` whose `kind` says what happened:
+
+```ts
+const result = parseWithOptions(input, { maxSteps: 1_000_000, signal: AbortSignal.timeout(2000) });
+if (result.error instanceof ParseInterruptionError) {
+  console.log(result.error.kind, result.error.used);
+}
+```
+
+A parse is synchronous and does not yield to the event loop, so a timer such as `AbortSignal.timeout` cannot fire during
+the call: use `maxSteps` and `maxInputWork` for a bound that holds, and a signal that is already aborted or a worker
+that you terminate for cancellation. The units of the limits are explained in
+[Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits).
+
 ## Deep Nesting and the JavaScript Stack
 
 The generated parser calls rules recursively, like the generated Go parser, and defaults to the same limit of 100,000 nested
@@ -470,6 +495,7 @@ Everything `pego gen` supports for Go, except typed values:
 | Recognition without a tree | `recognize`, with `-recognize` |
 | Typed values (`-types`) | Interfaces, aliases and configured-start `parseAST`/`parseASTWithOptions`; `parse` still returns Nodes |
 | `#stream` and `ParseStream`, `Document` | **No** (`#stream` is an ordinary repetition, as in Go) |
+| Cancellation and work limits | `signal`, `maxInputWork`, `maxSteps` in the options-aware entry points |
 | Per-call depth | `maxDepth` in the options-aware entry points; generated default is configurable, and the host stack still bounds nesting |
 
 ## Keeping Generated Code up to Date

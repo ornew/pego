@@ -34,11 +34,9 @@ for concurrent use. A document is always parsed as a whole: `#stream` has no
 effect on it and it is not a stream parse. Grammars that use `#missing` are
 rejected.
 
-For `Bytes`, an original large immutable input MAY be kept as a string-backed
-piece without scanning or copying it, so construction can charge zero
-input-work. For `CodePoints`, initialization decodes and normalizes the input,
-and the inspected work is charged. This is an implementation detail with no
-effect on results.
+For `Bytes`, construction can charge zero input-work, because a large immutable
+input need not be scanned or copied. For `CodePoints`, initialization decodes and
+normalizes the input, and the inspected work is charged.
 
 ### Edits
 
@@ -180,11 +178,8 @@ recovered errors are completed outcomes and keep their reusable caches.
 
 Reuse is a performance property, not a result property. An implementation MAY
 retain, shift, drop or recompute any intermediate result, provided that every
-parse returns what a parse of the current text from scratch returns. The
-reference implementation memoizes rule calls with the range of input each call
-examined, drops entries whose range overlaps an edit, shifts the positions of
-entries after it and resumes long repetitions; none of this is observable except
-through the statistics.
+parse returns what a parse of the current text from scratch returns. Reuse is
+observable only through the statistics.
 
 ## Change Notifications
 
@@ -223,17 +218,17 @@ continuity: the next successful capture reports `OutputMayHaveChanged`. Complete
 syntax failures stay comparable. Unsupported captures also report unavailable.
 
 Snapshots that consumers retain stay immutable. `Parse` still returns its mutable
-`Node`, so `Snapshot` is the call to use for output that must survive later
-parses. A conservative consumer rebuilds indexes and highlights from the latest
-snapshot on source invalidation, on changed or unavailable output, on a version
-gap and on a full-refresh marker, and keeps its edit cursor separate from the last
-displayed snapshot version.
+`Node`, which later parses of the document can change; a `Snapshot` never changes.
+The edit cursor of a consumer, which follows `ChangeEdit` events, is independent of
+the version of the snapshot it last displayed, which follows `ChangeOutcome`
+events.
 
 ## Validation and Errors
 
 | Condition | Result |
 |:--|:--|
 | `NewDocument` with `RecognizeOnly`, an unavailable backend or an unknown start rule | Error; no document |
+| A grammar that uses `#missing`, or a `WithMissingTokens` limit other than zero, in `NewDocument` or `Parse` | Error; no document or result |
 | `Edit` range outside the text, or inside a character in `Bytes` | Error; text and version unchanged |
 | `EditBatch` with a foreign or stale version, unordered or overlapping edits, repeated starts or invalid ranges | The whole batch is rejected |
 | Parse option that changes unit, backend, start rule or mode | Error before execution; caches and statistics kept |

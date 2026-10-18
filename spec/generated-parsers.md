@@ -41,7 +41,7 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
 | `-recognize` | `WithRecognize()` | Generate recognition without a tree |
 | `-observability` | `WithGeneratedObservability()` | Generate tracing and profiling, specified in [Observability](observability.md) |
 | `-nodoc` | `WithoutPackageDoc()` | Omit the package comment (Go only; rejected with `-lang ts`) |
-| `-max-depth` | `WithGeneratedMaxDepth(n)` | The default nested rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript accepts only a positive safe integer |
+| `-max-depth` | `WithGeneratedMaxDepth(n)` | The default nested rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript also requires a safe integer |
 
 - The output is deterministic: generating twice yields identical bytes. Omitted,
   zero and an explicit 100,000 depth default generate identical source.
@@ -225,8 +225,23 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult;
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult;
 
-export interface ParseOptions { unit?: Unit; maxDepth?: number }
+export interface ParseOptions {
+  unit?: Unit;
+  maxDepth?: number;
+  signal?: CancellationSignal | null;
+  maxInputWork?: number;
+  maxSteps?: number;
+}
 export interface ParseResult { node: Node | null; error: Error | null }
+export interface CancellationSignal { readonly aborted: boolean; readonly reason?: unknown }
+export type ParseInterruptionKind = "canceled" | "input-work-limit" | "step-work-limit";
+export class ParseInterruptionError extends Error {
+  readonly kind: ParseInterruptionKind;
+  readonly limit: number;
+  readonly used: number;
+  readonly requested: number;
+  readonly cause: unknown;
+}
 export type Unit = 0 | 1;
 export const CodePoints: Unit; // the default
 export const Bytes: Unit;
@@ -251,6 +266,21 @@ export function marshal(n: Node | null): string;
 - `maxDepth` MUST be a positive safe integer or zero; negative values, fractions, NaN,
   infinity and unsafe integers return a configuration error in the result before
   matching. Omitted or zero selects the generated default.
+- `signal` is a structural cancellation signal: any object with `aborted` and an optional
+  `reason`, such as an `AbortSignal`. `maxInputWork` and `maxSteps` MUST be finite
+  nonnegative safe integers, and zero means unlimited; other values return a
+  configuration error in the result. The units of the limits are those of
+  [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits).
+- An interrupted parse returns `node` as `null` and `error` as a `ParseInterruptionError`
+  whose `kind` is `"canceled"`, `"input-work-limit"` or `"step-work-limit"`. For a limit,
+  `limit`, `used` and `requested` give the accounting; for cancellation, `cause` is the
+  `reason` of the signal. Recovery does not turn an interruption into a partial result,
+  and the parser keeps no reference to the signal after the call returns. Typed
+  conversion (`parseAST`) and recognition report interruptions the same way.
+- A synchronous parse does not yield to the event loop: a signal that changes only
+  through timers or other tasks of the same thread is not observed during the call. A
+  signal that is already aborted is observed at the first poll, and the work limits do not
+  depend on the event loop.
 - With `-recognize`, `recognize` and `recognizeWithOptions` return `null` if the
   input matches and an `Error` otherwise. With `-observability`, the batch entry
   points accept the tracing and profiling options of [Observability](observability.md).
@@ -285,8 +315,7 @@ engine, and not UTF-16 code units. The parser decodes the input first.
 | The JavaScript stack is exhausted before the limit | `Error`: `nesting too deep: the JavaScript stack overflowed at N rule calls` |
 
 The host stack of a JavaScript runtime is far smaller than the stack of a Go
-program, so a TypeScript parser can reject nesting that the engine accepts. This
-is the principal difference in practice.
+program, so a TypeScript parser can reject nesting that the engine accepts.
 
 ## Validation and Errors
 
@@ -315,14 +344,13 @@ is the principal difference in practice.
 | Typed values | `ParseAST`, `ParseRuleAST` with `-types` | `parseAST`, `parseASTWithOptions` with `-types` |
 | Streaming | `ParseStream`, `Iterate` with `-stream` | None; `#stream` is an ordinary repetition |
 | Incremental documents | A subset with `-document` | None |
-| Cancellation and work limits | `WithContext`, `WithWorkLimits` | None |
+| Cancellation and work limits | `WithContext`, `WithWorkLimits` | `signal`, `maxInputWork`, `maxSteps`; `ParseInterruptionError` |
 | Nested rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
 | Choice of backend, saved grammar, `Parser.Grammar()` | Not applicable | Not applicable |
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |
 
-A generated parser embeds the runtime of the generator that produced it, so it MUST
-be regenerated when the grammar changes and when the generator is upgraded.
-Regenerating can rename grammar types that collide with names that the new runtime
+A generated parser embeds the runtime of the generator that produced it and does not
+follow later changes of the grammar or of the generator. Regenerating can rename grammar types that collide with names that the new runtime
 reserves, and can change exported signatures (for example, entry points that took
 a variable number of `Unit` values take `ParseOption` values).
 

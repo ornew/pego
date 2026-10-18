@@ -112,13 +112,15 @@ A `Parser` supports any number of concurrent stream parses; each has its own sta
 
 ## Validation and Errors
 
-The compile-time errors for `#stream`, in the order in which they are checked,
-are:
+The following are compile-time errors for `#stream`. A grammar can report more
+than one, and the order in which they are reported is not specified.
 
-1. `#stream must be attached to a repetition (*, +, or #repeat(...))`
-2. `#stream is only allowed at the top level of a rule body`
-3. `a rule body can have only one #stream`
-4. `#stream takes no arguments`
+- `#stream is only allowed at the top level of a rule body`
+- `a rule body can have only one #stream`
+- `#recover cannot wrap a #stream repetition; recover inside each element instead`
+- `#stream must be attached to a repetition (*, +, or #repeat(...))`
+- `#stream takes no arguments`. Source text cannot express this case, because
+  `#stream(1)` is a syntax error; it arises only in a grammar AST or JSON.
 
 A stream parse ends in one of the following ways.
 
@@ -163,14 +165,12 @@ only the terminal `TruncatedSyntaxErrors` has the total and dropped counts.
 
 ## Memory
 
-An action MAY construct temporary nodes and return `nil`. The caller then receives
-`nil`, and the action's construction tracker releases its references before
-delivery; nodes that the action returns are unaffected. Variables hold scalar
-values. Repeated assignments to a variable keep one current binding per name:
-environments saved for backtracking or for a caller stay immutable, but the
-current environment does not retain every earlier assignment from consumed
-elements, and lookup cost depends on the number of distinct names. Large variable
-values, active rollback points and memoization keys keep their own data alive.
+The parser does not retain an element after delivering it. An element is matched
+in memory as a whole, so the memory held for input and tree is bounded by the
+largest element and not by the size of the input. Recovered errors are retained
+until the end of the input unless a [diagnostic limit](#recovered-errors) is set.
+An action that returns `nil` delivers `nil` to the caller. Variable values, active
+rollback points and memoization keys keep their own data alive.
 
 ## Compatibility and Support
 

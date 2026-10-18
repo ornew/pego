@@ -37,8 +37,7 @@ the pattern, together with its captures.
   grammar uses `#recover` and `Missing` when it uses `#missing`.
 - Export needs checked grammar metadata. A parser restored by `LoadParser` cannot
   export a schema even if its file holds the AST; the error matches
-  `pego.ErrSchemaUnavailable`. A caller that needs the schema later stores it
-  separately.
+  `pego.ErrSchemaUnavailable`. A schema is not recoverable from a loaded parser.
 
 ### Schema JSON, version 1
 
@@ -86,8 +85,8 @@ are significant. A diff is descriptive: it does not classify compatibility.
 | `Capture` | Binds the value at this pattern under the given name |
 
 - `list` means an explicit `[]any` field value. A repetition or a typed list field is
-  a `Node` of type `List`; match it with `Type: "List"`, and `Category: "node"` if
-  useful. The scalar categories and `list` apply to nested field-value patterns;
+  a `Node` of type `List`; match it with `Type: "List"`; `Category: "node"` is accepted
+  for it. The scalar categories and `list` apply to nested field-value patterns;
   `nil` MAY also match a nil child.
 - Patterns are copied when compiled. There is no text query language and there are
   no text predicates.

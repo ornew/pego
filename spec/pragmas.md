@@ -68,8 +68,9 @@ Recovery applies to every failure inside the annotated expression, however deepl
 nested; the nearest enclosing `#recover` handles it. Attributes and pragmas apply
 from the innermost outward in the order written, so `@error(...) #recover(...)`
 labels the expression before recovery and the recorded error carries the label,
-whereas in `#recover(...) @error(...)` the label wraps an expression that almost
-never fails.
+whereas in `#recover(...) @error(...)` the label applies to the recovered
+expression, which fails only when recovery is impossible, so the label is used only
+in that case.
 
 A recovery on a path that the parser then abandons is discarded with the path; a
 memoized result carries its recovered errors, so a reused result still reports

@@ -66,8 +66,8 @@ Normalized ownership is serialized in explicit `source`, `packageSource` and
 those objects. JSON-decoded grammar ASTs therefore do not guarantee lossless
 source formatting. Normalized comment strings preserve content whitespace and
 line endings; each detached entry is one paragraph. Older JSON may omit these
-metadata objects. Comment grouping and node ownership follow the
-rules of this section.
+metadata objects. Comment grouping and node ownership follow
+[Comment Grouping and Ownership](#comment-grouping-and-ownership).
 
 `SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
 comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
@@ -79,6 +79,46 @@ layout alone does not create a `source` object. Current layout preservation
 covers selected Action Expression operand boundaries, including unary operands
 and confirmed lambda expressions, plus constructor field names. Other source
 forms remain outside this increment's coverage.
+
+#### Comment Grouping and Ownership
+
+A comment is a `//` line comment or a `/* */` block comment. The comments between
+two tokens are grouped, and each group is assigned to at most one owner: it trails
+the previous token, leads the next token, or is detached. The following rules
+decide it.
+
+| Event between two tokens | Effect |
+|:--|:--|
+| Start of the file | No previous token exists, so no group can trail |
+| A comment on the line of the previous token | It forms a group at once and is the only group that can trail that token. A comment-only run that follows is a new group; it never extends the inline comment |
+| Consecutive `//` comments | One group |
+| A block comment | It starts a distinct group and ends any pending group. Switching between block and line comments also ends the pending group. An empty block comment such as `/**/` is a group |
+| A blank line | Ends the pending group, and no later group can trail the previous token |
+| A group ends while trailing is possible | The first such group trails the previous token and later groups are detached |
+| A group ends while trailing is not possible | It is detached; the last group that no blank line ended leads the next token |
+| The next token is on the line of the previous token, or a block comment that could trail ends on the line of the next token | If exactly one group exists, it is detached and not guessed to trail or lead. With several groups, the first trails the previous token, the groups in between are detached and the last leads the next token |
+| A closing delimiter or the end of the file | The same rules apply. Groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
+
+Ownership then follows the construct:
+
+- The leading and detached comments of a declaration belong to the declaration, not
+  to its name or its body. A trailing comment after its last token belongs to the
+  declaration.
+- A comment before a list element belongs to the element, not to the separator that
+  precedes it.
+- A comment at the boundary of a nested expression belongs to the expression that
+  contains the boundary.
+- A parenthesized group owns the comments adjacent to its delimiters.
+- A capture, an atomic expression or an attributed expression does not duplicate
+  the ownership of its inner expression only because their spans share a boundary.
+- The grammar parser and the AST built by hand-written code have the same owners.
+
+Normalized comment text removes only the `//` marker of a line comment and keeps the
+following white space and the final newline. For a block comment it removes the outer
+delimiters and keeps the content of the first line; on later lines it removes the
+indentation and the first `*`. Newlines and nested comment delimiters stay in the
+text. The text is not a copy of every white space detail of the source; exact
+comment tokens and layout belong to `SourceInfo.Layout`.
 
 #### Parenthesized Groups in the Public AST
 
@@ -332,4 +372,4 @@ layout; and it keeps Predicate Actions and the pragmas that affect recognition,
 including `#repeat`, `#atomic` and `#stream`. A predicate that refers to captures or to
 values produced by omitted syntax MAY not work in the projection. Comments on retained
 forms follow the layout rules of the formatter; comments attached only to omitted
-forms MAY be omitted. `-syntax` cannot be combined with `-w` or `-l`.
+forms MAY be omitted. `-syntax` cannot be combined with `-w`, `-l` or `-check`.

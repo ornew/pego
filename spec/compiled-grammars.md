@@ -54,7 +54,7 @@ version 3 with a recognition bundle when a complete recognizer is available.
 | `RecognizeOnly()`, `pego parse -check` | Supported | Supported on the bytecode backends when a version 3 recognition bundle is present; a legacy file without a bundle returns an error |
 | `Parser.Grammar()` | The grammar, without source positions | `nil` |
 | `pego.Lint`, `pego lint` | Supported | Not supported |
-| `pego.GenerateGo`, `pego.GenerateTS`, `pego gen` | Supported; the output equals that from source | Not supported |
+| `pego.GenerateGo`, `pego.GenerateTypeScript`, `pego gen` | Supported; the output equals that from source | Not supported |
 | `pego convert` to `.pego` or `.json` | Supported, without comments or layout | Error: `the compiled grammar omits the AST` |
 | `pego sample` | Supported | Error: `the parser has no grammar AST` |
 | `pego explain`, `pego trace`, `pego profile` | Supported | Supported |
@@ -81,7 +81,7 @@ A file carries two version numbers after its magic number.
 | Number | Current values | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file: version 2 for a save with the AST, version 3 for a save without the AST that has a recognition bundle. A runtime loads versions 1, 2 and 3 |
-| Instruction-set version | 1 to 6, 8 and 9 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 the diagnostic-label mode, and version 9 run-time checks of dynamically typed struct field values and rule results. A recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own |
+| Instruction-set version | 1 to 6 and 8 to 12 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 the diagnostic-label mode, version 9 run-time checks of dynamically typed struct field values and rule results, version 10 the indexing operator `[]`, version 11 member names that start with `$` (capture access) and version 12 casts. A recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own |
 
 - A newer runtime loads the files of an older one. The file keeps the bytecode that
   the older compiler produced.
@@ -100,7 +100,7 @@ A file carries two version numbers after its magic number.
 ### Loading
 
 Loading checks the magic number, both versions, a CRC-32 checksum, the structure
-(every index is in range, every jump goes forward, no bytes trail the module) and
+(every index is in range, every jump goes forward except the one that closes a repetition and jumps back, no bytes trail the module) and
 the nesting depth. It also rejects a recovery region that encloses a streaming
 commitment, including files that were made with `#recover` on the `#stream`
 repetition.
@@ -109,8 +109,9 @@ Loading does not type-check the grammar again and does not verify that the
 bytecode uses the VM stacks correctly. A file that was made to contain type errors
 MAY make actions fail while parsing, and made-up bytecode is not guaranteed to
 terminate. The checksum detects accidents, not tampering, and is not a signature.
-A program that loads files from a source it does not trust MUST authenticate them
-by other means, or accept grammar source and compile it with `CompileSource`.
+A file from a source that is not trusted therefore cannot be verified by PEGO;
+authenticating it, or accepting grammar source and compiling it with `CompileSource`,
+is up to the program.
 
 ## Validation and Errors
 

@@ -56,8 +56,8 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocks := pegoCodeBlocks(string(doc))
-	if len(blocks) != 1 || !strings.Contains(string(doc), "https://github.com/ornew/pego/blob/main/pego.pego") || strings.Contains(string(doc), "## Full Grammar") {
-		t.Fatal("expected one simple grammar and a link to the canonical full source")
+	if len(blocks) != 1 || !strings.Contains(string(doc), "`pego.pego`") || strings.Contains(string(doc), "](http") || strings.Contains(string(doc), "## Full Grammar") {
+		t.Fatal("expected one simple grammar and a reference to the full source and no external link")
 	}
 	g, err := pego.ParseGrammar(src)
 	if err != nil {

@@ -101,7 +101,7 @@ The command-line form writes to standard output:
 pego fmt -syntax grammar.pego
 ```
 
-`-syntax` cannot be combined with `-w` or `-l`. Comments on retained forms
+`-syntax` cannot be combined with `-w`, `-l` or `-check`. Comments on retained forms
 follow the formatter's layout rules; comments attached only to omitted forms
 may be omitted.
 

@@ -692,7 +692,7 @@ generator rejects grammars that use it. See the [pragma specification](../../spe
 | `Document` (incremental parsing) | Yes | Go Node with `-document`; `-types` adds direct typed `Document.ParseAST` for eligible grammars, with Node conversion fallback otherwise. TypeScript is deferred |
 | `RecognizeOnly` | Yes | `Recognize`, with `-recognize` |
 | `WithMaxDepth` | Yes | Yes; generation-time default is set by `WithGeneratedMaxDepth` / `-max-depth` |
-| Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | Go: same package-local options |
+| Invocation cancellation and work limits | `WithContext`, `WithWorkLimits` | TypeScript: `signal`, `maxInputWork` and `maxSteps` options |
 | Choice of backend | Yes | (it is a backend of its own) |
 | `Parser.Grammar()`, saving, loading | Yes | No: the grammar is gone at run time |
 

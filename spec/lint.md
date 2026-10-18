@@ -32,8 +32,9 @@ linter, identified by a name.
   grammar saved one. A grammar that does not compile is reported with its compile
   errors.
 - Each finding prints on one line as `file:line:col: severity: message [check]`,
-  followed by a line `fix: ...` when there is a suggested fix. The last line
-  summarizes the number of errors, warnings and hints.
+  followed by a line `fix: ...` when there is a suggested fix. A run that exits
+  with status 1 ends with the error line `pego: lint: N errors, N warnings, N hints`
+  on the standard error; a run that exits with status 0 prints no summary.
 - `-f json` prints one JSON document with the members `grammar`, `start` and
   `findings`; each finding has `line`, `col`, `severity`, `check`, `rule`,
   `message` and, if present, `fix`.
@@ -148,8 +149,8 @@ The fix shows the class without the overlap or the punctuation.
 
 #### `unreachable-rule`
 
-A rule that the start rule never calls. A grammar with several entry points MAY
-suppress the finding for those rules or disable the check.
+A rule that the start rule never calls. The finding can be suppressed for a rule
+or disabled as a check, which is the way to declare further entry points.
 
 #### `right-recursion`
 
