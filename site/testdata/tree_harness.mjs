@@ -100,6 +100,6 @@ export async function treeView({ app, tree } = {}) {
 }
 
 export function wide(count = 10000) {
-  return { type: "List", start: 0, end: count,
-    children: Array.from({ length: count }, (_, i) => ({ type: "Match", start: i, end: i + 1, text: "x" })) };
+  return { start: 0, end: count,
+    value: Array.from({ length: count }, (_, i) => ({ start: i, end: i + 1, value: "x" })) };
 }

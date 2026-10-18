@@ -74,6 +74,9 @@ type parseRequest struct {
 	Unit      string `json:"unit"`      // codepoints (default) or bytes
 	Backend   string `json:"backend"`   // closure, bytecode, bytecode-iterative, or empty for the default
 	Recognize bool   `json:"recognize"` // check the input without building a tree
+	// SourceInfo adds the rule of each node and the names of captures to the tree, as
+	// pego parse -source-info does.
+	SourceInfo bool `json:"sourceInfo,omitempty"`
 	// MaxDepth limits the nesting of rule calls (pego.WithMaxDepth); 0 selects the playground's
 	// limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
@@ -213,6 +216,20 @@ type compiled struct {
 	g      *grammar.Grammar
 	info   compileResult
 	parser *pego.Parser // nil if the grammar has errors
+	// sourceInfo is the parser compiled with source information, compiled when first requested.
+	sourceInfo *pego.Parser
+}
+
+// sourceInfoParser returns the parser of c compiled with source information.
+func (c *compiled) sourceInfoParser() (*pego.Parser, error) {
+	if c.sourceInfo == nil {
+		p, err := pego.Compile(c.g, c.info.Start, pego.WithSourceInfo())
+		if err != nil {
+			return nil, err
+		}
+		c.sourceInfo = p
+	}
+	return c.sourceInfo, nil
 }
 
 var last *compiled
@@ -355,6 +372,13 @@ func parse(req parseRequest) parseResult {
 		opts = append(opts, pego.WithMaxDepth(maxDepth))
 	}
 	p := c.parser
+	if req.SourceInfo {
+		var err error
+		if p, err = c.sourceInfoParser(); err != nil {
+			res.Error = err.Error()
+			return res
+		}
+	}
 	if req.Start != "" && req.Start != p.Start() {
 		var err error
 		if p, err = p.WithStart(req.Start); err != nil {

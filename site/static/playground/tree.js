@@ -1,20 +1,81 @@
 // A bounded, paged view of the worker's tree. Parsing limits do not bound DOM work.
 import { escapeHTML } from "../assets/highlight.js";
 
-const isNode = (v) => v !== null && typeof v === "object" && typeof v.type === "string";
+// The tree is the JSON of pego parse: a node is an object with start and end, whose value is a
+// string or an array (a tuple or a list) and which may name its rule and captures; an error value
+// has an error message instead of a value; a struct is an object with type and fields; a tuple or
+// list value is an array; any other value is a plain JSON value.
+const isNode = (v) => v !== null && typeof v === "object" && typeof v.start === "number";
+const isStruct = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.type === "string";
+const isComposite = (v) => Array.isArray(v) || isStruct(v) || (isNode(v) && Array.isArray(v.value));
 const PAGE_SIZE = 100, INITIAL_ROWS = 400, MAX_ROWS = 5000;
 
-function nodeChildren(n) {
-  const fields = n.fields ? Object.keys(n.fields) : [];
-  const values = n.children ?? [];
+const noChildren = { length: 0 };
+
+// nodeChildren returns the entries shown under v: the elements of a node's tuple or list, labeled
+// with the names of the captures that sit on them, then the captures beside the tuple; the fields
+// of a struct; or the elements of an array.
+function nodeChildren(v) {
+  if (Array.isArray(v)) {
+    return { length: v.length, value(i) { return v[i]; }, entry(i) { return { label: String(i), index: true, value: v[i] }; } };
+  }
+  if (isStruct(v)) {
+    const names = v.fields ? Object.keys(v.fields) : [];
+    return { length: names.length, value(i) { return v.fields[names[i]]; }, entry(i) { return { label: names[i], index: false, value: v.fields[names[i]] }; } };
+  }
+  if (!isNode(v) || !Array.isArray(v.value)) return noChildren;
+  const labels = new Map(), side = [];
+  for (const [name, c] of Object.entries(v.captures ?? {})) {
+    if (Array.isArray(c.path) && c.path.length === 1) labels.set(c.path[0], labels.has(c.path[0]) ? `${labels.get(c.path[0])}, ${name}` : name);
+    else if ("value" in c) side.push({ name, value: c.value });
+  }
+  const elems = v.value;
   return {
-    length: fields.length + values.length,
-    value(i) { return i < fields.length ? n.fields[fields[i]] : values[i - fields.length]; },
+    length: elems.length + side.length,
+    value(i) { return i < elems.length ? elems[i] : side[i - elems.length].value; },
     entry(i) {
-      return { label: i < fields.length ? fields[i] : String(i - fields.length),
-        index: i >= fields.length, value: this.value(i) };
+      if (i >= elems.length) return { label: "&" + side[i - elems.length].name, index: false, value: this.value(i) };
+      return labels.has(i) ? { label: labels.get(i), index: false, value: elems[i] } : { label: String(i), index: true, value: elems[i] };
     },
   };
+}
+
+// span returns the range of the input that v covers: a node's own, or that of the nodes inside a
+// struct or an array; null when it has none. Ranges of values without their own are cached.
+const spans = new WeakMap();
+function span(v) {
+  if (isNode(v)) return [v.start, v.end];
+  if (v === null || typeof v !== "object") return null;
+  if (spans.has(v)) return spans.get(v);
+  let out = null;
+  const kids = nodeChildren(v);
+  for (let i = 0; i < kids.length; i++) {
+    const r = span(kids.value(i));
+    if (r) out = out ? [Math.min(out[0], r[0]), Math.max(out[1], r[1])] : r;
+  }
+  spans.set(v, out);
+  return out;
+}
+
+const short = (t) => JSON.stringify(t.length > 80 ? t.slice(0, 80) + "…" : t);
+
+// summary returns the HTML of the row of v after its label.
+function summary(v) {
+  if (isNode(v)) {
+    let html = "";
+    if (typeof v.error === "string") {
+      html += `<span class="n-type n-error">error</span> <span class="n-text">${escapeHTML(short(v.error))}</span>`;
+    } else if (typeof v.value === "string") {
+      html += `<span class="n-text">${escapeHTML(short(v.value))}</span>`;
+    } else {
+      html += `<span class="n-type n-type-builtin">${v.value.length === 0 ? "()" : `(${v.value.length})`}</span>`;
+    }
+    if (v.rule) html += `<span class="n-rule">@${escapeHTML(v.rule)}</span>`;
+    return html + ` <span class="n-span">${v.start}–${v.end}</span>`;
+  }
+  if (isStruct(v)) return `<span class="n-type n-type-user">${escapeHTML(v.type)}</span>`;
+  if (Array.isArray(v)) return `<span class="n-type n-type-builtin">[${v.length}]</span>`;
+  return `<span class="n-value">${escapeHTML(v === null ? "nil" : JSON.stringify(v))}</span>`;
 }
 
 export class TreeView {
@@ -56,7 +117,7 @@ export class TreeView {
     this.rows = 0;
     this.el.textContent = "";
     this.elements = new WeakMap();
-    if (!isNode(root)) {
+    if (root === null || root === undefined) {
       const p = this.doc.createElement("p");
       p.className = "tree-empty";
       p.textContent = message;
@@ -100,21 +161,13 @@ export class TreeView {
     row.className = "row";
     row.tabIndex = -1;
     const v = entry.value;
-    const kids = isNode(v) ? nodeChildren(v) : null;
+    const kids = isComposite(v) ? nodeChildren(v) : null;
     let html = kids?.length ? '<span class="twisty" aria-hidden="true"></span>' : '<span class="twisty none" aria-hidden="true"></span>';
     if (entry.label !== null) html += `<span class="n-label${entry.index ? " index" : ""}">${escapeHTML(entry.label)}${entry.index ? "" : ":"}</span> `;
+    html += summary(v);
     if (isNode(v)) {
-      html += `<span class="n-type n-type-${/^(Match|Seq|List|Operator|Error)$/.test(v.type) ? "builtin" : "user"}${v.type === "Error" ? " n-error" : ""}">${escapeHTML(v.type)}</span>`;
-      if (v.rule) html += `<span class="n-rule">@${escapeHTML(v.rule)}</span>`;
-      if (v.text !== undefined) {
-        const t = v.text.length > 80 ? v.text.slice(0, 80) + "…" : v.text;
-        html += ` <span class="n-text">${escapeHTML(JSON.stringify(t))}</span>`;
-      }
-      html += ` <span class="n-span">${v.start}–${v.end}</span>`;
       row.node = v;
       this.elements.set(v, row);
-    } else {
-      html += `<span class="n-value">${escapeHTML(v === null ? "nil" : JSON.stringify(v))}</span>`;
     }
     row.innerHTML = html;
     li.append(row);
@@ -259,12 +312,12 @@ export class TreeView {
       this.expand(li, work);
       if (li.group) for (const child of li.items.values()) walk(child);
     };
-    if (this.top && isNode(this.root)) walk(this.top);
+    if (this.top && this.root != null) walk(this.top);
   }
 
   collapseAll() {
     for (const li of this.el.querySelectorAll('li[aria-expanded="true"]')) this.collapse(li);
-    if (this.top && isNode(this.root)) this.expand(this.top);
+    if (this.top && this.root != null) this.expand(this.top);
   }
 
   onClick(e) {
@@ -321,15 +374,15 @@ export class TreeView {
 
   // Preserve last-containing-child semantics without rendering preceding siblings.
   reveal(pos) {
-    if (!isNode(this.root)) return;
+    if (this.root == null) return;
     const path = [];
     let n = this.root;
     for (;;) {
       const kids = nodeChildren(n);
       let index = -1;
       for (let i = 0; i < kids.length; i++) {
-        const v = kids.value(i);
-        if (isNode(v) && v.start <= pos && pos < v.end) index = i;
+        const r = span(kids.value(i));
+        if (r && r[0] <= pos && pos < r[1]) index = i;
       }
       if (index < 0) break;
       path.push(index);

@@ -79,11 +79,20 @@ func TestParse(t *testing.T) {
 	if !r.Matched || len(r.Errors) != 0 || r.Error != "" {
 		t.Fatalf("parse failed: %+v", r)
 	}
-	if want := `[(Pair Key="abc"@key Value="12"@value) (Pair Key="d"@key Value="3"@value)]`; r.SExpr != want {
+	if want := `[Pair{Key: "abc", Value: "12"} Pair{Key: "d", Value: "3"}]`; r.SExpr != want {
 		t.Errorf("sexpr = %s", r.SExpr)
 	}
-	if !strings.HasPrefix(r.JSON, "{\n  \"type\": \"List\",") || r.Nodes != 7 {
+	if !strings.HasPrefix(r.JSON, "{\n  \"start\": 0,\n  \"end\": 11,\n  \"value\": [") || r.Nodes != 7 {
 		t.Errorf("json = %s, nodes = %d", r.JSON, r.Nodes)
+	}
+
+	// Source information adds the rules and capture names, as pego parse -source-info does.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3", SourceInfo: true})
+	if want := `[Pair{Key: "abc"@key, Value: "12"@value} Pair{Key: "d"@key, Value: "3"@value}]`; r.SExpr != want {
+		t.Errorf("source info sexpr = %s", r.SExpr)
+	}
+	if !strings.Contains(r.JSON, `"rule": "key"`) {
+		t.Errorf("source info json = %s", r.JSON)
 	}
 
 	// A syntax error.
@@ -219,10 +228,15 @@ rule list = "[" value* "]"
 }
 
 func TestParseWithoutValue(t *testing.T) {
-	// A start rule that matches without producing a value still matches.
+	// A start rule whose elements are all dropped matches with the node of the empty tuple, and
+	// recognition matches without a tree.
 	for _, recognize := range []bool{false, true} {
 		r := call[parseResult](t, "parse", parseRequest{Grammar: `rule main = -"a"`, Input: "a", Recognize: recognize})
-		if !r.Matched || len(r.Errors) != 0 || r.Error != "" || r.JSON != "" {
+		want := "()"
+		if recognize {
+			want = ""
+		}
+		if !r.Matched || len(r.Errors) != 0 || r.Error != "" || r.SExpr != want || (r.JSON == "") != recognize {
 			t.Errorf("recognize=%v: %+v", recognize, r)
 		}
 	}
