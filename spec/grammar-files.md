@@ -67,7 +67,7 @@ those objects. JSON-decoded grammar ASTs therefore do not guarantee lossless
 source formatting. Normalized comment strings preserve content whitespace and
 line endings; each detached entry is one paragraph. Older JSON may omit these
 metadata objects. Comment grouping and node ownership follow the
-[source-metadata contract](../docs/design/057-source-info-and-comment-ownership.md).
+rules of this section.
 
 `SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
 comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
@@ -218,6 +218,118 @@ repetition bounds. Pointer cycles and typed nil interface nodes are rejected.
 The public `grammar.Validate` function checks this structure before semantic
 compilation. `grammar.ValidateContext(ctx, g)` checks the same structure and
 error order, but may return `ctx.Err()` without a partial diagnostic when its
-context is canceled. Neither function changes the AST. See
-[building grammars as ASTs and JSON](../docs/guide/grammar-asts.md) for API
-details. Unknown JSON fields remain ignored.
+context is canceled. Neither function changes the AST. Unknown JSON fields
+remain ignored.
+
+### Validation of a Grammar AST
+
+`grammar.Validate(g)` checks the structure of a grammar AST before compilation or
+formatting and returns the first `*grammar.ValidationError` in a deterministic
+traversal, without changing the AST. `grammar.ValidateContext(ctx, g)` performs the
+same checks in the same order and returns `ctx.Err()`, without a partial
+diagnostic, if it observes cancellation. Cancellation is cooperative and is not a
+bound on latency. Both functions walk iteratively, impose no size or depth limit,
+and MUST NOT run concurrently with a mutation of the AST.
+
+A `ValidationError` has a `Path` that uses JSON field names and zero-based indexes
+(`$.statements[0].expr.expr`), the closest known diagnostic position `Pos`, and a
+message `Msg`.
+
+| Rejected | Allowed |
+|:--|:--|
+| A nil grammar; a missing required child; a nil entry in a node collection | Shared subtrees; empty collections; genuinely nil optional children |
+| An interface that holds a typed nil pointer; an unsupported embedded node type | |
+| A pointer cycle | |
+| A negative positional reference | |
+| A repetition whose minimum is negative, or whose finite maximum is smaller than the minimum | Any negative maximum, which means unbounded |
+| A character range whose `Lo` or `Hi` is not a Unicode scalar value (0 through 0x10FFFF except 0xD800 to 0xDFFF), or with `Lo > Hi` | A range that spans the surrogate interval; overlapping ranges; an empty class |
+
+Validation is structural. It does not resolve names, check the types of actions,
+validate attributes or enforce the semantics of an Operators Rule; compilation does.
+It does not validate comments or layout. Compilation, the generators and the
+reconstruction of an AST from a compiled grammar run structural validation
+themselves. `grammar.Format` and `grammar.MarshalJSON` expect a structurally valid
+AST.
+
+Both bytecode VMs and generated parsers treat any negative maximum as unbounded.
+Saving a compiled grammar preserves the original maximum in its AST and writes the
+standard unbounded representation to the bytecode.
+
+### Grammar JSON
+
+`grammar.MarshalJSON` serializes the AST using the `json` tags of its fields. Each
+interface node has an `"@type"` member such as `"RuleDef"` or `"Literal"`. Parsed
+metadata is written under `source`, `packageSource` or `skipSource`; formatter layout
+and exact comment tokens are omitted.
+
+| Function | Behavior |
+|:--|:--|
+| `grammar.UnmarshalJSON(data)` | Accepts exactly one complete JSON value, optionally followed by white space, and runs structural validation. It rejects `null`, trailing values or other data, and numbers that overflow their Go destination. Unknown fields are ignored; duplicate keys follow `encoding/json` |
+| `grammar.DecodeJSON(data)` | As `UnmarshalJSON`, and also rejects unknown fields and duplicate keys at every object. A `*grammar.JSONDecodeError` reports the JSON path and the zero-based byte offset of such an error; malformed JSON wraps the standard syntax error |
+
+A null field is reported by path (for example `$.statements[0].spec.fields[0]`)
+and does not cause a panic during compilation.
+
+An attribute (`Attributed`, `Attribute`) holds `args`, an ordered list of integers,
+strings, booleans, null slots and expression nodes, and `kwArgs`, which maps names to
+the same forms. `@custom(2,)` yields `[2, null]` and `@custom(2)` yields `[2]`.
+Keyword arguments follow positional arguments in source, and strict decoding rejects
+a repeated keyword. Integer constants use the native `int` range; the minimum
+integer is formatted as `-MaxInt - 1`, with parentheses where required, because its
+absolute value cannot be a positive source token, and parsing the result preserves
+the value.
+
+### Source-only AST nodes
+
+Source-only syntax has dedicated nodes. An explicit Rule Expression group is
+`Group{Expr}`; formatting and JSON preserve it and compilation removes it. Source
+`#` pragmas use `Repeat` (`#repeat`), `Atomic` (`#atomic`), `Recovery` (`#recover`)
+and `Stream` (`#stream`); compilation lowers recovery and streaming to their
+executable representation without changing the source AST. A braced action sequence
+is `Block{Statements}`: a single statement stays in `Predicate.Term`, and a nonempty
+multi-statement block executes its statements in order like adjacent Predicate
+Actions. Empty predicate blocks, braced Value Actions and `InlineAction` nodes can be
+parsed, formatted and serialized, but semantic checking or compilation rejects them
+as unsupported. The AST of a compiled grammar and `Parser.Grammar()` return the
+normalized grammar, which MAY share unchanged nodes with the source AST and is not a
+detached copy. Normalization does not mutate the caller's AST; the source and
+normalized ASTs are treated as immutable while a parser uses them, and
+`Grammar.Clone()` returns an independent copy.
+
+### Literal matching values
+
+A `grammar.Literal.Value` matches as its decoded sequence of runes, in which each
+malformed UTF-8 byte becomes U+FFFD. A value that contains `"\xc3"` matches a
+replacement character and cannot match the leading byte of `"é"`. Both position
+units, saved modules and generated parsers share this rule. Compilation and
+generation derive the matching data without rewriting the caller's AST, binary
+serialization preserves the original value, and JSON strings follow the replacement
+behavior of `encoding/json`. String constants in actions are separate from
+matching literals. Matched text follows the input: with byte positions it keeps the
+consumed bytes, and with code-point positions it is decoded; so in byte mode
+`text($capture)` distinguishes a valid U+FFFD from an invalid input byte that the
+same literal matched.
+
+### Context-aware formatting and collection
+
+`grammar.FormatContext`, `FormatExprContext`, `FormatTermContext` and
+`FormatTypeContext` produce the same text as `Format`, `FormatExpr`, `FormatTerm` and
+`FormatType`. On cancellation they return an empty string and the context error, never
+partial text. `Grammar.RulesContext`, `Grammar.AllCommentsContext`,
+`Grammar.TypesContext` and `Attribute.ExpressionArgsContext` return the contents of
+their ordinary counterparts in the same order (declaration order for rules and types;
+positional arguments followed by keyword arguments in sorted order; the traversal of
+`AllComments`), or a nil slice and the context error on cancellation. Cancellation is
+cooperative in every case, and the AST MUST NOT be mutated while these functions run.
+
+### Syntax projection
+
+`grammar.FormatSyntax(g)` (command line: `pego fmt -syntax`) prints the recognition
+syntax of a grammar and leaves the AST unchanged. It omits Type Definition
+Statements, result types, Value Actions, metadata attributes, captures and `#recover`
+wrappers; it removes groups whose parentheses are not required for precedence or
+layout; and it keeps Predicate Actions and the pragmas that affect recognition,
+including `#repeat`, `#atomic` and `#stream`. A predicate that refers to captures or to
+values produced by omitted syntax MAY not work in the projection. Comments on retained
+forms follow the layout rules of the formatter; comments attached only to omitted
+forms MAY be omitted. `-syntax` cannot be combined with `-w` or `-l`.

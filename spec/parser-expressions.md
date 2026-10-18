@@ -69,9 +69,6 @@ The following rules determine the shape of the tree.
 5. **Whole input.** A parse succeeds only if the [start rule](parsing.md#start-rule)
    matches the entire input; see [Parsing](parsing.md#whole-input).
 
-The reasons for making choices transparent are recorded in
-[docs/design/002](../docs/design/002-transparent-choice.md).
-
 ## Operator Summary
 
 | Syntax | Name | Consumes input |
@@ -128,7 +125,7 @@ A literal `"..."` matches the given decoded character sequence and produces a te
 For public grammar ASTs, malformed UTF-8 bytes in `Literal.Value` each decode as U+FFFD;
 comparison uses the same sequence in both position units. This does not rewrite the AST
 or change string constants in actions. Matched text retains the input spelling according
-to the selected position unit (see [grammar ASTs](../docs/guide/grammar-asts.md)).
+to the selected position unit.
 
 ```pego
 rule a = "abc"
@@ -400,7 +397,7 @@ that the rule defines end with the call; the variables of the calling rules are
 visible to the called rule (see [Variables](predicates.md#variables)). Rules
 MAY call themselves recursively.
 
-A rule defined with a [Operators Rule](operators-rule.md) can be called with the name
+A rule defined with an [Operators Rule](operators-rule.md) can be called with the name
 of a binding level using `level(name, binding)`. The keyword and opening parenthesis
 must be adjacent; `name(binding)` is not a level call. See
 [Level-restricted calls](operators-rule.md#level-restricted-calls).
@@ -458,8 +455,7 @@ For the input `yxx`, `pego parse -f sexpr` prints the left-associative tree
 With `rule a = "y" / a "x"`, the same input fails with
 `1:2: syntax error: expected end of input`.
 
-The memoization that the algorithm needs is described in
-[docs/design/003](../docs/design/003-packrat-parsing.md). For expressions with
-operator precedence and associativity, a [Operators Rule](operators-rule.md) declares
+For expressions with
+operator precedence and associativity, an [Operators Rule](operators-rule.md) declares
 the operators directly instead of requiring one left-recursive rule per
 precedence level.

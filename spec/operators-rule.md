@@ -5,9 +5,6 @@ expressions by declaring operator parts at binding levels, each with a
 precedence and an associativity. Operand and operator shapes are ordinary Rule Expressions.
 Their combination follows a parsing algorithm inspired by Pratt parsing.
 
-The background of the design and the alternatives that were considered are
-recorded in [design 005](../docs/design/005-operators-rule.md).
-
 ```pego
 type Num terminal
 type Ident terminal

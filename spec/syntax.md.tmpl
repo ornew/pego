@@ -9,8 +9,7 @@ and meaning.
 
 The canonical generator input is the [full grammar on GitHub](https://github.com/ornew/pego/blob/main/pego.pego). Its actions
 produce a typed source tree with comments, source forms, and recoverable error
-nodes. This tree is separate from the public `grammar.Grammar` AST; selecting
-a generated parser for source APIs remains [proposed](../docs/design/054-generated-grammar-source-parser.md).
+nodes. This tree is separate from the public `grammar.Grammar` AST.
 
 The grammar is checked by tests, which run both views on every
 `.pego` file of the repository and on every `pego` code block of the

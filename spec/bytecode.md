@@ -1,7 +1,7 @@
 # PEGO Bytecode Specification
 
 This document specifies the bytecode (the *module*) that a PEGO grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
-A runtime for another language must implement this document. The meaning of the language that the bytecode implements is defined by the other chapters of the [specification](README.md); for the results a parse must produce, see [Parsing](parsing.md). For the design background, see [design record 010](../docs/design/010-bytecode-vm.md).
+A runtime for another language must implement this document. The meaning of the language that the bytecode implements is defined by the other chapters of the [specification](README.md); for the results a parse must produce, see [Parsing](parsing.md).
 
 The reference implementation is the Go package `internal/engine` (`bytecode.go`, `bcompile.go` and the VMs in `vm.go` and `ivm.go`). A bytecode VM must produce the same results as the closure backend.
 
@@ -180,7 +180,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 31 | `RETURN` | | The rule body succeeded. |
 | 32 | `END` | | An Operators Rule part succeeded. |
 
-**Streaming.** `NEXT` with mode 2 is emitted only for the repetition marked `#stream` in the start rule. When the VM is parsing a stream and this repetition runs in the start rule's body (call depth 1), the element value is not kept: it is passed to the consumer (no longer fresh), the input up to the current position is committed (earlier input and memo entries are discarded; see [design record 007](../docs/design/007-streaming-and-incremental-parsing.md)), and the loop exits if the iteration consumed no input and otherwise jumps to A. On reentry, `ITER` enforces the finite maximum before executing another element; a zero maximum executes no elements. In any other parse, mode 2 behaves like mode 1.
+**Streaming.** `NEXT` with mode 2 is emitted only for the repetition marked `#stream` in the start rule. When the VM is parsing a stream and this repetition runs in the start rule's body (call depth 1), the element value is not kept: it is passed to the consumer (no longer fresh), the input up to the current position is committed (earlier input and memo entries are discarded), and the loop exits if the iteration consumed no input and otherwise jumps to A. On reentry, `ITER` enforces the finite maximum before executing another element; a zero maximum executes no elements. In any other parse, mode 2 behaves like mode 1.
 
 ### Recovery
 
