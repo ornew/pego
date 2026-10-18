@@ -6,19 +6,19 @@ rejected, and where the time of a parse goes. It covers three commands, `pego ex
 
 Contents:
 
-1. [The example grammar](#1-the-example-grammar)
-2. [Why does an input fail?](#2-why-does-an-input-fail) `pego explain`
-3. [What does the parser do?](#3-what-does-the-parser-do) `pego trace`
-4. [Why is a parse slow?](#4-why-is-a-parse-slow) `pego profile`
-5. [Reading the profile](#5-reading-the-profile)
-6. [From Go](#6-from-go)
-7. [Costs and limits](#7-costs-and-limits)
+1. [The example grammar](#the-example-grammar)
+2. [Why does an input fail?](#why-does-an-input-fail) `pego explain`
+3. [What does the parser do?](#what-does-the-parser-do) `pego trace`
+4. [Why is a parse slow?](#why-is-a-parse-slow) `pego profile`
+5. [Reading the profile](#reading-the-profile)
+6. [From Go](#from-go)
+7. [Costs and limits](#costs-and-limits)
 
 The examples use the `pego` command; build it with `go build -o pego ./cmd/pego`. Every command below was run as shown,
 and its output is copied from the terminal (standard output and standard error together). Times in profiles will
 differ on your machine.
 
-## 1. The Example Grammar
+## The Example Grammar
 
 A small configuration language with assignments, updates and calls:
 
@@ -46,7 +46,7 @@ server.port = 8080;
 log.rotate(7 size);
 ```
 
-## 2. Why Does an Input Fail?
+## Why Does an Input Fail?
 
 A PEG parser backtracks, so a syntax error does not come from one place: it lists everything that was expected at the
 farthest position any alternative reached (see [error messages](error-messages.md#what-a-syntax-error-is)).
@@ -100,7 +100,7 @@ Some things to know:
   expression a `#recover` recovered from are listed under the call that contains it, marked `(recovered by #recover)`.
 - `-n` limits the number of entries per error (default 10).
 
-## 3. What Does the Parser Do?
+## What Does the Parser Do?
 
 `pego trace` prints every rule call of a parse as an indented tree. A call whose nested calls are shown takes two
 lines, its start (`rule line:col`) and its end (`rule -> result`); a call without shown nested calls takes one:
@@ -138,7 +138,7 @@ main 1:1
 
 Ranges are `start-end` with the end exclusive, in lines and columns of the position unit (`-unit`). Already this short
 trace shows a cost: on the second line `ident` reads `log.rotate` three times, once per alternative of `stmt`.
-Section 4 comes back to it.
+[Why Is a Parse Slow?](#why-is-a-parse-slow) comes back to it.
 
 Other marks on a result:
 
@@ -230,7 +230,7 @@ match the next character (first-character dispatch), not always the same ones. T
 that fail having examined no more than the next character, with the calls inside them; every other event is the same
 on each backend, and results never differ.
 
-## 4. Why Is a Parse Slow?
+## Why Is a Parse Slow?
 
 `pego profile` parses the input once with tracing and prints the cost of each rule. On 900 statements (35 KB):
 
@@ -298,7 +298,7 @@ Flags: `-sort` chooses the column to sort by (`self`, the default, `time`, `call
 same data as JSON (times in nanoseconds), and `-s`, `-i`, `-unit` and `-backend` work as for `parse`. The profile is
 printed even when the input has a syntax error (the `result` line shows it), and the exit status is 0.
 
-## 5. Reading the Profile
+## Reading the Profile
 
 | Column | Meaning |
 |:--|:--|
@@ -322,7 +322,7 @@ How to use them:
   rule normally has at most one repeat per position. Rules that call no other rule, and rules called from a single
   place, are not memoized (see [memoization](memoization.md)): they are evaluated again whenever their caller
   is. A rule evaluated more than twice at a position is flagged. The fix is usually in the caller: a choice whose
-  alternatives begin alike, as in section 4.
+  alternatives begin alike, as in [Why Is a Parse Slow?](#why-is-a-parse-slow).
 - **`wasted` is backtracking.** Failing is normal (every choice fails before it succeeds), and failing on the first
   character costs one position. A large `wasted`, or a hint about a call that "failed after examining much input",
   means a rule recognized much of a construct before deciding it was the wrong one. Factor the common prefix, reorder
@@ -338,7 +338,7 @@ alternative failed, and a later one matched) is not counted in `wasted`: it show
 alternative makes again, or as failed calls of the alternatives themselves when they are rules, as `assign` and
 `update` are here.
 
-## 6. From Go
+## From Go
 
 `pego.WithTrace` passes every event to a function; the methods of the event read the parser, so call them from the
 function:
@@ -673,7 +673,7 @@ JavaScript allocations, retained heap or browser timing; see [design
 043](../design/043-generated-parser-observability.md#typescript-profile-measurements)
 for conditions and limits.
 
-## 7. Costs and Limits
+## Costs and Limits
 
 These costs and limits describe engine tracing and profiling; generated-parser
 measurements are linked above.

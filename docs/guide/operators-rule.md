@@ -21,7 +21,7 @@ left-recursive calculator are the files `calc.pego` and `calc_lr.pego` in
 [`examples/calculator`](../../examples/calculator) (without their header comments); the chain variant is written out
 below.
 
-## 1. An Operators Rule Calculator
+## An Operators Rule Calculator
 
 ```pego
 // calc.pego
@@ -89,9 +89,9 @@ Here is how to read an Operators Rule Definition Statement.
   level is a one-line change and nothing else has to be renumbered. All operators of a level share a precedence, and a
   level may mix prefix, infix and postfix operators.
 - **`infix left | right | none`** gives the associativity: `1 - 2 - 3` is `(1 - 2) - 3`, `2 ^ 3 ^ 2` is `2 ^ (3 ^ 2)`,
-  and `none` operators do not chain (section 5).
+  and `none` operators do not chain ([Operator Forms and Associativity](#operator-forms-and-associativity)).
 - **An operator part** (`"+" / "-"`) is an ordinary Rule Expression. It may be several tokens, call other rules, or
-  contain captures (section 4).
+  contain captures ([Level-Restricted Calls](#level-restricted-calls)).
 - **Actions** see `$lhs`, `$rhs` (the operands) and `$op` (the text the operator part matched, as a `Match` node). In
   a rule with a declared type, `$lhs` and `$rhs` have that type, which is what lets the `Binary` fields be `Expr`.
 
@@ -109,7 +109,7 @@ pego parse -g calc.pego -f sexpr -i '1 +'
 pego: 1:4: syntax error: expected "(", "+", "-", [0-9]
 ```
 
-## 2. The Same Language With Left Recursion
+## The Same Language With Left Recursion
 
 A PEG rule may call itself in leftmost position, directly or through other rules. PEGO detects such cycles and parses
 them by growing a seed: it first matches the non-recursive alternatives, then repeatedly tries again with the result so
@@ -188,7 +188,7 @@ grammar is organized.
   main rule has to consume the trailing `ws`.
 - **Every level is a rule you can call.** `term` parses a product without sums, which is useful if other parts of your
   grammar need exactly that (an Operators Rule offers the same with
-  [level-restricted calls](#4-level-restricted-calls)).
+  [level-restricted calls](#level-restricted-calls)).
 
 ```bash
 pego parse -g calc_lr.pego -f sexpr -i '1 +'
@@ -232,7 +232,7 @@ alternatives; when a left-recursive rule stops short, look at the order first.
 
 **Ordered choice picks the first operator that matches, not the longest.** In `op:("<" / "<=")` the `<` wins on `1<=2`
 and `=2` is left over; write `"<=" / "<"` (or put `!"="` after `"<"`). This is the usual PEG rule, and you have to
-follow it in every operator list. An Operators Rule does not have the problem (section 8).
+follow it in every operator list. An Operators Rule does not have the problem ([Pitfalls](#pitfalls)).
 
 ```pego
 // lr-ops.pego
@@ -251,7 +251,7 @@ pego: 1:3: syntax error: expected [0-9]
 (Seq "1"@num "<=" "2"@num l="1"@num op="<=" r="2"@num)@rel2
 ```
 
-## 3. The Precedence Chain
+## The Precedence Chain
 
 The oldest way to write an expression grammar needs neither left recursion nor Operators Rule. Each level matches an operand of
 the next level, followed by any number of operator-operand pairs, and `foldl` builds the left-leaning tree
@@ -330,7 +330,7 @@ pego parse -g chain-cmp.pego -f sexpr -i '1 < 2 < 3'
 pego: 1:7: syntax error: expected " ", "+", "-", end of input
 ```
 
-## 4. Level-Restricted Calls
+## Level-Restricted Calls
 
 Some constructs contain an expression that must not use the loosest operators. The classic example is the argument list
 of a call: in `f(a, b)` the comma separates arguments, so the arguments must be parsed *without* the comma operator,
@@ -417,9 +417,9 @@ Things to notice:
   by the Operators Rule loop, which makes `a ? b : c ? d : e` nest to the right.
 - `-a ** b` is `-(a ** b)` because `**` is in a tighter level than the prefix `-`, and `2 ** -1` parses anyway.
 - `skip` is **not** inserted inside an operator part, so `"?" then:expr ws ":"` spells out the whitespace before `":"`.
-  See [pitfalls](#8-pitfalls).
+  See [pitfalls](#pitfalls).
 
-## 5. Operator Forms and Associativity
+## Operator Forms and Associativity
 
 | Declaration | Form | Notes |
 |:--|:--|:--|
@@ -485,7 +485,7 @@ pego parse -g apply.pego -s e -f sexpr -i 'f (-1)'
 ```
 
 The last two lines show the catch of juxtaposition: `f -1` is a subtraction, because at that position both `-` and
-the empty operator match and the longer one wins (see [pitfalls](#8-pitfalls)). The argument has to be parenthesized.
+the empty operator match and the longer one wins (see [pitfalls](#pitfalls)). The argument has to be parenthesized.
 
 **Prefix and postfix in the same level.** The right operand of a prefix operator contains only *tighter* levels, so a
 postfix operator of the same level is applied to the whole prefix expression: `-3!` is `(-3)!`. Put the postfix operator
@@ -524,7 +524,7 @@ pego parse -g same-level.pego -s tighter -f sexpr -i '-3!'
 (Neg X=(Fact X=Num"3"@num))
 ```
 
-## 6. The Tree of an Operators Rule
+## The Tree of an Operators Rule
 
 ### Typed Rules and the `Operator` Node
 
@@ -621,7 +621,7 @@ pego parse -g operand-captures.pego -s e -f sexpr -i '((1))'
 (Paren X=(Paren X=Num"1"@num))
 ```
 
-## 7. Choosing Between the Three
+## Choosing Between the Three
 
 | | Operators Rule | Left-recursive rules | Precedence chain |
 |:--|:--|:--|:--|
@@ -653,7 +653,7 @@ A rule of thumb:
 The three can be mixed freely. An Operators Rule's operands and operator parts are normal Rule Expressions, so they
 can call any rule; and the rules of a statement grammar call the rule that holds the Operators Rule like any other.
 
-## 8. Pitfalls
+## Pitfalls
 
 **The words `operators`, `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are keywords.** A rule called
 `operand` can be defined, but every reference to it is a syntax error (`expected an expression, found 'operand'`);
@@ -735,7 +735,7 @@ current level. If it cannot, the parser does *not* fall back to a shorter operat
 tokenizer's maximal munch, and it has two consequences.
 
 First, the order of the operators does not matter for correctness. `"<"` and `"<="` can be in different levels, in any
-order, and `1 <= 2` parses as expected (in rule-based grammars `"<" / "<="` is the bug shown in section 2).
+order, and `1 <= 2` parses as expected (in rule-based grammars `"<" / "<="` is the bug shown in [The Same Language With Left Recursion](#the-same-language-with-left-recursion)).
 
 Second, `a ++b` is a postfix `++` followed by an unexpected `b`, and not `a + (+b)`, even though both are
 syntactically possible:
@@ -849,10 +849,10 @@ pego: 1:5: syntax error: expected [0-9]
 Without the cut, `1 + x` is the number `1` followed by the literal text `+ x`; with it, the `+` is an operator and the
 missing operand is an error.
 
-**Left recursion needs the base case last.** See section 2. If a left-recursive rule matches less than you expect,
+**Left recursion needs the base case last.** See [The Same Language With Left Recursion](#the-same-language-with-left-recursion). If a left-recursive rule matches less than you expect,
 check the order of its alternatives first.
 
-## 9. A Larger Example: Minilang
+## A Larger Example: Minilang
 
 [`examples/minilang`](../../examples/minilang/minilang.pego) is a small language where statements are ordinary PEG rules
 and expressions are one Operators Rule, nested in each other. The pieces that matter for this guide:

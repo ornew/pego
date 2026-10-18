@@ -13,19 +13,19 @@ error messages and recovery, see [Error Messages](error-messages.md) and [Recove
 
 Contents:
 
-1. [The toolbox](#1-the-toolbox): predicates, variables, lookahead, attributes
-2. [Cost: memoization and variables](#2-cost-memoization-and-variables)
-3. [Recipes](#3-recipes): [matching tags](#matching-tags), [indentation blocks](#indentation-blocks),
+1. [The toolbox](#the-toolbox): predicates, variables, lookahead, attributes
+2. [Cost: memoization and variables](#cost-memoization-and-variables)
+3. [Recipes](#recipes): [matching tags](#matching-tags), [indentation blocks](#indentation-blocks),
    [newlines that depend on context](#newlines-that-depend-on-context), [here-documents](#here-documents),
    [long brackets](#long-brackets), [limiting nesting](#limiting-nesting)
-4. [Pitfalls](#4-pitfalls)
+4. [Pitfalls](#pitfalls)
 
 The examples use the `pego` command (`go build -o pego ./cmd/pego`). Commands are followed by their output, standard
 output and standard error together. A grammar block whose first line is `// name.pego` is a complete file to save under
 that name; a block marked `(changed rules)` replaces the rules of the same names in that file. Every command and its
 output below were run as shown, in this order.
 
-## 1. The Toolbox
+## The Toolbox
 
 ### Predicate Actions
 
@@ -296,7 +296,7 @@ Three attributes matter here:
 | say why a check failed | `@error` on the predicate |
 | skip bad input and carry on | `#recover`, whose `skip` can read variables |
 
-## 2. Cost: Memoization and Variables
+## Cost: Memoization and Variables
 
 A packrat parser caches the result of a rule at each input position, so that backtracking does not repeat work. A rule
 that reads variables does not depend on the position alone: the same rule at the same position can succeed with one
@@ -338,7 +338,7 @@ environment. Changing a value behind other names copies that prefix to preserve 
 changes to many distinct names can allocate more than a grammar with one variable. To measure this trade-off in your
 own grammar, see the [performance measurement method](../performance.md#how-to-measure).
 
-## 3. Recipes
+## Recipes
 
 ### Matching Tags
 
@@ -718,7 +718,7 @@ pego parse -g depth.pego -check -i '(((())))'
 pego: 1:5: nested too deeply
 ```
 
-## 4. Pitfalls
+## Pitfalls
 
 | Pitfall | What happens | What to do |
 |:--|:--|:--|
