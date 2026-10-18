@@ -100,10 +100,182 @@ func fixParsed(src string, positional bool) (string, error) {
 			edits = append(edits, fixEdit{start, start + len(m.Name), "End"})
 		}
 	})
+	types, err := typeEdits(o, src, g)
+	if err != nil {
+		return "", err
+	}
+	edits = append(edits, types...)
 	if len(edits) == 0 {
 		return src, nil
 	}
 	return applyFixEdits(src, edits), nil
+}
+
+// valueTypeNames maps the reserved names of concrete syntax tree types to the value types that
+// replace them.
+var valueTypeNames = map[string]string{
+	"terminal": "node[string]",
+	"Match":    "node[string]",
+	"Seq":      "node",
+	"List":     "node",
+	"Operator": "node",
+	"Error":    "error",
+}
+
+// typeEdits returns the edits that replace terminal types and the reserved names of concrete
+// syntax tree types with value types. A terminal type T becomes the struct { Text string }; a
+// rule declared with it and without an action, which produced a terminal holding its matched
+// text, builds the struct from that text instead; and T{s} becomes T{Text: s}.
+func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error) {
+	defs := map[string]grammar.TypeSpec{}
+	for _, td := range g.Types() {
+		defs[td.Name] = td.Spec
+	}
+	// terminal returns the terminal type that name stands for, through aliases, or "".
+	terminal := func(name string) string {
+		for seen := map[string]bool{}; !seen[name]; {
+			seen[name] = true
+			switch spec := defs[name].(type) {
+			case *grammar.TerminalSpec:
+				return name
+			case *grammar.AliasSpec:
+				r, ok := spec.Type.(*grammar.TypeRef)
+				if !ok {
+					return ""
+				}
+				name = r.Name
+			default:
+				return ""
+			}
+		}
+		return ""
+	}
+	var edits, last []fixEdit
+	for _, td := range g.Types() {
+		if spec, ok := td.Spec.(*grammar.TerminalSpec); ok {
+			src := spec.Source()
+			edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "= { Text string }"})
+		}
+	}
+	for _, r := range grammar.TypeRefs(g) {
+		if to, ok := valueTypeNames[r.Name]; ok && defs[r.Name] == nil && r.Pos.IsValid() {
+			edits = append(edits, fixEdit{o.at(r.Pos), o.at(r.End), to})
+		}
+	}
+	inspectAST(g, func(n any) {
+		if c, ok := n.(*grammar.TerminalConstructor); ok && len(c.Args) == 1 {
+			start := o.at(c.Args[0].(grammar.SourceNode).Source().Pos)
+			edits = append(edits, fixEdit{start, start, "Text: "})
+		}
+	})
+	// ruleTerminal returns the terminal type a rule is declared with, or "".
+	ruleTerminal := map[string]string{}
+	for _, s := range g.Statements {
+		if rd, ok := s.(*grammar.RuleDef); ok {
+			if ref, ok := rd.Type.(*grammar.TypeRef); ok {
+				ruleTerminal[rd.Name] = terminal(ref.Name)
+			}
+		}
+	}
+	// A terminal of a rule held its matched text, which text read; the struct holds it in Text.
+	// text($x) becomes $x.Text where every capture x in the rule is a call of a rule of a
+	// terminal type, or a choice of such calls.
+	var terminalCall func(e grammar.Expr) bool
+	terminalCall = func(e grammar.Expr) bool {
+		switch e := ungroup(e).(type) {
+		case *grammar.Ref:
+			return e.Level == "" && ruleTerminal[e.Name] != ""
+		case *grammar.Choice:
+			for _, alt := range e.Alts {
+				if !terminalCall(alt) {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	}
+	for _, s := range g.Statements {
+		rd, ok := s.(*grammar.RuleDef)
+		if !ok {
+			continue
+		}
+		terminalCapture := map[string]bool{}
+		inspectAST(rd, func(n any) {
+			if c, ok := n.(*grammar.Capture); ok {
+				ok, seen := terminalCapture[c.Name]
+				terminalCapture[c.Name] = (ok || !seen) && terminalCall(c.Expr)
+			}
+		})
+		inspectAST(rd, func(n any) {
+			c, ok := n.(*grammar.Call)
+			if !ok || c.Func != "text" || len(c.Args) != 1 {
+				return
+			}
+			if r, ok := c.Args[0].(*grammar.CaptureRef); ok && !r.Param && terminalCapture[r.Name] {
+				src := c.Source()
+				edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "$" + r.Name + ".Text"})
+			}
+		})
+	}
+	for _, s := range g.Statements {
+		rd, ok := s.(*grammar.RuleDef)
+		if !ok || rd.Action != nil {
+			continue
+		}
+		ref, ok := rd.Type.(*grammar.TypeRef)
+		if !ok {
+			continue
+		}
+		t := terminal(ref.Name)
+		if t == "" {
+			continue
+		}
+		if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+			return nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running pego fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
+		}
+		taken := map[string]bool{}
+		captures := false
+		inspectAST(rd, func(n any) {
+			switch n := n.(type) {
+			case *grammar.Capture:
+				taken[n.Name] = true
+				captures = true
+			case *grammar.Lambda:
+				for _, p := range n.Params {
+					taken[p] = true
+				}
+			}
+		})
+		name := "t"
+		for i := 1; taken[name]; i++ {
+			name = fmt.Sprintf("t%d", i)
+		}
+		body := rd.Expr.(grammar.SourceNode).Source()
+		start, end := o.at(body.Pos), o.at(body.End)
+		open, close := name+":(", ")"
+		if _, ok := rd.Expr.(*grammar.Group); ok {
+			open, close = name+":", ""
+		}
+		// The text of a match is its value only where nothing in it is captured: captures inside
+		// #atomic have no effect.
+		if !captures && !atomic(rd.Expr) {
+			close += " #atomic"
+		}
+		action := fmt.Sprintf("%s{Text: text($%s)}", t, name)
+		edits = append(edits, fixEdit{start, start, open})
+		if rd.DefaultAction {
+			// Replace the ... of "=> ...".
+			at := strings.Index(src[end:], "...")
+			if at < 0 {
+				return nil, fmt.Errorf("%d:%d: cannot find the action of rule %s", rd.Pos.Line, rd.Pos.Col, rd.Name)
+			}
+			last = append(last, fixEdit{end, end, close}, fixEdit{end + at, end + at + 3, action})
+		} else {
+			last = append(last, fixEdit{end, end, close + " => " + action})
+		}
+	}
+	return append(edits, last...), nil
 }
 
 // positionalSite returns the edits for the positional captures of one action over expression
@@ -183,6 +355,12 @@ func positionalSite(o *fixOffsets, e grammar.Expr, action grammar.Term, taken ma
 		edits = append(edits, fixEdit{o.at(r.Pos), o.at(r.End), text})
 	}
 	return edits, nil
+}
+
+// atomic reports whether e is an expression marked #atomic, in parentheses or not.
+func atomic(e grammar.Expr) bool {
+	_, ok := ungroup(e).(*grammar.Atomic)
+	return ok
 }
 
 // ungroup returns e without its enclosing parentheses.

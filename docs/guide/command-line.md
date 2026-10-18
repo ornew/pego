@@ -210,7 +210,14 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
   built-in member;
 - the deprecated type `any` to `_`, where the grammar still compiles with `_`. A value of type `_` needs a cast before
   it is used as another type, so a use that would need one keeps `any`, as does a rule type or cast that must produce
-  a node; `pego lint` reports them.
+  a node; `pego lint` reports them;
+- a terminal type `type T terminal` to the struct `type T = { Text string }`. A rule declared with it and without an
+  action, `rule r T = e`, which produced the text it matched, becomes `rule r T = t:(e) #atomic => T{Text: text($t)}`
+  (without `#atomic` when `e` is atomic already or has captures, which `#atomic` would ignore); `T{s}` becomes `T{Text: s}`; and `text($x)`
+  becomes `$x.Text` where `x` captures a call of such a rule. A capture that may be absent needs a cast,
+  `$x.(T).Text`, or a test for `nil`, which the type checker asks for;
+- the type names `terminal` and `Match` to `node[string]`, `Seq`, `List` and `Operator` to `node`, and `Error` to
+  `error`.
 
 The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
 comments is left alone. The rewrites other than the cut and type declarations need a grammar that otherwise parses, so

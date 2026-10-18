@@ -38,7 +38,7 @@ func TestFixPositional(t *testing.T) {
 		{"rule main = (x:\"a\") \"b\" => list($1, $0)", "rule main = (x:\"a\") v2:\"b\" => list($x, list($x, $v2))", []string{"ab"}},
 		{"rule main = (b) \"x\" => $1\nrule b = \"b\"", "rule main = b:(b) \"x\" => $b\nrule b = \"b\"", []string{"bx"}},
 		{"rule main = \"é\" \"b\" => $2", "rule main = \"é\" v2:\"b\" => $v2", []string{"éb"}},
-		{"type T struct { A Match }\nrule main T = \"a\" -- \"b\" => T{A: $2}", "type T = { A Match }\nrule main T = \"a\" #cut v2:\"b\" => T{A: $v2}", nil},
+		{"type T struct { A Match }\nrule main T = \"a\" -- \"b\" => T{A: $2}", "type T = { A node[string] }\nrule main T = \"a\" #cut v2:\"b\" => T{A: $v2}", nil},
 		{"rule main = operators {\n    operand \"(\" main \")\" => $2\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", "rule main = operators {\n    operand \"(\" main:main \")\" => $main\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", []string{"1+(2+3)"}},
 	} {
 		got, err := syntax.Fix(tc.in)
@@ -143,7 +143,7 @@ func TestFixLambdaParams(t *testing.T) {
 		{"rule main = xs:(y:\"a\" \"b\")+ => $xs[0].y", "rule main = xs:(y:\"a\" \"b\")+ => $xs[0].$y", []string{"abab"}},
 		{"rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.y), (j) => j.endPos > 1)", "rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.$y), (j) => j.End > 1)", []string{"abab"}},
 		{"rule main = x:\"a\" {$x.startPos == 0 && $x.endPos == 1}", "rule main = x:\"a\" {$x.Start == 0 && $x.End == 1}", []string{"a"}},
-		{"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
+		{"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A node[string] }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
 		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"ab"}},
 		// Positional captures and parameters in one lambda.
 		{"rule main = \"b\" xs:\"a\"* => map($2, (e) => list($1, $e))", "rule main = v1:\"b\" xs:\"a\"* => map($xs, (e) => list($v1, e))", []string{"baa"}},

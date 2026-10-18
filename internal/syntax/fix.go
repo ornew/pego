@@ -22,12 +22,19 @@ import (
 //   - a capture read as a member "x.y" is read "x.$y". Since field names start with an uppercase
 //     letter, a member with another name reads a capture, except the node members startPos,
 //     endPos and children, and the members expected and message of Missing;
-//   - the node members startPos and endPos become Start and End.
+//   - the node members startPos and endPos become Start and End;
+//   - a terminal type "type T terminal" becomes the struct "type T = { Text string }". A rule
+//     declared with it and without an action, "rule r T = e", becomes
+//     "rule r T = t:(e) #atomic => T{Text: text($t)}", without #atomic when e is atomic already
+//     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) becomes $x.Text where x
+//     captures a call of a rule of a terminal type;
+//   - the type names terminal and Match become node[string], Seq, List and Operator become
+//     node, and Error becomes error.
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
 // is an error, and so is source with positional captures that does not parse. Lambda
-// parameters and members are rewritten only in source that parses.
+// parameters, members and types are rewritten only in source that parses.
 func Fix(src string) (string, error) {
 	errs := &errorList{}
 	toks := lex(src, errs)
@@ -35,14 +42,16 @@ func Fix(src string) (string, error) {
 		return "", errs.list
 	}
 	out := fixTokens(src, toks)
-	positional, captures := false, false
+	positional, parsed := false, false
 	for i, t := range toks {
 		positional = positional || t.kind == tIndex
-		captures = captures || t.kind == tCapture
+		parsed = parsed || t.kind == tCapture
 		// x.y may read a capture.
-		captures = captures || t.kind == tPunct && t.text == "." && i+1 < len(toks) && toks[i+1].kind == tIdent
+		parsed = parsed || t.kind == tPunct && t.text == "." && i+1 < len(toks) && toks[i+1].kind == tIdent
+		_, reserved := valueTypeNames[t.text]
+		parsed = parsed || t.kind == tIdent && reserved
 	}
-	if positional || captures {
+	if positional || parsed {
 		return fixParsed(out, positional)
 	}
 	return out, nil
