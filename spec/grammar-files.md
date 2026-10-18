@@ -319,7 +319,7 @@ integer is formatted as `-MaxInt - 1`, with parentheses where required, because 
 absolute value cannot be a positive source token, and parsing the result preserves
 the value.
 
-### Source-only AST nodes
+### Source-Only AST Nodes
 
 Source-only syntax has dedicated nodes. An explicit Rule Expression group is
 `Group{Expr}`; formatting and JSON preserve it and compilation removes it. Source
@@ -336,7 +336,7 @@ detached copy. Normalization does not mutate the caller's AST; the source and
 normalized ASTs are treated as immutable while a parser uses them, and
 `Grammar.Clone()` returns an independent copy.
 
-### Literal matching values
+### Literal Matching Values
 
 A `grammar.Literal.Value` matches as its decoded sequence of runes, in which each
 malformed UTF-8 byte becomes U+FFFD. A value that contains `"\xc3"` matches a
@@ -350,7 +350,7 @@ consumed bytes, and with code-point positions it is decoded; so in byte mode
 `text($capture)` distinguishes a valid U+FFFD from an invalid input byte that the
 same literal matched.
 
-### Context-aware formatting and collection
+### Context-Aware Formatting and Collection
 
 `grammar.FormatContext`, `FormatExprContext`, `FormatTermContext` and
 `FormatTypeContext` produce the same text as `Format`, `FormatExpr`, `FormatTerm` and
@@ -362,7 +362,7 @@ positional arguments followed by keyword arguments in sorted order; the traversa
 `AllComments`), or a nil slice and the context error on cancellation. Cancellation is
 cooperative in every case, and the AST MUST NOT be mutated while these functions run.
 
-### Syntax projection
+### Syntax Projection
 
 `grammar.FormatSyntax(g)` (command line: `pego fmt -syntax`) prints the recognition
 syntax of a grammar and leaves the AST unchanged. It omits Type Definition

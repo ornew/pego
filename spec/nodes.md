@@ -17,7 +17,7 @@ graph MAY contain a cycle when a caller builds one.
 
 ## Contract
 
-### Node model
+### Node Model
 
 | Property | Meaning |
 |:--|:--|
@@ -40,7 +40,7 @@ The data of each node type is held as follows.
 | `Missing` | A `#missing` literal insertion | Empty text and range, and the string fields `expected` and `message` |
 | a type name | `T{...}` in an action, or a terminal type | `Fields` for struct types, `Text` for terminal types |
 
-### The Go type
+### The Go Type
 
 ```go
 type Node struct {
@@ -108,7 +108,7 @@ Scalars and lists have no range and are never selected.
 Generated Go parsers expose the same walker as `WalkTree`, with the same visits
 and ordering.
 
-### Text rendering
+### Text Rendering
 
 `n.String()`, which `fmt` uses, renders a node as an S-expression-like string
 for tests and debugging.
@@ -124,7 +124,7 @@ for tests and debugging.
 
 The command `pego parse -f sexpr` prints this form.
 
-### JSON encoding
+### JSON Encoding
 
 A node encodes with `encoding/json` as an object with the members `type`, `rule`
 (if not empty), `start`, `end`, `text` (if not empty), `children` (if any) and

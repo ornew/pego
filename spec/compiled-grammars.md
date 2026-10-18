@@ -17,7 +17,7 @@ recognizer is available, an independent **recognition bundle**.
 
 ## Contract
 
-### Saving and loading
+### Saving and Loading
 
 | Operation | Go | Command line |
 |:--|:--|:--|
@@ -39,7 +39,7 @@ recognizer is available, an independent **recognition bundle**.
   loaded from a file returns the same tree, positions and errors as the parser
   compiled from the same source.
 
-### With and without the AST
+### With and Without the AST
 
 A compiled grammar always holds bytecode. A save with the AST uses container
 version 2 and has no recognition bundle. A save without the AST uses container
@@ -61,7 +61,7 @@ version 3 with a recognition bundle when a complete recognizer is available.
 | `WithStart`, `Marshal` | Supported | Supported |
 | Output schema (`OutputSchema`) | Not supported; see [Output Schemas and Queries](schemas-and-queries.md) | Not supported |
 
-### Re-saving
+### Re-Saving
 
 - `pego compile -g file.pegoc -no-ast` drops the AST of an existing file.
 - A file without the AST cannot be turned into a file with the AST. Compiling one
@@ -74,7 +74,7 @@ version 3 with a recognition bundle when a complete recognizer is available.
 - A valid legacy or experimental version 3 file with the AST may load, but saving
   it again writes canonical version 2 and drops its recognition bundle.
 
-### Versions and compatibility
+### Versions and Compatibility
 
 A file carries two version numbers after its magic number.
 

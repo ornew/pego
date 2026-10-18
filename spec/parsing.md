@@ -199,7 +199,7 @@ anchors (`beginning of input`, `end of input`, `beginning of line`,
   an expression with a message. If a message applies at the farthest position,
   the message is reported instead of the expected items.
 
-### Errors in Go and on the command line
+### Errors in Go and on the Command Line
 
 In the Go API, a failed parse returns a `*pego.SyntaxError` with the fields `Pos`
 (the position in the position unit), `Line`, `Col`, `Expected` (the sorted expected

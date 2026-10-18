@@ -20,7 +20,7 @@ the document is created; see [Positions](parsing.md#positions).
 
 ## Contract
 
-### Construction and ownership
+### Construction and Ownership
 
 | Operation | Behavior |
 |:--|:--|

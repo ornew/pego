@@ -19,7 +19,7 @@ the pattern, together with its captures.
 
 ## Contract
 
-### Output schemas
+### Output Schemas
 
 `p.OutputSchema(opts...)` returns the schema of the parser's grammar.
 
@@ -39,7 +39,7 @@ the pattern, together with its captures.
   export a schema even if its file holds the AST; the error matches
   `pego.ErrSchemaUnavailable`. A schema is not recoverable from a loaded parser.
 
-### Schema JSON, version 1
+### Schema JSON, Version 1
 
 Decoding requires exact field-name case and rejects unknown fields, duplicate keys at
 every object level, unsupported formats and versions and incomplete envelopes.
@@ -62,7 +62,7 @@ was decoded from JSON or built in Go. It checks that:
 Validation checks structure and canonical relationships. Type names alone do not
 establish compatibility between grammars.
 
-### Comparing schemas
+### Comparing Schemas
 
 `pego.DiffOutputSchemas(before, after)` validates both complete operands and
 compares their contents by type ID and rule name. It returns the added, removed and
@@ -91,7 +91,7 @@ are significant. A diff is descriptive: it does not classify compatibility.
 - Patterns are copied when compiled. There is no text query language and there are
   no text predicates.
 
-### Compiling queries
+### Compiling Queries
 
 `pego.CompileStructuralQuery(pattern, schema)` compiles a query. A supplied schema is
 validated first, and the compilation rejects patterns that no described value can

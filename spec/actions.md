@@ -262,20 +262,20 @@ functions. The checker accepts a union of list types and combines their
 possible element types. At runtime the functions consume the child values of a
 list-like node; a broad `node` type can therefore supply that node's children.
 
-#### len
+#### `len`
 
 `len(x)` accepts a string, node or `nil` and returns `int`. For a string, it
 returns the length in the selected position unit. For a terminal node, it
 returns the length of matched text in that unit. For another node, it returns
 the number of children. For `nil`, it returns `0`.
 
-#### text
+#### `text`
 
 `text(x)` accepts a string, node or `nil` and returns `string`. It returns a
 string argument unchanged, returns `""` for `nil`, returns a terminal node's
 matched text, and returns the input text covered by a nonterminal node's range.
 
-#### foldl
+#### `foldl`
 
 `foldl(init, xs, f)` visits list elements from first to last. The callback has
 two parameters and is called as `f(accumulator, element)`; its result becomes
@@ -287,14 +287,14 @@ type.
 foldl(0, $items, (sum, item) => sum + item.$value)
 ```
 
-#### foldr
+#### `foldr`
 
 `foldr(init, xs, f)` visits list elements from last to first but still calls
 the two-parameter callback as `f(accumulator, element)`. An empty input
 returns `init`. The accumulator type is widened to the union of the initial
 value type and the callback result type, as for `foldl`.
 
-#### map
+#### `map`
 
 `map(xs, f)` calls the one-parameter callback `f(element)` in input order and
 returns its results in a `List`. The callback must return a node or `nil`;
@@ -302,7 +302,7 @@ returns its results in a `List`. The callback must return a node or `nil`;
 `Error` list input is empty, and a `nil` element in a list is passed to the
 callback as `nil`.
 
-#### filter
+#### `filter`
 
 `filter(xs, (item) => condition)` visits the elements of `xs` from left to
 right. The lambda must take one argument and produce an actual Boolean:
@@ -318,13 +318,13 @@ is a runtime action error. Runtime errors follow the surrounding action:
 inside a Predicate Action they fail that predicate and permit normal
 backtracking; inside a Value Action they abort the parse.
 
-#### list
+#### `list`
 
 `list(x, ...)` constructs a `List` with its arguments in order. Each argument
 must be a node or `nil`, and `nil` values remain elements. `list()` constructs
 an empty `List`. Unlike `concat`, `list` does not flatten its arguments.
 
-#### concat
+#### `concat`
 
 `concat(xs, ...)` appends the child elements of each list-like argument, in
 argument order and then element order, into one `List`. A `nil` or `Error`

@@ -76,7 +76,7 @@ Predicate Actions use the same operators and built-in functions as
 [Value Actions](actions.md). Common functions include `len(x)` and `text(x)`.
 Nodes created while evaluating a predicate are discarded after evaluation.
 
-## Interaction with Memoization
+## Interaction With Memoization
 
 A rule that reads variables in Predicate Actions or Value Actions, directly or
 through a called rule, depends on their values when it is called. Memoized

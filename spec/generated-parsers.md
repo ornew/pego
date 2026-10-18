@@ -20,7 +20,7 @@ runtime, which is the same for every grammar of one generator release.
 
 ## Contract
 
-### The generator
+### The Generator
 
 ```
 pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
@@ -104,7 +104,7 @@ const (
   recovery does not turn an interruption into a successful partial tree.
   Cancellation is cooperative.
 
-### Typed values
+### Typed Values
 
 With `-types`, the Go package also defines a Go type for each type of the grammar
 and the functions
@@ -176,7 +176,7 @@ input matches the start rule without building a tree and return the errors that
 are not read by predicates are skipped; actions that predicates read still run and
 can report runtime errors.
 
-### Incremental documents (Go only)
+### Incremental Documents (Go Only)
 
 With `-document`, the Go package gains `NewDocument(text string, opts ...ParseOption) (*Document, error)` and a
 `Document` with these members: `Parse`, `Edit(start, end, replacement)`, `Text`,
@@ -200,7 +200,7 @@ With `-document`, the Go package gains `NewDocument(text string, opts ...ParseOp
 - It supports a subset of the engine's [Incremental Documents](documents.md): there
   is no `EditBatch`, no `Version`, no snapshots and no change notifications.
 
-### Streaming (Go only)
+### Streaming (Go Only)
 
 With `-stream`, the Go package gains `ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error`,
 `Iterate` with `StreamIterator` and `ErrStreamClosed`, and the options
@@ -288,7 +288,7 @@ export function marshal(n: Node | null): string;
   parsers are imported under different namespaces. A parser keeps no state between
   calls.
 
-### Input and positions in TypeScript
+### Input and Positions in TypeScript
 
 Positions count Unicode code points (the default) or UTF-8 bytes (`Bytes`), as in the
 engine, and not UTF-16 code units. The parser decodes the input first.
@@ -304,7 +304,7 @@ engine, and not UTF-16 code units. The parser decodes the input first.
   and wrap on overflow; division truncates toward zero and `%` takes the sign of the
   dividend. An integer is a `number` while it is a safe integer and a `bigint` beyond.
 
-### TypeScript errors and the stack
+### TypeScript Errors and the Stack
 
 | Error | `error` |
 |:--|:--|

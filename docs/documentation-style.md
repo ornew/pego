@@ -49,9 +49,9 @@ the title without a trailing qualifier.
   except articles (a, an, the), coordinating conjunctions (and, but, or, nor, for, so, yet) and prepositions of up to
   three letters (as, at, by, in, of, off, on, per, to, via, vs). Prepositions of four letters or more are capitalized
   (With, From, Into, Over, Through), and so is the adverb in "Up to Date". `TestHeadingTitleCase` enforces this for the
-  tutorial, the guides and the cookbook.
-- Words in code spans stay as written (`pego gen`, `foldl`). A hyphenated word keeps the capitalization of its
-  parts (Built-In, Indentation-Based).
+  tutorial, the guides, the cookbook, the specification and the project documents.
+- Words in code spans stay as written (`pego gen`, `foldl`). Every part of a hyphenated word is capitalized
+  (Built-In, Indentation-Based).
 - The title of a page names what the page is for. Tutorial titles name what the reader builds or learns, guide
   titles name the feature (a noun phrase), recipe titles start with a verb for the task, and specification titles name
   the construct.

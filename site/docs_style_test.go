@@ -28,9 +28,27 @@ var (
 	headingLineRe = regexp.MustCompile(`^(#{1,6}) (.*)$`)
 )
 
-// titleCase returns heading text in the capitalization of the style sheet. Code spans,
-// compounds with a hyphen, identifiers and words with their own capitals (JSON,
-// TypeScript) stay as written.
+// titleWord capitalizes one word. Identifiers and words with their own capitals (JSON,
+// TypeScript) stay as written; edge is true for the first and last word and the word
+// after a colon, which are always capitalized.
+func titleWord(w string, edge bool) string {
+	m := titleWordRe.FindStringSubmatch(w)
+	if m == nil || strings.ContainsAny(m[3], "._/@=$#(") {
+		return w
+	}
+	pre, word, post := m[1], m[2], m[3]
+	lower := strings.ToLower(word)
+	if word != lower && word != strings.ToUpper(word[:1])+lower[1:] {
+		return w
+	}
+	if titleLowercase[lower] && !edge {
+		return pre + lower + post
+	}
+	return pre + strings.ToUpper(lower[:1]) + lower[1:] + post
+}
+
+// titleCase returns heading text in the capitalization of the style sheet. Code spans
+// stay as written, and every part of a hyphenated word is capitalized (Built-In).
 func titleCase(text string) string {
 	spans := codeSpanRe.FindAllString(text, -1)
 	words := strings.Split(codeSpanRe.ReplaceAllString(text, "\x00"), " ")
@@ -40,25 +58,19 @@ func titleCase(text string) string {
 	}
 	for n := start; n < len(words); n++ {
 		w := words[n]
-		if strings.Contains(w, "\x00") || strings.Contains(w, "-") {
-			continue
-		}
-		m := titleWordRe.FindStringSubmatch(w)
-		if m == nil || strings.ContainsAny(m[3], "._/@=$#(") {
-			continue
-		}
-		pre, word, post := m[1], m[2], m[3]
-		lower := strings.ToLower(word)
-		if word != lower && word != strings.ToUpper(word[:1])+lower[1:] {
+		if strings.Contains(w, "\x00") {
 			continue
 		}
 		edge := n == start || n == len(words)-1 || (n > 0 && strings.HasSuffix(words[n-1], ":"))
-		if titleLowercase[lower] && !edge {
-			word = lower
-		} else {
-			word = strings.ToUpper(lower[:1]) + lower[1:]
+		if strings.Contains(w, "-") {
+			parts := strings.Split(w, "-")
+			for i, p := range parts {
+				parts[i] = titleWord(p, true)
+			}
+			words[n] = strings.Join(parts, "-")
+			continue
 		}
-		words[n] = pre + word + post
+		words[n] = titleWord(w, edge)
 	}
 	out := strings.Join(words, " ")
 	for _, s := range spans {
@@ -81,6 +93,8 @@ func TestTitleCase(t *testing.T) {
 		{"Step: a thing", "Step: A Thing"},
 		{"2. The Same Language with Left Recursion", "2. The Same Language With Left Recursion"},
 		{"Built-In Functions and Lambdas", "Built-In Functions and Lambdas"},
+		{"Source-only AST nodes", "Source-Only AST Nodes"},
+		{"Context-aware Formatting", "Context-Aware Formatting"},
 		{"Typed Values (`-types`)", "Typed Values (`-types`)"},
 		{"Parsing JSON and TypeScript", "Parsing JSON and TypeScript"},
 		{"What Is Inside the File", "What Is Inside the File"},
@@ -92,33 +106,54 @@ func TestTitleCase(t *testing.T) {
 	}
 }
 
-// TestHeadingTitleCase checks the capitalization of every heading of the tutorial, the
-// guides and the cookbook.
-func TestHeadingTitleCase(t *testing.T) {
-	for _, dir := range []string{"docs/tutorial", "docs/guide", "docs/cookbook"} {
-		root := filepath.Join("..", dir)
-		err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() || filepath.Ext(p) != ".md" {
-				return err
+// styledDocs returns the Markdown files whose headings the style sheet governs: the
+// tutorial, the guides, the cookbook, the specification and the project documents of
+// docs/ and the repository root. The generated benchmark report and the reference
+// notes on other projects are not covered.
+func styledDocs(t *testing.T) []string {
+	t.Helper()
+	var files []string
+	for _, dir := range []string{"docs/tutorial", "docs/guide", "docs/cookbook", "spec"} {
+		err := filepath.WalkDir(filepath.Join("..", dir), func(p string, d fs.DirEntry, err error) error {
+			if err == nil && !d.IsDir() && filepath.Ext(p) == ".md" {
+				files = append(files, p)
 			}
-			data, err := os.ReadFile(p)
-			if err != nil {
-				return err
-			}
-			rel, _ := filepath.Rel("..", p)
-			for i, line := range maskCode(strings.Split(string(data), "\n")) {
-				m := headingLineRe.FindStringSubmatch(line)
-				if m == nil {
-					continue
-				}
-				if want := titleCase(m[2]); want != m[2] {
-					t.Errorf("%s:%d: heading %q should be %q", filepath.ToSlash(rel), i+1, m[2], want)
-				}
-			}
-			return nil
+			return err
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+	}
+	top, err := filepath.Glob(filepath.Join("..", "docs", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range top {
+		switch filepath.Base(p) {
+		case "benchmarks.md", "ref-cpython-pegen-packrat-parsing.md":
+		default:
+			files = append(files, p)
+		}
+	}
+	return append(files, filepath.Join("..", "README.md"))
+}
+
+// TestHeadingTitleCase checks the capitalization of every heading of the styled documents.
+func TestHeadingTitleCase(t *testing.T) {
+	for _, p := range styledDocs(t) {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel, _ := filepath.Rel("..", p)
+		for i, line := range maskCode(strings.Split(string(data), "\n")) {
+			m := headingLineRe.FindStringSubmatch(line)
+			if m == nil {
+				continue
+			}
+			if want := titleCase(m[2]); want != m[2] {
+				t.Errorf("%s:%d: heading %q should be %q", filepath.ToSlash(rel), i+1, m[2], want)
+			}
 		}
 	}
 }

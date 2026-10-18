@@ -15,7 +15,7 @@ linter, identified by a name.
 
 ## Contract
 
-### Entry points
+### Entry Points
 
 | | Command line | Go |
 |:--|:--|:--|
@@ -180,7 +180,7 @@ A lookahead that repeats `.` or a negated class that admits line breaks, such as
 `&([^!]* ($$ / "!"))`, can examine any amount of input. Lookaheads through other
 rules are not reported.
 
-### Suppressing findings
+### Suppressing Findings
 
 A comment that starts with `lint:ignore` followed by check names separated by commas,
 and an optional reason, suppresses their findings.

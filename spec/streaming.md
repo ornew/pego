@@ -36,7 +36,7 @@ the `#stream` repetition of the start rule.
 | Ordinary parses | `Parse` and every other non-stream entry point treat `#stream` as an ordinary repetition |
 | Recognition | Recognition treats `#stream` as an ordinary repetition and invokes no callbacks. Captures that element predicates read are still built; element values are not collected |
 
-### Entry points
+### Entry Points
 
 ```go
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error
@@ -64,7 +64,7 @@ early `Close`, `Next` returns `ErrStreamClosed`. The iterator does not close its
 reader. One goroutine owns an iterator: calls to `Next` and `Close` MUST NOT
 overlap, including from a callback. `Close` cannot interrupt a blocked `Read`.
 
-### Delivery and finality
+### Delivery and Finality
 
 - Each element is delivered as soon as it matches, in the middle of the parse and
   before the next element is tried. The parser reads nothing from the reader while
@@ -82,7 +82,7 @@ overlap, including from a callback. `Close` cannot interrupt a blocked `Read`.
 - PEG lookahead and buffering MAY cause the parser to read beyond the element
   that a `Next` call returns.
 
-### Positions and text
+### Positions and Text
 
 `Node.Start`, `Node.End`, `startPos` and `endPos` in actions, and `SyntaxError.Pos`,
 `Line` and `Col` count from the start of the whole input, regardless of how much
@@ -133,7 +133,7 @@ A stream parse ends in one of the following ways.
 | Cancellation or a work limit | The interruption error is returned instead of a completed diagnostic result; elements already delivered remain delivered. A reader or callback blocked in caller code cannot be preempted |
 | `emit` or the reader panics | The panic propagates with its original value on every backend, including values that implement `runtime.Error`. Delivered elements stay valid; the parser does not close the reader |
 
-### Recovered errors
+### Recovered Errors
 
 With `#recover` inside an element, a bad element becomes an `Error` node that is
 delivered like any other element, and parsing continues. At the end the parse
