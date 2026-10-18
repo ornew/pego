@@ -94,8 +94,8 @@ func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 		{Kind: "scalar", Scalar: "string"}, {Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "bool"}},
 	}}}}
 	s.Types = append(s.Types, SchemaType{ID: "inferred/pair", Name: "pair", Origin: "inferred", Shape: SchemaShape{
-		Kind:  "node",
-		Value: &SchemaShape{Kind: "tuple", Elements: []SchemaShape{{Kind: "scalar", Scalar: "int"}, {Kind: "nil"}}},
+		Kind:     "node",
+		Value:    &SchemaShape{Kind: "tuple", Elements: []SchemaShape{{Kind: "scalar", Scalar: "int"}, {Kind: "nil"}}},
 		Captures: []SchemaCapture{{Name: "x", Paths: [][]int{{0}}, Shape: SchemaShape{Kind: "scalar", Scalar: "int"}}},
 	}})
 	data, err := json.Marshal(s)
