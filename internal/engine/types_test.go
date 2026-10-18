@@ -161,3 +161,22 @@ rule main = ps $$`)
 		t.Error("RuleType reported a type without type checking")
 	}
 }
+
+// TestAliasErrorsReportedOnce checks that an error inside an alias is reported once, however many
+// places resolve the alias.
+func TestAliasErrorsReportedOnce(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{"type A ~ Nope\nrule main A = \"a\"", "1:10: undefined type Nope"},
+		{"type A ~ Nope\ntype B = { F A; G []A }\nrule main A = \"a\"\nrule other A = \"b\"\nrule x = v:main => B{F: $v, G: list($v)}", "1:10: undefined type Nope"},
+		{"type A ~ *A\nrule main A = \"a\"\nrule other A = \"b\"", "type A refers to itself"},
+	} {
+		g, err := syntax.Parse(tc.src)
+		if err != nil {
+			t.Fatalf("%q: %v", tc.src, err)
+		}
+		_, err = Compile(g, Options{})
+		if err == nil || strings.Count(err.Error(), tc.want) != 1 {
+			t.Errorf("%q: got %v, want %q once", tc.src, err, tc.want)
+		}
+	}
+}

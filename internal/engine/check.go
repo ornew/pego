@@ -49,12 +49,33 @@ func (k *checker) errorf(pos grammar.Pos, format string, args ...any) {
 	*k.errs = append(*k.errs, &Error{Pos: pos, Msg: fmt.Sprintf(format, args...)})
 }
 
+// dropRepeatedErrors removes the errors after the first from that repeat an earlier one at the same
+// position. A type is resolved wherever it is used, so an undefined name inside an alias would be
+// reported once per use of the alias.
+func dropRepeatedErrors(errs *ErrorList, from int) {
+	type key struct {
+		pos grammar.Pos
+		msg string
+	}
+	seen := map[key]bool{}
+	kept := (*errs)[:from]
+	for _, e := range (*errs)[from:] {
+		k := key{e.Pos, e.Msg}
+		if !seen[k] {
+			seen[k] = true
+			kept = append(kept, e)
+		}
+	}
+	*errs = kept
+}
+
 // checkTypes checks the types of the whole grammar.
 func checkTypes(prog *Program, errs *ErrorList) {
 	checkTypesControlled(prog, errs, nil)
 }
 
 func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
+	defer dropRepeatedErrors(errs, len(*errs))
 	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}, streams: map[string]ty{}, checks: &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}}
 
 	// Check references in type definitions.
@@ -251,6 +272,7 @@ func (k *checker) resolveLocation(t grammar.TypeExpr, pos grammar.Pos, what stri
 // location of type _|_, while the run-time checks treat a type they cannot describe as one every
 // value fits.
 func checkBottomLocations(prog *Program, errs *ErrorList, control *compileControl) {
+	defer dropRepeatedErrors(errs, len(*errs))
 	k := &checker{control: control, prog: prog, errs: errs, resolving: map[string]bool{}, reportUnsupported: true}
 	located := func(t grammar.TypeExpr, pos grammar.Pos, what string) {
 		k.report = false // other type errors stay unreported, as without this check
