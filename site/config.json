@@ -81,15 +81,26 @@
           "title": "Running Parsers",
           "match": [
             "docs/guide/running-parsers.md",
-            "docs/guide/working-with-trees.md",
             "docs/guide/grammar-asts.md",
             "docs/guide/command-line.md"
           ],
           "first": [
             "docs/guide/running-parsers.md",
-            "docs/guide/working-with-trees.md",
             "docs/guide/grammar-asts.md",
             "docs/guide/command-line.md"
+          ]
+        },
+        {
+          "title": "Using the Results",
+          "match": [
+            "docs/guide/reading-trees.md",
+            "docs/guide/walking-trees.md",
+            "docs/guide/output-schemas-and-queries.md"
+          ],
+          "first": [
+            "docs/guide/reading-trees.md",
+            "docs/guide/walking-trees.md",
+            "docs/guide/output-schemas-and-queries.md"
           ]
         },
         {
@@ -299,8 +310,9 @@
     "/docs/guide/runtime/": "/docs/guide/running-parsers/",
     "/docs/guide/expressions/": "/docs/guide/operators-rule/",
     "/docs/guide/prefix-parsing/": "/docs/guide/running-parsers/",
-    "/docs/guide/tree-traversal/": "/docs/guide/working-with-trees/",
-    "/docs/guide/output-schema-and-queries/": "/docs/guide/working-with-trees/",
+    "/docs/guide/working-with-trees/": "/docs/guide/reading-trees/",
+    "/docs/guide/tree-traversal/": "/docs/guide/walking-trees/",
+    "/docs/guide/output-schema-and-queries/": "/docs/guide/output-schemas-and-queries/",
     "/docs/guide/document-changes/": "/docs/guide/incremental/",
     "/docs/guide/predicate-actions-and-filter/": "/docs/guide/context-sensitive/"
   }

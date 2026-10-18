@@ -1,0 +1,94 @@
+# Output Schemas and Structural Queries
+
+`Parser.OutputSchema` describes the possible values of a checked grammar. By default the schema holds the start rule, the
+rules it calls and the types their output references; `pego.WithAllSchemaRules()` also includes unreachable rules and all
+declared types. A structural query searches the nodes of an
+actual parse result. Together they let a tool inspect the shape of a grammar and find nodes without generating code or
+serializing a tree. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
+[Output Schemas and Structural Queries](../../spec/schemas-and-queries.md).
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/ornew/pego"
+)
+
+func main() {
+	p, err := pego.CompileSource("rule main = name\nrule name = [a-z]+ #atomic", "main")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	schema, err := p.OutputSchema()
+	if err != nil {
+		log.Fatal(err)
+	}
+	encoded, err := json.Marshal(schema)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	query, err := pego.CompileStructuralQuery(pego.QueryPattern{
+		Type: "Match", Rule: "name", Capture: "name",
+	}, schema)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tree, err := p.Parse("abc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	matches, err := query.Matches(tree)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(len(encoded), len(matches))
+}
+```
+
+To compile many queries against one schema, validate it once with `pego.PrepareQuerySchema(schema)` and compile with
+the result's `CompileStructuralQuery(pattern)`. With a 128-type schema, compiling a query takes about 80 µs without
+preparation and under 1 µs with it; preparing takes about as long as one unprepared compilation.
+
+```go
+prepared, err := pego.PrepareQuerySchema(schema)
+if err != nil {
+	return err
+}
+query, err := prepared.CompileStructuralQuery(pego.QueryPattern{
+	Type: "Match", Rule: "name", Capture: "name",
+})
+```
+
+`pego.DiffOutputSchemas(before, after)` compares two schemas and returns the added, removed and changed entries, for
+example to review how a grammar change alters its output:
+
+```go
+diff, err := pego.DiffOutputSchemas(before, after)
+if err != nil {
+	return err
+}
+for _, change := range diff.Types {
+	fmt.Println(change.ID, change.Kind)
+}
+```
+
+Keep in mind:
+
+- A parser restored by `LoadParser` cannot export a schema, even if its file holds the grammar AST. Store the schema
+  separately if a consumer needs it later.
+- A query sees only what the tree retains. Actions and discard operators remove punctuation and comments, and a query
+  does not recover them or interpret source positions.
+- A pattern's `list` category means an explicit `[]any` field value. A repetition is a `Node` of type `List`; match it
+  with `Type: "List"`.
+- Generated parsers and TypeScript do not expose this API.
+
+## Related Topics
+
+- [Reading Trees](reading-trees.md): reading the nodes that a query returns.
+- [Generated Parsers](../../spec/generated-parsers.md): the typed values that generated Go parsers return.

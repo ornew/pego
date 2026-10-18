@@ -631,8 +631,9 @@ pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -A6 '"v"'
 ## 8. Using the Tree from Go
 
 `Parser.Parse` returns a `*pego.Node` that mirrors the JSON keys above: the methods `Type()` and `Rule()`, the fields
-`Start` and `End`, `Text`, `Children` and `Fields`, and `Field(name)` for a struct field or capture. Reading fields,
-walking the tree and selecting nodes by position are covered in [Working With Trees](working-with-trees.md), and the
+`Start` and `End`, `Text`, `Children` and `Fields`, and `Field(name)` for a struct field or capture. Reading fields
+is covered in [Reading Trees](reading-trees.md), walking the tree and selecting nodes by position in [Walking
+Trees](walking-trees.md), and the
 node model is defined in [Nodes and Values](../../spec/nodes.md).
 
 ## 9. Recipes

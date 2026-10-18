@@ -18,9 +18,16 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | Guide | Contents |
 |:--|:--|
 | [Running Parsers](running-parsers.md) | The Go API: compiling a grammar, start rules, results and errors, concurrency, cancellation, parsing a prefix, position units, backends and how to choose one, nesting limits, recognition mode, memoization |
-| [Working With Trees](working-with-trees.md) | Reading a `Node`: fields and positions, printing and JSON, walking and cursors, typed values, output schemas and structural queries |
 | [Building Grammars as ASTs and JSON](grammar-asts.md) | Structural validation, formatting, source metadata and JSON loading for tools that build grammars in Go |
 | [The `pego` Command](command-line.md) | The command-line workflows: parse, format, fix, convert, compile and generate |
+
+## Using the Results
+
+| Guide | Contents |
+|:--|:--|
+| [Reading Trees](reading-trees.md) | Reading a `Node`: fields and positions, printing and JSON, a whole tree, typed values |
+| [Walking Trees](walking-trees.md) | `Walk` and `Cursor`: visiting nodes in order and selecting them by position |
+| [Output Schemas and Structural Queries](output-schemas-and-queries.md) | Describing the output of a grammar, comparing schemas, finding nodes by their shape |
 
 ## Incremental and Streaming Input
 
