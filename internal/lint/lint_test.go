@@ -321,3 +321,12 @@ func TestExamples(t *testing.T) {
 		})
 	}
 }
+
+func TestDeprecatedAny(t *testing.T) {
+	runCases(t, []lintCase{
+		{name: "fields and casts", src: "type Box = { V any; L []any }\nrule main Box = x:\"x\" => Box{V: $x.(any), L: list($x)}",
+			want: []string{"1:16 warning deprecated-any", "1:25 warning deprecated-any", "2:37 warning deprecated-any"},
+			msg: "use _, the top type"},
+		{name: "top type", src: "type Box = { V _ }\nrule main Box = x:\"x\" => Box{V: $x}"},
+	})
+}

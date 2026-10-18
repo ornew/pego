@@ -697,7 +697,10 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
   calls when that name is free, and `v1`, `v2`, ... otherwise), and `$0` to a `list(...)` of the labeled elements;
 - a lambda parameter written `$p` in the lambda body to `p`;
 - a capture read `x.y` to `x.$y`, for every member whose name does not begin with an uppercase letter and is not a
-  built-in field.
+  built-in field;
+- the deprecated type `any` to `_`, where the grammar still compiles with `_`. A value of type `_` needs a cast before
+  it is used as another type, so a use that would need one keeps `any`, as does a rule type or cast that must produce
+  a node; `pego lint` reports them.
 
 The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
 comments is left alone. The rewrites other than the cut and type declarations need a grammar that otherwise parses, so

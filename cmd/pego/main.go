@@ -31,6 +31,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego"
@@ -332,6 +333,7 @@ func fixSource(name string, src []byte, write, list bool, stdout io.Writer) erro
 	if err != nil {
 		return fileError(name, err)
 	}
+	out = fixAnyTypes(out)
 	changed := out != string(src)
 	if list && changed {
 		if _, err := fmt.Fprintln(stdout, name); err != nil {
@@ -349,6 +351,33 @@ func fixSource(name string, src []byte, write, list bool, stdout io.Writer) erro
 	}
 	_, err = io.WriteString(stdout, out)
 	return err
+}
+
+// fixAnyTypes rewrites the deprecated type any to _ where the grammar still type checks with _.
+// A value of type _ must be narrowed with a cast before it is used as another type, so the uses
+// that need one keep any, and lint reports them.
+func fixAnyTypes(src string) string {
+	offsets := syntax.AnyTypes(src)
+	if len(offsets) == 0 || !typeChecks(src) {
+		return src
+	}
+	// From the end, so that the earlier offsets stay valid.
+	for _, o := range slices.Backward(offsets) {
+		if next := src[:o] + "_" + src[o+len("any"):]; typeChecks(next) {
+			src = next
+		}
+	}
+	return src
+}
+
+// typeChecks reports whether src parses and compiles.
+func typeChecks(src string) bool {
+	g, err := pego.ParseGrammar(src)
+	if err != nil || len(g.Rules()) == 0 {
+		return false
+	}
+	_, err = pego.Compile(g, g.Rules()[0].Name)
+	return err == nil
 }
 
 func formatFile(path string, write, list bool, stdout io.Writer) error {

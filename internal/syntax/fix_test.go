@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -66,6 +67,28 @@ func TestCutSpelling(t *testing.T) {
 	} {
 		if _, err := Parse(src); err == nil {
 			t.Errorf("Parse(%q) succeeded, want an error", src)
+		}
+	}
+}
+
+func TestAnyTypes(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want []int
+	}{
+		{"type B = { V any; L []any; O *any; M _ }", []int{13, 22, 30}},
+		{"rule c any = x:\"y\" => $x.(any)", []int{7, 26}},
+		{"type any2 = { V any2 }\nrule a = \"any\" // any", nil},
+		{"rule a = (", nil},
+	} {
+		got := AnyTypes(tc.src)
+		if !slices.Equal(got, tc.want) {
+			t.Errorf("AnyTypes(%q) = %v, want %v", tc.src, got, tc.want)
+		}
+		for _, o := range got {
+			if tc.src[o:o+3] != "any" {
+				t.Errorf("AnyTypes(%q): offset %d is not any", tc.src, o)
+			}
 		}
 	}
 }

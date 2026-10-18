@@ -1230,3 +1230,15 @@ func ungroupTypeControlled(t grammar.TypeExpr, control *lintControl) grammar.Typ
 		t = g.Type
 	}
 }
+
+// --- deprecated-any ---
+
+func (l *linter) deprecatedAny(g *grammar.Grammar) {
+	for _, r := range grammar.TypeRefs(g) {
+		l.control.poll()
+		if r.Name == "any" {
+			l.report(CheckDeprecatedAny, Warning, r.Pos, "write _ and narrow its values with x.(T); pego fix rewrites the uses that need no cast",
+				"the type any is deprecated: use _, the top type")
+		}
+	}
+}

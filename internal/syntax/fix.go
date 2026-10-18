@@ -2,6 +2,7 @@ package syntax
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"unicode"
@@ -147,4 +148,22 @@ func lineStarts(src string) []int {
 		}
 	}
 	return starts
+}
+
+// AnyTypes returns the byte offsets in src of the references to the type any, which is
+// deprecated, in the order of src. It returns nil for source that does not parse.
+func AnyTypes(src string) []int {
+	g, err := Parse(src)
+	if err != nil {
+		return nil
+	}
+	offsets := newFixOffsets(src)
+	var out []int
+	for _, r := range grammar.TypeRefs(g) {
+		if r.Name == "any" && r.Pos.IsValid() {
+			out = append(out, offsets.at(r.Pos))
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
 }

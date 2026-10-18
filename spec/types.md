@@ -77,7 +77,9 @@ do not compile, also when types are otherwise not checked:
 `_` is the top type: every value is a `_`, and `_ | T` is `_`. A value of type
 `_` is assignable only to `_` and to `any`, whose values are checked where they
 reach a typed location; a [cast](actions.md#casts) such as `x.(T)` checks it at
-run time. `_|_` is the bottom type, which has no values:
+run time. `any` is deprecated: unlike `_`, it is also assignable to every
+other type, so its values are checked where they are used rather than where a
+cast narrows them. `_|_` is the bottom type, which has no values:
 `_|_ | T` is `T`, and `[]_|_` and `*_|_` are `_|_`. A struct field, a rule, a
 list element or a cast whose type resolves to `_|_` is an error, also when
 types are otherwise not checked.
