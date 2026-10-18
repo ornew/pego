@@ -307,32 +307,43 @@ func (v *valueInference) index(x, i ty, t *grammar.Binary) ty {
 		v.errorf(t.Diagnostic(), "index must be int, got %s", i)
 	}
 	var out []ty
-	for _, a := range v.alts(x) {
+	var elems func(a ty) bool
+	elems = func(a ty) bool {
 		switch a := a.(type) {
 		case listTy:
 			out = append(out, a.elem)
-			continue
+			return true
 		case tupleTy:
 			if lit, ok := ungroupTerm(t.R).(*grammar.IntLit); ok {
 				if lit.Value < 0 || lit.Value >= len(a.elems) {
 					v.errorf(t.Diagnostic(), "index %d is out of range for %s", lit.Value, a)
-					return tyAny
+					return false
 				}
 				out = append(out, a.elems[lit.Value])
 			} else {
 				out = append(out, a.elems...)
 			}
-			continue
+			return true
 		case nodeTy:
-			v.errorf(t.Diagnostic(), "cannot index %s: index its .Value", a)
-			return tyAny
+			for _, b := range v.alts(a.value) {
+				if !elems(b) {
+					return false
+				}
+			}
+			return true
 		case basicTy:
 			if a == tyAny {
-				return tyAny
+				out = append(out, tyAny)
+				return true
 			}
 		}
 		v.errorf(t.Diagnostic(), "cannot index %s", a)
-		return tyAny
+		return false
+	}
+	for _, a := range v.alts(x) {
+		if !elems(a) {
+			return tyAny
+		}
 	}
 	return vunion(out...)
 }

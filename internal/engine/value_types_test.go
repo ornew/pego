@@ -173,6 +173,9 @@ func TestValueActionTypes(t *testing.T) {
 		// Indexing a tuple with a constant reads that element.
 		{"rule a = x:(b c) => $x.Value[1]\nrule b = \"b\"\nrule c = \"c\"", "a", `c`},
 		{"rule a = x:(b c) => $x.Value[0]\nrule b = \"b\"\nrule c = \"c\"", "a", `b`},
+		// Indexing a node indexes its Value.
+		{"rule a = x:(b c) => $x[1]\nrule b = \"b\"\nrule c = \"c\"", "a", `c`},
+		{`rule a = x:(y:.)* => map($x.Value, (i) => i[0])`, "a", `[]node[string]`},
 		// List functions.
 		{`rule a = x:"x"* => filter($x, (i) => len(i) > 0)`, "a", `[]node[string]`},
 		{`rule a = x:"x"* => foldl(0, $x, (n, i) => n + len(i))`, "a", `int`},
@@ -238,7 +241,8 @@ func TestValueActionErrors(t *testing.T) {
 		{"rule a = x:(b / c) => $x.$y\nrule b = y:\"b\" \"1\"\nrule c = \"c\"", "node[string] has no capture y"},
 		{`rule a = x:"x"? => $x.Value`, "cannot access .Value of *node[string]: the value may be nil"},
 		{`rule a = x:"x" => $x.Value + 1`, "invalid operands string and int for +"},
-		{`rule a = x:"x" => $x[0]`, "cannot index node[string]: index its .Value"},
+		{`rule a = x:"x" => $x[0]`, "cannot index string"},
+		{"rule a = x:(b c) => $x[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
 		{"rule a = x:(b c) => $x.Value[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
 		{`rule a = x:"x" => map($x, (i) => i)`, "map: expected a list, got node[string]"},
 		{"type Foo = { Name string }\nrule a = x:\"x\" => Foo{Name: $x}", "cannot use node[string] as string in field Name of Foo"},

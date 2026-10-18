@@ -65,6 +65,9 @@ neither associative nor commutative: `((T, U), V)` differs from
 `(T, (U, V))`, and `(T, U)` from `(U, T)`.
 
 **List and tuple indexing.** `x[i]` reads the element at zero-based index `i`.
+A node is indexed through its value: when `x` is a node, `x[i]` is
+`x.Value[i]`, so `$x[1]` reads the second element of a captured sequence. A
+constant index outside a tuple is a compile-time error.
 
 **Optional.** Untyped `nil` is assignable to every optional type.
 
