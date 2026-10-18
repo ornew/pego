@@ -124,7 +124,7 @@ code-point parses reuse the byte-offset table. Recognition and malformed input
 may require a second, work-limited decoding pass over the consumed prefix. The
 cursor-to-byte conversion uses the original source bytes, so a valid U+FFFD
 occupies three bytes while each malformed byte remains one byte. The guide
-[Parsing a Named Prefix](../guide/running-parsers.md#parsing-a-prefix) covers its public contract.
+[Parsing a Named Prefix](../guide/prefix-parsing.md) covers its public contract.
 
 The position-map API remains a proposal. Its adoption requires extraction of the
 private LSP index without changing protocol clamping, plus conversion and

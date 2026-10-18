@@ -1,9 +1,9 @@
 # Running Parsers
 
-Turn a grammar into a parser in Go, call it, and read what comes back. This guide covers the Go API of the engine: the
-pipeline from source to parser, start rules, results and errors, concurrency, cancellation, parsing a prefix, position
-units, backends and how to choose one, nesting limits, recognition mode and memoization. It assumes you can write a
-grammar; the [language specification](../../spec/README.md) defines the language, and
+Turn a grammar into a parser in Go, call it, and read what comes back. This guide covers the pipeline from source to
+parser, start rules, results and errors, concurrency and how to choose among the features of the engine. Cancellation
+and work limits, parsing a prefix, position units, backends and recognition mode have guides of their own. It assumes you
+can write a grammar; the [language specification](../../spec/README.md) defines the language, and
 [Parsing](../../spec/parsing.md) defines what a parse returns.
 
 All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs separated by optional semicolons:
@@ -199,7 +199,7 @@ fmt.Println(err) // 1:4: syntax error: expected [a-zあ-ん], end of input
 ```
 
 To accept a named rule's prefix and get its consumed code-point and byte lengths, use
-[`Parser.ParsePrefix`](#parsing-a-prefix). It selects a rule per call without changing the parser's start rule.
+[`Parser.ParsePrefix`](prefix-parsing.md). It selects a rule per call without changing the parser's start rule.
 
 On the command line, `-s` selects the start rule for `parse`, `compile` and `gen` (default: the one saved in a
 `.pegoc`, otherwise `main`).
@@ -217,7 +217,7 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error)
 | `node, nil` | The input matched. |
 | `nil, *pego.SyntaxError` | The input does not match. The error holds the farthest position reached and what was expected there. |
 | `node, pego.SyntaxErrors` | The input matched after recovering from errors with `#recover`. The tree contains `Error` nodes. See [Errors and Recovery](errors-and-recovery.md). |
-| `nil, error` | Anything else that stops the parse: a run-time error in an action (such as `action in main: division by zero`), or exceeding the [nesting limit](#deep-nesting-and-withmaxdepth). These are plain errors, not syntax errors, and they are not subject to backtracking. |
+| `nil, error` | Anything else that stops the parse: a run-time error in an action (such as `action in main: division by zero`), or exceeding the [nesting limit](backends.md#deep-nesting-and-withmaxdepth). These are plain errors, not syntax errors, and they are not subject to backtracking. |
 
 ```go
 _, err = p.Parse("abc=x")
@@ -233,293 +233,15 @@ if errors.As(err, &se) {
 1:5: syntax error: expected [0-9]
 ```
 
-`Pos` is the offset in the [position unit](#position-units), `Line` and `Col` are 1-based, `Expected` lists what would
+`Pos` is the offset in the [position unit](position-units.md), `Line` and `Col` are 1-based, `Expected` lists what would
 have been accepted, and `Messages` holds the messages set with `@error`. `se.Message()` is the text without the
 position. Use [`@diagnostic`](../../spec/attributes.md#diagnostic) to give an expression a concise expected-item name
 while preserving its failure position and explicit `@error` messages.
 
-### Cancellation and Work Limits
-
-`Parse` accepts per-invocation `WithContext` and `WithWorkLimits` options. A zero
-limit is unlimited; each counter resets for the next call:
-
-```go
-ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-defer cancel()
-node, err := p.Parse(input,
-    pego.WithContext(ctx),
-    pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: 4_000_000, MaxSteps: 1_000_000}),
-)
-switch {
-case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-    // The invocation was cancelled.
-case errors.Is(err, pego.ErrWorkLimit):
-    // A work limit was reached; use errors.As for *pego.WorkLimitError details.
-case err != nil:
-    // Syntax or another parse error.
-case node != nil:
-    // The parse completed.
-}
-```
-
-Input work counts inspected input elements and steps count backend execution work; neither is a time or memory
-limit, and backtracking never refunds them. An interruption is fatal to the parse and `#recover` cannot consume it,
-so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
-a callback of yours. The exact rules are in
-[Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits); the
-[streaming cancellation recipe](streaming.md#recipe-cancelling-a-stream) shows how to cancel caller-owned I/O.
-
 A `*pego.Parser` is **safe for concurrent use**: share one among goroutines and call `Parse` on all of them (each call
 has its own state). A `Document`, in contrast, is not. Concurrent first use of different backends and of recognition
-mode is also safe.
-
-## Parsing a Prefix
-
-`Parser.Parse` requires its start rule to consume the complete supplied input.
-`Parser.ParsePrefix` selects a rule for one call and returns its successful
-endpoint without imposing an additional end-of-input check. This is useful
-when a larger document contains a contiguous fragment described by another
-rule.
-
-### Values and Consumption
-
-```go
-package main
-
-import (
-    "fmt"
-    "log"
-
-    "github.com/ornew/pego"
-)
-
-func main() {
-    parser, err := pego.CompileSource(`
-rule main = value $$
-rule value = x:"é😀" "!" => $x
-`, "main")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    source := "before:é😀!remaining"
-    start := len("before:") // Byte offset of a contiguous fragment.
-    result, err := parser.ParsePrefix("value", source[start:])
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println(result.Consumed, result.ConsumedBytes) // 3 7
-    fmt.Println(source[start+result.ConsumedBytes:]) // remaining
-}
-```
-
-`PrefixResult.Node` is the selected rule's value. `Consumed` is the successful
-cursor in the selected parser `Unit`, defaulting to code points.
-`ConsumedBytes` is the endpoint in the original UTF-8 bytes of the supplied
-input. Malformed UTF-8 bytes each count as one replacement code point, while
-the byte endpoint still refers to the original source.
-
-The example's action returns only `é😀`, but the rule consumes the following
-`!` too. The consumption fields come from the parser cursor, independently of
-`Node.Start` and `Node.End`. Actions can return nil, and recognition builds no
-node. Neither implies that parsing failed or consumed zero input. A nullable
-rule can succeed with zero consumption.
-
-All node spans, action positions and syntax-error positions remain local to the
-supplied input. Add the fragment's starting byte offset to `ConsumedBytes` to
-obtain the consumed endpoint in the complete source. To translate a code-point
-node span, first convert that local span to source bytes; adding a byte base
-directly to a code-point span gives incorrect coordinates for multibyte text.
-With `WithUnit(pego.Bytes)`, node spans and both consumption fields use bytes.
-
-### Recovery and Failure
-
-Recovered success returns both the result and the existing `SyntaxErrors`
-error, just as whole-input parsing returns a node alongside recovered errors.
-Inspect the error type before discarding a recovered result:
-
-```go
-result, err := parser.ParsePrefix("value", input)
-var recovered pego.SyntaxErrors
-switch {
-case err == nil:
-    // Successful prefix; use result and its consumption fields.
-case errors.As(err, &recovered):
-    // Recovered success; use result and report the recovered diagnostics.
-    for _, diagnostic := range recovered {
-        fmt.Println(diagnostic)
-    }
-default:
-    // Unrecovered syntax failure or fatal error; result is the zero value.
-}
-```
-
-This snippet needs the standard `errors` package. A failure after an earlier
-recovery still returns a zero result. No speculative endpoint is exposed on
-failure. A zero result by itself cannot distinguish failure from a successful
-zero-width rule returning nil; use the error.
-
-### Options and Boundaries
-
-`ParsePrefix` accepts the options for position units, backends, recognition, tracing, nesting limits, context and
-work limits. It does not change the start rule of the parser, and it can run concurrently on one parser. Two things
-catch people out:
-
-- An explicit `$$` still sees the end of the entire string you supplied. To confine it to a fragment, slice both the
-  beginning and the end of the fragment before calling `ParsePrefix`.
-- Grammars that contain `#missing` are not supported, and neither is a positive `WithMissingTokens` limit.
-
-The complete rules are in [Prefix Parsing](../../spec/parsing.md#prefix-parsing).
-
-## Position Units
-
-Positions can count **Unicode code points** (the default) or **UTF-8 bytes**. The unit affects node `Start` and `End`,
-the `Pos` and `Col` of syntax errors, `startPos` and `endPos` in actions, the `len` builtin, and the ranges of
-`Document.Edit`. It never changes what matches: matching always proceeds by code point.
-
-```go
-n, _ := p.Parse("あい=3")
-fmt.Println(n.Children[0].Field("Key").(*pego.Node).End) // 2
-n, _ = p.Parse("あい=3", pego.WithUnit(pego.Bytes))
-fmt.Println(n.Children[0].Field("Key").(*pego.Node).End) // 6
-```
-
-Syntax errors follow the unit, too (the same `あい=x` input, with the error at the `x`):
-
-```bash
-$ pego parse -g pairs.pego -i 'あい=x'
-pego: 1:4: syntax error: expected [0-9]
-$ pego parse -g pairs.pego -unit bytes -i 'あい=x'
-pego: 1:8: syntax error: expected [0-9]
-```
-
-Choosing:
-
-- Use **bytes** when you index into the Go string (`input[n.Start:n.End]`), pass positions to other byte-oriented
-  tools, or want to avoid converting offsets. Bytes is the natural unit for Go.
-- Use **code points** (the default) when positions are shown to people as character counts, or are exchanged with a
-  system that counts characters (editors and language servers often count UTF-16 units, which neither unit matches).
-- Invalid UTF-8 is read as one U+FFFD character per invalid byte, so positions stay well defined; the decoding rules
-  and their effect on `Match.Text` are in [Positions](../../spec/parsing.md#positions).
-
-The [benchmarks](../benchmarks.md#parsing-time-position-unit-bytes) show almost no speed difference between the units.
-The CLI flag is `-unit codepoints|bytes`.
-
-## Backends
-
-A *backend* is the way a compiled grammar is executed. All of them produce **identical results**: the same trees
-(including positions), the same syntax errors and the same recovered errors. The test suite checks this, and the
-closure backend serves as the reference. They differ in speed, memory, how they treat deep nesting, and what they need.
-
-| Backend | Option | How it runs | Needs the grammar AST |
-|:--|:--|:--|:--|
-| Closure | `pego.Closure` | Compiles Rule Expressions into Go closures | Yes |
-| Bytecode (recursive) | `pego.Bytecode` | A VM running [portable bytecode](../../spec/bytecode.md); rule calls use Go recursion | No |
-| Bytecode (iterative) | `pego.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
-| Generated Go | (not an option) | A Go parser generated ahead of time by `pego gen` | At generation time |
-
-The first three are selected per parse:
-
-```go
-n, err := p.Parse("abc=12", pego.WithBackend(pego.BytecodeIterative))
-```
-
-`pego.DefaultBackend`, used when you give no option, is the **closure backend when the grammar AST is available and
-recursive bytecode otherwise** (that is, for a parser loaded from a `.pegoc` file saved without the AST). On the command
-line, `-backend closure|bytecode|bytecode-iterative` does the same.
-
-### Which One
-
-The measurements are in [benchmarks.md](../benchmarks.md) and their analysis in
-[performance.md](../performance.md#where-pego-stands); the figures below are summarized from them (one machine, so
-treat them as orders of magnitude rather than promises). Run `go test ./bench -bench . -benchmem` to measure your own
-grammar and input.
-
-| You want | Choose | Why |
-|:--|:--|:--|
-| The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
-| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.41–0.59× closure time in CodePoints and 0.45–0.64× in Bytes; direct typed values are 0.52–0.88× generated `Parse`. |
-| Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
-| A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See the [compiled grammars guide](compiled-grammars.md). |
-| Checking validity only | Any backend with [`RecognizeOnly`](#recognition-mode) | No tree is built. |
-
-Across both units, the recursive bytecode VM is 1.08–1.39× slower than the closure backend in the benchmarks and the iterative VM 1.19–1.94×
-slower; you pay that for portability (the same bytecode is specified for other runtimes in
-[bytecode.md](../../spec/bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
-inside a Go program for speed.
-
-### Deep Nesting and `WithMaxDepth`
-
-Recursive grammars (parentheses, nested arrays, nested blocks) use one rule call per level of nesting. The closure and
-recursive bytecode backends use the Go stack for those calls. To keep runaway input from exhausting memory, a parse
-fails with an error once rule calls nest deeper than a limit: **100,000 by default, 10,000,000 for
-`BytecodeIterative`**. `WithMaxDepth(n)` changes it. This is the grammar `rule main = nested $$` with
-`rule nested = "(" nested ")" / "x"` (one rule call per level of parentheses, plus the calls of `main` and of the
-innermost `x`):
-
-| Input (parentheses around `x`) | Closure | Bytecode | Iterative |
-|:--|:--|:--|:--|
-| 50,000 deep | ok | ok | ok |
-| 200,000 deep | `nesting too deep: more than 100000 rule calls` | same error | ok |
-| 1,000,000 deep | same error | same error | ok |
-
-```go
-n, err := p.Parse(input, pego.WithBackend(pego.BytecodeIterative), pego.WithMaxDepth(100))
-// nesting too deep: more than 100 rule calls
-```
-
-An Operators Rule adds one active call level, and reading a prefix operand or an infix right operand adds another
-Operators Rule level. These levels count on every backend, including the iterative VM's heap frames. Each operator of a
-prefix or right-associative chain (`---x`, `a ^ b ^ c ^ ...`) adds a nested level; left-associative chains return
-from each right operand before reading the next operator. Completed frames and ordinary failed branches release
-depth; exceeding the limit aborts the parse and discards its execution state.
-
-Two things to know:
-
-- Lowering the limit is safe on every backend and bounds active nested calls and Operators Rule frames. Input length and
-  total parsing work require separate limits. A nesting error is an ordinary `error`, so treat it like any parse failure.
-- **Raising the limit on the closure and recursive bytecode backends is limited by the Go stack.** Go's goroutine
-  stack is capped at 1 GB by default; running past it is not a recoverable error but a fatal `stack overflow` that
-  kills the process. In a trial with the grammar above, the closure backend parsed 300,000 levels with
-  `WithMaxDepth(1_000_000)`, but 1,000,000 levels with `WithMaxDepth(2_000_000)` on the recursive bytecode backend
-  crashed. If you need depth beyond the default, use `BytecodeIterative` rather than raising the limit.
-
-Generated parsers have the same default of 100,000. `pego.WithGeneratedMaxDepth` or `pego gen -max-depth` sets a
-generated default; generated Go `WithMaxDepth` and TypeScript options-aware entry points override it per invocation
-(see [code generation](code-generation.md#invocation-options-and-migration) and
-[TypeScript depth options](typescript.md#deep-nesting-and-the-javascript-stack)). Their recursive host stacks still
-bound acceptance even when the configured limit is higher.
-
-## Recognition Mode
-
-`RecognizeOnly()` checks whether the input matches without building a tree. `Parse` then returns a `nil` node and the
-same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.4–1.8×
-faster than a full parse on the closure backend.
-
-```go
-n, err := p.Parse("abc=12", pego.RecognizeOnly())
-fmt.Println(n, err) // nil <nil>
-n, err = p.Parse("abc=", pego.RecognizeOnly())
-fmt.Println(n, err) // nil 1:5: syntax error: expected [0-9]
-```
-
-What it does not do:
-
-- **Actions are conditionally evaluated.** Actions whose values are not needed to evaluate predicates are skipped. Actions needed by predicates still run and can report run-time errors. With the grammar
-  `rule main Ratio =  a:[0-9]+ #atomic "/" b:[0-9]+ #atomic $$ => Ratio{Num: len($a) / (len($b) - len($b))} `, the input `12/34`
-  fails a full parse with `action in main: division by zero` but is accepted by recognition (`pego parse -check` prints
-  `ok`). Use recognition for syntax checks, and a full parse where action errors matter.
-- Captures that [predicates](../../spec/predicates.md) read are still built, since a predicate can depend on them.
-- Recognition needs either the grammar AST or a saved recognition bundle. A version 3 AST-less `.pegoc` can recognize
-  on bytecode backends; a legacy AST-less file without a bundle returns
-  `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source`. The [compiled
-  grammars guide](compiled-grammars.md#with-and-without-the-ast) explains the distinction.
-- It cannot be combined with `ParseStream` or `NewDocument`: both return errors (`recognition is not supported for
-  stream parsing`, `recognition is not supported for documents`).
-
-Typical uses are validating uploads or configuration before doing real work, linting loops, and pre-filtering large
-inputs. On the command line: `pego parse -g grammar.pego -check < input`, which prints `ok` or the syntax error (and
-exits with status 1).
+mode is also safe. A call can be cancelled and bounded with `WithContext` and `WithWorkLimits`; see [Cancellation and
+Work Limits](cancellation-and-limits.md).
 
 ## Compiled Grammars
 
@@ -529,34 +251,7 @@ it; on the command line, `pego compile` writes the file and every `-g` argument 
 grammar AST runs only on the bytecode backends. The [Compiled Grammars](compiled-grammars.md) guide covers what is
 kept and lost, sizes, embedding, versions and loading files you did not produce.
 
-## Memoization
-
-PEGO parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is
-evaluated at most twice at that position, however much backtracking the grammar does. This is what keeps parsing time
-roughly linear in the input. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
-
-- Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in a normal parse,
-  because their entries could never be reused.
-- Other rules are memoized at a position from their second call there: most rules are called only once per position,
-  and an entry that is never reused only costs memory. A rule whose calls do repeat is memoized from the first call
-  for the rest of the parse.
-- Rules in a left-recursive cycle are not memoized one by one; only the cycle's leader, the rule that grows the seed, is.
-- Rules that read [variables](../../spec/predicates.md#interaction-with-memoization) are memoized per combination of
-  those variables' values, so memoization never changes the result; it only changes the cost.
-
-What this means for you:
-
-- **Memory grows with input size.** The memo table, like the tree, is proportional to the input. For very large or
-  unbounded input use a `#stream` repetition and `ParseStream`, which discards memo entries and input already
-  handed to you (see [streaming.md](streaming.md)).
-- **Incremental parsing reuses the memo.** `Document` keeps it between edits, and memoizes the rules that a normal parse
-  skips, so that more of a previous parse can be reused.
-- **Generated parsers memoize in the same way.** Memoization decisions are made by the same analysis and are saved in
-  `.pegoc` files.
-- The design is in [003-packrat-parsing.md](../design/003-packrat-parsing.md), and the history of how the engine's
-  speed was tuned (including the memo table) in [performance.md](../performance.md).
-
-## Choosing: A Cheat Sheet
+## Choosing a Feature
 
 | Situation | Use |
 |:--|:--|
@@ -572,4 +267,9 @@ What this means for you:
 | Many goroutines | Share one `*pego.Parser` |
 | Finding why an input fails or a parse is slow | `pego explain`, `pego trace`, `pego profile` (see [debugging.md](debugging.md)) |
 
+## Related Topics
 
+- [Cancellation and Work Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
+  Units](position-units.md) and [Backends](backends.md): the options of a parse.
+- [Reading Trees](reading-trees.md): what to do with the result.
+- [Errors and Recovery](errors-and-recovery.md): reporting and recovering from syntax errors.

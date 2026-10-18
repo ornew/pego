@@ -5,7 +5,7 @@ call like any other package. The generated code depends only on the standard lib
 does not load or compile the grammar at run time.
 
 This guide shows how to generate a parser, how to call it, what it supports compared with the engine (the
-`pego.Parser` of the [runtime guide](running-parsers.md)), how to keep it up to date, and when it is the right choice.
+`pego.Parser` of the [Running Parsers](running-parsers.md)), how to keep it up to date, and when it is the right choice.
 `pego gen -lang ts` generates a TypeScript module with the same behavior instead; it has a guide of its own,
 [TypeScript parsers](typescript.md).
 
@@ -42,7 +42,7 @@ change what your code sees. The test suite checks this for every grammar in `exa
 
 ## Quick Start
 
-A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [runtime guide](running-parsers.md):
+A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [Running Parsers](running-parsers.md):
 
 ```pego
 type Pair = { Key Match; Value Match }
@@ -219,7 +219,7 @@ err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
-[runtime guide](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
+[Running Parsers](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
 When `-observability` is enabled, the generated Go or TypeScript package
 includes opt-in rule tracing and profiling. See [generated Go Node and typed
@@ -596,7 +596,7 @@ With `-recognize` (`pego.WithRecognize()`), the generated package also has
 func Recognize(input string, opts ...ParseOption) error
 ```
 
-It is the engine's [`RecognizeOnly`](running-parsers.md#recognition-mode) in generated form: the grammar is compiled once more
+It is the engine's [`RecognizeOnly`](backends.md#recognition-mode) in generated form: the grammar is compiled once more
 with no rule building a value (except those whose values predicates read), into a second rule table in the same file.
 Actions whose values are not needed by predicates are skipped. Actions needed by predicates still run and can report runtime errors. On the benchmark workloads it
 takes about half the time of `Parse` (JSON 8.8 → 4.9 ms on a 262 KB input, CSV 4.0 → 1.8 ms), and it is the fastest
@@ -703,7 +703,7 @@ Notes:
   invocation, and `-max-depth` changes the generated default. With the nested-parentheses grammar
   `rule nested = "(" nested ")" / "x"`, 50,000 levels parse and 200,000 levels fail with that error. If you must accept
   deeper nesting beyond the host stack, the engine's `BytecodeIterative` backend with `WithMaxDepth` is the tool
-  ([runtime guide](running-parsers.md#deep-nesting-and-withmaxdepth)).
+  ([Backends](backends.md#deep-nesting-and-withmaxdepth)).
 - **Memory.** Generated parsers memoize in the same way as the engine, so memory still grows with the input. For input
   larger than memory, generate `ParseStream` with `-stream` or use the engine's `ParseStream`.
 - Using a stream grammar with the generator is fine: `Parse` treats the `#stream` pragma as an ordinary repetition, so

@@ -17,9 +17,12 @@ complete, runnable examples, and points to the [specification](../../spec/README
 
 | Guide | Contents |
 |:--|:--|
-| [Running Parsers](running-parsers.md) | The Go API: compiling a grammar, start rules, results and errors, concurrency, cancellation, parsing a prefix, position units, backends and how to choose one, nesting limits, recognition mode, memoization |
+| [Running Parsers](running-parsers.md) | The Go API: the pipeline from source to parser, compiling, start rules, results and errors, concurrency, choosing a feature |
+| [Backends](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit, recognition mode, memoization |
+| [Cancellation and Work Limits](cancellation-and-limits.md) | `WithContext` and `WithWorkLimits`: stopping a parse and what it returns |
+| [Position Units](position-units.md) | Code points or bytes: what the unit changes, how to choose it, invalid UTF-8 |
+| [Parsing a Prefix](prefix-parsing.md) | `ParsePrefix`: parsing a fragment of a larger text and reading how much it consumed |
 | [Building Grammars as ASTs and JSON](grammar-asts.md) | Structural validation, formatting, source metadata and JSON loading for tools that build grammars in Go |
-| [The `pego` Command](command-line.md) | The command-line workflows: parse, format, fix, convert, compile and generate |
 
 ## Using the Results
 
@@ -49,6 +52,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 
 | Guide | Contents |
 |:--|:--|
+| [The `pego` Command](command-line.md) | The command-line workflows: parse, format, fix, convert, compile and generate |
 | [Testing Grammars](testing-grammars.md) | A test suite for a grammar in layers: examples, golden files, fixture suites, properties, generated inputs, fuzzing, reference implementations, equivalence checks, lint and format checks in CI |
 | [Debugging and Profiling](debugging.md) | Why an input fails (`pego explain`), what the parser does (`pego trace`), why a parse is slow (`pego profile`), `WithTrace` and `WithProfile` in Go, costs and limits |
 | [Linting Grammars](linting.md) | Finding likely mistakes with `pego lint` and `pego.Lint`, what the checks mean and how to fix what they report, suppressing findings |

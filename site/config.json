@@ -81,13 +81,19 @@
           "title": "Running Parsers",
           "match": [
             "docs/guide/running-parsers.md",
-            "docs/guide/grammar-asts.md",
-            "docs/guide/command-line.md"
+            "docs/guide/backends.md",
+            "docs/guide/cancellation-and-limits.md",
+            "docs/guide/position-units.md",
+            "docs/guide/prefix-parsing.md",
+            "docs/guide/grammar-asts.md"
           ],
           "first": [
             "docs/guide/running-parsers.md",
-            "docs/guide/grammar-asts.md",
-            "docs/guide/command-line.md"
+            "docs/guide/backends.md",
+            "docs/guide/cancellation-and-limits.md",
+            "docs/guide/position-units.md",
+            "docs/guide/prefix-parsing.md",
+            "docs/guide/grammar-asts.md"
           ]
         },
         {
@@ -132,6 +138,7 @@
         {
           "title": "Developing Grammars",
           "match": [
+            "docs/guide/command-line.md",
             "docs/guide/testing-grammars.md",
             "docs/guide/debugging.md",
             "docs/guide/linting.md",
@@ -140,6 +147,7 @@
             "docs/guide/playground.md"
           ],
           "first": [
+            "docs/guide/command-line.md",
             "docs/guide/testing-grammars.md",
             "docs/guide/debugging.md",
             "docs/guide/linting.md",
@@ -309,7 +317,6 @@
     "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/",
     "/docs/guide/runtime/": "/docs/guide/running-parsers/",
     "/docs/guide/expressions/": "/docs/guide/operators-rule/",
-    "/docs/guide/prefix-parsing/": "/docs/guide/running-parsers/",
     "/docs/guide/working-with-trees/": "/docs/guide/reading-trees/",
     "/docs/guide/tree-traversal/": "/docs/guide/walking-trees/",
     "/docs/guide/output-schema-and-queries/": "/docs/guide/output-schemas-and-queries/",

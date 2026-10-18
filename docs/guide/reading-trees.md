@@ -49,7 +49,7 @@ Because a field is an `any`, assert its type: `.(*pego.Node)` for nodes and capt
 `int` values. They delimit the input a node covers as a half-open range in the position unit of the parse. A rule that
 includes trailing white space covers it: the first `Pair` above ends at 8, after `"; "`. To get the matched text of
 any node, slice the input (a plain Go slice when you parse with `pego.WithUnit(pego.Bytes)`) or use `text(...)` in an
-action. [Running Parsers](running-parsers.md#position-units) explains how to choose a unit.
+action. [Running Parsers](position-units.md) explains how to choose a unit.
 
 ## Printing and JSON
 
