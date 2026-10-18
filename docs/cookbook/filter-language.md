@@ -220,4 +220,4 @@ age > 30 and                                     error: 1:13: syntax error: expe
 - **Ready-made.** For the Common Expression Language (CEL), which is a complete expression language for policies and
   filters, use [parsers/cel](../../parsers/cel/).
 
-See [Expressions](../guide/expressions.md) and [Operators Rule](../../spec/operators-rule.md).
+See [Expressions](../guide/operators-rule.md) and [Operators Rule](../../spec/operators-rule.md).

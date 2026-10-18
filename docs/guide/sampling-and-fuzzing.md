@@ -454,7 +454,7 @@ parser would read differently:
   position, including prefixes below the entry level. Their right operands can use operators tighter than the
   prefix's own level; coverage includes these RHS paths and the rules they call. Operators and nested targets
   that no reachable entry or prefix RHS permits are excluded. See the
-  [prefix exception](expressions.md#4-level-restricted-calls) for the parser's contract.
+  [prefix exception](operators-rule.md#4-level-restricted-calls) for the parser's contract.
 
 After an already-used nonassociative operator closes its level, the stop check allows a caller to continue with
 that token: `e "<" e` with `infix none "<"` can generate `a<a<a`. Other applicable infix and postfix operators still

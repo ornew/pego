@@ -660,7 +660,7 @@ This produces the same trees as the Operators Rule version, with one rule per le
 expressions scale better as the language grows (the [Go](../../parsers/golang/) and
 [Python](../../parsers/python/) parsers use them for their full operator tables), and they support features such as
 level-restricted calls and mixed prefix, infix and postfix operators. The guide to
-[expressions](../guide/expressions.md) compares the two approaches and covers every option;
+[expressions](../guide/operators-rule.md) compares the two approaches and covers every option;
 [examples/calculator](../../examples/calculator/) contains both versions of a complete calculator with an evaluator.
 
 ## 7. Syntax Errors
@@ -809,19 +809,19 @@ n, err := p.Parse("abc=12", pego.WithBackend(pego.Bytecode)) // also pego.WithUn
 `pego compile -g config.pego -o config.pegoc` saves a compiled grammar that every command accepts in place of the
 `.pego` file (`pego parse -g config.pegoc ...`), and `pego.LoadParser` loads it without recompiling.
 `pego convert -to json config.pego` converts a grammar to JSON, which is handy for tools that generate grammars.
-The [runtime guide](../guide/runtime.md) describes the backends and options in detail, and the
+The [runtime guide](../guide/running-parsers.md) describes the backends and options in detail, and the
 [compiled grammars guide](../guide/compiled-grammars.md) the `.pegoc` format.
 
 ### Where to Go from Here
 
 | To learn about | Read |
 |:--|:--|
-| Choosing a backend, runtime options, code generation | [Runtime guide](../guide/runtime.md) |
+| Choosing a backend, runtime options, code generation | [Runtime guide](../guide/running-parsers.md) |
 | Saving a grammar to a file and loading it without recompiling | [Compiled grammars](../guide/compiled-grammars.md) |
 | Parsing unbounded input as a stream | [Streaming](../guide/streaming.md) |
 | Reparsing an edited document | [Incremental parsing](../guide/incremental.md) |
 | Shaping trees, struct and union types, `foldl`, `map`, `concat` and the other action functions | [Trees and actions](../guide/trees-and-actions.md) |
-| Operator tables, precedence, associativity, level-restricted calls, left recursion | [Expressions](../guide/expressions.md) |
+| Operator tables, precedence, associativity, level-restricted calls, left recursion | [Expressions](../guide/operators-rule.md) |
 | Error messages, `@error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |
 | Indentation-based languages, matching tags, predicates and variables | [Context-sensitive parsing](../guide/context-sensitive.md) |
 | Solving a concrete task: reading a configuration file, evaluating formulas, reporting errors, parsing as the user types, shipping a parser | [Cookbook](../cookbook/README.md) |

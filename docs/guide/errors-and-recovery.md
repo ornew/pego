@@ -802,9 +802,10 @@ the diagnostic. The node's `Text` is empty because no semicolon was read.
 The limit counts abandoned attempts too. Exhaustion returns
 `*pego.MissingTokenLimitError` with no tree. VM backends, generated parsers,
 Document, streams and compiled grammar serialization do not support this
-initial feature. See the [runtime guide](runtime.md#missing-literals-in-editor-input)
-and the [pragma specification](../../spec/pragmas.md#missing) for the full
-contract.
+initial feature. The budget includes abandoned attempts and left-recursion seed
+replay, so a limit of 16 does not guarantee acceptance of a tree with 16 missing
+nodes. `Missing` is a reserved type name. The [pragma
+specification](../../spec/pragmas.md#missing) defines the full contract.
 
 ## 5. Recipes
 

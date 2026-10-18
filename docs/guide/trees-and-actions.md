@@ -8,7 +8,7 @@ with captures, atomic (`#atomic`) and discard (`-`), and then shows how to repla
 The guide complements the normative chapters [Rule Expressions](../../spec/parser-expressions.md),
 [Type System](../../spec/types.md) and [Actions](../../spec/actions.md); read them for the exact rules. Here the focus
 is on how and why to use each feature. For operator expressions (`foldl` chains
-versus Operators Rule Definition Statements), see the companion guide [Rule Expressions with Operators](expressions.md).
+versus Operators Rule Definition Statements), see the companion guide [Operators Rule](operators-rule.md).
 
 Every grammar and output below was produced by running it. To follow along, put each grammar in the file named on its
 first line and run the command shown, using either the installed tool or `go run ./cmd/pego` from a checkout:
@@ -630,97 +630,10 @@ pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -A6 '"v"'
 
 ## 8. Using the Tree from Go
 
-`Parser.Parse` returns a `*pego.Node`. It mirrors the JSON keys: the methods `Type()` and `Rule()`, and the fields
-`Start` and `End` (`int32`), `Text`, `Children` and `Fields`. `Field(name)` returns the value of a struct field or capture (a `*pego.Node`, `int`,
-`string`, `bool` or `nil`), and `IsTerminal` tells terminals apart. The node also marshals to the JSON shown above with
-`encoding/json`.
-
-The program below parses a left-associative sum (the grammar of
-[Recipe 1](#91-left-associative-trees-with-foldl) without the `main` rule) and prints every node with its range:
-
-```go
-// main.go
-package main
-
-import (
-	"fmt"
-	"log"
-	"strings"
-
-	"github.com/ornew/pego"
-)
-
-const src = `type Num terminal
-type Op terminal
-type Bin = {
-    Left  Expr
-    Op    Op
-    Right Expr
-}
-type Expr ~ Num | Bin
-
-rule sum Expr =  first:num rest:(-ws op:op -ws n:num)*
-    => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.op, Right: i.n})
-
-rule num Num =  [0-9]+
-rule op Op =  "+" / "-"
-rule ws =  " "* `
-
-func main() {
-	p, err := pego.CompileSource(src, "sum")
-	if err != nil {
-		log.Fatal(err)
-	}
-	n, err := p.Parse("1 - 2 + 3")
-	if err != nil {
-		log.Fatal(err)
-	}
-	dump(n, 0)
-
-	// Fields are read by name; terminals carry their text.
-	right := n.Field("Right").(*pego.Node)
-	fmt.Println("right operand:", right.Text, right.Start, right.End)
-}
-
-func dump(n *pego.Node, depth int) {
-	fmt.Printf("%s%s [%d,%d)", strings.Repeat("  ", depth), n.Type(), n.Start, n.End)
-	if n.IsTerminal() {
-		fmt.Printf(" %q", n.Text)
-	}
-	fmt.Println()
-	for _, f := range n.Fields {
-		if c, ok := f.Value.(*pego.Node); ok && c != nil {
-			fmt.Printf("%s.%s\n", strings.Repeat("  ", depth+1), f.Name)
-			dump(c, depth+2)
-		}
-	}
-	for _, c := range n.Children { // Seq, List and Operator nodes; a nil child is an unmatched optional
-		if c != nil {
-			dump(c, depth+1)
-		}
-	}
-}
-```
-
-```text
-Bin [0,9)
-  .Left
-    Bin [0,5)
-      .Left
-        Num [0,1) "1"
-      .Op
-        Op [2,3) "-"
-      .Right
-        Num [4,5) "2"
-  .Op
-    Op [6,7) "+"
-  .Right
-    Num [8,9) "3"
-right operand: 3 8 9
-```
-
-The inner `Bin` covers `1 - 2` and the outer one the whole input, even though the inner node was created inside the
-lambda.
+`Parser.Parse` returns a `*pego.Node` that mirrors the JSON keys above: the methods `Type()` and `Rule()`, the fields
+`Start` and `End`, `Text`, `Children` and `Fields`, and `Field(name)` for a struct field or capture. Reading fields,
+walking the tree and selecting nodes by position are covered in [Working With Trees](working-with-trees.md), and the
+node model is defined in [Nodes and Values](../../spec/nodes.md).
 
 ## 9. Recipes
 
@@ -760,7 +673,7 @@ Num"7"@num
 Notes: the accumulator starts as a `Num` and becomes a `Bin`, so its type is widened to the union of both, and the
 declared `Expr ~ Num | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
 initial value unchanged, which is why `7` stays a bare `Num`. For several precedence levels you would write one such
-rule per level; for that case also look at [Operators Rule](expressions.md).
+rule per level; for that case also look at [Operators Rule](operators-rule.md).
 
 ### 9.2 Right-Associative Trees With `foldr`
 

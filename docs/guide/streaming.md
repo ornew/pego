@@ -15,7 +15,7 @@ until EOF; `WithDiagnosticLimit` can bound the retained diagnostic tail.
 | You get | Each element of that repetition, as soon as it matches |
 | Saves | Memory: neither the input nor the tree ever exists whole |
 
-`#stream` has no effect on `Parse`, and `ParseStream` works with every backend ([Runtime](runtime.md)) and with both
+`#stream` has no effect on `Parse`, and `ParseStream` works with every backend ([Runtime](running-parsers.md)) and with both
 position units. It does not work with `RecognizeOnly` (`ParseStream` returns an error). A parser produced by `GenerateGo` has a
 `ParseStream` and `Iterate` of its own, with the same diagnostic options, when generated with `-stream`, and with
 `-types` also `ParseStreamAST` and `IterateAST` for typed elements ([Code generation](code-generation.md#streams--stream)). If the problem is the opposite one, a text that stays in memory and is edited again and again, see
@@ -820,5 +820,5 @@ err: context deadline exceeded true
 - [Incremental parsing](incremental.md): reparsing a text after edits.
 - [spec/pragmas.md](../../spec/pragmas.md#stream): the `#stream` behavioral pragma.
 - [Errors and recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
-- [Runtime](runtime.md): backends, position units and the other parse options.
+- [Runtime](running-parsers.md): backends, position units and the other parse options.
 - [Design record 007](../design/007-streaming-and-incremental-parsing.md).

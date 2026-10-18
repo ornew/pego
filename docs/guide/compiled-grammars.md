@@ -18,7 +18,7 @@ it costs and saves, how files stay compatible between releases, and when to use 
 - [Compiled grammar, generated code or source?](#compiled-grammar-generated-code-or-source)
 - [Troubleshooting](#troubleshooting)
 
-The examples use the grammar `pairs.pego` of the [runtime guide](runtime.md):
+The examples use the grammar `pairs.pego` of the [runtime guide](running-parsers.md):
 
 ```pego
 type Pair = { Key Match; Value Match }
@@ -69,7 +69,7 @@ A few more facts:
 - `pego.IsCompiled(data)` tells a compiled grammar from other data by its magic number. The commands use it to decide
   whether `-g` names source, JSON or a compiled grammar.
 - A loaded parser is an ordinary `*pego.Parser`: it is safe for concurrent use, `WithStart` changes its start rule, and
-  `Parse`, `ParsePrefix`, `ParseStream`, `NewDocument` and the options of the [runtime guide](runtime.md) work on it, within the limits
+  `Parse`, `ParsePrefix`, `ParseStream`, `NewDocument` and the options of the [runtime guide](running-parsers.md) work on it, within the limits
   of the next section.
 - A parser loaded from a file preserves the same tree, positions and errors as one compiled from source. Keep a
   round-trip comparison in your own test suite for the grammars your application depends on.
@@ -124,7 +124,7 @@ pego compile -g existing-noast.pegoc -no-ast -o copy-noast.pegoc
 Choose the file without the AST for a build artifact that is only ever executed, and the full file when something may
 want to read the grammar again (a tool that lints, formats or generates from it) or when the closure backend's speed
 matters more than the load time. The effects on size and load time are in the next section. The effect on parse speed
-is the difference between the backends, which the [runtime guide](runtime.md#which-one) measures: on its benchmarks the
+is the difference between the backends, which the [runtime guide](running-parsers.md#which-one) measures: on its benchmarks the
 recursive bytecode VM is 1.1 to 1.3 times slower than the closure backend. If you load a file without the AST and want
 the iterative VM, say so: `pego.WithBackend(pego.BytecodeIterative)`.
 
@@ -408,7 +408,7 @@ Rules of thumb:
   or the process is long-lived. It is the simplest.
 - **Use a `.pegoc`** when start-up is noticeable (a command-line tool, a plugin, a serverless function, a test binary),
   when the grammar has to be a data file, or when you want to keep PEGO's features that generated code lacks
-  ([streaming and incremental parsing](streaming.md), [backends](runtime.md#backends)) and still skip the compile.
+  ([streaming and incremental parsing](streaming.md), [backends](running-parsers.md#backends)) and still skip the compile.
 - **Use `pego gen`** when the parser is on a hot path or you want no dependency on PEGO at run time: it has no
   start-up and the fastest parsing. The cost is that the grammar is frozen into the binary, and that the generated
   source is large: `parsers/python/parser.go` is 3,948,176 bytes against 84,841 bytes for `python.pego`, and
@@ -443,7 +443,7 @@ PEGO source            not a compiled PEGO grammar
 
 ## See Also
 
-- [Running parsers](runtime.md): the Go API, backends, position units and the `pego` command.
+- [Running parsers](running-parsers.md): the Go API, backends, position units and the `pego` command.
 - [Code generation](code-generation.md): the other way to skip compiling at run time.
 - [Benchmarks](../benchmarks.md#preparation-time-until-a-grammar-is-ready-to-use) and
   [performance notes](../performance.md#where-pego-stands): preparation times and sizes.

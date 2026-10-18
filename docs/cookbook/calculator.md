@@ -194,5 +194,5 @@ z * 2            0 undefined variable "z"
 - **A grammar without an Operators Rule**: a rule per precedence level, or a left-recursive rule per level, gives the same trees;
   [examples/calculator](../../examples/calculator/) has both.
 
-See [Expressions](../guide/expressions.md) for operator tables, associativity and level-restricted calls, and
+See [Expressions](../guide/operators-rule.md) for operator tables, associativity and level-restricted calls, and
 [Operators Rule](../../spec/operators-rule.md) for the rules.

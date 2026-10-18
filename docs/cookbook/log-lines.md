@@ -174,4 +174,4 @@ it).
   structs can be replaced by the `Field` and `Children` of `*pego.Node`.
 
 See [Code generation](../guide/code-generation.md) for what generated parsers support and
-[Running parsers](../guide/runtime.md) for recognition mode.
+[Running parsers](../guide/running-parsers.md) for recognition mode.

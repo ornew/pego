@@ -115,8 +115,8 @@ func TestBuild(t *testing.T) {
 		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules", "077. Inline value-building and memoized Node expressions in generated Go parsers"},
 		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`, `id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"`},
 		"playground/index.html":         {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
-		"docs/guide/runtime/index.html": {
-			`id="compiled-grammars-pegoc"`, `href="../../../spec/"`, `<pre><code class="language-pego">`,
+		"docs/guide/running-parsers/index.html": {
+			`id="compiled-grammars"`, `href="../../../spec/"`, `<pre><code class="language-pego">`,
 		},
 	} {
 		data, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(page)))
@@ -259,7 +259,7 @@ func TestBuild(t *testing.T) {
 	// be cached forever.
 	if cfg.Wasm {
 		wasmRe := regexp.MustCompile(`<html [^>]*data-wasm="([^"]+)"`)
-		for _, page := range []string{"index.html", "playground/index.html", "docs/guide/runtime/index.html"} {
+		for _, page := range []string{"index.html", "playground/index.html", "docs/guide/running-parsers/index.html"} {
 			data, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(page)))
 			if err != nil {
 				t.Fatal(err)
@@ -568,15 +568,21 @@ func TestNavigation(t *testing.T) {
 
 	// Only designated section indexes are called "Introduction". Design and optimization
 	// records remain rendered and searchable; design records also appear in their disclosure.
-	secs := readSidebar(t, filepath.Join(out, "docs", "guide", "runtime", "index.html"))
+	secs := readSidebar(t, filepath.Join(out, "docs", "guide", "running-parsers", "index.html"))
 	var names []string
 	intro := map[string]bool{}
 	for _, sec := range secs {
 		names = append(names, sec.Name)
-		for _, l := range sec.Links {
-			if l.Title == "Introduction" {
-				intro[site(l.Href)] = true
-			}
+	}
+	// Sections with nested groups close their first group before their own links, so the
+	// introductions are collected from the whole sidebar.
+	page, err := os.ReadFile(filepath.Join(out, "docs", "guide", "running-parsers", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range sidebarLinkRe.FindAllStringSubmatch(sidebarRe.FindString(string(page)), -1) {
+		if html.UnescapeString(l[3]) == "Introduction" {
+			intro[site(l[1])] = true
 		}
 	}
 	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Project"; got != want {

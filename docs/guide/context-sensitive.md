@@ -113,6 +113,15 @@ pego: 1:1: syntax error
 
 If a predicate unexpectedly fails, check the names first.
 
+#### Blocks of Predicate Actions
+
+A nonempty block `{ a; b; c }` is shorthand for adjacent Predicate Actions at the same position, so
+`{ count := 1; count == 1 } "a"` behaves like `{ count := 1 } { count == 1 } "a"`. The statements run from left to
+right and stop at the first false result or error. Assignments are visible to later statements and follow the usual
+backtracking rules. A block creates no variable or capture scope, consumes no input and adds no rule boundary. Empty
+blocks are compile-time errors, and Value Actions have no block form: they use the single term after `=>`. The
+[Actions](../../spec/actions.md#predicate-action-blocks) chapter defines blocks.
+
 ### Variables
 
 A predicate `{ name := value }` **defines** a variable, and `{ name }` or any expression that mentions `name` **reads** it.

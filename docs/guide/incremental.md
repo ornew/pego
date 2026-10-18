@@ -14,7 +14,7 @@ the new text from scratch.
 | You get | A full tree for every version of the text |
 | Saves | Time: unchanged parts are not parsed again |
 
-An engine `Document` works with every backend ([Runtime](runtime.md)) and with both position units. It does
+An engine `Document` works with every backend ([Runtime](running-parsers.md)) and with both position units. It does
 not work with `RecognizeOnly` (`NewDocument` returns an error). Standalone generated Go parsers support an opt-in
 Document with the [`-document` option](code-generation.md#incremental-documents--document). With `-types`, they
 also expose `Document.ParseAST`: eligible grammars use direct typed incremental matching, while other results use
@@ -27,12 +27,13 @@ Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` 
 `#stream` has no effect on it, so the two do not combine.
 
 To observe edits and parse outcomes for downstream indexes or highlights, enable
-the opt-in [Document change notifications](document-changes.md) before editing.
+the opt-in [Document change notifications](incremental.md#change-notifications) before editing.
 
 The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md).
 
 - [The model](#the-model)
 - [The API](#the-api)
+- [Change notifications](#change-notifications)
 - [A walkthrough with `Stats`](#a-walkthrough-with-stats)
 - [Managing reuse history](#managing-reuse-history)
 - [What is reused, and why](#what-is-reused-and-why)
@@ -130,7 +131,7 @@ cleanup.
 per-invocation input work and execution steps. These are not elapsed-time or
 buffered-byte limits. A blocked reader or callback cannot be preempted by the
 parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#recipe-cancelling-a-stream)
-for the reader ownership boundary and [Runtime](runtime.md) for option names and
+for the reader ownership boundary and [Runtime](running-parsers.md) for option names and
 error handling.
 
 ## Keeping a Result While Editing
@@ -199,6 +200,34 @@ _ = err
 | `EstimatedBytes` | Approximate cache-owned backing storage. |
 
 `EstimatedBytes` excludes document text, caller-held result trees, shared strings, shared expectation/error/environment payloads, map buckets and allocator overhead. It is neither process heap use nor a memory cap. Inspection traverses the cache and should be done by the same owner that edits and parses the document. `Stats` describes the previous parse instead: `Reused` remains the sum of `MemoHits` and `ResumedElements` for that parse.
+
+## Change Notifications
+
+A tool that keeps derived data (an outline, an index, highlights) next to a `Document` can ask it to record what
+changed. Tracking is off by default; enable it before the edits and parses you want to observe:
+
+```go
+doc, err := parser.NewDocument(source)
+if err != nil {
+	return err
+}
+if err := doc.EnableChanges(64); err != nil {
+	return err
+}
+snapshot, parseErr := doc.Snapshot()
+changes := doc.DrainChanges()
+```
+
+The positive limit bounds the number of events, not the size of replacement strings or of the comparison `Snapshot`
+that tracking retains. `DrainChanges` transfers the recorded events and clears the queue. The events say that an edit
+was applied (`ChangeEdit`), what a parse or snapshot produced compared with the previous one (`ChangeOutcome`), or that
+the history overflowed and you must rebuild from the latest state (`ChangeFullRefresh`).
+
+A conservative consumer rebuilds its indexes from the latest `Snapshot` when it sees source invalidation, a changed or
+unavailable output, a gap in revisions or a full-refresh marker, and keeps the edit cursor separate from the version
+of the last displayed `Snapshot`. Notifications never promise a minimal difference between trees. The kinds of events,
+what counts as a change and how interruption is reported are defined in
+[Change Notifications](../../spec/documents.md#change-notifications).
 
 ## A Walkthrough With `Stats`
 
@@ -784,7 +813,7 @@ Limits to keep in mind:
 - The whole text and memo table are in memory. The engine can discard reuse history with `ResetHistory`; generated
   Go's Node Document has no reset method.
 - `Parse` returns a complete tree each time. The engine Document can report conservative changes through
-  [opt-in notifications](document-changes.md); generated Go's Node Document has no change-notification API.
+  [opt-in notifications](incremental.md#change-notifications); generated Go's Node Document has no change-notification API.
 - The engine Document is unavailable with `RecognizeOnly` or [streams](streaming.md). Generated Go offers the
   smaller [`-document` API](code-generation.md#incremental-documents--document); `-types` adds
   `Document.ParseAST`, with direct matching for grammars eligible for batch typed parsing and Node conversion
@@ -1078,5 +1107,5 @@ number of times in the two parses; only results and errors are compared.
 - [Streaming](streaming.md): input too big to hold.
 - [Linting grammars](linting.md): the `hint` findings that point at grammars that reuse poorly.
 - [Errors and recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
-- [Runtime](runtime.md): backends, position units and the other parse options.
+- [Runtime](running-parsers.md): backends, position units and the other parse options.
 - [Performance](../performance.md): current benchmark results and how to measure your grammar.

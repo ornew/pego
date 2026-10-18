@@ -135,7 +135,7 @@ A grammar decoded from JSON or loaded from a compiled grammar has no source posi
 
 Errors and warnings are proven from the grammar: when the linter cannot be sure, it says nothing. That means it misses
 some mistakes (see [What the linter does not find](#what-the-linter-does-not-find)), but what it reports is worth
-fixing. It assumes that rule calls do not nest deeper than the [nesting limit](runtime.md), which can make any call
+fixing. It assumes that rule calls do not nest deeper than the [nesting limit](running-parsers.md), which can make any call
 fail.
 
 ## The Checks

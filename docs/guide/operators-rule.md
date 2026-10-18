@@ -1,4 +1,4 @@
-# Rule Expressions with Operators
+# Operators Rule
 
 Expressions with operators (`1 + 2 * 3`, `-x ** 2`, `f(a)[i].name`, `c ? a : b`) are where a grammar needs
 precedence and associativity. PEGO gives you three ways to write them:

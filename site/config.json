@@ -57,7 +57,86 @@
       "match": [
         "docs/guide/*.md"
       ],
-      "index": "docs/guide/README.md"
+      "index": "docs/guide/README.md",
+      "children": [
+        {
+          "title": "Writing Grammars",
+          "match": [
+            "docs/guide/rule-expressions.md",
+            "docs/guide/trees-and-actions.md",
+            "docs/guide/operators-rule.md",
+            "docs/guide/context-sensitive.md",
+            "docs/guide/errors-and-recovery.md"
+          ],
+          "first": [
+            "docs/guide/rule-expressions.md",
+            "docs/guide/trees-and-actions.md",
+            "docs/guide/operators-rule.md",
+            "docs/guide/context-sensitive.md",
+            "docs/guide/errors-and-recovery.md"
+          ]
+        },
+        {
+          "title": "Running Parsers",
+          "match": [
+            "docs/guide/running-parsers.md",
+            "docs/guide/working-with-trees.md",
+            "docs/guide/grammar-asts.md",
+            "docs/guide/command-line.md"
+          ],
+          "first": [
+            "docs/guide/running-parsers.md",
+            "docs/guide/working-with-trees.md",
+            "docs/guide/grammar-asts.md",
+            "docs/guide/command-line.md"
+          ]
+        },
+        {
+          "title": "Incremental and Streaming Input",
+          "match": [
+            "docs/guide/incremental.md",
+            "docs/guide/streaming.md"
+          ],
+          "first": [
+            "docs/guide/incremental.md",
+            "docs/guide/streaming.md"
+          ]
+        },
+        {
+          "title": "Shipping Parsers",
+          "match": [
+            "docs/guide/compiled-grammars.md",
+            "docs/guide/code-generation.md",
+            "docs/guide/typescript.md",
+            "docs/guide/ready-made-parsers.md"
+          ],
+          "first": [
+            "docs/guide/compiled-grammars.md",
+            "docs/guide/code-generation.md",
+            "docs/guide/typescript.md",
+            "docs/guide/ready-made-parsers.md"
+          ]
+        },
+        {
+          "title": "Developing Grammars",
+          "match": [
+            "docs/guide/testing-grammars.md",
+            "docs/guide/debugging.md",
+            "docs/guide/linting.md",
+            "docs/guide/sampling-and-fuzzing.md",
+            "docs/guide/editor-support.md",
+            "docs/guide/playground.md"
+          ],
+          "first": [
+            "docs/guide/testing-grammars.md",
+            "docs/guide/debugging.md",
+            "docs/guide/linting.md",
+            "docs/guide/sampling-and-fuzzing.md",
+            "docs/guide/editor-support.md",
+            "docs/guide/playground.md"
+          ]
+        }
+      ]
     },
     {
       "title": "Cookbook",
@@ -215,6 +294,13 @@
     "/docs/design/050-pratt-skip-control/": "/docs/design/050-operators-rule-skip-control/",
     "/docs/optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c/": "/docs/optimizations/009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c/",
     "/docs/optimizations/013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms/": "/docs/optimizations/013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms/",
-    "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/"
+    "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/",
+    "/docs/guide/runtime/": "/docs/guide/running-parsers/",
+    "/docs/guide/expressions/": "/docs/guide/operators-rule/",
+    "/docs/guide/prefix-parsing/": "/docs/guide/running-parsers/",
+    "/docs/guide/tree-traversal/": "/docs/guide/working-with-trees/",
+    "/docs/guide/output-schema-and-queries/": "/docs/guide/working-with-trees/",
+    "/docs/guide/document-changes/": "/docs/guide/incremental/",
+    "/docs/guide/predicate-actions-and-filter/": "/docs/guide/context-sensitive/"
   }
 }

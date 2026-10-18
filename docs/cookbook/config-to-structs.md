@@ -184,4 +184,4 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
   own.
 
 See [Trees and actions](../guide/trees-and-actions.md) for shaping the tree and [Running
-parsers](../guide/runtime.md) for the Go API.
+parsers](../guide/running-parsers.md) for the Go API.
