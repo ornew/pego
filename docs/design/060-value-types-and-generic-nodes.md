@@ -12,8 +12,8 @@ typed value, and the concrete syntax tree is built from a single generic
 `Seq`, `List`, `Operator` and `Error`, the `terminal` type and node fields
 disappear. Types gain tuples, primitive lists, a top type `_`, a bottom type
 `_|_`, joins, meets and an explicit distinction between type definitions and
-type aliases. Actions lose positional captures and `text`, and gain indexing
-and the `.$` capture-access operator.
+type aliases. Actions lose positional captures, keep `text` for the input a
+node spans, and gain indexing and the `.$` capture-access operator.
 
 In this record, *standard syntax* is the syntax users write; *extended syntax*
 is notation the implementation uses to describe built-in types that standard
@@ -190,9 +190,11 @@ and the parser returns the default `node` tree even for grammars with actions.
 - **Lambda parameters are variables.** Captures remain `$x`; lambda
   parameters share the variable namespace and are written without `$`:
   `{ indent := 1 } => { indent + 1; map($items, (x) => x.$item) }`.
-- **Node access.** `text` is removed. A captured node exposes `.Start`, `.End`
-  and `.Value`; `.Source` is rejected. `rule a = x:"x" => $x.Value` replaces
-  `X{Text: text($x)}`. `len($x.Value)` and `len($x)` keep their meaning.
+- **Node access.** A captured node exposes `.Start`, `.End` and `.Value`;
+  `.Source` is rejected. `text(x)` remains and returns the input that node `x`
+  spans as a `string`, whatever its value, so `X{Text: text($x)}` keeps its
+  meaning; for a terminal, `$x.Value` is the same string.
+  `len($x.Value)` and `len($x)` keep their meaning.
 - **`.$` capture access.** `i.$y` reads capture `y` of node `i`; its receiver
   must be a `node`, and `C` turns the name into an index. For
   `rule a = x:(y:.)* => map($x, (i) => i.$y)`, `$x.Value` has type
@@ -285,14 +287,23 @@ and every guide. Saved bytecode and schema formats need new versions.
   and a `name:` label before the element in S-expressions, for example
   `(k:["a"]@key ":" v:["1"]@num)@main`. `pego parse` does not request source
   information unless asked to.
+- **The Go node is opaque.** The public `Node` exposes methods only: its
+  range, its value, the elements of a tuple or list value, and, with source
+  information, its rule and captures. No field or method commits to a memory
+  layout, so the engine may store trees in flat arrays or arenas and avoid
+  allocating nodes for terminals.
+- **The engine moves at once on a branch.** The repository grammars, the
+  closure backend, the VM, Documents and snapshots, the output formats,
+  schemas and queries, and generated code move in separate commits on one
+  branch, which replaces the current model on the main line only when every
+  backend agrees and every test and ready-made parser passes. No release
+  carries both tree models.
 - **Typos in the source.** `a?` has type `*A`, not `[]A`, and the tuple example
   is `(T, U) != (U, T)`.
 
 ## Open Questions
 
-1. **Migration order.** The order in which the checker, backends, generated
-   code, tools and ready-made parsers move, and how `text` on nonterminal
-   ranges is rewritten, since it has no mechanical replacement.
+No open questions remain.
 
 ## Alternatives Considered
 

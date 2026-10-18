@@ -163,6 +163,9 @@ func TestValueActionTypes(t *testing.T) {
 		{`rule a = x:"x"* => $x.Value`, "a", `[]node[string]`},
 		{`rule a = x:"x"* => len($x)`, "a", `int`},
 		{`rule a = x:"x"* => len($x.Value)`, "a", `int`},
+		// text is the input a node spans, whatever its value.
+		{`rule a = x:("x" "y")* => text($x)`, "a", `string`},
+		{`rule a = x:"x"? => text($x)`, "a", `string`},
 		// The example of the record: map over the node of a repetition reads its elements.
 		{`rule a = x:(y:.)* => map($x, (i) => i.$y)`, "a", `[]node[string]`},
 		{`rule a = x:(y:.)* => map($x.Value, (i) => i.Value[0])`, "a", `[]node[string]`},
@@ -236,7 +239,8 @@ func TestValueActionTypes(t *testing.T) {
 func TestValueActionErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule a = x:"x" => $x.Source`, "the source information of a node is not accessible from actions"},
-		{`rule a = x:"x" => text($x)`, "text is removed: read the string of a node with .Value"},
+		{`rule a = x:"x" => text(1)`, "text: invalid argument int"},
+		{`rule a = x:"x" => text(list($x))`, "text: invalid argument []node[string]"},
 		{`rule a = x:"x" => $x.startPos`, ".startPos is removed: use .Start or .End"},
 		{`rule a = x:"x" => $x.children`, ".children is removed: use .Value"},
 		{`rule a = x:(y:"y" "z") => $x.y`, `node[(node[string], node[string]), {"y": 0}] has no field y: read the capture with .$y`},

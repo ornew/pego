@@ -522,8 +522,20 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 		}
 		return tyInt
 	case "text":
-		arg(0)
-		v.errorf(t.Diagnostic(), "text is removed: read the string of a node with .Value")
+		// text(x) is the input that node x spans; nil and strings are kept as they are.
+		a := arg(0)
+		for _, x := range v.alts(a) {
+			if o, ok := x.(optTy); ok {
+				x = v.expand(o.elem)
+			}
+			if _, ok := x.(nodeTy); ok {
+				continue
+			}
+			if x != tyString && x != tyNil && x != tyAny && x != tyBottom {
+				v.errorf(t.Diagnostic(), "text: invalid argument %s", a)
+				break
+			}
+		}
 		return tyString
 	case "foldl", "foldr":
 		acc := arg(0)
