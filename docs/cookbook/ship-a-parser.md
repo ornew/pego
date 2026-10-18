@@ -16,8 +16,9 @@ type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
 
 rule main Version = v:version $$ => $v
 
-rule version Version = major:num "." minor:num "." patch:num pre:pre?
-    => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
+rule version Version = (
+    major:num "." minor:num "." patch:num pre:pre?
+) => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
 rule pre Ident = -"-" i:ident => $i
 
 rule num Num = "0" / [1-9] [0-9]*

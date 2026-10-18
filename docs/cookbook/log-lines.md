@@ -33,8 +33,9 @@ type Log = { Lines []Line }
 
 rule main Log = ls:line* $$ => Log{Lines: $ls}
 
-rule line Line = t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
-    => Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
+rule line Line = (
+    t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
+) => Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
 
 rule time Time = [0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z"
 rule severity Level = "DEBUG" / "INFO" / "WARN" / "ERROR"

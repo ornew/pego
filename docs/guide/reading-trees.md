@@ -98,8 +98,9 @@ type Bin = {
 }
 type Expr ~ Num | Bin
 
-rule sum Expr =  first:num rest:(-ws op:op -ws n:num)*
-    => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.op, Right: i.n})
+rule sum Expr = (
+    first:num rest:(-ws op:op -ws n:num)*
+) => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.op, Right: i.n})
 
 rule num Num =  [0-9]+
 rule op Op =  "+" / "-"

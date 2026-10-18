@@ -18,8 +18,9 @@ rule main = -ws (setting -ws)* $$
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
 rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
-rule entry Setting = k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
-    => Setting{Key: $k, Value: $v}
+rule entry Setting = (
+    k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
+) => Setting{Key: $k, Value: $v}
 rule value = number #atomic / string #atomic / _|_ @error(message="expected a number or a string")
 
 rule key = [a-z_]+
