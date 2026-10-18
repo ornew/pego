@@ -219,9 +219,10 @@ syntax failures stay comparable. Unsupported captures also report unavailable.
 
 Snapshots that consumers retain stay immutable. `Parse` still returns its mutable
 `Node`, which later parses of the document can change; a `Snapshot` never changes.
-The edit cursor of a consumer, which follows `ChangeEdit` events, is independent of
-the version of the snapshot it last displayed, which follows `ChangeOutcome`
-events.
+The `To` of a `ChangeEdit` is the document version after the edit, and the `To` of a
+`ChangeOutcome` is the document version when the `Parse` or `Snapshot` ran. The
+version of the latest outcome can therefore be older than the version of the latest
+edit: edits that follow an outcome are not part of it.
 
 ## Validation and Errors
 

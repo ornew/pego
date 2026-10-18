@@ -165,12 +165,14 @@ only the terminal `TruncatedSyntaxErrors` has the total and dropped counts.
 
 ## Memory
 
-The parser does not retain an element after delivering it. An element is matched
-in memory as a whole, so the memory held for input and tree is bounded by the
-largest element and not by the size of the input. Recovered errors are retained
-until the end of the input unless a [diagnostic limit](#recovered-errors) is set.
-An action that returns `nil` delivers `nil` to the caller. Variable values, active
-rollback points and memoization keys keep their own data alive.
+An element is matched in memory as a whole, so the memory held for the input and
+the tree of an element depends on the size of that element. Once the callback has
+returned, the parser keeps no reference to the element, and the input and memo
+entries before it are released as parsing continues, so the memory held does not
+grow with the number of elements delivered. Recovered errors are retained until the
+end of the input unless a [diagnostic limit](#recovered-errors) is set. An action
+that returns `nil` delivers `nil` to the caller. Variable values, active rollback
+points and memoization keys keep their own data alive.
 
 ## Compatibility and Support
 

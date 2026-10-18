@@ -34,7 +34,8 @@ linter, identified by a name.
 - Each finding prints on one line as `file:line:col: severity: message [check]`,
   followed by a line `fix: ...` when there is a suggested fix. A run that exits
   with status 1 ends with the error line `pego: lint: N errors, N warnings, N hints`
-  on the standard error; a run that exits with status 0 prints no summary.
+  on the standard error, where each count is written as `1 error`, `1 warning` or `1 hint`
+  when it is one and in the plural otherwise; a run that exits with status 0 prints no summary.
 - `-f json` prints one JSON document with the members `grammar`, `start` and
   `findings`; each finding has `line`, `col`, `severity`, `check`, `rule`,
   `message` and, if present, `fix`.
