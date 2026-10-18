@@ -273,6 +273,10 @@ machinery, which the generated code only has when you ask for it:
   forms). Without `-stream`, `#stream` is an ordinary repetition. TypeScript has neither streams nor documents.
 - `ParseRule` replaces `WithStart` for another start rule, and `WithUnit` and `WithMaxDepth` work as in the engine;
   `-max-depth` sets the generated default.
+- Cancellation and work limits are `WithContext` and `WithWorkLimits` in the engine and in generated Go, and the
+  `signal`, `maxInputWork` and `maxSteps` options in TypeScript; see
+  [Cancellation and Work Limits](cancellation-and-limits.md) and the
+  [specification](../../spec/generated-parsers.md#compatibility-and-support).
 - There is no choice of backend, because the generated code is a backend of its own, and no `Parser.Grammar()`, saving
   or loading, because the grammar is gone at run time.
 - `#missing` works only in the engine's Closure backend for whole-input parsing and recognition, and the generator
