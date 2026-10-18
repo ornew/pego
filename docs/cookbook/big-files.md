@@ -8,8 +8,8 @@ as it has been parsed. The input before the record is dropped after it.
 
 ```pego
 // stream.pego
-type Level terminal
-type Millis terminal
+type Level = { Text string }
+type Millis = { Text string }
 type Entry = { Level Level; Millis Millis }
 
 // Each entry is one line: time level service method path status millis.
@@ -17,8 +17,8 @@ rule main = entry* #stream $$
 
 rule entry Entry = -token " " l:severity " " -token " " -token " " -token " " -token " " ms:millis "ms\n" => Entry{Level: $l, Millis: $ms}
 rule token = [^ \n]+
-rule severity Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
-rule millis Millis = [0-9]+
+rule severity Level = t:("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic => Level{Text: text($t)}
+rule millis Millis = t:([0-9]+) #atomic => Millis{Text: text($t)}
 ```
 
 The lines are those of [Parse log lines fast](log-lines.md). This grammar keeps only the level and the time, and skips the
@@ -86,10 +86,10 @@ func main() {
 	var lines, errors, totalMs int
 	count := func(e *pego.Node) error {
 		lines++
-		if e.Field("Level").(*pego.Node).Text() == "ERROR" {
+		if e.Field("Level").(*pego.Node).Field("Text") == "ERROR" {
 			errors++
 		}
-		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Text())
+		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Field("Text").(string))
 		totalMs += ms
 		return nil
 	}
@@ -132,11 +132,11 @@ go run . -n 1000000 -whole
 
 ```text
 1000000 lines, 166666 errors, 499500000 ms in total
-memory obtained from the system: 941 MiB
+memory obtained from the system: 1045 MiB
 ```
 
-With five million lines (290 MB) the streaming program still needs 17 MiB. For one million lines it took 1.2 seconds and
-the whole-input program 0.8 seconds: streaming trades some time for memory that does not grow with the input. (The
+With five million lines (290 MB) the streaming program still needs 25 MiB. For one million lines it took 1.6 seconds and
+the whole-input program 1.0 second: streaming trades some time for memory that does not grow with the input. (The
 memory figures vary by a few MiB from run to run.)
 
 ## How It Works

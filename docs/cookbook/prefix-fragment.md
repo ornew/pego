@@ -13,10 +13,10 @@ program adds the fragment's offset to report a position in the whole text.
 // expr.pego
 package expr
 
-type Num terminal
-type Name terminal
+type Num = { Text string }
+type Name = { Text string }
 type Bin = { Op Op; Left Expr; Right Expr }
-type Op terminal
+type Op = { Text string }
 type Expr ~ Num | Name | Bin
 
 // A fragment is an expression followed by the closing delimiter.
@@ -27,10 +27,10 @@ rule product Expr = first:atom rest:(-ws op:mulop -ws a:atom)* => foldl($first, 
 rule atom Expr = number / name / group
 rule group Expr = "(" -ws e:sum -ws ")" => $e
 
-rule addop Op = "+" / "-"
-rule mulop Op = "*" / "/"
-rule number Num = [0-9]+ ("." [0-9]+)?
-rule name Name = [a-z_]+
+rule addop Op = t:("+" / "-") #atomic => Op{Text: text($t)}
+rule mulop Op = t:("*" / "/") #atomic => Op{Text: text($t)}
+rule number Num = t:([0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
+rule name Name = t:([a-z_]+) #atomic => Name{Text: text($t)}
 rule ws = (&[ \t\r\n] .)*
 ```
 
@@ -55,11 +55,12 @@ var grammar string
 func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
-		return strconv.ParseFloat(n.Text(), 64)
+		return strconv.ParseFloat(n.Field("Text").(string), 64)
 	case "Name":
-		v, ok := vars[n.Text()]
+		name := n.Field("Text").(string)
+		v, ok := vars[name]
 		if !ok {
-			return 0, fmt.Errorf("unknown name %q", n.Text())
+			return 0, fmt.Errorf("unknown name %q", name)
 		}
 		return v, nil
 	}
@@ -71,7 +72,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	switch n.Field("Op").(*pego.Node).Text() {
+	switch n.Field("Op").(*pego.Node).Field("Text") {
 	case "+":
 		return l + r, nil
 	case "-":

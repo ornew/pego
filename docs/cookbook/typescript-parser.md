@@ -10,7 +10,7 @@ syntax problem, and the tool adds its own checks on top of the values that were 
 
 ```pego
 // settings.pego
-type Setting = { Key Match; Value Match }
+type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 type File = { Settings []Item }
 

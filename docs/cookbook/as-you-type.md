@@ -11,7 +11,7 @@ is half typed is not valid, so the grammar recovers from errors, and every keyst
 
 ```pego
 // settings.pego
-type Setting = { Key Match; Value Match }
+type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 
 rule main = -ws (setting -ws)* $$

@@ -8,7 +8,7 @@ to a place where parsing can go on, and puts an `error` value where the setting 
 
 ```pego
 // settings.pego
-type Setting = { Key Match; Value Match }
+type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 type File = { Settings []Item }
 

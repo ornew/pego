@@ -27,13 +27,13 @@ import (
 const grammar = `package settings
 
 type Setting = { Key Key; Value Value }
-type Key terminal
-type Value terminal
+type Key = { Text string }
+type Value = { Text string }
 
 rule main =  (setting / blank)* $$
 rule setting Setting =  k:key " = " v:value "\n" => Setting{Key: $k, Value: $v}
-rule key Key =  [a-z_]+ #atomic
-rule value Value =  [0-9]+ #atomic
+rule key Key =  t:([a-z_]+) #atomic => Key{Text: text($t)}
+rule value Value =  t:([0-9]+) #atomic => Value{Text: text($t)}
 rule blank =  "\n" `
 
 // lineStart returns the position, in code points, of the first character of the 1-based line.

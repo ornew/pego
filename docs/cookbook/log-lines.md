@@ -12,13 +12,13 @@ A line looks like this:
 
 ```pego
 // logs.pego
-type Time terminal
-type Level terminal
-type Service terminal
-type Method terminal
-type Path terminal
-type Status terminal
-type Millis terminal
+type Time = { Text string }
+type Level = { Text string }
+type Service = { Text string }
+type Method = { Text string }
+type Path = { Text string }
+type Status = { Text string }
+type Millis = { Text string }
 
 type Line = {
     Time    Time
@@ -37,13 +37,13 @@ rule line Line = (
     t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
 ) => Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
 
-rule time Time = [0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z"
-rule severity Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
-rule service Service = [a-z\-]+
-rule method Method = "GET" / "POST" / "PUT" / "DELETE"
-rule path Path = [^ \n]+
-rule status Status = [0-9] #repeat(3)
-rule millis Millis = [0-9]+
+rule time Time = t:([0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z") #atomic => Time{Text: text($t)}
+rule severity Level = t:("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic => Level{Text: text($t)}
+rule service Service = t:([a-z\-]+) #atomic => Service{Text: text($t)}
+rule method Method = t:("GET" / "POST" / "PUT" / "DELETE") #atomic => Method{Text: text($t)}
+rule path Path = t:([^ \n]+) #atomic => Path{Text: text($t)}
+rule status Status = t:([0-9] #repeat(3)) #atomic => Status{Text: text($t)}
+rule millis Millis = t:([0-9]+) #atomic => Millis{Text: text($t)}
 ```
 
 Generate the parser with `-types` (Go types for the grammar's types and `ParseAST`) and `-recognize` (`Recognize`).
@@ -138,7 +138,7 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 - **A generated parser is the fast one.** `pego gen` writes a Go file with no dependency on PEGO. With `-types`, every
   rule here has a Go type of its own, so `ParseAST` builds `*Line` values directly, without the generic nodes `Parse`
   would build first. The values are plain structs: `l.Level.Text`, `l.Millis.Text`.
-- **Terminals stay text.** `Millis` is a terminal type, so its value is the matched digits, and you convert
+- **Text stays text.** `Millis` is a text struct, so its `Text` is the matched digits, and you convert
   (`strconv.Atoi`) only the fields you use.
 - **`Recognize` only checks.** If all you need is "is this file well formed", `logparser.Recognize(text)` returns the
   same error as `ParseAST` without building anything.
@@ -152,11 +152,11 @@ point in turn (`b.Loop()`, `b.SetBytes(len(input))`): `p.Parse` and `p.Parse(inp
 out:
 
 ```text
-BenchmarkEngineParse           72 ms    79 MB/s   158.7 MB/op   7007 allocs/op
-BenchmarkEngineRecognizeOnly   45 ms   127 MB/s    22.7 MB/op     18 allocs/op
-BenchmarkGeneratedParse        38 ms   150 MB/s   158.6 MB/op   6987 allocs/op
-BenchmarkGeneratedParseAST     20 ms   285 MB/s    81.4 MB/op   3136 allocs/op
-BenchmarkGeneratedRecognize    20 ms   285 MB/s    45.4 MB/op      4 allocs/op
+BenchmarkEngineParse          100 ms    57 MB/s   205.0 MB/op  709789 allocs/op
+BenchmarkEngineRecognizeOnly   52 ms   110 MB/s    22.9 MB/op      40 allocs/op
+BenchmarkGeneratedParse        48 ms   118 MB/s   195.6 MB/op  708688 allocs/op
+BenchmarkGeneratedParseAST     24 ms   240 MB/s    81.7 MB/op    3192 allocs/op
+BenchmarkGeneratedRecognize    14 ms   414 MB/s    45.7 MB/op       4 allocs/op
 ```
 
 Generating the parser halves the time, and typed values and recognition halve it again. Numbers differ between machines

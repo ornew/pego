@@ -8,11 +8,11 @@ and `not`, and comparisons that do not chain.
 
 ```pego
 // filter.pego
-type Num terminal
-type Str terminal
-type Bool terminal
-type Field terminal
-type Binary = { Left Expr; Op Match; Right Expr }
+type Num = { Text string }
+type Str = { Text string }
+type Bool = { Text string }
+type Field = { Text string }
+type Binary = { Left Expr; Op node[string]; Right Expr }
 type Not = { X Expr }
 type Expr ~ Num | Str | Bool | Field | Binary | Not
 
@@ -33,10 +33,10 @@ rule expr Expr = operators {
     }
 }
 
-rule num Num = "-"? [0-9]+ ("." [0-9]+)?
-rule str Str = "\"" ("\\" . / [^"\\])* "\""
-rule bool Bool = ("true" / "false") !wordchar
-rule field Field = !keyword [a-z_] wordchar*
+rule num Num = t:("-"? [0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
+rule str Str = t:("\"" ("\\" . / [^"\\])* "\"") #atomic => Str{Text: text($t)}
+rule bool Bool = t:(("true" / "false") !wordchar) #atomic => Bool{Text: text($t)}
+rule field Field = t:(!keyword [a-z_] wordchar*) #atomic => Field{Text: text($t)}
 rule keyword = ("and" / "or" / "not") !wordchar
 rule wordchar = [a-z0-9_]
 rule ws = [ \t\r\n]*
@@ -67,20 +67,23 @@ type Record map[string]any
 // value computes the value of a subexpression for a record.
 type value func(Record) any
 
+// text returns the text of a Num, Str, Bool or Field, the value of its Text field.
+func text(n *pego.Node) string { return n.Field("Text").(string) }
+
 // compile turns a tree into closures, so that the tree is walked once, not once per record.
 func compile(n *pego.Node) value {
 	switch n.Type() {
 	case "Num":
-		v, _ := strconv.ParseFloat(n.Text(), 64)
+		v, _ := strconv.ParseFloat(text(n), 64)
 		return func(Record) any { return v }
 	case "Str":
-		s, _ := strconv.Unquote(n.Text())
+		s, _ := strconv.Unquote(text(n))
 		return func(Record) any { return s }
 	case "Bool":
-		b := n.Text() == "true"
+		b := text(n) == "true"
 		return func(Record) any { return b }
 	case "Field":
-		name := n.Text()
+		name := text(n)
 		return func(r Record) any { return r[name] }
 	case "Not":
 		x := compile(n.Field("X").(*pego.Node))

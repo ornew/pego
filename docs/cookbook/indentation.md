@@ -9,8 +9,8 @@ predicates.
 ```pego
 // nested.pego
 type Entry = {
-    Key      Match
-    Value    *Match
+    Key      node[string]
+    Value    *node[string]
     Children []Entry
 }
 
@@ -152,7 +152,7 @@ go run . bad.yml
   new bindings, never a mutation.
 - **`@error` on the predicate.** A predicate that fails records no expected token, so without the label the message for
   the third line above is `syntax error: expected " ", "\n", [ \t]`, which is true and unhelpful.
-- **`*Match` for the optional value.** `v:value?` is a `Match` or nothing, which the struct field must say with `*Match`;
+- **`*node[string]` for the optional value.** `v:value?` is a `node[string]` or nothing, which the struct field must say with `*node[string]`;
   in Go, `Field("Value")` is then a `*pego.Node` or `nil`, which `v, ok := ....(*pego.Node)` tells apart.
 
 ## Variations and Limits

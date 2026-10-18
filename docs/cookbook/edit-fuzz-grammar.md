@@ -14,8 +14,8 @@ grammar where a reused result can disagree with a fresh one.
 ```pego
 // nested.pego
 type Entry = {
-    Key      Match
-    Value    *Match
+    Key      node[string]
+    Value    *node[string]
     Children []Entry
 }
 

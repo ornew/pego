@@ -8,9 +8,9 @@ precedence and associativity in a table; the evaluator is a `switch` on the node
 
 ```pego
 // calc.pego
-type Num terminal
-type Name terminal
-type Bin = { Left Expr; Op Match; Right Expr }
+type Num = { Text string }
+type Name = { Text string }
+type Bin = { Left Expr; Op node[string]; Right Expr }
 type Neg = { X Expr }
 type Call = { Fn Name; Args []Expr }
 type Expr ~ Num | Name | Bin | Neg | Call
@@ -32,8 +32,8 @@ rule expr Expr = operators {
 rule call Call = f:name ws "(" ws as:args? ws ")" => Call{Fn: $f, Args: concat($as)}
 rule args = first:expr rest:(ws "," ws e:expr)* => concat(list($first), map($rest, (r) => r.$e))
 
-rule num Num = [0-9]+ ("." [0-9]+)?
-rule name Name = [a-z_]+
+rule num Num = t:([0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
+rule name Name = t:([a-z_]+) #atomic => Name{Text: text($t)}
 rule ws = [ \t\r\n]*
 ```
 
@@ -68,11 +68,12 @@ var funcs = map[string]struct {
 func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
-		return strconv.ParseFloat(n.Text(), 64)
+		return strconv.ParseFloat(n.Field("Text").(string), 64)
 	case "Name":
-		v, ok := vars[n.Text()]
+		name := n.Field("Text").(string)
+		v, ok := vars[name]
 		if !ok {
-			return 0, fmt.Errorf("undefined variable %q", n.Text())
+			return 0, fmt.Errorf("undefined variable %q", name)
 		}
 		return v, nil
 	case "Neg":
@@ -105,7 +106,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	case "Call":
-		name := n.Field("Fn").(*pego.Node).Text()
+		name := n.Field("Fn").(*pego.Node).Field("Text").(string)
 		fn, ok := funcs[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined function %q", name)
