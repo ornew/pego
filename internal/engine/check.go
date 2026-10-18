@@ -130,7 +130,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 	// Check values in the value model, which decides the run-time checks.
 	k.report = false
-	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}
+	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}}
 	values, valueErrs := valueTypesChecked(prog, control, checks)
 	// A location the current model already reports is reported once.
 	reported := map[grammar.Pos]bool{}

@@ -36,15 +36,11 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	if info == nil {
 		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}}
+	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
+	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { _, ok := t.unions[x.String()]; return ok })
 	t.name()
 	g.typedSpan = t.span
-	ruleType := func(r *rule) ty {
-		if x := info.rules[r.name]; x != nil {
-			return x
-		}
-		return tyAny
-	}
+	ruleType := t.ruleType
 	var b, entries, named strings.Builder
 	t.decls(&b)
 	t.valueMethods(&b)
@@ -119,6 +115,11 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 		et, ok := info.streams[r.name]
 		if !ok {
 			return "", "", fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.name)
+		}
+		if _, ok := t.ruleType(r).(vrule); ok {
+			if v, ok := streamValue(g.prog, r.def); ok {
+				et = t.resolveValue(v)
+			}
 		}
 		result := t.conv(et, "n")
 		newConv := ""
@@ -271,6 +272,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	} else if g.enableTypedOutputSweep {
 		t.outputSweep(&b, needTyped, needNodes)
 	}
+	t.tupleDecls(&b)
 	b.WriteString(entries.String())
 	b.WriteString(named.String())
 	return b.String(), t.span, nil
@@ -295,6 +297,13 @@ type typedGen struct {
 	terms       []string // terminal type names, sorted
 	aliases     []string // canonical node union names, sorted
 	typeAliases []string // other declared aliases, sorted
+	// valueResolver selects the rules whose Go types come from their value types.
+	valueResolver
+	tupleSizes map[int]bool // the sizes of the tuple types used
+	unitUsed   bool
+	// nhelpers, dhelpers and chelpers are the helpers converting value-model values from nodes,
+	// from values of the typed runtime, and cloning them for Documents.
+	nhelpers, dhelpers, chelpers vhelpers
 }
 
 type listConv struct {
@@ -343,7 +352,7 @@ func (t *typedGen) name() {
 	sort.Strings(all)
 	for _, name := range all {
 		goName := name
-		for used[goName] {
+		for used[goName] || tupleName(goName) {
 			goName += "_"
 		}
 		used[goName] = true
@@ -408,8 +417,19 @@ func (t *typedGen) goType(x ty) string {
 		switch x {
 		case tyInt, tyString, tyBool:
 			return string(x)
+		case tyErr:
+			return "*Error"
 		}
 		return "any"
+	case vrule:
+		return t.goType(t.vres[x.name])
+	case tupleTy:
+		return t.tupleType(x)
+	case nodeTy:
+		if x.value == tyTop || x.value == tyAny {
+			return "*TNode[any]"
+		}
+		return "*TNode[" + t.goType(x.value) + "]"
 	case namedTy:
 		switch {
 		case x == tyMatch:
@@ -426,10 +446,16 @@ func (t *typedGen) goType(x ty) string {
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "*" + string(b)
 		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return "*" + t.goType(x.elem)
+		}
 		return t.goType(x.elem)
 	case unionTy:
 		if name, ok := t.unions[x.String()]; ok {
 			return name
+		}
+		if g, ok := t.unionGoType(x); ok {
+			return g
 		}
 		return "any"
 	case recordTy:
@@ -450,8 +476,23 @@ func (t *typedGen) conv(x ty, v string) string {
 			return "astString(" + v + ")"
 		case tyBool:
 			return "astBool(" + v + ")"
+		case tyErr:
+			return "a.toError(astNode(" + v + "))"
 		}
 		return "a.anyValue(" + v + ")"
+	case vrule:
+		return "a." + t.vconvHelper(x) + "(" + v + ")"
+	case tupleTy:
+		if len(x.elems) == 0 {
+			t.goType(x)
+			return "Unit{}"
+		}
+		return "a." + t.vconvHelper(x) + "(" + v + ")"
+	case nodeTy:
+		if x.value == tyTop || x.value == tyAny {
+			return "a.toNode(astNode(" + v + "))"
+		}
+		return "a." + t.vconvHelper(x) + "(" + v + ")"
 	case namedTy:
 		switch {
 		case x == tyMatch:
@@ -475,10 +516,16 @@ func (t *typedGen) conv(x ty, v string) string {
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "astPtr" + strings.ToUpper(string(b)[:1]) + string(b)[1:] + "(" + v + ")"
 		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return "a." + t.vconvHelper(x) + "(" + v + ")"
+		}
 		return t.conv(x.elem, v)
 	case unionTy:
 		if name, ok := t.unions[x.String()]; ok {
 			return "a.to" + name + "(astNode(" + v + "))"
+		}
+		if _, ok := t.unionGoType(x); ok {
+			return t.conv(x.alts[0], v)
 		}
 		return "a.anyValue(" + v + ")"
 	case recordTy:
@@ -650,12 +697,20 @@ func (a *astConv) toError(n *Node) *Error {
 			b.WriteString("\t}\n\treturn nil\n}\n\n")
 		}
 	}
-	// List converters (more may be added while writing them, for lists of lists).
-	for i := 0; i < len(t.listOrder); i++ {
-		l := t.listOrder[i]
-		elem := t.goType(l.elem)
-		conv := t.conv(l.elem, "c")
-		fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.Children))\n\tfor i, c := range n.Children {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
+	// List converters and the helpers of value-model types (more may be added while writing them,
+	// for lists of lists).
+	b.WriteString("// nodeValue returns the Value of node n: its text, or its converted elements.\nfunc (a *astConv) nodeValue(n *Node) any {\n\tif n.IsTerminal() {\n\t\treturn n.Text\n\t}\n\treturn a.elems(n)\n}\n\n")
+	helpers := 0
+	for i := 0; ; {
+		for ; i < len(t.listOrder); i++ {
+			l := t.listOrder[i]
+			elem := t.goType(l.elem)
+			conv := t.conv(l.elem, "unboxNode(c)")
+			fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.Children))\n\tfor i, c := range n.Children {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
+		}
+		if !t.nodeHelpers(b, &helpers) && i == len(t.listOrder) {
+			break
+		}
 	}
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
@@ -704,6 +759,11 @@ func (t *typedGen) runtimeOK(st ty) bool {
 	return true
 }
 
+// nodeMember reports whether the member access m reads only .Start, .End or .Value of nodes.
+func (t *typedGen) nodeMember(m *grammar.Member) bool {
+	return t.info.checks != nil && t.info.checks.nodeMembers[m]
+}
+
 // readsFields reports whether an action or predicate may read a field of a struct: a member
 // access whose name is a field of some struct type. A typed value keeps its fields converted to
 // their Go types (a list as a slice, an Error where a struct is expected as nil, an omitted int as
@@ -718,7 +778,7 @@ func (t *typedGen) readsFields() bool {
 	found := false
 	term := func(x grammar.Term) {
 		walkTerm(x, func(y grammar.Term) {
-			if m, ok := y.(*grammar.Member); ok && fields[m.Name] {
+			if m, ok := y.(*grammar.Member); ok && fields[m.Name] && !t.nodeMember(m) {
 				found = true
 			}
 		})
@@ -762,12 +822,21 @@ func (t *typedGen) representable(x ty) bool {
 	switch x := x.(type) {
 	case basicTy:
 		switch x {
-		case tyInt, tyString, tyBool, tyNode, tyTerminal, tyAny:
+		case tyInt, tyString, tyBool, tyNode, tyTerminal, tyAny, tyErr, tyTop:
 			return true
 		}
 		return false
-	case namedTy, recordTy:
+	case namedTy, recordTy, vrule:
 		return true
+	case tupleTy:
+		for _, e := range x.elems {
+			if !t.representable(e) {
+				return false
+			}
+		}
+		return true
+	case nodeTy:
+		return t.representable(x.value)
 	case listTy:
 		return t.representable(x.elem)
 	case optTy:
@@ -873,8 +942,23 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 			return "astString(" + v + ")"
 		case tyBool:
 			return "astBool(" + v + ")"
+		case tyErr:
+			return "tpubError(" + v + ")"
 		}
 		return "tpub(" + v + ")"
+	case vrule:
+		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
+	case tupleTy:
+		if len(x.elems) == 0 {
+			t.goType(x)
+			return "Unit{}"
+		}
+		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
+	case nodeTy:
+		if x.value == tyTop || x.value == tyAny {
+			return "tpubNode(" + v + ")"
+		}
+		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case recordTy:
 		return "tpubNode(" + v + ")"
 	case namedTy:
@@ -889,12 +973,18 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		return "tAs[" + t.goType(x) + "](" + v + ")"
 	case unionTy:
 		if _, ok := t.unions[x.String()]; !ok {
+			if _, ok := t.unionGoType(x); ok {
+				return t.dconv(x.alts[0], v, a)
+			}
 			return "tpub(" + v + ")"
 		}
 		return "tAs[" + t.goType(x) + "](tpub(" + v + "))"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "astPtr" + strings.ToUpper(string(b)[:1]) + string(b)[1:] + "(" + v + ")"
+		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 		}
 		return t.dconv(x.elem, v, a)
 	case listTy:
@@ -947,12 +1037,19 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		}
 		cons.WriteString("\treturn c.made(v, first, start, end)\n}\n\n")
 	}
-	// List converters (more may be added while writing them, for lists of lists).
+	// List converters and the helpers of value-model types (more may be added while writing them,
+	// for lists of lists).
 	var convs strings.Builder
-	for i := 0; i < len(t.tlistOrder); i++ {
-		l := t.tlistOrder[i]
-		elem := t.goType(l.elem)
-		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\ta.stepWork()\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\ta.stepWork()\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+	helpers := 0
+	for i := 0; ; {
+		for ; i < len(t.tlistOrder); i++ {
+			l := t.tlistOrder[i]
+			elem := t.goType(l.elem)
+			fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\ta.stepWork()\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\ta.stepWork()\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+		}
+		if !t.typedHelpers(&convs, &helpers) && i == len(t.tlistOrder) {
+			break
+		}
 	}
 	b.WriteString("// tinit sets up the typed rules (called at the end of init, after the rule tables).\nfunc tinit() {\n" + reg.String() + "}\n\n")
 	b.WriteString(cons.String())
@@ -969,6 +1066,15 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 
 // astHelpers are the conversion helpers of typed values.
 const astHelpers = `func astNode(v any) *Node { n, _ := v.(*Node); return n }
+func astIsNil(v any) bool  { n, ok := v.(*Node); return v == nil || ok && n == nil }
+
+// astKid returns the value of element i of a tuple node's children (nil if there is none).
+func astKid(kids []*Node, i int) any {
+	if i < len(kids) {
+		return unboxNode(kids[i])
+	}
+	return nil
+}
 func astInt(v any) int       { i, _ := v.(int); return i }
 func astString(v any) string { s, _ := v.(string); return s }
 func astBool(v any) bool     { x, _ := v.(bool); return x }
@@ -1106,3 +1212,12 @@ func astSlice[T any](_ *astChunk[T], n int) []T {
 
 
 `
+
+// tupleName reports whether name is that of a tuple type of typed values (Tuple1, Tuple2, ...).
+func tupleName(name string) bool {
+	digits := strings.TrimPrefix(name, "Tuple")
+	if digits == name || digits == "" || digits[0] == '0' {
+		return false
+	}
+	return strings.Trim(digits, "0123456789") == ""
+}

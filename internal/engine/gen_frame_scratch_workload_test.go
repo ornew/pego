@@ -52,7 +52,7 @@ rule main Tok = ("é" / "�")* $$`, `func frameInputs() (string,string,string) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			prog := compile(t, c.source)
+			prog := compileBare(t, c.source) // generated parsers keep no source information by default
 			var rows strings.Builder
 			if c.name != "typescript" {
 				for _, input := range []string{"", "é", "éé", "�", "é�", "é!", "\xff", "é\xff", "\xe2\x82"} {

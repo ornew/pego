@@ -12,7 +12,7 @@ type Bag = {
     Items []Word
 }
 
-rule main Bag = x:word* #cut => Bag{Items: $x}
+rule main Bag = x:word* #cut => Bag{Items: $x.Value}
 
 rule word Word = "a" / "é" / "😀" / "�"
 

@@ -19,7 +19,7 @@ func TestGeneratedActionTracking(t *testing.T) {
 	for _, c := range []struct{ name, src, input string }{
 		{"nil", `type V = { N int }
 type Root = { Items []*V }
-rule main = items:item* $$ => Root{Items: $items}
+rule main = items:item* $$ => Root{Items: $items.Value}
 rule item = "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)`, "aaaa"},
 		{"nested constructor", `type Inner = { N int }
 type Outer = { Inner Inner }
@@ -95,13 +95,14 @@ for (const unit of [CodePoints, Bytes]) {
   const n = p.call(rules[0]!, 0);
   if (n === undefined || n === null || p.pos !== p.n) throw new Error("parse failed");
   if (p.created.length !== 0) throw new Error("nil actions retain tracking");
-  for (const v of [null, 1]) {
+  // Any value is a result (boxed unless it is a node); a function is not.
+  for (const v of [null, 1, () => 0]) {
     p.created = [n];
     const c = p.useCtx(emptyFrame, 0, 4, null, null, null);
     let failed = false;
     try { c.result(() => { p.created.push(n); return v; }, "test"); }
     catch { failed = true; }
-    if (failed !== (v !== null)) throw new Error("wrong result validation");
+    if (failed !== (typeof v === "function")) throw new Error("wrong result validation");
     if (p.created.length !== 1 || p.created[0] !== n) throw new Error("result tracking cleanup");
   }
   p.created = [n];

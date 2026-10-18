@@ -22,7 +22,7 @@ type Bag = {
     Nested [][]Leaf
 }
 
-rule main Bag = x:leaf* #cut => Bag{Items: $x, Nested: list($x, $x)}
+rule main Bag = x:leaf* #cut => Bag{Items: $x.Value, Nested: list($x.Value, $x.Value)}
 
 rule leaf Leaf = "a"
 
@@ -77,7 +77,7 @@ func requireGraphLimit(t *testing.T,p *parser,f func()){
 }
 func graphKids()([]*Node,[]any){
  nodes:=make([]*Node,300);values:=make([]any,300)
- for i:=range nodes{nodes[i]=&Node{Start:int32(i+3),End:int32(i+4),Text:"a"};values[i]=&tmatch{Span:Span{Start:i+3,End:i+4},Text:"a"}}
+ for i:=range nodes{nodes[i]=&Node{Start:int32(i+3),End:int32(i+4),Text:"a"};values[i]=&tmatch{TNode:TNode[string]{Span:Span{Start:i+3,End:i+4},Value:"a"}}}
  return nodes,values
 }
 func TestGraphFields(t *testing.T){

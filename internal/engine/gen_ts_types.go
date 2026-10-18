@@ -26,6 +26,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		return "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
 	t := &tsTypedGen{info: g.prog.typed, names: map[string]string{}, unions: map[string]bool{}, ids: map[string]int{}}
+	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { return t.unions[x.String()] })
 	used := map[string]bool{}
 	for _, n := range strings.Fields(tsReservedBindings) {
 		used[n] = true
@@ -60,7 +61,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	var b strings.Builder
 	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
 	b.WriteString(tsTypedDeclarations)
-	open := []string{"Node", "Match", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
+	open := []string{"Node", "Match", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
 	for _, name := range t.all {
 		switch spec := g.prog.types[name].(type) {
 		case *grammar.StructSpec:
@@ -82,10 +83,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		}
 	}
 	fmt.Fprintf(&b, "%s%s;\n\n", tsTypedValueDeclaration, strings.Join(open, " | "))
-	st := t.info.rules[start.name]
-	if st == nil {
-		st = tyAny
-	}
+	st := t.ruleRef(start.name)
 	repr := t.recipe(st)
 	stType := t.tsType(st)
 	if g.observability {
@@ -102,6 +100,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	// reference the same representation. Write the table after all registration.
 	t.recipe(tyMatch)
 	t.recipe(tyError)
+	openID, elemsID := t.recipe(openNode), t.recipe(listTy{tyAny})
 	b.WriteString(tsTypedRecipeTable)
 	for _, r := range t.recipes {
 		b.WriteString("  " + r + ",\n")
@@ -109,6 +108,13 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	b.WriteString(tsTypedNodeRecipeTable)
 	for _, n := range []namedTy{tyMatch, tyError} {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(n.name), t.recipe(n))
+	}
+	// Open values: tuple and list nodes become TNode<unknown>, and tuple and list values arrays.
+	for _, name := range []string{TypeSeq, TypeList, TypeOperator} {
+		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), openID)
+	}
+	for _, name := range []string{typeTupleValue, typeListValue} {
+		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
 		switch g.prog.types[name].(type) {
@@ -123,7 +129,11 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 }
 
 type tsTypedGen struct {
-	info    *typeInfo
+	info *typeInfo
+	// valueResolver selects the rules whose typed values come from their value types (see
+	// gen_types_values.go): node[T] becomes TNode<T>, a tuple a readonly array type and () the empty
+	// tuple type.
+	valueResolver
 	names   map[string]string
 	all     []string
 	unions  map[string]bool
@@ -150,7 +160,22 @@ func (t *tsTypedGen) tsType(x ty) string {
 			return "string"
 		case tyBool:
 			return "boolean"
+		case tyErr:
+			return "RecoveredError | null"
 		}
+	case vrule:
+		return t.tsType(t.vres[x.name])
+	case tupleTy:
+		elems := make([]string, len(x.elems))
+		for i, e := range x.elems {
+			elems[i] = t.tsType(e)
+		}
+		return "readonly [" + strings.Join(elems, ", ") + "]"
+	case nodeTy:
+		if x.value == tyTop || x.value == tyAny {
+			return "TNode<unknown> | null" // the value of an open node is its text or its elements
+		}
+		return "TNode<" + t.tsType(x.value) + "> | null"
 	case namedTy:
 		switch {
 		case x == tyMatch:
@@ -158,18 +183,18 @@ func (t *tsTypedGen) tsType(x ty) string {
 		case x == tyError:
 			return "RecoveredError | null"
 		case x.kind == 'c':
-			return "Node | null"
+			return "TNode<unknown> | null"
 		}
 		return t.names[x.name] + " | null"
 	case optTy:
-		if x.elem == tyInt || x.elem == tyString || x.elem == tyBool {
+		if _, ok := x.elem.(tupleTy); ok || x.elem == tyInt || x.elem == tyString || x.elem == tyBool {
 			return t.tsType(x.elem) + " | null"
 		}
 		return t.tsType(x.elem)
 	case listTy:
 		return "readonly (" + t.tsType(x.elem) + ")[] | null"
 	case recordTy:
-		return "Node | null"
+		return "TNode<unknown> | null"
 	case unionTy:
 		if t.unions[x.String()] {
 			parts := []string{"RecoveredError", "null"}
@@ -182,12 +207,29 @@ func (t *tsTypedGen) tsType(x ty) string {
 				}
 			}
 			if cstUnion(x) {
-				parts = append(parts, "Node")
+				parts = append(parts, "TNode<unknown>")
 			}
 			return strings.Join(parts, " | ")
 		}
+		if _, ok := t.commonRecipe(x); ok {
+			return t.tsType(x.alts[0])
+		}
 	}
 	return "TypedValue"
+}
+
+// commonRecipe reports whether the arguments of a union share a recipe (and with it a TypeScript
+// type), and returns its key.
+func (t *tsTypedGen) commonRecipe(x unionTy) (string, bool) {
+	common := ""
+	for _, a := range x.alts {
+		key := t.conversionKey(a)
+		if common != "" && key != common {
+			return "", false
+		}
+		common = key
+	}
+	return common, common != "" && common != "any"
 }
 
 // conversionKey identifies a canonical recipe without expanding named fields.
@@ -199,16 +241,32 @@ func (t *tsTypedGen) conversionKey(x ty) string {
 		if x == tyInt || x == tyString || x == tyBool {
 			return x.String()
 		}
+		if x == tyErr {
+			return "named:Error"
+		}
+	case vrule:
+		return t.conversionKey(t.vres[x.name])
+	case tupleTy:
+		keys := make([]string, len(x.elems))
+		for i, e := range x.elems {
+			keys[i] = t.conversionKey(e)
+		}
+		return "tuple(" + strings.Join(keys, ",") + ")"
+	case nodeTy:
+		return "tnode:" + tnodeMode(x) + ":" + t.conversionKey(x.value)
 	case namedTy:
 		if x.kind != 'c' || x == tyMatch || x == tyError {
 			return "named:" + x.name
 		}
-		return "node"
+		return t.conversionKey(openNode)
 	case recordTy:
-		return "node"
+		return t.conversionKey(openNode)
 	case optTy:
 		if x.elem == tyInt || x.elem == tyString || x.elem == tyBool {
 			return "opt" + x.elem.String()
+		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return "opt:" + t.conversionKey(x.elem)
 		}
 		return t.conversionKey(x.elem)
 	case listTy:
@@ -217,8 +275,27 @@ func (t *tsTypedGen) conversionKey(x ty) string {
 		if t.unions[x.String()] {
 			return "union:" + x.String()
 		}
+		if key, ok := t.commonRecipe(x); ok {
+			return key
+		}
 	}
 	return "any"
+}
+
+// openNode is the type of the nodes of CST types: their values are their text or their elements.
+var openNode = nodeTy{value: tyTop}
+
+// tnodeMode returns where the value of a node of type x comes from: its text ("text"), the node
+// itself for a tuple or list value ("self"), or the text or elements of the node ("value").
+func tnodeMode(x nodeTy) string {
+	switch x.value.(type) {
+	case tupleTy, listTy:
+		return "self"
+	}
+	if x.value == tyString {
+		return "text"
+	}
+	return "value"
 }
 
 // recipe follows the existing Go Node-converter recipes, including anyValue
@@ -230,7 +307,15 @@ func (t *tsTypedGen) recipe(x ty) int {
 		switch a {
 		case tyInt, tyString, tyBool:
 			kind, key = string(a), string(a)
+		case tyErr:
+			return t.recipe(tyError)
 		}
+	case vrule:
+		return t.recipe(t.vres[a.name])
+	case tupleTy:
+		kind, key = "tuple", t.conversionKey(a)
+	case nodeTy:
+		kind, key = "tnode", t.conversionKey(a)
 	case namedTy:
 		kind, key = "terminal", "named:"+a.name
 		if a == tyError {
@@ -238,21 +323,25 @@ func (t *tsTypedGen) recipe(x ty) int {
 		} else if a.kind == 's' {
 			kind = "struct"
 		} else if a.kind == 'c' && a != tyMatch {
-			kind, key = "node", "node"
+			return t.recipe(openNode)
 		}
 	case optTy:
 		if a.elem == tyInt || a.elem == tyString || a.elem == tyBool {
 			kind, key = "opt"+a.elem.String(), "opt"+a.elem.String()
+		} else if _, ok := a.elem.(tupleTy); ok {
+			kind, key = "opt", t.conversionKey(a)
 		} else {
 			return t.recipe(a.elem)
 		}
 	case listTy:
 		kind, key = "list", "list:"+t.conversionKey(a.elem)
 	case recordTy:
-		kind, key = "node", "node"
+		return t.recipe(openNode)
 	case unionTy:
 		if t.unions[a.String()] {
 			kind, key = "union", "union:"+a.String()
+		} else if _, ok := t.commonRecipe(a); ok {
+			return t.recipe(a.alts[0])
 		}
 	}
 	if id, ok := t.ids[key]; ok {
@@ -276,6 +365,16 @@ func (t *tsTypedGen) recipe(x ty) int {
 		}
 	case listTy:
 		r += ", elem: " + strconv.Itoa(t.recipe(a.elem))
+	case optTy:
+		r += ", elem: " + strconv.Itoa(t.recipe(a.elem))
+	case nodeTy:
+		r += ", mode: " + tsString(tnodeMode(a)) + ", elem: " + strconv.Itoa(t.recipe(a.value))
+	case tupleTy:
+		elems := make([]string, len(a.elems))
+		for i, e := range a.elems {
+			elems[i] = strconv.Itoa(t.recipe(e))
+		}
+		r += ", elems: [" + strings.Join(elems, ", ") + "]"
 	case unionTy:
 		if kind == "union" {
 			members := []string{fmt.Sprintf("[%s, %d]", tsString("Error"), t.recipe(tyError))}
@@ -284,7 +383,10 @@ func (t *tsTypedGen) recipe(x ty) int {
 					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))
 				}
 			}
-			r += ", members: new Map([" + strings.Join(members, ", ") + "]), cst: " + strconv.FormatBool(cstUnion(a))
+			r += ", members: new Map([" + strings.Join(members, ", ") + "])"
+			if cstUnion(a) {
+				r += ", fallback: " + strconv.Itoa(t.recipe(openNode))
+			}
 		}
 	}
 	t.recipes[id] = r + " }"
@@ -294,7 +396,9 @@ func (t *tsTypedGen) recipe(x ty) int {
 // Reuse declaration templates for emission and reservation so adding a public
 // or private typed helper automatically reserves its actual binding name.
 const tsTypedDeclarations = `export interface Span { readonly start: number; readonly end: number }
-export interface Match extends Span { readonly type: "Match"; readonly text: string }
+/** A node with the value T: a string node has its text, other nodes their elements. */
+export interface TNode<T> extends Span { readonly type: string; readonly value: T }
+export interface Match extends TNode<string> { readonly type: "Match" }
 export interface RecoveredError extends Span {
   readonly type: "Error";
   readonly text: string;
@@ -333,11 +437,19 @@ const tsTypedRuntime = `interface ASTRecipe {
   readonly name?: string;
   readonly fields?: readonly { readonly name: string; readonly repr: number }[];
   readonly elem?: number;
+  readonly elems?: readonly number[];
+  readonly mode?: string;
   readonly members?: ReadonlyMap<string, number>;
-  readonly cst?: boolean;
+  readonly fallback?: number;
 }
 type ASTObject = { [name: string]: unknown };
 interface ASTPending { readonly node: Node; readonly repr: number; readonly out: ASTObject | unknown[] }
+
+// astKid returns the value of the i-th element of a tuple or list node.
+function astKid(n: Node, i: number): Value {
+  const kid = n.children[i];
+  return kid === undefined ? null : unboxNode(kid);
+}
 
 function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): TypedParseResult<T> {
   return { value: astConvert(r.node, repr, control) as T | null, error: r.error };
@@ -362,21 +474,37 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         case "optbool": return typeof v === "boolean" ? v : null;
         case "any": {
           if (!(v instanceof Node)) return v;
+          if (v.type === typeBox) {
+            v = v.box;
+            continue;
+          }
           const next = astNodeRecipes.get(v.type);
           if (next === undefined) return v;
           id = next;
           continue;
         }
-        case "node": return v instanceof Node ? v : null;
+        case "opt":
+          if (v === null) return null;
+          id = recipe.elem!;
+          continue;
         case "union": {
           if (!(v instanceof Node)) return null;
           const next = recipe.members!.get(v.type);
-          if (next === undefined) return recipe.cst ? v : null;
+          if (next === undefined) {
+            if (recipe.fallback === undefined) return null;
+            id = recipe.fallback;
+            continue;
+          }
           id = next;
           continue;
         }
       }
-      if (!(v instanceof Node)) return null;
+      if (!(v instanceof Node)) {
+        if (recipe.kind !== "tuple") return null;
+        control?.charge(0, recipe.elems!.length);
+        return recipe.elems!.map(e => get(null, e));
+      }
+      if (recipe.kind === "tnode" && (v.type === "Error" || v.type === typeTupleValue || v.type === typeListValue)) return null;
       let reps = cache.get(v);
       if (reps === undefined) {
         reps = new Map<number, unknown>();
@@ -387,9 +515,15 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       if (recipe.kind === "list") {
         control?.charge(0, v.children.length);
         out = new Array<unknown>(v.children.length);
+      } else if (recipe.kind === "tuple") {
+        control?.charge(0, recipe.elems!.length);
+        out = new Array<unknown>(recipe.elems!.length);
+      } else if (recipe.kind === "tnode") {
+        out = { type: v.type, start: v.start, end: v.end, value: null };
       } else if (v.type === recipe.name) {
         const obj: ASTObject = { type: v.type, start: v.start, end: v.end };
-        if (recipe.kind !== "struct") obj["text"] = v.text;
+        if (recipe.name === "Match") obj["value"] = v.text;
+        else if (recipe.kind !== "struct") obj["text"] = v.text;
         if (recipe.kind === "error") {
           const msg = getFieldWork(v, "message", control);
           obj["message"] = typeof msg === "string" ? msg : "";
@@ -397,7 +531,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         out = obj;
       }
       reps.set(id, out);
-      if (out !== null && (recipe.kind === "list" || recipe.kind === "struct")) {
+      if (out !== null && (recipe.kind === "list" || recipe.kind === "struct" || recipe.kind === "tuple" || recipe.kind === "tnode")) {
         pending.push({ node: v, repr: id, out });
       }
       return out;
@@ -412,7 +546,24 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       const array = work.out as unknown[];
       for (let i = 0; i < work.node.children.length; i++) {
         control?.charge(0, 1);
-        array[i] = get(work.node.children[i]!, recipe.elem!);
+        array[i] = get(astKid(work.node, i), recipe.elem!);
+      }
+    } else if (recipe.kind === "tuple") {
+      const array = work.out as unknown[];
+      for (let i = 0; i < recipe.elems!.length; i++) {
+        control?.charge(0, 1);
+        array[i] = get(astKid(work.node, i), recipe.elems![i]!);
+      }
+    } else if (recipe.kind === "tnode") {
+      const n = work.node, obj = work.out as ASTObject;
+      if (recipe.mode === "text") obj["value"] = n.text;
+      else if (recipe.mode === "self") obj["value"] = get(n, recipe.elem!);
+      else if (n.terminal) obj["value"] = get(n.text, recipe.elem!);
+      else if (astRecipes[recipe.elem!]!.kind !== "any") obj["value"] = get(null, recipe.elem!);
+      else {
+        // The elements of an open value, converted like any other open value.
+        control?.charge(0, n.children.length);
+        obj["value"] = n.children.map((_, i) => get(astKid(n, i), recipe.elem!));
       }
     } else {
       const obj = work.out as ASTObject;

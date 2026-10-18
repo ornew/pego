@@ -71,7 +71,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const input="-".repeat(512)+"z",ordinary=p.parse(input,unit),typed=p.parseAST(input,unit);
  const active=p.parseWithOptions(input,{unit,signal:{aborted:false}}),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.error===null&&typed.error===null&&active.error===null&&converted.error===null&&stable(active.node)===stable(ordinary.node)&&stable(converted.value)===stable(typed.value),"Operators Rule capture preservation parity");
- check(converted.value?.type==="Box"&&converted.value.Token?.text==="-"&&converted.value.Rhs?.type==="Word","successful operator retains its captured token across candidate reset");
+ check(converted.value?.type==="Box"&&converted.value.Token?.value==="-"&&converted.value.Rhs?.type==="Word","successful operator retains its captured token across candidate reset");
  const baseline=minimum(n=>p.parseRuleWithOptions("fast",input,{unit,maxSteps:n}).error===null);
  // Allow the successful trail reset, operator span materialization and
  // either one preservation pass over both candidate frames. Completing
@@ -166,11 +166,11 @@ type Expr ~ Word | Box
 rule main Expr = operators {
     operand word
     level {
-        prefix bad #repeat(512) => Box{Token: $op, Rhs: $rhs}
+        prefix (bad #repeat(512) #atomic) => Box{Token: $op, Rhs: $rhs}
     }
 }
 
-rule fast Box = t:bad #repeat(512) #atomic (-bad #repeat(512))? x:word => Box{Token: $t, Rhs: $x}
+rule fast Box = t:(bad #repeat(512) #atomic) (-bad #repeat(512))? x:word => Box{Token: $t, Rhs: $x}
 
 rule bad = ("a" "!") #recover(skip="a" "?")
 
@@ -186,7 +186,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const input="a?".repeat(512)+"z",ordinary=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.node!==null&&active.node!==null&&ordinary.error instanceof p.SyntaxErrors&&active.error instanceof p.SyntaxErrors&&active.error.errors.length===512&&stable(active.node)===stable(ordinary.node)&&active.error.message===ordinary.error.message,"Operators Rule recovered snapshot and apply parity");
  const typed=p.parseAST(input,unit),converted=p.parseASTWithOptions(input,{unit,signal:{aborted:false}});
- check(converted.error instanceof p.SyntaxErrors&&stable(converted.value)===stable(typed.value)&&converted.value?.type==="Box"&&converted.value.Token?.text==="a?".repeat(512),"typed Operators Rule recovered output");
+ check(converted.error instanceof p.SyntaxErrors&&stable(converted.value)===stable(typed.value)&&converted.value?.type==="Box"&&converted.value.Token?.value==="a?".repeat(512),"typed Operators Rule recovered output");
  const baseline=minimum(n=>{const r=p.parseRuleWithOptions("fast",input,{unit,maxSteps:n});return r.node!==null&&r.error instanceof p.SyntaxErrors&&r.error.errors.length===512});
  const stopped=p.parseWithOptions(input,{unit,maxSteps:baseline+512+128});
  check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="step-work-limit","Operators Rule recovered snapshots and apply both consume work");

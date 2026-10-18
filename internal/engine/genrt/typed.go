@@ -82,6 +82,13 @@ func tpubNode(v any) *TNode[any] {
 		if n, ok := tpub(x).(*TNode[any]); ok {
 			return n
 		}
+	case *terror:
+	case tval:
+		// A value of a terminal type is a string node.
+		if text, ok := x.ttext(); ok {
+			start, end := x.tspan()
+			return &TNode[any]{Span{start, end}, text}
+		}
 	}
 	return nil
 }
@@ -271,6 +278,23 @@ func tback(v any) any {
 		return &tnode{typ: typeTupleValue, kids: tbackAll(x)}
 	}
 	return v
+}
+
+// tkid returns element i of a tuple's elements (nil if there is none).
+func tkid(kids []any, i int) any {
+	if i < len(kids) {
+		return kids[i]
+	}
+	return nil
+}
+
+// tnodeValue returns the Value of a tuple or list node as a tuple or list value.
+func tnodeValue(n *tnode) any {
+	typ := typeTupleValue
+	if n.typ == "List" {
+		typ = typeListValue
+	}
+	return &tnode{Span: n.Span, typ: typ, kids: n.kids}
 }
 
 func tbackAll(vs []any) []any {

@@ -76,7 +76,7 @@ func TestNodeWriteJSONMatchesReferenceShape(t *testing.T) {
 			{Name: "emptyList", Value: []any{}},
 		},
 	}
-	tuple := &Node{kind: kindOf(TypeSeq, "pair"), Start: 1, End: 8, Children: []*Node{child, nil, child}}
+	tuple := &Node{kind: kindOf("Seq", "pair"), Start: 1, End: 8, Children: []*Node{child, nil, child}}
 	for _, n := range []*Node{record, tuple} {
 		want, err := json.Marshal(referenceJSON(n))
 		if err != nil {

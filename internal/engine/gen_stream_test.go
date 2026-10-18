@@ -277,7 +277,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenO
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts.Package, opts.Start, opts.Stream = fmt.Sprintf("g%d", i), "main", true
+		opts.Package, opts.Start, opts.Stream, opts.SourceInfo = fmt.Sprintf("g%d", i), "main", true, true // compile gives the engine source information
 		code, err := Generate(g, opts)
 		if err != nil {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
@@ -549,28 +549,28 @@ var typedStreamCorpus = []struct {
 }{
 	{"structs", `type Pair = { Key Match; Value Match }
 rule main = item* #stream
-rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, "bv", []string{"a=1\nbc=22\n", "a=1\nb=x\n", "", strings.Repeat("ab=12\n", 1500)}},
+rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, "bv.Value", []string{"a=1\nbc=22\n", "a=1\nb=x\n", "", strings.Repeat("ab=12\n", 1500)}},
 	{"unions", `type A terminal
 type B terminal
 type U ~ A | B
 rule main = item* #stream
 rule item U = a / b
 rule a A = "a"
-rule b B = "b"`, "bv", []string{"abba", "abc", ""}},
+rule b B = "b"`, "bv.Value", []string{"abba", "abc", ""}},
 	{"records", `rule main = item* #stream
-rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";"`, "bv", []string{"a=1;bc=22;", "a=1;b", strings.Repeat("ab=1;", 2000)}},
+rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";"`, "bv.Value", []string{"a=1;bc=22;", "a=1;b", strings.Repeat("ab=1;", 2000)}},
 	{"inline records", `rule main = (k:[a-z] v:[0-9]?)* #stream $$`, "", []string{"a1bc2", "a1!"}},
 	{"recovered", `type S = { N Match }
 rule main = (stmt #recover(skip=[^;]+ ";"))* #stream
-rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`, "bv", []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
+rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`, "bv.Value", []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
 	{"nil", `rule main = item* #stream
-rule item = "a" => nil`, "bv", []string{"aaa", "ab"}},
-	{"matches", `rule main = ("a" / "é")* #stream`, "bv", []string{"aéa", "é\xc3", "a\xffa"}},
+rule item = "a" => nil`, "bv.Value", []string{"aaa", "ab"}},
+	{"matches", `rule main = ("a" / "é")* #stream`, "bv.Value", []string{"aéa", "é\xc3", "a\xffa"}},
 	{"lists", `rule main = item* #stream
-rule item = xs:[a-z]* ";" => $xs`, "bv", []string{"ab;;c;", "ab;c"}},
+rule item = xs:[a-z]* ";" => $xs`, "bv.Value", []string{"ab;;c;", "ab;c"}},
 	{"aliases", `type P = { A Match; B Match }
 rule main = item* #stream
-rule item P = x:[a-z] => P{A: $x, B: $x}`, "bv", []string{"abc", "a1"}},
+rule item P = x:[a-z] => P{A: $x, B: $x}`, "bv.Value", []string{"abc", "a1"}},
 	{"surrounded", `rule main = h:"#" xs:item* #stream t:"!"?
 rule item = [a-z] #atomic`, "", []string{"#ab!", "#", "#a?"}},
 	{"captured", `type I = { C Match }
@@ -615,7 +615,8 @@ func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
 		fmt.Fprintf(&imports, "\tg%d \"typedstream/g%d\"\n", i, i)
 		batch := "nil"
 		if c.batch != "" {
-			batch = "func(input string, b bool) (any, error) {\n\t\tbv, err := g%[1]d.ParseAST(input, g%[1]d.WithUnit(unit%[1]d(b)))\n\t\treturn " + c.batch + ", err\n\t}"
+			// The start rule's value is a node of the repetition: bv.Value is its list.
+			batch = "func(input string, b bool) (any, error) {\n\t\tbv, err := g%[1]d.ParseAST(input, g%[1]d.WithUnit(unit%[1]d(b)))\n\t\tif bv == nil {\n\t\t\treturn nil, err\n\t\t}\n\t\treturn " + c.batch + ", err\n\t}"
 		}
 		fmt.Fprintf(&parsers, `	%[1]d: {
 		typed: func(r io.Reader, emit func(any) error, b bool) error {
@@ -946,7 +947,7 @@ rule atom = [a-z] #atomic " "?`)
 	files["memo/parser.go"] = string(code)
 	typed, err := syntax.Parse(`type P = { A Match; B Match; Xs []Match }
 rule main = item* #stream $$
-rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys}`)
+rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1124,7 +1125,7 @@ func TestIterateAST(t *testing.T) {
 				t.Fatal(v, diags)
 			}
 		}
-		if s, isS := v.(*S); isS && s.N.Text != want[i].(*S).N.Text {
+		if s, isS := v.(*S); isS && s.N.Value != want[i].(*S).N.Value {
 			t.Fatal(i, s, want[i])
 		}
 	}
@@ -1171,7 +1172,7 @@ func TestParseStreamAST(t *testing.T) {
 		t.Fatal(err, got)
 	}
 	// A node in two fields converts to one value.
-	if got[0].A != got[0].B || got[0].A.Text != "a" || len(got[0].Xs) != 2 || got[0].Xs[1].Text != "2" || got[1].Xs != nil && len(got[1].Xs) != 0 {
+	if got[0].A != got[0].B || got[0].A.Value != "a" || len(got[0].Xs) != 2 || got[0].Xs[1].Value != "2" || got[1].Xs != nil && len(got[1].Xs) != 0 {
 		t.Fatal(got[0], got[1])
 	}
 	if got[1].Start != 4 || got[1].A.Start != 4 {

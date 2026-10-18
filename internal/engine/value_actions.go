@@ -443,6 +443,7 @@ func ungroupTerm(t grammar.Term) grammar.Term {
 func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	x = v.expand(x)
 	if x == tyAny || x == tyBottom {
+		v.noteMember(m, x == tyBottom)
 		return x
 	}
 	switch m.Name {
@@ -464,6 +465,10 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 		return v.captureAccess(x, name, m)
 	}
 	alts := v.alts(x)
+	v.noteMember(m, !slices.ContainsFunc(alts, func(a ty) bool {
+		_, node := a.(nodeTy)
+		return !node && a != tyErr && a != tyBottom
+	}))
 	var found []ty
 	for _, a := range alts {
 		switch a := a.(type) {
@@ -501,6 +506,19 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 		return vopt(vunion(found...))
 	}
 	return vunion(found...)
+}
+
+// noteMember records whether the member access m reads only node members (.Start, .End and
+// .Value), never a struct field: an access typed several times (in a lambda body) must read node
+// members every time.
+func (v *valueInference) noteMember(m *grammar.Member, nodeOnly bool) {
+	if v.checks == nil || v.quiet {
+		return
+	}
+	if prev, ok := v.checks.nodeMembers[m]; ok && !prev {
+		return
+	}
+	v.checks.nodeMembers[m] = nodeOnly
 }
 
 // captureAccess returns the type of x.$name: every argument of x must be a node that captures

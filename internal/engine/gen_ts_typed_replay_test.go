@@ -40,10 +40,11 @@ func TestGeneratedTSTypedReplay(t *testing.T) {
 		}
 	}
 	cases = append(cases, genCase{"mixed union recovery", `type Word terminal
-type Mixed ~ Word | int
-type U ~ Word | Match
-type R = { A Mixed; B U; C Word; D any; E []Word; O *int; I int }
-rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs, I: 7}
+type Mixed ~ Word | int | error
+type U ~ Word | Match | error
+type WE ~ Word | error
+type R = { A Mixed; B U; C WE; D any; E []WE; O *int; I int }
+rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs.Value, I: 7}
 rule word Word = [a-z😀]+ ";"`, []string{"😀;abc;", "1;abc;2;", "", "x;"}})
 	cases = append(cases, genCase{"shared fold", tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, []string{"x", "xxxxxxxx"}}, genCase{"shared LR", tsTypedDAGTypes + `rule main Tree = branch / leaf
 rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`, []string{"x", "xxxxxxxx"}}, genCase{"raw Unicode text", `type R = { Text string; Token Match }
@@ -109,7 +110,7 @@ rule main = leaf #recover(skip=.+)`, []string{"!", ""}})
 	}
 	b, _ := json.Marshal(inputs)
 	write("inputs.json", string(b))
-	write("main.go", "package main\nimport (\"encoding/base64\";\"encoding/json\";\"fmt\";\"os\";\"reflect\";\"strconv\";"+imports.String()+")\nvar parsers=[]func(string,bool)(any,error){"+parsers.String()+"}\nvar recognizers=[]func(string,bool)error{"+recognizers.String()+"}\nvar terminalTypes=map[string]bool{"+terminalNames.String()+"}\nvar valueNames=map[string]string{"+valueNames.String()+"}\n"+tsTypedGoOracle)
+	write("main.go", "package main\nimport (\"encoding/base64\";\"encoding/json\";\"fmt\";\"os\";\"reflect\";\"strconv\";\"strings\";"+imports.String()+")\nvar parsers=[]func(string,bool)(any,error){"+parsers.String()+"}\nvar recognizers=[]func(string,bool)error{"+recognizers.String()+"}\nvar terminalTypes=map[string]bool{"+terminalNames.String()+"}\nvar valueNames=map[string]string{"+valueNames.String()+"}\n"+tsTypedGoOracle)
 	write("replay.mjs", tsTypedReplayHarness)
 	cmd := exec.Command(tsc, append([]string{"--noEmit", "--target", "es2020", "--lib", "es2020", "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly"}, files...)...)
 	cmd.Dir = dir
@@ -179,7 +180,7 @@ func normal(v reflect.Value) any {
   case reflect.Slice:
     if v.IsNil(){return nil};out:=make([]any,v.Len());for i:=range out {out[i]=normal(v.Index(i))};return out
   case reflect.Struct:
-    typeKey:=v.Type().PkgPath()+"."+v.Type().Name();name:=v.Type().Name();if n,ok:=valueNames[typeKey];ok{name=n};out:=map[string]any{"type":name}
+    typeKey:=v.Type().PkgPath()+"."+v.Type().Name();name:=v.Type().Name();if n,ok:=valueNames[typeKey];ok{name=n}else if strings.HasPrefix(name,"TNode["){return map[string]any{"start":v.FieldByName("Start").Int(),"end":v.FieldByName("End").Int(),"value":normal(v.FieldByName("Value"))}}else if name=="Unit"||strings.HasPrefix(name,"Tuple"){out:=make([]any,v.NumField());for i:=range out{out[i]=normal(v.Field(i))};return out};out:=map[string]any{"type":name}
     for i:=0;i<v.NumField();i++ {if v.Type().Field(i).Anonymous {sp:=v.Field(i);out["start"]=sp.FieldByName("Start").Int();out["end"]=sp.FieldByName("End").Int()}}
     for i:=0;i<v.NumField();i++ {name:=v.Type().Field(i).Name;if v.Type().Field(i).Anonymous{continue};if name=="Text"&&terminalTypes[typeKey]{name="text"};if name=="Message"&&v.Type().Name()=="Error"{name="message"};out[name]=normal(v.Field(i))};return out
   }
@@ -191,6 +192,6 @@ func main(){data,_:=os.ReadFile(os.Args[1]);var inputs [][]string;json.Unmarshal
 const tsTypedReplayHarness = `import {readFileSync} from "node:fs";
 const inputs=JSON.parse(readFileSync("inputs.json","utf8"));
 function text(s){const out=[];for(const ch of s){const c=ch.codePointAt(0);if(c>=0xdc80&&c<=0xdcff)out.push(c&255);else out.push(...Buffer.from(ch,"utf8"));}return Buffer.from(out).toString("base64");}
-function normal(v,m){if(v===null)return null;if(typeof v==="number"||typeof v==="bigint")return "int:"+v;if(typeof v==="string")return text(v);if(typeof v==="boolean")return v;if(Array.isArray(v))return v.map(x=>normal(x,m));if(v instanceof m.Node){const fs={};for(const f of v.fields)fs[f.name]=normal(f.value,m);return {type:v.type,rule:v.rule,start:v.start,end:v.end,text:text(v.text),children:v.children.length===0?null:v.children.map(x=>normal(x,m)),fields:fs};}const out={};for(const [k,x] of Object.entries(v)){out[k]=k==="type"||k==="start"||k==="end"?x:normal(x,m);}return out;}
+function normal(v,m){if(v===null)return null;if(typeof v==="number"||typeof v==="bigint")return "int:"+v;if(typeof v==="string")return text(v);if(typeof v==="boolean")return v;if(Array.isArray(v))return v.map(x=>normal(x,m));if(v instanceof m.Node){const fs={};for(const f of v.fields)fs[f.name]=normal(f.value,m);return {type:v.type,rule:v.rule,start:v.start,end:v.end,text:text(v.text),children:v.children.length===0?null:v.children.map(x=>normal(x,m)),fields:fs};}const out={};const keys=Object.keys(v);const tnode=keys.length===4&&"value" in v&&"type" in v;for(const [k,x] of Object.entries(v)){if(tnode&&k==="type")continue;out[k]=k==="type"||k==="start"||k==="end"?x:normal(x,m);}return out;}
 for(let i=0;i<inputs.length;i++){const m=await import("./g"+i+".ts");for(const b64 of inputs[i]){const input=new Uint8Array(Buffer.from(b64,"base64"));for(const unit of [m.CodePoints,m.Bytes]){const r=m.parseAST(input,unit),n=m.parse(input,unit),rec=m.recognize(input,unit);if(r.error?.message!==n.error?.message)throw new Error("typed error changed");console.log(JSON.stringify({grammar:i,bytes:unit===m.Bytes,input:b64,value:normal(r.value,m),error:r.error?.message??null,recognize:rec?.message??null}));}}}
 `

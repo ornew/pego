@@ -26,7 +26,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
  rule main Word = (({` + variable + `} leaf) / leaf) #cut
  rule leaf Word = "a"`, "", true},
 		{"captured", "main", `type A = { N int }
- rule main A = x:` + rule + ` {text($x) == "a"} $$ #cut => $x
+ rule main A = x:` + rule + ` {$x != nil} $$ #cut => $x
  rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true},
 	}
 	dir := t.TempDir()

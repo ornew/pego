@@ -21,8 +21,10 @@ func TestGeneratedGoWorkLayoutReference(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Word terminal
 
+type WordOrError ~ Word | error
+
 type Bag = {
-    Items []Word
+    Items []WordOrError
     Count int
 }
 
@@ -30,7 +32,7 @@ type WithContext terminal
 
 rule collision WithContext = "z"
 
-rule main Bag = {n := 1} x:word* #cut => Bag{Items: $x, Count: len($x) + n}
+rule main Bag = {n := 1} x:word* #cut => Bag{Items: $x.Value, Count: len($x) + n}
 
 rule word Word = "a" / "é"
 
@@ -40,7 +42,10 @@ rule bad Bag = v1:"a" #cut => Bag{Count: 1 / (len($v1) - 1)}
 
 rule anynil any = t:word? => $t
 
-rule ptrnil *node = t:word? => $t`)
+rule ptrnil *node = t:word? => $t
+
+// A nil result is converted from nodes, so the reference also covers the converter.
+rule converted = "a" => nil`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +140,7 @@ func TestInvocationStateLayout(t *testing.T){
  optionType:=reflect.TypeOf(parseOptions{});_,control:=optionType.FieldByName("control")
  if control==reference{t.Fatal("option control field presence",control)}
  if reference {
-  if optionType.NumField()!=2 || unsafe.Sizeof(parseOptions{})!=unsafe.Sizeof(struct{unit Unit;maxDepth int}{}) || unsafe.Offsetof(parseOptions{}.unit)!=0 || unsafe.Offsetof(parseOptions{}.maxDepth)!=unsafe.Sizeof(Unit(0)){t.Fatal("ordinary option layout changed")}
+  if optionType.NumField()!=2 || unsafe.Sizeof(parseOptions{})!=unsafe.Sizeof(struct{unit PositionUnit;maxDepth int}{}) || unsafe.Offsetof(parseOptions{}.unit)!=0 || unsafe.Offsetof(parseOptions{}.maxDepth)!=unsafe.Sizeof(PositionUnit(0)){t.Fatal("ordinary option layout changed")}
  }
  for _,typ:=range []reflect.Type{reflect.TypeOf(parser{})}{_,has:=typ.FieldByName("control");if has==reference{t.Fatal("parser control state presence",typ)}}
  TYPED_STATE
@@ -170,7 +175,10 @@ func TestGeneratedGoWorkLayoutReferenceDrift(t *testing.T) {
 
 rule main Word = "a"
 
-rule other any = "a" => nil`)
+rule other any = "a" => nil
+
+// A nil result is converted from nodes, so the reference also covers the converter.
+rule converted = "a" => nil`)
 	if err != nil {
 		t.Fatal(err)
 	}

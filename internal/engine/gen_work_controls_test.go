@@ -495,20 +495,20 @@ rule leaf Word = "é"`)
 }
 
 const generatedGoLegacyNilConsumer = `package legacynil
-import("context";"errors";"reflect";"testing")
+import("context";"errors";"testing")
 type ownedErrorContext struct{context.Context;err error}
 func(c *ownedErrorContext)Done()<-chan struct{}{return make(chan struct{})}
 func(c *ownedErrorContext)Err()error{return c.err}
 func TestLegacyAndInterruptedNil(t *testing.T){
  for _,input:=range []string{"","?"}{
   got,err:=ParseAST(input)
-  if reflect.TypeOf(got)!=reflect.TypeOf((*Node)(nil)) || !reflect.ValueOf(got).IsNil(){t.Fatalf("configured legacy nil changed: %T %v",got,got)}
+  if got!=nil{t.Fatalf("absent value is not nil: %T %v",got,got)}
   if (err==nil)!=(input==""){t.Fatal("legacy syntax failure",err)}
   got,err=ParseRuleAST("main",input)
   if got!=nil || (err==nil)!=(input==""){t.Fatalf("named zero result changed: %T %v %v",got,got,err)}
  }
  got,err:=ParseAST("",WithMaxDepth(-1))
- if err==nil || reflect.TypeOf(got)!=reflect.TypeOf((*Node)(nil)) || !reflect.ValueOf(got).IsNil(){t.Fatalf("ordinary option error mapping: %T %v %v",got,got,err)}
+ if err==nil || got!=nil{t.Fatalf("ordinary option error mapping: %T %v %v",got,got,err)}
  ctx,cancel:=context.WithCancel(context.Background());cancel()
  owned:=errors.New("caller-owned context interruption")
  for _,r:=range []func(string,...ParseOption)(any,error){ParseAST,func(s string,o ...ParseOption)(any,error){return ParseRuleAST("main",s,o...)}}{
@@ -561,13 +561,13 @@ rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 }
 
 const generatedGoOrdinaryNilErrorConsumer = `package ordinarynil
-import("context";"reflect";"testing")
+import("context";"testing")
 func TestOrdinaryNilMapping(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,extra:=range [][]ParseOption{nil,{WithContext(context.Background())},{WithWorkLimits(WorkLimits{MaxSteps:1000000,MaxInputWork:1000000})}}{
    opts:=append([]ParseOption{WithUnit(unit),OPTION},extra...)
    got,err:=ParseAST(INPUT,opts...)
-   if err==nil || reflect.TypeOf(got)!=reflect.TypeOf((*Node)(nil)) || !reflect.ValueOf(got).IsNil(){t.Fatalf("ordinary error lost boxed nil: %T %v %v",got,got,err)}
+   if err==nil || got!=nil{t.Fatalf("ordinary error returned a value: %T %v %v",got,got,err)}
   }
  }
 }

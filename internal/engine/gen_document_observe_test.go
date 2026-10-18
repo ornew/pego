@@ -29,7 +29,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	write("go.mod", "module documentobserve\n\ngo 1.27.1\n")
 	for _, f := range []struct{ name, grammar, input string }{
 		{"plain", "type W terminal\nrule main W = part part part\nrule part W = [a-b]", "aaa"},
-		{"list", "type W terminal\nrule main []W = part+\nrule part W = [a-b]", "aaa"},
+		{"list", "type W terminal\nrule main []W = p:part+ => $p.Value\nrule part W = [a-b]", "aaa"},
 		{"predicate", "type W terminal\nrule main W = {x:=1} &part p:part {x==1} => $p\nrule part W = [a-z]", "a"},
 		{"framed", "type W terminal\ntype N = { Value W }\nrule main N = p:part => N{Value:$p}\nrule part W = [a-z]+", "abc"},
 		{"memo", "type W terminal\nrule main W = &part &part &part p:part => $p\nrule part W = letter\nrule letter = \"a\"", "a"},

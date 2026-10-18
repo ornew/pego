@@ -18,7 +18,22 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			if x == tyInt || x == tyString || x == tyBool {
 				return value
 			}
+			if x == tyErr {
+				return "c.toError(" + value + ")"
+			}
 			return "c.toOpen(" + value + ")"
+		case vrule:
+			return "c." + t.chelpers.get("cv", "rule "+x.name, x) + "(" + value + ")"
+		case tupleTy:
+			if len(x.elems) == 0 {
+				return value
+			}
+			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
+		case nodeTy:
+			if x.value == tyTop || x.value == tyAny {
+				return "c.toNode(" + value + ")"
+			}
+			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
 		case recordTy:
 			return "c.toNode(" + value + ")"
 		case namedTy:
@@ -35,10 +50,16 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			if name, ok := t.unions[x.String()]; ok {
 				return "c.to" + name + "(" + value + ")"
 			}
+			if _, ok := t.unionGoType(x); ok {
+				return clone(x.alts[0], value)
+			}
 			return "c.toOpen(" + value + ")"
 		case optTy:
 			if scalar, ok := x.elem.(basicTy); ok && (scalar == tyInt || scalar == tyString || scalar == tyBool) {
 				return "typedDocumentClonePointer(c, " + value + ")"
+			}
+			if _, ok := x.elem.(tupleTy); ok {
+				return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
 			}
 			return clone(x.elem, value)
 		case listTy:
@@ -92,6 +113,8 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 					return true
 				}
 			}
+		case vrule, tupleTy, nodeTy:
+			return true
 		}
 		return false
 	}
@@ -171,7 +194,32 @@ func (c *typedDocumentClone) toElems(v []any) []any {
  return out
 }
 `)
-	for i := 0; i < len(lists); i++ {
+	// The helpers of value-model types and the list cloners (more may be added while writing them).
+	helpers := 0
+	for i := 0; ; i++ {
+		for ; helpers < len(t.chelpers.order); helpers++ {
+			h := t.chelpers.order[helpers]
+			g := t.goType(h.x)
+			fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.step(1)\n", h.name, g, g)
+			switch x := h.x.(type) {
+			case vrule:
+				fmt.Fprintf(&methods, " return %s\n", clone(t.vres[x.name], "v"))
+			case optTy:
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n x := %s\n return &x\n", clone(x.elem, "*v"))
+			case tupleTy:
+				methods.WriteString(" out := v\n")
+				for j, e := range x.elems {
+					fmt.Fprintf(&methods, " out.E%d = %s\n", j, clone(e, fmt.Sprintf("v.E%d", j)))
+				}
+				methods.WriteString(" return out\n")
+			case nodeTy:
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.values[v]; ok { return old.(%s) }\n out := &%s{%s: v.%s}\n c.remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], t.span, t.span, clone(x.value, "v.Value"))
+			}
+			methods.WriteString("}\n")
+		}
+		if i >= len(lists) {
+			break
+		}
 		list := lists[i]
 		elem := t.goType(list.elem)
 		value := clone(list.elem, "item")

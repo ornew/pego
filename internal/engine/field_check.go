@@ -225,6 +225,9 @@ type checkInfo struct {
 	// *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator for a line of an
 	// Operators Rule. A nil type (in a loaded program) stands for the rule's declared type.
 	results map[any]ty
+	// nodeMembers reports, for each member access of an action, whether it reads only node
+	// members (.Start, .End, .Value) and never a struct field.
+	nodeMembers map[*grammar.Member]bool
 }
 
 // rekey returns the checks keyed by the nodes of the rules to instead of those of the rules from:

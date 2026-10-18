@@ -84,7 +84,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 			if err := os.Mkdir(filepath.Join(dir, "named"), 0755); err != nil {
 				t.Fatal(err)
 			}
-			for name, data := range map[string]string{"go.mod": "module namedfixture\n\ngo 1.27.1\n", "named/parser.go": string(code), "named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*p.TNode[any]", false: "*p.ParseRuleAST_"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
+			for name, data := range map[string]string{"go.mod": "module namedfixture\n\ngo 1.27.1\n", "named/parser.go": string(code), "named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*p.TNode[p.Tuple2[*p.TNode[string], *p.TNode[string]]]", false: "*p.ParseRuleAST_"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -157,7 +157,7 @@ func TestNamedMappings(t *testing.T) {
    case "values":x:=v.(*p.Values);var n p.Number=x.N;if n!=42||x.Text!="yes"||!x.Flag {t.Fatal(x)}
    case "items":var xs p.Items=v.([]*p.S);if len(xs)!=2||xs[1].T.Start!=end {t.Fatal(xs)}
    case "union":var u p.U=v.(*p.S);if u==nil {t.Fatal(u)}
-   case "cst":if _,ok:=v.(*p.TNode[any]);!ok {t.Fatal(v)}
+   case "cst":x,ok:=v.(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]]);if !ok||x.Value.E0.Value!="x"||x.Value.E1.Value!="y"||x.Value.E1.Start!=1 {t.Fatalf("cst: %T %v",v,v)}
    case "open", "abstract":if _,ok:=v.(*p.TNode[string]);!ok {t.Fatalf("%s: %T",c.name,v)}
    }
    if _,err=p.ParseRule(c.name,c.input,p.WithUnit(unit));err!=nil {t.Fatal(err)}
@@ -166,7 +166,7 @@ func TestNamedMappings(t *testing.T) {
   for _,c:=range []struct{name string;zero any}{
    {"main",(*p.ParseRuleAST_)(nil)},{"term",(*p.T)(nil)},{"structure",(*p.S)(nil)},
    {"values",(*p.Values)(nil)},{"items",[]*p.S(nil)},
-   {"union",nil},{"mixed",nil},{"aliased",(*p.T)(nil)},{"cst",(*p.TNode[any])(nil)},{"arbitrary",nil},{"open",nil},{"abstract",nil},
+   {"union",nil},{"mixed",nil},{"aliased",(*p.T)(nil)},{"cst",(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]])(nil)},{"arbitrary",nil},{"open",(*p.TNode[string])(nil)},{"abstract",(*p.TNode[string])(nil)},
   } {v,err:=p.ParseRuleAST(c.name,"!",p.WithUnit(unit));if err==nil||!reflect.DeepEqual(v,c.zero) {t.Fatalf("%s failure: %T %v %v",c.name,v,v,err)}}
  }
 }
@@ -265,7 +265,9 @@ func TestXMLFragments(t *testing.T) {
    }
    if err!=nil||werr!=nil {t.Fatal(err,werr)}
    var wrapped any
-   if c.name=="content" {wrapped=doc.Root.Content;if _,ok:=v.([]p.Content);!ok {t.Fatalf("content mapping: %T",v)}} else {wrapped=doc.Doctype.Subset;if _,ok:=v.([]p.Decl);!ok {t.Fatalf("declaration mapping: %T",v)}}
+   // content, a rule without an action, has a node of its list as its value; the wrapper's
+   // field holds the list.
+   if c.name=="content" {wrapped=doc.Root.Content;n,ok:=v.(*p.TNode[[]p.Content]);if !ok {t.Fatalf("content mapping: %T",v)};v=n.Value} else {wrapped=doc.Doctype.Subset;if _,ok:=v.([]p.Decl);!ok {t.Fatalf("declaration mapping: %T",v)}}
    if normalized(v,0)!=normalized(wrapped,len(c.prefix)) {t.Fatalf("fragment differs from shifted wrapper: %s\n%s",normalized(v,0),normalized(wrapped,len(c.prefix)))}
   }
  }

@@ -1108,7 +1108,11 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 			if a.Name == "error" {
 				d.line("p.expect(%s, msgBit|%d)", far, msg)
 			} else {
-				d.line("p.mergeExpected(%s, renamedExpected(p, %s, %d))", far, exp, msg)
+				pp := "p"
+				if d.g.table == "trules" {
+					pp = "p.parser"
+				}
+				d.line("p.mergeExpected(%s, renamedExpected(%s, %s, %d))", far, pp, exp, msg)
 			}
 			d.jump(fail)
 			d.place(done)

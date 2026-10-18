@@ -505,7 +505,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 `+imports.String()+`)
 
@@ -515,13 +514,22 @@ var parsers = []func(string, bool) (any, error){
 var converters = []func(string, bool) (any, error){
 `+converters.String()+`}
 
-// typeName is the dynamic type of v without the package.
+// typeName is the dynamic type of v without package qualifiers, also inside type arguments.
 func typeName(v any) string {
-	s := fmt.Sprintf("%T", v)
-	if i := strings.LastIndex(s, "."); i >= 0 {
-		return strings.TrimLeft(s[:i], "[]*") + s[i:]
+	var out []byte
+	word := 0 // where the current qualified name starts in out
+	for _, c := range []byte(fmt.Sprintf("%T", v)) {
+		switch {
+		case c == '.':
+			out = out[:word] // drop the package qualifier
+		case c == '_' || c == '/' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z':
+			out = append(out, c)
+		default:
+			out = append(out, c)
+			word = len(out)
+		}
 	}
-	return s
+	return string(out)
 }
 
 func main() {
@@ -535,7 +543,7 @@ func main() {
 				cv, cerr := converters[i](s, bytes)
 				typed, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
 				conv, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
-				if string(typed) != string(conv) || typeName(v)[strings.Index(typeName(v), ".")+1:] != typeName(cv)[strings.Index(typeName(cv), ".")+1:] {
+				if string(typed) != string(conv) || typeName(v) != typeName(cv) {
 					fmt.Fprintf(os.Stderr, "MISMATCH %d %q (bytes: %v)\n typed %s %s\n conv  %s %s\n", i, s, bytes, typeName(v), typed, typeName(cv), conv)
 				}
 				if !bytes {
@@ -627,15 +635,15 @@ func main() {
 	typed := got[len(got)-3:]
 	for i, want := range []string{
 		`{"Value":[` +
-			`{"Start":0,"End":9,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"1"},{"Start":4,"End":5,"Text":"x"}],"Span":{"Start":6,"End":7,"Text":"!"},"N":2,"Opt":{"Start":7,"End":8,"Text":"?"},"Rows":[[]],"Ok":true},` +
-			`{"type":"Seq","rule":"grp","start":9,"end":13,"children":[{"type":"Match","start":9,"end":10,"text":"["},{"type":"Num","rule":"num","start":10,"end":11,"text":"3"},{"type":"Match","start":11,"end":12,"text":"]"},{"type":"Match","start":12,"end":13,"text":";"}],"fields":{"n":{"type":"Num","rule":"num","start":10,"end":11,"text":"3"}}},` +
+			`{"Start":0,"End":9,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"1"},{"Start":4,"End":5,"Text":"x"}],"Span":{"Start":6,"End":7,"Value":"!"},"N":2,"Opt":{"Start":7,"End":8,"Value":"?"},"Rows":[[]],"Ok":true},` +
+			`{"Start":9,"End":13,"Value":[{"Start":9,"End":10,"Value":"["},{"Start":10,"End":11,"Text":"3"},{"Start":11,"End":12,"Value":"]"},{"Start":12,"End":13,"Value":";"}]},` +
 			`{"Start":13,"End":15,"Text":"zz"}],"Type":"[]g37.Node_","Err":"<nil>"}`,
 		`{"Value":[` +
 			`{"Start":0,"End":1,"Text":"f"},` +
 			`{"Start":1,"End":6,"Text":"(1,(;","Message":"1:2: syntax error: expected \"[\", [0-9], [a-z]"},` +
 			`{"Start":6,"End":7,"Text":"g"},` +
 			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", [0-9], [a-z]"}],"Type":"[]g37.Node_","Err":"1:2: syntax error: expected \"[\", [0-9], [a-z]\n1:8: syntax error: expected \"[\", [0-9], [a-z]"}`,
-		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span":{"Start":4,"End":4,"Text":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]g37.Node_","Err":"<nil>"}`,
+		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span":{"Start":4,"End":4,"Value":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]g37.Node_","Err":"<nil>"}`,
 	} {
 		var b strings.Builder
 		enc := json.NewEncoder(&b)

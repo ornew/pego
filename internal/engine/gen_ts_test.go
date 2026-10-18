@@ -353,6 +353,11 @@ func runTSScript(t *testing.T, src, script string) string {
 
 func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string {
 	t.Helper()
+	return runTSGrammarScriptWith(t, g, script, GenOptions{Start: "main"})
+}
+
+func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opts GenOptions) string {
+	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
@@ -360,7 +365,7 @@ func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string 
 	if err != nil {
 		t.Skip("node not found")
 	}
-	code, err := GenerateTS(g, GenOptions{Start: "main"})
+	code, err := GenerateTS(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +418,7 @@ console.log(r.error === null ? "ok" : r.error.message);
 console.log(String(r.node));
 console.log(marshal(r.node));
 `)
-	n, err := compile(t, src).Parse("main", input)
+	n, err := compileBare(t, src).Parse("main", input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,7 +449,7 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 			b.WriteRune(r)
 		}
 	}
-	n, err := compile(t, `rule main = .*`).Parse("main", b.String())
+	n, err := compileBare(t, `rule main = .*`).Parse("main", b.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -458,9 +463,14 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 // JavaScript objects.
 func TestGeneratedTSFieldNames(t *testing.T) {
 	src := `rule main = prototype:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
-	out := runTSScript(t, src, `import { parse } from "./parser.ts";
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Capture names appear in the source information.
+	out := runTSGrammarScriptWith(t, g, `import { parse } from "./parser.ts";
 console.log(JSON.stringify(parse("abcd").node));
-`)
+`, GenOptions{Start: "main", SourceInfo: true})
 	n, err := compile(t, src).Parse("main", "abcd")
 	if err != nil {
 		t.Fatal(err)

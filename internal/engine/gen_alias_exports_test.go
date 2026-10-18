@@ -90,7 +90,7 @@ func Test%s(t *testing.T) {
  var maybe P.Maybe = &count
  var mixed P.Mixed = count
  var anything P.Anything = mixed
- var cst P.CST = &P.Node{}
+ var cst P.CST = &P.TNode[any]{}
  var box *P.Box = &P.Box{Item:chain, Items:words, Choice:v, N:*maybe}
  var boxAlias P.BoxAlias = box
  var node P.Node_ = word

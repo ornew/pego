@@ -103,7 +103,7 @@ type Mixed ~ Word | int
 type Open ~ any
 type Raw ~ Seq
 type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
-rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs, OpenItems: $xs, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
+rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = [a-zあ-ん😀]+`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
 import type { R_, W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw, TypedParseResult } from "./parser.ts";
@@ -115,7 +115,7 @@ const types: [W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, Cho
 check(types.length === 12 && v.W?.type === "Word" && v.W.text === "😀あ", "exported types/terminal");
 check(v.Items?.length === 0 && v.Empty?.length === 0 && v.Missing === null && v.Optional === null && v.O === null, "nil/empty/optionals");
 check(v.I === -3 && v.Big === 9223372036854775807n && v.M === 9007199254740992n && v.S === "😀あ" && v.B, "scalar representation");
-check(v.Raw instanceof Node && v.Any instanceof Node, "CST retained");
+check(v.Raw !== null && !(v.Raw instanceof Node) && v.Raw.type === "Seq" && v.Any === v.Raw, "CST types convert to shared TNode values");
 check(v.Items !== v.OpenItems, "list representations stay distinct");
 check(v.start === 0 && v.end === 4 && v.W.end === 2, "code point spans");
 const b = parseASTWithOptions("😀あ!?", {unit: Bytes, maxDepth: 0});
@@ -164,10 +164,11 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
 	src := `type Word terminal
-type U ~ Word | Match
-type Mixed ~ Word | int
-type R = { Specific Word; U U; M Mixed; A any; Items []Word; OpenItems []any }
-rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs, OpenItems: $xs}
+type U ~ Word | Match | error
+type Mixed ~ Word | int | error
+type WE ~ Word | error
+type R = { Specific WE; U U; M Mixed; A any; Items []WE; OpenItems []any }
+rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs.Value, OpenItems: $xs.Value}
 rule word Word = [a-z]+ ";"`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
 ` + tsTypedAssert + `
@@ -175,13 +176,14 @@ for (const unit of [CodePoints, Bytes]) {
   const r = parseAST("1;abc;2;", unit), n = parse("1;abc;2;", unit);
   check(r.error instanceof SyntaxErrors && n.error instanceof SyntaxErrors && r.error.message === n.error.message, "same recovery diagnostics");
   const v = r.value; check(v !== null, "recovered result");
-  check(v.Specific === null && v.U?.type === "Error", "representation-specific Error " + stable(v));
-  check(typeof v.M === "object" && v.M !== null && v.M.type === "Error", "mixed recovery");
-  check(typeof v.A === "object" && v.A !== null && v.A.type === "Error", "any recovery");
-  check(v.M === v.A && v.M === v.U, "equivalent representations share converted Error");
-  check(v.Items?.length === 2 && v.Items[0]?.text === "abc;" && v.Items[1] === null, "list recovery null element");
+  check(v.Specific?.type === "Error" && v.U?.type === "Error", "recovered Error " + stable(v));
+  check(typeof v.M === "object" && v.M !== null && !Array.isArray(v.M) && v.M.type === "Error", "mixed recovery");
+  check(typeof v.A === "object" && v.A !== null && !Array.isArray(v.A) && v.A.type === "Error", "any recovery");
+  check(v.M === v.A && v.M === v.U && v.Specific === v.U, "equivalent representations share converted Error");
+  const first = v.Items?.[0];
+  check(v.Items?.length === 2 && first != null && "text" in first && first.text === "abc;" && v.Items[1]?.type === "Error", "list recovery Error element");
   check(v.OpenItems !== v.Items && v.OpenItems?.[0] === v.Items?.[0], "list recipes/cache sharing");
-  const openError = v.OpenItems?.[1]; check(typeof openError === "object" && openError !== null && openError?.type === "Error", "open list retains Error");
+  const openError = v.OpenItems?.[1]; check(typeof openError === "object" && openError !== null && !Array.isArray(openError) && openError?.type === "Error", "open list retains Error");
   const before = stable(v); parseAST("abc;"); check(stable(v) === before, "recovery ownership");
 }
 `
@@ -196,7 +198,7 @@ rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, 
 for (const unit of [Bytes, CodePoints]) for (const input of ["😀é\ud800�", new Uint8Array([0x61,0xff,0xe2,0x82]), new Uint8Array([0xef,0xbf,0xbd])]) {
   const r = parseAST(input, unit), n = parse(input, unit); check(r.error === null && n.error === null && r.value !== null && n.node !== null, "unicode parse");
   const v = r.value, token = n.node.field("Token"); check(token instanceof Node, "Node token");
-  check(v.Text === n.node.field("Text") && v.Token?.text === token.text && v.Token.start === token.start && v.Token.end === token.end, "raw text/positions copied exactly");
+  check(v.Text === n.node.field("Text") && v.Token?.value === token.text && v.Token.start === token.start && v.Token.end === token.end, "raw text/positions copied exactly");
   check(v.A === 9007199254740991 && v.B === 9007199254740992n && v.C === -9007199254740992n && v.D === -9223372036854775808n && v.E === -1 && v.F === -3 && v.G === 9223372036854775807n && v.O === null, "canonical int64/optional");
   check(stable(v).includes("int:9223372036854775807"), "explicit exact transport");
 }
@@ -262,7 +264,7 @@ rule main *U = "" => nil`,
 	runTypedTSFixture(t, `type T = { X Match }
 rule main T = x:n #atomic => T{X: $x}
 rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
-`+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.text === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
+`+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.value === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
 	for _, scalar := range []string{"int", "string", "bool"} {
 		g, err := syntax.Parse("rule main " + scalar + ` = "" => nil`)
 		if err != nil {
@@ -281,12 +283,12 @@ func TestGeneratedTSTypedWorkloads(t *testing.T) {
 		name, src, small, large string
 	}{
 		{"fields", `type Item = { Key Match; Value Match; N int; S string; B bool }
-rule main []Item = item*
+rule main []Item = xs:item* => $xs.Value
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
 		{"capture-free", `rule main = [a-zé😀]* #atomic`, "a", strings.Repeat("é😀a", 8000)},
 		{"recovery", `type Good = { Token Match }
-type Item ~ Good | Match
-rule main []Item = item #recover(skip=[^;]+ ";")*
+type Item ~ Good | Match | error
+rule main []Item = xs:item #recover(skip=[^;]+ ";")* => $xs.Value
 rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings.Repeat("é😀;1;", 2000)},
 	}
 	for _, c := range cases {
@@ -322,7 +324,7 @@ func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
 		src, inferred string
 		recovered     bool
 	}{
-		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", false},
+		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", true},
 		"never": {`rule main = main`, "_|_", false},
 		"nil-rule-recovery": {`rule leaf = "a" => nil
 rule main = leaf #recover(skip=.+)`, "*Error", true},
@@ -341,7 +343,7 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
  check(r.error !== null && r.error.message === n.error?.message, "inferred diagnostics");
  // Narrow the actual entry point's type, not just the widened annotation.
  const v = parseAST("!",unit).value;
- if (typeof v === "object" && v !== null && !(v instanceof Node)) {
+ if (typeof v === "object" && v !== null && !(v instanceof Node) && !Array.isArray(v)) {
    check(v.type === "Error" && v.start === 0 && v.end === 1, "inferred recovered value");
  }
  const bad = parseAST("",unit); check(bad.value === null && bad.error !== null, "unrecoverable empty input");
@@ -352,7 +354,11 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
 			} else {
 				consumer += `check(parseAST("!").value === null, "selected Node zero remains null");`
 			}
-			if c.inferred == "nil" || name == "nil-rule-recovery" {
+			switch name {
+			case "nil":
+				// The group of a dropped expression is a node whose value is the empty tuple.
+				consumer += `const success = parseAST("a"); check(stable(success.value) === '{"type":"Seq","start":0,"end":1,"value":[]}' && success.error === null, "normal empty tuple success " + stable(success.value));`
+			case "nil-rule-recovery":
 				consumer += `const success = parseAST("a"); check(success.value === null && success.error === null, "normal inferred nil success");`
 			}
 			runTypedTSFixture(t, c.src, consumer, GenOptions{}, "")

@@ -64,7 +64,7 @@ func TestGeneratedNodeDirectRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := compile(t, c.src)
+	p := compileBare(t, c.src) // generated parsers keep no source information by default
 	var rows strings.Builder
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, rule := range []string{"main", "pair"} {
