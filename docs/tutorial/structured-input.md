@@ -200,5 +200,5 @@ Without `-i`, `pego parse` reads the input from standard input. The new pieces:
 ## Next Steps
 
 The tree above is a faithful picture of the text. [Building Typed Trees](typed-trees.md) reshapes it into the data the
-program wants. The guides [Rule Expressions](../guide/rule-expressions.md) and [Trees and Actions](../guide/trees-and-actions.md)
+program wants. The guides [Rule Expressions](../guide/rule-expressions.md) and [Shaping Trees](../guide/shaping-trees.md)
 cover the expressions of this lesson in depth.

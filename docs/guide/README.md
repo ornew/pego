@@ -8,7 +8,9 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | Guide | Contents |
 |:--|:--|
 | [Rule Expressions](rule-expressions.md) | Writing the matching part of a grammar: ordered choice, repetition and lookahead, cut, white space and tokens, keywords, and the pitfalls of each |
-| [Trees and Actions](trees-and-actions.md) | The tree a grammar builds by default, shaping it with `#atomic`, `-` and captures, struct, union and terminal types, actions, built-in functions and lambdas, positions, recipes (`foldl`, flattening lists), performance guidelines |
+| [Shaping Trees](shaping-trees.md) | The tree a grammar builds by default, and shaping it with `#atomic`, `-` and captures; performance guidelines |
+| [Declaring Types](types.md) | Struct, union and terminal types, optional and list fields, rule result types and inference |
+| [Actions](actions.md) | Actions, built-in functions and lambdas, positions of constructed nodes, recipes (`foldl`, flattening lists) |
 | [Operators Rule](operators-rule.md) | Operator expressions: Operators Rule Definition Statements, left-recursive rules and precedence chains compared, level-restricted calls, operator forms and associativity, pitfalls, a larger example |
 | [Context-Sensitive Parsing](context-sensitive.md) | Predicates, variables, lookahead and attributes; matching tags, indentation blocks, here-documents and other recipes; the cost of variables |
 | [Errors and Recovery](errors-and-recovery.md) | How syntax errors are reported, getting them out on the command line and in Go, readable messages with `@error`, cuts, recovering with `#recover`, inserting missing literals, recipes |

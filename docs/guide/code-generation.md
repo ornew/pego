@@ -854,5 +854,5 @@ func Pairs(input string) ([]Pair, error) {
 }
 ```
 
-Design the grammar's types and actions ([trees-and-actions.md](trees-and-actions.md)) so that this layer is
+Design the grammar's types and actions ([Declaring Types](types.md), [Actions](actions.md)) so that this layer is
 thin, and unit-test it with the engine and the generated parser alike.

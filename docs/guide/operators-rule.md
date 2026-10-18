@@ -10,7 +10,7 @@ precedence and associativity. PEGO gives you three ways to write them:
 | **Precedence chain** | One rule per level, each a repetition `next (OP next)*` folded with `foldl` | One rule per level |
 
 This guide builds the same calculator in all three styles, compares the trees and error messages they produce, and
-helps you choose. It relies on [Trees and actions](trees-and-actions.md) for captures, types and `foldl`; the normative
+helps you choose. It relies on [Shaping Trees](shaping-trees.md), [Declaring Types](types.md) and [Actions](actions.md) for captures, types and `foldl`; the normative
 text is in [Operators Rule](../../spec/operators-rule.md) and
 [Left recursion](../../spec/parser-expressions.md#left-recursion), and the reasoning behind the design in
 [design record 005](../design/005-operators-rule.md) and [design record 003](../design/003-packrat-parsing.md).
@@ -255,7 +255,7 @@ pego: 1:3: syntax error: expected [0-9]
 
 The oldest way to write an expression grammar needs neither left recursion nor Operators Rule. Each level matches an operand of
 the next level, followed by any number of operator-operand pairs, and `foldl` builds the left-leaning tree
-([Recipe 1 of the trees guide](trees-and-actions.md#91-left-associative-trees-with-foldl)):
+([the `foldl` recipe](actions.md#left-associative-trees-with-foldl)):
 
 ```pego
 // chain.pego

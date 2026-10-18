@@ -3,7 +3,7 @@
 A successful parse returns a tree of `*pego.Node`. This guide shows how to read that tree from Go: fields, positions,
 printing, JSON, reading a whole tree and typed values. [Walking Trees](walking-trees.md) visits and selects nodes
 without writing the recursion, and [Output Schemas and Structural Queries](output-schemas-and-queries.md) describes and
-searches the output of a grammar. How a grammar shapes the tree is the subject of [Trees and Actions](trees-and-actions.md);
+searches the output of a grammar. How a grammar shapes the tree is the subject of [Shaping Trees](shaping-trees.md);
 the exact node model is defined in [Nodes and Values](../../spec/nodes.md).
 
 The examples use the grammar `pairs.pego`:
@@ -171,5 +171,5 @@ types that mirror the types of the grammar, so a type switch replaces field look
 ## Related Topics
 
 - [Walking Trees](walking-trees.md): visiting nodes and selecting them by position.
-- [Trees and Actions](trees-and-actions.md): shaping the tree in the grammar.
+- [Shaping Trees](shaping-trees.md): shaping the tree in the grammar.
 - [Running Parsers](running-parsers.md): parse entry points, errors and position units.

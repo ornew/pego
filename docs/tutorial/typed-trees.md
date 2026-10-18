@@ -162,6 +162,6 @@ which member of the `Value` union you got, so a `switch` on it is how you walk a
 
 ## Next Steps
 
-[Parsing Expressions](expressions.md) builds a calculator. The guide [Trees and Actions](../guide/trees-and-actions.md)
-covers struct, union and terminal types, the built-in functions and positions, and
+[Parsing Expressions](expressions.md) builds a calculator. The guides [Declaring Types](../guide/types.md) and
+[Actions](../guide/actions.md) cover struct, union and terminal types, the built-in functions and positions, and
 [Reading Trees](../guide/reading-trees.md) covers reading a tree in Go.

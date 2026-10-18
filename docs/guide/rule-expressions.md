@@ -3,7 +3,7 @@
 The right-hand side of a rule is a Rule Expression. This guide is about writing the matching part of a grammar:
 choosing between alternatives, repeating, looking ahead, committing with a cut, handling white space and tokens,
 and reading keywords. Each section ends with the mistake that goes with it. What the expressions produce is the
-subject of [Trees and Actions](trees-and-actions.md); the exact meaning of every expression is defined in
+subject of [Shaping Trees](shaping-trees.md); the exact meaning of every expression is defined in
 [Rule Expressions](../../spec/parser-expressions.md).
 
 All examples run with `pego parse -g <file> -s <rule> -f sexpr -i <input>`.
@@ -129,7 +129,7 @@ pego: 1:7: syntax error: expected [ \t], [0-9]
 ```
 
 Mark the rules that read a token as `#atomic` so that the token is one terminal and not a sequence of characters, and
-discard white space with `-` when it should not appear in the tree (see [Trees and Actions](trees-and-actions.md)).
+discard white space with `-` when it should not appear in the tree (see [Shaping Trees](shaping-trees.md)).
 White space inside a tree is only noise for the program that reads it.
 
 ## Keywords and Word Boundaries
@@ -190,7 +190,7 @@ decides how good that report is:
 
 ## Related Topics
 
-- [Trees and Actions](trees-and-actions.md): what the expressions produce and how to shape it.
+- [Shaping Trees](shaping-trees.md): what the expressions produce and how to shape it.
 - [Operators Rule](operators-rule.md): operator expressions and precedence.
 - [Context-Sensitive Parsing](context-sensitive.md): predicates, variables and lookahead for context-dependent
   syntax.

@@ -64,14 +64,18 @@
           "title": "Writing Grammars",
           "match": [
             "docs/guide/rule-expressions.md",
-            "docs/guide/trees-and-actions.md",
+            "docs/guide/shaping-trees.md",
+            "docs/guide/types.md",
+            "docs/guide/actions.md",
             "docs/guide/operators-rule.md",
             "docs/guide/context-sensitive.md",
             "docs/guide/errors-and-recovery.md"
           ],
           "first": [
             "docs/guide/rule-expressions.md",
-            "docs/guide/trees-and-actions.md",
+            "docs/guide/shaping-trees.md",
+            "docs/guide/types.md",
+            "docs/guide/actions.md",
             "docs/guide/operators-rule.md",
             "docs/guide/context-sensitive.md",
             "docs/guide/errors-and-recovery.md"
@@ -322,6 +326,7 @@
     "/docs/optimizations/013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms/": "/docs/optimizations/013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms/",
     "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/",
     "/docs/guide/runtime/": "/docs/guide/running-parsers/",
+    "/docs/guide/trees-and-actions/": "/docs/guide/shaping-trees/",
     "/docs/guide/expressions/": "/docs/guide/operators-rule/",
     "/docs/guide/working-with-trees/": "/docs/guide/reading-trees/",
     "/docs/guide/tree-traversal/": "/docs/guide/walking-trees/",

@@ -164,7 +164,7 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
   function that turns text into a number, so `strconv` does that in the `as...` helpers.
 - **The tree is what the grammar declares.** `main` returns a `Config` node whose `Entries` field is a list of `Entry`
   nodes. `Field("Entries")` and `Children` walk it, as described in
-  [Trees and actions](../guide/trees-and-actions.md).
+  [Shaping Trees](../guide/shaping-trees.md).
 - **`pego.WithUnit(pego.Bytes)`** makes `Start` and `End` offsets into the Go string, so `src[:e.Start]` is the text
   before an entry, and counting its line feeds gives the line. By default positions count code points, which are not
   string indexes when the text has non-ASCII characters.
@@ -183,5 +183,5 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
 - If the file is YAML, JSON, CSV or XML, use a [ready-made parser](ready-made-parsers.md) instead of a grammar of your
   own.
 
-See [Trees and actions](../guide/trees-and-actions.md) for shaping the tree and [Running
+See [Declaring Types](../guide/types.md) and [Actions](../guide/actions.md) for the types and actions, and [Running
 parsers](../guide/running-parsers.md) for the Go API.
