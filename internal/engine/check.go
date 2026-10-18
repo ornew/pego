@@ -612,8 +612,11 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	sc := &scopeCheck{caps: caps{}}
 	bodyT := k.expr(rd.Expr, sc)
 	k.checkPreds(sc)
+	// Positional items only feed the rule action's $N references. The body
+	// pass above already reports every item's errors and records its checks,
+	// so a rule without an action skips typing the items a second time.
 	var items []ty
-	if seq, ok := rd.Expr.(*grammar.Seq); ok {
+	if seq, ok := rd.Expr.(*grammar.Seq); ok && rd.Action != nil {
 		for _, it := range seq.Items {
 			if visible(it) {
 				items = append(items, k.expr(it, &scopeCheck{caps: caps{}}))

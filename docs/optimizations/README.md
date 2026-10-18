@@ -112,6 +112,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G060](mechanisms/G060-ordinary-typed-direct-rules.md) | Ordinary typed direct bodies | TG eligible default; later extensions separately keyed | — | — | — | — | Partial | — | Default | None maintained |
 | [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.disableLiteralTextDispatch |
 | [G080](mechanisms/G080-equal-capture-type-reuse.md) | Reuse structurally equal capture types | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
+| [G085](mechanisms/G085-action-free-positional-items.md) | Skip positional item typing for action-free rules | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G090](mechanisms/G090-variable-read-components.md) | Variable reads by dependency component | Shared compiler metadata, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G100](mechanisms/G100-generated-node-body-inlining.md) | Inline eligible Go Node expressions | GN partial default; separate value-free/node eligibility | — | — | — | Partial | — | — | Default | None maintained |
 | [G110](mechanisms/G110-one-pass-code-point-preparation.md) | Decode/validate/build offsets in one pass | CodePoints input preparation; GN/TG eager, core recognition lazy, TypeScript uses its own decoder | Partial | Partial | Partial | Partial | Partial | Partial | Default by input path | None maintained |
@@ -236,6 +237,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 
 - [099. Share Document snapshot child runs](099-share-document-snapshot-child-runs.md)
 - [100. Relative Snapshot Position Overlays](100-relative-snapshot-position-overlays.md)
+- [101. Skip positional items for action-free rules](101-skip-positional-items-for-action-free-rules.md)
 
 ## Experiments That Did Not Pay Off
 
