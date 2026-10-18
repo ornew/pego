@@ -113,10 +113,16 @@
           "title": "Incremental and Streaming Input",
           "match": [
             "docs/guide/incremental.md",
+            "docs/guide/incremental-reuse.md",
+            "docs/guide/incremental-performance.md",
+            "docs/guide/incremental-editing.md",
             "docs/guide/streaming.md"
           ],
           "first": [
             "docs/guide/incremental.md",
+            "docs/guide/incremental-reuse.md",
+            "docs/guide/incremental-performance.md",
+            "docs/guide/incremental-editing.md",
             "docs/guide/streaming.md"
           ]
         },

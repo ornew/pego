@@ -36,7 +36,10 @@ complete, runnable examples, and points to the [specification](../../spec/README
 
 | Guide | Contents |
 |:--|:--|
-| [Incremental Parsing](incremental.md) | `Document` for reparsing a text after edits: the model, change notifications, what is reused and why, writing grammars that reuse well, performance and limits, an editor loop, fuzzing edits against fresh parses |
+| [Incremental Parsing](incremental.md) | `Document` for reparsing a text after edits: the model, the API, change notifications, a walkthrough with `Stats` |
+| [What Incremental Parsing Reuses](incremental-reuse.md) | Which results survive an edit and why, and writing grammars that reuse well |
+| [Incremental Parsing Performance](incremental-performance.md) | Measurements of reparsing after an edit, and the limits of a `Document` |
+| [Editor Loops and Edit Fuzzing](incremental-editing.md) | An editor loop around a `Document`, and checking a grammar against fresh parses with random edits |
 | [Streaming](streaming.md) | `#stream` and `ParseStream` for input that is too big to hold or never ends: what is emitted and when, memory, errors, recipes (summing a column, a header followed by records, cancelling) |
 
 ## Shipping Parsers

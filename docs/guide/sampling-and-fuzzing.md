@@ -433,7 +433,7 @@ must not panic, must not loop, and must handle `SyntaxError` and `SyntaxErrors` 
 with `WithMaxLen`: the fuzzer works best on short inputs.
 
 To fuzz incremental parsing, use `pego edit-fuzz`, which starts from generated inputs too and edits them; see
-[fuzzing edits](incremental.md#fuzzing-edits).
+[fuzzing edits](incremental-editing.md#fuzzing-edits).
 
 ## How It Works, and What It Cannot Do
 

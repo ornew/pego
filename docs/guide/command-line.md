@@ -21,7 +21,7 @@ is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything 
 | `test` | Run a fixture suite | [Testing Grammars](testing-grammars.md) |
 | `lint` | Find likely mistakes in a grammar | [Linting Grammars](linting.md) |
 | `explain`, `trace`, `profile` | Find out why an input fails or a parse is slow | [Debugging and Profiling](debugging.md) |
-| `sample`, `edit-fuzz` | Generate inputs, check incremental parsing | [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md), [Incremental Parsing](incremental.md#fuzzing-edits) |
+| `sample`, `edit-fuzz` | Generate inputs, check incremental parsing | [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md), [Incremental Parsing](incremental-editing.md#fuzzing-edits) |
 | `lsp` | Run the language server | [Editor Support](editor-support.md) |
 
 The examples use the grammar `pairs.pego`:

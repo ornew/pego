@@ -688,7 +688,7 @@ measurements are linked above.
   test suite checks this on all its grammars, and for `Document` checks the results and `Document.Stats` across
   edits on the backend corpus.
 - **A `Document` reparse skips calls.** It reuses the unchanged elements of long repetitions without calling their
-  rules (see [incremental parsing](incremental.md#what-is-reused-and-why)), so those
+  rules (see [incremental parsing](incremental-reuse.md#what-is-reused-and-why)), so those
   calls do not become synthetic trace events, calls, evaluations or memo hits. `ReusedElements` reports the number
   of repetition elements reused separately; memo hits still appear as ordinary entered calls. A reused element can
   contain several omitted calls, so this is an element count rather than a count of skipped rule calls.
