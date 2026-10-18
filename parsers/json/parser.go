@@ -6893,34 +6893,16 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Bool is the terminal type Bool.
-type Bool struct {
-	Span
-	Text string
-}
-
-// Null is the terminal type Null.
-type Null struct {
-	Span
-	Text string
-}
-
-// Number is the terminal type Number.
-type Number struct {
-	Span
-	Text string
-}
-
-// String is the terminal type String.
-type String struct {
-	Span
-	Text string
-}
-
 // Array is the struct type Array.
 type Array struct {
 	Span
 	Elements []Value
+}
+
+// Bool is the struct type Bool.
+type Bool struct {
+	Span
+	Text string
 }
 
 // Member is the struct type Member.
@@ -6930,10 +6912,28 @@ type Member struct {
 	Value Value
 }
 
+// Null is the struct type Null.
+type Null struct {
+	Span
+	Text string
+}
+
+// Number is the struct type Number.
+type Number struct {
+	Span
+	Text string
+}
+
 // Object is the struct type Object.
 type Object struct {
 	Span
 	Members []*Member
+}
+
+// String is the struct type String.
+type String struct {
+	Span
+	Text string
 }
 
 // Value is the union type Value ~ Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
@@ -6946,38 +6946,6 @@ func (*Null) isValue()   {}
 func (*Number) isValue() {}
 func (*Object) isValue() {}
 func (*String) isValue() {}
-
-func (v *Bool) tname() string             { return "Bool" }
-func (v *Bool) ttext() (string, bool)     { return v.Text, true }
-func (v *Bool) tkids() []any              { return nil }
-func (v *Bool) tfield(string) (any, bool) { return nil, true }
-func (v *Bool) tstruct() bool             { return false }
-func (v *Bool) tfresh() bool              { return false }
-func (v *Bool) tsetFresh(bool)            {}
-
-func (v *Null) tname() string             { return "Null" }
-func (v *Null) ttext() (string, bool)     { return v.Text, true }
-func (v *Null) tkids() []any              { return nil }
-func (v *Null) tfield(string) (any, bool) { return nil, true }
-func (v *Null) tstruct() bool             { return false }
-func (v *Null) tfresh() bool              { return false }
-func (v *Null) tsetFresh(bool)            {}
-
-func (v *Number) tname() string             { return "Number" }
-func (v *Number) ttext() (string, bool)     { return v.Text, true }
-func (v *Number) tkids() []any              { return nil }
-func (v *Number) tfield(string) (any, bool) { return nil, true }
-func (v *Number) tstruct() bool             { return false }
-func (v *Number) tfresh() bool              { return false }
-func (v *Number) tsetFresh(bool)            {}
-
-func (v *String) tname() string             { return "String" }
-func (v *String) ttext() (string, bool)     { return v.Text, true }
-func (v *String) tkids() []any              { return nil }
-func (v *String) tfield(string) (any, bool) { return nil, true }
-func (v *String) tstruct() bool             { return false }
-func (v *String) tfresh() bool              { return false }
-func (v *String) tsetFresh(bool)            {}
 
 func (v *Array) tname() string         { return "Array" }
 func (v *Array) ttext() (string, bool) { return "", false }
@@ -7020,6 +6988,28 @@ func (v *Array) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Bool) tname() string         { return "Bool" }
+func (v *Bool) ttext() (string, bool) { return "", false }
+func (v *Bool) tkids() []any          { return nil }
+func (v *Bool) tstruct() bool         { return true }
+func (v *Bool) tfresh() bool          { return false }
+func (v *Bool) tsetFresh(bool)        {}
+func (v *Bool) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Bool) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Member) tname() string         { return "Member" }
 func (v *Member) ttext() (string, bool) { return "", false }
 func (v *Member) tkids() []any          { return nil }
@@ -7042,6 +7032,50 @@ func (v *Member) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Key), true
 	case "Value":
 		return tback(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *Null) tname() string         { return "Null" }
+func (v *Null) ttext() (string, bool) { return "", false }
+func (v *Null) tkids() []any          { return nil }
+func (v *Null) tstruct() bool         { return true }
+func (v *Null) tfresh() bool          { return false }
+func (v *Null) tsetFresh(bool)        {}
+func (v *Null) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Null) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tname() string         { return "Number" }
+func (v *Number) ttext() (string, bool) { return "", false }
+func (v *Number) tkids() []any          { return nil }
+func (v *Number) tstruct() bool         { return true }
+func (v *Number) tfresh() bool          { return false }
+func (v *Number) tsetFresh(bool)        {}
+func (v *Number) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7083,6 +7117,28 @@ func (v *Object) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *String) tname() string         { return "String" }
+func (v *String) ttext() (string, bool) { return "", false }
+func (v *String) tkids() []any          { return nil }
+func (v *String) tstruct() bool         { return true }
+func (v *String) tfresh() bool          { return false }
+func (v *String) tsetFresh(bool)        {}
+func (v *String) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *String) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7225,6 +7281,23 @@ func tmk_Array(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Bool makes a Bool in an action (newStruct in the typed runtime).
+func tmk_Bool(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBool)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Member makes a Member in an action (newStruct in the typed runtime).
 func tmk_Member(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -7246,6 +7319,40 @@ func tmk_Member(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Null makes a Null in an action (newStruct in the typed runtime).
+func tmk_Null(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNull)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Number makes a Number in an action (newStruct in the typed runtime).
+func tmk_Number(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNumber)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Object makes a Object in an action (newStruct in the typed runtime).
 func tmk_Object(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -7253,6 +7360,23 @@ func tmk_Object(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tObject)
 	c.p.stepWork()
 	v.Members = tl0(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_String makes a String in an action (newStruct in the typed runtime).
+func tmk_String(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tString)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -7513,13 +7637,13 @@ func tl2(a *tslabs, v any) []*TNode[string] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *workControl
+	tArray   astChunk[Array]
 	tBool    astChunk[Bool]
+	tMember  astChunk[Member]
 	tNull    astChunk[Null]
 	tNumber  astChunk[Number]
-	tString  astChunk[String]
-	tArray   astChunk[Array]
-	tMember  astChunk[Member]
 	tObject  astChunk[Object]
+	tString  astChunk[String]
 	tl0Chunk astChunk[*Member]
 	tl1Chunk astChunk[Value]
 	tl2Chunk astChunk[*TNode[string]]
@@ -7670,15 +7794,15 @@ func init() {
 		{id: 5, name: "array", scope: []string{"es"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 6, name: "elements", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 7, name: "string", scope: []string{"s"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
-		{id: 8, name: "chars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "String", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 8, name: "chars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "String", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 9, name: "escape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 10, name: "hex", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 11, name: "number", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 11, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Number", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 12, name: "int", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 13, name: "frac", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 14, name: "exp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 15, name: "bool", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Bool", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 16, name: "null", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Null", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 15, name: "bool", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Bool", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 16, name: "null", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Null", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 17, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 18, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 19, name: "escape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -7759,10 +7883,18 @@ func init() {
 	rules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e42() }
 	structFields["Array"] = map[string]bool{"Elements": true}
 	typeKinds["Array"] = kindOf("Array", "")
+	structFields["Bool"] = map[string]bool{"Text": true}
+	typeKinds["Bool"] = kindOf("Bool", "")
 	structFields["Member"] = map[string]bool{"Key": true, "Value": true}
 	typeKinds["Member"] = kindOf("Member", "")
+	structFields["Null"] = map[string]bool{"Text": true}
+	typeKinds["Null"] = kindOf("Null", "")
+	structFields["Number"] = map[string]bool{"Text": true}
+	typeKinds["Number"] = kindOf("Number", "")
 	structFields["Object"] = map[string]bool{"Members": true}
 	typeKinds["Object"] = kindOf("Object", "")
+	structFields["String"] = map[string]bool{"Text": true}
+	typeKinds["String"] = kindOf("String", "")
 	recRules = []*rule{
 		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 1, name: "value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
@@ -7775,7 +7907,7 @@ func init() {
 		{id: 8, name: "chars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 9, name: "escape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 10, name: "hex", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 11, name: "number", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 11, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 12, name: "int", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 13, name: "frac", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 14, name: "exp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -8876,6 +9008,7 @@ func (p *parser) e18() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -9297,6 +9430,7 @@ func (p *parser) e25() (*Node, bool) {
 		x4 mark
 		x7 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -10005,6 +10139,7 @@ func (p *parser) e33() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -10067,6 +10202,7 @@ func (p *parser) e35() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
@@ -12950,6 +13086,7 @@ func (p *parser) e51() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -13260,6 +13397,7 @@ func (p *parser) e53() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
@@ -13370,6 +13508,7 @@ func (p *parser) e54() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -13438,6 +13577,7 @@ func (p *parser) e55() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
@@ -14142,6 +14282,7 @@ func (p *parser) q8() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -14566,6 +14707,7 @@ func (p *parser) q11() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -15142,6 +15284,7 @@ func (p *parser) q15() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -15232,6 +15375,7 @@ func (p *parser) q16() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
@@ -17122,6 +17266,7 @@ func (p *tparser) s8() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -17648,6 +17793,7 @@ func (p *tparser) s11() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -18511,6 +18657,7 @@ func (p *tparser) s15() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -18601,6 +18748,7 @@ func (p *tparser) s16() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4

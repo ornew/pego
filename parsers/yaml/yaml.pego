@@ -20,19 +20,19 @@ package yaml
 type Stream = { Documents []Document }
 type Document = { Directives []Directive; Start *Marker; Root Value; End *Marker }
 type Directive = { Name Word; Params []Word }
-type Word terminal
-type Marker terminal
+type Word = { Text string }
+type Marker = { Text string }
 
 type Mapping = { Props *Properties; Flow bool; Pairs []Pair }
 type Pair = { Key Value; Value Value }
 type Sequence = { Props *Properties; Flow bool; Items []Value }
 type Scalar = { Props *Properties; Style int; Indent int; Text string }
-type Alias terminal
+type Alias = { Text string }
 type Value ~ Mapping | Sequence | Scalar | Alias
 
 type Properties = { Tag *Tag; Anchor *Anchor }
-type Tag terminal
-type Anchor terminal
+type Tag = { Text string }
+type Anchor = { Text string }
 
 rule main Stream = l_yaml_stream
 
@@ -53,8 +53,8 @@ rule l_document_prefix = "\u{feff}" l_comment* / l_comment+
 // [205] l-document-suffix ::= c-document-end s-l-comments
 rule l_document_suffix = c_document_end s_l_comments
 // [203] c-directives-end, [204] c-document-end
-rule c_directives_end Marker = "---"
-rule c_document_end Marker = "..."
+rule c_directives_end Marker = t:("---") #atomic => Marker{Text: text($t)}
+rule c_document_end Marker = t:("...") #atomic => Marker{Text: text($t)}
 // [206] c-forbidden ::= <start-of-line> ( c-directives-end | c-document-end ) ( b-char | s-white | <end-of-input> )
 rule c_forbidden = ^ ("---" / "...") ([\r\n \t] / $$)
 
@@ -85,25 +85,25 @@ rule l_directive Directive = "%" d:(ns_yaml_directive / ns_tag_directive / ns_re
 rule ns_yaml_directive Directive = (
     name:yaml_name s_separate_in_line v:ns_yaml_version
 ) => Directive{Name: $name, Params: list($v)}
-rule yaml_name Word = "YAML"
+rule yaml_name Word = t:("YAML") #atomic => Word{Text: text($t)}
 // [87] ns-yaml-version ::= ns-dec-digit+ "." ns-dec-digit+
-rule ns_yaml_version Word = [0-9]+ "." [0-9]+
+rule ns_yaml_version Word = t:([0-9]+ "." [0-9]+) #atomic => Word{Text: text($t)}
 // [88] ns-tag-directive ::= "TAG" s-separate-in-line c-tag-handle s-separate-in-line ns-tag-prefix
 rule ns_tag_directive Directive = (
     name:tag_name s_separate_in_line h:tag_handle s_separate_in_line p:ns_tag_prefix
 ) => Directive{Name: $name, Params: list($h, $p)}
-rule tag_name Word = "TAG"
-rule tag_handle Word = c_tag_handle
+rule tag_name Word = t:("TAG") #atomic => Word{Text: text($t)}
+rule tag_handle Word = t:(c_tag_handle) #atomic => Word{Text: text($t)}
 // [93] ns-tag-prefix ::= c-ns-local-tag-prefix | ns-global-tag-prefix
-rule ns_tag_prefix Word = "!" ns_uri_char* / ns_tag_char ns_uri_char*
+rule ns_tag_prefix Word = t:("!" ns_uri_char* / ns_tag_char ns_uri_char*) #atomic => Word{Text: text($t)}
 // [83] ns-reserved-directive ::= ns-directive-name ( s-separate-in-line ns-directive-parameter )*
 // A parameter does not start with "#", which starts the comment after the directive instead.
 // Known names must satisfy their own syntax; longer unknown names remain reserved directives.
 rule ns_reserved_directive Directive = (
     !("YAML" !ns_char / "TAG" !ns_char) name:ns_directive_name ps:(-s_separate_in_line !"#" p:ns_directive_parameter)*
 ) => Directive{Name: $name, Params: map($ps, (x) => x.$p)}
-rule ns_directive_name Word = ns_char+
-rule ns_directive_parameter Word = ns_char+
+rule ns_directive_name Word = t:(ns_char+) #atomic => Word{Text: text($t)}
+rule ns_directive_parameter Word = t:(ns_char+) #atomic => Word{Text: text($t)}
 
 // ---- Node properties and aliases (6.9, 7.1) ----
 
@@ -113,13 +113,13 @@ rule c_ns_properties Properties = (
     t:c_ns_tag_property (-s_separate a:c_ns_anchor_property)? / a:c_ns_anchor_property (-s_separate t:c_ns_tag_property)?
 ) => Properties{Tag: $t, Anchor: $a}
 // [97] c-ns-tag-property ::= c-verbatim-tag | c-ns-shorthand-tag | c-non-specific-tag
-rule c_ns_tag_property Tag = "!<" ns_uri_char+ ">" / c_tag_handle ns_tag_char+ / "!"
+rule c_ns_tag_property Tag = t:("!<" ns_uri_char+ ">" / c_tag_handle ns_tag_char+ / "!") #atomic => Tag{Text: text($t)}
 // [89] c-tag-handle ::= c-named-tag-handle | c-secondary-tag-handle | c-primary-tag-handle
 rule c_tag_handle = "!" [0-9a-zA-Z\-]+ "!" / "!!" / "!"
 // [101] c-ns-anchor-property ::= "&" ns-anchor-name
-rule c_ns_anchor_property Anchor = "&" ns_anchor_char+
+rule c_ns_anchor_property Anchor = t:("&" ns_anchor_char+) #atomic => Anchor{Text: text($t)}
 // [104] c-ns-alias-node ::= "*" ns-anchor-name
-rule c_ns_alias_node Alias = "*" ns_anchor_char+
+rule c_ns_alias_node Alias = t:("*" ns_anchor_char+) #atomic => Alias{Text: text($t)}
 // [102] ns-anchor-char ::= ns-char - c-flow-indicator
 rule ns_anchor_char = [^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},\[\]{}]
 // [39] ns-uri-char, [40] ns-tag-char ::= ns-uri-char - c-tag - c-flow-indicator

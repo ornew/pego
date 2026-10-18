@@ -130,7 +130,7 @@ type JoinedStr = { Values []StrPart }
 // Adjacent t-strings: their literal text and Interpolations.
 type TemplateStr = { Values []StrPart }
 // A number, True, False, None, `...`, or adjacent string or bytes literals: the source text.
-type Constant terminal
+type Constant = { Text string }
 type Attribute = { Value Expr; Attr string; Ctx string }
 type Subscript = { Value Expr; Slice Expr; Ctx string }
 type Starred = { Value Expr; Ctx string }
@@ -142,9 +142,9 @@ type Expr ~ BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set |
 
 // The literal text of an f-string or t-string between replacement fields, with its escape
 // sequences and doubled braces as written.
-type FStringMiddle terminal
+type FStringMiddle = { Text string }
 // The same in a raw f-string or t-string.
-type FStringRawMiddle terminal
+type FStringRawMiddle = { Text string }
 type StrPart ~ Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation
 
 // --- Patterns ---
@@ -183,9 +183,9 @@ type ParamSpec = { Name string; DefaultValue *Expr }
 type TypeVarTuple = { Name string; DefaultValue *Expr }
 type TypeParam ~ TypeVar | ParamSpec | TypeVarTuple
 // A name in a list of names (Global, Nonlocal, MatchClass.KwdAttrs).
-type Identifier terminal
+type Identifier = { Text string }
 // An operator as written: "+", "not in", "+=", "and", ...
-type Op terminal
+type Op = { Text string }
 
 // ============================================================================
 // Module, blocks and lines
@@ -291,7 +291,7 @@ rule assign_chain Assign = (
 rule aug_assign AugAssign = (
     t:single_target -ws o:augassign_op -ws v:annotated_rhs
 ) => AugAssign{Target: $t, Op: $o, Value: $v}
-rule augassign_op Op = "+=" / "-=" / "*=" / "@=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "**=" / "//="
+rule augassign_op Op = t:("+=" / "-=" / "*=" / "@=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "**=" / "//=") #atomic => Op{Text: text($t)}
 rule annotated_rhs Expr = yield_expr / star_expressions
 
 rule pass_stmt Pass = kw_pass => Pass{}
@@ -479,7 +479,7 @@ rule signed_number_pattern MatchValue = v:signed_number !(ws [+\-]) => MatchValu
 rule complex_pattern MatchValue = v:complex_number => MatchValue{Value: $v}
 rule string_pattern MatchValue = v:strings => MatchValue{Value: $v}
 rule singleton_pattern MatchSingleton = v:singleton => MatchSingleton{Value: $v}
-rule singleton Constant = ("None" / "True" / "False") !idcont
+rule singleton Constant = t:(("None" / "True" / "False") !idcont) #atomic => Constant{Text: text($t)}
 // The keys of mapping patterns.
 rule literal_expr Expr = signed_number_lit / complex_number / strings / singleton
 rule signed_number_lit Expr = v:signed_number !(ws [+\-]) => $v
@@ -489,8 +489,8 @@ rule neg_number UnaryOp = o:minus_op -ws n:number => UnaryOp{Op: $o, Operand: $n
 rule complex_number BinOp = r:signed_real_number -ws o:plus_minus_op -ws i:imag_number => BinOp{Left: $r, Op: $o, Right: $i}
 rule signed_real_number Expr = real_number / neg_real_number
 rule neg_real_number UnaryOp = o:minus_op -ws n:real_number => UnaryOp{Op: $o, Operand: $n}
-rule minus_op Op = "-" ![=>]
-rule plus_minus_op Op = "+" !"=" / "-" ![=>]
+rule minus_op Op = t:("-" ![=>]) #atomic => Op{Text: text($t)}
+rule plus_minus_op Op = t:("+" !"=" / "-" ![=>]) #atomic => Op{Text: text($t)}
 
 rule capture_pattern MatchAs = n:capture_name => MatchAs{Name: text($n)}
 rule capture_name = !("_" !idcont) n:ident !(ws ("." !".." / "(" / "=" !"=")) => $n
@@ -638,20 +638,20 @@ rule disjunction Expr = (
 rule conjunction Expr = (
     f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*) #repeat(0, 1)
 ) => foldl($f, $t, (acc, y) => BoolOp{Op: y.$o, Values: concat(list($f), list(y.$c), map(y.$rs, (z) => z.$x))})
-rule or_op Op = "or" !idcont
-rule and_op Op = "and" !idcont
+rule or_op Op = t:("or" !idcont) #atomic => Op{Text: text($t)}
+rule and_op Op = t:("and" !idcont) #atomic => Op{Text: text($t)}
 rule inversion Expr = not_expr / comparison
 rule not_expr UnaryOp = o:not_op -ws v:inversion => UnaryOp{Op: $o, Operand: $v}
-rule not_op Op = "not" !idcont
+rule not_op Op = t:("not" !idcont) #atomic => Op{Text: text($t)}
 
 // Chained comparisons are one Compare, as in Python.
 rule comparison Expr = (
     f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+) #repeat(0, 1)
 ) => foldl($f, $t, (acc, y) => Compare{Left: $f, Ops: map(y.$rs, (z) => z.$o), Comparators: map(y.$rs, (z) => z.$x)})
-rule comp_op Op = (
+rule comp_op Op = t:(
     "==" / "!=" / "<>" / "<=" / ">=" / "<" ![<=>] / ">" ![>=]
     / "not" !idcont ws "in" !idcont / "in" !idcont / "is" !idcont ws "not" !idcont / "is" !idcont
-)
+) #atomic => Op{Text: text($t)}
 
 // The arithmetic and bitwise operators are one Operators Rule, which parses the operand once
 // instead of descending through a rule for each of the nine levels. `**` binds tighter than the
@@ -670,14 +670,14 @@ rule bitwise_or Expr = operators {
     level { prefix o:unary_op => UnaryOp{Op: $o, Operand: $rhs} }
     level { infix right o:pow_op => BinOp{Left: $lhs, Op: $o, Right: $rhs} }
 }
-rule bor_op Op = "|" !"="
-rule bxor_op Op = "^" !"="
-rule band_op Op = "&" !"="
-rule shift_op Op = "<<" !"=" / ">>" !"="
-rule sum_op Op = "+" !"=" / "-" ![=>]
-rule term_op Op = "*" ![*=] / "//" !"=" / "/" ![/=] / "%" !"=" / "@" !"="
-rule unary_op Op = "+" !"=" / "-" ![=>] / "~"
-rule pow_op Op = "**" !"="
+rule bor_op Op = t:("|" !"=") #atomic => Op{Text: text($t)}
+rule bxor_op Op = t:("^" !"=") #atomic => Op{Text: text($t)}
+rule band_op Op = t:("&" !"=") #atomic => Op{Text: text($t)}
+rule shift_op Op = t:("<<" !"=" / ">>" !"=") #atomic => Op{Text: text($t)}
+rule sum_op Op = t:("+" !"=" / "-" ![=>]) #atomic => Op{Text: text($t)}
+rule term_op Op = t:("*" ![*=] / "//" !"=" / "/" ![/=] / "%" !"=" / "@" !"=") #atomic => Op{Text: text($t)}
+rule unary_op Op = t:("+" !"=" / "-" ![=>] / "~") #atomic => Op{Text: text($t)}
+rule pow_op Op = t:("**" !"=") #atomic => Op{Text: text($t)}
 rule await_expr Await = kw_await -ws v:primary => Await{Value: $v}
 
 // An atom followed by attributes, calls and subscripts. Most atoms are followed by none, and are
@@ -742,8 +742,8 @@ rule for_if_clause Comprehension = (
 // --- Atoms ---
 rule atom Expr = strings / name / number / constant_kw / paren / list_display / braces / ellipsis
 rule name Name = n:ident => Name{Id: text($n), Ctx: "Load"}
-rule constant_kw Constant = ("True" / "False" / "None") !idcont
-rule ellipsis Constant = "..."
+rule constant_kw Constant = t:(("True" / "False" / "None") !idcont) #atomic => Constant{Text: text($t)}
+rule ellipsis Constant = t:("...") #atomic => Constant{Text: text($t)}
 
 // (), (x), (x,), (x, y), (*x, y), (x for x in y), (yield x)
 rule paren Expr = empty_tuple / yield_group / star_first_tuple / paren_named
@@ -863,14 +863,14 @@ rule del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? => co
 // may not be mixed with others).
 rule strings Expr = &string_start s:(tstrings / plain_strings / bytes_strings / fjoined) => $s
 rule string_start = [rRbBuUfFtT] #repeat(0, 2) ['"]
-rule plain_strings Constant = str_lit (ws str_lit)* !(ws string_start)
-rule bytes_strings Constant = bytes_lit (ws bytes_lit)* !(ws string_start)
+rule plain_strings Constant = t:(str_lit (ws str_lit)* !(ws string_start)) #atomic => Constant{Text: text($t)}
+rule bytes_strings Constant = t:(bytes_lit (ws bytes_lit)* !(ws string_start)) #atomic => Constant{Text: text($t)}
 rule fjoined JoinedStr = (
     f:fjoin_item r:(-ws p:fjoin_item)* !(ws string_start)
 ) => JoinedStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.$p))}
 rule fjoin_item = fstring / str_part
 rule str_part = c:str_constant => list($c)
-rule str_constant Constant = str_lit
+rule str_constant Constant = t:(str_lit) #atomic => Constant{Text: text($t)}
 rule tstrings TemplateStr = (
     f:tstring r:(-ws p:tstring)* !(ws string_start)
 ) => TemplateStr{Values: foldl($f, $r, (acc, x) => concat(acc, x.$p))}
@@ -925,8 +925,8 @@ rule fclose = {lv / 512 % 8 == 1} "'" / {lv / 512 % 8 == 2} "\"" / {lv / 512 % 8
 rule fpart StrPart = fraw_text / ftext / ffield
 rule tpart StrPart = fraw_text / ftext / tfield
 // Literal text: doubled braces stand for braces; a single '}' is an error.
-rule ftext FStringMiddle = {lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / fesc)+
-rule fraw_text FStringRawMiddle = {lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / frawesc)+
+rule ftext FStringMiddle = t:({lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / fesc)+) #atomic => FStringMiddle{Text: text($t)}
+rule fraw_text FStringRawMiddle = t:({lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / "{{" / "}}" / frawesc)+) #atomic => FStringRawMiddle{Text: text($t)}
 // The quotes and newlines that do not end the string.
 rule fquote = (
     {lv / 512 % 8 == 1} "\"" / {lv / 512 % 8 == 2} "'"
@@ -955,8 +955,8 @@ rule fconv = -ws "!" c:[sra] #atomic !idcont => $c
 // A format spec: literal text (no doubled braces) and replacement fields.
 rule fspec JoinedStr = ":" {lv := lv + 8192} ps:fspec_part* => JoinedStr{Values: $ps.Value}
 rule fspec_part StrPart = fspec_raw_text / fspec_text / ffield
-rule fspec_text FStringMiddle = {lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / fesc)+
-rule fspec_raw_text FStringRawMiddle = {lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / frawesc)+
+rule fspec_text FStringMiddle = t:({lv / 4096 % 2 == 0} ([^'"\\{}\n\r\u{0}]+ / fquote / fesc)+) #atomic => FStringMiddle{Text: text($t)}
+rule fspec_raw_text FStringRawMiddle = t:({lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+ / fquote / frawesc)+) #atomic => FStringRawMiddle{Text: text($t)}
 
 // ============================================================================
 // Numbers
@@ -964,9 +964,9 @@ rule fspec_raw_text FStringRawMiddle = {lv / 4096 % 2 == 1} ([^'"\\{}\n\r\u{0}]+
 
 // A number may be followed by an identifier character only if a keyword that can follow a number
 // starts there (CPython's verify_end_of_number): `1if x else 2`, `0x1for x in y`.
-rule number Constant = (hex_lit / oct_lit / bin_lit / dec_number) num_end
-rule real_number Constant = (hex_lit / oct_lit / bin_lit / dec_real) ![jJ] num_end
-rule imag_number Constant = (pointfloat exponent? / digitpart exponent?) [jJ] num_end
+rule number Constant = t:((hex_lit / oct_lit / bin_lit / dec_number) num_end) #atomic => Constant{Text: text($t)}
+rule real_number Constant = t:((hex_lit / oct_lit / bin_lit / dec_real) ![jJ] num_end) #atomic => Constant{Text: text($t)}
+rule imag_number Constant = t:((pointfloat exponent? / digitpart exponent?) [jJ] num_end) #atomic => Constant{Text: text($t)}
 rule hex_lit = "0" [xX] ("_"? [0-9a-fA-F])+
 rule oct_lit = "0" [oO] ("_"? [0-7])+
 rule bin_lit = "0" [bB] ("_"? [01])+
@@ -987,7 +987,7 @@ rule num_end = &("and" / "else" / "for" / "i" [fns] / "or" / "not") / ![a-zA-Z0-
 // A name: a letter or '_' then letters, digits and '_' (Unicode XID_Start and XID_Continue), that is
 // not a keyword. The soft keywords (match, case, type, _) are names.
 rule ident = (!keyword idstart idcont*) #atomic
-rule identifier Identifier = ident
+rule identifier Identifier = t:(ident) #atomic => Identifier{Text: text($t)}
 rule idstart = [a-zA-Z_] / &[\u{80}-\u{10ffff}] idstart_other @error(message="invalid character")
 rule idcont = [a-zA-Z0-9_] / &[\u{80}-\u{10ffff}] idcont_other @error(message="invalid character")
 rule keyword = ("False" / "None" / "True" / "and" / "assert" / "async" / "as" / "await" / "break" / "class" / "continue" / "def" / "del" / "elif" / "else" / "except" / "finally" / "for" / "from" / "global" / "if" / "import" / "in" / "is" / "lambda" / "nonlocal" / "not" / "or" / "pass" / "raise" / "return" / "try" / "while" / "with" / "yield") !idcont

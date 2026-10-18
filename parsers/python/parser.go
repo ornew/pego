@@ -6893,36 +6893,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Constant is the terminal type Constant.
-type Constant struct {
-	Span
-	Text string
-}
-
-// FStringMiddle is the terminal type FStringMiddle.
-type FStringMiddle struct {
-	Span
-	Text string
-}
-
-// FStringRawMiddle is the terminal type FStringRawMiddle.
-type FStringRawMiddle struct {
-	Span
-	Text string
-}
-
-// Identifier is the terminal type Identifier.
-type Identifier struct {
-	Span
-	Text string
-}
-
-// Op is the terminal type Op.
-type Op struct {
-	Span
-	Text string
-}
-
 // Alias is the struct type Alias.
 type Alias struct {
 	Span
@@ -7077,6 +7047,12 @@ type Comprehension struct {
 	IsAsync bool
 }
 
+// Constant is the struct type Constant.
+type Constant struct {
+	Span
+	Text string
+}
+
 // Continue is the struct type Continue.
 type Continue struct {
 	Span
@@ -7115,6 +7091,18 @@ type ExceptHandler struct {
 type ExprStmt struct {
 	Span
 	Value Expr
+}
+
+// FStringMiddle is the struct type FStringMiddle.
+type FStringMiddle struct {
+	Span
+	Text string
+}
+
+// FStringRawMiddle is the struct type FStringRawMiddle.
+type FStringRawMiddle struct {
+	Span
+	Text string
 }
 
 // For is the struct type For.
@@ -7158,6 +7146,12 @@ type GeneratorExp struct {
 type Global struct {
 	Span
 	Names []*Identifier
+}
+
+// Identifier is the struct type Identifier.
+type Identifier struct {
+	Span
+	Text string
 }
 
 // If is the struct type If.
@@ -7327,6 +7321,12 @@ type NamedExpr struct {
 type Nonlocal struct {
 	Span
 	Names []*Identifier
+}
+
+// Op is the struct type Op.
+type Op struct {
+	Span
+	Text string
 }
 
 // ParamSpec is the struct type ParamSpec.
@@ -7578,46 +7578,6 @@ func (*While) isStmt()               {}
 func (*With) isStmt()                {}
 func (*Yield) isExpr()               {}
 func (*YieldFrom) isExpr()           {}
-
-func (v *Constant) tname() string             { return "Constant" }
-func (v *Constant) ttext() (string, bool)     { return v.Text, true }
-func (v *Constant) tkids() []any              { return nil }
-func (v *Constant) tfield(string) (any, bool) { return nil, true }
-func (v *Constant) tstruct() bool             { return false }
-func (v *Constant) tfresh() bool              { return false }
-func (v *Constant) tsetFresh(bool)            {}
-
-func (v *FStringMiddle) tname() string             { return "FStringMiddle" }
-func (v *FStringMiddle) ttext() (string, bool)     { return v.Text, true }
-func (v *FStringMiddle) tkids() []any              { return nil }
-func (v *FStringMiddle) tfield(string) (any, bool) { return nil, true }
-func (v *FStringMiddle) tstruct() bool             { return false }
-func (v *FStringMiddle) tfresh() bool              { return false }
-func (v *FStringMiddle) tsetFresh(bool)            {}
-
-func (v *FStringRawMiddle) tname() string             { return "FStringRawMiddle" }
-func (v *FStringRawMiddle) ttext() (string, bool)     { return v.Text, true }
-func (v *FStringRawMiddle) tkids() []any              { return nil }
-func (v *FStringRawMiddle) tfield(string) (any, bool) { return nil, true }
-func (v *FStringRawMiddle) tstruct() bool             { return false }
-func (v *FStringRawMiddle) tfresh() bool              { return false }
-func (v *FStringRawMiddle) tsetFresh(bool)            {}
-
-func (v *Identifier) tname() string             { return "Identifier" }
-func (v *Identifier) ttext() (string, bool)     { return v.Text, true }
-func (v *Identifier) tkids() []any              { return nil }
-func (v *Identifier) tfield(string) (any, bool) { return nil, true }
-func (v *Identifier) tstruct() bool             { return false }
-func (v *Identifier) tfresh() bool              { return false }
-func (v *Identifier) tsetFresh(bool)            {}
-
-func (v *Op) tname() string             { return "Op" }
-func (v *Op) ttext() (string, bool)     { return v.Text, true }
-func (v *Op) tkids() []any              { return nil }
-func (v *Op) tfield(string) (any, bool) { return nil, true }
-func (v *Op) tstruct() bool             { return false }
-func (v *Op) tfresh() bool              { return false }
-func (v *Op) tsetFresh(bool)            {}
 
 func (v *Alias) tname() string         { return "Alias" }
 func (v *Alias) ttext() (string, bool) { return "", false }
@@ -8653,6 +8613,28 @@ func (v *Comprehension) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Constant) tname() string         { return "Constant" }
+func (v *Constant) ttext() (string, bool) { return "", false }
+func (v *Constant) tkids() []any          { return nil }
+func (v *Constant) tstruct() bool         { return true }
+func (v *Constant) tfresh() bool          { return false }
+func (v *Constant) tsetFresh(bool)        {}
+func (v *Constant) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Constant) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Continue) tname() string         { return "Continue" }
 func (v *Continue) ttext() (string, bool) { return "", false }
 func (v *Continue) tkids() []any          { return nil }
@@ -8892,6 +8874,50 @@ func (v *ExprStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return tback(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *FStringMiddle) tname() string         { return "FStringMiddle" }
+func (v *FStringMiddle) ttext() (string, bool) { return "", false }
+func (v *FStringMiddle) tkids() []any          { return nil }
+func (v *FStringMiddle) tstruct() bool         { return true }
+func (v *FStringMiddle) tfresh() bool          { return false }
+func (v *FStringMiddle) tsetFresh(bool)        {}
+func (v *FStringMiddle) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *FStringMiddle) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *FStringRawMiddle) tname() string         { return "FStringRawMiddle" }
+func (v *FStringRawMiddle) ttext() (string, bool) { return "", false }
+func (v *FStringRawMiddle) tkids() []any          { return nil }
+func (v *FStringRawMiddle) tstruct() bool         { return true }
+func (v *FStringRawMiddle) tfresh() bool          { return false }
+func (v *FStringRawMiddle) tsetFresh(bool)        {}
+func (v *FStringRawMiddle) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *FStringRawMiddle) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -9187,6 +9213,28 @@ func (v *Global) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *Identifier) tname() string         { return "Identifier" }
+func (v *Identifier) ttext() (string, bool) { return "", false }
+func (v *Identifier) tkids() []any          { return nil }
+func (v *Identifier) tstruct() bool         { return true }
+func (v *Identifier) tfresh() bool          { return false }
+func (v *Identifier) tsetFresh(bool)        {}
+func (v *Identifier) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Identifier) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -10157,6 +10205,28 @@ func (v *Nonlocal) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *Op) tname() string         { return "Op" }
+func (v *Op) ttext() (string, bool) { return "", false }
+func (v *Op) tkids() []any          { return nil }
+func (v *Op) tstruct() bool         { return true }
+func (v *Op) tfresh() bool          { return false }
+func (v *Op) tsetFresh(bool)        {}
+func (v *Op) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Op) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -11818,6 +11888,23 @@ func tmk_Comprehension(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any 
 	return c.made(v, first, start, end)
 }
 
+// tmk_Constant makes a Constant in an action (newStruct in the typed runtime).
+func tmk_Constant(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tConstant)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Continue makes a Continue in an action (newStruct in the typed runtime).
 func tmk_Continue(c *tctx, final bool) any {
 	c.p.stepWork()
@@ -11926,6 +12013,40 @@ func tmk_ExprStmt(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tExprStmt)
 	c.p.stepWork()
 	v.Value = tAs[Expr](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_FStringMiddle makes a FStringMiddle in an action (newStruct in the typed runtime).
+func tmk_FStringMiddle(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tFStringMiddle)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_FStringRawMiddle makes a FStringRawMiddle in an action (newStruct in the typed runtime).
+func tmk_FStringRawMiddle(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tFStringRawMiddle)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12063,6 +12184,23 @@ func tmk_Global(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tGlobal)
 	c.p.stepWork()
 	v.Names = tl15(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Identifier makes a Identifier in an action (newStruct in the typed runtime).
+func tmk_Identifier(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIdentifier)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12571,6 +12709,23 @@ func tmk_Nonlocal(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tNonlocal)
 	c.p.stepWork()
 	v.Names = tl15(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Op makes a Op in an action (newStruct in the typed runtime).
+func tmk_Op(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tOp)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -15689,11 +15844,6 @@ func tv174(a *tslabs, v any) Tuple2[*TNode[string], Expr] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control           *workControl
-	tConstant         astChunk[Constant]
-	tFStringMiddle    astChunk[FStringMiddle]
-	tFStringRawMiddle astChunk[FStringRawMiddle]
-	tIdentifier       astChunk[Identifier]
-	tOp               astChunk[Op]
 	tAlias            astChunk[Alias]
 	tAnnAssign        astChunk[AnnAssign]
 	tArg              astChunk[Arg]
@@ -15713,17 +15863,21 @@ type tslabs struct {
 	tClassDef         astChunk[ClassDef]
 	tCompare          astChunk[Compare]
 	tComprehension    astChunk[Comprehension]
+	tConstant         astChunk[Constant]
 	tContinue         astChunk[Continue]
 	tDelete           astChunk[Delete]
 	tDict             astChunk[Dict]
 	tDictComp         astChunk[DictComp]
 	tExceptHandler    astChunk[ExceptHandler]
 	tExprStmt         astChunk[ExprStmt]
+	tFStringMiddle    astChunk[FStringMiddle]
+	tFStringRawMiddle astChunk[FStringRawMiddle]
 	tFor              astChunk[For]
 	tFormattedValue   astChunk[FormattedValue]
 	tFunctionDef      astChunk[FunctionDef]
 	tGeneratorExp     astChunk[GeneratorExp]
 	tGlobal           astChunk[Global]
+	tIdentifier       astChunk[Identifier]
 	tIf               astChunk[If]
 	tIfExp            astChunk[IfExp]
 	tImport           astChunk[Import]
@@ -15748,6 +15902,7 @@ type tslabs struct {
 	tName             astChunk[Name]
 	tNamedExpr        astChunk[NamedExpr]
 	tNonlocal         astChunk[Nonlocal]
+	tOp               astChunk[Op]
 	tParamSpec        astChunk[ParamSpec]
 	tPass             astChunk[Pass]
 	tRaise            astChunk[Raise]
@@ -17618,7 +17773,7 @@ func init() {
 		{id: 21, name: "assign_one", scope: []string{"t", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 22, name: "assign_chain", scope: []string{"ts", "v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 23, name: "aug_assign", scope: []string{"t", "o", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 24, name: "augassign_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 24, name: "augassign_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 25, name: "annotated_rhs", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 26, name: "pass_stmt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 27, name: "break_stmt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -17692,7 +17847,7 @@ func init() {
 		{id: 95, name: "complex_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 96, name: "string_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 97, name: "singleton_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 98, name: "singleton", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 22, novalue: false, vars: []string{}},
+		{id: 98, name: "singleton", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, textStruct: true, seen: 22, novalue: false, vars: []string{}},
 		{id: 99, name: "literal_expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 100, name: "signed_number_lit", scope: []string{"v"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 101, name: "signed_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 23, novalue: false, vars: []string{"lv"}},
@@ -17700,8 +17855,8 @@ func init() {
 		{id: 103, name: "complex_number", scope: []string{"r", "o", "i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 24, novalue: false, vars: []string{"lv"}},
 		{id: 104, name: "signed_real_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 105, name: "neg_real_number", scope: []string{"o", "n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 106, name: "minus_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 107, name: "plus_minus_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 106, name: "minus_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 107, name: "plus_minus_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 108, name: "capture_pattern", scope: []string{"n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 109, name: "capture_name", scope: []string{"n"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 25, novalue: false, vars: []string{"lv"}},
 		{id: 110, name: "wildcard_pattern", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -17762,22 +17917,22 @@ func init() {
 		{id: 165, name: "yield_plain", scope: []string{"v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 166, name: "disjunction", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 51, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 167, name: "conjunction", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 52, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 168, name: "or_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: true, leader: false, seen: 53, novalue: false, vars: []string{}},
-		{id: 169, name: "and_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: true, leader: false, seen: 54, novalue: false, vars: []string{}},
+		{id: 168, name: "or_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: true, leader: false, textStruct: true, seen: 53, novalue: false, vars: []string{}},
+		{id: 169, name: "and_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: true, leader: false, textStruct: true, seen: 54, novalue: false, vars: []string{}},
 		{id: 170, name: "inversion", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 55, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 171, name: "not_expr", scope: []string{"o", "v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 172, name: "not_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 172, name: "not_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 173, name: "comparison", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 174, name: "comp_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 174, name: "comp_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 175, name: "bitwise_or", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 56, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 176, name: "bor_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 177, name: "bxor_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 178, name: "band_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 179, name: "shift_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 180, name: "sum_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 181, name: "term_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 182, name: "unary_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 183, name: "pow_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 176, name: "bor_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 177, name: "bxor_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 178, name: "band_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 179, name: "shift_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 180, name: "sum_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 181, name: "term_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 182, name: "unary_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 183, name: "pow_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 184, name: "await_expr", scope: []string{"v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 185, name: "primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 57, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 186, name: "atom_only", scope: []string{"a"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
@@ -17802,8 +17957,8 @@ func init() {
 		{id: 205, name: "for_if_clause", scope: []string{"a", "t", "i", "ifs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 66, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 206, name: "atom", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 67, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 207, name: "name", scope: []string{"n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
-		{id: 208, name: "constant_kw", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 209, name: "ellipsis", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 208, name: "constant_kw", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 209, name: "ellipsis", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 210, name: "paren", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 211, name: "empty_tuple", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 212, name: "yield_group", scope: []string{"y"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
@@ -17845,12 +18000,12 @@ func init() {
 		{id: 248, name: "del_targets", scope: []string{"f", "r"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 80, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 249, name: "strings", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 81, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 250, name: "string_start", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 251, name: "plain_strings", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 252, name: "bytes_strings", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 251, name: "plain_strings", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 252, name: "bytes_strings", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 253, name: "fjoined", scope: []string{"f", "r"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 254, name: "fjoin_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 82, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 255, name: "str_part", scope: []string{"c"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 256, name: "str_constant", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 256, name: "str_constant", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 257, name: "tstrings", scope: []string{"f", "r"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 258, name: "str_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 83, novalue: false, vars: []string{}},
 		{id: 259, name: "bytes_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 84, novalue: false, vars: []string{}},
@@ -17866,8 +18021,8 @@ func init() {
 		{id: 269, name: "fclose", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 270, name: "fpart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 271, name: "tpart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 272, name: "ftext", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringMiddle", memo: true, leader: false, seen: 89, novalue: false, vars: []string{"lv"}},
-		{id: 273, name: "fraw_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringRawMiddle", memo: true, leader: false, seen: 90, novalue: false, vars: []string{"lv"}},
+		{id: 272, name: "ftext", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringMiddle", memo: true, leader: false, textStruct: true, seen: 89, novalue: false, vars: []string{"lv"}},
+		{id: 273, name: "fraw_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringRawMiddle", memo: true, leader: false, textStruct: true, seen: 90, novalue: false, vars: []string{"lv"}},
 		{id: 274, name: "fquote", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 91, novalue: false, vars: []string{"lv"}},
 		{id: 275, name: "fesc", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 92, novalue: false, vars: []string{}},
 		{id: 276, name: "frawesc", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -17877,11 +18032,11 @@ func init() {
 		{id: 280, name: "fconv", scope: []string{"c"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 95, novalue: false, vars: []string{"lv"}},
 		{id: 281, name: "fspec", scope: []string{"ps"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 96, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 282, name: "fspec_part", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 283, name: "fspec_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 284, name: "fspec_raw_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringRawMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 285, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 97, novalue: false, vars: []string{}},
-		{id: 286, name: "real_number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 98, novalue: false, vars: []string{}},
-		{id: 287, name: "imag_number", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 283, name: "fspec_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringMiddle", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 284, name: "fspec_raw_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringRawMiddle", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 285, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, textStruct: true, seen: 97, novalue: false, vars: []string{}},
+		{id: 286, name: "real_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, textStruct: true, seen: 98, novalue: false, vars: []string{}},
+		{id: 287, name: "imag_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 288, name: "hex_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 289, name: "oct_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 290, name: "bin_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -17894,7 +18049,7 @@ func init() {
 		{id: 297, name: "zero_int", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 298, name: "num_end", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 299, name: "ident", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 101, novalue: false, vars: []string{}},
-		{id: 300, name: "identifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 102, novalue: false, vars: []string{}},
+		{id: 300, name: "identifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 102, novalue: false, vars: []string{}},
 		{id: 301, name: "idstart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 302, name: "idcont", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 103, novalue: false, vars: []string{}},
 		{id: 303, name: "keyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -20459,6 +20614,8 @@ func init() {
 	typeKinds["Compare"] = kindOf("Compare", "")
 	structFields["Comprehension"] = map[string]bool{"Target": true, "Iter": true, "Ifs": true, "IsAsync": true}
 	typeKinds["Comprehension"] = kindOf("Comprehension", "")
+	structFields["Constant"] = map[string]bool{"Text": true}
+	typeKinds["Constant"] = kindOf("Constant", "")
 	structFields["Continue"] = map[string]bool{}
 	typeKinds["Continue"] = kindOf("Continue", "")
 	structFields["Delete"] = map[string]bool{"Targets": true}
@@ -20471,6 +20628,10 @@ func init() {
 	typeKinds["ExceptHandler"] = kindOf("ExceptHandler", "")
 	structFields["ExprStmt"] = map[string]bool{"Value": true}
 	typeKinds["ExprStmt"] = kindOf("ExprStmt", "")
+	structFields["FStringMiddle"] = map[string]bool{"Text": true}
+	typeKinds["FStringMiddle"] = kindOf("FStringMiddle", "")
+	structFields["FStringRawMiddle"] = map[string]bool{"Text": true}
+	typeKinds["FStringRawMiddle"] = kindOf("FStringRawMiddle", "")
 	structFields["For"] = map[string]bool{"Target": true, "Iter": true, "Body": true, "OrElse": true}
 	typeKinds["For"] = kindOf("For", "")
 	structFields["FormattedValue"] = map[string]bool{"Value": true, "Str": true, "Debug": true, "Conversion": true, "FormatSpec": true}
@@ -20481,6 +20642,8 @@ func init() {
 	typeKinds["GeneratorExp"] = kindOf("GeneratorExp", "")
 	structFields["Global"] = map[string]bool{"Names": true}
 	typeKinds["Global"] = kindOf("Global", "")
+	structFields["Identifier"] = map[string]bool{"Text": true}
+	typeKinds["Identifier"] = kindOf("Identifier", "")
 	structFields["If"] = map[string]bool{"Test": true, "Body": true, "OrElse": true}
 	typeKinds["If"] = kindOf("If", "")
 	structFields["IfExp"] = map[string]bool{"Test": true, "Body": true, "OrElse": true}
@@ -20529,6 +20692,8 @@ func init() {
 	typeKinds["NamedExpr"] = kindOf("NamedExpr", "")
 	structFields["Nonlocal"] = map[string]bool{"Names": true}
 	typeKinds["Nonlocal"] = kindOf("Nonlocal", "")
+	structFields["Op"] = map[string]bool{"Text": true}
+	typeKinds["Op"] = kindOf("Op", "")
 	structFields["ParamSpec"] = map[string]bool{"Name": true, "DefaultValue": true}
 	typeKinds["ParamSpec"] = kindOf("ParamSpec", "")
 	structFields["Pass"] = map[string]bool{}
@@ -20672,7 +20837,7 @@ func init() {
 		{id: 95, name: "complex_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 96, name: "string_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 97, name: "singleton_pattern", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 98, name: "singleton", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 22, novalue: false, vars: []string{}},
+		{id: 98, name: "singleton", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, seen: 22, novalue: false, vars: []string{}},
 		{id: 99, name: "literal_expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 100, name: "signed_number_lit", scope: []string{"v"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 101, name: "signed_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 23, novalue: false, vars: []string{"lv"}},
@@ -20680,7 +20845,7 @@ func init() {
 		{id: 103, name: "complex_number", scope: []string{"r", "o", "i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 24, novalue: false, vars: []string{"lv"}},
 		{id: 104, name: "signed_real_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 105, name: "neg_real_number", scope: []string{"o", "n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 106, name: "minus_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 106, name: "minus_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 107, name: "plus_minus_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 108, name: "capture_pattern", scope: []string{"n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 109, name: "capture_name", scope: []string{"n"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 25, novalue: false, vars: []string{"lv"}},
@@ -20742,22 +20907,22 @@ func init() {
 		{id: 165, name: "yield_plain", scope: []string{"v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 166, name: "disjunction", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 51, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 167, name: "conjunction", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 52, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 168, name: "or_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: true, leader: false, seen: 53, novalue: false, vars: []string{}},
-		{id: 169, name: "and_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: true, leader: false, seen: 54, novalue: false, vars: []string{}},
+		{id: 168, name: "or_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: true, leader: false, seen: 53, novalue: false, vars: []string{}},
+		{id: 169, name: "and_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: true, leader: false, seen: 54, novalue: false, vars: []string{}},
 		{id: 170, name: "inversion", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 55, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 171, name: "not_expr", scope: []string{"o", "v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 172, name: "not_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 172, name: "not_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 173, name: "comparison", scope: []string{"f", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 174, name: "comp_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 175, name: "bitwise_or", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 56, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 176, name: "bor_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 177, name: "bxor_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 178, name: "band_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 176, name: "bor_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 177, name: "bxor_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 178, name: "band_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 179, name: "shift_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 180, name: "sum_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 181, name: "term_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 182, name: "unary_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 183, name: "pow_op", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 183, name: "pow_op", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Op", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 184, name: "await_expr", scope: []string{"v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 185, name: "primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 57, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 186, name: "atom_only", scope: []string{"a"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
@@ -20782,7 +20947,7 @@ func init() {
 		{id: 205, name: "for_if_clause", scope: []string{"a", "t", "i", "ifs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 66, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 206, name: "atom", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 67, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 207, name: "name", scope: []string{"n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
-		{id: 208, name: "constant_kw", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 208, name: "constant_kw", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 209, name: "ellipsis", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 210, name: "paren", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 211, name: "empty_tuple", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
@@ -20825,8 +20990,8 @@ func init() {
 		{id: 248, name: "del_targets", scope: []string{"f", "r"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 80, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 249, name: "strings", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 81, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 250, name: "string_start", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 251, name: "plain_strings", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 252, name: "bytes_strings", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 251, name: "plain_strings", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 252, name: "bytes_strings", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 253, name: "fjoined", scope: []string{"f", "r"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 254, name: "fjoin_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 82, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 255, name: "str_part", scope: []string{"c"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -20846,8 +21011,8 @@ func init() {
 		{id: 269, name: "fclose", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
 		{id: 270, name: "fpart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 271, name: "tpart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 272, name: "ftext", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringMiddle", memo: true, leader: false, seen: 89, novalue: false, vars: []string{"lv"}},
-		{id: 273, name: "fraw_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringRawMiddle", memo: true, leader: false, seen: 90, novalue: false, vars: []string{"lv"}},
+		{id: 272, name: "ftext", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringMiddle", memo: true, leader: false, seen: 89, novalue: false, vars: []string{"lv"}},
+		{id: 273, name: "fraw_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringRawMiddle", memo: true, leader: false, seen: 90, novalue: false, vars: []string{"lv"}},
 		{id: 274, name: "fquote", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 91, novalue: false, vars: []string{"lv"}},
 		{id: 275, name: "fesc", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 92, novalue: false, vars: []string{}},
 		{id: 276, name: "frawesc", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -20857,11 +21022,11 @@ func init() {
 		{id: 280, name: "fconv", scope: []string{"c"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 95, novalue: false, vars: []string{"lv"}},
 		{id: 281, name: "fspec", scope: []string{"ps"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 96, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 282, name: "fspec_part", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 283, name: "fspec_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 284, name: "fspec_raw_text", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FStringRawMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 285, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 97, novalue: false, vars: []string{}},
-		{id: 286, name: "real_number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Constant", memo: true, leader: false, seen: 98, novalue: false, vars: []string{}},
-		{id: 287, name: "imag_number", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 283, name: "fspec_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 284, name: "fspec_raw_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FStringRawMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
+		{id: 285, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, seen: 97, novalue: false, vars: []string{}},
+		{id: 286, name: "real_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: true, leader: false, seen: 98, novalue: false, vars: []string{}},
+		{id: 287, name: "imag_number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Constant", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 288, name: "hex_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 289, name: "oct_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 290, name: "bin_lit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -31464,6 +31629,7 @@ func (p *parser) e71() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -42950,6 +43116,7 @@ func (p *parser) e190() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -43597,6 +43764,7 @@ func (p *parser) e198() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit197, "-", 73, false); !ok {
@@ -43732,6 +43900,7 @@ func (p *parser) e200() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -55097,6 +55266,7 @@ func (p *parser) e288() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 111 && p.in[p.pos+1] == 114) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
@@ -55157,6 +55327,7 @@ func (p *parser) e290() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 110 && p.in[p.pos+2] == 100) {
@@ -55383,6 +55554,7 @@ func (p *parser) e294() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 116) {
@@ -56023,6 +56195,7 @@ func (p *parser) e307() (*Node, bool) {
 		x41  mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -56378,6 +56551,7 @@ func (p *parser) e308() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 124) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit179, "|", 66, false); !ok {
@@ -56444,6 +56618,7 @@ func (p *parser) e310() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 94) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit309, "^", 104, false); !ok {
@@ -56508,6 +56683,7 @@ func (p *parser) e312() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -56629,6 +56805,7 @@ func (p *parser) e315() (*Node, bool) {
 		x7  mark
 		x11 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -56907,6 +57084,7 @@ func (p *parser) e318() (*Node, bool) {
 		x19  mark
 		x23  mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -57203,6 +57381,7 @@ func (p *parser) e320() (*Node, bool) {
 		size int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -57336,6 +57515,7 @@ func (p *parser) e321() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 42 && p.in[p.pos+1] == 42) {
@@ -60995,6 +61175,7 @@ func (p *parser) e351() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -61084,6 +61265,7 @@ func (p *parser) e352() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -69330,6 +69512,7 @@ func (p *parser) e404() (*Node, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(rules[382], 0); !ok {
 		goto fail
 	}
@@ -69444,6 +69627,7 @@ func (p *parser) e405() (*Node, bool) {
 		x4 mark
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(rules[383], 0); !ok {
@@ -69818,6 +70002,7 @@ func (p *parser) e410() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(rules[382], 0); !ok {
 		goto fail
@@ -80081,6 +80266,7 @@ func (p *parser) e447() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -80337,6 +80523,7 @@ func (p *parser) e448() (*Node, bool) {
 		x9   rune
 		x10  bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if !p.predicate(func(c *actx) any {
@@ -83443,6 +83630,7 @@ func (p *parser) e460() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -83645,6 +83833,7 @@ func (p *parser) e461() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -83810,6 +83999,7 @@ func (p *parser) e462() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -83979,6 +84169,7 @@ func (p *parser) e463() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -84158,6 +84349,7 @@ func (p *parser) e464() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -87113,6 +87305,7 @@ func (p *parser) e482() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(rules[399], 0); !ok {
 		goto fail
@@ -138798,6 +138991,7 @@ func (p *parser) e949() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -150759,6 +150953,7 @@ func (p *parser) e1033() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 111 && p.in[p.pos+1] == 114) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit287, "or", 90, false); !ok {
@@ -150819,6 +151014,7 @@ func (p *parser) e1034() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 110 && p.in[p.pos+2] == 100) {
@@ -151045,6 +151241,7 @@ func (p *parser) e1037() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 116) {
@@ -151684,6 +151881,7 @@ func (p *parser) e1041() (*Node, bool) {
 		x37  mark
 		x41  mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -155656,6 +155854,7 @@ func (p *parser) e1071() (*Node, bool) {
 		ok  bool
 		x11 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -163664,6 +163863,7 @@ func (p *parser) e1120() (*Node, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(recRules[382], 0); !ok {
 		goto fail
 	}
@@ -163778,6 +163978,7 @@ func (p *parser) e1121() (*Node, bool) {
 		x4 mark
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(recRules[383], 0); !ok {
@@ -164152,6 +164353,7 @@ func (p *parser) e1126() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(recRules[382], 0); !ok {
 		goto fail
@@ -170423,6 +170625,7 @@ func (p *parser) e1139() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -170679,6 +170882,7 @@ func (p *parser) e1140() (*Node, bool) {
 		x9   rune
 		x10  bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if !p.predicate(func(c *actx) any {
@@ -173546,6 +173750,7 @@ func (p *parser) e1149() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -173748,6 +173953,7 @@ func (p *parser) e1150() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -173913,6 +174119,7 @@ func (p *parser) e1151() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -174082,6 +174289,7 @@ func (p *parser) e1152() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -174261,6 +174469,7 @@ func (p *parser) e1153() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -175486,6 +175695,7 @@ func (p *parser) e1159() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.call(recRules[399], 0); !ok {
 		goto fail
@@ -214256,6 +214466,7 @@ func (p *tparser) s24() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -231788,6 +231999,7 @@ func (p *tparser) v98() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -231978,6 +232190,7 @@ func (p *tparser) i98() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -233305,6 +233518,7 @@ func (p *tparser) s106() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit197, "-", 73, false); !ok {
@@ -233480,6 +233694,7 @@ func (p *tparser) s107() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -251368,6 +251583,7 @@ func (p *tparser) v168() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 111 && p.in[p.pos+1] == 114) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit287, "or", 90, false); !ok {
@@ -251456,6 +251672,7 @@ func (p *tparser) i168() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 111 && p.in[p.pos+1] == 114) {
@@ -251565,6 +251782,7 @@ func (p *tparser) v169() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 110 && p.in[p.pos+2] == 100) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit289, "and", 91, false); !ok {
@@ -251653,6 +251871,7 @@ func (p *tparser) i169() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 110 && p.in[p.pos+2] == 100) {
@@ -252160,6 +252379,7 @@ func (p *tparser) s172() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 116) {
@@ -252975,6 +253195,7 @@ func (p *tparser) s174() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -253807,6 +254028,7 @@ func (p *tparser) s176() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 124) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit179, "|", 66, false); !ok {
@@ -253905,6 +254127,7 @@ func (p *tparser) s177() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 94) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit309, "^", 104, false); !ok {
@@ -254001,6 +254224,7 @@ func (p *tparser) s178() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -254162,6 +254386,7 @@ func (p *tparser) s179() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -254385,6 +254610,7 @@ func (p *tparser) s180() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -254728,6 +254954,7 @@ func (p *tparser) s181() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -255078,6 +255305,7 @@ func (p *tparser) s182() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -255248,6 +255476,7 @@ func (p *tparser) s183() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 42 && p.in[p.pos+1] == 42) {
@@ -261948,6 +262177,7 @@ func (p *tparser) s208() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -262068,6 +262298,7 @@ func (p *tparser) s209() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -275527,6 +275758,7 @@ func (p *tparser) s251() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.u382(); !ok {
 		goto fail
 	}
@@ -275677,6 +275909,7 @@ func (p *tparser) s252() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.u383(); !ok {
@@ -276378,6 +276611,7 @@ func (p *tparser) s256() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.u382(); !ok {
 		goto fail
@@ -291307,6 +291541,7 @@ func (p *tparser) v272() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
@@ -291603,6 +291838,7 @@ func (p *tparser) i272() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
@@ -291920,6 +292156,7 @@ func (p *tparser) v273() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
@@ -292216,6 +292453,7 @@ func (p *tparser) i273() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
@@ -297792,6 +298030,7 @@ func (p *tparser) s283() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
@@ -298034,6 +298273,7 @@ func (p *tparser) s284() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
@@ -298252,6 +298492,7 @@ func (p *tparser) v285() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -298424,6 +298665,7 @@ func (p *tparser) i285() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -298646,6 +298888,7 @@ func (p *tparser) v286() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -298876,6 +299119,7 @@ func (p *tparser) i286() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -299093,6 +299337,7 @@ func (p *tparser) s287() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -303241,6 +303486,7 @@ func (p *tparser) v300() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.u399(); !ok {
 		goto fail
 	}
@@ -303291,6 +303537,7 @@ func (p *tparser) i300() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.u399(); !ok {
 		goto fail

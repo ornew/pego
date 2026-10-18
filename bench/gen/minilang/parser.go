@@ -6894,30 +6894,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Bool is the terminal type Bool.
-type Bool struct {
-	Span
-	Text string
-}
-
-// Ident is the terminal type Ident.
-type Ident struct {
-	Span
-	Text string
-}
-
-// Number is the terminal type Number.
-type Number struct {
-	Span
-	Text string
-}
-
-// String is the terminal type String.
-type String struct {
-	Span
-	Text string
-}
-
 // ArrayLit is the struct type ArrayLit.
 type ArrayLit struct {
 	Span
@@ -6943,6 +6919,12 @@ type Binary struct {
 type Block struct {
 	Span
 	Body []Stmt
+}
+
+// Bool is the struct type Bool.
+type Bool struct {
+	Span
+	Text string
 }
 
 // Call is the struct type Call.
@@ -6974,6 +6956,12 @@ type Func struct {
 	Body   *Block
 }
 
+// Ident is the struct type Ident.
+type Ident struct {
+	Span
+	Text string
+}
+
 // If is the struct type If.
 type If struct {
 	Span
@@ -7003,6 +6991,12 @@ type Member struct {
 	Name *Ident
 }
 
+// Number is the struct type Number.
+type Number struct {
+	Span
+	Text string
+}
+
 // Program is the struct type Program.
 type Program struct {
 	Span
@@ -7013,6 +7007,12 @@ type Program struct {
 type Return struct {
 	Span
 	Value Expr
+}
+
+// String is the struct type String.
+type String struct {
+	Span
+	Text string
 }
 
 // Unary is the struct type Unary.
@@ -7057,38 +7057,6 @@ func (*String) isExpr()   {}
 func (*TNode[T]) isStmt() {}
 func (*Unary) isExpr()    {}
 func (*While) isStmt()    {}
-
-func (v *Bool) tname() string             { return "Bool" }
-func (v *Bool) ttext() (string, bool)     { return v.Text, true }
-func (v *Bool) tkids() []any              { return nil }
-func (v *Bool) tfield(string) (any, bool) { return nil, true }
-func (v *Bool) tstruct() bool             { return false }
-func (v *Bool) tfresh() bool              { return false }
-func (v *Bool) tsetFresh(bool)            {}
-
-func (v *Ident) tname() string             { return "Ident" }
-func (v *Ident) ttext() (string, bool)     { return v.Text, true }
-func (v *Ident) tkids() []any              { return nil }
-func (v *Ident) tfield(string) (any, bool) { return nil, true }
-func (v *Ident) tstruct() bool             { return false }
-func (v *Ident) tfresh() bool              { return false }
-func (v *Ident) tsetFresh(bool)            {}
-
-func (v *Number) tname() string             { return "Number" }
-func (v *Number) ttext() (string, bool)     { return v.Text, true }
-func (v *Number) tkids() []any              { return nil }
-func (v *Number) tfield(string) (any, bool) { return nil, true }
-func (v *Number) tstruct() bool             { return false }
-func (v *Number) tfresh() bool              { return false }
-func (v *Number) tsetFresh(bool)            {}
-
-func (v *String) tname() string             { return "String" }
-func (v *String) ttext() (string, bool)     { return v.Text, true }
-func (v *String) tkids() []any              { return nil }
-func (v *String) tfield(string) (any, bool) { return nil, true }
-func (v *String) tstruct() bool             { return false }
-func (v *String) tfresh() bool              { return false }
-func (v *String) tsetFresh(bool)            {}
 
 func (v *ArrayLit) tname() string         { return "ArrayLit" }
 func (v *ArrayLit) ttext() (string, bool) { return "", false }
@@ -7224,6 +7192,28 @@ func (v *Block) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *Bool) tname() string         { return "Bool" }
+func (v *Bool) ttext() (string, bool) { return "", false }
+func (v *Bool) tkids() []any          { return nil }
+func (v *Bool) tstruct() bool         { return true }
+func (v *Bool) tfresh() bool          { return false }
+func (v *Bool) tsetFresh(bool)        {}
+func (v *Bool) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Bool) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7374,6 +7364,28 @@ func (v *Func) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Ident) tname() string         { return "Ident" }
+func (v *Ident) ttext() (string, bool) { return "", false }
+func (v *Ident) tkids() []any          { return nil }
+func (v *Ident) tstruct() bool         { return true }
+func (v *Ident) tfresh() bool          { return false }
+func (v *Ident) tsetFresh(bool)        {}
+func (v *Ident) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Ident) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *If) tname() string         { return "If" }
 func (v *If) ttext() (string, bool) { return "", false }
 func (v *If) tkids() []any          { return nil }
@@ -7482,6 +7494,28 @@ func (v *Member) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Number) tname() string         { return "Number" }
+func (v *Number) ttext() (string, bool) { return "", false }
+func (v *Number) tkids() []any          { return nil }
+func (v *Number) tstruct() bool         { return true }
+func (v *Number) tfresh() bool          { return false }
+func (v *Number) tsetFresh(bool)        {}
+func (v *Number) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Program) tname() string         { return "Program" }
 func (v *Program) ttext() (string, bool) { return "", false }
 func (v *Program) tkids() []any          { return nil }
@@ -7541,6 +7575,28 @@ func (v *Return) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return tback(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *String) tname() string         { return "String" }
+func (v *String) ttext() (string, bool) { return "", false }
+func (v *String) tkids() []any          { return nil }
+func (v *String) tstruct() bool         { return true }
+func (v *String) tfresh() bool          { return false }
+func (v *String) tsetFresh(bool)        {}
+func (v *String) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *String) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7698,12 +7754,6 @@ func tinit() {
 		*v = Ident{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[17].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdent)
-		*v = Ident{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[20].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tNumber)
@@ -7804,6 +7854,23 @@ func tmk_Block(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Bool makes a Bool in an action (newStruct in the typed runtime).
+func tmk_Bool(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBool)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Call makes a Call in an action (newStruct in the typed runtime).
 func tmk_Call(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -7889,6 +7956,23 @@ func tmk_Func(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Ident makes a Ident in an action (newStruct in the typed runtime).
+func tmk_Ident(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIdent)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -7980,6 +8064,23 @@ func tmk_Member(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Number makes a Number in an action (newStruct in the typed runtime).
+func tmk_Number(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNumber)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Program makes a Program in an action (newStruct in the typed runtime).
 func tmk_Program(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -8004,6 +8105,23 @@ func tmk_Return(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tReturn)
 	c.p.stepWork()
 	v.Value = tAs[Expr](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_String makes a String in an action (newStruct in the typed runtime).
+func tmk_String(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tString)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8260,24 +8378,24 @@ func tl3(a *tslabs, v any) []any {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control   *workControl
-	tBool     astChunk[Bool]
-	tIdent    astChunk[Ident]
-	tNumber   astChunk[Number]
-	tString   astChunk[String]
 	tArrayLit astChunk[ArrayLit]
 	tAssign   astChunk[Assign]
 	tBinary   astChunk[Binary]
 	tBlock    astChunk[Block]
+	tBool     astChunk[Bool]
 	tCall     astChunk[Call]
 	tCond     astChunk[Cond]
 	tExprStmt astChunk[ExprStmt]
 	tFunc     astChunk[Func]
+	tIdent    astChunk[Ident]
 	tIf       astChunk[If]
 	tIndex    astChunk[Index]
 	tLet      astChunk[Let]
 	tMember   astChunk[Member]
+	tNumber   astChunk[Number]
 	tProgram  astChunk[Program]
 	tReturn   astChunk[Return]
+	tString   astChunk[String]
 	tUnary    astChunk[Unary]
 	tWhile    astChunk[While]
 	tl0Chunk  astChunk[Stmt]
@@ -8507,14 +8625,14 @@ func init() {
 		{id: 13, name: "expr", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
 		{id: 14, name: "operation", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
 		{id: 15, name: "args", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
-		{id: 16, name: "ident", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
-		{id: 17, name: "name", scope: []string{"i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
+		{id: 16, name: "ident", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 6, novalue: false, vars: []string{}},
+		{id: 17, name: "name", scope: []string{"i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
 		{id: 18, name: "keyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 19, name: "idchar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 20, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 20, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Number", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 21, name: "string", scope: []string{"s"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 22, name: "strchars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "String", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 23, name: "bool", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Bool", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 22, name: "strchars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "String", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 23, name: "bool", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Bool", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 24, name: "kw_let", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 25, name: "kw_fn", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 26, name: "kw_if", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -8747,6 +8865,8 @@ func init() {
 	typeKinds["Binary"] = kindOf("Binary", "")
 	structFields["Block"] = map[string]bool{"Body": true}
 	typeKinds["Block"] = kindOf("Block", "")
+	structFields["Bool"] = map[string]bool{"Text": true}
+	typeKinds["Bool"] = kindOf("Bool", "")
 	structFields["Call"] = map[string]bool{"Fn": true, "Args": true}
 	typeKinds["Call"] = kindOf("Call", "")
 	structFields["Cond"] = map[string]bool{"Cond": true, "Then": true, "Else": true}
@@ -8755,6 +8875,8 @@ func init() {
 	typeKinds["ExprStmt"] = kindOf("ExprStmt", "")
 	structFields["Func"] = map[string]bool{"Name": true, "Params": true, "Body": true}
 	typeKinds["Func"] = kindOf("Func", "")
+	structFields["Ident"] = map[string]bool{"Text": true}
+	typeKinds["Ident"] = kindOf("Ident", "")
 	structFields["If"] = map[string]bool{"Cond": true, "Then": true, "Else": true}
 	typeKinds["If"] = kindOf("If", "")
 	structFields["Index"] = map[string]bool{"X": true, "Index": true}
@@ -8763,10 +8885,14 @@ func init() {
 	typeKinds["Let"] = kindOf("Let", "")
 	structFields["Member"] = map[string]bool{"X": true, "Name": true}
 	typeKinds["Member"] = kindOf("Member", "")
+	structFields["Number"] = map[string]bool{"Text": true}
+	typeKinds["Number"] = kindOf("Number", "")
 	structFields["Program"] = map[string]bool{"Body": true}
 	typeKinds["Program"] = kindOf("Program", "")
 	structFields["Return"] = map[string]bool{"Value": true}
 	typeKinds["Return"] = kindOf("Return", "")
+	structFields["String"] = map[string]bool{"Text": true}
+	typeKinds["String"] = kindOf("String", "")
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
 	typeKinds["Unary"] = kindOf("Unary", "")
 	structFields["While"] = map[string]bool{"Cond": true, "Body": true}
@@ -8788,14 +8914,14 @@ func init() {
 		{id: 13, name: "expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
 		{id: 14, name: "operation", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
 		{id: 15, name: "args", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
-		{id: 16, name: "ident", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
+		{id: 16, name: "ident", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
 		{id: 17, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
 		{id: 18, name: "keyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 19, name: "idchar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 20, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 20, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 21, name: "string", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 22, name: "strchars", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 23, name: "bool", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 23, name: "bool", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 24, name: "kw_let", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 25, name: "kw_fn", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 26, name: "kw_if", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -11135,6 +11261,7 @@ func (p *parser) e40() (*Node, bool) {
 	_ = x3
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.silent++
 	p.stepWork()
@@ -11768,6 +11895,7 @@ func (p *parser) e53() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		if p.pos < len(p.in) {
@@ -11989,6 +12117,7 @@ func (p *parser) e57() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -12134,6 +12263,7 @@ func (p *parser) e58() (*Node, bool) {
 		ok bool
 		x9 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -18667,6 +18797,7 @@ func (p *parser) e170() (*Node, bool) {
 	_ = x3
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.silent++
 	p.stepWork()
@@ -19169,6 +19300,7 @@ func (p *parser) e173() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		if p.pos < len(p.in) {
@@ -19395,6 +19527,7 @@ func (p *parser) e175() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -19555,6 +19688,7 @@ func (p *parser) e176() (*Node, bool) {
 		x10 int
 		x11 int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -22667,6 +22801,7 @@ func (p *parser) q20() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		if p.pos < len(p.in) {
@@ -22928,6 +23063,7 @@ func (p *parser) q22() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -23107,6 +23243,7 @@ func (p *parser) q23() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -28506,6 +28643,7 @@ func (p *tparser) v16() (any, bool) {
 	_ = x4
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.silent++
 	p.stepWork()
@@ -28654,6 +28792,7 @@ func (p *tparser) i16() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x4
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -29470,6 +29609,7 @@ func (p *tparser) s20() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		if p.pos < len(p.in) {
@@ -29777,6 +29917,7 @@ func (p *tparser) s22() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -29956,6 +30097,7 @@ func (p *tparser) s23() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)

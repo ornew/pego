@@ -1,4 +1,4 @@
-Program{Body: [Let{Name: "a", Value: "1"} error("2:5: expected a name") error("3:10: syntax error: expected \"!\", \"(\", \"-\", \"[\", \"\\\"\", \"false\", \"true\", [0-9], [a-zA-Z_]") If{Cond: "a", Else: Block{Body: [Assign{Target: "b", Value: "3"}]}, Then: Block{Body: [error("4:16: expected an expression")]}} Let{Name: "c", Value: Binary{Left: "a", Op: "*", Right: "2"}}]}
+Program{Body: [Let{Name: Ident{Text: "a"}, Value: Number{Text: "1"}} error("2:5: expected a name") error("3:10: syntax error: expected \"!\", \"(\", \"-\", \"[\", \"\\\"\", \"false\", \"true\", [0-9], [a-zA-Z_]") If{Cond: Ident{Text: "a"}, Else: Block{Body: [Assign{Target: Ident{Text: "b"}, Value: Number{Text: "3"}}]}, Then: Block{Body: [error("4:16: expected an expression")]}} Let{Name: Ident{Text: "c"}, Value: Binary{Left: Ident{Text: "a"}, Op: "*", Right: Number{Text: "2"}}}]}
 error: 2:5: expected a name
 3:10: syntax error: expected "!", "(", "-", "[", "\"", "false", "true", [0-9], [a-zA-Z_]
 4:16: expected an expression

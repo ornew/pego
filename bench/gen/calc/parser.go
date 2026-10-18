@@ -6894,18 +6894,18 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Number is the terminal type Number.
-type Number struct {
-	Span
-	Text string
-}
-
 // Binary is the struct type Binary.
 type Binary struct {
 	Span
 	Left  Expr
 	Op    *TNode[string]
 	Right Expr
+}
+
+// Number is the struct type Number.
+type Number struct {
+	Span
+	Text string
 }
 
 // Unary is the struct type Unary.
@@ -6922,14 +6922,6 @@ func (*Binary) isExpr() {}
 func (*Error) isExpr()  {}
 func (*Number) isExpr() {}
 func (*Unary) isExpr()  {}
-
-func (v *Number) tname() string             { return "Number" }
-func (v *Number) ttext() (string, bool)     { return v.Text, true }
-func (v *Number) tkids() []any              { return nil }
-func (v *Number) tfield(string) (any, bool) { return nil, true }
-func (v *Number) tstruct() bool             { return false }
-func (v *Number) tfresh() bool              { return false }
-func (v *Number) tsetFresh(bool)            {}
 
 func (v *Binary) tname() string         { return "Binary" }
 func (v *Binary) ttext() (string, bool) { return "", false }
@@ -6957,6 +6949,28 @@ func (v *Binary) tfieldWork(p *tparser, name string) (any, bool) {
 		return tback(v.Op), true
 	case "Right":
 		return tback(v.Right), true
+	}
+	return nil, false
+}
+
+func (v *Number) tname() string         { return "Number" }
+func (v *Number) ttext() (string, bool) { return "", false }
+func (v *Number) tkids() []any          { return nil }
+func (v *Number) tstruct() bool         { return true }
+func (v *Number) tfresh() bool          { return false }
+func (v *Number) tsetFresh(bool)        {}
+func (v *Number) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7115,6 +7129,23 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Number makes a Number in an action (newStruct in the typed runtime).
+func tmk_Number(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNumber)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Unary makes a Unary in an action (newStruct in the typed runtime).
 func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -7212,8 +7243,8 @@ func tv2(a *tslabs, v any) *TNode[string] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *workControl
-	tNumber  astChunk[Number]
 	tBinary  astChunk[Binary]
+	tNumber  astChunk[Number]
 	tUnary   astChunk[Unary]
 	tl0Chunk astChunk[*TNode[string]]
 }
@@ -7279,7 +7310,7 @@ func init() {
 	rules = []*rule{
 		{id: 0, name: "main", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 1, name: "expr", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 2, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Number", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 4, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
@@ -7326,12 +7357,14 @@ func init() {
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	structFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	typeKinds["Binary"] = kindOf("Binary", "")
+	structFields["Number"] = map[string]bool{"Text": true}
+	typeKinds["Number"] = kindOf("Number", "")
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
 	typeKinds["Unary"] = kindOf("Unary", "")
 	recRules = []*rule{
 		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 1, name: "expr", scope: []string{}, value: shaper{}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
-		{id: 2, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
@@ -7555,6 +7588,7 @@ func (p *parser) e3() (*Node, bool) {
 		x2   mark
 		x5   int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -8518,6 +8552,7 @@ func (p *parser) e31() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		if p.pos < len(p.in) {
@@ -9167,6 +9202,7 @@ func (p *parser) q2() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -10098,6 +10134,7 @@ func (p *tparser) s2() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0

@@ -6893,180 +6893,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// BigIntLiteral is the terminal type BigIntLiteral.
-type BigIntLiteral struct {
-	Span
-	Text string
-}
-
-// BooleanLiteral is the terminal type BooleanLiteral.
-type BooleanLiteral struct {
-	Span
-	Text string
-}
-
-// DebuggerStatement is the terminal type DebuggerStatement.
-type DebuggerStatement struct {
-	Span
-	Text string
-}
-
-// EmptyStatement is the terminal type EmptyStatement.
-type EmptyStatement struct {
-	Span
-	Text string
-}
-
-// EndOfFileToken is the terminal type EndOfFileToken.
-type EndOfFileToken struct {
-	Span
-	Text string
-}
-
-// Identifier is the terminal type Identifier.
-type Identifier struct {
-	Span
-	Text string
-}
-
-// ImportExpression is the terminal type ImportExpression.
-type ImportExpression struct {
-	Span
-	Text string
-}
-
-// JSDocAllType is the terminal type JSDocAllType.
-type JSDocAllType struct {
-	Span
-	Text string
-}
-
-// JSDocUnknownType is the terminal type JSDocUnknownType.
-type JSDocUnknownType struct {
-	Span
-	Text string
-}
-
-// JsxClosingFragment is the terminal type JsxClosingFragment.
-type JsxClosingFragment struct {
-	Span
-	Text string
-}
-
-// JsxOpeningFragment is the terminal type JsxOpeningFragment.
-type JsxOpeningFragment struct {
-	Span
-	Text string
-}
-
-// JsxText is the terminal type JsxText.
-type JsxText struct {
-	Span
-	Text string
-}
-
-// KeywordTypeNode is the terminal type KeywordTypeNode.
-type KeywordTypeNode struct {
-	Span
-	Text string
-}
-
-// Modifier is the terminal type Modifier.
-type Modifier struct {
-	Span
-	Text string
-}
-
-// NoSubstitutionTemplateLiteral is the terminal type NoSubstitutionTemplateLiteral.
-type NoSubstitutionTemplateLiteral struct {
-	Span
-	Text string
-}
-
-// NullLiteral is the terminal type NullLiteral.
-type NullLiteral struct {
-	Span
-	Text string
-}
-
-// NumericLiteral is the terminal type NumericLiteral.
-type NumericLiteral struct {
-	Span
-	Text string
-}
-
-// OmittedExpression is the terminal type OmittedExpression.
-type OmittedExpression struct {
-	Span
-	Text string
-}
-
-// PrivateIdentifier is the terminal type PrivateIdentifier.
-type PrivateIdentifier struct {
-	Span
-	Text string
-}
-
-// RegularExpressionLiteral is the terminal type RegularExpressionLiteral.
-type RegularExpressionLiteral struct {
-	Span
-	Text string
-}
-
-// SemicolonClassElement is the terminal type SemicolonClassElement.
-type SemicolonClassElement struct {
-	Span
-	Text string
-}
-
-// StringLiteral is the terminal type StringLiteral.
-type StringLiteral struct {
-	Span
-	Text string
-}
-
-// SuperExpression is the terminal type SuperExpression.
-type SuperExpression struct {
-	Span
-	Text string
-}
-
-// TemplateHead is the terminal type TemplateHead.
-type TemplateHead struct {
-	Span
-	Text string
-}
-
-// TemplateMiddle is the terminal type TemplateMiddle.
-type TemplateMiddle struct {
-	Span
-	Text string
-}
-
-// TemplateTail is the terminal type TemplateTail.
-type TemplateTail struct {
-	Span
-	Text string
-}
-
-// ThisExpression is the terminal type ThisExpression.
-type ThisExpression struct {
-	Span
-	Text string
-}
-
-// ThisTypeNode is the terminal type ThisTypeNode.
-type ThisTypeNode struct {
-	Span
-	Text string
-}
-
-// Token is the terminal type Token.
-type Token struct {
-	Span
-	Text string
-}
-
 // ArrayBindingPattern is the struct type ArrayBindingPattern.
 type ArrayBindingPattern struct {
 	Span
@@ -7109,6 +6935,12 @@ type AwaitExpression struct {
 	Expression Expression
 }
 
+// BigIntLiteral is the struct type BigIntLiteral.
+type BigIntLiteral struct {
+	Span
+	Text string
+}
+
 // BinaryExpression is the struct type BinaryExpression.
 type BinaryExpression struct {
 	Span
@@ -7130,6 +6962,12 @@ type BindingElement struct {
 type Block struct {
 	Span
 	Statements []Statement
+}
+
+// BooleanLiteral is the struct type BooleanLiteral.
+type BooleanLiteral struct {
+	Span
+	Text string
 }
 
 // BreakStatement is the struct type BreakStatement.
@@ -7260,6 +7098,12 @@ type ContinueStatement struct {
 	Label *Identifier
 }
 
+// DebuggerStatement is the struct type DebuggerStatement.
+type DebuggerStatement struct {
+	Span
+	Text string
+}
+
 // Decorator is the struct type Decorator.
 type Decorator struct {
 	Span
@@ -7291,6 +7135,18 @@ type ElementAccessExpression struct {
 	Expression         Expression
 	QuestionDotToken   *Token
 	ArgumentExpression Expression
+}
+
+// EmptyStatement is the struct type EmptyStatement.
+type EmptyStatement struct {
+	Span
+	Text string
+}
+
+// EndOfFileToken is the struct type EndOfFileToken.
+type EndOfFileToken struct {
+	Span
+	Text string
 }
 
 // EnumDeclaration is the struct type EnumDeclaration.
@@ -7429,6 +7285,12 @@ type HeritageClause struct {
 	Types []*ExpressionWithTypeArguments
 }
 
+// Identifier is the struct type Identifier.
+type Identifier struct {
+	Span
+	Text string
+}
+
 // IfStatement is the struct type IfStatement.
 type IfStatement struct {
 	Span
@@ -7475,6 +7337,12 @@ type ImportEqualsDeclaration struct {
 	Name            *Identifier
 	ModuleReference ModuleReference
 	IsTypeOnly      bool
+}
+
+// ImportExpression is the struct type ImportExpression.
+type ImportExpression struct {
+	Span
+	Text string
 }
 
 // ImportSpecifier is the struct type ImportSpecifier.
@@ -7532,6 +7400,12 @@ type IntersectionType struct {
 	Types []TypeNode
 }
 
+// JSDocAllType is the struct type JSDocAllType.
+type JSDocAllType struct {
+	Span
+	Text string
+}
+
 // JSDocFunctionType is the struct type JSDocFunctionType.
 type JSDocFunctionType struct {
 	Span
@@ -7553,6 +7427,12 @@ type JSDocNullableType struct {
 	Postfix bool
 }
 
+// JSDocUnknownType is the struct type JSDocUnknownType.
+type JSDocUnknownType struct {
+	Span
+	Text string
+}
+
 // JsxAttribute is the struct type JsxAttribute.
 type JsxAttribute struct {
 	Span
@@ -7570,6 +7450,12 @@ type JsxAttributes struct {
 type JsxClosingElement struct {
 	Span
 	TagName JsxTagName
+}
+
+// JsxClosingFragment is the struct type JsxClosingFragment.
+type JsxClosingFragment struct {
+	Span
+	Text string
 }
 
 // JsxElement is the struct type JsxElement.
@@ -7610,6 +7496,12 @@ type JsxOpeningElement struct {
 	Attributes    *JsxAttributes
 }
 
+// JsxOpeningFragment is the struct type JsxOpeningFragment.
+type JsxOpeningFragment struct {
+	Span
+	Text string
+}
+
 // JsxSelfClosingElement is the struct type JsxSelfClosingElement.
 type JsxSelfClosingElement struct {
 	Span
@@ -7622,6 +7514,18 @@ type JsxSelfClosingElement struct {
 type JsxSpreadAttribute struct {
 	Span
 	Expression Expression
+}
+
+// JsxText is the struct type JsxText.
+type JsxText struct {
+	Span
+	Text string
+}
+
+// KeywordTypeNode is the struct type KeywordTypeNode.
+type KeywordTypeNode struct {
+	Span
+	Text string
 }
 
 // LabeledStatement is the struct type LabeledStatement.
@@ -7678,6 +7582,12 @@ type MethodSignature struct {
 	TypeParameters []*TypeParameter
 	Parameters     []*Parameter
 	Type           TypeNode
+}
+
+// Modifier is the struct type Modifier.
+type Modifier struct {
+	Span
+	Text string
 }
 
 // ModuleBlock is the struct type ModuleBlock.
@@ -7742,10 +7652,28 @@ type NewExpression struct {
 	Arguments     []Expression
 }
 
+// NoSubstitutionTemplateLiteral is the struct type NoSubstitutionTemplateLiteral.
+type NoSubstitutionTemplateLiteral struct {
+	Span
+	Text string
+}
+
 // NonNullExpression is the struct type NonNullExpression.
 type NonNullExpression struct {
 	Span
 	Expression Expression
+}
+
+// NullLiteral is the struct type NullLiteral.
+type NullLiteral struct {
+	Span
+	Text string
+}
+
+// NumericLiteral is the struct type NumericLiteral.
+type NumericLiteral struct {
+	Span
+	Text string
 }
 
 // ObjectBindingPattern is the struct type ObjectBindingPattern.
@@ -7758,6 +7686,12 @@ type ObjectBindingPattern struct {
 type ObjectLiteralExpression struct {
 	Span
 	Properties []ObjectLiteralElement
+}
+
+// OmittedExpression is the struct type OmittedExpression.
+type OmittedExpression struct {
+	Span
+	Text string
 }
 
 // OptionalType is the struct type OptionalType.
@@ -7801,6 +7735,12 @@ type PrefixUnaryExpression struct {
 	Span
 	Operator string
 	Operand  Expression
+}
+
+// PrivateIdentifier is the struct type PrivateIdentifier.
+type PrivateIdentifier struct {
+	Span
+	Text string
 }
 
 // PropertyAccessExpression is the struct type PropertyAccessExpression.
@@ -7849,6 +7789,12 @@ type QualifiedName struct {
 	Right *Identifier
 }
 
+// RegularExpressionLiteral is the struct type RegularExpressionLiteral.
+type RegularExpressionLiteral struct {
+	Span
+	Text string
+}
+
 // RestType is the struct type RestType.
 type RestType struct {
 	Span
@@ -7866,6 +7812,12 @@ type SatisfiesExpression struct {
 	Span
 	Expression Expression
 	Type       TypeNode
+}
+
+// SemicolonClassElement is the struct type SemicolonClassElement.
+type SemicolonClassElement struct {
+	Span
+	Text string
 }
 
 // SetAccessor is the struct type SetAccessor.
@@ -7909,6 +7861,18 @@ type SpreadElement struct {
 	Expression Expression
 }
 
+// StringLiteral is the struct type StringLiteral.
+type StringLiteral struct {
+	Span
+	Text string
+}
+
+// SuperExpression is the struct type SuperExpression.
+type SuperExpression struct {
+	Span
+	Text string
+}
+
 // SwitchStatement is the struct type SwitchStatement.
 type SwitchStatement struct {
 	Span
@@ -7932,6 +7896,12 @@ type TemplateExpression struct {
 	TemplateSpans []*TemplateSpan
 }
 
+// TemplateHead is the struct type TemplateHead.
+type TemplateHead struct {
+	Span
+	Text string
+}
+
 // TemplateLiteralType is the struct type TemplateLiteralType.
 type TemplateLiteralType struct {
 	Span
@@ -7946,6 +7916,12 @@ type TemplateLiteralTypeSpan struct {
 	Literal TemplateMiddleOrTail
 }
 
+// TemplateMiddle is the struct type TemplateMiddle.
+type TemplateMiddle struct {
+	Span
+	Text string
+}
+
 // TemplateSpan is the struct type TemplateSpan.
 type TemplateSpan struct {
 	Span
@@ -7953,10 +7929,34 @@ type TemplateSpan struct {
 	Literal    TemplateMiddleOrTail
 }
 
+// TemplateTail is the struct type TemplateTail.
+type TemplateTail struct {
+	Span
+	Text string
+}
+
+// ThisExpression is the struct type ThisExpression.
+type ThisExpression struct {
+	Span
+	Text string
+}
+
+// ThisTypeNode is the struct type ThisTypeNode.
+type ThisTypeNode struct {
+	Span
+	Text string
+}
+
 // ThrowStatement is the struct type ThrowStatement.
 type ThrowStatement struct {
 	Span
 	Expression Expression
+}
+
+// Token is the struct type Token.
+type Token struct {
+	Span
+	Text string
 }
 
 // TryStatement is the struct type TryStatement.
@@ -8501,238 +8501,6 @@ func (*YieldExpression) isConciseBody()                      {}
 func (*YieldExpression) isExpression()                       {}
 func (*YieldExpression) isForInitializer()                   {}
 
-func (v *BigIntLiteral) tname() string             { return "BigIntLiteral" }
-func (v *BigIntLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *BigIntLiteral) tkids() []any              { return nil }
-func (v *BigIntLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *BigIntLiteral) tstruct() bool             { return false }
-func (v *BigIntLiteral) tfresh() bool              { return false }
-func (v *BigIntLiteral) tsetFresh(bool)            {}
-
-func (v *BooleanLiteral) tname() string             { return "BooleanLiteral" }
-func (v *BooleanLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *BooleanLiteral) tkids() []any              { return nil }
-func (v *BooleanLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *BooleanLiteral) tstruct() bool             { return false }
-func (v *BooleanLiteral) tfresh() bool              { return false }
-func (v *BooleanLiteral) tsetFresh(bool)            {}
-
-func (v *DebuggerStatement) tname() string             { return "DebuggerStatement" }
-func (v *DebuggerStatement) ttext() (string, bool)     { return v.Text, true }
-func (v *DebuggerStatement) tkids() []any              { return nil }
-func (v *DebuggerStatement) tfield(string) (any, bool) { return nil, true }
-func (v *DebuggerStatement) tstruct() bool             { return false }
-func (v *DebuggerStatement) tfresh() bool              { return false }
-func (v *DebuggerStatement) tsetFresh(bool)            {}
-
-func (v *EmptyStatement) tname() string             { return "EmptyStatement" }
-func (v *EmptyStatement) ttext() (string, bool)     { return v.Text, true }
-func (v *EmptyStatement) tkids() []any              { return nil }
-func (v *EmptyStatement) tfield(string) (any, bool) { return nil, true }
-func (v *EmptyStatement) tstruct() bool             { return false }
-func (v *EmptyStatement) tfresh() bool              { return false }
-func (v *EmptyStatement) tsetFresh(bool)            {}
-
-func (v *EndOfFileToken) tname() string             { return "EndOfFileToken" }
-func (v *EndOfFileToken) ttext() (string, bool)     { return v.Text, true }
-func (v *EndOfFileToken) tkids() []any              { return nil }
-func (v *EndOfFileToken) tfield(string) (any, bool) { return nil, true }
-func (v *EndOfFileToken) tstruct() bool             { return false }
-func (v *EndOfFileToken) tfresh() bool              { return false }
-func (v *EndOfFileToken) tsetFresh(bool)            {}
-
-func (v *Identifier) tname() string             { return "Identifier" }
-func (v *Identifier) ttext() (string, bool)     { return v.Text, true }
-func (v *Identifier) tkids() []any              { return nil }
-func (v *Identifier) tfield(string) (any, bool) { return nil, true }
-func (v *Identifier) tstruct() bool             { return false }
-func (v *Identifier) tfresh() bool              { return false }
-func (v *Identifier) tsetFresh(bool)            {}
-
-func (v *ImportExpression) tname() string             { return "ImportExpression" }
-func (v *ImportExpression) ttext() (string, bool)     { return v.Text, true }
-func (v *ImportExpression) tkids() []any              { return nil }
-func (v *ImportExpression) tfield(string) (any, bool) { return nil, true }
-func (v *ImportExpression) tstruct() bool             { return false }
-func (v *ImportExpression) tfresh() bool              { return false }
-func (v *ImportExpression) tsetFresh(bool)            {}
-
-func (v *JSDocAllType) tname() string             { return "JSDocAllType" }
-func (v *JSDocAllType) ttext() (string, bool)     { return v.Text, true }
-func (v *JSDocAllType) tkids() []any              { return nil }
-func (v *JSDocAllType) tfield(string) (any, bool) { return nil, true }
-func (v *JSDocAllType) tstruct() bool             { return false }
-func (v *JSDocAllType) tfresh() bool              { return false }
-func (v *JSDocAllType) tsetFresh(bool)            {}
-
-func (v *JSDocUnknownType) tname() string             { return "JSDocUnknownType" }
-func (v *JSDocUnknownType) ttext() (string, bool)     { return v.Text, true }
-func (v *JSDocUnknownType) tkids() []any              { return nil }
-func (v *JSDocUnknownType) tfield(string) (any, bool) { return nil, true }
-func (v *JSDocUnknownType) tstruct() bool             { return false }
-func (v *JSDocUnknownType) tfresh() bool              { return false }
-func (v *JSDocUnknownType) tsetFresh(bool)            {}
-
-func (v *JsxClosingFragment) tname() string             { return "JsxClosingFragment" }
-func (v *JsxClosingFragment) ttext() (string, bool)     { return v.Text, true }
-func (v *JsxClosingFragment) tkids() []any              { return nil }
-func (v *JsxClosingFragment) tfield(string) (any, bool) { return nil, true }
-func (v *JsxClosingFragment) tstruct() bool             { return false }
-func (v *JsxClosingFragment) tfresh() bool              { return false }
-func (v *JsxClosingFragment) tsetFresh(bool)            {}
-
-func (v *JsxOpeningFragment) tname() string             { return "JsxOpeningFragment" }
-func (v *JsxOpeningFragment) ttext() (string, bool)     { return v.Text, true }
-func (v *JsxOpeningFragment) tkids() []any              { return nil }
-func (v *JsxOpeningFragment) tfield(string) (any, bool) { return nil, true }
-func (v *JsxOpeningFragment) tstruct() bool             { return false }
-func (v *JsxOpeningFragment) tfresh() bool              { return false }
-func (v *JsxOpeningFragment) tsetFresh(bool)            {}
-
-func (v *JsxText) tname() string             { return "JsxText" }
-func (v *JsxText) ttext() (string, bool)     { return v.Text, true }
-func (v *JsxText) tkids() []any              { return nil }
-func (v *JsxText) tfield(string) (any, bool) { return nil, true }
-func (v *JsxText) tstruct() bool             { return false }
-func (v *JsxText) tfresh() bool              { return false }
-func (v *JsxText) tsetFresh(bool)            {}
-
-func (v *KeywordTypeNode) tname() string             { return "KeywordTypeNode" }
-func (v *KeywordTypeNode) ttext() (string, bool)     { return v.Text, true }
-func (v *KeywordTypeNode) tkids() []any              { return nil }
-func (v *KeywordTypeNode) tfield(string) (any, bool) { return nil, true }
-func (v *KeywordTypeNode) tstruct() bool             { return false }
-func (v *KeywordTypeNode) tfresh() bool              { return false }
-func (v *KeywordTypeNode) tsetFresh(bool)            {}
-
-func (v *Modifier) tname() string             { return "Modifier" }
-func (v *Modifier) ttext() (string, bool)     { return v.Text, true }
-func (v *Modifier) tkids() []any              { return nil }
-func (v *Modifier) tfield(string) (any, bool) { return nil, true }
-func (v *Modifier) tstruct() bool             { return false }
-func (v *Modifier) tfresh() bool              { return false }
-func (v *Modifier) tsetFresh(bool)            {}
-
-func (v *NoSubstitutionTemplateLiteral) tname() string             { return "NoSubstitutionTemplateLiteral" }
-func (v *NoSubstitutionTemplateLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *NoSubstitutionTemplateLiteral) tkids() []any              { return nil }
-func (v *NoSubstitutionTemplateLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *NoSubstitutionTemplateLiteral) tstruct() bool             { return false }
-func (v *NoSubstitutionTemplateLiteral) tfresh() bool              { return false }
-func (v *NoSubstitutionTemplateLiteral) tsetFresh(bool)            {}
-
-func (v *NullLiteral) tname() string             { return "NullLiteral" }
-func (v *NullLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *NullLiteral) tkids() []any              { return nil }
-func (v *NullLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *NullLiteral) tstruct() bool             { return false }
-func (v *NullLiteral) tfresh() bool              { return false }
-func (v *NullLiteral) tsetFresh(bool)            {}
-
-func (v *NumericLiteral) tname() string             { return "NumericLiteral" }
-func (v *NumericLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *NumericLiteral) tkids() []any              { return nil }
-func (v *NumericLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *NumericLiteral) tstruct() bool             { return false }
-func (v *NumericLiteral) tfresh() bool              { return false }
-func (v *NumericLiteral) tsetFresh(bool)            {}
-
-func (v *OmittedExpression) tname() string             { return "OmittedExpression" }
-func (v *OmittedExpression) ttext() (string, bool)     { return v.Text, true }
-func (v *OmittedExpression) tkids() []any              { return nil }
-func (v *OmittedExpression) tfield(string) (any, bool) { return nil, true }
-func (v *OmittedExpression) tstruct() bool             { return false }
-func (v *OmittedExpression) tfresh() bool              { return false }
-func (v *OmittedExpression) tsetFresh(bool)            {}
-
-func (v *PrivateIdentifier) tname() string             { return "PrivateIdentifier" }
-func (v *PrivateIdentifier) ttext() (string, bool)     { return v.Text, true }
-func (v *PrivateIdentifier) tkids() []any              { return nil }
-func (v *PrivateIdentifier) tfield(string) (any, bool) { return nil, true }
-func (v *PrivateIdentifier) tstruct() bool             { return false }
-func (v *PrivateIdentifier) tfresh() bool              { return false }
-func (v *PrivateIdentifier) tsetFresh(bool)            {}
-
-func (v *RegularExpressionLiteral) tname() string             { return "RegularExpressionLiteral" }
-func (v *RegularExpressionLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *RegularExpressionLiteral) tkids() []any              { return nil }
-func (v *RegularExpressionLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *RegularExpressionLiteral) tstruct() bool             { return false }
-func (v *RegularExpressionLiteral) tfresh() bool              { return false }
-func (v *RegularExpressionLiteral) tsetFresh(bool)            {}
-
-func (v *SemicolonClassElement) tname() string             { return "SemicolonClassElement" }
-func (v *SemicolonClassElement) ttext() (string, bool)     { return v.Text, true }
-func (v *SemicolonClassElement) tkids() []any              { return nil }
-func (v *SemicolonClassElement) tfield(string) (any, bool) { return nil, true }
-func (v *SemicolonClassElement) tstruct() bool             { return false }
-func (v *SemicolonClassElement) tfresh() bool              { return false }
-func (v *SemicolonClassElement) tsetFresh(bool)            {}
-
-func (v *StringLiteral) tname() string             { return "StringLiteral" }
-func (v *StringLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *StringLiteral) tkids() []any              { return nil }
-func (v *StringLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *StringLiteral) tstruct() bool             { return false }
-func (v *StringLiteral) tfresh() bool              { return false }
-func (v *StringLiteral) tsetFresh(bool)            {}
-
-func (v *SuperExpression) tname() string             { return "SuperExpression" }
-func (v *SuperExpression) ttext() (string, bool)     { return v.Text, true }
-func (v *SuperExpression) tkids() []any              { return nil }
-func (v *SuperExpression) tfield(string) (any, bool) { return nil, true }
-func (v *SuperExpression) tstruct() bool             { return false }
-func (v *SuperExpression) tfresh() bool              { return false }
-func (v *SuperExpression) tsetFresh(bool)            {}
-
-func (v *TemplateHead) tname() string             { return "TemplateHead" }
-func (v *TemplateHead) ttext() (string, bool)     { return v.Text, true }
-func (v *TemplateHead) tkids() []any              { return nil }
-func (v *TemplateHead) tfield(string) (any, bool) { return nil, true }
-func (v *TemplateHead) tstruct() bool             { return false }
-func (v *TemplateHead) tfresh() bool              { return false }
-func (v *TemplateHead) tsetFresh(bool)            {}
-
-func (v *TemplateMiddle) tname() string             { return "TemplateMiddle" }
-func (v *TemplateMiddle) ttext() (string, bool)     { return v.Text, true }
-func (v *TemplateMiddle) tkids() []any              { return nil }
-func (v *TemplateMiddle) tfield(string) (any, bool) { return nil, true }
-func (v *TemplateMiddle) tstruct() bool             { return false }
-func (v *TemplateMiddle) tfresh() bool              { return false }
-func (v *TemplateMiddle) tsetFresh(bool)            {}
-
-func (v *TemplateTail) tname() string             { return "TemplateTail" }
-func (v *TemplateTail) ttext() (string, bool)     { return v.Text, true }
-func (v *TemplateTail) tkids() []any              { return nil }
-func (v *TemplateTail) tfield(string) (any, bool) { return nil, true }
-func (v *TemplateTail) tstruct() bool             { return false }
-func (v *TemplateTail) tfresh() bool              { return false }
-func (v *TemplateTail) tsetFresh(bool)            {}
-
-func (v *ThisExpression) tname() string             { return "ThisExpression" }
-func (v *ThisExpression) ttext() (string, bool)     { return v.Text, true }
-func (v *ThisExpression) tkids() []any              { return nil }
-func (v *ThisExpression) tfield(string) (any, bool) { return nil, true }
-func (v *ThisExpression) tstruct() bool             { return false }
-func (v *ThisExpression) tfresh() bool              { return false }
-func (v *ThisExpression) tsetFresh(bool)            {}
-
-func (v *ThisTypeNode) tname() string             { return "ThisTypeNode" }
-func (v *ThisTypeNode) ttext() (string, bool)     { return v.Text, true }
-func (v *ThisTypeNode) tkids() []any              { return nil }
-func (v *ThisTypeNode) tfield(string) (any, bool) { return nil, true }
-func (v *ThisTypeNode) tstruct() bool             { return false }
-func (v *ThisTypeNode) tfresh() bool              { return false }
-func (v *ThisTypeNode) tsetFresh(bool)            {}
-
-func (v *Token) tname() string             { return "Token" }
-func (v *Token) ttext() (string, bool)     { return v.Text, true }
-func (v *Token) tkids() []any              { return nil }
-func (v *Token) tfield(string) (any, bool) { return nil, true }
-func (v *Token) tstruct() bool             { return false }
-func (v *Token) tfresh() bool              { return false }
-func (v *Token) tsetFresh(bool)            {}
-
 func (v *ArrayBindingPattern) tname() string         { return "ArrayBindingPattern" }
 func (v *ArrayBindingPattern) ttext() (string, bool) { return "", false }
 func (v *ArrayBindingPattern) tkids() []any          { return nil }
@@ -8984,6 +8752,28 @@ func (v *AwaitExpression) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *BigIntLiteral) tname() string         { return "BigIntLiteral" }
+func (v *BigIntLiteral) ttext() (string, bool) { return "", false }
+func (v *BigIntLiteral) tkids() []any          { return nil }
+func (v *BigIntLiteral) tstruct() bool         { return true }
+func (v *BigIntLiteral) tfresh() bool          { return false }
+func (v *BigIntLiteral) tsetFresh(bool)        {}
+func (v *BigIntLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *BigIntLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *BinaryExpression) tname() string         { return "BinaryExpression" }
 func (v *BinaryExpression) ttext() (string, bool) { return "", false }
 func (v *BinaryExpression) tkids() []any          { return nil }
@@ -9085,6 +8875,28 @@ func (v *Block) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *BooleanLiteral) tname() string         { return "BooleanLiteral" }
+func (v *BooleanLiteral) ttext() (string, bool) { return "", false }
+func (v *BooleanLiteral) tkids() []any          { return nil }
+func (v *BooleanLiteral) tstruct() bool         { return true }
+func (v *BooleanLiteral) tfresh() bool          { return false }
+func (v *BooleanLiteral) tsetFresh(bool)        {}
+func (v *BooleanLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *BooleanLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -10006,6 +9818,28 @@ func (v *ContinueStatement) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *DebuggerStatement) tname() string         { return "DebuggerStatement" }
+func (v *DebuggerStatement) ttext() (string, bool) { return "", false }
+func (v *DebuggerStatement) tkids() []any          { return nil }
+func (v *DebuggerStatement) tstruct() bool         { return true }
+func (v *DebuggerStatement) tfresh() bool          { return false }
+func (v *DebuggerStatement) tsetFresh(bool)        {}
+func (v *DebuggerStatement) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *DebuggerStatement) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Decorator) tname() string         { return "Decorator" }
 func (v *Decorator) ttext() (string, bool) { return "", false }
 func (v *Decorator) tkids() []any          { return nil }
@@ -10143,6 +9977,50 @@ func (v *ElementAccessExpression) tfieldWork(p *tparser, name string) (any, bool
 		return tptr(v.QuestionDotToken), true
 	case "ArgumentExpression":
 		return tback(v.ArgumentExpression), true
+	}
+	return nil, false
+}
+
+func (v *EmptyStatement) tname() string         { return "EmptyStatement" }
+func (v *EmptyStatement) ttext() (string, bool) { return "", false }
+func (v *EmptyStatement) tkids() []any          { return nil }
+func (v *EmptyStatement) tstruct() bool         { return true }
+func (v *EmptyStatement) tfresh() bool          { return false }
+func (v *EmptyStatement) tsetFresh(bool)        {}
+func (v *EmptyStatement) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EmptyStatement) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EndOfFileToken) tname() string         { return "EndOfFileToken" }
+func (v *EndOfFileToken) ttext() (string, bool) { return "", false }
+func (v *EndOfFileToken) tkids() []any          { return nil }
+func (v *EndOfFileToken) tstruct() bool         { return true }
+func (v *EndOfFileToken) tfresh() bool          { return false }
+func (v *EndOfFileToken) tsetFresh(bool)        {}
+func (v *EndOfFileToken) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EndOfFileToken) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -10982,6 +10860,28 @@ func (v *HeritageClause) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Identifier) tname() string         { return "Identifier" }
+func (v *Identifier) ttext() (string, bool) { return "", false }
+func (v *Identifier) tkids() []any          { return nil }
+func (v *Identifier) tstruct() bool         { return true }
+func (v *Identifier) tfresh() bool          { return false }
+func (v *Identifier) tsetFresh(bool)        {}
+func (v *Identifier) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Identifier) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *IfStatement) tname() string         { return "IfStatement" }
 func (v *IfStatement) ttext() (string, bool) { return "", false }
 func (v *IfStatement) tkids() []any          { return nil }
@@ -11215,6 +11115,28 @@ func (v *ImportEqualsDeclaration) tfieldWork(p *tparser, name string) (any, bool
 		return tback(v.ModuleReference), true
 	case "IsTypeOnly":
 		return any(v.IsTypeOnly), true
+	}
+	return nil, false
+}
+
+func (v *ImportExpression) tname() string         { return "ImportExpression" }
+func (v *ImportExpression) ttext() (string, bool) { return "", false }
+func (v *ImportExpression) tkids() []any          { return nil }
+func (v *ImportExpression) tstruct() bool         { return true }
+func (v *ImportExpression) tfresh() bool          { return false }
+func (v *ImportExpression) tsetFresh(bool)        {}
+func (v *ImportExpression) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ImportExpression) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -11577,6 +11499,28 @@ func (v *IntersectionType) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *JSDocAllType) tname() string         { return "JSDocAllType" }
+func (v *JSDocAllType) ttext() (string, bool) { return "", false }
+func (v *JSDocAllType) tkids() []any          { return nil }
+func (v *JSDocAllType) tstruct() bool         { return true }
+func (v *JSDocAllType) tfresh() bool          { return false }
+func (v *JSDocAllType) tsetFresh(bool)        {}
+func (v *JSDocAllType) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *JSDocAllType) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *JSDocFunctionType) tname() string         { return "JSDocFunctionType" }
 func (v *JSDocFunctionType) ttext() (string, bool) { return "", false }
 func (v *JSDocFunctionType) tkids() []any          { return nil }
@@ -11674,6 +11618,28 @@ func (v *JSDocNullableType) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *JSDocUnknownType) tname() string         { return "JSDocUnknownType" }
+func (v *JSDocUnknownType) ttext() (string, bool) { return "", false }
+func (v *JSDocUnknownType) tkids() []any          { return nil }
+func (v *JSDocUnknownType) tstruct() bool         { return true }
+func (v *JSDocUnknownType) tfresh() bool          { return false }
+func (v *JSDocUnknownType) tsetFresh(bool)        {}
+func (v *JSDocUnknownType) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *JSDocUnknownType) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *JsxAttribute) tname() string         { return "JsxAttribute" }
 func (v *JsxAttribute) ttext() (string, bool) { return "", false }
 func (v *JsxAttribute) tkids() []any          { return nil }
@@ -11759,6 +11725,28 @@ func (v *JsxClosingElement) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "TagName":
 		return tback(v.TagName), true
+	}
+	return nil, false
+}
+
+func (v *JsxClosingFragment) tname() string         { return "JsxClosingFragment" }
+func (v *JsxClosingFragment) ttext() (string, bool) { return "", false }
+func (v *JsxClosingFragment) tkids() []any          { return nil }
+func (v *JsxClosingFragment) tstruct() bool         { return true }
+func (v *JsxClosingFragment) tfresh() bool          { return false }
+func (v *JsxClosingFragment) tsetFresh(bool)        {}
+func (v *JsxClosingFragment) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *JsxClosingFragment) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -11962,6 +11950,28 @@ func (v *JsxOpeningElement) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *JsxOpeningFragment) tname() string         { return "JsxOpeningFragment" }
+func (v *JsxOpeningFragment) ttext() (string, bool) { return "", false }
+func (v *JsxOpeningFragment) tkids() []any          { return nil }
+func (v *JsxOpeningFragment) tstruct() bool         { return true }
+func (v *JsxOpeningFragment) tfresh() bool          { return false }
+func (v *JsxOpeningFragment) tsetFresh(bool)        {}
+func (v *JsxOpeningFragment) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *JsxOpeningFragment) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *JsxSelfClosingElement) tname() string         { return "JsxSelfClosingElement" }
 func (v *JsxSelfClosingElement) ttext() (string, bool) { return "", false }
 func (v *JsxSelfClosingElement) tkids() []any          { return nil }
@@ -12029,6 +12039,50 @@ func (v *JsxSpreadAttribute) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Expression":
 		return tback(v.Expression), true
+	}
+	return nil, false
+}
+
+func (v *JsxText) tname() string         { return "JsxText" }
+func (v *JsxText) ttext() (string, bool) { return "", false }
+func (v *JsxText) tkids() []any          { return nil }
+func (v *JsxText) tstruct() bool         { return true }
+func (v *JsxText) tfresh() bool          { return false }
+func (v *JsxText) tsetFresh(bool)        {}
+func (v *JsxText) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *JsxText) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *KeywordTypeNode) tname() string         { return "KeywordTypeNode" }
+func (v *KeywordTypeNode) ttext() (string, bool) { return "", false }
+func (v *KeywordTypeNode) tkids() []any          { return nil }
+func (v *KeywordTypeNode) tstruct() bool         { return true }
+func (v *KeywordTypeNode) tfresh() bool          { return false }
+func (v *KeywordTypeNode) tsetFresh(bool)        {}
+func (v *KeywordTypeNode) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *KeywordTypeNode) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -12374,6 +12428,28 @@ func (v *MethodSignature) tfieldWork(p *tparser, name string) (any, bool) {
 		}(), true
 	case "Type":
 		return tback(v.Type), true
+	}
+	return nil, false
+}
+
+func (v *Modifier) tname() string         { return "Modifier" }
+func (v *Modifier) ttext() (string, bool) { return "", false }
+func (v *Modifier) tkids() []any          { return nil }
+func (v *Modifier) tstruct() bool         { return true }
+func (v *Modifier) tfresh() bool          { return false }
+func (v *Modifier) tsetFresh(bool)        {}
+func (v *Modifier) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Modifier) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -12741,6 +12817,28 @@ func (v *NewExpression) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *NoSubstitutionTemplateLiteral) tname() string         { return "NoSubstitutionTemplateLiteral" }
+func (v *NoSubstitutionTemplateLiteral) ttext() (string, bool) { return "", false }
+func (v *NoSubstitutionTemplateLiteral) tkids() []any          { return nil }
+func (v *NoSubstitutionTemplateLiteral) tstruct() bool         { return true }
+func (v *NoSubstitutionTemplateLiteral) tfresh() bool          { return false }
+func (v *NoSubstitutionTemplateLiteral) tsetFresh(bool)        {}
+func (v *NoSubstitutionTemplateLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *NoSubstitutionTemplateLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *NonNullExpression) tname() string         { return "NonNullExpression" }
 func (v *NonNullExpression) ttext() (string, bool) { return "", false }
 func (v *NonNullExpression) tkids() []any          { return nil }
@@ -12759,6 +12857,50 @@ func (v *NonNullExpression) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Expression":
 		return tback(v.Expression), true
+	}
+	return nil, false
+}
+
+func (v *NullLiteral) tname() string         { return "NullLiteral" }
+func (v *NullLiteral) ttext() (string, bool) { return "", false }
+func (v *NullLiteral) tkids() []any          { return nil }
+func (v *NullLiteral) tstruct() bool         { return true }
+func (v *NullLiteral) tfresh() bool          { return false }
+func (v *NullLiteral) tsetFresh(bool)        {}
+func (v *NullLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *NullLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *NumericLiteral) tname() string         { return "NumericLiteral" }
+func (v *NumericLiteral) ttext() (string, bool) { return "", false }
+func (v *NumericLiteral) tkids() []any          { return nil }
+func (v *NumericLiteral) tstruct() bool         { return true }
+func (v *NumericLiteral) tfresh() bool          { return false }
+func (v *NumericLiteral) tsetFresh(bool)        {}
+func (v *NumericLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *NumericLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -12841,6 +12983,28 @@ func (v *ObjectLiteralExpression) tfieldWork(p *tparser, name string) (any, bool
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *OmittedExpression) tname() string         { return "OmittedExpression" }
+func (v *OmittedExpression) ttext() (string, bool) { return "", false }
+func (v *OmittedExpression) tkids() []any          { return nil }
+func (v *OmittedExpression) tstruct() bool         { return true }
+func (v *OmittedExpression) tfresh() bool          { return false }
+func (v *OmittedExpression) tsetFresh(bool)        {}
+func (v *OmittedExpression) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *OmittedExpression) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -13020,6 +13184,28 @@ func (v *PrefixUnaryExpression) tfieldWork(p *tparser, name string) (any, bool) 
 		return any(v.Operator), true
 	case "Operand":
 		return tback(v.Operand), true
+	}
+	return nil, false
+}
+
+func (v *PrivateIdentifier) tname() string         { return "PrivateIdentifier" }
+func (v *PrivateIdentifier) ttext() (string, bool) { return "", false }
+func (v *PrivateIdentifier) tkids() []any          { return nil }
+func (v *PrivateIdentifier) tstruct() bool         { return true }
+func (v *PrivateIdentifier) tfresh() bool          { return false }
+func (v *PrivateIdentifier) tsetFresh(bool)        {}
+func (v *PrivateIdentifier) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PrivateIdentifier) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -13255,6 +13441,28 @@ func (v *QualifiedName) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *RegularExpressionLiteral) tname() string         { return "RegularExpressionLiteral" }
+func (v *RegularExpressionLiteral) ttext() (string, bool) { return "", false }
+func (v *RegularExpressionLiteral) tkids() []any          { return nil }
+func (v *RegularExpressionLiteral) tstruct() bool         { return true }
+func (v *RegularExpressionLiteral) tfresh() bool          { return false }
+func (v *RegularExpressionLiteral) tsetFresh(bool)        {}
+func (v *RegularExpressionLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *RegularExpressionLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *RestType) tname() string         { return "RestType" }
 func (v *RestType) ttext() (string, bool) { return "", false }
 func (v *RestType) tkids() []any          { return nil }
@@ -13321,6 +13529,28 @@ func (v *SatisfiesExpression) tfieldWork(p *tparser, name string) (any, bool) {
 		return tback(v.Expression), true
 	case "Type":
 		return tback(v.Type), true
+	}
+	return nil, false
+}
+
+func (v *SemicolonClassElement) tname() string         { return "SemicolonClassElement" }
+func (v *SemicolonClassElement) ttext() (string, bool) { return "", false }
+func (v *SemicolonClassElement) tkids() []any          { return nil }
+func (v *SemicolonClassElement) tstruct() bool         { return true }
+func (v *SemicolonClassElement) tfresh() bool          { return false }
+func (v *SemicolonClassElement) tsetFresh(bool)        {}
+func (v *SemicolonClassElement) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *SemicolonClassElement) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -13574,6 +13804,50 @@ func (v *SpreadElement) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *StringLiteral) tname() string         { return "StringLiteral" }
+func (v *StringLiteral) ttext() (string, bool) { return "", false }
+func (v *StringLiteral) tkids() []any          { return nil }
+func (v *StringLiteral) tstruct() bool         { return true }
+func (v *StringLiteral) tfresh() bool          { return false }
+func (v *StringLiteral) tsetFresh(bool)        {}
+func (v *StringLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *StringLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *SuperExpression) tname() string         { return "SuperExpression" }
+func (v *SuperExpression) ttext() (string, bool) { return "", false }
+func (v *SuperExpression) tkids() []any          { return nil }
+func (v *SuperExpression) tstruct() bool         { return true }
+func (v *SuperExpression) tfresh() bool          { return false }
+func (v *SuperExpression) tsetFresh(bool)        {}
+func (v *SuperExpression) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *SuperExpression) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *SwitchStatement) tname() string         { return "SwitchStatement" }
 func (v *SwitchStatement) ttext() (string, bool) { return "", false }
 func (v *SwitchStatement) tkids() []any          { return nil }
@@ -13698,6 +13972,28 @@ func (v *TemplateExpression) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *TemplateHead) tname() string         { return "TemplateHead" }
+func (v *TemplateHead) ttext() (string, bool) { return "", false }
+func (v *TemplateHead) tkids() []any          { return nil }
+func (v *TemplateHead) tstruct() bool         { return true }
+func (v *TemplateHead) tfresh() bool          { return false }
+func (v *TemplateHead) tsetFresh(bool)        {}
+func (v *TemplateHead) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *TemplateHead) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *TemplateLiteralType) tname() string         { return "TemplateLiteralType" }
 func (v *TemplateLiteralType) ttext() (string, bool) { return "", false }
 func (v *TemplateLiteralType) tkids() []any          { return nil }
@@ -13769,6 +14065,28 @@ func (v *TemplateLiteralTypeSpan) tfieldWork(p *tparser, name string) (any, bool
 	return nil, false
 }
 
+func (v *TemplateMiddle) tname() string         { return "TemplateMiddle" }
+func (v *TemplateMiddle) ttext() (string, bool) { return "", false }
+func (v *TemplateMiddle) tkids() []any          { return nil }
+func (v *TemplateMiddle) tstruct() bool         { return true }
+func (v *TemplateMiddle) tfresh() bool          { return false }
+func (v *TemplateMiddle) tsetFresh(bool)        {}
+func (v *TemplateMiddle) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *TemplateMiddle) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *TemplateSpan) tname() string         { return "TemplateSpan" }
 func (v *TemplateSpan) ttext() (string, bool) { return "", false }
 func (v *TemplateSpan) tkids() []any          { return nil }
@@ -13795,6 +14113,72 @@ func (v *TemplateSpan) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *TemplateTail) tname() string         { return "TemplateTail" }
+func (v *TemplateTail) ttext() (string, bool) { return "", false }
+func (v *TemplateTail) tkids() []any          { return nil }
+func (v *TemplateTail) tstruct() bool         { return true }
+func (v *TemplateTail) tfresh() bool          { return false }
+func (v *TemplateTail) tsetFresh(bool)        {}
+func (v *TemplateTail) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *TemplateTail) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ThisExpression) tname() string         { return "ThisExpression" }
+func (v *ThisExpression) ttext() (string, bool) { return "", false }
+func (v *ThisExpression) tkids() []any          { return nil }
+func (v *ThisExpression) tstruct() bool         { return true }
+func (v *ThisExpression) tfresh() bool          { return false }
+func (v *ThisExpression) tsetFresh(bool)        {}
+func (v *ThisExpression) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ThisExpression) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ThisTypeNode) tname() string         { return "ThisTypeNode" }
+func (v *ThisTypeNode) ttext() (string, bool) { return "", false }
+func (v *ThisTypeNode) tkids() []any          { return nil }
+func (v *ThisTypeNode) tstruct() bool         { return true }
+func (v *ThisTypeNode) tfresh() bool          { return false }
+func (v *ThisTypeNode) tsetFresh(bool)        {}
+func (v *ThisTypeNode) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ThisTypeNode) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *ThrowStatement) tname() string         { return "ThrowStatement" }
 func (v *ThrowStatement) ttext() (string, bool) { return "", false }
 func (v *ThrowStatement) tkids() []any          { return nil }
@@ -13813,6 +14197,28 @@ func (v *ThrowStatement) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Expression":
 		return tback(v.Expression), true
+	}
+	return nil, false
+}
+
+func (v *Token) tname() string         { return "Token" }
+func (v *Token) ttext() (string, bool) { return "", false }
+func (v *Token) tkids() []any          { return nil }
+func (v *Token) tstruct() bool         { return true }
+func (v *Token) tfresh() bool          { return false }
+func (v *Token) tsetFresh(bool)        {}
+func (v *Token) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Token) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -14660,12 +15066,6 @@ func tinit() {
 		*v = Identifier{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[88].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdentifier)
-		*v = Identifier{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[104].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tSemicolonClassElement)
@@ -14942,30 +15342,6 @@ func tinit() {
 		*v = Identifier{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[391].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tToken)
-		*v = Token{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[392].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tToken)
-		*v = Token{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[393].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tToken)
-		*v = Token{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[394].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tToken)
-		*v = Token{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[395].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tToken)
@@ -15024,18 +15400,6 @@ func tinit() {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tToken)
 		*v = Token{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[421].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdentifier)
-		*v = Identifier{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[422].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdentifier)
-		*v = Identifier{Span: Span{start, end}, Text: text}
 		return v
 	}
 	trules[423].term = func(p *tparser, start, end int, text string) tval {
@@ -15256,6 +15620,23 @@ func tmk_AwaitExpression(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_BigIntLiteral makes a BigIntLiteral in an action (newStruct in the typed runtime).
+func tmk_BigIntLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBigIntLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_BinaryExpression makes a BinaryExpression in an action (newStruct in the typed runtime).
 func tmk_BinaryExpression(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
@@ -15317,6 +15698,23 @@ func tmk_Block(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tBlock)
 	c.p.stepWork()
 	v.Statements = tl23(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_BooleanLiteral makes a BooleanLiteral in an action (newStruct in the typed runtime).
+func tmk_BooleanLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBooleanLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -15727,6 +16125,23 @@ func tmk_ContinueStatement(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_DebuggerStatement makes a DebuggerStatement in an action (newStruct in the typed runtime).
+func tmk_DebuggerStatement(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tDebuggerStatement)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Decorator makes a Decorator in an action (newStruct in the typed runtime).
 func tmk_Decorator(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -15821,6 +16236,40 @@ func tmk_ElementAccessExpression(c *tctx, final bool, f0 any, f1 any, f2 any) an
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_EmptyStatement makes a EmptyStatement in an action (newStruct in the typed runtime).
+func tmk_EmptyStatement(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tEmptyStatement)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_EndOfFileToken makes a EndOfFileToken in an action (newStruct in the typed runtime).
+func tmk_EndOfFileToken(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tEndOfFileToken)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -16256,6 +16705,23 @@ func tmk_HeritageClause(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Identifier makes a Identifier in an action (newStruct in the typed runtime).
+func tmk_Identifier(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIdentifier)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_IfStatement makes a IfStatement in an action (newStruct in the typed runtime).
 func tmk_IfStatement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
@@ -16403,6 +16869,23 @@ func tmk_ImportEqualsDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3
 	spanOf(f2, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f3, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_ImportExpression makes a ImportExpression in an action (newStruct in the typed runtime).
+func tmk_ImportExpression(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tImportExpression)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -16577,6 +17060,23 @@ func tmk_IntersectionType(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_JSDocAllType makes a JSDocAllType in an action (newStruct in the typed runtime).
+func tmk_JSDocAllType(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tJSDocAllType)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_JSDocFunctionType makes a JSDocFunctionType in an action (newStruct in the typed runtime).
 func tmk_JSDocFunctionType(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -16640,6 +17140,23 @@ func tmk_JSDocNullableType(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_JSDocUnknownType makes a JSDocUnknownType in an action (newStruct in the typed runtime).
+func tmk_JSDocUnknownType(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tJSDocUnknownType)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_JsxAttribute makes a JsxAttribute in an action (newStruct in the typed runtime).
 func tmk_JsxAttribute(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -16685,6 +17202,23 @@ func tmk_JsxClosingElement(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tJsxClosingElement)
 	c.p.stepWork()
 	v.TagName = tAs[JsxTagName](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_JsxClosingFragment makes a JsxClosingFragment in an action (newStruct in the typed runtime).
+func tmk_JsxClosingFragment(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tJsxClosingFragment)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -16812,6 +17346,23 @@ func tmk_JsxOpeningElement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_JsxOpeningFragment makes a JsxOpeningFragment in an action (newStruct in the typed runtime).
+func tmk_JsxOpeningFragment(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tJsxOpeningFragment)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_JsxSelfClosingElement makes a JsxSelfClosingElement in an action (newStruct in the typed runtime).
 func tmk_JsxSelfClosingElement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
@@ -16844,6 +17395,40 @@ func tmk_JsxSpreadAttribute(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tJsxSpreadAttribute)
 	c.p.stepWork()
 	v.Expression = tAs[Expression](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_JsxText makes a JsxText in an action (newStruct in the typed runtime).
+func tmk_JsxText(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tJsxText)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_KeywordTypeNode makes a KeywordTypeNode in an action (newStruct in the typed runtime).
+func tmk_KeywordTypeNode(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tKeywordTypeNode)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -17036,6 +17621,23 @@ func tmk_MethodSignature(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	return c.made(v, first, start, end)
 }
 
+// tmk_Modifier makes a Modifier in an action (newStruct in the typed runtime).
+func tmk_Modifier(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tModifier)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_ModuleBlock makes a ModuleBlock in an action (newStruct in the typed runtime).
 func tmk_ModuleBlock(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -17221,6 +17823,23 @@ func tmk_NewExpression(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_NoSubstitutionTemplateLiteral makes a NoSubstitutionTemplateLiteral in an action (newStruct in the typed runtime).
+func tmk_NoSubstitutionTemplateLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNoSubstitutionTemplateLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_NonNullExpression makes a NonNullExpression in an action (newStruct in the typed runtime).
 func tmk_NonNullExpression(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -17228,6 +17847,40 @@ func tmk_NonNullExpression(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tNonNullExpression)
 	c.p.stepWork()
 	v.Expression = tAs[Expression](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_NullLiteral makes a NullLiteral in an action (newStruct in the typed runtime).
+func tmk_NullLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNullLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_NumericLiteral makes a NumericLiteral in an action (newStruct in the typed runtime).
+func tmk_NumericLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNumericLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -17262,6 +17915,23 @@ func tmk_ObjectLiteralExpression(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tObjectLiteralExpression)
 	c.p.stepWork()
 	v.Properties = tl21(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_OmittedExpression makes a OmittedExpression in an action (newStruct in the typed runtime).
+func tmk_OmittedExpression(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tOmittedExpression)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -17399,6 +18069,23 @@ func tmk_PrefixUnaryExpression(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_PrivateIdentifier makes a PrivateIdentifier in an action (newStruct in the typed runtime).
+func tmk_PrivateIdentifier(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tPrivateIdentifier)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -17551,6 +18238,23 @@ func tmk_QualifiedName(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_RegularExpressionLiteral makes a RegularExpressionLiteral in an action (newStruct in the typed runtime).
+func tmk_RegularExpressionLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tRegularExpressionLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_RestType makes a RestType in an action (newStruct in the typed runtime).
 func tmk_RestType(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -17603,6 +18307,23 @@ func tmk_SatisfiesExpression(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_SemicolonClassElement makes a SemicolonClassElement in an action (newStruct in the typed runtime).
+func tmk_SemicolonClassElement(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tSemicolonClassElement)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -17735,6 +18456,40 @@ func tmk_SpreadElement(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_StringLiteral makes a StringLiteral in an action (newStruct in the typed runtime).
+func tmk_StringLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tStringLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_SuperExpression makes a SuperExpression in an action (newStruct in the typed runtime).
+func tmk_SuperExpression(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tSuperExpression)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_SwitchStatement makes a SwitchStatement in an action (newStruct in the typed runtime).
 func tmk_SwitchStatement(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -17806,6 +18561,23 @@ func tmk_TemplateExpression(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_TemplateHead makes a TemplateHead in an action (newStruct in the typed runtime).
+func tmk_TemplateHead(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tTemplateHead)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_TemplateLiteralType makes a TemplateLiteralType in an action (newStruct in the typed runtime).
 func tmk_TemplateLiteralType(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -17848,6 +18620,23 @@ func tmk_TemplateLiteralTypeSpan(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_TemplateMiddle makes a TemplateMiddle in an action (newStruct in the typed runtime).
+func tmk_TemplateMiddle(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tTemplateMiddle)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_TemplateSpan makes a TemplateSpan in an action (newStruct in the typed runtime).
 func tmk_TemplateSpan(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -17869,6 +18658,57 @@ func tmk_TemplateSpan(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_TemplateTail makes a TemplateTail in an action (newStruct in the typed runtime).
+func tmk_TemplateTail(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tTemplateTail)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_ThisExpression makes a ThisExpression in an action (newStruct in the typed runtime).
+func tmk_ThisExpression(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tThisExpression)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_ThisTypeNode makes a ThisTypeNode in an action (newStruct in the typed runtime).
+func tmk_ThisTypeNode(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tThisTypeNode)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_ThrowStatement makes a ThrowStatement in an action (newStruct in the typed runtime).
 func tmk_ThrowStatement(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -17876,6 +18716,23 @@ func tmk_ThrowStatement(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tThrowStatement)
 	c.p.stepWork()
 	v.Expression = tAs[Expression](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Token makes a Token in an action (newStruct in the typed runtime).
+func tmk_Token(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tToken)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -19974,44 +20831,17 @@ func tv114(a *tslabs, v any) Tuple2[any, *TNode[[]*TNode[string]]] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control                        *workControl
-	tBigIntLiteral                 astChunk[BigIntLiteral]
-	tBooleanLiteral                astChunk[BooleanLiteral]
-	tDebuggerStatement             astChunk[DebuggerStatement]
-	tEmptyStatement                astChunk[EmptyStatement]
-	tEndOfFileToken                astChunk[EndOfFileToken]
-	tIdentifier                    astChunk[Identifier]
-	tImportExpression              astChunk[ImportExpression]
-	tJSDocAllType                  astChunk[JSDocAllType]
-	tJSDocUnknownType              astChunk[JSDocUnknownType]
-	tJsxClosingFragment            astChunk[JsxClosingFragment]
-	tJsxOpeningFragment            astChunk[JsxOpeningFragment]
-	tJsxText                       astChunk[JsxText]
-	tKeywordTypeNode               astChunk[KeywordTypeNode]
-	tModifier                      astChunk[Modifier]
-	tNoSubstitutionTemplateLiteral astChunk[NoSubstitutionTemplateLiteral]
-	tNullLiteral                   astChunk[NullLiteral]
-	tNumericLiteral                astChunk[NumericLiteral]
-	tOmittedExpression             astChunk[OmittedExpression]
-	tPrivateIdentifier             astChunk[PrivateIdentifier]
-	tRegularExpressionLiteral      astChunk[RegularExpressionLiteral]
-	tSemicolonClassElement         astChunk[SemicolonClassElement]
-	tStringLiteral                 astChunk[StringLiteral]
-	tSuperExpression               astChunk[SuperExpression]
-	tTemplateHead                  astChunk[TemplateHead]
-	tTemplateMiddle                astChunk[TemplateMiddle]
-	tTemplateTail                  astChunk[TemplateTail]
-	tThisExpression                astChunk[ThisExpression]
-	tThisTypeNode                  astChunk[ThisTypeNode]
-	tToken                         astChunk[Token]
 	tArrayBindingPattern           astChunk[ArrayBindingPattern]
 	tArrayLiteralExpression        astChunk[ArrayLiteralExpression]
 	tArrayType                     astChunk[ArrayType]
 	tArrowFunction                 astChunk[ArrowFunction]
 	tAsExpression                  astChunk[AsExpression]
 	tAwaitExpression               astChunk[AwaitExpression]
+	tBigIntLiteral                 astChunk[BigIntLiteral]
 	tBinaryExpression              astChunk[BinaryExpression]
 	tBindingElement                astChunk[BindingElement]
 	tBlock                         astChunk[Block]
+	tBooleanLiteral                astChunk[BooleanLiteral]
 	tBreakStatement                astChunk[BreakStatement]
 	tCallExpression                astChunk[CallExpression]
 	tCallSignature                 astChunk[CallSignature]
@@ -20028,11 +20858,14 @@ type tslabs struct {
 	tConstructor                   astChunk[Constructor]
 	tConstructorType               astChunk[ConstructorType]
 	tContinueStatement             astChunk[ContinueStatement]
+	tDebuggerStatement             astChunk[DebuggerStatement]
 	tDecorator                     astChunk[Decorator]
 	tDefaultClause                 astChunk[DefaultClause]
 	tDeleteExpression              astChunk[DeleteExpression]
 	tDoStatement                   astChunk[DoStatement]
 	tElementAccessExpression       astChunk[ElementAccessExpression]
+	tEmptyStatement                astChunk[EmptyStatement]
+	tEndOfFileToken                astChunk[EndOfFileToken]
 	tEnumDeclaration               astChunk[EnumDeclaration]
 	tEnumMember                    astChunk[EnumMember]
 	tExportAssignment              astChunk[ExportAssignment]
@@ -20049,12 +20882,14 @@ type tslabs struct {
 	tFunctionType                  astChunk[FunctionType]
 	tGetAccessor                   astChunk[GetAccessor]
 	tHeritageClause                astChunk[HeritageClause]
+	tIdentifier                    astChunk[Identifier]
 	tIfStatement                   astChunk[IfStatement]
 	tImportAttribute               astChunk[ImportAttribute]
 	tImportAttributes              astChunk[ImportAttributes]
 	tImportClause                  astChunk[ImportClause]
 	tImportDeclaration             astChunk[ImportDeclaration]
 	tImportEqualsDeclaration       astChunk[ImportEqualsDeclaration]
+	tImportExpression              astChunk[ImportExpression]
 	tImportSpecifier               astChunk[ImportSpecifier]
 	tImportType                    astChunk[ImportType]
 	tIndexSignature                astChunk[IndexSignature]
@@ -20062,25 +20897,32 @@ type tslabs struct {
 	tInferType                     astChunk[InferType]
 	tInterfaceDeclaration          astChunk[InterfaceDeclaration]
 	tIntersectionType              astChunk[IntersectionType]
+	tJSDocAllType                  astChunk[JSDocAllType]
 	tJSDocFunctionType             astChunk[JSDocFunctionType]
 	tJSDocNonNullableType          astChunk[JSDocNonNullableType]
 	tJSDocNullableType             astChunk[JSDocNullableType]
+	tJSDocUnknownType              astChunk[JSDocUnknownType]
 	tJsxAttribute                  astChunk[JsxAttribute]
 	tJsxAttributes                 astChunk[JsxAttributes]
 	tJsxClosingElement             astChunk[JsxClosingElement]
+	tJsxClosingFragment            astChunk[JsxClosingFragment]
 	tJsxElement                    astChunk[JsxElement]
 	tJsxExpression                 astChunk[JsxExpression]
 	tJsxFragment                   astChunk[JsxFragment]
 	tJsxNamespacedName             astChunk[JsxNamespacedName]
 	tJsxOpeningElement             astChunk[JsxOpeningElement]
+	tJsxOpeningFragment            astChunk[JsxOpeningFragment]
 	tJsxSelfClosingElement         astChunk[JsxSelfClosingElement]
 	tJsxSpreadAttribute            astChunk[JsxSpreadAttribute]
+	tJsxText                       astChunk[JsxText]
+	tKeywordTypeNode               astChunk[KeywordTypeNode]
 	tLabeledStatement              astChunk[LabeledStatement]
 	tLiteralType                   astChunk[LiteralType]
 	tMappedType                    astChunk[MappedType]
 	tMetaProperty                  astChunk[MetaProperty]
 	tMethodDeclaration             astChunk[MethodDeclaration]
 	tMethodSignature               astChunk[MethodSignature]
+	tModifier                      astChunk[Modifier]
 	tModuleBlock                   astChunk[ModuleBlock]
 	tModuleDeclaration             astChunk[ModuleDeclaration]
 	tNamedExports                  astChunk[NamedExports]
@@ -20090,35 +20932,50 @@ type tslabs struct {
 	tNamespaceExportDeclaration    astChunk[NamespaceExportDeclaration]
 	tNamespaceImport               astChunk[NamespaceImport]
 	tNewExpression                 astChunk[NewExpression]
+	tNoSubstitutionTemplateLiteral astChunk[NoSubstitutionTemplateLiteral]
 	tNonNullExpression             astChunk[NonNullExpression]
+	tNullLiteral                   astChunk[NullLiteral]
+	tNumericLiteral                astChunk[NumericLiteral]
 	tObjectBindingPattern          astChunk[ObjectBindingPattern]
 	tObjectLiteralExpression       astChunk[ObjectLiteralExpression]
+	tOmittedExpression             astChunk[OmittedExpression]
 	tOptionalType                  astChunk[OptionalType]
 	tParameter                     astChunk[Parameter]
 	tParenthesizedExpression       astChunk[ParenthesizedExpression]
 	tParenthesizedType             astChunk[ParenthesizedType]
 	tPostfixUnaryExpression        astChunk[PostfixUnaryExpression]
 	tPrefixUnaryExpression         astChunk[PrefixUnaryExpression]
+	tPrivateIdentifier             astChunk[PrivateIdentifier]
 	tPropertyAccessExpression      astChunk[PropertyAccessExpression]
 	tPropertyAssignment            astChunk[PropertyAssignment]
 	tPropertyDeclaration           astChunk[PropertyDeclaration]
 	tPropertySignature             astChunk[PropertySignature]
 	tQualifiedName                 astChunk[QualifiedName]
+	tRegularExpressionLiteral      astChunk[RegularExpressionLiteral]
 	tRestType                      astChunk[RestType]
 	tReturnStatement               astChunk[ReturnStatement]
 	tSatisfiesExpression           astChunk[SatisfiesExpression]
+	tSemicolonClassElement         astChunk[SemicolonClassElement]
 	tSetAccessor                   astChunk[SetAccessor]
 	tShorthandPropertyAssignment   astChunk[ShorthandPropertyAssignment]
 	tSourceFile                    astChunk[SourceFile]
 	tSpreadAssignment              astChunk[SpreadAssignment]
 	tSpreadElement                 astChunk[SpreadElement]
+	tStringLiteral                 astChunk[StringLiteral]
+	tSuperExpression               astChunk[SuperExpression]
 	tSwitchStatement               astChunk[SwitchStatement]
 	tTaggedTemplateExpression      astChunk[TaggedTemplateExpression]
 	tTemplateExpression            astChunk[TemplateExpression]
+	tTemplateHead                  astChunk[TemplateHead]
 	tTemplateLiteralType           astChunk[TemplateLiteralType]
 	tTemplateLiteralTypeSpan       astChunk[TemplateLiteralTypeSpan]
+	tTemplateMiddle                astChunk[TemplateMiddle]
 	tTemplateSpan                  astChunk[TemplateSpan]
+	tTemplateTail                  astChunk[TemplateTail]
+	tThisExpression                astChunk[ThisExpression]
+	tThisTypeNode                  astChunk[ThisTypeNode]
 	tThrowStatement                astChunk[ThrowStatement]
+	tToken                         astChunk[Token]
 	tTryStatement                  astChunk[TryStatement]
 	tTupleType                     astChunk[TupleType]
 	tTypeAliasDeclaration          astChunk[TypeAliasDeclaration]
@@ -22522,7 +23379,7 @@ func init() {
 		{id: 3, name: "otherTopLevelStatement", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 4, name: "awaitFreeTopLevelStatement", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 5, name: "topLevelAwaitFreeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 6, name: "endOfFile", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "EndOfFileToken", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "endOfFile", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EndOfFileToken", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 7, name: "hashbang", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 8, name: "statement", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"ctx"}},
 		{id: 9, name: "specialStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22535,7 +23392,7 @@ func init() {
 		{id: 16, name: "contextualDeclaration", scope: []string{"d"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 17, name: "declarationKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 18, name: "block", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{"ctx"}},
-		{id: 19, name: "emptyStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EmptyStatement", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 19, name: "emptyStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EmptyStatement", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 20, name: "variableStatement", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 21, name: "variableStatementStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
 		{id: 22, name: "letFollows", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -22548,7 +23405,7 @@ func init() {
 		{id: 29, name: "forOfStatement", scope: []string{"t", "i", "e", "s"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 30, name: "forInStatement", scope: []string{"i", "e", "s"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 31, name: "forClassicStatement", scope: []string{"i", "c", "n", "s"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 32, name: "awaitToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 32, name: "awaitToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 33, name: "forInitializer", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"ctx"}},
 		{id: 34, name: "forDeclarationList", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 35, name: "forUsingFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -22556,8 +23413,8 @@ func init() {
 		{id: 37, name: "breakStatement", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 38, name: "returnStatement", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 39, name: "throwStatement", scope: []string{"d", "e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 40, name: "missingIdentifier", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 41, name: "debuggerStatement", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "DebuggerStatement", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 40, name: "missingIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 41, name: "debuggerStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "DebuggerStatement", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 42, name: "switchStatement", scope: []string{"e", "b"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 43, name: "caseBlock", scope: []string{"cs"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 44, name: "caseOrDefaultClause", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22570,7 +23427,7 @@ func init() {
 		{id: 51, name: "labeledStatement", scope: []string{"l", "s"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{"ctx"}},
 		{id: 52, name: "expressionStatement", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{"ctx"}},
 		{id: 53, name: "declareStatement", scope: []string{"x", "e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 54, name: "declareIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 54, name: "declareIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 55, name: "eos", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
 		{id: 56, name: "canParseSemicolon", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
 		{id: 57, name: "nlAhead", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
@@ -22591,7 +23448,7 @@ func init() {
 		{id: 72, name: "bindingElementShorthand", scope: []string{"t", "n", "i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 22, novalue: false, vars: []string{"ctx"}},
 		{id: 73, name: "arrayBindingPattern", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 74, name: "arrayBindingElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 23, novalue: false, vars: []string{"ctx"}},
-		{id: 75, name: "omittedExpression", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "OmittedExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 75, name: "omittedExpression", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "OmittedExpression", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 76, name: "functionDeclaration", scope: []string{"dm", "am", "m", "s", "i", "t", "ps", "rt", "fb"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 24, novalue: false, vars: []string{"ctx"}},
 		{id: 77, name: "defaultModifierScan", scope: []string{"d"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 78, name: "asyncModifierScan", scope: []string{"a"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 25, novalue: false, vars: []string{"ctx"}},
@@ -22599,12 +23456,12 @@ func init() {
 		{id: 80, name: "parameters", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 27, novalue: false, vars: []string{"ctx"}},
 		{id: 81, name: "parameter", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 28, novalue: false, vars: []string{"ctx"}},
 		{id: 82, name: "thisParameter", scope: []string{"n", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 83, name: "thisIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 83, name: "thisIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 84, name: "regularParameter", scope: []string{"m", "dt", "n", "qt", "t", "i"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 85, name: "returnType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 29, novalue: false, vars: []string{"ctx"}},
 		{id: 86, name: "classDeclaration", scope: []string{"m", "i", "t", "hc", "ms"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 30, novalue: false, vars: []string{"ctx"}},
 		{id: 87, name: "classExpression", scope: []string{"m", "i", "t", "hc", "ms"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 88, name: "className", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 31, novalue: false, vars: []string{}},
+		{id: 88, name: "className", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 31, novalue: false, vars: []string{}},
 		{id: 89, name: "heritageClauses", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 32, novalue: false, vars: []string{"ctx"}},
 		{id: 90, name: "heritageClause", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 33, novalue: false, vars: []string{"ctx"}},
 		{id: 91, name: "heritageElementStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 34, novalue: false, vars: []string{"ctx"}},
@@ -22620,7 +23477,7 @@ func init() {
 		{id: 101, name: "classAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 102, name: "classMemberNotAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 103, name: "accessorKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 39, novalue: false, vars: []string{}},
-		{id: 104, name: "semicolonClassElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SemicolonClassElement", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 104, name: "semicolonClassElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SemicolonClassElement", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 105, name: "classStaticBlock", scope: []string{"m", "b"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 106, name: "getAccessor", scope: []string{"m", "n", "t", "ps", "rt", "fb"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 107, name: "setAccessor", scope: []string{"m", "n", "t", "ps", "rt", "fb"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22632,7 +23489,7 @@ func init() {
 		{id: 113, name: "propertyDeclaration", scope: []string{"m", "n", "qt", "x", "t", "v"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 114, name: "interfaceDeclaration", scope: []string{"m", "n", "t", "hc", "ms"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 115, name: "typeAliasDeclaration", scope: []string{"m", "n", "t", "ty"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 116, name: "intrinsicKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "KeywordTypeNode", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 116, name: "intrinsicKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "KeywordTypeNode", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 117, name: "enumDeclaration", scope: []string{"m", "n", "ms"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 118, name: "enumMember", scope: []string{"n", "v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 42, novalue: false, vars: []string{"ctx"}},
 		{id: 119, name: "moduleDeclaration", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22641,7 +23498,7 @@ func init() {
 		{id: 122, name: "nestedNamespace", scope: []string{"n", "b"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 123, name: "externalModuleDeclaration", scope: []string{"m", "n", "mb"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 124, name: "globalDeclaration", scope: []string{"m", "n", "mb"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 125, name: "globalIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 125, name: "globalIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 126, name: "moduleBlock", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 44, novalue: false, vars: []string{"ctx"}},
 		{id: 127, name: "importEqualsDeclaration", scope: []string{"m", "tt", "n", "r"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 128, name: "moduleReference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22658,10 +23515,10 @@ func init() {
 		{id: 139, name: "importSpecifierTypeAs", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 140, name: "importSpecifierType", scope: []string{"p", "n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 141, name: "importSpecifierPlain", scope: []string{"p", "n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 142, name: "typeIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 47, novalue: false, vars: []string{}},
-		{id: 143, name: "importedName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 48, novalue: false, vars: []string{"ctx"}},
-		{id: 144, name: "privateName", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 145, name: "asIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 49, novalue: false, vars: []string{}},
+		{id: 142, name: "typeIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 47, novalue: false, vars: []string{}},
+		{id: 143, name: "importedName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 48, novalue: false, vars: []string{"ctx"}},
+		{id: 144, name: "privateName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 145, name: "asIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 49, novalue: false, vars: []string{}},
 		{id: 146, name: "moduleExportName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 50, novalue: false, vars: []string{}},
 		{id: 147, name: "moduleExportNameStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 51, novalue: false, vars: []string{}},
 		{id: 148, name: "moduleSpecifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 52, novalue: false, vars: []string{"ctx"}},
@@ -22685,8 +23542,8 @@ func init() {
 		{id: 166, name: "decoratorList", scope: []string{"ds"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 58, novalue: false, vars: []string{"ctx"}},
 		{id: 167, name: "modifierList", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 59, novalue: false, vars: []string{}},
 		{id: 168, name: "staticModifierList", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 60, novalue: false, vars: []string{}},
-		{id: 169, name: "modifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 61, novalue: false, vars: []string{}},
-		{id: 170, name: "staticModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: true, leader: false, seen: 62, novalue: false, vars: []string{}},
+		{id: 169, name: "modifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, textStruct: true, seen: 61, novalue: false, vars: []string{}},
+		{id: 170, name: "staticModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, textStruct: true, seen: 62, novalue: false, vars: []string{}},
 		{id: 171, name: "exportModifierFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 172, name: "canFollowExportModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 63, novalue: false, vars: []string{}},
 		{id: 173, name: "defaultModifierFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 64, novalue: false, vars: []string{}},
@@ -22695,8 +23552,8 @@ func init() {
 		{id: 176, name: "classModifiers", scope: []string{"d1", "m1", "d2", "m2"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 67, novalue: false, vars: []string{"ctx"}},
 		{id: 177, name: "classModifierList", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
 		{id: 178, name: "classStaticModifierList", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 179, name: "classModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 69, novalue: false, vars: []string{}},
-		{id: 180, name: "classStaticModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 179, name: "classModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, textStruct: true, seen: 69, novalue: false, vars: []string{}},
+		{id: 180, name: "classStaticModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 181, name: "typeMemberModifiers", scope: []string{"ms"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 70, novalue: false, vars: []string{}},
 		{id: 182, name: "typeParameterModifiers", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 183, name: "decorator", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 71, novalue: false, vars: []string{"ctx"}},
@@ -22710,14 +23567,14 @@ func init() {
 		{id: 191, name: "identifierOrKeywordOrLiteralStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 78, novalue: false, vars: []string{}},
 		{id: 192, name: "nlStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 193, name: "assignment", scope: []string{"l", "o", "r"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 194, name: "assignmentOperator", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 194, name: "assignmentOperator", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 195, name: "conditionalOrBinaryExpression", scope: []string{"c", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 196, name: "conditionalWhenTrue", scope: []string{"e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 197, name: "conditionalWhenFalse", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 198, name: "conditionalQuestionToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 198, name: "conditionalQuestionToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 199, name: "arrowFunction", scope: []string{"ml", "t", "ps", "rt", "a", "b"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 200, name: "arrowAsyncModifier", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 201, name: "asyncKeywordModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: true, leader: false, seen: 79, novalue: false, vars: []string{}},
+		{id: 201, name: "asyncKeywordModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, textStruct: true, seen: 79, novalue: false, vars: []string{}},
 		{id: 202, name: "arrowTypeParameters", scope: []string{"tp"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 203, name: "tsxArrowTypeParametersStart", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 204, name: "arrowParenthesisIsNotParameterList", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22726,17 +23583,17 @@ func init() {
 		{id: 207, name: "asyncSimpleArrowFunction", scope: []string{"m", "p", "a", "b"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 208, name: "arrowBody", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 81, novalue: false, vars: []string{"ctx"}},
 		{id: 209, name: "binaryExpression", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 210, name: "coalesceOrToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 211, name: "ampersandAmpersandToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 212, name: "barToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 213, name: "caretToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 214, name: "ampersandToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 215, name: "equalityToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 216, name: "relationalToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: true, leader: false, seen: 82, novalue: false, vars: []string{"ctx"}},
-		{id: 217, name: "shiftToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 218, name: "additiveToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 219, name: "multiplicativeToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 220, name: "asteriskAsteriskToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 210, name: "coalesceOrToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 211, name: "ampersandAmpersandToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 212, name: "barToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 213, name: "caretToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 214, name: "ampersandToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 215, name: "equalityToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 216, name: "relationalToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: true, leader: false, textStruct: true, seen: 82, novalue: false, vars: []string{"ctx"}},
+		{id: 217, name: "shiftToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 218, name: "additiveToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 219, name: "multiplicativeToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 220, name: "asteriskAsteriskToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 221, name: "binaryOperatorStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 83, novalue: false, vars: []string{"ctx"}},
 		{id: 222, name: "unaryExpression", scope: []string{"u"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 84, novalue: false, vars: []string{"ctx"}},
 		{id: 223, name: "unaryOperatorStart", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 85, novalue: false, vars: []string{"ctx"}},
@@ -22756,7 +23613,7 @@ func init() {
 		{id: 237, name: "heritageExpression", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 238, name: "newTarget", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 239, name: "memberName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 89, novalue: false, vars: []string{}},
-		{id: 240, name: "questionDotToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 240, name: "questionDotToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 241, name: "typeArgumentsInExpression", scope: []string{"ts"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 90, novalue: false, vars: []string{"ctx"}},
 		{id: 242, name: "typeArgumentsCanFollow", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 243, name: "expressionStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 91, novalue: false, vars: []string{"ctx"}},
@@ -22764,17 +23621,17 @@ func init() {
 		{id: 245, name: "argumentList", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 246, name: "argument", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 93, novalue: false, vars: []string{"ctx"}},
 		{id: 247, name: "spreadElement", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 94, novalue: false, vars: []string{"ctx"}},
-		{id: 248, name: "superExpression", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "SuperExpression", memo: true, leader: false, seen: 95, novalue: false, vars: []string{}},
-		{id: 249, name: "superKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "SuperExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 250, name: "importCallee", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ImportExpression", memo: true, leader: false, seen: 96, novalue: false, vars: []string{}},
+		{id: 248, name: "superExpression", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SuperExpression", memo: true, leader: false, textStruct: true, seen: 95, novalue: false, vars: []string{}},
+		{id: 249, name: "superKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SuperExpression", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 250, name: "importCallee", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ImportExpression", memo: true, leader: false, textStruct: true, seen: 96, novalue: false, vars: []string{}},
 		{id: 251, name: "importMetaProperty", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 97, novalue: false, vars: []string{}},
 		{id: 252, name: "primaryExpression", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 98, novalue: false, vars: []string{"ctx"}},
 		{id: 253, name: "wordPrimary", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 254, name: "symbolPrimary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 255, name: "numericOrBigIntLiteral", scope: []string{"e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 256, name: "thisKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 257, name: "nullKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "NullLiteral", memo: true, leader: false, seen: 99, novalue: false, vars: []string{}},
-		{id: 258, name: "booleanKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "BooleanLiteral", memo: true, leader: false, seen: 100, novalue: false, vars: []string{}},
+		{id: 256, name: "thisKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisExpression", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 257, name: "nullKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NullLiteral", memo: true, leader: false, textStruct: true, seen: 99, novalue: false, vars: []string{}},
+		{id: 258, name: "booleanKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BooleanLiteral", memo: true, leader: false, textStruct: true, seen: 100, novalue: false, vars: []string{}},
 		{id: 259, name: "parenthesizedExpression", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 260, name: "arrayLiteralExpression", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 261, name: "arrayElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 101, novalue: false, vars: []string{"ctx"}},
@@ -22810,13 +23667,13 @@ func init() {
 		{id: 291, name: "jsxOpeningElement", scope: []string{"n", "t", "a"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 292, name: "jsxClosingElement", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 293, name: "jsxFragment", scope: []string{"o", "cs", "c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 109, novalue: false, vars: []string{"ctx"}},
-		{id: 294, name: "jsxOpeningFragment", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "JsxOpeningFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 295, name: "jsxClosingFragment", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "JsxClosingFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 294, name: "jsxOpeningFragment", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxOpeningFragment", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 295, name: "jsxClosingFragment", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxClosingFragment", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 296, name: "jsxElementName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 110, novalue: false, vars: []string{}},
 		{id: 297, name: "jsxMemberName", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 298, name: "jsxTagNameStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 299, name: "jsxThis", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 300, name: "jsxIdentifier", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 111, novalue: false, vars: []string{}},
+		{id: 299, name: "jsxThis", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisExpression", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 300, name: "jsxIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 111, novalue: false, vars: []string{}},
 		{id: 301, name: "jsxNamespacedName", scope: []string{"s", "n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 112, novalue: false, vars: []string{}},
 		{id: 302, name: "jsxAttributes", scope: []string{"ps"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 113, novalue: false, vars: []string{"ctx"}},
 		{id: 303, name: "jsxAttributeLike", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 114, novalue: false, vars: []string{"ctx"}},
@@ -22824,11 +23681,11 @@ func init() {
 		{id: 305, name: "jsxAttributeName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 306, name: "jsxAttributeValue", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 307, name: "jsxElementOrFragmentValue", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 308, name: "jsxAttributeString", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 308, name: "jsxAttributeString", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 309, name: "jsxAttributeExpression", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 310, name: "jsxSpreadAttribute", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 311, name: "jsxChild", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 115, novalue: false, vars: []string{"ctx"}},
-		{id: 312, name: "jsxText", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxText", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 312, name: "jsxText", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxText", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 313, name: "jsxChildExpression", scope: []string{"dt", "e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 314, name: "jsxChildElement", scope: []string{"e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 315, name: "typeNode", scope: []string{"t"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 116, novalue: false, vars: []string{"ctx"}},
@@ -22841,7 +23698,7 @@ func init() {
 		{id: 322, name: "functionType", scope: []string{"t", "ps", "r"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 323, name: "constructorType", scope: []string{"am", "t", "ps", "r"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 324, name: "abstractModifier", scope: []string{"m"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 325, name: "abstractKeywordModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 325, name: "abstractKeywordModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 326, name: "returnTypeOfType", scope: []string{"t"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 121, novalue: false, vars: []string{"ctx"}},
 		{id: 327, name: "unionOrHigher", scope: []string{"u"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 328, name: "leadingUnionType", scope: []string{"f", "r"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22860,33 +23717,33 @@ func init() {
 		{id: 341, name: "wordType", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 342, name: "specialWordType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 343, name: "symbolType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 344, name: "keywordType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "KeywordTypeNode", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 344, name: "keywordType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "KeywordTypeNode", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 345, name: "literalType", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 125, novalue: false, vars: []string{}},
 		{id: 346, name: "negativeLiteral", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 347, name: "thisType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisTypeNode", memo: true, leader: false, seen: 126, novalue: false, vars: []string{}},
+		{id: 347, name: "thisType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisTypeNode", memo: true, leader: false, textStruct: true, seen: 126, novalue: false, vars: []string{}},
 		{id: 348, name: "thisTypePredicate", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 349, name: "assertsTypePredicate", scope: []string{"a", "n", "ty"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 350, name: "assertsToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 350, name: "assertsToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 351, name: "identifierOrKeywordStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 127, novalue: false, vars: []string{}},
 		{id: 352, name: "typeQuery", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 353, name: "importType", scope: []string{"o", "a", "i", "qn", "t"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 354, name: "importTypeAttributes", scope: []string{"a"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 355, name: "typeReference", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 128, novalue: false, vars: []string{"ctx"}},
 		{id: 356, name: "functionTypeReference", scope: []string{"n"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 357, name: "functionIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 357, name: "functionIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 358, name: "parenthesizedType", scope: []string{"t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 359, name: "unambiguousFunctionTypeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 129, novalue: false, vars: []string{"ctx"}},
 		{id: 360, name: "templateLiteralType", scope: []string{"h", "ss"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 361, name: "templateTypeSpans", scope: []string{"ms", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 362, name: "templateTypeSpanMiddle", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 363, name: "templateTypeSpanTail", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 364, name: "jsdocAllType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "JSDocAllType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 365, name: "jsdocUnknownType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "JSDocUnknownType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 364, name: "jsdocAllType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JSDocAllType", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 365, name: "jsdocUnknownType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JSDocUnknownType", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 366, name: "jsdocNullableType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 367, name: "jsdocNonNullableType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 368, name: "jsdocFunctionType", scope: []string{"ps", "rt"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 369, name: "jsdocParameter", scope: []string{"i", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 130, novalue: false, vars: []string{"ctx"}},
-		{id: 370, name: "jsdocParameterName", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 370, name: "jsdocParameterName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 371, name: "entityName", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 372, name: "entityNameAllowReserved", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 131, novalue: false, vars: []string{}},
 		{id: 373, name: "typeArguments", scope: []string{"ts"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 132, novalue: false, vars: []string{"ctx"}},
@@ -22907,12 +23764,12 @@ func init() {
 		{id: 388, name: "mappedTypeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 142, novalue: false, vars: []string{"ctx"}},
 		{id: 389, name: "mappedType", scope: []string{"rt", "p", "nt", "qt", "t", "ms"}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 390, name: "mappedTypeParameter", scope: []string{"n", "c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 391, name: "mappedReadonlyToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 392, name: "mappedPlusMinusReadonly", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 393, name: "mappedQuestionToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 394, name: "mappedPlusMinusQuestion", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 395, name: "plusMinusToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 396, name: "readonlyToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 391, name: "mappedReadonlyToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 392, name: "mappedPlusMinusReadonly", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 393, name: "mappedQuestionToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 394, name: "mappedPlusMinusQuestion", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 395, name: "plusMinusToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 396, name: "readonlyToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 397, name: "typeMember", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 143, novalue: false, vars: []string{"ctx"}},
 		{id: 398, name: "typeAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 399, name: "typeMemberNotAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -22929,19 +23786,19 @@ func init() {
 		{id: 410, name: "typeStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 147, novalue: false, vars: []string{}},
 		{id: 411, name: "propertyName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 148, novalue: false, vars: []string{"ctx"}},
 		{id: 412, name: "computedPropertyName", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 413, name: "questionToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 414, name: "exclamationToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 415, name: "asteriskToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 416, name: "dotDotDotToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 417, name: "equalsGreaterThanToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 418, name: "colonToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 419, name: "equalsToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 420, name: "commaToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 421, name: "identifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 149, novalue: false, vars: []string{"ctx"}},
-		{id: 422, name: "bindingIdentifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 150, novalue: false, vars: []string{}},
-		{id: 423, name: "identifierName", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 151, novalue: false, vars: []string{}},
-		{id: 424, name: "privateIdentifier", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "PrivateIdentifier", memo: true, leader: false, seen: 152, novalue: false, vars: []string{}},
-		{id: 425, name: "identifierNameOrPrivate", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 153, novalue: false, vars: []string{}},
+		{id: 413, name: "questionToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 414, name: "exclamationToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 415, name: "asteriskToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 416, name: "dotDotDotToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 417, name: "equalsGreaterThanToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 418, name: "colonToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 419, name: "equalsToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 420, name: "commaToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 421, name: "identifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 149, novalue: false, vars: []string{"ctx"}},
+		{id: 422, name: "bindingIdentifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 150, novalue: false, vars: []string{}},
+		{id: 423, name: "identifierName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 151, novalue: false, vars: []string{}},
+		{id: 424, name: "privateIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PrivateIdentifier", memo: true, leader: false, textStruct: true, seen: 152, novalue: false, vars: []string{}},
+		{id: 425, name: "identifierNameOrPrivate", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, textStruct: true, seen: 153, novalue: false, vars: []string{}},
 		{id: 426, name: "anyKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 154, novalue: false, vars: []string{}},
 		{id: 427, name: "reservedWord", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 155, novalue: false, vars: []string{}},
 		{id: 428, name: "identifierRest", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 156, novalue: false, vars: []string{}},
@@ -22956,8 +23813,8 @@ func init() {
 		{id: 437, name: "unicodeEscape", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 438, name: "unicodeBraced", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 439, name: "hex", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 440, name: "numericLiteral", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "NumericLiteral", memo: true, leader: false, seen: 162, novalue: false, vars: []string{}},
-		{id: 441, name: "bigIntLiteral", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "BigIntLiteral", memo: true, leader: false, seen: 163, novalue: false, vars: []string{}},
+		{id: 440, name: "numericLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NumericLiteral", memo: true, leader: false, textStruct: true, seen: 162, novalue: false, vars: []string{}},
+		{id: 441, name: "bigIntLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BigIntLiteral", memo: true, leader: false, textStruct: true, seen: 163, novalue: false, vars: []string{}},
 		{id: 442, name: "decimalLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 443, name: "decimalInteger", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 444, name: "decimalDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -22965,19 +23822,19 @@ func init() {
 		{id: 446, name: "hexLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 165, novalue: false, vars: []string{}},
 		{id: 447, name: "binaryLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 448, name: "octalLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 449, name: "stringLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLiteral", memo: true, leader: false, seen: 166, novalue: false, vars: []string{}},
+		{id: 449, name: "stringLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLiteral", memo: true, leader: false, textStruct: true, seen: 166, novalue: false, vars: []string{}},
 		{id: 450, name: "escapeSequence", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 167, novalue: false, vars: []string{}},
-		{id: 451, name: "noSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "NoSubstitutionTemplateLiteral", memo: true, leader: false, seen: 168, novalue: false, vars: []string{}},
-		{id: 452, name: "templateHead", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateHead", memo: true, leader: false, seen: 169, novalue: false, vars: []string{}},
-		{id: 453, name: "templateMiddle", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateMiddle", memo: true, leader: false, seen: 170, novalue: false, vars: []string{}},
-		{id: 454, name: "templateTail", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateTail", memo: true, leader: false, seen: 171, novalue: false, vars: []string{}},
+		{id: 451, name: "noSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NoSubstitutionTemplateLiteral", memo: true, leader: false, textStruct: true, seen: 168, novalue: false, vars: []string{}},
+		{id: 452, name: "templateHead", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateHead", memo: true, leader: false, textStruct: true, seen: 169, novalue: false, vars: []string{}},
+		{id: 453, name: "templateMiddle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateMiddle", memo: true, leader: false, textStruct: true, seen: 170, novalue: false, vars: []string{}},
+		{id: 454, name: "templateTail", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateTail", memo: true, leader: false, textStruct: true, seen: 171, novalue: false, vars: []string{}},
 		{id: 455, name: "templateCharacters", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 172, novalue: false, vars: []string{}},
-		{id: 456, name: "rawNoSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "NoSubstitutionTemplateLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 457, name: "rawTemplateHead", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateHead", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 458, name: "rawTemplateMiddle", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 459, name: "rawTemplateTail", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateTail", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 456, name: "rawNoSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NoSubstitutionTemplateLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 457, name: "rawTemplateHead", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateHead", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 458, name: "rawTemplateMiddle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateMiddle", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 459, name: "rawTemplateTail", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateTail", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 460, name: "rawTemplateCharacters", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 461, name: "regularExpressionLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "RegularExpressionLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 461, name: "regularExpressionLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "RegularExpressionLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 462, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 463, name: "sp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 464, name: "arrayBindingElementList", scope: []string{"f", "r"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -25634,12 +26491,16 @@ func init() {
 	typeKinds["AsExpression"] = kindOf("AsExpression", "")
 	structFields["AwaitExpression"] = map[string]bool{"Expression": true}
 	typeKinds["AwaitExpression"] = kindOf("AwaitExpression", "")
+	structFields["BigIntLiteral"] = map[string]bool{"Text": true}
+	typeKinds["BigIntLiteral"] = kindOf("BigIntLiteral", "")
 	structFields["BinaryExpression"] = map[string]bool{"Left": true, "OperatorToken": true, "Right": true}
 	typeKinds["BinaryExpression"] = kindOf("BinaryExpression", "")
 	structFields["BindingElement"] = map[string]bool{"DotDotDotToken": true, "PropertyName": true, "Name": true, "Initializer": true}
 	typeKinds["BindingElement"] = kindOf("BindingElement", "")
 	structFields["Block"] = map[string]bool{"Statements": true}
 	typeKinds["Block"] = kindOf("Block", "")
+	structFields["BooleanLiteral"] = map[string]bool{"Text": true}
+	typeKinds["BooleanLiteral"] = kindOf("BooleanLiteral", "")
 	structFields["BreakStatement"] = map[string]bool{"Label": true}
 	typeKinds["BreakStatement"] = kindOf("BreakStatement", "")
 	structFields["CallExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "TypeArguments": true, "Arguments": true}
@@ -25672,6 +26533,8 @@ func init() {
 	typeKinds["ConstructorType"] = kindOf("ConstructorType", "")
 	structFields["ContinueStatement"] = map[string]bool{"Label": true}
 	typeKinds["ContinueStatement"] = kindOf("ContinueStatement", "")
+	structFields["DebuggerStatement"] = map[string]bool{"Text": true}
+	typeKinds["DebuggerStatement"] = kindOf("DebuggerStatement", "")
 	structFields["Decorator"] = map[string]bool{"Expression": true}
 	typeKinds["Decorator"] = kindOf("Decorator", "")
 	structFields["DefaultClause"] = map[string]bool{"Statements": true}
@@ -25682,6 +26545,10 @@ func init() {
 	typeKinds["DoStatement"] = kindOf("DoStatement", "")
 	structFields["ElementAccessExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "ArgumentExpression": true}
 	typeKinds["ElementAccessExpression"] = kindOf("ElementAccessExpression", "")
+	structFields["EmptyStatement"] = map[string]bool{"Text": true}
+	typeKinds["EmptyStatement"] = kindOf("EmptyStatement", "")
+	structFields["EndOfFileToken"] = map[string]bool{"Text": true}
+	typeKinds["EndOfFileToken"] = kindOf("EndOfFileToken", "")
 	structFields["EnumDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "Members": true}
 	typeKinds["EnumDeclaration"] = kindOf("EnumDeclaration", "")
 	structFields["EnumMember"] = map[string]bool{"Name": true, "Initializer": true}
@@ -25714,6 +26581,8 @@ func init() {
 	typeKinds["GetAccessor"] = kindOf("GetAccessor", "")
 	structFields["HeritageClause"] = map[string]bool{"Token": true, "Types": true}
 	typeKinds["HeritageClause"] = kindOf("HeritageClause", "")
+	structFields["Identifier"] = map[string]bool{"Text": true}
+	typeKinds["Identifier"] = kindOf("Identifier", "")
 	structFields["IfStatement"] = map[string]bool{"Expression": true, "ThenStatement": true, "ElseStatement": true}
 	typeKinds["IfStatement"] = kindOf("IfStatement", "")
 	structFields["ImportAttribute"] = map[string]bool{"Name": true, "Value": true}
@@ -25726,6 +26595,8 @@ func init() {
 	typeKinds["ImportDeclaration"] = kindOf("ImportDeclaration", "")
 	structFields["ImportEqualsDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "ModuleReference": true, "IsTypeOnly": true}
 	typeKinds["ImportEqualsDeclaration"] = kindOf("ImportEqualsDeclaration", "")
+	structFields["ImportExpression"] = map[string]bool{"Text": true}
+	typeKinds["ImportExpression"] = kindOf("ImportExpression", "")
 	structFields["ImportSpecifier"] = map[string]bool{"PropertyName": true, "Name": true, "IsTypeOnly": true}
 	typeKinds["ImportSpecifier"] = kindOf("ImportSpecifier", "")
 	structFields["ImportType"] = map[string]bool{"Argument": true, "Attributes": true, "Qualifier": true, "TypeArguments": true, "IsTypeOf": true}
@@ -25740,18 +26611,24 @@ func init() {
 	typeKinds["InterfaceDeclaration"] = kindOf("InterfaceDeclaration", "")
 	structFields["IntersectionType"] = map[string]bool{"Types": true}
 	typeKinds["IntersectionType"] = kindOf("IntersectionType", "")
+	structFields["JSDocAllType"] = map[string]bool{"Text": true}
+	typeKinds["JSDocAllType"] = kindOf("JSDocAllType", "")
 	structFields["JSDocFunctionType"] = map[string]bool{"Parameters": true, "Type": true}
 	typeKinds["JSDocFunctionType"] = kindOf("JSDocFunctionType", "")
 	structFields["JSDocNonNullableType"] = map[string]bool{"Type": true, "Postfix": true}
 	typeKinds["JSDocNonNullableType"] = kindOf("JSDocNonNullableType", "")
 	structFields["JSDocNullableType"] = map[string]bool{"Type": true, "Postfix": true}
 	typeKinds["JSDocNullableType"] = kindOf("JSDocNullableType", "")
+	structFields["JSDocUnknownType"] = map[string]bool{"Text": true}
+	typeKinds["JSDocUnknownType"] = kindOf("JSDocUnknownType", "")
 	structFields["JsxAttribute"] = map[string]bool{"Name": true, "Initializer": true}
 	typeKinds["JsxAttribute"] = kindOf("JsxAttribute", "")
 	structFields["JsxAttributes"] = map[string]bool{"Properties": true}
 	typeKinds["JsxAttributes"] = kindOf("JsxAttributes", "")
 	structFields["JsxClosingElement"] = map[string]bool{"TagName": true}
 	typeKinds["JsxClosingElement"] = kindOf("JsxClosingElement", "")
+	structFields["JsxClosingFragment"] = map[string]bool{"Text": true}
+	typeKinds["JsxClosingFragment"] = kindOf("JsxClosingFragment", "")
 	structFields["JsxElement"] = map[string]bool{"OpeningElement": true, "Children": true, "ClosingElement": true}
 	typeKinds["JsxElement"] = kindOf("JsxElement", "")
 	structFields["JsxExpression"] = map[string]bool{"DotDotDotToken": true, "Expression": true}
@@ -25762,10 +26639,16 @@ func init() {
 	typeKinds["JsxNamespacedName"] = kindOf("JsxNamespacedName", "")
 	structFields["JsxOpeningElement"] = map[string]bool{"TagName": true, "TypeArguments": true, "Attributes": true}
 	typeKinds["JsxOpeningElement"] = kindOf("JsxOpeningElement", "")
+	structFields["JsxOpeningFragment"] = map[string]bool{"Text": true}
+	typeKinds["JsxOpeningFragment"] = kindOf("JsxOpeningFragment", "")
 	structFields["JsxSelfClosingElement"] = map[string]bool{"TagName": true, "TypeArguments": true, "Attributes": true}
 	typeKinds["JsxSelfClosingElement"] = kindOf("JsxSelfClosingElement", "")
 	structFields["JsxSpreadAttribute"] = map[string]bool{"Expression": true}
 	typeKinds["JsxSpreadAttribute"] = kindOf("JsxSpreadAttribute", "")
+	structFields["JsxText"] = map[string]bool{"Text": true}
+	typeKinds["JsxText"] = kindOf("JsxText", "")
+	structFields["KeywordTypeNode"] = map[string]bool{"Text": true}
+	typeKinds["KeywordTypeNode"] = kindOf("KeywordTypeNode", "")
 	structFields["LabeledStatement"] = map[string]bool{"Label": true, "Statement": true}
 	typeKinds["LabeledStatement"] = kindOf("LabeledStatement", "")
 	structFields["LiteralType"] = map[string]bool{"Literal": true}
@@ -25778,6 +26661,8 @@ func init() {
 	typeKinds["MethodDeclaration"] = kindOf("MethodDeclaration", "")
 	structFields["MethodSignature"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "TypeParameters": true, "Parameters": true, "Type": true}
 	typeKinds["MethodSignature"] = kindOf("MethodSignature", "")
+	structFields["Modifier"] = map[string]bool{"Text": true}
+	typeKinds["Modifier"] = kindOf("Modifier", "")
 	structFields["ModuleBlock"] = map[string]bool{"Statements": true}
 	typeKinds["ModuleBlock"] = kindOf("ModuleBlock", "")
 	structFields["ModuleDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "Body": true}
@@ -25796,12 +26681,20 @@ func init() {
 	typeKinds["NamespaceImport"] = kindOf("NamespaceImport", "")
 	structFields["NewExpression"] = map[string]bool{"Expression": true, "TypeArguments": true, "Arguments": true}
 	typeKinds["NewExpression"] = kindOf("NewExpression", "")
+	structFields["NoSubstitutionTemplateLiteral"] = map[string]bool{"Text": true}
+	typeKinds["NoSubstitutionTemplateLiteral"] = kindOf("NoSubstitutionTemplateLiteral", "")
 	structFields["NonNullExpression"] = map[string]bool{"Expression": true}
 	typeKinds["NonNullExpression"] = kindOf("NonNullExpression", "")
+	structFields["NullLiteral"] = map[string]bool{"Text": true}
+	typeKinds["NullLiteral"] = kindOf("NullLiteral", "")
+	structFields["NumericLiteral"] = map[string]bool{"Text": true}
+	typeKinds["NumericLiteral"] = kindOf("NumericLiteral", "")
 	structFields["ObjectBindingPattern"] = map[string]bool{"Elements": true}
 	typeKinds["ObjectBindingPattern"] = kindOf("ObjectBindingPattern", "")
 	structFields["ObjectLiteralExpression"] = map[string]bool{"Properties": true}
 	typeKinds["ObjectLiteralExpression"] = kindOf("ObjectLiteralExpression", "")
+	structFields["OmittedExpression"] = map[string]bool{"Text": true}
+	typeKinds["OmittedExpression"] = kindOf("OmittedExpression", "")
 	structFields["OptionalType"] = map[string]bool{"Type": true}
 	typeKinds["OptionalType"] = kindOf("OptionalType", "")
 	structFields["Parameter"] = map[string]bool{"Modifiers": true, "DotDotDotToken": true, "Name": true, "QuestionToken": true, "Type": true, "Initializer": true}
@@ -25814,6 +26707,8 @@ func init() {
 	typeKinds["PostfixUnaryExpression"] = kindOf("PostfixUnaryExpression", "")
 	structFields["PrefixUnaryExpression"] = map[string]bool{"Operator": true, "Operand": true}
 	typeKinds["PrefixUnaryExpression"] = kindOf("PrefixUnaryExpression", "")
+	structFields["PrivateIdentifier"] = map[string]bool{"Text": true}
+	typeKinds["PrivateIdentifier"] = kindOf("PrivateIdentifier", "")
 	structFields["PropertyAccessExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "Name": true}
 	typeKinds["PropertyAccessExpression"] = kindOf("PropertyAccessExpression", "")
 	structFields["PropertyAssignment"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "Initializer": true}
@@ -25824,12 +26719,16 @@ func init() {
 	typeKinds["PropertySignature"] = kindOf("PropertySignature", "")
 	structFields["QualifiedName"] = map[string]bool{"Left": true, "Right": true}
 	typeKinds["QualifiedName"] = kindOf("QualifiedName", "")
+	structFields["RegularExpressionLiteral"] = map[string]bool{"Text": true}
+	typeKinds["RegularExpressionLiteral"] = kindOf("RegularExpressionLiteral", "")
 	structFields["RestType"] = map[string]bool{"Type": true}
 	typeKinds["RestType"] = kindOf("RestType", "")
 	structFields["ReturnStatement"] = map[string]bool{"Expression": true}
 	typeKinds["ReturnStatement"] = kindOf("ReturnStatement", "")
 	structFields["SatisfiesExpression"] = map[string]bool{"Expression": true, "Type": true}
 	typeKinds["SatisfiesExpression"] = kindOf("SatisfiesExpression", "")
+	structFields["SemicolonClassElement"] = map[string]bool{"Text": true}
+	typeKinds["SemicolonClassElement"] = kindOf("SemicolonClassElement", "")
 	structFields["SetAccessor"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
 	typeKinds["SetAccessor"] = kindOf("SetAccessor", "")
 	structFields["ShorthandPropertyAssignment"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "EqualsToken": true, "ObjectAssignmentInitializer": true}
@@ -25840,20 +26739,36 @@ func init() {
 	typeKinds["SpreadAssignment"] = kindOf("SpreadAssignment", "")
 	structFields["SpreadElement"] = map[string]bool{"Expression": true}
 	typeKinds["SpreadElement"] = kindOf("SpreadElement", "")
+	structFields["StringLiteral"] = map[string]bool{"Text": true}
+	typeKinds["StringLiteral"] = kindOf("StringLiteral", "")
+	structFields["SuperExpression"] = map[string]bool{"Text": true}
+	typeKinds["SuperExpression"] = kindOf("SuperExpression", "")
 	structFields["SwitchStatement"] = map[string]bool{"Expression": true, "CaseBlock": true}
 	typeKinds["SwitchStatement"] = kindOf("SwitchStatement", "")
 	structFields["TaggedTemplateExpression"] = map[string]bool{"Tag": true, "QuestionDotToken": true, "TypeArguments": true, "Template": true}
 	typeKinds["TaggedTemplateExpression"] = kindOf("TaggedTemplateExpression", "")
 	structFields["TemplateExpression"] = map[string]bool{"Head": true, "TemplateSpans": true}
 	typeKinds["TemplateExpression"] = kindOf("TemplateExpression", "")
+	structFields["TemplateHead"] = map[string]bool{"Text": true}
+	typeKinds["TemplateHead"] = kindOf("TemplateHead", "")
 	structFields["TemplateLiteralType"] = map[string]bool{"Head": true, "TemplateSpans": true}
 	typeKinds["TemplateLiteralType"] = kindOf("TemplateLiteralType", "")
 	structFields["TemplateLiteralTypeSpan"] = map[string]bool{"Type": true, "Literal": true}
 	typeKinds["TemplateLiteralTypeSpan"] = kindOf("TemplateLiteralTypeSpan", "")
+	structFields["TemplateMiddle"] = map[string]bool{"Text": true}
+	typeKinds["TemplateMiddle"] = kindOf("TemplateMiddle", "")
 	structFields["TemplateSpan"] = map[string]bool{"Expression": true, "Literal": true}
 	typeKinds["TemplateSpan"] = kindOf("TemplateSpan", "")
+	structFields["TemplateTail"] = map[string]bool{"Text": true}
+	typeKinds["TemplateTail"] = kindOf("TemplateTail", "")
+	structFields["ThisExpression"] = map[string]bool{"Text": true}
+	typeKinds["ThisExpression"] = kindOf("ThisExpression", "")
+	structFields["ThisTypeNode"] = map[string]bool{"Text": true}
+	typeKinds["ThisTypeNode"] = kindOf("ThisTypeNode", "")
 	structFields["ThrowStatement"] = map[string]bool{"Expression": true}
 	typeKinds["ThrowStatement"] = kindOf("ThrowStatement", "")
+	structFields["Token"] = map[string]bool{"Text": true}
+	typeKinds["Token"] = kindOf("Token", "")
 	structFields["TryStatement"] = map[string]bool{"TryBlock": true, "CatchClause": true, "FinallyBlock": true}
 	typeKinds["TryStatement"] = kindOf("TryStatement", "")
 	structFields["TupleType"] = map[string]bool{"Elements": true}
@@ -25899,7 +26814,7 @@ func init() {
 		{id: 3, name: "otherTopLevelStatement", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ctx"}},
 		{id: 4, name: "awaitFreeTopLevelStatement", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ctx"}},
 		{id: 5, name: "topLevelAwaitFreeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
-		{id: 6, name: "endOfFile", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "endOfFile", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 7, name: "hashbang", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 8, name: "statement", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"ctx"}},
 		{id: 9, name: "specialStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -25925,7 +26840,7 @@ func init() {
 		{id: 29, name: "forOfStatement", scope: []string{"t", "i", "e", "s"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 30, name: "forInStatement", scope: []string{"i", "e", "s"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 31, name: "forClassicStatement", scope: []string{"i", "c", "n", "s"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 32, name: "awaitToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 32, name: "awaitToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 33, name: "forInitializer", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"ctx"}},
 		{id: 34, name: "forDeclarationList", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 35, name: "forUsingFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -25933,8 +26848,8 @@ func init() {
 		{id: 37, name: "breakStatement", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 38, name: "returnStatement", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 39, name: "throwStatement", scope: []string{"d", "e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 40, name: "missingIdentifier", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 41, name: "debuggerStatement", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "DebuggerStatement", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 40, name: "missingIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 41, name: "debuggerStatement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "DebuggerStatement", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 42, name: "switchStatement", scope: []string{"e", "b"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 43, name: "caseBlock", scope: []string{"cs"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 44, name: "caseOrDefaultClause", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -25947,7 +26862,7 @@ func init() {
 		{id: 51, name: "labeledStatement", scope: []string{"l", "s"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{"ctx"}},
 		{id: 52, name: "expressionStatement", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{"ctx"}},
 		{id: 53, name: "declareStatement", scope: []string{"x", "e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 54, name: "declareIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 54, name: "declareIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 55, name: "eos", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
 		{id: 56, name: "canParseSemicolon", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
 		{id: 57, name: "nlAhead", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
@@ -25968,7 +26883,7 @@ func init() {
 		{id: 72, name: "bindingElementShorthand", scope: []string{"t", "n", "i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 22, novalue: false, vars: []string{"ctx"}},
 		{id: 73, name: "arrayBindingPattern", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 74, name: "arrayBindingElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 23, novalue: false, vars: []string{"ctx"}},
-		{id: 75, name: "omittedExpression", scope: []string{}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "OmittedExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 75, name: "omittedExpression", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "OmittedExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 76, name: "functionDeclaration", scope: []string{"dm", "am", "m", "s", "i", "t", "ps", "rt", "fb"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 24, novalue: false, vars: []string{"ctx"}},
 		{id: 77, name: "defaultModifierScan", scope: []string{"d"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 78, name: "asyncModifierScan", scope: []string{"a"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 25, novalue: false, vars: []string{"ctx"}},
@@ -25976,12 +26891,12 @@ func init() {
 		{id: 80, name: "parameters", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 27, novalue: false, vars: []string{"ctx"}},
 		{id: 81, name: "parameter", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 28, novalue: false, vars: []string{"ctx"}},
 		{id: 82, name: "thisParameter", scope: []string{"n", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 83, name: "thisIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 83, name: "thisIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 84, name: "regularParameter", scope: []string{"m", "dt", "n", "qt", "t", "i"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 85, name: "returnType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 29, novalue: false, vars: []string{"ctx"}},
 		{id: 86, name: "classDeclaration", scope: []string{"m", "i", "t", "hc", "ms"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 30, novalue: false, vars: []string{"ctx"}},
 		{id: 87, name: "classExpression", scope: []string{"m", "i", "t", "hc", "ms"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 88, name: "className", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 31, novalue: false, vars: []string{}},
+		{id: 88, name: "className", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 31, novalue: false, vars: []string{}},
 		{id: 89, name: "heritageClauses", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 32, novalue: false, vars: []string{"ctx"}},
 		{id: 90, name: "heritageClause", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 33, novalue: false, vars: []string{"ctx"}},
 		{id: 91, name: "heritageElementStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 34, novalue: false, vars: []string{"ctx"}},
@@ -26009,7 +26924,7 @@ func init() {
 		{id: 113, name: "propertyDeclaration", scope: []string{"m", "n", "qt", "x", "t", "v"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 114, name: "interfaceDeclaration", scope: []string{"m", "n", "t", "hc", "ms"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 115, name: "typeAliasDeclaration", scope: []string{"m", "n", "t", "ty"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 116, name: "intrinsicKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "KeywordTypeNode", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 116, name: "intrinsicKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "KeywordTypeNode", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 117, name: "enumDeclaration", scope: []string{"m", "n", "ms"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 118, name: "enumMember", scope: []string{"n", "v"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 42, novalue: false, vars: []string{"ctx"}},
 		{id: 119, name: "moduleDeclaration", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -26018,7 +26933,7 @@ func init() {
 		{id: 122, name: "nestedNamespace", scope: []string{"n", "b"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 123, name: "externalModuleDeclaration", scope: []string{"m", "n", "mb"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 124, name: "globalDeclaration", scope: []string{"m", "n", "mb"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 125, name: "globalIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 125, name: "globalIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 126, name: "moduleBlock", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 44, novalue: false, vars: []string{"ctx"}},
 		{id: 127, name: "importEqualsDeclaration", scope: []string{"m", "tt", "n", "r"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 128, name: "moduleReference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -26035,10 +26950,10 @@ func init() {
 		{id: 139, name: "importSpecifierTypeAs", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 140, name: "importSpecifierType", scope: []string{"p", "n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 141, name: "importSpecifierPlain", scope: []string{"p", "n"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 142, name: "typeIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 47, novalue: false, vars: []string{}},
+		{id: 142, name: "typeIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 47, novalue: false, vars: []string{}},
 		{id: 143, name: "importedName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 48, novalue: false, vars: []string{"ctx"}},
-		{id: 144, name: "privateName", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 145, name: "asIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 49, novalue: false, vars: []string{}},
+		{id: 144, name: "privateName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 145, name: "asIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 49, novalue: false, vars: []string{}},
 		{id: 146, name: "moduleExportName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 50, novalue: false, vars: []string{}},
 		{id: 147, name: "moduleExportNameStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 51, novalue: false, vars: []string{}},
 		{id: 148, name: "moduleSpecifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 52, novalue: false, vars: []string{"ctx"}},
@@ -26063,7 +26978,7 @@ func init() {
 		{id: 167, name: "modifierList", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 59, novalue: false, vars: []string{}},
 		{id: 168, name: "staticModifierList", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 60, novalue: false, vars: []string{}},
 		{id: 169, name: "modifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 61, novalue: false, vars: []string{}},
-		{id: 170, name: "staticModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: true, leader: false, seen: 62, novalue: false, vars: []string{}},
+		{id: 170, name: "staticModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 62, novalue: false, vars: []string{}},
 		{id: 171, name: "exportModifierFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 172, name: "canFollowExportModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 63, novalue: false, vars: []string{}},
 		{id: 173, name: "defaultModifierFollows", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 64, novalue: false, vars: []string{}},
@@ -26073,7 +26988,7 @@ func init() {
 		{id: 177, name: "classModifierList", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
 		{id: 178, name: "classStaticModifierList", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 179, name: "classModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 69, novalue: false, vars: []string{}},
-		{id: 180, name: "classStaticModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 180, name: "classStaticModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 181, name: "typeMemberModifiers", scope: []string{"ms"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 70, novalue: false, vars: []string{}},
 		{id: 182, name: "typeParameterModifiers", scope: []string{"b", "s", "a"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 183, name: "decorator", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 71, novalue: false, vars: []string{"ctx"}},
@@ -26091,10 +27006,10 @@ func init() {
 		{id: 195, name: "conditionalOrBinaryExpression", scope: []string{"c", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 196, name: "conditionalWhenTrue", scope: []string{"e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 197, name: "conditionalWhenFalse", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 198, name: "conditionalQuestionToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 198, name: "conditionalQuestionToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 199, name: "arrowFunction", scope: []string{"ml", "t", "ps", "rt", "a", "b"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 200, name: "arrowAsyncModifier", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 201, name: "asyncKeywordModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: true, leader: false, seen: 79, novalue: false, vars: []string{}},
+		{id: 201, name: "asyncKeywordModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: true, leader: false, seen: 79, novalue: false, vars: []string{}},
 		{id: 202, name: "arrowTypeParameters", scope: []string{"tp"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 203, name: "tsxArrowTypeParametersStart", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 204, name: "arrowParenthesisIsNotParameterList", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -26104,16 +27019,16 @@ func init() {
 		{id: 208, name: "arrowBody", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 81, novalue: false, vars: []string{"ctx"}},
 		{id: 209, name: "binaryExpression", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 210, name: "coalesceOrToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 211, name: "ampersandAmpersandToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 212, name: "barToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 213, name: "caretToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 214, name: "ampersandToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 211, name: "ampersandAmpersandToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 212, name: "barToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 213, name: "caretToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 214, name: "ampersandToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 215, name: "equalityToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 216, name: "relationalToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: true, leader: false, seen: 82, novalue: false, vars: []string{"ctx"}},
 		{id: 217, name: "shiftToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 218, name: "additiveToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 219, name: "multiplicativeToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 220, name: "asteriskAsteriskToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 220, name: "asteriskAsteriskToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 221, name: "binaryOperatorStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 83, novalue: false, vars: []string{"ctx"}},
 		{id: 222, name: "unaryExpression", scope: []string{"u"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 84, novalue: false, vars: []string{"ctx"}},
 		{id: 223, name: "unaryOperatorStart", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 85, novalue: false, vars: []string{"ctx"}},
@@ -26133,7 +27048,7 @@ func init() {
 		{id: 237, name: "heritageExpression", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 238, name: "newTarget", scope: []string{}, value: shaper{}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 239, name: "memberName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 89, novalue: false, vars: []string{}},
-		{id: 240, name: "questionDotToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 240, name: "questionDotToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 241, name: "typeArgumentsInExpression", scope: []string{"ts"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 90, novalue: false, vars: []string{"ctx"}},
 		{id: 242, name: "typeArgumentsCanFollow", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 243, name: "expressionStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 91, novalue: false, vars: []string{"ctx"}},
@@ -26141,17 +27056,17 @@ func init() {
 		{id: 245, name: "argumentList", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 246, name: "argument", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 93, novalue: false, vars: []string{"ctx"}},
 		{id: 247, name: "spreadElement", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 94, novalue: false, vars: []string{"ctx"}},
-		{id: 248, name: "superExpression", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "SuperExpression", memo: true, leader: false, seen: 95, novalue: false, vars: []string{}},
-		{id: 249, name: "superKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "SuperExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 250, name: "importCallee", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ImportExpression", memo: true, leader: false, seen: 96, novalue: false, vars: []string{}},
+		{id: 248, name: "superExpression", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SuperExpression", memo: true, leader: false, seen: 95, novalue: false, vars: []string{}},
+		{id: 249, name: "superKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SuperExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 250, name: "importCallee", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ImportExpression", memo: true, leader: false, seen: 96, novalue: false, vars: []string{}},
 		{id: 251, name: "importMetaProperty", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 97, novalue: false, vars: []string{}},
 		{id: 252, name: "primaryExpression", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 98, novalue: false, vars: []string{"ctx"}},
 		{id: 253, name: "wordPrimary", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 254, name: "symbolPrimary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 255, name: "numericOrBigIntLiteral", scope: []string{"e"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 256, name: "thisKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 257, name: "nullKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "NullLiteral", memo: true, leader: false, seen: 99, novalue: false, vars: []string{}},
-		{id: 258, name: "booleanKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "BooleanLiteral", memo: true, leader: false, seen: 100, novalue: false, vars: []string{}},
+		{id: 256, name: "thisKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 257, name: "nullKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NullLiteral", memo: true, leader: false, seen: 99, novalue: false, vars: []string{}},
+		{id: 258, name: "booleanKeyword", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BooleanLiteral", memo: true, leader: false, seen: 100, novalue: false, vars: []string{}},
 		{id: 259, name: "parenthesizedExpression", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 260, name: "arrayLiteralExpression", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 261, name: "arrayElement", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 101, novalue: false, vars: []string{"ctx"}},
@@ -26187,13 +27102,13 @@ func init() {
 		{id: 291, name: "jsxOpeningElement", scope: []string{"n", "t", "a"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 292, name: "jsxClosingElement", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 293, name: "jsxFragment", scope: []string{"o", "cs", "c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 109, novalue: false, vars: []string{"ctx"}},
-		{id: 294, name: "jsxOpeningFragment", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "JsxOpeningFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 295, name: "jsxClosingFragment", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "JsxClosingFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 294, name: "jsxOpeningFragment", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxOpeningFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 295, name: "jsxClosingFragment", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JsxClosingFragment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 296, name: "jsxElementName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 110, novalue: false, vars: []string{}},
 		{id: 297, name: "jsxMemberName", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 298, name: "jsxTagNameStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 299, name: "jsxThis", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 300, name: "jsxIdentifier", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 111, novalue: false, vars: []string{}},
+		{id: 299, name: "jsxThis", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisExpression", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 300, name: "jsxIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 111, novalue: false, vars: []string{}},
 		{id: 301, name: "jsxNamespacedName", scope: []string{"s", "n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 112, novalue: false, vars: []string{}},
 		{id: 302, name: "jsxAttributes", scope: []string{"ps"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 113, novalue: false, vars: []string{"ctx"}},
 		{id: 303, name: "jsxAttributeLike", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 114, novalue: false, vars: []string{"ctx"}},
@@ -26218,7 +27133,7 @@ func init() {
 		{id: 322, name: "functionType", scope: []string{"t", "ps", "r"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 323, name: "constructorType", scope: []string{"am", "t", "ps", "r"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 324, name: "abstractModifier", scope: []string{"m"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 325, name: "abstractKeywordModifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 325, name: "abstractKeywordModifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Modifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 326, name: "returnTypeOfType", scope: []string{"t"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 121, novalue: false, vars: []string{"ctx"}},
 		{id: 327, name: "unionOrHigher", scope: []string{"u"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 328, name: "leadingUnionType", scope: []string{"f", "r"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -26240,30 +27155,30 @@ func init() {
 		{id: 344, name: "keywordType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "KeywordTypeNode", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 345, name: "literalType", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 125, novalue: false, vars: []string{}},
 		{id: 346, name: "negativeLiteral", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 347, name: "thisType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ThisTypeNode", memo: true, leader: false, seen: 126, novalue: false, vars: []string{}},
+		{id: 347, name: "thisType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ThisTypeNode", memo: true, leader: false, seen: 126, novalue: false, vars: []string{}},
 		{id: 348, name: "thisTypePredicate", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 349, name: "assertsTypePredicate", scope: []string{"a", "n", "ty"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 350, name: "assertsToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 350, name: "assertsToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 351, name: "identifierOrKeywordStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 127, novalue: false, vars: []string{}},
 		{id: 352, name: "typeQuery", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 353, name: "importType", scope: []string{"o", "a", "i", "qn", "t"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 354, name: "importTypeAttributes", scope: []string{"a"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 355, name: "typeReference", scope: []string{"n", "t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 128, novalue: false, vars: []string{"ctx"}},
 		{id: 356, name: "functionTypeReference", scope: []string{"n"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 357, name: "functionIdentifier", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 357, name: "functionIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 358, name: "parenthesizedType", scope: []string{"t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 359, name: "unambiguousFunctionTypeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 129, novalue: false, vars: []string{"ctx"}},
 		{id: 360, name: "templateLiteralType", scope: []string{"h", "ss"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 361, name: "templateTypeSpans", scope: []string{"ms", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 362, name: "templateTypeSpanMiddle", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 363, name: "templateTypeSpanTail", scope: []string{"t", "l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 364, name: "jsdocAllType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "JSDocAllType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 365, name: "jsdocUnknownType", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "JSDocUnknownType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 364, name: "jsdocAllType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JSDocAllType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 365, name: "jsdocUnknownType", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "JSDocUnknownType", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 366, name: "jsdocNullableType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 367, name: "jsdocNonNullableType", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 368, name: "jsdocFunctionType", scope: []string{"ps", "rt"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 369, name: "jsdocParameter", scope: []string{"i", "t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 130, novalue: false, vars: []string{"ctx"}},
-		{id: 370, name: "jsdocParameterName", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 370, name: "jsdocParameterName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 371, name: "entityName", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 372, name: "entityNameAllowReserved", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 131, novalue: false, vars: []string{}},
 		{id: 373, name: "typeArguments", scope: []string{"ts"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 132, novalue: false, vars: []string{"ctx"}},
@@ -26284,12 +27199,12 @@ func init() {
 		{id: 388, name: "mappedTypeStart", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 142, novalue: false, vars: []string{"ctx"}},
 		{id: 389, name: "mappedType", scope: []string{"rt", "p", "nt", "qt", "t", "ms"}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 390, name: "mappedTypeParameter", scope: []string{"n", "c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
-		{id: 391, name: "mappedReadonlyToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 392, name: "mappedPlusMinusReadonly", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 393, name: "mappedQuestionToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 394, name: "mappedPlusMinusQuestion", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 391, name: "mappedReadonlyToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 392, name: "mappedPlusMinusReadonly", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 393, name: "mappedQuestionToken", scope: []string{"t"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 394, name: "mappedPlusMinusQuestion", scope: []string{"t"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 395, name: "plusMinusToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 396, name: "readonlyToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 396, name: "readonlyToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 397, name: "typeMember", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 143, novalue: false, vars: []string{"ctx"}},
 		{id: 398, name: "typeAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 399, name: "typeMemberNotAccessor", scope: []string{"m"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -26307,18 +27222,18 @@ func init() {
 		{id: 411, name: "propertyName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 148, novalue: false, vars: []string{"ctx"}},
 		{id: 412, name: "computedPropertyName", scope: []string{"e"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
 		{id: 413, name: "questionToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 414, name: "exclamationToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 414, name: "exclamationToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 415, name: "asteriskToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 416, name: "dotDotDotToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 417, name: "equalsGreaterThanToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 418, name: "colonToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 419, name: "equalsToken", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 419, name: "equalsToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 420, name: "commaToken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Token", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 421, name: "identifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 149, novalue: false, vars: []string{"ctx"}},
-		{id: 422, name: "bindingIdentifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 150, novalue: false, vars: []string{}},
-		{id: 423, name: "identifierName", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 151, novalue: false, vars: []string{}},
-		{id: 424, name: "privateIdentifier", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "PrivateIdentifier", memo: true, leader: false, seen: 152, novalue: false, vars: []string{}},
-		{id: 425, name: "identifierNameOrPrivate", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Identifier", memo: true, leader: false, seen: 153, novalue: false, vars: []string{}},
+		{id: 421, name: "identifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 149, novalue: false, vars: []string{"ctx"}},
+		{id: 422, name: "bindingIdentifier", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 150, novalue: false, vars: []string{}},
+		{id: 423, name: "identifierName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 151, novalue: false, vars: []string{}},
+		{id: 424, name: "privateIdentifier", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PrivateIdentifier", memo: true, leader: false, seen: 152, novalue: false, vars: []string{}},
+		{id: 425, name: "identifierNameOrPrivate", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Identifier", memo: true, leader: false, seen: 153, novalue: false, vars: []string{}},
 		{id: 426, name: "anyKeyword", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 154, novalue: false, vars: []string{}},
 		{id: 427, name: "reservedWord", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 155, novalue: false, vars: []string{}},
 		{id: 428, name: "identifierRest", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 156, novalue: false, vars: []string{}},
@@ -26333,8 +27248,8 @@ func init() {
 		{id: 437, name: "unicodeEscape", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 438, name: "unicodeBraced", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 439, name: "hex", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 440, name: "numericLiteral", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "NumericLiteral", memo: true, leader: false, seen: 162, novalue: false, vars: []string{}},
-		{id: 441, name: "bigIntLiteral", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "BigIntLiteral", memo: true, leader: false, seen: 163, novalue: false, vars: []string{}},
+		{id: 440, name: "numericLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NumericLiteral", memo: true, leader: false, seen: 162, novalue: false, vars: []string{}},
+		{id: 441, name: "bigIntLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BigIntLiteral", memo: true, leader: false, seen: 163, novalue: false, vars: []string{}},
 		{id: 442, name: "decimalLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 443, name: "decimalInteger", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 444, name: "decimalDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -26344,17 +27259,17 @@ func init() {
 		{id: 448, name: "octalLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 449, name: "stringLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLiteral", memo: true, leader: false, seen: 166, novalue: false, vars: []string{}},
 		{id: 450, name: "escapeSequence", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 167, novalue: false, vars: []string{}},
-		{id: 451, name: "noSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "NoSubstitutionTemplateLiteral", memo: true, leader: false, seen: 168, novalue: false, vars: []string{}},
-		{id: 452, name: "templateHead", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateHead", memo: true, leader: false, seen: 169, novalue: false, vars: []string{}},
-		{id: 453, name: "templateMiddle", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateMiddle", memo: true, leader: false, seen: 170, novalue: false, vars: []string{}},
-		{id: 454, name: "templateTail", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateTail", memo: true, leader: false, seen: 171, novalue: false, vars: []string{}},
+		{id: 451, name: "noSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NoSubstitutionTemplateLiteral", memo: true, leader: false, seen: 168, novalue: false, vars: []string{}},
+		{id: 452, name: "templateHead", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateHead", memo: true, leader: false, seen: 169, novalue: false, vars: []string{}},
+		{id: 453, name: "templateMiddle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateMiddle", memo: true, leader: false, seen: 170, novalue: false, vars: []string{}},
+		{id: 454, name: "templateTail", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateTail", memo: true, leader: false, seen: 171, novalue: false, vars: []string{}},
 		{id: 455, name: "templateCharacters", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 172, novalue: false, vars: []string{}},
-		{id: 456, name: "rawNoSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "NoSubstitutionTemplateLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 457, name: "rawTemplateHead", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateHead", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 458, name: "rawTemplateMiddle", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 459, name: "rawTemplateTail", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "TemplateTail", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 456, name: "rawNoSubstitutionTemplateLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NoSubstitutionTemplateLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 457, name: "rawTemplateHead", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateHead", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 458, name: "rawTemplateMiddle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateMiddle", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 459, name: "rawTemplateTail", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "TemplateTail", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 460, name: "rawTemplateCharacters", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 461, name: "regularExpressionLiteral", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "RegularExpressionLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 461, name: "regularExpressionLiteral", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "RegularExpressionLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 462, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 463, name: "sp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 464, name: "arrayBindingElementList", scope: []string{"f", "r"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ctx"}},
@@ -32307,6 +33222,7 @@ func (p *parser) e19() (*Node, bool) {
 	p.stepWork()
 	var ()
 	p.stepWork()
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -35537,6 +36453,7 @@ func (p *parser) e69() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit68, ";", 21, false); !ok {
@@ -38193,6 +39110,7 @@ func (p *parser) e87() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit29, "await", 38, false); !ok {
 		goto fail
 	}
@@ -39833,6 +40751,7 @@ func (p *parser) e95() (*Node, bool) {
 	p.stepWork()
 	var ()
 	p.stepWork()
+	p.stepWork()
 	return nil, true
 }
 
@@ -39875,6 +40794,7 @@ func (p *parser) e96() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit43, "debugger", 32, false); !ok {
@@ -42109,6 +43029,7 @@ func (p *parser) e117() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit53, "declare", 45, false); !ok {
@@ -48590,6 +49511,7 @@ func (p *parser) e146() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.pos
 	p.silent++
 	p.stepWork()
@@ -50209,6 +51131,7 @@ func (p *parser) e156() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
@@ -59217,6 +60140,7 @@ func (p *parser) e208() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit207, "intrinsic", 105, false); !ok {
 		goto fail
 	}
@@ -60408,6 +61332,7 @@ func (p *parser) e217() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit17, "global", 17, false); !ok {
@@ -64071,6 +64996,7 @@ func (p *parser) e238() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 121 && p.in[p.pos+2] == 112 && p.in[p.pos+3] == 101) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit11, "type", 10, false); !ok {
@@ -64145,6 +65071,7 @@ func (p *parser) e239() (*Node, bool) {
 		x4 rune
 		x5 bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
@@ -64254,6 +65181,7 @@ func (p *parser) e241() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit240, "#", 112, false); !ok {
@@ -64342,6 +65270,7 @@ func (p *parser) e242() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 115) {
@@ -68840,6 +69769,7 @@ func (p *parser) e271() (*Node, bool) {
 		x57 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -69249,6 +70179,7 @@ func (p *parser) e272() (*Node, bool) {
 		x1 mark
 		x3 int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit60, "static", 52, false); !ok {
@@ -71769,6 +72700,7 @@ func (p *parser) e284() (*Node, bool) {
 		x9 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -71913,6 +72845,7 @@ func (p *parser) e285() (*Node, bool) {
 		x3 mark
 		x5 int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit60, "static", 52, false); !ok {
@@ -74579,6 +75512,7 @@ func (p *parser) e320() (*Node, bool) {
 		size int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -75293,6 +76227,7 @@ func (p *parser) e326() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit325, "?", 139, false); !ok {
@@ -75929,6 +76864,7 @@ func (p *parser) e329() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit51, "async", 43, false); !ok {
@@ -77792,6 +78728,7 @@ func (p *parser) e341() (*Node, bool) {
 		x11 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -77907,6 +78844,7 @@ func (p *parser) e343() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 38) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit342, "&&", 145, false); !ok {
@@ -77983,6 +78921,7 @@ func (p *parser) e345() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 124) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit344, "|", 146, false); !ok {
@@ -78053,6 +78992,7 @@ func (p *parser) e347() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 94) {
@@ -78129,6 +79069,7 @@ func (p *parser) e349() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -78250,6 +79191,7 @@ func (p *parser) e354() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -78569,6 +79511,7 @@ func (p *parser) e360() (*Node, bool) {
 		x23  mark
 		x26  mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -78924,6 +79867,7 @@ func (p *parser) e364() (*Node, bool) {
 		x15  mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -79144,6 +80088,7 @@ func (p *parser) e367() (*Node, bool) {
 		size int
 		x11  mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -79367,6 +80312,7 @@ func (p *parser) e369() (*Node, bool) {
 		x15  mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -79516,6 +80462,7 @@ func (p *parser) e371() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 42 && p.in[p.pos+1] == 42) {
@@ -83207,6 +84154,7 @@ func (p *parser) e399() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit398, "?.", 183, false); !ok {
@@ -85929,6 +86877,7 @@ func (p *parser) e409() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit169, "super", 88, false); !ok {
 		goto fail
 	}
@@ -86014,6 +86963,7 @@ func (p *parser) e410() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit169, "super", 88, false); !ok {
@@ -86105,6 +87055,7 @@ func (p *parser) e411() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit9, "import", 7, false); !ok {
@@ -87235,6 +88186,7 @@ func (p *parser) e417() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit170, "null", 89, false); !ok {
@@ -87331,6 +88283,7 @@ func (p *parser) e418() (*Node, bool) {
 		ok bool
 		x9 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -93093,6 +94046,7 @@ func (p *parser) e456() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 60) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit330, "<", 140, false); !ok {
@@ -93146,6 +94100,7 @@ func (p *parser) e457() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 47) {
@@ -93593,6 +94548,7 @@ func (p *parser) e462() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit155, "this", 81, false); !ok {
@@ -93733,6 +94689,7 @@ func (p *parser) e463() (*Node, bool) {
 		x11 bool
 	)
 	_ = x4
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -94433,6 +95390,7 @@ func (p *parser) e472() (*Node, bool) {
 		size int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -94880,6 +95838,7 @@ func (p *parser) e476() (*Node, bool) {
 		ok   bool
 		x1   int
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -96784,6 +97743,7 @@ func (p *parser) e491() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit58, "abstract", 50, false); !ok {
@@ -100866,6 +101826,7 @@ func (p *parser) e528() (*Node, bool) {
 		x36 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	p.stepWork()
@@ -101813,6 +102774,7 @@ func (p *parser) e533() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit524, "asserts", 212, false); !ok {
@@ -103542,6 +104504,7 @@ func (p *parser) e540() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit30, "function", 39, false); !ok {
 		goto fail
 	}
@@ -104597,6 +105560,7 @@ func (p *parser) e548() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit229, "*", 111, false); !ok {
@@ -104677,6 +105641,7 @@ func (p *parser) e550() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
@@ -105211,6 +106176,7 @@ func (p *parser) e555() (*Node, bool) {
 		ok bool
 		x9 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -109928,6 +110894,7 @@ func (p *parser) e586() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
 		ch, size, ok = p.in[p.pos], 1, true
@@ -109979,6 +110946,7 @@ func (p *parser) e587() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit61, "readonly", 53, false); !ok {
@@ -115223,6 +116191,7 @@ func (p *parser) e606() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit325, "?", 139, false); !ok {
@@ -115274,6 +116243,7 @@ func (p *parser) e607() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 33) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit382, "!", 179, false); !ok {
@@ -115322,6 +116292,7 @@ func (p *parser) e608() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit229, "*", 111, false); !ok {
@@ -115354,6 +116325,7 @@ func (p *parser) e609() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -115388,6 +116360,7 @@ func (p *parser) e610() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 62) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit298, "=>", 121, false); !ok {
@@ -115420,6 +116393,7 @@ func (p *parser) e611() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 58) {
 		p.pos++
@@ -115482,6 +116456,7 @@ func (p *parser) e612() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 61) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit66, "=", 55, false); !ok {
@@ -115535,6 +116510,7 @@ func (p *parser) e613() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 		p.pos++
@@ -116029,6 +117005,7 @@ func (p *parser) e617() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -116155,6 +117132,7 @@ func (p *parser) e618() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -126028,6 +127006,7 @@ func (p *parser) e656() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -126194,6 +127173,7 @@ func (p *parser) e657() (*Node, bool) {
 		ok  bool
 		x12 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -128284,6 +129264,7 @@ func (p *parser) e666() (*Node, bool) {
 	)
 	_, _ = x7, x20
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -128971,6 +129952,7 @@ func (p *parser) e674() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit673, "`", 188, false); !ok {
@@ -129023,6 +130005,7 @@ func (p *parser) e676() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -129079,6 +130062,7 @@ func (p *parser) e677() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit65, "}", 54, false); !ok {
@@ -129131,6 +130115,7 @@ func (p *parser) e678() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -129496,6 +130481,7 @@ func (p *parser) e681() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit673, "`", 188, false); !ok {
@@ -129548,6 +130534,7 @@ func (p *parser) e682() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -129604,6 +130591,7 @@ func (p *parser) e683() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit65, "}", 54, false); !ok {
@@ -129656,6 +130644,7 @@ func (p *parser) e684() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -130357,6 +131346,7 @@ func (p *parser) e688() (*Node, bool) {
 		x33  bool
 	)
 	_, _ = x16, x27
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 47) {
@@ -180145,6 +181135,7 @@ func (p *parser) e1019() (*Node, bool) {
 		v *Node
 	)
 	p.stepWork()
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -184498,6 +185489,7 @@ func (p *parser) e1042() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit29, "await", 38, false); !ok {
 		goto fail
 	}
@@ -186165,6 +187157,7 @@ func (p *parser) e1050() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit43, "debugger", 32, false); !ok {
@@ -188426,6 +189419,7 @@ func (p *parser) e1066() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit53, "declare", 45, false); !ok {
@@ -196543,6 +197537,7 @@ func (p *parser) e1096() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
@@ -205642,6 +206637,7 @@ func (p *parser) e1130() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit207, "intrinsic", 105, false); !ok {
 		goto fail
 	}
@@ -206833,6 +207829,7 @@ func (p *parser) e1139() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit17, "global", 17, false); !ok {
@@ -210496,6 +211493,7 @@ func (p *parser) e1157() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 121 && p.in[p.pos+2] == 112 && p.in[p.pos+3] == 101) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit11, "type", 10, false); !ok {
@@ -210570,6 +211568,7 @@ func (p *parser) e1158() (*Node, bool) {
 		x4 rune
 		x5 bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
@@ -210679,6 +211678,7 @@ func (p *parser) e1159() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit240, "#", 112, false); !ok {
@@ -210767,6 +211767,7 @@ func (p *parser) e1160() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 115) {
@@ -215292,6 +216293,7 @@ func (p *parser) e1186() (*Node, bool) {
 		x57 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -215701,6 +216703,7 @@ func (p *parser) e1187() (*Node, bool) {
 		x1 mark
 		x3 int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit60, "static", 52, false); !ok {
@@ -218221,6 +219224,7 @@ func (p *parser) e1198() (*Node, bool) {
 		x9 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -218365,6 +219369,7 @@ func (p *parser) e1199() (*Node, bool) {
 		x3 mark
 		x5 int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit60, "static", 52, false); !ok {
@@ -221551,6 +222556,7 @@ func (p *parser) e1221() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit51, "async", 43, false); !ok {
 		goto fail
 	}
@@ -223565,6 +224571,7 @@ func (p *parser) e1229() (*Node, bool) {
 		x23  mark
 		x26  mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -230088,6 +231095,7 @@ func (p *parser) e1255() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit169, "super", 88, false); !ok {
 		goto fail
 	}
@@ -230173,6 +231181,7 @@ func (p *parser) e1256() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit169, "super", 88, false); !ok {
@@ -230264,6 +231273,7 @@ func (p *parser) e1257() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit9, "import", 7, false); !ok {
@@ -231394,6 +232404,7 @@ func (p *parser) e1263() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit170, "null", 89, false); !ok {
@@ -231490,6 +232501,7 @@ func (p *parser) e1264() (*Node, bool) {
 		ok bool
 		x9 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -237306,6 +238318,7 @@ func (p *parser) e1301() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 60) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit330, "<", 140, false); !ok {
@@ -237359,6 +238372,7 @@ func (p *parser) e1302() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 47) {
@@ -237806,6 +238820,7 @@ func (p *parser) e1307() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit155, "this", 81, false); !ok {
@@ -237946,6 +238961,7 @@ func (p *parser) e1308() (*Node, bool) {
 		x11 bool
 	)
 	_ = x4
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -240743,6 +241759,7 @@ func (p *parser) e1331() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit58, "abstract", 50, false); !ok {
@@ -244825,6 +245842,7 @@ func (p *parser) e1354() (*Node, bool) {
 		x36 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	p.stepWork()
@@ -245772,6 +246790,7 @@ func (p *parser) e1359() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit524, "asserts", 212, false); !ok {
@@ -247501,6 +248520,7 @@ func (p *parser) e1366() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit30, "function", 39, false); !ok {
 		goto fail
 	}
@@ -248599,6 +249619,7 @@ func (p *parser) e1374() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit325, "?", 139, false); !ok {
@@ -249131,6 +250152,7 @@ func (p *parser) e1379() (*Node, bool) {
 		ok bool
 		x9 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -253904,6 +254926,7 @@ func (p *parser) e1409() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit61, "readonly", 53, false); !ok {
@@ -259608,6 +260631,7 @@ func (p *parser) e1428() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -259734,6 +260758,7 @@ func (p *parser) e1429() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -268892,6 +269917,7 @@ func (p *parser) e1441() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -269058,6 +270084,7 @@ func (p *parser) e1442() (*Node, bool) {
 		ok  bool
 		x12 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -270032,6 +271059,7 @@ func (p *parser) e1446() (*Node, bool) {
 	)
 	_, _ = x7, x20
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -270719,6 +271747,7 @@ func (p *parser) e1448() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit673, "`", 188, false); !ok {
@@ -270771,6 +271800,7 @@ func (p *parser) e1449() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -270827,6 +271857,7 @@ func (p *parser) e1450() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit65, "}", 54, false); !ok {
@@ -270879,6 +271910,7 @@ func (p *parser) e1451() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -271244,6 +272276,7 @@ func (p *parser) e1453() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit673, "`", 188, false); !ok {
@@ -271296,6 +272329,7 @@ func (p *parser) e1454() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -271352,6 +272386,7 @@ func (p *parser) e1455() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit65, "}", 54, false); !ok {
@@ -271404,6 +272439,7 @@ func (p *parser) e1456() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -271732,6 +272768,7 @@ func (p *parser) e1457() (*Node, bool) {
 		x33  bool
 	)
 	_, _ = x16, x27
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 47) {
@@ -297696,6 +298733,7 @@ func (p *parser) q6() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -316820,6 +317858,7 @@ func (p *tparser) s6() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -321179,6 +322218,7 @@ func (p *tparser) s19() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit68, ";", 21, false); !ok {
@@ -325488,6 +326528,7 @@ func (p *tparser) s32() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit29, "await", 38, false); !ok {
 		goto fail
 	}
@@ -327789,6 +328830,7 @@ func (p *tparser) s40() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	v = trules[40].term(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
@@ -327858,6 +328900,7 @@ func (p *tparser) s41() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit43, "debugger", 32, false); !ok {
@@ -331079,6 +332122,7 @@ func (p *tparser) s54() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit53, "declare", 45, false); !ok {
@@ -343767,6 +344811,7 @@ func (p *tparser) s75() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1 = p.pos
 	p.silent++
 	p.stepWork()
@@ -346210,6 +347255,7 @@ func (p *tparser) s83() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
@@ -355298,6 +356344,7 @@ func (p *tparser) s104() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit68, ";", 21, false); !ok {
@@ -360568,6 +361615,7 @@ func (p *tparser) s116() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit207, "intrinsic", 105, false); !ok {
 		goto fail
 	}
@@ -362460,6 +363508,7 @@ func (p *tparser) s125() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit17, "global", 17, false); !ok {
@@ -367992,6 +369041,7 @@ func (p *tparser) v142() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 121 && p.in[p.pos+2] == 112 && p.in[p.pos+3] == 101) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit11, "type", 10, false); !ok {
@@ -368080,6 +369130,7 @@ func (p *tparser) i142() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 121 && p.in[p.pos+2] == 112 && p.in[p.pos+3] == 101) {
@@ -368202,6 +369253,7 @@ func (p *tparser) v143() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u421(); !ok {
@@ -368314,6 +369366,7 @@ func (p *tparser) i143() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
@@ -368453,6 +369506,7 @@ func (p *tparser) s144() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit240, "#", 112, false); !ok {
@@ -368590,6 +369644,7 @@ func (p *tparser) v145() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 115) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit13, "as", 13, false); !ok {
@@ -368678,6 +369733,7 @@ func (p *tparser) i145() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 97 && p.in[p.pos+1] == 115) {
@@ -375981,6 +377037,7 @@ func (p *tparser) v169() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -376806,6 +377863,7 @@ func (p *tparser) i169() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -377285,6 +378343,7 @@ func (p *tparser) v170() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit60, "static", 52, false); !ok {
 		goto fail
 	}
@@ -377411,6 +378470,7 @@ func (p *tparser) i170() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit60, "static", 52, false); !ok {
@@ -382022,6 +383082,7 @@ func (p *tparser) v179() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -382211,6 +383272,7 @@ func (p *tparser) i179() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -382391,6 +383453,7 @@ func (p *tparser) s180() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit60, "static", 52, false); !ok {
@@ -386416,6 +387479,7 @@ func (p *tparser) s194() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -387411,6 +388475,7 @@ func (p *tparser) s198() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit325, "?", 139, false); !ok {
@@ -388288,6 +389353,7 @@ func (p *tparser) v201() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit51, "async", 43, false); !ok {
 		goto fail
 	}
@@ -388372,6 +389438,7 @@ func (p *tparser) i201() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit51, "async", 43, false); !ok {
@@ -392934,6 +394001,7 @@ func (p *tparser) s210() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -393085,6 +394153,7 @@ func (p *tparser) s211() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 38) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit342, "&&", 145, false); !ok {
@@ -393193,6 +394262,7 @@ func (p *tparser) s212() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 124) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit344, "|", 146, false); !ok {
@@ -393295,6 +394365,7 @@ func (p *tparser) s213() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 94) {
@@ -393403,6 +394474,7 @@ func (p *tparser) s214() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -393558,6 +394630,7 @@ func (p *tparser) s215() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -393954,6 +395027,7 @@ func (p *tparser) v216() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -394494,6 +395568,7 @@ func (p *tparser) i216() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -394907,6 +395982,7 @@ func (p *tparser) s217() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -395174,6 +396250,7 @@ func (p *tparser) s218() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -395446,6 +396523,7 @@ func (p *tparser) s219() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -395634,6 +396712,7 @@ func (p *tparser) s220() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 42 && p.in[p.pos+1] == 42) {
@@ -404425,6 +405504,7 @@ func (p *tparser) s240() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit398, "?.", 183, false); !ok {
@@ -409181,6 +410261,7 @@ func (p *tparser) v248() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit169, "super", 88, false); !ok {
 		goto fail
 	}
@@ -409329,6 +410410,7 @@ func (p *tparser) i248() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit169, "super", 88, false); !ok {
 		goto fail
 	}
@@ -409444,6 +410526,7 @@ func (p *tparser) s249() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit169, "super", 88, false); !ok {
@@ -409582,6 +410665,7 @@ func (p *tparser) v250() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit9, "import", 7, false); !ok {
@@ -409730,6 +410814,7 @@ func (p *tparser) i250() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit9, "import", 7, false); !ok {
@@ -411296,6 +412381,7 @@ func (p *tparser) s256() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit155, "this", 81, false); !ok {
@@ -411405,6 +412491,7 @@ func (p *tparser) v257() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit170, "null", 89, false); !ok {
@@ -411493,6 +412580,7 @@ func (p *tparser) i257() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108) {
@@ -411640,6 +412728,7 @@ func (p *tparser) v258() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -411802,6 +412891,7 @@ func (p *tparser) i258() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -421380,6 +422470,7 @@ func (p *tparser) s294() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 60) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit330, "<", 140, false); !ok {
@@ -421459,6 +422550,7 @@ func (p *tparser) s295() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 47) {
@@ -422211,6 +423303,7 @@ func (p *tparser) s299() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit155, "this", 81, false); !ok {
@@ -422408,6 +423501,7 @@ func (p *tparser) v300() (any, bool) {
 	_ = x5
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
@@ -422598,6 +423692,7 @@ func (p *tparser) i300() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x5
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -423988,6 +425083,7 @@ func (p *tparser) s308() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -424803,6 +425899,7 @@ func (p *tparser) s312() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -427895,6 +428992,7 @@ func (p *tparser) s325() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit58, "abstract", 50, false); !ok {
@@ -433980,6 +435078,7 @@ func (p *tparser) s344() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	p.stepWork()
@@ -434774,6 +435873,7 @@ func (p *tparser) v347() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit155, "this", 81, false); !ok {
@@ -434862,6 +435962,7 @@ func (p *tparser) i347() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 104 && p.in[p.pos+2] == 105 && p.in[p.pos+3] == 115) {
@@ -435514,6 +436615,7 @@ func (p *tparser) s350() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit524, "asserts", 212, false); !ok {
@@ -438020,6 +439122,7 @@ func (p *tparser) s357() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit30, "function", 39, false); !ok {
 		goto fail
 	}
@@ -440133,6 +441236,7 @@ func (p *tparser) s364() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit229, "*", 111, false); !ok {
@@ -440241,6 +441345,7 @@ func (p *tparser) s365() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
@@ -441119,6 +442224,7 @@ func (p *tparser) s370() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -449615,6 +450721,7 @@ func (p *tparser) s395() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
 		ch, size, ok = p.in[p.pos], 1, true
@@ -449696,6 +450803,7 @@ func (p *tparser) s396() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit61, "readonly", 53, false); !ok {
@@ -459851,6 +460959,7 @@ func (p *tparser) s413() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit325, "?", 139, false); !ok {
@@ -459932,6 +461041,7 @@ func (p *tparser) s414() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 33) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit382, "!", 179, false); !ok {
@@ -460008,6 +461118,7 @@ func (p *tparser) s415() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit229, "*", 111, false); !ok {
@@ -460066,6 +461177,7 @@ func (p *tparser) s416() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -460126,6 +461238,7 @@ func (p *tparser) s417() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 62) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit298, "=>", 121, false); !ok {
@@ -460184,6 +461297,7 @@ func (p *tparser) s418() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 58) {
 		p.pos++
@@ -460276,6 +461390,7 @@ func (p *tparser) s419() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 61) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit66, "=", 55, false); !ok {
@@ -460357,6 +461472,7 @@ func (p *tparser) s420() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 		p.pos++
@@ -461058,6 +462174,7 @@ func (p *tparser) v423() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -461198,6 +462315,7 @@ func (p *tparser) i423() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -461365,6 +462483,7 @@ func (p *tparser) v424() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit240, "#", 112, false); !ok {
@@ -461517,6 +462636,7 @@ func (p *tparser) i424() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
@@ -461701,6 +462821,7 @@ func (p *tparser) v425() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 35) {
@@ -461871,6 +462992,7 @@ func (p *tparser) i425() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -481030,6 +482152,7 @@ func (p *tparser) v440() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -481228,6 +482351,7 @@ func (p *tparser) i440() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -481453,6 +482577,7 @@ func (p *tparser) v441() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -481663,6 +482788,7 @@ func (p *tparser) i441() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -484576,6 +485702,7 @@ func (p *tparser) v449() (any, bool) {
 	}
 	_, _ = x8, x23
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -485010,6 +486137,7 @@ func (p *tparser) i449() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x23
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -486341,6 +487469,7 @@ func (p *tparser) v451() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit673, "`", 188, false); !ok {
@@ -486415,6 +487544,7 @@ func (p *tparser) i451() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -486510,6 +487640,7 @@ func (p *tparser) v452() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit673, "`", 188, false); !ok {
@@ -486584,6 +487715,7 @@ func (p *tparser) i452() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -486679,6 +487811,7 @@ func (p *tparser) v453() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit65, "}", 54, false); !ok {
@@ -486753,6 +487886,7 @@ func (p *tparser) i453() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -486848,6 +487982,7 @@ func (p *tparser) v454() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit65, "}", 54, false); !ok {
@@ -486922,6 +488057,7 @@ func (p *tparser) i454() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -487727,6 +488863,7 @@ func (p *tparser) s456() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit673, "`", 188, false); !ok {
@@ -487805,6 +488942,7 @@ func (p *tparser) s457() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 96) {
@@ -487887,6 +489025,7 @@ func (p *tparser) s458() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit65, "}", 54, false); !ok {
@@ -487965,6 +489104,7 @@ func (p *tparser) s459() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 125) {
@@ -488764,6 +489904,7 @@ func (p *tparser) s461() (any, bool) {
 		p.tooDeep()
 	}
 	_, _, _ = x4, x19, x32
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 47) {

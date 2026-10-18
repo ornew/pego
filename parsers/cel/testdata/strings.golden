@@ -1,1 +1,1 @@
-ListLit{Elems: ["r\"raw\\n\"" "B'\\xff\\303'" "\"\"\"multi\nline\"\"\"" "\"q\\\"uote\\u00e9\"" ".5" "0x1Fu" "1e-3"]}
+ListLit{Elems: [StringLit{Text: "r\"raw\\n\""} BytesLit{Text: "B'\\xff\\303'"} StringLit{Text: "\"\"\"multi\nline\"\"\""} StringLit{Text: "\"q\\\"uote\\u00e9\""} DoubleLit{Text: ".5"} UintLit{Text: "0x1Fu"} DoubleLit{Text: "1e-3"}]}

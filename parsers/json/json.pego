@@ -4,10 +4,10 @@ package json
 type Object = { Members []Member }
 type Member = { Key String; Value Value }
 type Array = { Elements []Value }
-type String terminal // the raw string without quotes, escapes included
-type Number terminal
-type Bool terminal
-type Null terminal
+type String = { Text string } // the raw string without quotes, escapes included
+type Number = { Text string }
+type Bool = { Text string }
+type Null = { Text string }
 type Value ~ Object | Array | String | Number | Bool | Null
 
 rule main Value = ws v:value ws $$ => $v
@@ -28,16 +28,16 @@ rule elements = (
 rule string = "\"" s:chars "\"" => $s
 // Runs of unescaped characters are matched by an inline class: calling a rule for each character
 // makes the generated Recognize about a quarter slower and ParseAST about a tenth.
-rule chars String = ([^"\\\u{0}-\u{1f}]+ / escape)*
+rule chars String = t:(([^"\\\u{0}-\u{1f}]+ / escape)*) #atomic => String{Text: text($t)}
 rule escape = "\\" (["\\/bfnrt] / "u" hex hex hex hex)
 rule hex = [0-9a-fA-F]
 
-rule number Number = "-"? int frac? exp?
+rule number Number = t:("-"? int frac? exp?) #atomic => Number{Text: text($t)}
 rule int = "0" / [1-9] [0-9]*
 rule frac = "." [0-9]+
 rule exp = [eE] [+\-]? [0-9]+
 
-rule bool Bool = "true" / "false"
-rule null Null = "null"
+rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
+rule null Null = t:("null") #atomic => Null{Text: text($t)}
 
 rule ws = [ \t\r\n]*

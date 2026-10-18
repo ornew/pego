@@ -6893,60 +6893,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// BitLit is the terminal type BitLit.
-type BitLit struct {
-	Span
-	Text string
-}
-
-// BoolLit is the terminal type BoolLit.
-type BoolLit struct {
-	Span
-	Text string
-}
-
-// DefaultExpr is the terminal type DefaultExpr.
-type DefaultExpr struct {
-	Span
-	Text string
-}
-
-// Ident is the terminal type Ident.
-type Ident struct {
-	Span
-	Text string
-}
-
-// IntervalUnit is the terminal type IntervalUnit.
-type IntervalUnit struct {
-	Span
-	Text string
-}
-
-// NullLit is the terminal type NullLit.
-type NullLit struct {
-	Span
-	Text string
-}
-
-// Number is the terminal type Number.
-type Number struct {
-	Span
-	Text string
-}
-
-// Param is the terminal type Param.
-type Param struct {
-	Span
-	Text string
-}
-
-// StringLit is the terminal type StringLit.
-type StringLit struct {
-	Span
-	Text string
-}
-
 // AlterCmd is the struct type AlterCmd.
 type AlterCmd struct {
 	Span
@@ -7097,6 +7043,18 @@ type Binary struct {
 	Left  Expr
 	Op    *TNode[string]
 	Right Expr
+}
+
+// BitLit is the struct type BitLit.
+type BitLit struct {
+	Span
+	Text string
+}
+
+// BoolLit is the struct type BoolLit.
+type BoolLit struct {
+	Span
+	Text string
 }
 
 // CTE is the struct type CTE.
@@ -7353,6 +7311,12 @@ type DefElem struct {
 	Value string
 }
 
+// DefaultExpr is the struct type DefaultExpr.
+type DefaultExpr struct {
+	Span
+	Text string
+}
+
 // DeleteStmt is the struct type DeleteStmt.
 type DeleteStmt struct {
 	Span
@@ -7540,6 +7504,12 @@ type GroupingSet struct {
 	Items []Expr
 }
 
+// Ident is the struct type Ident.
+type Ident struct {
+	Span
+	Text string
+}
+
 // ImportStmt is the struct type ImportStmt.
 type ImportStmt struct {
 	Span
@@ -7600,6 +7570,12 @@ type IntervalLit struct {
 	Span
 	Value Expr
 	Unit  *IntervalUnit
+}
+
+// IntervalUnit is the struct type IntervalUnit.
+type IntervalUnit struct {
+	Span
+	Text string
 }
 
 // IntoClause is the struct type IntoClause.
@@ -7780,6 +7756,18 @@ type Not struct {
 	X Expr
 }
 
+// NullLit is the struct type NullLit.
+type NullLit struct {
+	Span
+	Text string
+}
+
+// Number is the struct type Number.
+type Number struct {
+	Span
+	Text string
+}
+
 // OffsetClause is the struct type OffsetClause.
 type OffsetClause struct {
 	Span
@@ -7805,6 +7793,12 @@ type OrderBy struct {
 	All       bool
 	Direction string
 	Nulls     string
+}
+
+// Param is the struct type Param.
+type Param struct {
+	Span
+	Text string
 }
 
 // Paren is the struct type Paren.
@@ -8113,6 +8107,12 @@ type Star struct {
 	Exclude   []*Name
 	Replace   []*ReplaceItem
 	Rename    []*RenameItem
+}
+
+// StringLit is the struct type StringLit.
+type StringLit struct {
+	Span
+	Text string
 }
 
 // StructField is the struct type StructField.
@@ -8497,78 +8497,6 @@ func (*UseStmt) isStatement()               {}
 func (*VacuumStmt) isStatement()            {}
 func (*ValuesClause) isQueryBody()          {}
 func (*ValuesRef) isTableRef()              {}
-
-func (v *BitLit) tname() string             { return "BitLit" }
-func (v *BitLit) ttext() (string, bool)     { return v.Text, true }
-func (v *BitLit) tkids() []any              { return nil }
-func (v *BitLit) tfield(string) (any, bool) { return nil, true }
-func (v *BitLit) tstruct() bool             { return false }
-func (v *BitLit) tfresh() bool              { return false }
-func (v *BitLit) tsetFresh(bool)            {}
-
-func (v *BoolLit) tname() string             { return "BoolLit" }
-func (v *BoolLit) ttext() (string, bool)     { return v.Text, true }
-func (v *BoolLit) tkids() []any              { return nil }
-func (v *BoolLit) tfield(string) (any, bool) { return nil, true }
-func (v *BoolLit) tstruct() bool             { return false }
-func (v *BoolLit) tfresh() bool              { return false }
-func (v *BoolLit) tsetFresh(bool)            {}
-
-func (v *DefaultExpr) tname() string             { return "DefaultExpr" }
-func (v *DefaultExpr) ttext() (string, bool)     { return v.Text, true }
-func (v *DefaultExpr) tkids() []any              { return nil }
-func (v *DefaultExpr) tfield(string) (any, bool) { return nil, true }
-func (v *DefaultExpr) tstruct() bool             { return false }
-func (v *DefaultExpr) tfresh() bool              { return false }
-func (v *DefaultExpr) tsetFresh(bool)            {}
-
-func (v *Ident) tname() string             { return "Ident" }
-func (v *Ident) ttext() (string, bool)     { return v.Text, true }
-func (v *Ident) tkids() []any              { return nil }
-func (v *Ident) tfield(string) (any, bool) { return nil, true }
-func (v *Ident) tstruct() bool             { return false }
-func (v *Ident) tfresh() bool              { return false }
-func (v *Ident) tsetFresh(bool)            {}
-
-func (v *IntervalUnit) tname() string             { return "IntervalUnit" }
-func (v *IntervalUnit) ttext() (string, bool)     { return v.Text, true }
-func (v *IntervalUnit) tkids() []any              { return nil }
-func (v *IntervalUnit) tfield(string) (any, bool) { return nil, true }
-func (v *IntervalUnit) tstruct() bool             { return false }
-func (v *IntervalUnit) tfresh() bool              { return false }
-func (v *IntervalUnit) tsetFresh(bool)            {}
-
-func (v *NullLit) tname() string             { return "NullLit" }
-func (v *NullLit) ttext() (string, bool)     { return v.Text, true }
-func (v *NullLit) tkids() []any              { return nil }
-func (v *NullLit) tfield(string) (any, bool) { return nil, true }
-func (v *NullLit) tstruct() bool             { return false }
-func (v *NullLit) tfresh() bool              { return false }
-func (v *NullLit) tsetFresh(bool)            {}
-
-func (v *Number) tname() string             { return "Number" }
-func (v *Number) ttext() (string, bool)     { return v.Text, true }
-func (v *Number) tkids() []any              { return nil }
-func (v *Number) tfield(string) (any, bool) { return nil, true }
-func (v *Number) tstruct() bool             { return false }
-func (v *Number) tfresh() bool              { return false }
-func (v *Number) tsetFresh(bool)            {}
-
-func (v *Param) tname() string             { return "Param" }
-func (v *Param) ttext() (string, bool)     { return v.Text, true }
-func (v *Param) tkids() []any              { return nil }
-func (v *Param) tfield(string) (any, bool) { return nil, true }
-func (v *Param) tstruct() bool             { return false }
-func (v *Param) tfresh() bool              { return false }
-func (v *Param) tsetFresh(bool)            {}
-
-func (v *StringLit) tname() string             { return "StringLit" }
-func (v *StringLit) ttext() (string, bool)     { return v.Text, true }
-func (v *StringLit) tkids() []any              { return nil }
-func (v *StringLit) tfield(string) (any, bool) { return nil, true }
-func (v *StringLit) tstruct() bool             { return false }
-func (v *StringLit) tfresh() bool              { return false }
-func (v *StringLit) tsetFresh(bool)            {}
 
 func (v *AlterCmd) tname() string         { return "AlterCmd" }
 func (v *AlterCmd) ttext() (string, bool) { return "", false }
@@ -9351,6 +9279,50 @@ func (v *Binary) tfieldWork(p *tparser, name string) (any, bool) {
 		return tback(v.Op), true
 	case "Right":
 		return tback(v.Right), true
+	}
+	return nil, false
+}
+
+func (v *BitLit) tname() string         { return "BitLit" }
+func (v *BitLit) ttext() (string, bool) { return "", false }
+func (v *BitLit) tkids() []any          { return nil }
+func (v *BitLit) tstruct() bool         { return true }
+func (v *BitLit) tfresh() bool          { return false }
+func (v *BitLit) tsetFresh(bool)        {}
+func (v *BitLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *BitLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *BoolLit) tname() string         { return "BoolLit" }
+func (v *BoolLit) ttext() (string, bool) { return "", false }
+func (v *BoolLit) tkids() []any          { return nil }
+func (v *BoolLit) tstruct() bool         { return true }
+func (v *BoolLit) tfresh() bool          { return false }
+func (v *BoolLit) tsetFresh(bool)        {}
+func (v *BoolLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *BoolLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -10794,6 +10766,28 @@ func (v *DefElem) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *DefaultExpr) tname() string         { return "DefaultExpr" }
+func (v *DefaultExpr) ttext() (string, bool) { return "", false }
+func (v *DefaultExpr) tkids() []any          { return nil }
+func (v *DefaultExpr) tstruct() bool         { return true }
+func (v *DefaultExpr) tfresh() bool          { return false }
+func (v *DefaultExpr) tsetFresh(bool)        {}
+func (v *DefaultExpr) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *DefaultExpr) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *DeleteStmt) tname() string         { return "DeleteStmt" }
 func (v *DeleteStmt) ttext() (string, bool) { return "", false }
 func (v *DeleteStmt) tkids() []any          { return nil }
@@ -11783,6 +11777,28 @@ func (v *GroupingSet) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Ident) tname() string         { return "Ident" }
+func (v *Ident) ttext() (string, bool) { return "", false }
+func (v *Ident) tkids() []any          { return nil }
+func (v *Ident) tstruct() bool         { return true }
+func (v *Ident) tfresh() bool          { return false }
+func (v *Ident) tsetFresh(bool)        {}
+func (v *Ident) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Ident) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *ImportStmt) tname() string         { return "ImportStmt" }
 func (v *ImportStmt) ttext() (string, bool) { return "", false }
 func (v *ImportStmt) tkids() []any          { return nil }
@@ -12070,6 +12086,28 @@ func (v *IntervalLit) tfieldWork(p *tparser, name string) (any, bool) {
 		return tback(v.Value), true
 	case "Unit":
 		return tptr(v.Unit), true
+	}
+	return nil, false
+}
+
+func (v *IntervalUnit) tname() string         { return "IntervalUnit" }
+func (v *IntervalUnit) ttext() (string, bool) { return "", false }
+func (v *IntervalUnit) tkids() []any          { return nil }
+func (v *IntervalUnit) tstruct() bool         { return true }
+func (v *IntervalUnit) tfresh() bool          { return false }
+func (v *IntervalUnit) tsetFresh(bool)        {}
+func (v *IntervalUnit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *IntervalUnit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -13029,6 +13067,50 @@ func (v *Not) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *NullLit) tname() string         { return "NullLit" }
+func (v *NullLit) ttext() (string, bool) { return "", false }
+func (v *NullLit) tkids() []any          { return nil }
+func (v *NullLit) tstruct() bool         { return true }
+func (v *NullLit) tfresh() bool          { return false }
+func (v *NullLit) tsetFresh(bool)        {}
+func (v *NullLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *NullLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tname() string         { return "Number" }
+func (v *Number) ttext() (string, bool) { return "", false }
+func (v *Number) tkids() []any          { return nil }
+func (v *Number) tstruct() bool         { return true }
+func (v *Number) tfresh() bool          { return false }
+func (v *Number) tsetFresh(bool)        {}
+func (v *Number) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *OffsetClause) tname() string         { return "OffsetClause" }
 func (v *OffsetClause) ttext() (string, bool) { return "", false }
 func (v *OffsetClause) tkids() []any          { return nil }
@@ -13184,6 +13266,28 @@ func (v *OrderBy) tfieldWork(p *tparser, name string) (any, bool) {
 		return any(v.Direction), true
 	case "Nulls":
 		return any(v.Nulls), true
+	}
+	return nil, false
+}
+
+func (v *Param) tname() string         { return "Param" }
+func (v *Param) ttext() (string, bool) { return "", false }
+func (v *Param) tkids() []any          { return nil }
+func (v *Param) tstruct() bool         { return true }
+func (v *Param) tfresh() bool          { return false }
+func (v *Param) tsetFresh(bool)        {}
+func (v *Param) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Param) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -14882,6 +14986,28 @@ func (v *Star) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *StringLit) tname() string         { return "StringLit" }
+func (v *StringLit) ttext() (string, bool) { return "", false }
+func (v *StringLit) tkids() []any          { return nil }
+func (v *StringLit) tstruct() bool         { return true }
+func (v *StringLit) tfresh() bool          { return false }
+func (v *StringLit) tsetFresh(bool)        {}
+func (v *StringLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *StringLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *StructField) tname() string         { return "StructField" }
 func (v *StructField) ttext() (string, bool) { return "", false }
 func (v *StructField) tkids() []any          { return nil }
@@ -16450,12 +16576,6 @@ func tinit() {
 		*v = Number{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[30].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tNumber)
-		*v = Number{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[58].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tIdent)
@@ -16511,24 +16631,6 @@ func tinit() {
 		return v
 	}
 	trules[263].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdent)
-		*v = Ident{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[310].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tNumber)
-		*v = Number{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[345].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdent)
-		*v = Ident{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[436].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tIdent)
 		*v = Ident{Span: Span{start, end}, Text: text}
@@ -17041,6 +17143,40 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_BitLit makes a BitLit in an action (newStruct in the typed runtime).
+func tmk_BitLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBitLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_BoolLit makes a BoolLit in an action (newStruct in the typed runtime).
+func tmk_BoolLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tBoolLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -17878,6 +18014,23 @@ func tmk_DefElem(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_DefaultExpr makes a DefaultExpr in an action (newStruct in the typed runtime).
+func tmk_DefaultExpr(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tDefaultExpr)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_DeleteStmt makes a DeleteStmt in an action (newStruct in the typed runtime).
 func tmk_DeleteStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	c.p.stepWork()
@@ -18472,6 +18625,23 @@ func tmk_GroupingSet(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Ident makes a Ident in an action (newStruct in the typed runtime).
+func tmk_Ident(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIdent)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_ImportStmt makes a ImportStmt in an action (newStruct in the typed runtime).
 func tmk_ImportStmt(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -18668,6 +18838,23 @@ func tmk_IntervalLit(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_IntervalUnit makes a IntervalUnit in an action (newStruct in the typed runtime).
+func tmk_IntervalUnit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIntervalUnit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -19236,6 +19423,40 @@ func tmk_Not(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_NullLit makes a NullLit in an action (newStruct in the typed runtime).
+func tmk_NullLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNullLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Number makes a Number in an action (newStruct in the typed runtime).
+func tmk_Number(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNumber)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_OffsetClause makes a OffsetClause in an action (newStruct in the typed runtime).
 func tmk_OffsetClause(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -19320,6 +19541,23 @@ func tmk_OrderBy(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	spanOf(f2, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f3, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Param makes a Param in an action (newStruct in the typed runtime).
+func tmk_Param(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tParam)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -20307,6 +20545,23 @@ func tmk_Star(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	spanOf(f2, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f3, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_StringLit makes a StringLit in an action (newStruct in the typed runtime).
+func tmk_StringLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tStringLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -26025,15 +26280,6 @@ func tv528(a *tslabs, v any) Tuple4[*Ident, *TNode[Tuple2[*TNode[[]*TNode[string
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control                *workControl
-	tBitLit                astChunk[BitLit]
-	tBoolLit               astChunk[BoolLit]
-	tDefaultExpr           astChunk[DefaultExpr]
-	tIdent                 astChunk[Ident]
-	tIntervalUnit          astChunk[IntervalUnit]
-	tNullLit               astChunk[NullLit]
-	tNumber                astChunk[Number]
-	tParam                 astChunk[Param]
-	tStringLit             astChunk[StringLit]
 	tAlterCmd              astChunk[AlterCmd]
 	tAlterDatabaseStmt     astChunk[AlterDatabaseStmt]
 	tAlterObjectSchemaStmt astChunk[AlterObjectSchemaStmt]
@@ -26050,6 +26296,8 @@ type tslabs struct {
 	tBaseTable             astChunk[BaseTable]
 	tBetween               astChunk[Between]
 	tBinary                astChunk[Binary]
+	tBitLit                astChunk[BitLit]
+	tBoolLit               astChunk[BoolLit]
 	tCTE                   astChunk[CTE]
 	tCallStmt              astChunk[CallStmt]
 	tCase                  astChunk[Case]
@@ -26076,6 +26324,7 @@ type tslabs struct {
 	tCreateViewStmt        astChunk[CreateViewStmt]
 	tDeallocateStmt        astChunk[DeallocateStmt]
 	tDefElem               astChunk[DefElem]
+	tDefaultExpr           astChunk[DefaultExpr]
 	tDeleteStmt            astChunk[DeleteStmt]
 	tDetachStmt            astChunk[DetachStmt]
 	tDistinctClause        astChunk[DistinctClause]
@@ -26098,6 +26347,7 @@ type tslabs struct {
 	tGroupBy               astChunk[GroupBy]
 	tGrouping              astChunk[Grouping]
 	tGroupingSet           astChunk[GroupingSet]
+	tIdent                 astChunk[Ident]
 	tImportStmt            astChunk[ImportStmt]
 	tIn                    astChunk[In]
 	tIndexElem             astChunk[IndexElem]
@@ -26105,6 +26355,7 @@ type tslabs struct {
 	tIndirection           astChunk[Indirection]
 	tInsertStmt            astChunk[InsertStmt]
 	tIntervalLit           astChunk[IntervalLit]
+	tIntervalUnit          astChunk[IntervalUnit]
 	tIntoClause            astChunk[IntoClause]
 	tIsExpr                astChunk[IsExpr]
 	tIsOf                  astChunk[IsOf]
@@ -26126,9 +26377,12 @@ type tslabs struct {
 	tName                  astChunk[Name]
 	tNamedArg              astChunk[NamedArg]
 	tNot                   astChunk[Not]
+	tNullLit               astChunk[NullLit]
+	tNumber                astChunk[Number]
 	tOffsetClause          astChunk[OffsetClause]
 	tOnConflict            astChunk[OnConflict]
 	tOrderBy               astChunk[OrderBy]
+	tParam                 astChunk[Param]
 	tParen                 astChunk[Paren]
 	tParenQuery            astChunk[ParenQuery]
 	tParenTable            astChunk[ParenTable]
@@ -26164,6 +26418,7 @@ type tslabs struct {
 	tSortItem              astChunk[SortItem]
 	tSpecialCall           astChunk[SpecialCall]
 	tStar                  astChunk[Star]
+	tStringLit             astChunk[StringLit]
 	tStructField           astChunk[StructField]
 	tStructLit             astChunk[StructLit]
 	tSubquery              astChunk[Subquery]
@@ -31371,12 +31626,12 @@ var scope2472 = []string{}
 var scope2496 = []string{}
 var scope2836 = []string{"t"}
 var scope2837 = []string{"u"}
-var scope2985 = []string{"t"}
-var scope3001 = []string{"n"}
-var scope3007 = []string{"n"}
-var scope3044 = []string{"n"}
-var scope3050 = []string{"n"}
-var scope3635 = []string{"n"}
+var scope2986 = []string{"t"}
+var scope3002 = []string{"n"}
+var scope3008 = []string{"n"}
+var scope3045 = []string{"n"}
+var scope3051 = []string{"n"}
+var scope3636 = []string{"n"}
 
 func init() {
 	rules = []*rule{
@@ -31388,13 +31643,13 @@ func init() {
 		{id: 5, name: "word", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
 		{id: 6, name: "quoted_ident", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 7, name: "uquoted_ident", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
-		{id: 8, name: "col_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
-		{id: 9, name: "type_function_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 10, name: "function_name_token", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
-		{id: 11, name: "type_name_token", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 12, name: "ident_only", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
-		{id: 13, name: "col_label", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
-		{id: 14, name: "non_reserved_word", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
+		{id: 8, name: "col_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 4, novalue: false, vars: []string{}},
+		{id: 9, name: "type_function_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 10, name: "function_name_token", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 5, novalue: false, vars: []string{}},
+		{id: 11, name: "type_name_token", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 12, name: "ident_only", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 6, novalue: false, vars: []string{}},
+		{id: 13, name: "col_label", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 7, novalue: false, vars: []string{}},
+		{id: 14, name: "non_reserved_word", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 8, novalue: false, vars: []string{}},
 		{id: 15, name: "sq_cont", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 16, name: "sq_string", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 17, name: "e_body", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
@@ -31405,12 +31660,12 @@ func init() {
 		{id: 22, name: "dq_close", scope: []string{"u"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{"tag"}},
 		{id: 23, name: "dq_tag", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 24, name: "bit_string", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 25, name: "sconst", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"tag"}},
-		{id: 26, name: "bit_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BitLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 25, name: "sconst", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, textStruct: true, seen: 11, novalue: false, vars: []string{"tag"}},
+		{id: 26, name: "bit_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BitLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 27, name: "digits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 28, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Number", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
+		{id: 28, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Number", memo: true, leader: false, textStruct: true, seen: 12, novalue: false, vars: []string{}},
 		{id: 29, name: "exp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 30, name: "iconst", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Number", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
+		{id: 30, name: "iconst", scope: []string{"t", "i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
 		{id: 31, name: "int_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 32, name: "opc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 33, name: "cut", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -31438,10 +31693,10 @@ func init() {
 		{id: 55, name: "op_plain", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 56, name: "core", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 32, novalue: false, vars: []string{}},
 		{id: 57, name: "core_long", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 58, name: "col_id_or_string", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 33, novalue: false, vars: []string{"tag"}},
-		{id: 59, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 34, novalue: false, vars: []string{"tag"}},
-		{id: 60, name: "attr_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 35, novalue: false, vars: []string{}},
-		{id: 61, name: "param_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 36, novalue: false, vars: []string{}},
+		{id: 58, name: "col_id_or_string", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 33, novalue: false, vars: []string{"tag"}},
+		{id: 59, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 34, novalue: false, vars: []string{"tag"}},
+		{id: 60, name: "attr_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 35, novalue: false, vars: []string{}},
+		{id: 61, name: "param_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 36, novalue: false, vars: []string{}},
 		{id: 62, name: "qualified_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 37, novalue: false, vars: []string{"tag"}},
 		{id: 63, name: "qn_dotted", scope: []string{"p", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 64, name: "qn_string", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -31476,7 +31731,7 @@ func init() {
 		{id: 93, name: "literal_primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 94, name: "plain_literal", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 95, name: "string_literal", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 96, name: "param", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Param", memo: true, leader: false, seen: 55, novalue: false, vars: []string{}},
+		{id: 96, name: "param", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Param", memo: true, leader: false, textStruct: true, seen: 55, novalue: false, vars: []string{}},
 		{id: 97, name: "dollar_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 98, name: "positional_ref", scope: []string{"i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 99, name: "plain_column", scope: []string{"ps"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -31508,7 +31763,7 @@ func init() {
 		{id: 125, name: "expr_list", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 63, novalue: false, vars: []string{"tag"}},
 		{id: 126, name: "expr_list_opt_comma", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 64, novalue: false, vars: []string{"tag"}},
 		{id: 127, name: "star_primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 128, name: "default_expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "DefaultExpr", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 128, name: "default_expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "DefaultExpr", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 129, name: "columns_expr", scope: []string{"a"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 130, name: "star_columns", scope: []string{"a"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 131, name: "unpack_expr", scope: []string{"a"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -31529,8 +31784,8 @@ func init() {
 		{id: 146, name: "rename_paren", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 147, name: "rename_single", scope: []string{"i"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 148, name: "keyword_primary", scope: []string{"k"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 149, name: "bool_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BoolLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 150, name: "null_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NullLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 149, name: "bool_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "BoolLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 150, name: "null_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "NullLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 151, name: "exists_expr", scope: []string{"q"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 152, name: "grouping_expr", scope: []string{"n", "xs"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 153, name: "cast_expr", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 71, novalue: false, vars: []string{"tag"}},
@@ -31539,7 +31794,7 @@ func init() {
 		{id: 156, name: "interval_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 157, name: "interval_paren", scope: []string{"v", "u"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 158, name: "interval_const", scope: []string{"v", "u"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 159, name: "interval_unit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "IntervalUnit", memo: true, leader: false, seen: 72, novalue: false, vars: []string{}},
+		{id: 159, name: "interval_unit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "IntervalUnit", memo: true, leader: false, textStruct: true, seen: 72, novalue: false, vars: []string{}},
 		{id: 160, name: "interval_to", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 161, name: "interval_field", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 162, name: "special_call", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 73, novalue: false, vars: []string{"tag"}},
@@ -31643,7 +31898,7 @@ func init() {
 		{id: 260, name: "select_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 99, novalue: false, vars: []string{"tag"}},
 		{id: 261, name: "item_prefixed", scope: []string{"a", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 262, name: "item_plain", scope: []string{"e", "kw", "al"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 263, name: "col_label_or_string", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 100, novalue: false, vars: []string{"tag"}},
+		{id: 263, name: "col_label_or_string", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 100, novalue: false, vars: []string{"tag"}},
 		{id: 264, name: "into_clause", scope: []string{"t"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 101, novalue: false, vars: []string{"tag"}},
 		{id: 265, name: "opt_temp_table_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 266, name: "into_temp", scope: []string{"t", "n"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -31690,7 +31945,7 @@ func init() {
 		{id: 307, name: "fetch_value_clause", scope: []string{"k", "v"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 308, name: "fetch_clause", scope: []string{"k"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 309, name: "fetch_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 117, novalue: false, vars: []string{"tag"}},
-		{id: 310, name: "fetch_signed", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 310, name: "fetch_signed", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 311, name: "offset_clause", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 118, novalue: false, vars: []string{"tag"}},
 		{id: 312, name: "offset_plain", scope: []string{"v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 313, name: "offset_rows", scope: []string{"v", "r"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -31725,7 +31980,7 @@ func init() {
 		{id: 342, name: "pivot_header_single", scope: []string{"e"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 343, name: "c_expr_list_opt_comma", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 344, name: "table_primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 134, novalue: false, vars: []string{"tag"}},
-		{id: 345, name: "alias_prefix", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 135, novalue: false, vars: []string{"tag"}},
+		{id: 345, name: "alias_prefix", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 135, novalue: false, vars: []string{"tag"}},
 		{id: 346, name: "base_ref", scope: []string{"pa", "n", "st", "o", "a", "at", "s"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 347, name: "at_clause", scope: []string{"u", "v"}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 348, name: "subquery_ref", scope: []string{"pa", "l", "q", "a", "s"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -31816,7 +32071,7 @@ func init() {
 		{id: 433, name: "gen_as", scope: []string{"e", "st"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 434, name: "generated_when", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 177, novalue: false, vars: []string{}},
 		{id: 435, name: "generated_storage", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 178, novalue: false, vars: []string{}},
-		{id: 436, name: "constraint_name", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 179, novalue: false, vars: []string{"tag"}},
+		{id: 436, name: "constraint_name", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 179, novalue: false, vars: []string{"tag"}},
 		{id: 437, name: "col_constraint", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 180, novalue: false, vars: []string{"tag"}},
 		{id: 438, name: "cc_not_null", scope: []string{"cn", "k"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 439, name: "cc_null", scope: []string{"cn", "k"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -32028,8 +32283,8 @@ func init() {
 		{id: 645, name: "comment_stmt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 646, name: "comment_column", scope: []string{"k", "c", "v"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
 		{id: 647, name: "comment_object", scope: []string{"k", "n", "v"}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
-		{id: 648, name: "comment_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, seen: 244, novalue: false, vars: []string{"tag"}},
-		{id: 649, name: "null_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 648, name: "comment_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, textStruct: true, seen: 244, novalue: false, vars: []string{"tag"}},
+		{id: 649, name: "null_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 650, name: "update_extensions_stmt", scope: []string{"w", "ns"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 245, novalue: false, vars: []string{"tag"}},
 		{id: 651, name: "stmt_end", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 652, name: "main", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"tag"}},
@@ -32824,6 +33079,12 @@ func init() {
 	rules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e48() }
 	rules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e49() }
 	rules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e50() }
+	rules[30].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("Number", "Text", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }())
+		}()
+	}
 	rules[31].body = func(p *parser, _ int) (*Node, bool) { return p.e51() }
 	rules[32].body = func(p *parser, _ int) (*Node, bool) { return p.e53() }
 	rules[33].body = func(p *parser, _ int) (*Node, bool) { return p.e54() }
@@ -37766,6 +38027,10 @@ func init() {
 	typeKinds["Between"] = kindOf("Between", "")
 	structFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	typeKinds["Binary"] = kindOf("Binary", "")
+	structFields["BitLit"] = map[string]bool{"Text": true}
+	typeKinds["BitLit"] = kindOf("BitLit", "")
+	structFields["BoolLit"] = map[string]bool{"Text": true}
+	typeKinds["BoolLit"] = kindOf("BoolLit", "")
 	structFields["CTE"] = map[string]bool{"Name": true, "Columns": true, "UsingKey": true, "Materialized": true, "Query": true}
 	typeKinds["CTE"] = kindOf("CTE", "")
 	structFields["CallStmt"] = map[string]bool{"Func": true}
@@ -37818,6 +38083,8 @@ func init() {
 	typeKinds["DeallocateStmt"] = kindOf("DeallocateStmt", "")
 	structFields["DefElem"] = map[string]bool{"Name": true, "Value": true}
 	typeKinds["DefElem"] = kindOf("DefElem", "")
+	structFields["DefaultExpr"] = map[string]bool{"Text": true}
+	typeKinds["DefaultExpr"] = kindOf("DefaultExpr", "")
 	structFields["DeleteStmt"] = map[string]bool{"With": true, "Table": true, "Using": true, "Where": true, "Returning": true, "Truncate": true}
 	typeKinds["DeleteStmt"] = kindOf("DeleteStmt", "")
 	structFields["DetachStmt"] = map[string]bool{"Database": true, "IfExists": true, "Name": true}
@@ -37862,6 +38129,8 @@ func init() {
 	typeKinds["Grouping"] = kindOf("Grouping", "")
 	structFields["GroupingSet"] = map[string]bool{"Kind": true, "Items": true}
 	typeKinds["GroupingSet"] = kindOf("GroupingSet", "")
+	structFields["Ident"] = map[string]bool{"Text": true}
+	typeKinds["Ident"] = kindOf("Ident", "")
 	structFields["ImportStmt"] = map[string]bool{"Path": true}
 	typeKinds["ImportStmt"] = kindOf("ImportStmt", "")
 	structFields["In"] = map[string]bool{"X": true, "Negated": true, "Query": true, "Items": true, "Source": true}
@@ -37876,6 +38145,8 @@ func init() {
 	typeKinds["InsertStmt"] = kindOf("InsertStmt", "")
 	structFields["IntervalLit"] = map[string]bool{"Value": true, "Unit": true}
 	typeKinds["IntervalLit"] = kindOf("IntervalLit", "")
+	structFields["IntervalUnit"] = map[string]bool{"Text": true}
+	typeKinds["IntervalUnit"] = kindOf("IntervalUnit", "")
 	structFields["IntoClause"] = map[string]bool{"Temp": true, "Table": true}
 	typeKinds["IntoClause"] = kindOf("IntoClause", "")
 	structFields["IsExpr"] = map[string]bool{"X": true, "Negated": true, "Test": true}
@@ -37918,12 +38189,18 @@ func init() {
 	typeKinds["NamedArg"] = kindOf("NamedArg", "")
 	structFields["Not"] = map[string]bool{"X": true}
 	typeKinds["Not"] = kindOf("Not", "")
+	structFields["NullLit"] = map[string]bool{"Text": true}
+	typeKinds["NullLit"] = kindOf("NullLit", "")
+	structFields["Number"] = map[string]bool{"Text": true}
+	typeKinds["Number"] = kindOf("Number", "")
 	structFields["OffsetClause"] = map[string]bool{"Value": true, "Rows": true}
 	typeKinds["OffsetClause"] = kindOf("OffsetClause", "")
 	structFields["OnConflict"] = map[string]bool{"Target": true, "TargetWhere": true, "Constraint": true, "Nothing": true, "Set": true, "Where": true}
 	typeKinds["OnConflict"] = kindOf("OnConflict", "")
 	structFields["OrderBy"] = map[string]bool{"Items": true, "All": true, "Direction": true, "Nulls": true}
 	typeKinds["OrderBy"] = kindOf("OrderBy", "")
+	structFields["Param"] = map[string]bool{"Text": true}
+	typeKinds["Param"] = kindOf("Param", "")
 	structFields["Paren"] = map[string]bool{"X": true}
 	typeKinds["Paren"] = kindOf("Paren", "")
 	structFields["ParenQuery"] = map[string]bool{"Query": true}
@@ -37994,6 +38271,8 @@ func init() {
 	typeKinds["SpecialCall"] = kindOf("SpecialCall", "")
 	structFields["Star"] = map[string]bool{"Qualifier": true, "Exclude": true, "Replace": true, "Rename": true}
 	typeKinds["Star"] = kindOf("Star", "")
+	structFields["StringLit"] = map[string]bool{"Text": true}
+	typeKinds["StringLit"] = kindOf("StringLit", "")
 	structFields["StructField"] = map[string]bool{"Name": true, "Value": true}
 	typeKinds["StructField"] = kindOf("StructField", "")
 	structFields["StructLit"] = map[string]bool{"Fields": true}
@@ -38083,9 +38362,9 @@ func init() {
 		{id: 25, name: "sconst", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"tag"}},
 		{id: 26, name: "bit_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 27, name: "digits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 28, name: "number", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
+		{id: 28, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
 		{id: 29, name: "exp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 30, name: "iconst", scope: []string{"i"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
+		{id: 30, name: "iconst", scope: []string{"i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
 		{id: 31, name: "int_lit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 32, name: "opc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 33, name: "cut", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -38400,7 +38679,7 @@ func init() {
 		{id: 342, name: "pivot_header_single", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"tag"}},
 		{id: 343, name: "c_expr_list_opt_comma", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"tag"}},
 		{id: 344, name: "table_primary", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 134, novalue: true, vars: []string{"tag"}},
-		{id: 345, name: "alias_prefix", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 135, novalue: false, vars: []string{"tag"}},
+		{id: 345, name: "alias_prefix", scope: []string{"n"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 135, novalue: false, vars: []string{"tag"}},
 		{id: 346, name: "base_ref", scope: []string{"pa"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"tag"}},
 		{id: 347, name: "at_clause", scope: []string{}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"tag"}},
 		{id: 348, name: "subquery_ref", scope: []string{"pa"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"tag"}},
@@ -41757,87 +42036,87 @@ func init() {
 	trules[70].entry = (*tparser).u70
 	trules[71].entry = (*tparser).u71
 	trules[72].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3792, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3793, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3794, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
-		prefix: []*toperatorsRuleOp{{id: 4, kind: "prefix", assoc: "", level: 4, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3810, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{{id: 4, kind: "prefix", assoc: "", level: 4, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3811, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
-				return func() any { f_3811 := func() any { c.p.stepWork(); return (c.rhs) }(); return tmk_Not(c, true, f_3811) }()
+				return func() any { f_3812 := func() any { c.p.stepWork(); return (c.rhs) }(); return tmk_Not(c, true, f_3812) }()
 			}()
 		}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}},
-			{id: 15, kind: "prefix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3860, action: func(c *tctx) any {
+			{id: 15, kind: "prefix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3861, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3861 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3862 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Unary(c, true, f_3861, f_3862)
+						f_3862 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3863 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Unary(c, true, f_3862, f_3863)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}}},
-			{id: 23, kind: "prefix", assoc: "", level: 14, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3888, action: func(c *tctx) any {
+			{id: 23, kind: "prefix", assoc: "", level: 14, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3889, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3889 := func() any { c.p.stepWork(); return (c.op) }()
-						f_3890 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Unary(c, true, f_3889, f_3890)
+						f_3890 := func() any { c.p.stepWork(); return (c.op) }()
+						f_3891 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Unary(c, true, f_3890, f_3891)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}}},
-		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3794, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3795, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3795 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3796 := func() any { c.p.stepWork(); return c.cap(0) }()
-					f_3797 := func() any { c.p.stepWork(); return (c.rhs) }()
-					return tmk_Binary(c, true, f_3795, f_3796, f_3797)
+					f_3796 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3797 := func() any { c.p.stepWork(); return c.cap(0) }()
+					f_3798 := func() any { c.p.stepWork(); return (c.rhs) }()
+					return tmk_Binary(c, true, f_3796, f_3797, f_3798)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3798, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3799, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3799 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3800 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3801 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Binary(c, true, f_3799, f_3800, f_3801)
+						f_3800 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3801 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3802 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Binary(c, true, f_3800, f_3801, f_3802)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 2, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3802, action: func(c *tctx) any {
+			{id: 2, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3803, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3803 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3804 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3805 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3803, f_3804, f_3805)
+						f_3804 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3805 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3806 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3804, f_3805, f_3806)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 3, kind: "infix", assoc: "left", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3806, action: func(c *tctx) any {
+			{id: 3, kind: "infix", assoc: "left", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3807, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3807 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3808 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3809 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3807, f_3808, f_3809)
+						f_3808 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3809 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3810 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3808, f_3809, f_3810)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "t", "nn"}, m: (*tparser).e3812, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "t", "nn"}, m: (*tparser).e3813, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3813 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3814 := func() any {
+						f_3814 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3815 := func() any {
 							c.p.stepWork()
 							return c.or(func() any {
 								c.p.stepWork()
@@ -41849,219 +42128,219 @@ func init() {
 								}()
 							})
 						}()
-						f_3815 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
-						return tmk_IsExpr(c, true, f_3813, f_3814, f_3815)
+						f_3816 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
+						return tmk_IsExpr(c, true, f_3814, f_3815, f_3816)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3816, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3817, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3817 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3818 := func() any { c.p.stepWork(); return any(true) }()
-						f_3819 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						return tmk_IsExpr(c, true, f_3817, f_3818, f_3819)
+						f_3818 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3819 := func() any { c.p.stepWork(); return any(true) }()
+						f_3820 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						return tmk_IsExpr(c, true, f_3818, f_3819, f_3820)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "r"}, m: (*tparser).e3820, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "r"}, m: (*tparser).e3821, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3821 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3822 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_3823 := func() any {
+						f_3822 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3823 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_3824 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						return tmk_DistinctFrom(c, true, f_3821, f_3822, f_3823)
+						return tmk_DistinctFrom(c, true, f_3822, f_3823, f_3824)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "ts"}, m: (*tparser).e3824, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 5, line: &toperatorsRuleLine{scope: []string{"n", "ts"}, m: (*tparser).e3825, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3825 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3826 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_3827 := func() any {
+						f_3826 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3827 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_3828 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						return tmk_IsOf(c, true, f_3825, f_3826, f_3827)
+						return tmk_IsOf(c, true, f_3826, f_3827, f_3828)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}}},
-			{id: 9, kind: "postfix", assoc: "", level: 6, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3828, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 6, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3829, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3829 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3830 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3831 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Binary(c, true, f_3829, f_3830, f_3831)
+						f_3830 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3831 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3832 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Binary(c, true, f_3830, f_3831, f_3832)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 10, kind: "postfix", assoc: "", level: 6, line: &toperatorsRuleLine{scope: []string{"o", "q", "s"}, m: (*tparser).e3832, action: func(c *tctx) any {
+			{id: 10, kind: "postfix", assoc: "", level: 6, line: &toperatorsRuleLine{scope: []string{"o", "q", "s"}, m: (*tparser).e3833, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3833 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3834 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_3835 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
-						f_3836 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_AnyAll(c, true, f_3833, f_3834, f_3835, f_3836)
+						f_3834 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3835 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_3836 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
+						f_3837 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_AnyAll(c, true, f_3834, f_3835, f_3836, f_3837)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 11, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "o", "p", "e"}, m: (*tparser).e3837, action: func(c *tctx) any {
+			{id: 11, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "o", "p", "e"}, m: (*tparser).e3838, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3838 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3839 := func() any {
+						f_3839 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3840 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						f_3840 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
-						f_3841 := func() any { c.p.stepWork(); return c.cap(2) }()
-						f_3842 := func() any { c.p.stepWork(); return c.cap(3) }()
-						return tmk_Like(c, true, f_3838, f_3839, f_3840, f_3841, f_3842)
+						f_3841 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
+						f_3842 := func() any { c.p.stepWork(); return c.cap(2) }()
+						f_3843 := func() any { c.p.stepWork(); return c.cap(3) }()
+						return tmk_Like(c, true, f_3839, f_3840, f_3841, f_3842, f_3843)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 12, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"o", "p"}, m: (*tparser).e3843, action: func(c *tctx) any {
+			{id: 12, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"o", "p"}, m: (*tparser).e3844, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3844 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3845 := func() any { c.p.stepWork(); return any(false) }()
-						f_3846 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_3847 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Like(c, true, f_3844, f_3845, f_3846, f_3847, nil)
+						f_3845 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3846 := func() any { c.p.stepWork(); return any(false) }()
+						f_3847 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_3848 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Like(c, true, f_3845, f_3846, f_3847, f_3848, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 13, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "q", "is", "s"}, m: (*tparser).e3848, action: func(c *tctx) any {
+			{id: 13, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "q", "is", "s"}, m: (*tparser).e3849, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3849 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3850 := func() any {
+						f_3850 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3851 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						f_3851 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_3852 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
-						f_3853 := func() any { c.p.stepWork(); return c.cap(3) }()
-						return tmk_In(c, true, f_3849, f_3850, f_3851, f_3852, f_3853)
+						f_3852 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_3853 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
+						f_3854 := func() any { c.p.stepWork(); return c.cap(3) }()
+						return tmk_In(c, true, f_3850, f_3851, f_3852, f_3853, f_3854)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 14, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "sy", "lo", "hi"}, m: (*tparser).e3854, action: func(c *tctx) any {
+			{id: 14, kind: "postfix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{"n", "sy", "lo", "hi"}, m: (*tparser).e3855, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3855 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3856 := func() any { c.p.stepWork(); return c.cap(2) }()
-						f_3857 := func() any { c.p.stepWork(); return c.cap(3) }()
-						f_3858 := func() any {
+						f_3856 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3857 := func() any { c.p.stepWork(); return c.cap(2) }()
+						f_3858 := func() any { c.p.stepWork(); return c.cap(3) }()
+						f_3859 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						f_3859 := func() any {
+						f_3860 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(1) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						return tmk_Between(c, true, f_3855, f_3856, f_3857, f_3858, f_3859)
+						return tmk_Between(c, true, f_3856, f_3857, f_3858, f_3859, f_3860)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 12, mode: 2, tuple: true}}},
-			{id: 16, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3863, action: func(c *tctx) any {
+			{id: 16, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3864, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3864 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3865 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3866 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Binary(c, true, f_3864, f_3865, f_3866)
+						f_3865 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3866 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3867 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Binary(c, true, f_3865, f_3866, f_3867)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 17, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3867, action: func(c *tctx) any {
+			{id: 17, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3868, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3868 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3869 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_PostfixOp(c, true, f_3868, f_3869)
+						f_3869 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3870 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_PostfixOp(c, true, f_3869, f_3870)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 18, kind: "infix", assoc: "left", level: 9, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3870, action: func(c *tctx) any {
+			{id: 18, kind: "infix", assoc: "left", level: 9, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3871, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3871 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3872 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3873 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3871, f_3872, f_3873)
+						f_3872 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3873 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3874 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3872, f_3873, f_3874)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 19, kind: "infix", assoc: "left", level: 10, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3874, action: func(c *tctx) any {
+			{id: 19, kind: "infix", assoc: "left", level: 10, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3875, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3875 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3876 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3877 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3875, f_3876, f_3877)
+						f_3876 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3877 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3878 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3876, f_3877, f_3878)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 20, kind: "infix", assoc: "left", level: 11, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3878, action: func(c *tctx) any {
+			{id: 20, kind: "infix", assoc: "left", level: 11, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3879, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3879 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3880 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3881 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3879, f_3880, f_3881)
+						f_3880 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3881 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3882 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3880, f_3881, f_3882)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 21, kind: "postfix", assoc: "", level: 12, line: &toperatorsRuleLine{scope: []string{"z"}, m: (*tparser).e3882, action: func(c *tctx) any {
+			{id: 21, kind: "postfix", assoc: "", level: 12, line: &toperatorsRuleLine{scope: []string{"z"}, m: (*tparser).e3883, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3883 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3884 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_AtTimeZone(c, true, f_3883, f_3884)
+						f_3884 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3885 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_AtTimeZone(c, true, f_3884, f_3885)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 22, kind: "postfix", assoc: "", level: 13, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3885, action: func(c *tctx) any {
+			{id: 22, kind: "postfix", assoc: "", level: 13, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3886, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3886 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3887 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_Collate(c, true, f_3886, f_3887)
+						f_3887 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3888 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_Collate(c, true, f_3887, f_3888)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 24, kind: "postfix", assoc: "", level: 15, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3891, action: func(c *tctx) any {
+			{id: 24, kind: "postfix", assoc: "", level: 15, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3892, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3892 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3893 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3894 := func() any { c.p.stepWork(); return any(false) }()
-						f_3895 := func() any { c.p.stepWork(); return any(true) }()
-						return tmk_Cast(c, true, f_3892, f_3893, f_3894, f_3895)
+						f_3893 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3894 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3895 := func() any { c.p.stepWork(); return any(false) }()
+						f_3896 := func() any { c.p.stepWork(); return any(true) }()
+						return tmk_Cast(c, true, f_3893, f_3894, f_3895, f_3896)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}}},
@@ -42069,132 +42348,132 @@ func init() {
 	trules[72].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[72], min) }
 	trules[73].entry = (*tparser).u73
 	trules[74].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3793, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3794, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
-		prefix: []*toperatorsRuleOp{{id: 3, kind: "prefix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3860, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{{id: 3, kind: "prefix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3861, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3908 := func() any { c.p.stepWork(); return c.cap(0) }()
-					f_3909 := func() any { c.p.stepWork(); return (c.rhs) }()
-					return tmk_Unary(c, true, f_3908, f_3909)
+					f_3909 := func() any { c.p.stepWork(); return c.cap(0) }()
+					f_3910 := func() any { c.p.stepWork(); return (c.rhs) }()
+					return tmk_Unary(c, true, f_3909, f_3910)
 				}()
 			}()
 		}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}}},
-			{id: 9, kind: "prefix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3888, action: func(c *tctx) any {
+			{id: 9, kind: "prefix", assoc: "", level: 7, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3889, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3928 := func() any { c.p.stepWork(); return (c.op) }()
-						f_3929 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Unary(c, true, f_3928, f_3929)
+						f_3929 := func() any { c.p.stepWork(); return (c.op) }()
+						f_3930 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Unary(c, true, f_3929, f_3930)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}}},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "r"}, m: (*tparser).e3896, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "r"}, m: (*tparser).e3897, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3897 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3898 := func() any { c.p.stepWork(); return c.cap(1) }()
-					f_3899 := func() any {
+					f_3898 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3899 := func() any { c.p.stepWork(); return c.cap(1) }()
+					f_3900 := func() any {
 						c.p.stepWork()
 						return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 					}()
-					return tmk_DistinctFrom(c, true, f_3897, f_3898, f_3899)
+					return tmk_DistinctFrom(c, true, f_3898, f_3899, f_3900)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "ts"}, m: (*tparser).e3900, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "ts"}, m: (*tparser).e3901, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3901 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3902 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_3903 := func() any {
+						f_3902 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3903 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_3904 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						return tmk_IsOf(c, true, f_3901, f_3902, f_3903)
+						return tmk_IsOf(c, true, f_3902, f_3903, f_3904)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 11, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 2, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3904, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 2, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3905, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3905 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3906 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3907 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Binary(c, true, f_3905, f_3906, f_3907)
+						f_3906 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3907 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3908 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Binary(c, true, f_3906, f_3907, f_3908)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3910, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o", "r"}, m: (*tparser).e3911, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3911 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3912 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3913 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Binary(c, true, f_3911, f_3912, f_3913)
+						f_3912 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3913 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3914 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Binary(c, true, f_3912, f_3913, f_3914)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3914, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e3915, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3915 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3916 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_PostfixOp(c, true, f_3915, f_3916)
+						f_3916 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3917 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_PostfixOp(c, true, f_3916, f_3917)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}},
-			{id: 6, kind: "infix", assoc: "left", level: 4, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3888, action: func(c *tctx) any {
+			{id: 6, kind: "infix", assoc: "left", level: 4, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3889, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3917 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3918 := func() any { c.p.stepWork(); return (c.op) }()
-						f_3919 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3917, f_3918, f_3919)
+						f_3918 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3919 := func() any { c.p.stepWork(); return (c.op) }()
+						f_3920 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3918, f_3919, f_3920)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}},
-			{id: 7, kind: "infix", assoc: "left", level: 5, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3920, action: func(c *tctx) any {
+			{id: 7, kind: "infix", assoc: "left", level: 5, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3921, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3921 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3922 := func() any { c.p.stepWork(); return (c.op) }()
-						f_3923 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3921, f_3922, f_3923)
+						f_3922 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3923 := func() any { c.p.stepWork(); return (c.op) }()
+						f_3924 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3922, f_3923, f_3924)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}},
-			{id: 8, kind: "infix", assoc: "left", level: 6, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3924, action: func(c *tctx) any {
+			{id: 8, kind: "infix", assoc: "left", level: 6, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e3925, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3925 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3926 := func() any { c.p.stepWork(); return (c.op) }()
-						f_3927 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_Binary(c, true, f_3925, f_3926, f_3927)
+						f_3926 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3927 := func() any { c.p.stepWork(); return (c.op) }()
+						f_3928 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_Binary(c, true, f_3926, f_3927, f_3928)
 					}()
 				}()
 			}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}}},
-			{id: 10, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3930, action: func(c *tctx) any {
+			{id: 10, kind: "postfix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e3931, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3931 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3932 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_3933 := func() any { c.p.stepWork(); return any(false) }()
-						f_3934 := func() any { c.p.stepWork(); return any(true) }()
-						return tmk_Cast(c, true, f_3931, f_3932, f_3933, f_3934)
+						f_3932 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3933 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_3934 := func() any { c.p.stepWork(); return any(false) }()
+						f_3935 := func() any { c.p.stepWork(); return any(true) }()
+						return tmk_Cast(c, true, f_3932, f_3933, f_3934, f_3935)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}}},
@@ -42213,75 +42492,75 @@ func init() {
 	trules[85].entry = (*tparser).u85
 	trules[86].entry = (*tparser).s86
 	trules[87].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3935, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3936, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3936, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3937, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3937 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3938 := func() any {
+					f_3938 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3939 := func() any {
 						c.p.stepWork()
 						return func() any {
-							f_3939 := func() any { c.p.stepWork(); return c.cap(0) }()
-							return tmk_FieldStep(c, false, f_3939, nil, nil)
+							f_3940 := func() any { c.p.stepWork(); return c.cap(0) }()
+							return tmk_FieldStep(c, false, f_3940, nil, nil)
 						}()
 					}()
-					return tmk_Indirection(c, true, f_3937, f_3938)
+					return tmk_Indirection(c, true, f_3938, f_3939)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3940, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3941, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3941 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3942 := func() any {
+						f_3942 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3943 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3943 := func() any { c.p.stepWork(); return c.cap(0) }()
-								return tmk_IndexStep(c, false, f_3943)
+								f_3944 := func() any { c.p.stepWork(); return c.cap(0) }()
+								return tmk_IndexStep(c, false, f_3944)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3941, f_3942)
+						return tmk_Indirection(c, true, f_3942, f_3943)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "hi"}, m: (*tparser).e3944, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "hi"}, m: (*tparser).e3945, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3945 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3946 := func() any {
+						f_3946 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3947 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3947 := func() any { c.p.stepWork(); return c.cap(0) }()
-								f_3948 := func() any { c.p.stepWork(); return c.cap(1) }()
-								return tmk_SliceStep(c, false, f_3947, f_3948, nil, nil)
+								f_3948 := func() any { c.p.stepWork(); return c.cap(0) }()
+								f_3949 := func() any { c.p.stepWork(); return c.cap(1) }()
+								return tmk_SliceStep(c, false, f_3948, f_3949, nil, nil)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3945, f_3946)
+						return tmk_Indirection(c, true, f_3946, f_3947)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "hi", "st"}, m: (*tparser).e3949, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "hi", "st"}, m: (*tparser).e3950, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3950 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3951 := func() any {
+						f_3951 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3952 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3952 := func() any { c.p.stepWork(); return c.cap(0) }()
-								f_3953 := func() any { c.p.stepWork(); return c.cap(1) }()
-								f_3954 := func() any { c.p.stepWork(); return c.cap(2) }()
-								return tmk_SliceStep(c, false, f_3952, f_3953, f_3954, nil)
+								f_3953 := func() any { c.p.stepWork(); return c.cap(0) }()
+								f_3954 := func() any { c.p.stepWork(); return c.cap(1) }()
+								f_3955 := func() any { c.p.stepWork(); return c.cap(2) }()
+								return tmk_SliceStep(c, false, f_3953, f_3954, f_3955, nil)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3950, f_3951)
+						return tmk_Indirection(c, true, f_3951, f_3952)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 13, mode: 2, tuple: true}}}},
@@ -42290,129 +42569,129 @@ func init() {
 	trules[88].entry = (*tparser).u88
 	trules[89].entry = (*tparser).u89
 	trules[90].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3955, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3956, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3936, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n"}, m: (*tparser).e3937, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3956 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3957 := func() any {
+					f_3957 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3958 := func() any {
 						c.p.stepWork()
 						return func() any {
-							f_3958 := func() any { c.p.stepWork(); return c.cap(0) }()
-							return tmk_FieldStep(c, false, f_3958, nil, nil)
+							f_3959 := func() any { c.p.stepWork(); return c.cap(0) }()
+							return tmk_FieldStep(c, false, f_3959, nil, nil)
 						}()
 					}()
-					return tmk_Indirection(c, true, f_3956, f_3957)
+					return tmk_Indirection(c, true, f_3957, f_3958)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3940, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3941, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3959 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3960 := func() any {
+						f_3960 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3961 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3961 := func() any { c.p.stepWork(); return c.cap(0) }()
-								return tmk_IndexStep(c, false, f_3961)
+								f_3962 := func() any { c.p.stepWork(); return c.cap(0) }()
+								return tmk_IndexStep(c, false, f_3962)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3959, f_3960)
+						return tmk_Indirection(c, true, f_3960, f_3961)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "d", "st", "hi"}, m: (*tparser).e3962, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "d", "st", "hi"}, m: (*tparser).e3963, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3963 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3964 := func() any {
+						f_3964 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3965 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3965 := func() any { c.p.stepWork(); return c.cap(0) }()
-								f_3966 := func() any { c.p.stepWork(); return c.cap(3) }()
-								f_3967 := func() any { c.p.stepWork(); return c.cap(2) }()
-								f_3968 := func() any {
+								f_3966 := func() any { c.p.stepWork(); return c.cap(0) }()
+								f_3967 := func() any { c.p.stepWork(); return c.cap(3) }()
+								f_3968 := func() any { c.p.stepWork(); return c.cap(2) }()
+								f_3969 := func() any {
 									c.p.stepWork()
 									return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(1) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 								}()
-								return tmk_SliceStep(c, false, f_3965, f_3966, f_3967, f_3968)
+								return tmk_SliceStep(c, false, f_3966, f_3967, f_3968, f_3969)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3963, f_3964)
+						return tmk_Indirection(c, true, f_3964, f_3965)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}}}},
 	}
 	trules[90].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[90], min) }
 	trules[91].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3969, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3970, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "c", "a"}, m: (*tparser).e3970, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "c", "a"}, m: (*tparser).e3971, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3971 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3972 := func() any {
+					f_3972 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3973 := func() any {
 						c.p.stepWork()
 						return func() any {
-							f_3973 := func() any { c.p.stepWork(); return c.cap(0) }()
-							f_3974 := func() any {
+							f_3974 := func() any { c.p.stepWork(); return c.cap(0) }()
+							f_3975 := func() any {
 								c.p.stepWork()
 								return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(1) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 							}()
-							f_3975 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
-							return tmk_FieldStep(c, false, f_3973, f_3974, f_3975)
+							f_3976 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
+							return tmk_FieldStep(c, false, f_3974, f_3975, f_3976)
 						}()
 					}()
-					return tmk_Indirection(c, true, f_3971, f_3972)
+					return tmk_Indirection(c, true, f_3972, f_3973)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3940, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e3941, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3976 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3977 := func() any {
+						f_3977 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3978 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3978 := func() any { c.p.stepWork(); return c.cap(0) }()
-								return tmk_IndexStep(c, false, f_3978)
+								f_3979 := func() any { c.p.stepWork(); return c.cap(0) }()
+								return tmk_IndexStep(c, false, f_3979)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3976, f_3977)
+						return tmk_Indirection(c, true, f_3977, f_3978)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "d", "st", "hi"}, m: (*tparser).e3962, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"lo", "d", "st", "hi"}, m: (*tparser).e3963, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3979 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_3980 := func() any {
+						f_3980 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_3981 := func() any {
 							c.p.stepWork()
 							return func() any {
-								f_3981 := func() any { c.p.stepWork(); return c.cap(0) }()
-								f_3982 := func() any { c.p.stepWork(); return c.cap(3) }()
-								f_3983 := func() any { c.p.stepWork(); return c.cap(2) }()
-								f_3984 := func() any {
+								f_3982 := func() any { c.p.stepWork(); return c.cap(0) }()
+								f_3983 := func() any { c.p.stepWork(); return c.cap(3) }()
+								f_3984 := func() any { c.p.stepWork(); return c.cap(2) }()
+								f_3985 := func() any {
 									c.p.stepWork()
 									return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(1) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 								}()
-								return tmk_SliceStep(c, false, f_3981, f_3982, f_3983, f_3984)
+								return tmk_SliceStep(c, false, f_3982, f_3983, f_3984, f_3985)
 							}()
 						}()
-						return tmk_Indirection(c, true, f_3979, f_3980)
+						return tmk_Indirection(c, true, f_3980, f_3981)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}}}},
@@ -42582,46 +42861,46 @@ func init() {
 	trules[253].entry = (*tparser).u253
 	trules[254].entry = (*tparser).s254
 	trules[255].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3985, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3986, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3987, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3988, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3989, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3990, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3991, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e3992, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &toperatorsRuleLine{scope: []string{"o", "q", "bn"}, m: (*tparser).e3992, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &toperatorsRuleLine{scope: []string{"o", "q", "bn"}, m: (*tparser).e3993, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3993 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_3994 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-					f_3995 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
-					f_3996 := func() any {
+					f_3994 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_3995 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+					f_3996 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
+					f_3997 := func() any {
 						c.p.stepWork()
 						return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(2) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 					}()
-					f_3997 := func() any { c.p.stepWork(); return (c.rhs) }()
-					return tmk_SetOp(c, true, f_3993, f_3994, f_3995, f_3996, f_3997)
+					f_3998 := func() any { c.p.stepWork(); return (c.rhs) }()
+					return tmk_SetOp(c, true, f_3994, f_3995, f_3996, f_3997, f_3998)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{"o", "q", "bn"}, m: (*tparser).e3998, action: func(c *tctx) any {
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{"o", "q", "bn"}, m: (*tparser).e3999, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3999 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4000 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4001 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
-						f_4002 := func() any {
+						f_4000 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4001 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4002 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }()
+						f_4003 := func() any {
 							c.p.stepWork()
 							return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(2) }()) }(), func() any { c.p.stepWork(); return any(0) }())
 						}()
-						f_4003 := func() any { c.p.stepWork(); return (c.rhs) }()
-						return tmk_SetOp(c, true, f_3999, f_4000, f_4001, f_4002, f_4003)
+						f_4004 := func() any { c.p.stepWork(); return (c.rhs) }()
+						return tmk_SetOp(c, true, f_4000, f_4001, f_4002, f_4003, f_4004)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}}},
@@ -42701,115 +42980,115 @@ func init() {
 	trules[327].entry = (*tparser).u327
 	trules[328].entry = (*tparser).u328
 	trules[329].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e3791,
+		skip: (*tparser).e3792,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e4004, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e4005, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4005, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4006, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_4006 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_4007 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-					f_4008 := func() any { c.p.stepWork(); return c.cap(1) }()
-					return tmk_Join(c, true, f_4006, f_4007, f_4008, nil, nil)
+					f_4007 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_4008 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+					f_4009 := func() any { c.p.stepWork(); return c.cap(1) }()
+					return tmk_Join(c, true, f_4007, f_4008, f_4009, nil, nil)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4009, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4010, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4010 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4011 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4012 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Join(c, true, f_4010, f_4011, f_4012, nil, nil)
+						f_4011 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4012 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4013 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Join(c, true, f_4011, f_4012, f_4013, nil, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4013, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r"}, m: (*tparser).e4014, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4014 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4015 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4016 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_Join(c, true, f_4014, f_4015, f_4016, nil, nil)
+						f_4015 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4016 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4017 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_Join(c, true, f_4015, f_4016, f_4017, nil, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4017, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4018, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4018 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4019 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4020 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4021 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_Join(c, true, f_4018, f_4019, f_4020, f_4021, nil)
+						f_4019 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4020 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4021 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4022 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_Join(c, true, f_4019, f_4020, f_4021, f_4022, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4022, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4023, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4023 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4024 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4025 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4026 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_Join(c, true, f_4023, f_4024, f_4025, nil, f_4026)
+						f_4024 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4025 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4026 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4027 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_Join(c, true, f_4024, f_4025, f_4026, nil, f_4027)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4027, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4028, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4028 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4029 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4030 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4031 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_Join(c, true, f_4028, f_4029, f_4030, f_4031, nil)
+						f_4029 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4030 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4031 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4032 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_Join(c, true, f_4029, f_4030, f_4031, f_4032, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4032, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"k", "r", "q"}, m: (*tparser).e4033, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4033 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4034 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-						f_4035 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4036 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_Join(c, true, f_4033, f_4034, f_4035, nil, f_4036)
+						f_4034 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4035 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+						f_4036 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4037 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_Join(c, true, f_4034, f_4035, f_4036, nil, f_4037)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "vs", "g", "a"}, m: (*tparser).e4037, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "vs", "g", "a"}, m: (*tparser).e4038, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4038 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4039 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_4040 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4041 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
-						f_4042 := func() any { c.p.stepWork(); return c.cap(3) }()
-						return tmk_PivotRef(c, true, f_4038, f_4039, f_4040, f_4041, f_4042)
+						f_4039 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4040 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_4041 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4042 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }()
+						f_4043 := func() any { c.p.stepWork(); return c.cap(3) }()
+						return tmk_PivotRef(c, true, f_4039, f_4040, f_4041, f_4042, f_4043)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 13, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "h", "vs", "a"}, m: (*tparser).e4043, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"n", "h", "vs", "a"}, m: (*tparser).e4044, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_4044 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_4045 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_4046 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_4047 := func() any { c.p.stepWork(); return c.cap(2) }()
-						f_4048 := func() any { c.p.stepWork(); return c.cap(3) }()
-						return tmk_UnpivotRef(c, true, f_4044, f_4045, f_4046, f_4047, f_4048)
+						f_4045 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_4046 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_4047 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_4048 := func() any { c.p.stepWork(); return c.cap(2) }()
+						f_4049 := func() any { c.p.stepWork(); return c.cap(3) }()
+						return tmk_UnpivotRef(c, true, f_4045, f_4046, f_4047, f_4048, f_4049)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 13, mode: 2, tuple: true}}}},
@@ -46068,6 +46347,7 @@ func (p *parser) e21() (*Node, bool) {
 		x10 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -46206,6 +46486,7 @@ func (p *parser) e22() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -46346,6 +46627,7 @@ func (p *parser) e23() (*Node, bool) {
 		x10 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -46485,6 +46767,7 @@ func (p *parser) e24() (*Node, bool) {
 		x10 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -46623,6 +46906,7 @@ func (p *parser) e25() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -46843,6 +47127,7 @@ func (p *parser) e26() (*Node, bool) {
 		x15 bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -47056,6 +47341,7 @@ func (p *parser) e27() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -50761,6 +51047,7 @@ func (p *parser) e43() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -50843,6 +51130,7 @@ func (p *parser) e44() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r1047(); !ok {
 		goto fail
@@ -51264,6 +51552,7 @@ func (p *parser) e48() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -51503,17 +51792,28 @@ func (p *parser) e50() (*Node, bool) {
 
 		var (
 			x1 int
+			x2 int
+			x3 []*Node
+			x4 int
 			ok bool
-			v2 *Node
+			v5 *Node
+			v6 *Node
+			v7 *Node
 		)
-		_ = x1
+		_ = x4
 
 		x1 = p.pos
 
-		if v2, ok = p.r31(); !ok {
+		x2 = p.pos
+		x3 = p.nodes(1)[:0]
+
+		x4 = p.pos
+
+		if v5, ok = p.r31(); !ok {
 			goto fail_ordinary
 		}
-		p.setCaptureOrdinary(0, v2)
+		p.setCaptureOrdinary(1, v5)
+		x3 = append(x3, v5)
 
 		if !p.predicate(func(c *actx) any {
 			return func() any {
@@ -51522,7 +51822,7 @@ func (p *parser) e50() (*Node, bool) {
 
 					return c.binary("<", func() any {
 
-						return c.length(func() any { return c.text(func() any { return c.cap(0) }()) }())
+						return c.length(func() any { return c.text(func() any { return c.cap(1) }()) }())
 					}(), func() any { return any(10) }())
 				}(), func() any {
 					return func() any {
@@ -51531,12 +51831,12 @@ func (p *parser) e50() (*Node, bool) {
 
 							return c.binary("==", func() any {
 
-								return c.length(func() any { return c.text(func() any { return c.cap(0) }()) }())
+								return c.length(func() any { return c.text(func() any { return c.cap(1) }()) }())
 							}(), func() any { return any(10) }())
 						}(), func() any {
 							return func() any {
 
-								return c.binary("<=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("2147483647") }())
+								return c.binary("<=", func() any { return c.text(func() any { return c.cap(1) }()) }(), func() any { return any("2147483647") }())
 							}()
 						})
 					}()
@@ -51545,6 +51845,9 @@ func (p *parser) e50() (*Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
+		v6 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x2), end: int32(p.pos), children: x3, fresh: true})
+		v7 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v6, x1)
+		p.setCaptureOrdinary(0, v7)
 		return nil, true
 	fail_ordinary:
 		return nil, false
@@ -51553,18 +51856,28 @@ func (p *parser) e50() (*Node, bool) {
 	p.stepWork()
 	var (
 		x1 int
+		x2 int
+		x3 []*Node
+		x4 int
 		ok bool
-		v2 *Node
+		v5 *Node
+		v6 *Node
+		v7 *Node
 	)
-	_ = x1
-	p.stepWork()
+	_ = x4
 	p.stepWork()
 	x1 = p.pos
 	p.stepWork()
-	if v2, ok = p.r31(); !ok {
+	x2 = p.pos
+	x3 = p.nodes(1)[:0]
+	p.stepWork()
+	x4 = p.pos
+	p.stepWork()
+	if v5, ok = p.r31(); !ok {
 		goto fail
 	}
-	p.setCapture(0, v2)
+	p.setCapture(1, v5)
+	x3 = append(x3, v5)
 	p.stepWork()
 	if !p.predicate(func(c *actx) any {
 		return func() any {
@@ -51573,7 +51886,7 @@ func (p *parser) e50() (*Node, bool) {
 				c.p.stepWork()
 				return c.binary("<", func() any {
 					c.p.stepWork()
-					return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }())
+					return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 				}(), func() any { c.p.stepWork(); return any(10) }())
 			}(), func() any {
 				return func() any {
@@ -51582,12 +51895,12 @@ func (p *parser) e50() (*Node, bool) {
 						c.p.stepWork()
 						return c.binary("==", func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }())
+							return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 						}(), func() any { c.p.stepWork(); return any(10) }())
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("<=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("2147483647") }())
+							return c.binary("<=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }(), func() any { c.p.stepWork(); return any("2147483647") }())
 						}()
 					})
 				}()
@@ -51596,6 +51909,9 @@ func (p *parser) e50() (*Node, bool) {
 	}) {
 		goto fail
 	}
+	v6 = p.newNode(Node{kind: kindSeq, start: int32(x2), end: int32(p.pos), children: x3, fresh: true})
+	v7 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v6, x1)
+	p.setCapture(0, v7)
 	return nil, true
 fail:
 	return nil, false
@@ -55046,6 +55362,7 @@ func (p *parser) e100() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(rules[8], 0); !ok {
@@ -55089,6 +55406,7 @@ func (p *parser) e101() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(rules[58], 0); !ok {
 		goto fail
 	}
@@ -55118,6 +55436,7 @@ func (p *parser) e102() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(rules[13], 0); !ok {
 		goto fail
 	}
@@ -55146,6 +55465,7 @@ func (p *parser) e103() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r9(); !ok {
 		goto fail
@@ -59232,6 +59552,7 @@ func (p *parser) e144() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -64132,6 +64453,7 @@ func (p *parser) e186() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.r1095(); !ok {
 		goto fail
 	}
@@ -66824,6 +67146,7 @@ func (p *parser) e211() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -66882,6 +67205,7 @@ func (p *parser) e212() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r1106(); !ok {
 		goto fail
@@ -67959,6 +68283,7 @@ func (p *parser) e221() (*Node, bool) {
 		x1 mark
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
@@ -88159,6 +88484,7 @@ func (p *parser) e336() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(rules[13], 0); !ok {
@@ -99341,7 +99667,7 @@ func (p *parser) e429() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L37_ordinary
@@ -99586,7 +99912,7 @@ L7:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L37
@@ -99930,7 +100256,7 @@ func (p *parser) e431() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L14_ordinary
@@ -100042,7 +100368,7 @@ L8:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L14
@@ -100175,7 +100501,7 @@ func (p *parser) e432() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L12_ordinary
@@ -100291,7 +100617,7 @@ L8:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L12
@@ -100920,7 +101246,7 @@ func (p *parser) e435() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L19_ordinary
@@ -101061,7 +101387,7 @@ L15:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L19
@@ -101270,7 +101596,7 @@ func (p *parser) e437() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L24_ordinary
@@ -101483,7 +101809,7 @@ L20:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L24
@@ -153773,6 +154099,7 @@ func (p *parser) e772() (*Node, bool) {
 		x4 rune
 		x5 bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
@@ -712613,6 +712940,7 @@ func (p *parser) e1896() (*Node, bool) {
 		x10 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -712764,6 +713092,7 @@ func (p *parser) e1897() (*Node, bool) {
 		x12 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -712908,6 +713237,7 @@ func (p *parser) e1898() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -713060,6 +713390,7 @@ func (p *parser) e1899() (*Node, bool) {
 		x12 int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -713204,6 +713535,7 @@ func (p *parser) e1900() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -713424,6 +713756,7 @@ func (p *parser) e1901() (*Node, bool) {
 		x15 bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -713637,6 +713970,7 @@ func (p *parser) e1902() (*Node, bool) {
 		ok  bool
 		x10 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -715806,6 +716140,7 @@ func (p *parser) e1909() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -715891,6 +716226,7 @@ func (p *parser) e1910() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q24(); !ok {
 		goto fail
@@ -716018,6 +716354,7 @@ func (p *parser) e1911() (*Node, bool) {
 		x12 mark
 		x17 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -716278,6 +716615,7 @@ func (p *parser) e1913() (*Node, bool) {
 		v2 *Node
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.pos
@@ -719245,6 +719583,7 @@ func (p *parser) e1939() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(recRules[8], 0); !ok {
@@ -719288,6 +719627,7 @@ func (p *parser) e1940() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(recRules[58], 0); !ok {
 		goto fail
 	}
@@ -719317,6 +719657,7 @@ func (p *parser) e1941() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.call(recRules[13], 0); !ok {
 		goto fail
 	}
@@ -719345,6 +719686,7 @@ func (p *parser) e1942() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q9(); !ok {
 		goto fail
@@ -722748,6 +723090,7 @@ func (p *parser) e1975() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -727138,6 +727481,7 @@ func (p *parser) e2008() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.q724(); !ok {
 		goto fail
 	}
@@ -729527,6 +729871,7 @@ func (p *parser) e2030() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -729591,6 +729936,7 @@ func (p *parser) e2031() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q850(); !ok {
 		goto fail
@@ -730577,6 +730923,7 @@ func (p *parser) e2040() (*Node, bool) {
 		x1 mark
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
@@ -748207,6 +748554,7 @@ func (p *parser) e2145() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(recRules[13], 0); !ok {
@@ -758130,7 +758478,7 @@ func (p *parser) e2229() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L19_ordinary
@@ -758323,7 +758671,7 @@ L7:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L19
@@ -758630,7 +758978,7 @@ func (p *parser) e2231() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L10_ordinary
@@ -758725,7 +759073,7 @@ L8:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L10
@@ -758847,7 +759195,7 @@ func (p *parser) e2232() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L10_ordinary
@@ -758955,7 +759303,7 @@ L8:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L10
@@ -759520,7 +759868,7 @@ func (p *parser) e2235() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L13_ordinary
@@ -759640,7 +759988,7 @@ L11:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L13
@@ -759817,7 +760165,7 @@ func (p *parser) e2237() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return c.cap(0) }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return c.cap(0) }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L15_ordinary
@@ -760002,7 +760350,7 @@ L13:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L15
@@ -805346,6 +805694,7 @@ func (p *parser) e2546() (*Node, bool) {
 		x5 bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(recRules[25], 0); !ok {
@@ -821393,6 +821742,7 @@ func (p *parser) q9() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -821571,6 +821921,7 @@ func (p *parser) q11() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -822177,6 +822528,7 @@ func (p *parser) q26() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q24(); !ok {
 		goto fail
@@ -834229,6 +834581,7 @@ func (p *parser) q128() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.q724(); !ok {
 		goto fail
 	}
@@ -836416,6 +836769,7 @@ func (p *parser) q149() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -836502,6 +836856,7 @@ func (p *parser) q150() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q850(); !ok {
 		goto fail
@@ -894927,6 +895282,7 @@ func (p *parser) q649() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q850(); !ok {
 		goto fail
@@ -1064517,6 +1064873,7 @@ func (p *tparser) v8() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1064691,6 +1065048,7 @@ func (p *tparser) i8() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1064868,6 +1065226,7 @@ func (p *tparser) s9() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1065063,6 +1065422,7 @@ func (p *tparser) v10() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1065237,6 +1065597,7 @@ func (p *tparser) i10() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1065414,6 +1065775,7 @@ func (p *tparser) s11() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1065609,6 +1065971,7 @@ func (p *tparser) v12() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1065783,6 +1066146,7 @@ func (p *tparser) i12() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1066062,6 +1066426,7 @@ func (p *tparser) v13() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1066405,6 +1066770,7 @@ func (p *tparser) i13() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1066677,6 +1067043,7 @@ func (p *tparser) v14() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1066851,6 +1067218,7 @@ func (p *tparser) i14() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1071708,6 +1072076,7 @@ func (p *tparser) v25() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1071883,6 +1072252,7 @@ func (p *tparser) i25() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1071993,6 +1072363,7 @@ func (p *tparser) s26() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.s1047(); !ok {
 		goto fail
@@ -1072514,6 +1072885,7 @@ func (p *tparser) v28() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1072771,6 +1073143,7 @@ func (p *tparser) i28() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -1073086,24 +1073459,38 @@ func (p *tparser) i30() (any, bool) {
 		var (
 			start int
 			v     any
+			c     *tctx
 			k1    any
 			x2    int
+			x3    int
+			x4    []any
+			k5    any
+			x6    int
 			ok    bool
-			v3    any
+			v7    any
+			v8    any
+			v9    any
+			w     string
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x2
+		_ = x6
 
 		x2 = p.pos
 
-		if v3, ok = p.s31(); !ok {
+		x3 = p.pos
+		x4 = p.newVals(1)[:0]
+
+		x6 = p.pos
+
+		if v7, ok = p.s31(); !ok {
 			goto fail_ordinary
 		}
-		k1 = v3
+		k5 = v7
+		x4 = append(x4, v7)
 
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
@@ -1073112,7 +1073499,7 @@ func (p *tparser) i30() (any, bool) {
 
 					return c.binary("<", func() any {
 
-						return c.length(func() any { return c.text(func() any { return k1 }()) }())
+						return c.length(func() any { return c.text(func() any { return k5 }()) }())
 					}(), func() any { return any(10) }())
 				}(), func() any {
 					return func() any {
@@ -1073121,12 +1073508,12 @@ func (p *tparser) i30() (any, bool) {
 
 							return c.binary("==", func() any {
 
-								return c.length(func() any { return c.text(func() any { return k1 }()) }())
+								return c.length(func() any { return c.text(func() any { return k5 }()) }())
 							}(), func() any { return any(10) }())
 						}(), func() any {
 							return func() any {
 
-								return c.binary("<=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("2147483647") }())
+								return c.binary("<=", func() any { return c.text(func() any { return k5 }()) }(), func() any { return any("2147483647") }())
 							}()
 						})
 					}()
@@ -1073135,7 +1073522,20 @@ func (p *tparser) i30() (any, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		v = trules[30].term(p, start, p.pos, p.text(start, p.pos))
+		v8 = p.newNodeOrdinary("Seq", x3, p.pos, x4)
+		v9 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v8, x2)
+		k1 = v9
+		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
+		p.where = "iconst"
+		v = func() any {
+
+			return func() any {
+				f_2838 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_Number(c, true, f_2838)
+			}()
+		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -1073147,25 +1073547,38 @@ func (p *tparser) i30() (any, bool) {
 	var (
 		start int
 		v     any
+		c     *tctx
 		k1    any
 		x2    int
+		x3    int
+		x4    []any
+		k5    any
+		x6    int
 		ok    bool
-		v3    any
+		v7    any
+		v8    any
+		v9    any
+		w     string
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x2
-	p.stepWork()
+	_ = x6
 	p.stepWork()
 	x2 = p.pos
 	p.stepWork()
-	if v3, ok = p.s31(); !ok {
+	x3 = p.pos
+	x4 = p.newVals(1)[:0]
+	p.stepWork()
+	x6 = p.pos
+	p.stepWork()
+	if v7, ok = p.s31(); !ok {
 		goto fail
 	}
-	k1 = v3
+	k5 = v7
+	x4 = append(x4, v7)
 	p.stepWork()
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
@@ -1073174,7 +1073587,7 @@ func (p *tparser) i30() (any, bool) {
 				c.p.stepWork()
 				return c.binary("<", func() any {
 					c.p.stepWork()
-					return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }())
+					return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }())
 				}(), func() any { c.p.stepWork(); return any(10) }())
 			}(), func() any {
 				return func() any {
@@ -1073183,12 +1073596,12 @@ func (p *tparser) i30() (any, bool) {
 						c.p.stepWork()
 						return c.binary("==", func() any {
 							c.p.stepWork()
-							return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }())
+							return c.length(func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }())
 						}(), func() any { c.p.stepWork(); return any(10) }())
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("<=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("2147483647") }())
+							return c.binary("<=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }(), func() any { c.p.stepWork(); return any("2147483647") }())
 						}()
 					})
 				}()
@@ -1073197,7 +1073610,20 @@ func (p *tparser) i30() (any, bool) {
 	}) {
 		goto fail
 	}
-	v = trules[30].term(p, start, p.pos, p.text(start, p.pos))
+	v8 = p.newNode("Seq", x3, p.pos, x4)
+	v9 = p.shapeCapture(shaper{elems: true, k: 1, mode: 2, tuple: true}, v8, x2)
+	k1 = v9
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
+	p.where = "iconst"
+	v = func() any {
+		c.p.stepWork()
+		return func() any {
+			f_2838 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Number(c, true, f_2838)
+		}()
+	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -1080377,6 +1080803,7 @@ func (p *tparser) v58() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u8(); !ok {
@@ -1080464,6 +1080891,7 @@ func (p *tparser) i58() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u8(); !ok {
@@ -1080548,6 +1080976,7 @@ func (p *tparser) v59() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.u58(); !ok {
 		goto fail
 	}
@@ -1080598,6 +1081027,7 @@ func (p *tparser) i59() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.u58(); !ok {
 		goto fail
@@ -1080667,6 +1081097,7 @@ func (p *tparser) v60() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.u13(); !ok {
 		goto fail
 	}
@@ -1080717,6 +1081148,7 @@ func (p *tparser) i60() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.u13(); !ok {
 		goto fail
@@ -1080786,6 +1081218,7 @@ func (p *tparser) v61() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.s9(); !ok {
 		goto fail
 	}
@@ -1080836,6 +1081269,7 @@ func (p *tparser) i61() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.s9(); !ok {
 		goto fail
@@ -1081179,7 +1081613,7 @@ func (p *tparser) i63() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2838 := func() any {
+				f_2839 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1081188,7 +1081622,7 @@ func (p *tparser) i63() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Name(c, true, f_2838)
+				return tmk_Name(c, true, f_2839)
 			}()
 		}()
 		p.where = w
@@ -1081288,7 +1081722,7 @@ func (p *tparser) i63() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2838 := func() any {
+			f_2839 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1081297,7 +1081731,7 @@ func (p *tparser) i63() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_2838)
+			return tmk_Name(c, true, f_2839)
 		}()
 	}()
 	p.where = w
@@ -1081362,8 +1081796,8 @@ func (p *tparser) i64() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2839 := func() any { return c.list(func() any { return k1 }()) }()
-				return tmk_Name(c, true, f_2839)
+				f_2840 := func() any { return c.list(func() any { return k1 }()) }()
+				return tmk_Name(c, true, f_2840)
 			}()
 		}()
 		p.where = w
@@ -1081404,8 +1081838,8 @@ func (p *tparser) i64() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2839 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_Name(c, true, f_2839)
+			f_2840 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Name(c, true, f_2840)
 		}()
 	}()
 	p.where = w
@@ -1081526,7 +1081960,7 @@ func (p *tparser) i65() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2840 := func() any {
+				f_2841 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1081535,7 +1081969,7 @@ func (p *tparser) i65() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Name(c, true, f_2840)
+				return tmk_Name(c, true, f_2841)
 			}()
 		}()
 		p.where = w
@@ -1081631,7 +1082065,7 @@ func (p *tparser) i65() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2840 := func() any {
+			f_2841 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1081640,7 +1082074,7 @@ func (p *tparser) i65() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_2840)
+			return tmk_Name(c, true, f_2841)
 		}()
 	}()
 	p.where = w
@@ -1082582,7 +1083016,7 @@ func (p *tparser) i70() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2841 := func() any {
+				f_2842 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1082591,7 +1083025,7 @@ func (p *tparser) i70() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Name(c, true, f_2841)
+				return tmk_Name(c, true, f_2842)
 			}()
 		}()
 		p.where = w
@@ -1082691,7 +1083125,7 @@ func (p *tparser) i70() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2841 := func() any {
+			f_2842 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1082700,7 +1083134,7 @@ func (p *tparser) i70() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_2841)
+			return tmk_Name(c, true, f_2842)
 		}()
 	}()
 	p.where = w
@@ -1082787,8 +1083221,8 @@ func (p *tparser) i71() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2842 := func() any { return c.list(func() any { return k1 }()) }()
-				return tmk_Name(c, true, f_2842)
+				f_2843 := func() any { return c.list(func() any { return k1 }()) }()
+				return tmk_Name(c, true, f_2843)
 			}()
 		}()
 		p.where = w
@@ -1082853,8 +1083287,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2842 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_Name(c, true, f_2842)
+			f_2843 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Name(c, true, f_2843)
 		}()
 	}()
 	p.where = w
@@ -1082866,7 +1083300,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3791() (any, bool) {
+func (p *tparser) e3792() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1082895,7 +1083329,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3792() (any, bool) {
+func (p *tparser) e3793() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1082926,7 +1083360,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3793() (any, bool) {
+func (p *tparser) e3794() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1082957,7 +1083391,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3794() (any, bool) {
+func (p *tparser) e3795() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083050,7 +1083484,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3798() (any, bool) {
+func (p *tparser) e3799() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083175,7 +1083609,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3802() (any, bool) {
+func (p *tparser) e3803() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083292,7 +1083726,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3806() (any, bool) {
+func (p *tparser) e3807() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083409,7 +1083843,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3810() (any, bool) {
+func (p *tparser) e3811() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083440,7 +1083874,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3812() (any, bool) {
+func (p *tparser) e3813() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1083945,7 +1084379,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3816() (any, bool) {
+func (p *tparser) e3817() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1084054,7 +1084488,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3820() (any, bool) {
+func (p *tparser) e3821() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1084324,7 +1084758,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3824() (any, bool) {
+func (p *tparser) e3825() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1084638,7 +1085072,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3828() (any, bool) {
+func (p *tparser) e3829() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1084816,7 +1085250,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3832() (any, bool) {
+func (p *tparser) e3833() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1085091,7 +1085525,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3837() (any, bool) {
+func (p *tparser) e3838() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1085564,7 +1085998,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3843() (any, bool) {
+func (p *tparser) e3844() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1085742,7 +1086176,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3848() (any, bool) {
+func (p *tparser) e3849() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1086143,7 +1086577,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3854() (any, bool) {
+func (p *tparser) e3855() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1086537,7 +1086971,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3860() (any, bool) {
+func (p *tparser) e3861() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1086578,7 +1087012,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3863() (any, bool) {
+func (p *tparser) e3864() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1086947,7 +1087381,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3867() (any, bool) {
+func (p *tparser) e3868() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1087130,7 +1087564,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3870() (any, bool) {
+func (p *tparser) e3871() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1087313,7 +1087747,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3874() (any, bool) {
+func (p *tparser) e3875() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1087552,7 +1087986,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3878() (any, bool) {
+func (p *tparser) e3879() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1087735,7 +1088169,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3882() (any, bool) {
+func (p *tparser) e3883() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1087916,7 +1088350,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3885() (any, bool) {
+func (p *tparser) e3886() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1088049,7 +1088483,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3888() (any, bool) {
+func (p *tparser) e3889() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1088154,7 +1088588,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func (p *tparser) e3891() (any, bool) {
+func (p *tparser) e3892() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1088376,9 +1088810,9 @@ func (p *tparser) i73() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2843 := func() any { return k1 }()
-				f_2844 := func() any { return k4 }()
-				return tmk_Unary(c, true, f_2843, f_2844)
+				f_2844 := func() any { return k1 }()
+				f_2845 := func() any { return k4 }()
+				return tmk_Unary(c, true, f_2844, f_2845)
 			}()
 		}()
 		p.where = w
@@ -1088456,9 +1088890,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2843 := func() any { c.p.stepWork(); return k1 }()
-			f_2844 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Unary(c, true, f_2843, f_2844)
+			f_2844 := func() any { c.p.stepWork(); return k1 }()
+			f_2845 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Unary(c, true, f_2844, f_2845)
 		}()
 	}()
 	p.where = w
@@ -1088470,7 +1088904,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3896() (any, bool) {
+func (p *tparser) e3897() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1088688,7 +1089122,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3900() (any, bool) {
+func (p *tparser) e3901() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1088950,7 +1089384,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3904() (any, bool) {
+func (p *tparser) e3905() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1089076,7 +1089510,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3910() (any, bool) {
+func (p *tparser) e3911() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1089193,7 +1089627,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3914() (any, bool) {
+func (p *tparser) e3915() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1089287,7 +1089721,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3920() (any, bool) {
+func (p *tparser) e3921() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1089448,7 +1089882,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3924() (any, bool) {
+func (p *tparser) e3925() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1089553,7 +1089987,7 @@ fail:
 }
 
 // b_expr (typed OperatorsRule body inlined)
-func (p *tparser) e3930() (any, bool) {
+func (p *tparser) e3931() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1093713,7 +1094147,7 @@ func (p *tparser) i85() (any, bool) {
 		p.where = "any_source_query"
 		v = func() any {
 
-			return func() any { f_2845 := func() any { return k1 }(); return tmk_Subquery(c, true, f_2845) }()
+			return func() any { f_2846 := func() any { return k1 }(); return tmk_Subquery(c, true, f_2846) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1093752,7 +1094186,7 @@ func (p *tparser) i85() (any, bool) {
 	p.where = "any_source_query"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_2845 := func() any { c.p.stepWork(); return k1 }(); return tmk_Subquery(c, true, f_2845) }()
+		return func() any { f_2846 := func() any { c.p.stepWork(); return k1 }(); return tmk_Subquery(c, true, f_2846) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1093870,7 +1094304,7 @@ fail:
 }
 
 // in_column (typed OperatorsRule body inlined)
-func (p *tparser) e3935() (any, bool) {
+func (p *tparser) e3936() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1093901,7 +1094335,7 @@ fail:
 }
 
 // in_column (typed OperatorsRule body inlined)
-func (p *tparser) e3936() (any, bool) {
+func (p *tparser) e3937() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1093992,7 +1094426,7 @@ fail:
 }
 
 // in_column (typed OperatorsRule body inlined)
-func (p *tparser) e3940() (any, bool) {
+func (p *tparser) e3941() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1094117,7 +1094551,7 @@ fail:
 }
 
 // in_column (typed OperatorsRule body inlined)
-func (p *tparser) e3944() (any, bool) {
+func (p *tparser) e3945() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1094338,7 +1094772,7 @@ fail:
 }
 
 // in_column (typed OperatorsRule body inlined)
-func (p *tparser) e3949() (any, bool) {
+func (p *tparser) e3950() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1094993,7 +1095427,7 @@ fail:
 }
 
 // col_chained (typed OperatorsRule body inlined)
-func (p *tparser) e3955() (any, bool) {
+func (p *tparser) e3956() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1095024,7 +1095458,7 @@ fail:
 }
 
 // col_chained (typed OperatorsRule body inlined)
-func (p *tparser) e3962() (any, bool) {
+func (p *tparser) e3963() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1095553,7 +1095987,7 @@ fail:
 }
 
 // call_chained (typed OperatorsRule body inlined)
-func (p *tparser) e3969() (any, bool) {
+func (p *tparser) e3970() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1095584,7 +1096018,7 @@ fail:
 }
 
 // call_chained (typed OperatorsRule body inlined)
-func (p *tparser) e3970() (any, bool) {
+func (p *tparser) e3971() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1096756,6 +1097190,7 @@ func (p *tparser) v96() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1096975,6 +1097410,7 @@ func (p *tparser) i96() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -1097414,8 +1097850,8 @@ func (p *tparser) i98() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2846 := func() any { return k1 }()
-				return tmk_PositionalRef(c, true, f_2846)
+				f_2847 := func() any { return k1 }()
+				return tmk_PositionalRef(c, true, f_2847)
 			}()
 		}()
 		p.where = w
@@ -1097467,8 +1097903,8 @@ func (p *tparser) i98() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2846 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_PositionalRef(c, true, f_2846)
+			f_2847 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_PositionalRef(c, true, f_2847)
 		}()
 	}()
 	p.where = w
@@ -1097928,8 +1098364,8 @@ func (p *tparser) i99() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2847 := func() any { return k49 }()
-				return tmk_ColumnRef(c, true, f_2847)
+				f_2848 := func() any { return k49 }()
+				return tmk_ColumnRef(c, true, f_2848)
 			}()
 		}()
 		p.where = w
@@ -1098371,8 +1098807,8 @@ L54:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2847 := func() any { c.p.stepWork(); return k49 }()
-			return tmk_ColumnRef(c, true, f_2847)
+			f_2848 := func() any { c.p.stepWork(); return k49 }()
+			return tmk_ColumnRef(c, true, f_2848)
 		}()
 	}()
 	p.where = w
@@ -1098443,8 +1098879,8 @@ func (p *tparser) i100() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2848 := func() any { return k1 }()
-				return tmk_ColumnRef(c, true, f_2848)
+				f_2849 := func() any { return k1 }()
+				return tmk_ColumnRef(c, true, f_2849)
 			}()
 		}()
 		p.where = w
@@ -1098485,8 +1098921,8 @@ func (p *tparser) i100() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2848 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ColumnRef(c, true, f_2848)
+			f_2849 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ColumnRef(c, true, f_2849)
 		}()
 	}()
 	p.where = w
@@ -1098948,7 +1099384,7 @@ func (p *tparser) i103() (any, bool) {
 		p.where = "subquery_expr"
 		v = func() any {
 
-			return func() any { f_2849 := func() any { return k1 }(); return tmk_Subquery(c, true, f_2849) }()
+			return func() any { f_2850 := func() any { return k1 }(); return tmk_Subquery(c, true, f_2850) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1098987,7 +1099423,7 @@ func (p *tparser) i103() (any, bool) {
 	p.where = "subquery_expr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_2849 := func() any { c.p.stepWork(); return k1 }(); return tmk_Subquery(c, true, f_2849) }()
+		return func() any { f_2850 := func() any { c.p.stepWork(); return k1 }(); return tmk_Subquery(c, true, f_2850) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1099125,7 +1099561,7 @@ func (p *tparser) i104() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2850 := func() any {
+				f_2851 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1099134,8 +1099570,8 @@ func (p *tparser) i104() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_2851 := func() any { return any(false) }()
-				return tmk_Row(c, true, f_2850, f_2851)
+				f_2852 := func() any { return any(false) }()
+				return tmk_Row(c, true, f_2851, f_2852)
 			}()
 		}()
 		p.where = w
@@ -1099255,7 +1099691,7 @@ func (p *tparser) i104() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2850 := func() any {
+			f_2851 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1099264,8 +1099700,8 @@ func (p *tparser) i104() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			f_2851 := func() any { c.p.stepWork(); return any(false) }()
-			return tmk_Row(c, true, f_2850, f_2851)
+			f_2852 := func() any { c.p.stepWork(); return any(false) }()
+			return tmk_Row(c, true, f_2851, f_2852)
 		}()
 	}()
 	p.where = w
@@ -1099355,7 +1099791,7 @@ func (p *tparser) i105() (any, bool) {
 		p.where = "paren_expr"
 		v = func() any {
 
-			return func() any { f_2852 := func() any { return k1 }(); return tmk_Paren(c, true, f_2852) }()
+			return func() any { f_2853 := func() any { return k1 }(); return tmk_Paren(c, true, f_2853) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1099415,7 +1099851,7 @@ func (p *tparser) i105() (any, bool) {
 	p.where = "paren_expr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_2852 := func() any { c.p.stepWork(); return k1 }(); return tmk_Paren(c, true, f_2852) }()
+		return func() any { f_2853 := func() any { c.p.stepWork(); return k1 }(); return tmk_Paren(c, true, f_2853) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1100586,8 +1101022,8 @@ func (p *tparser) i109() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2853 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_ListLit(c, true, f_2853)
+				f_2854 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_ListLit(c, true, f_2854)
 			}()
 		}()
 		p.where = w
@@ -1100661,8 +1101097,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2853 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_ListLit(c, true, f_2853)
+			f_2854 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_ListLit(c, true, f_2854)
 		}()
 	}()
 	p.where = w
@@ -1100878,8 +1101314,8 @@ func (p *tparser) i111() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2854 := func() any { return k1 }()
-				return tmk_ArraySubquery(c, true, f_2854)
+				f_2855 := func() any { return k1 }()
+				return tmk_ArraySubquery(c, true, f_2855)
 			}()
 		}()
 		p.where = w
@@ -1100929,8 +1101365,8 @@ func (p *tparser) i111() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2854 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ArraySubquery(c, true, f_2854)
+			f_2855 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ArraySubquery(c, true, f_2855)
 		}()
 	}()
 	p.where = w
@@ -1101035,8 +1101471,8 @@ func (p *tparser) i112() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2855 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_ArrayLit(c, true, f_2855)
+				f_2856 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_ArrayLit(c, true, f_2856)
 			}()
 		}()
 		p.where = w
@@ -1101118,8 +1101554,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2855 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_ArrayLit(c, true, f_2855)
+			f_2856 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_ArrayLit(c, true, f_2856)
 		}()
 	}()
 	p.where = w
@@ -1101273,7 +1101709,7 @@ func (p *tparser) i113() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2856 := func() any {
+				f_2857 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1101282,7 +1101718,7 @@ func (p *tparser) i113() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_StructLit(c, true, f_2856)
+				return tmk_StructLit(c, true, f_2857)
 			}()
 		}()
 		p.where = w
@@ -1101418,7 +1101854,7 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2856 := func() any {
+			f_2857 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1101427,7 +1101863,7 @@ L18:
 					return c.endList(b)
 				}()
 			}()
-			return tmk_StructLit(c, true, f_2856)
+			return tmk_StructLit(c, true, f_2857)
 		}()
 	}()
 	p.where = w
@@ -1101520,9 +1101956,9 @@ func (p *tparser) i114() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2857 := func() any { return k1 }()
-				f_2858 := func() any { return k4 }()
-				return tmk_StructField(c, true, f_2857, f_2858)
+				f_2858 := func() any { return k1 }()
+				f_2859 := func() any { return k4 }()
+				return tmk_StructField(c, true, f_2858, f_2859)
 			}()
 		}()
 		p.where = w
@@ -1101586,9 +1102022,9 @@ func (p *tparser) i114() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2857 := func() any { c.p.stepWork(); return k1 }()
-			f_2858 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_StructField(c, true, f_2857, f_2858)
+			f_2858 := func() any { c.p.stepWork(); return k1 }()
+			f_2859 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_StructField(c, true, f_2858, f_2859)
 		}()
 	}()
 	p.where = w
@@ -1101693,8 +1102129,8 @@ func (p *tparser) i115() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2859 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_MapLit(c, true, f_2859)
+				f_2860 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_MapLit(c, true, f_2860)
 			}()
 		}()
 		p.where = w
@@ -1101776,8 +1102212,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2859 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_MapLit(c, true, f_2859)
+			f_2860 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_MapLit(c, true, f_2860)
 		}()
 	}()
 	p.where = w
@@ -1102128,9 +1102564,9 @@ func (p *tparser) i117() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2860 := func() any { return k1 }()
-				f_2861 := func() any { return k4 }()
-				return tmk_MapEntry(c, true, f_2860, f_2861)
+				f_2861 := func() any { return k1 }()
+				f_2862 := func() any { return k4 }()
+				return tmk_MapEntry(c, true, f_2861, f_2862)
 			}()
 		}()
 		p.where = w
@@ -1102194,9 +1102630,9 @@ func (p *tparser) i117() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2860 := func() any { c.p.stepWork(); return k1 }()
-			f_2861 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_MapEntry(c, true, f_2860, f_2861)
+			f_2861 := func() any { c.p.stepWork(); return k1 }()
+			f_2862 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_MapEntry(c, true, f_2861, f_2862)
 		}()
 	}()
 	p.where = w
@@ -1102490,11 +1102926,11 @@ func (p *tparser) i119() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2862 := func() any { return k1 }()
-				f_2863 := func() any { return k4 }()
-				f_2864 := func() any { return k7 }()
-				f_2865 := func() any { return k10 }()
-				return tmk_ListComp(c, true, f_2862, f_2863, f_2864, f_2865)
+				f_2863 := func() any { return k1 }()
+				f_2864 := func() any { return k4 }()
+				f_2865 := func() any { return k7 }()
+				f_2866 := func() any { return k10 }()
+				return tmk_ListComp(c, true, f_2863, f_2864, f_2865, f_2866)
 			}()
 		}()
 		p.where = w
@@ -1102622,11 +1103058,11 @@ func (p *tparser) i119() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2862 := func() any { c.p.stepWork(); return k1 }()
-			f_2863 := func() any { c.p.stepWork(); return k4 }()
-			f_2864 := func() any { c.p.stepWork(); return k7 }()
-			f_2865 := func() any { c.p.stepWork(); return k10 }()
-			return tmk_ListComp(c, true, f_2862, f_2863, f_2864, f_2865)
+			f_2863 := func() any { c.p.stepWork(); return k1 }()
+			f_2864 := func() any { c.p.stepWork(); return k4 }()
+			f_2865 := func() any { c.p.stepWork(); return k7 }()
+			f_2866 := func() any { c.p.stepWork(); return k10 }()
+			return tmk_ListComp(c, true, f_2863, f_2864, f_2865, f_2866)
 		}()
 	}()
 	p.where = w
@@ -1102755,10 +1103191,10 @@ func (p *tparser) i120() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2866 := func() any { return k1 }()
-				f_2867 := func() any { return k4 }()
-				f_2868 := func() any { return k7 }()
-				return tmk_ListComp(c, true, f_2866, f_2867, f_2868, nil)
+				f_2867 := func() any { return k1 }()
+				f_2868 := func() any { return k4 }()
+				f_2869 := func() any { return k7 }()
+				return tmk_ListComp(c, true, f_2867, f_2868, f_2869, nil)
 			}()
 		}()
 		p.where = w
@@ -1102864,10 +1103300,10 @@ func (p *tparser) i120() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2866 := func() any { c.p.stepWork(); return k1 }()
-			f_2867 := func() any { c.p.stepWork(); return k4 }()
-			f_2868 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_ListComp(c, true, f_2866, f_2867, f_2868, nil)
+			f_2867 := func() any { c.p.stepWork(); return k1 }()
+			f_2868 := func() any { c.p.stepWork(); return k4 }()
+			f_2869 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_ListComp(c, true, f_2867, f_2868, f_2869, nil)
 		}()
 	}()
 	p.where = w
@@ -1103029,10 +1103465,10 @@ func (p *tparser) i121() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2869 := func() any { return k3 }()
-				f_2870 := func() any { return k12 }()
-				f_2871 := func() any { return k17 }()
-				return tmk_Case(c, true, f_2869, f_2870, f_2871)
+				f_2870 := func() any { return k3 }()
+				f_2871 := func() any { return k12 }()
+				f_2872 := func() any { return k17 }()
+				return tmk_Case(c, true, f_2870, f_2871, f_2872)
 			}()
 		}()
 		p.where = w
@@ -1103173,10 +1103609,10 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2869 := func() any { c.p.stepWork(); return k3 }()
-			f_2870 := func() any { c.p.stepWork(); return k12 }()
-			f_2871 := func() any { c.p.stepWork(); return k17 }()
-			return tmk_Case(c, true, f_2869, f_2870, f_2871)
+			f_2870 := func() any { c.p.stepWork(); return k3 }()
+			f_2871 := func() any { c.p.stepWork(); return k12 }()
+			f_2872 := func() any { c.p.stepWork(); return k17 }()
+			return tmk_Case(c, true, f_2870, f_2871, f_2872)
 		}()
 	}()
 	p.where = w
@@ -1103474,9 +1103910,9 @@ func (p *tparser) i123() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2872 := func() any { return k1 }()
-				f_2873 := func() any { return k4 }()
-				return tmk_When(c, true, f_2872, f_2873)
+				f_2873 := func() any { return k1 }()
+				f_2874 := func() any { return k4 }()
+				return tmk_When(c, true, f_2873, f_2874)
 			}()
 		}()
 		p.where = w
@@ -1103548,9 +1103984,9 @@ func (p *tparser) i123() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2872 := func() any { c.p.stepWork(); return k1 }()
-			f_2873 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_When(c, true, f_2872, f_2873)
+			f_2873 := func() any { c.p.stepWork(); return k1 }()
+			f_2874 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_When(c, true, f_2873, f_2874)
 		}()
 	}()
 	p.where = w
@@ -1103655,9 +1104091,9 @@ func (p *tparser) i124() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2874 := func() any { return c.concat(func() any { return k1 }()) }()
-				f_2875 := func() any { return any(true) }()
-				return tmk_Row(c, true, f_2874, f_2875)
+				f_2875 := func() any { return c.concat(func() any { return k1 }()) }()
+				f_2876 := func() any { return any(true) }()
+				return tmk_Row(c, true, f_2875, f_2876)
 			}()
 		}()
 		p.where = w
@@ -1103739,9 +1104175,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2874 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2875 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_Row(c, true, f_2874, f_2875)
+			f_2875 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2876 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_Row(c, true, f_2875, f_2876)
 		}()
 	}()
 	p.where = w
@@ -1104446,6 +1104882,7 @@ func (p *tparser) s128() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.s1095(); !ok {
 		goto fail
 	}
@@ -1104541,9 +1104978,9 @@ func (p *tparser) i129() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2876 := func() any { return k1 }()
-				f_2877 := func() any { return any(false) }()
-				return tmk_ColumnsExpr(c, true, f_2876, f_2877)
+				f_2877 := func() any { return k1 }()
+				f_2878 := func() any { return any(false) }()
+				return tmk_ColumnsExpr(c, true, f_2877, f_2878)
 			}()
 		}()
 		p.where = w
@@ -1104613,9 +1105050,9 @@ func (p *tparser) i129() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2876 := func() any { c.p.stepWork(); return k1 }()
-			f_2877 := func() any { c.p.stepWork(); return any(false) }()
-			return tmk_ColumnsExpr(c, true, f_2876, f_2877)
+			f_2877 := func() any { c.p.stepWork(); return k1 }()
+			f_2878 := func() any { c.p.stepWork(); return any(false) }()
+			return tmk_ColumnsExpr(c, true, f_2877, f_2878)
 		}()
 	}()
 	p.where = w
@@ -1104716,9 +1105153,9 @@ func (p *tparser) i130() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2878 := func() any { return k1 }()
-				f_2879 := func() any { return any(true) }()
-				return tmk_ColumnsExpr(c, true, f_2878, f_2879)
+				f_2879 := func() any { return k1 }()
+				f_2880 := func() any { return any(true) }()
+				return tmk_ColumnsExpr(c, true, f_2879, f_2880)
 			}()
 		}()
 		p.where = w
@@ -1104796,9 +1105233,9 @@ func (p *tparser) i130() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2878 := func() any { c.p.stepWork(); return k1 }()
-			f_2879 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_ColumnsExpr(c, true, f_2878, f_2879)
+			f_2879 := func() any { c.p.stepWork(); return k1 }()
+			f_2880 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_ColumnsExpr(c, true, f_2879, f_2880)
 		}()
 	}()
 	p.where = w
@@ -1104891,8 +1105328,8 @@ func (p *tparser) i131() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2880 := func() any { return k1 }()
-				return tmk_UnpackExpr(c, true, f_2880)
+				f_2881 := func() any { return k1 }()
+				return tmk_UnpackExpr(c, true, f_2881)
 			}()
 		}()
 		p.where = w
@@ -1104962,8 +1105399,8 @@ func (p *tparser) i131() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2880 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_UnpackExpr(c, true, f_2880)
+			f_2881 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_UnpackExpr(c, true, f_2881)
 		}()
 	}()
 	p.where = w
@@ -1105106,10 +1105543,10 @@ func (p *tparser) i132() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2881 := func() any { return c.concat(func() any { return k3 }()) }()
-				f_2882 := func() any { return c.concat(func() any { return k11 }()) }()
-				f_2883 := func() any { return c.concat(func() any { return k19 }()) }()
-				return tmk_Star(c, true, nil, f_2881, f_2882, f_2883)
+				f_2882 := func() any { return c.concat(func() any { return k3 }()) }()
+				f_2883 := func() any { return c.concat(func() any { return k11 }()) }()
+				f_2884 := func() any { return c.concat(func() any { return k19 }()) }()
+				return tmk_Star(c, true, nil, f_2882, f_2883, f_2884)
 			}()
 		}()
 		p.where = w
@@ -1105232,10 +1105669,10 @@ L22:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2881 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
-			f_2882 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
-			f_2883 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
-			return tmk_Star(c, true, nil, f_2881, f_2882, f_2883)
+			f_2882 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
+			f_2883 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
+			f_2884 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
+			return tmk_Star(c, true, nil, f_2882, f_2883, f_2884)
 		}()
 	}()
 	p.where = w
@@ -1105402,11 +1105839,11 @@ func (p *tparser) i133() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2884 := func() any { return k1 }()
-				f_2885 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_2886 := func() any { return c.concat(func() any { return k14 }()) }()
-				f_2887 := func() any { return c.concat(func() any { return k22 }()) }()
-				return tmk_Star(c, true, f_2884, f_2885, f_2886, f_2887)
+				f_2885 := func() any { return k1 }()
+				f_2886 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_2887 := func() any { return c.concat(func() any { return k14 }()) }()
+				f_2888 := func() any { return c.concat(func() any { return k22 }()) }()
+				return tmk_Star(c, true, f_2885, f_2886, f_2887, f_2888)
 			}()
 		}()
 		p.where = w
@@ -1105553,11 +1105990,11 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2884 := func() any { c.p.stepWork(); return k1 }()
-			f_2885 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_2886 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			f_2887 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
-			return tmk_Star(c, true, f_2884, f_2885, f_2886, f_2887)
+			f_2885 := func() any { c.p.stepWork(); return k1 }()
+			f_2886 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_2887 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			f_2888 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
+			return tmk_Star(c, true, f_2885, f_2886, f_2887, f_2888)
 		}()
 	}()
 	p.where = w
@@ -1105652,10 +1106089,10 @@ func (p *tparser) i134() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2888 := func() any { return k1 }()
-				f_2889 := func() any { return k4 }()
-				f_2890 := func() any { return any(true) }()
-				return tmk_Lambda(c, true, f_2888, f_2889, f_2890)
+				f_2889 := func() any { return k1 }()
+				f_2890 := func() any { return k4 }()
+				f_2891 := func() any { return any(true) }()
+				return tmk_Lambda(c, true, f_2889, f_2890, f_2891)
 			}()
 		}()
 		p.where = w
@@ -1105727,10 +1106164,10 @@ func (p *tparser) i134() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2888 := func() any { c.p.stepWork(); return k1 }()
-			f_2889 := func() any { c.p.stepWork(); return k4 }()
-			f_2890 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_Lambda(c, true, f_2888, f_2889, f_2890)
+			f_2889 := func() any { c.p.stepWork(); return k1 }()
+			f_2890 := func() any { c.p.stepWork(); return k4 }()
+			f_2891 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_Lambda(c, true, f_2889, f_2890, f_2891)
 		}()
 	}()
 	p.where = w
@@ -1105851,7 +1106288,7 @@ func (p *tparser) i135() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2891 := func() any {
+				f_2892 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1105860,7 +1106297,7 @@ func (p *tparser) i135() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Name(c, true, f_2891)
+				return tmk_Name(c, true, f_2892)
 			}()
 		}()
 		p.where = w
@@ -1105956,7 +1106393,7 @@ func (p *tparser) i135() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2891 := func() any {
+			f_2892 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1105965,7 +1106402,7 @@ func (p *tparser) i135() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_2891)
+			return tmk_Name(c, true, f_2892)
 		}()
 	}()
 	p.where = w
@@ -1106881,9 +1107318,9 @@ func (p *tparser) i140() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2892 := func() any { return k1 }()
-				f_2893 := func() any { return k4 }()
-				return tmk_ReplaceItem(c, true, f_2892, f_2893)
+				f_2893 := func() any { return k1 }()
+				f_2894 := func() any { return k4 }()
+				return tmk_ReplaceItem(c, true, f_2893, f_2894)
 			}()
 		}()
 		p.where = w
@@ -1106947,9 +1107384,9 @@ func (p *tparser) i140() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2892 := func() any { c.p.stepWork(); return k1 }()
-			f_2893 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ReplaceItem(c, true, f_2892, f_2893)
+			f_2893 := func() any { c.p.stepWork(); return k1 }()
+			f_2894 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ReplaceItem(c, true, f_2893, f_2894)
 		}()
 	}()
 	p.where = w
@@ -1107766,9 +1108203,9 @@ func (p *tparser) i144() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2894 := func() any { return k1 }()
-				f_2895 := func() any { return k4 }()
-				return tmk_RenameItem(c, true, f_2894, f_2895)
+				f_2895 := func() any { return k1 }()
+				f_2896 := func() any { return k4 }()
+				return tmk_RenameItem(c, true, f_2895, f_2896)
 			}()
 		}()
 		p.where = w
@@ -1107832,9 +1108269,9 @@ func (p *tparser) i144() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2894 := func() any { c.p.stepWork(); return k1 }()
-			f_2895 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_RenameItem(c, true, f_2894, f_2895)
+			f_2895 := func() any { c.p.stepWork(); return k1 }()
+			f_2896 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_RenameItem(c, true, f_2895, f_2896)
 		}()
 	}()
 	p.where = w
@@ -1109013,6 +1109450,7 @@ func (p *tparser) s149() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -1109100,6 +1109538,7 @@ func (p *tparser) s150() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.s1106(); !ok {
 		goto fail
 	}
@@ -1109174,7 +1109613,7 @@ func (p *tparser) i151() (any, bool) {
 		p.where = "exists_expr"
 		v = func() any {
 
-			return func() any { f_2896 := func() any { return k1 }(); return tmk_Exists(c, true, f_2896) }()
+			return func() any { f_2897 := func() any { return k1 }(); return tmk_Exists(c, true, f_2897) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1109222,7 +1109661,7 @@ func (p *tparser) i151() (any, bool) {
 	p.where = "exists_expr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_2896 := func() any { c.p.stepWork(); return k1 }(); return tmk_Exists(c, true, f_2896) }()
+		return func() any { f_2897 := func() any { c.p.stepWork(); return k1 }(); return tmk_Exists(c, true, f_2897) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1109360,9 +1109799,9 @@ func (p *tparser) i152() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2897 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2898 := func() any { return k14 }()
-				return tmk_Grouping(c, true, f_2897, f_2898)
+				f_2898 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2899 := func() any { return k14 }()
+				return tmk_Grouping(c, true, f_2898, f_2899)
 			}()
 		}()
 		p.where = w
@@ -1109478,9 +1109917,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2897 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2898 := func() any { c.p.stepWork(); return k14 }()
-			return tmk_Grouping(c, true, f_2897, f_2898)
+			f_2898 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2899 := func() any { c.p.stepWork(); return k14 }()
+			return tmk_Grouping(c, true, f_2898, f_2899)
 		}()
 	}()
 	p.where = w
@@ -1109890,11 +1110329,11 @@ func (p *tparser) i154() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2899 := func() any { return k1 }()
-				f_2900 := func() any { return k4 }()
-				f_2901 := func() any { return any(false) }()
+				f_2900 := func() any { return k1 }()
+				f_2901 := func() any { return k4 }()
 				f_2902 := func() any { return any(false) }()
-				return tmk_Cast(c, true, f_2899, f_2900, f_2901, f_2902)
+				f_2903 := func() any { return any(false) }()
+				return tmk_Cast(c, true, f_2900, f_2901, f_2902, f_2903)
 			}()
 		}()
 		p.where = w
@@ -1109986,11 +1110425,11 @@ func (p *tparser) i154() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2899 := func() any { c.p.stepWork(); return k1 }()
-			f_2900 := func() any { c.p.stepWork(); return k4 }()
-			f_2901 := func() any { c.p.stepWork(); return any(false) }()
+			f_2900 := func() any { c.p.stepWork(); return k1 }()
+			f_2901 := func() any { c.p.stepWork(); return k4 }()
 			f_2902 := func() any { c.p.stepWork(); return any(false) }()
-			return tmk_Cast(c, true, f_2899, f_2900, f_2901, f_2902)
+			f_2903 := func() any { c.p.stepWork(); return any(false) }()
+			return tmk_Cast(c, true, f_2900, f_2901, f_2902, f_2903)
 		}()
 	}()
 	p.where = w
@@ -1110105,11 +1110544,11 @@ func (p *tparser) i155() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2903 := func() any { return k1 }()
-				f_2904 := func() any { return k4 }()
-				f_2905 := func() any { return any(true) }()
-				f_2906 := func() any { return any(false) }()
-				return tmk_Cast(c, true, f_2903, f_2904, f_2905, f_2906)
+				f_2904 := func() any { return k1 }()
+				f_2905 := func() any { return k4 }()
+				f_2906 := func() any { return any(true) }()
+				f_2907 := func() any { return any(false) }()
+				return tmk_Cast(c, true, f_2904, f_2905, f_2906, f_2907)
 			}()
 		}()
 		p.where = w
@@ -1110201,11 +1110640,11 @@ func (p *tparser) i155() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2903 := func() any { c.p.stepWork(); return k1 }()
-			f_2904 := func() any { c.p.stepWork(); return k4 }()
-			f_2905 := func() any { c.p.stepWork(); return any(true) }()
-			f_2906 := func() any { c.p.stepWork(); return any(false) }()
-			return tmk_Cast(c, true, f_2903, f_2904, f_2905, f_2906)
+			f_2904 := func() any { c.p.stepWork(); return k1 }()
+			f_2905 := func() any { c.p.stepWork(); return k4 }()
+			f_2906 := func() any { c.p.stepWork(); return any(true) }()
+			f_2907 := func() any { c.p.stepWork(); return any(false) }()
+			return tmk_Cast(c, true, f_2904, f_2905, f_2906, f_2907)
 		}()
 	}()
 	p.where = w
@@ -1110469,9 +1110908,9 @@ func (p *tparser) i157() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2907 := func() any { return k1 }()
-				f_2908 := func() any { return k6 }()
-				return tmk_IntervalLit(c, true, f_2907, f_2908)
+				f_2908 := func() any { return k1 }()
+				f_2909 := func() any { return k6 }()
+				return tmk_IntervalLit(c, true, f_2908, f_2909)
 			}()
 		}()
 		p.where = w
@@ -1110570,9 +1111009,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2907 := func() any { c.p.stepWork(); return k1 }()
-			f_2908 := func() any { c.p.stepWork(); return k6 }()
-			return tmk_IntervalLit(c, true, f_2907, f_2908)
+			f_2908 := func() any { c.p.stepWork(); return k1 }()
+			f_2909 := func() any { c.p.stepWork(); return k6 }()
+			return tmk_IntervalLit(c, true, f_2908, f_2909)
 		}()
 	}()
 	p.where = w
@@ -1110708,9 +1111147,9 @@ func (p *tparser) i158() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2909 := func() any { return k1 }()
-				f_2910 := func() any { return k16 }()
-				return tmk_IntervalLit(c, true, f_2909, f_2910)
+				f_2910 := func() any { return k1 }()
+				f_2911 := func() any { return k16 }()
+				return tmk_IntervalLit(c, true, f_2910, f_2911)
 			}()
 		}()
 		p.where = w
@@ -1110824,9 +1111263,9 @@ L19:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2909 := func() any { c.p.stepWork(); return k1 }()
-			f_2910 := func() any { c.p.stepWork(); return k16 }()
-			return tmk_IntervalLit(c, true, f_2909, f_2910)
+			f_2910 := func() any { c.p.stepWork(); return k1 }()
+			f_2911 := func() any { c.p.stepWork(); return k16 }()
+			return tmk_IntervalLit(c, true, f_2910, f_2911)
 		}()
 	}()
 	p.where = w
@@ -1110914,6 +1111353,7 @@ func (p *tparser) v159() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.s1112(); !ok {
@@ -1111000,6 +1111440,7 @@ func (p *tparser) i159() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
@@ -1114353,9 +1114794,9 @@ func (p *tparser) i163() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2911 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2912 := func() any { return k4 }()
-				return tmk_SpecialCall(c, true, f_2911, nil, f_2912, nil, nil, nil, nil, nil)
+				f_2912 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2913 := func() any { return k4 }()
+				return tmk_SpecialCall(c, true, f_2912, nil, f_2913, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1114431,9 +1114872,9 @@ func (p *tparser) i163() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2911 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2912 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SpecialCall(c, true, f_2911, nil, f_2912, nil, nil, nil, nil, nil)
+			f_2912 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2913 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SpecialCall(c, true, f_2912, nil, f_2913, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1114556,12 +1114997,12 @@ func (p *tparser) i164() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2913 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2914 := func() any {
+				f_2914 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2915 := func() any {
 
 					return c.list(func() any { return k4 }(), func() any { return k7 }())
 				}()
-				return tmk_SpecialCall(c, true, f_2913, nil, f_2914, nil, nil, nil, nil, nil)
+				return tmk_SpecialCall(c, true, f_2914, nil, f_2915, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1114661,12 +1115102,12 @@ func (p *tparser) i164() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2913 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2914 := func() any {
+			f_2914 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2915 := func() any {
 				c.p.stepWork()
 				return c.list(func() any { c.p.stepWork(); return k4 }(), func() any { c.p.stepWork(); return k7 }())
 			}()
-			return tmk_SpecialCall(c, true, f_2913, nil, f_2914, nil, nil, nil, nil, nil)
+			return tmk_SpecialCall(c, true, f_2914, nil, f_2915, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1114787,10 +1115228,10 @@ func (p *tparser) i165() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2915 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2916 := func() any { return c.text(func() any { return k4 }()) }()
-				f_2917 := func() any { return c.list(func() any { return k7 }()) }()
-				return tmk_SpecialCall(c, true, f_2915, f_2916, f_2917, nil, nil, nil, nil, nil)
+				f_2916 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2917 := func() any { return c.text(func() any { return k4 }()) }()
+				f_2918 := func() any { return c.list(func() any { return k7 }()) }()
+				return tmk_SpecialCall(c, true, f_2916, f_2917, f_2918, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1114888,10 +1115329,10 @@ func (p *tparser) i165() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2915 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2916 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2917 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k7 }()) }()
-			return tmk_SpecialCall(c, true, f_2915, f_2916, f_2917, nil, nil, nil, nil, nil)
+			f_2916 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2917 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2918 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k7 }()) }()
+			return tmk_SpecialCall(c, true, f_2916, f_2917, f_2918, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1114976,8 +1115417,8 @@ func (p *tparser) i166() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2918 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_SpecialCall(c, true, f_2918, nil, nil, nil, nil, nil, nil, nil)
+				f_2919 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_SpecialCall(c, true, f_2919, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1115039,8 +1115480,8 @@ func (p *tparser) i166() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2918 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_2918, nil, nil, nil, nil, nil, nil, nil)
+			f_2919 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_2919, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1115219,12 +1115660,12 @@ func (p *tparser) i167() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2919 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2920 := func() any { return c.list(func() any { return k4 }()) }()
-				f_2921 := func() any { return k7 }()
-				f_2922 := func() any { return c.list(func() any { return k10 }()) }()
-				f_2923 := func() any { return k15 }()
-				return tmk_SpecialCall(c, true, f_2919, nil, f_2920, f_2922, f_2923, f_2921, nil, nil)
+				f_2920 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2921 := func() any { return c.list(func() any { return k4 }()) }()
+				f_2922 := func() any { return k7 }()
+				f_2923 := func() any { return c.list(func() any { return k10 }()) }()
+				f_2924 := func() any { return k15 }()
+				return tmk_SpecialCall(c, true, f_2920, nil, f_2921, f_2923, f_2924, f_2922, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1115381,12 +1115822,12 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2919 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2920 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2921 := func() any { c.p.stepWork(); return k7 }()
-			f_2922 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k10 }()) }()
-			f_2923 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_SpecialCall(c, true, f_2919, nil, f_2920, f_2922, f_2923, f_2921, nil, nil)
+			f_2920 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2921 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2922 := func() any { c.p.stepWork(); return k7 }()
+			f_2923 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k10 }()) }()
+			f_2924 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_SpecialCall(c, true, f_2920, nil, f_2921, f_2923, f_2924, f_2922, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1115507,12 +1115948,12 @@ func (p *tparser) i168() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2924 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2925 := func() any {
+				f_2925 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2926 := func() any {
 
 					return c.list(func() any { return k4 }(), func() any { return k7 }())
 				}()
-				return tmk_SpecialCall(c, true, f_2924, nil, f_2925, nil, nil, nil, nil, nil)
+				return tmk_SpecialCall(c, true, f_2925, nil, f_2926, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1115610,12 +1116051,12 @@ func (p *tparser) i168() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2924 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2925 := func() any {
+			f_2925 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2926 := func() any {
 				c.p.stepWork()
 				return c.list(func() any { c.p.stepWork(); return k4 }(), func() any { c.p.stepWork(); return k7 }())
 			}()
-			return tmk_SpecialCall(c, true, f_2924, nil, f_2925, nil, nil, nil, nil, nil)
+			return tmk_SpecialCall(c, true, f_2925, nil, f_2926, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1115700,8 +1116141,8 @@ func (p *tparser) i169() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2926 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_SpecialCall(c, true, f_2926, nil, nil, nil, nil, nil, nil, nil)
+				f_2927 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_SpecialCall(c, true, f_2927, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1115763,8 +1116204,8 @@ func (p *tparser) i169() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2926 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_2926, nil, nil, nil, nil, nil, nil, nil)
+			f_2927 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_2927, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1115921,11 +1116362,11 @@ func (p *tparser) i170() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2927 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2928 := func() any { return c.list(func() any { return k4 }()) }()
-				f_2929 := func() any { return c.list(func() any { return k7 }()) }()
-				f_2930 := func() any { return k12 }()
-				return tmk_SpecialCall(c, true, f_2927, nil, f_2928, f_2929, f_2930, nil, nil, nil)
+				f_2928 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2929 := func() any { return c.list(func() any { return k4 }()) }()
+				f_2930 := func() any { return c.list(func() any { return k7 }()) }()
+				f_2931 := func() any { return k12 }()
+				return tmk_SpecialCall(c, true, f_2928, nil, f_2929, f_2930, f_2931, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1116060,11 +1116501,11 @@ L15:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2927 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2928 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2929 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k7 }()) }()
-			f_2930 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_SpecialCall(c, true, f_2927, nil, f_2928, f_2929, f_2930, nil, nil, nil)
+			f_2928 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2929 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2930 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k7 }()) }()
+			f_2931 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_SpecialCall(c, true, f_2928, nil, f_2929, f_2930, f_2931, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1116207,11 +1116648,11 @@ func (p *tparser) i171() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2931 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2932 := func() any { return c.list(func() any { return k4 }()) }()
-				f_2933 := func() any { return c.list(func() any { return k10 }()) }()
-				f_2934 := func() any { return k7 }()
-				return tmk_SpecialCall(c, true, f_2931, nil, f_2932, f_2933, f_2934, nil, nil, nil)
+				f_2932 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2933 := func() any { return c.list(func() any { return k4 }()) }()
+				f_2934 := func() any { return c.list(func() any { return k10 }()) }()
+				f_2935 := func() any { return k7 }()
+				return tmk_SpecialCall(c, true, f_2932, nil, f_2933, f_2934, f_2935, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1116331,11 +1116772,11 @@ func (p *tparser) i171() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2931 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2932 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2933 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k10 }()) }()
-			f_2934 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_SpecialCall(c, true, f_2931, nil, f_2932, f_2933, f_2934, nil, nil, nil)
+			f_2932 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2933 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2934 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k10 }()) }()
+			f_2935 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_SpecialCall(c, true, f_2932, nil, f_2933, f_2934, f_2935, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1116456,10 +1116897,10 @@ func (p *tparser) i172() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2935 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2936 := func() any { return c.list(func() any { return k4 }()) }()
-				f_2937 := func() any { return k7 }()
-				return tmk_SpecialCall(c, true, f_2935, nil, f_2936, nil, f_2937, nil, nil, nil)
+				f_2936 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2937 := func() any { return c.list(func() any { return k4 }()) }()
+				f_2938 := func() any { return k7 }()
+				return tmk_SpecialCall(c, true, f_2936, nil, f_2937, nil, f_2938, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1116557,10 +1116998,10 @@ func (p *tparser) i172() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2935 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2936 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2937 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_SpecialCall(c, true, f_2935, nil, f_2936, nil, f_2937, nil, nil, nil)
+			f_2936 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2937 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2938 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_SpecialCall(c, true, f_2936, nil, f_2937, nil, f_2938, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1116659,9 +1117100,9 @@ func (p *tparser) i173() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2938 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2939 := func() any { return k4 }()
-				return tmk_SpecialCall(c, true, f_2938, nil, f_2939, nil, nil, nil, nil, nil)
+				f_2939 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2940 := func() any { return k4 }()
+				return tmk_SpecialCall(c, true, f_2939, nil, f_2940, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1116737,9 +1117178,9 @@ func (p *tparser) i173() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2938 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2939 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SpecialCall(c, true, f_2938, nil, f_2939, nil, nil, nil, nil, nil)
+			f_2939 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2940 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SpecialCall(c, true, f_2939, nil, f_2940, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1116824,8 +1117265,8 @@ func (p *tparser) i174() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2940 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_SpecialCall(c, true, f_2940, nil, nil, nil, nil, nil, nil, nil)
+				f_2941 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_SpecialCall(c, true, f_2941, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1116887,8 +1117328,8 @@ func (p *tparser) i174() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2940 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_2940, nil, nil, nil, nil, nil, nil, nil)
+			f_2941 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_2941, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1117009,10 +1117450,10 @@ func (p *tparser) i175() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2941 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2942 := func() any { return c.list(func() any { return k4 }()) }()
-				f_2943 := func() any { return k7 }()
-				return tmk_SpecialCall(c, true, f_2941, nil, f_2942, nil, nil, nil, nil, f_2943)
+				f_2942 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2943 := func() any { return c.list(func() any { return k4 }()) }()
+				f_2944 := func() any { return k7 }()
+				return tmk_SpecialCall(c, true, f_2942, nil, f_2943, nil, nil, nil, nil, f_2944)
 			}()
 		}()
 		p.where = w
@@ -1117110,10 +1117551,10 @@ func (p *tparser) i175() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2941 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2942 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2943 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_SpecialCall(c, true, f_2941, nil, f_2942, nil, nil, nil, nil, f_2943)
+			f_2942 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2943 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2944 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_SpecialCall(c, true, f_2942, nil, f_2943, nil, nil, nil, nil, f_2944)
 		}()
 	}()
 	p.where = w
@@ -1117317,11 +1117758,11 @@ func (p *tparser) i176() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2944 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2945 := func() any { return c.text(func() any { return k6 }()) }()
-				f_2946 := func() any { return k29 }()
-				f_2947 := func() any { return k26 }()
-				return tmk_SpecialCall(c, true, f_2944, f_2945, f_2946, nil, nil, nil, f_2947, nil)
+				f_2945 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2946 := func() any { return c.text(func() any { return k6 }()) }()
+				f_2947 := func() any { return k29 }()
+				f_2948 := func() any { return k26 }()
+				return tmk_SpecialCall(c, true, f_2945, f_2946, f_2947, nil, nil, nil, f_2948, nil)
 			}()
 		}()
 		p.where = w
@@ -1117503,11 +1117944,11 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2944 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2945 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_2946 := func() any { c.p.stepWork(); return k29 }()
-			f_2947 := func() any { c.p.stepWork(); return k26 }()
-			return tmk_SpecialCall(c, true, f_2944, f_2945, f_2946, nil, nil, nil, f_2947, nil)
+			f_2945 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2946 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_2947 := func() any { c.p.stepWork(); return k29 }()
+			f_2948 := func() any { c.p.stepWork(); return k26 }()
+			return tmk_SpecialCall(c, true, f_2945, f_2946, f_2947, nil, nil, nil, f_2948, nil)
 		}()
 	}()
 	p.where = w
@@ -1117724,10 +1118165,10 @@ func (p *tparser) i177() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2948 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2949 := func() any { return c.text(func() any { return k6 }()) }()
-				f_2950 := func() any { return k26 }()
-				return tmk_SpecialCall(c, true, f_2948, f_2949, f_2950, nil, nil, nil, nil, nil)
+				f_2949 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2950 := func() any { return c.text(func() any { return k6 }()) }()
+				f_2951 := func() any { return k26 }()
+				return tmk_SpecialCall(c, true, f_2949, f_2950, f_2951, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1117922,10 +1118363,10 @@ L31:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2948 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2949 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_2950 := func() any { c.p.stepWork(); return k26 }()
-			return tmk_SpecialCall(c, true, f_2948, f_2949, f_2950, nil, nil, nil, nil, nil)
+			f_2949 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2950 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_2951 := func() any { c.p.stepWork(); return k26 }()
+			return tmk_SpecialCall(c, true, f_2949, f_2950, f_2951, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1118036,9 +1118477,9 @@ func (p *tparser) i178() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2951 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2952 := func() any { return c.list(func() any { return k5 }()) }()
-				return tmk_SpecialCall(c, true, f_2951, nil, f_2952, nil, nil, nil, nil, nil)
+				f_2952 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2953 := func() any { return c.list(func() any { return k5 }()) }()
+				return tmk_SpecialCall(c, true, f_2952, nil, f_2953, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1118127,9 +1118568,9 @@ func (p *tparser) i178() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2951 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2952 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_SpecialCall(c, true, f_2951, nil, f_2952, nil, nil, nil, nil, nil)
+			f_2952 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2953 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_SpecialCall(c, true, f_2952, nil, f_2953, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1119792,20 +1120233,20 @@ func (p *tparser) i182() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2953 := func() any { return k1 }()
-				f_2954 := func() any { return c.text(func() any { return k6 }()) }()
-				f_2955 := func() any { return c.concat(func() any { return k8 }()) }()
-				f_2956 := func() any { return k10 }()
-				f_2957 := func() any { return k61 }()
-				f_2958 := func() any { return c.text(func() any { return k69 }()) }()
-				f_2959 := func() any { return k77 }()
-				f_2960 := func() any { return k85 }()
-				f_2961 := func() any {
+				f_2954 := func() any { return k1 }()
+				f_2955 := func() any { return c.text(func() any { return k6 }()) }()
+				f_2956 := func() any { return c.concat(func() any { return k8 }()) }()
+				f_2957 := func() any { return k10 }()
+				f_2958 := func() any { return k61 }()
+				f_2959 := func() any { return c.text(func() any { return k69 }()) }()
+				f_2960 := func() any { return k77 }()
+				f_2961 := func() any { return k85 }()
+				f_2962 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k93 }()) }(), func() any { return any(0) }())
 				}()
-				f_2962 := func() any { return k101 }()
-				return tmk_FuncCall(c, true, f_2953, f_2954, f_2955, f_2956, f_2957, f_2958, f_2959, f_2960, f_2961, f_2962)
+				f_2963 := func() any { return k101 }()
+				return tmk_FuncCall(c, true, f_2954, f_2955, f_2956, f_2957, f_2958, f_2959, f_2960, f_2961, f_2962, f_2963)
 			}()
 		}()
 		p.where = w
@@ -1120349,20 +1120790,20 @@ L104:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2953 := func() any { c.p.stepWork(); return k1 }()
-			f_2954 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_2955 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			f_2956 := func() any { c.p.stepWork(); return k10 }()
-			f_2957 := func() any { c.p.stepWork(); return k61 }()
-			f_2958 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k69 }()) }()
-			f_2959 := func() any { c.p.stepWork(); return k77 }()
-			f_2960 := func() any { c.p.stepWork(); return k85 }()
-			f_2961 := func() any {
+			f_2954 := func() any { c.p.stepWork(); return k1 }()
+			f_2955 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_2956 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			f_2957 := func() any { c.p.stepWork(); return k10 }()
+			f_2958 := func() any { c.p.stepWork(); return k61 }()
+			f_2959 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k69 }()) }()
+			f_2960 := func() any { c.p.stepWork(); return k77 }()
+			f_2961 := func() any { c.p.stepWork(); return k85 }()
+			f_2962 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k93 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_2962 := func() any { c.p.stepWork(); return k101 }()
-			return tmk_FuncCall(c, true, f_2953, f_2954, f_2955, f_2956, f_2957, f_2958, f_2959, f_2960, f_2961, f_2962)
+			f_2963 := func() any { c.p.stepWork(); return k101 }()
+			return tmk_FuncCall(c, true, f_2954, f_2955, f_2956, f_2957, f_2958, f_2959, f_2960, f_2961, f_2962, f_2963)
 		}()
 	}()
 	p.where = w
@@ -1120475,16 +1120916,16 @@ func (p *tparser) i183() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2963 := func() any {
+				f_2964 := func() any {
 
 					return func() any {
-						f_2964 := func() any { return c.text(func() any { return k1 }()) }()
-						f_2965 := func() any { return k4 }()
-						return tmk_Type(c, false, f_2964, f_2965, nil, nil, nil, nil)
+						f_2965 := func() any { return c.text(func() any { return k1 }()) }()
+						f_2966 := func() any { return k4 }()
+						return tmk_Type(c, false, f_2965, f_2966, nil, nil, nil, nil)
 					}()
 				}()
-				f_2966 := func() any { return k7 }()
-				return tmk_TypedLit(c, true, f_2963, f_2966)
+				f_2967 := func() any { return k7 }()
+				return tmk_TypedLit(c, true, f_2964, f_2967)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1120575,16 +1121016,16 @@ func (p *tparser) i183() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2963 := func() any {
+			f_2964 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_2964 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-					f_2965 := func() any { c.p.stepWork(); return k4 }()
-					return tmk_Type(c, false, f_2964, f_2965, nil, nil, nil, nil)
+					f_2965 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+					f_2966 := func() any { c.p.stepWork(); return k4 }()
+					return tmk_Type(c, false, f_2965, f_2966, nil, nil, nil, nil)
 				}()
 			}()
-			f_2966 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_TypedLit(c, true, f_2963, f_2966)
+			f_2967 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_TypedLit(c, true, f_2964, f_2967)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1121387,9 +1121828,9 @@ func (p *tparser) i187() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2967 := func() any { return k1 }()
-				f_2968 := func() any { return k13 }()
-				return tmk_NamedArg(c, true, f_2967, f_2968, nil)
+				f_2968 := func() any { return k1 }()
+				f_2969 := func() any { return k13 }()
+				return tmk_NamedArg(c, true, f_2968, f_2969, nil)
 			}()
 		}()
 		p.where = w
@@ -1121491,9 +1121932,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2967 := func() any { c.p.stepWork(); return k1 }()
-			f_2968 := func() any { c.p.stepWork(); return k13 }()
-			return tmk_NamedArg(c, true, f_2967, f_2968, nil)
+			f_2968 := func() any { c.p.stepWork(); return k1 }()
+			f_2969 := func() any { c.p.stepWork(); return k13 }()
+			return tmk_NamedArg(c, true, f_2968, f_2969, nil)
 		}()
 	}()
 	p.where = w
@@ -1122136,9 +1122577,9 @@ func (p *tparser) i190() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2969 := func() any { return k5 }()
-				f_2970 := func() any { return k3 }()
-				return tmk_WindowOver(c, true, f_2969, f_2970)
+				f_2970 := func() any { return k5 }()
+				f_2971 := func() any { return k3 }()
+				return tmk_WindowOver(c, true, f_2970, f_2971)
 			}()
 		}()
 		p.where = w
@@ -1122239,9 +1122680,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2969 := func() any { c.p.stepWork(); return k5 }()
-			f_2970 := func() any { c.p.stepWork(); return k3 }()
-			return tmk_WindowOver(c, true, f_2969, f_2970)
+			f_2970 := func() any { c.p.stepWork(); return k5 }()
+			f_2971 := func() any { c.p.stepWork(); return k3 }()
+			return tmk_WindowOver(c, true, f_2970, f_2971)
 		}()
 	}()
 	p.where = w
@@ -1122525,11 +1122966,11 @@ func (p *tparser) i191() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2971 := func() any { return k3 }()
-				f_2972 := func() any { return c.concat(func() any { return k27 }()) }()
-				f_2973 := func() any { return k35 }()
-				f_2974 := func() any { return k43 }()
-				return tmk_WindowSpec(c, true, f_2971, f_2972, f_2973, f_2974)
+				f_2972 := func() any { return k3 }()
+				f_2973 := func() any { return c.concat(func() any { return k27 }()) }()
+				f_2974 := func() any { return k35 }()
+				f_2975 := func() any { return k43 }()
+				return tmk_WindowSpec(c, true, f_2972, f_2973, f_2974, f_2975)
 			}()
 		}()
 		p.where = w
@@ -1122788,11 +1123229,11 @@ L46:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2971 := func() any { c.p.stepWork(); return k3 }()
-			f_2972 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k27 }()) }()
-			f_2973 := func() any { c.p.stepWork(); return k35 }()
-			f_2974 := func() any { c.p.stepWork(); return k43 }()
-			return tmk_WindowSpec(c, true, f_2971, f_2972, f_2973, f_2974)
+			f_2972 := func() any { c.p.stepWork(); return k3 }()
+			f_2973 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k27 }()) }()
+			f_2974 := func() any { c.p.stepWork(); return k35 }()
+			f_2975 := func() any { c.p.stepWork(); return k43 }()
+			return tmk_WindowSpec(c, true, f_2972, f_2973, f_2974, f_2975)
 		}()
 	}()
 	p.where = w
@@ -1124360,10 +1124801,10 @@ func (p *tparser) i195() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2975 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2976 := func() any { return k21 }()
-				f_2977 := func() any { return c.text(func() any { return k26 }()) }()
-				return tmk_Frame(c, true, f_2975, f_2976, nil, f_2977)
+				f_2976 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2977 := func() any { return k21 }()
+				f_2978 := func() any { return c.text(func() any { return k26 }()) }()
+				return tmk_Frame(c, true, f_2976, f_2977, nil, f_2978)
 			}()
 		}()
 		p.where = w
@@ -1124529,10 +1124970,10 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2975 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2976 := func() any { c.p.stepWork(); return k21 }()
-			f_2977 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k26 }()) }()
-			return tmk_Frame(c, true, f_2975, f_2976, nil, f_2977)
+			f_2976 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2977 := func() any { c.p.stepWork(); return k21 }()
+			f_2978 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k26 }()) }()
+			return tmk_Frame(c, true, f_2976, f_2977, nil, f_2978)
 		}()
 	}()
 	p.where = w
@@ -1124741,11 +1125182,11 @@ func (p *tparser) i196() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2978 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2979 := func() any { return k21 }()
-				f_2980 := func() any { return k24 }()
-				f_2981 := func() any { return c.text(func() any { return k29 }()) }()
-				return tmk_Frame(c, true, f_2978, f_2979, f_2980, f_2981)
+				f_2979 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2980 := func() any { return k21 }()
+				f_2981 := func() any { return k24 }()
+				f_2982 := func() any { return c.text(func() any { return k29 }()) }()
+				return tmk_Frame(c, true, f_2979, f_2980, f_2981, f_2982)
 			}()
 		}()
 		p.where = w
@@ -1124932,11 +1125373,11 @@ L32:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2978 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2979 := func() any { c.p.stepWork(); return k21 }()
-			f_2980 := func() any { c.p.stepWork(); return k24 }()
-			f_2981 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k29 }()) }()
-			return tmk_Frame(c, true, f_2978, f_2979, f_2980, f_2981)
+			f_2979 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2980 := func() any { c.p.stepWork(); return k21 }()
+			f_2981 := func() any { c.p.stepWork(); return k24 }()
+			f_2982 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k29 }()) }()
+			return tmk_Frame(c, true, f_2979, f_2980, f_2981, f_2982)
 		}()
 	}()
 	p.where = w
@@ -1125316,8 +1125757,8 @@ func (p *tparser) i198() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2982 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_FrameBound(c, true, f_2982, nil)
+				f_2983 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_FrameBound(c, true, f_2983, nil)
 			}()
 		}()
 		p.where = w
@@ -1125452,8 +1125893,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2982 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_FrameBound(c, true, f_2982, nil)
+			f_2983 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_FrameBound(c, true, f_2983, nil)
 		}()
 	}()
 	p.where = w
@@ -1125572,9 +1126013,9 @@ func (p *tparser) i199() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2983 := func() any { return c.text(func() any { return k4 }()) }()
-				f_2984 := func() any { return k1 }()
-				return tmk_FrameBound(c, true, f_2983, f_2984)
+				f_2984 := func() any { return c.text(func() any { return k4 }()) }()
+				f_2985 := func() any { return k1 }()
+				return tmk_FrameBound(c, true, f_2984, f_2985)
 			}()
 		}()
 		p.where = w
@@ -1125670,9 +1126111,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2983 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_2984 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_FrameBound(c, true, f_2983, f_2984)
+			f_2984 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_2985 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_FrameBound(c, true, f_2984, f_2985)
 		}()
 	}()
 	p.where = w
@@ -1126290,7 +1126731,7 @@ func (p *tparser) i201() (any, bool) {
 			x14 = append(x14, v16)
 			v17 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
-			v19 = p.attachCaptures(v18, scope2985, []any{k11}, x9, p.pos)
+			v19 = p.attachCaptures(v18, scope2986, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v19)
 			if p.pos == x9 {
@@ -1126312,8 +1126753,8 @@ func (p *tparser) i201() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_2986 any) any {
-					return func() any { return c.member(func() any { return (l_2986) }(), "$t") }()
+				c.pushMap(func() any { return k4 }(), func(l_2987 any) any {
+					return func() any { return c.member(func() any { return (l_2987) }(), "$t") }()
 				})
 				return c.endList(b)
 			}()
@@ -1126407,7 +1126848,7 @@ func (p *tparser) i201() (any, bool) {
 		x14 = append(x14, v16)
 		v17 = p.newNode("Seq", x13, p.pos, x14)
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
-		v19 = p.attachCaptures(v18, scope2985, []any{k11}, x9, p.pos)
+		v19 = p.attachCaptures(v18, scope2986, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v19)
 		if p.pos == x9 {
@@ -1126429,8 +1126870,8 @@ func (p *tparser) i201() (any, bool) {
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_2986 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_2986) }(), "$t") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_2987 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_2987) }(), "$t") }()
 			})
 			return c.endList(b)
 		}()
@@ -1127512,9 +1127953,9 @@ func (p *tparser) i206() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2987 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2988 := func() any { return k12 }()
-				return tmk_Type(c, true, f_2987, nil, nil, nil, f_2988, nil)
+				f_2988 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2989 := func() any { return k12 }()
+				return tmk_Type(c, true, f_2988, nil, nil, nil, f_2989, nil)
 			}()
 		}()
 		p.where = w
@@ -1127631,9 +1128072,9 @@ L11:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2987 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2988 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_Type(c, true, f_2987, nil, nil, nil, f_2988, nil)
+			f_2988 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2989 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_Type(c, true, f_2988, nil, nil, nil, f_2989, nil)
 		}()
 	}()
 	p.where = w
@@ -1127992,7 +1128433,7 @@ func (p *tparser) i208() (any, bool) {
 		p.where = "array_dim"
 		v = func() any {
 
-			return func() any { f_2989 := func() any { return k1 }(); return tmk_ArrayDim(c, true, f_2989) }()
+			return func() any { f_2990 := func() any { return k1 }(); return tmk_ArrayDim(c, true, f_2990) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1128064,7 +1128505,7 @@ L7:
 	p.where = "array_dim"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_2989 := func() any { c.p.stepWork(); return k1 }(); return tmk_ArrayDim(c, true, f_2989) }()
+		return func() any { f_2990 := func() any { c.p.stepWork(); return k1 }(); return tmk_ArrayDim(c, true, f_2990) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1128342,8 +1128783,8 @@ func (p *tparser) i210() (any, bool) {
 			return c.list(func() any {
 
 				return func() any {
-					f_2990 := func() any { return k1 }()
-					return tmk_ArrayDim(c, false, f_2990)
+					f_2991 := func() any { return k1 }()
+					return tmk_ArrayDim(c, false, f_2991)
 				}()
 			}())
 		}()
@@ -1128421,8 +1128862,8 @@ func (p *tparser) i210() (any, bool) {
 		return c.list(func() any {
 			c.p.stepWork()
 			return func() any {
-				f_2990 := func() any { c.p.stepWork(); return k1 }()
-				return tmk_ArrayDim(c, false, f_2990)
+				f_2991 := func() any { c.p.stepWork(); return k1 }()
+				return tmk_ArrayDim(c, false, f_2991)
 			}()
 		}())
 	}()
@@ -1128851,10 +1129292,10 @@ func (p *tparser) i213() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2991 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2992 := func() any { return k16 }()
-				f_2993 := func() any { return c.concat(func() any { return k19 }()) }()
-				return tmk_Type(c, true, f_2991, nil, f_2992, nil, f_2993, nil)
+				f_2992 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2993 := func() any { return k16 }()
+				f_2994 := func() any { return c.concat(func() any { return k19 }()) }()
+				return tmk_Type(c, true, f_2992, nil, f_2993, nil, f_2994, nil)
 			}()
 		}()
 		p.where = w
@@ -1129005,10 +1129446,10 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2991 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2992 := func() any { c.p.stepWork(); return k16 }()
-			f_2993 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
-			return tmk_Type(c, true, f_2991, nil, f_2992, nil, f_2993, nil)
+			f_2992 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2993 := func() any { c.p.stepWork(); return k16 }()
+			f_2994 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
+			return tmk_Type(c, true, f_2992, nil, f_2993, nil, f_2994, nil)
 		}()
 	}()
 	p.where = w
@@ -1129312,9 +1129753,9 @@ func (p *tparser) i215() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2994 := func() any { return k1 }()
-				f_2995 := func() any { return k4 }()
-				return tmk_TypeField(c, true, f_2994, f_2995)
+				f_2995 := func() any { return k1 }()
+				f_2996 := func() any { return k4 }()
+				return tmk_TypeField(c, true, f_2995, f_2996)
 			}()
 		}()
 		p.where = w
@@ -1129370,9 +1129811,9 @@ func (p *tparser) i215() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2994 := func() any { c.p.stepWork(); return k1 }()
-			f_2995 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_TypeField(c, true, f_2994, f_2995)
+			f_2995 := func() any { c.p.stepWork(); return k1 }()
+			f_2996 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_TypeField(c, true, f_2995, f_2996)
 		}()
 	}()
 	p.where = w
@@ -1129497,10 +1129938,10 @@ func (p *tparser) i216() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2996 := func() any { return c.text(func() any { return k1 }()) }()
-				f_2997 := func() any { return k5 }()
-				f_2998 := func() any { return c.concat(func() any { return k8 }()) }()
-				return tmk_Type(c, true, f_2996, nil, nil, f_2997, f_2998, nil)
+				f_2997 := func() any { return c.text(func() any { return k1 }()) }()
+				f_2998 := func() any { return k5 }()
+				f_2999 := func() any { return c.concat(func() any { return k8 }()) }()
+				return tmk_Type(c, true, f_2997, nil, nil, f_2998, f_2999, nil)
 			}()
 		}()
 		p.where = w
@@ -1129602,10 +1130043,10 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2996 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_2997 := func() any { c.p.stepWork(); return k5 }()
-			f_2998 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			return tmk_Type(c, true, f_2996, nil, nil, f_2997, f_2998, nil)
+			f_2997 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_2998 := func() any { c.p.stepWork(); return k5 }()
+			f_2999 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			return tmk_Type(c, true, f_2997, nil, nil, f_2998, f_2999, nil)
 		}()
 	}()
 	p.where = w
@@ -1129755,9 +1130196,9 @@ func (p *tparser) i217() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_2999 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3000 := func() any { return c.concat(func() any { return k14 }()) }()
-				return tmk_Type(c, true, f_2999, nil, nil, nil, f_3000, nil)
+				f_3000 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3001 := func() any { return c.concat(func() any { return k14 }()) }()
+				return tmk_Type(c, true, f_3000, nil, nil, nil, f_3001, nil)
 			}()
 		}()
 		p.where = w
@@ -1129887,9 +1130328,9 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_2999 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3000 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			return tmk_Type(c, true, f_2999, nil, nil, nil, f_3000, nil)
+			f_3000 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3001 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			return tmk_Type(c, true, f_3000, nil, nil, nil, f_3001, nil)
 		}()
 	}()
 	p.where = w
@@ -1130063,7 +1130504,7 @@ func (p *tparser) i218() (any, bool) {
 			}
 			v28 = p.newNodeOrdinary("Seq", x24, p.pos, x25)
 			v29 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20)
-			v30 = p.attachCaptures(v29, scope3001, []any{k22}, x20, p.pos)
+			v30 = p.attachCaptures(v29, scope3002, []any{k22}, x20, p.pos)
 			x18++
 			p.pushKid(v30)
 			if p.pos == x20 {
@@ -1130121,16 +1130562,16 @@ func (p *tparser) i218() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3002 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3003 := func() any {
+				f_3003 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3004 := func() any {
 
-					return c.mapList(func() any { return k14 }(), func(l_3004 any) any {
-						return func() any { return c.member(func() any { return (l_3004) }(), "$n") }()
+					return c.mapList(func() any { return k14 }(), func(l_3005 any) any {
+						return func() any { return c.member(func() any { return (l_3005) }(), "$n") }()
 					})
 				}()
-				f_3005 := func() any { return c.text(func() any { return k34 }()) }()
-				f_3006 := func() any { return c.concat(func() any { return k40 }()) }()
-				return tmk_Type(c, true, f_3002, f_3003, nil, nil, f_3006, f_3005)
+				f_3006 := func() any { return c.text(func() any { return k34 }()) }()
+				f_3007 := func() any { return c.concat(func() any { return k40 }()) }()
+				return tmk_Type(c, true, f_3003, f_3004, nil, nil, f_3007, f_3006)
 			}()
 		}()
 		p.where = w
@@ -1130286,7 +1130727,7 @@ L6:
 		}
 		v28 = p.newNode("Seq", x24, p.pos, x25)
 		v29 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20)
-		v30 = p.attachCaptures(v29, scope3001, []any{k22}, x20, p.pos)
+		v30 = p.attachCaptures(v29, scope3002, []any{k22}, x20, p.pos)
 		x18++
 		p.pushKid(v30)
 		if p.pos == x20 {
@@ -1130345,16 +1130786,16 @@ L46:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3002 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3003 := func() any {
+			f_3003 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3004 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k14 }(), func(l_3004 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3004) }(), "$n") }()
+				return c.mapList(func() any { c.p.stepWork(); return k14 }(), func(l_3005 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3005) }(), "$n") }()
 				})
 			}()
-			f_3005 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k34 }()) }()
-			f_3006 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k40 }()) }()
-			return tmk_Type(c, true, f_3002, f_3003, nil, nil, f_3006, f_3005)
+			f_3006 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k34 }()) }()
+			f_3007 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k40 }()) }()
+			return tmk_Type(c, true, f_3003, f_3004, nil, nil, f_3007, f_3006)
 		}()
 	}()
 	p.where = w
@@ -1130843,7 +1131284,7 @@ func (p *tparser) i220() (any, bool) {
 			}
 			v18 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v19 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x10)
-			v20 = p.attachCaptures(v19, scope3007, []any{k12}, x10, p.pos)
+			v20 = p.attachCaptures(v19, scope3008, []any{k12}, x10, p.pos)
 			x8++
 			p.pushKid(v20)
 			if p.pos == x10 {
@@ -1130879,15 +1131320,15 @@ func (p *tparser) i220() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3008 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3009 := func() any {
+				f_3009 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3010 := func() any {
 
-					return c.mapList(func() any { return k4 }(), func(l_3010 any) any {
-						return func() any { return c.member(func() any { return (l_3010) }(), "$n") }()
+					return c.mapList(func() any { return k4 }(), func(l_3011 any) any {
+						return func() any { return c.member(func() any { return (l_3011) }(), "$n") }()
 					})
 				}()
-				f_3011 := func() any { return c.concat(func() any { return k22 }()) }()
-				return tmk_Type(c, true, f_3008, f_3009, nil, nil, f_3011, nil)
+				f_3012 := func() any { return c.concat(func() any { return k22 }()) }()
+				return tmk_Type(c, true, f_3009, f_3010, nil, nil, f_3012, nil)
 			}()
 		}()
 		p.where = w
@@ -1130997,7 +1131438,7 @@ func (p *tparser) i220() (any, bool) {
 		}
 		v18 = p.newNode("Seq", x14, p.pos, x15)
 		v19 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x10)
-		v20 = p.attachCaptures(v19, scope3007, []any{k12}, x10, p.pos)
+		v20 = p.attachCaptures(v19, scope3008, []any{k12}, x10, p.pos)
 		x8++
 		p.pushKid(v20)
 		if p.pos == x10 {
@@ -1131033,15 +1131474,15 @@ L28:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3008 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3009 := func() any {
+			f_3009 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3010 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k4 }(), func(l_3010 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3010) }(), "$n") }()
+				return c.mapList(func() any { c.p.stepWork(); return k4 }(), func(l_3011 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3011) }(), "$n") }()
 				})
 			}()
-			f_3011 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
-			return tmk_Type(c, true, f_3008, f_3009, nil, nil, f_3011, nil)
+			f_3012 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
+			return tmk_Type(c, true, f_3009, f_3010, nil, nil, f_3012, nil)
 		}()
 	}()
 	p.where = w
@@ -1132112,10 +1132553,10 @@ func (p *tparser) i222() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3012 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3013 := func() any { return c.concat(func() any { return k11 }()) }()
-				f_3014 := func() any { return c.concat(func() any { return k17 }()) }()
-				return tmk_Type(c, true, f_3012, f_3013, nil, nil, f_3014, nil)
+				f_3013 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3014 := func() any { return c.concat(func() any { return k11 }()) }()
+				f_3015 := func() any { return c.concat(func() any { return k17 }()) }()
+				return tmk_Type(c, true, f_3013, f_3014, nil, nil, f_3015, nil)
 			}()
 		}()
 		p.where = w
@@ -1132251,10 +1132692,10 @@ L23:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3012 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3013 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3014 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_Type(c, true, f_3012, f_3013, nil, nil, f_3014, nil)
+			f_3013 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3014 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3015 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_Type(c, true, f_3013, f_3014, nil, nil, f_3015, nil)
 		}()
 	}()
 	p.where = w
@@ -1132506,9 +1132947,9 @@ func (p *tparser) i224() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3015 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3016 := func() any { return c.concat(func() any { return k5 }()) }()
-				return tmk_Type(c, true, f_3015, nil, nil, nil, f_3016, nil)
+				f_3016 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3017 := func() any { return c.concat(func() any { return k5 }()) }()
+				return tmk_Type(c, true, f_3016, nil, nil, nil, f_3017, nil)
 			}()
 		}()
 		p.where = w
@@ -1132585,9 +1133026,9 @@ L11:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3015 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3016 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_Type(c, true, f_3015, nil, nil, nil, f_3016, nil)
+			f_3016 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3017 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_Type(c, true, f_3016, nil, nil, nil, f_3017, nil)
 		}()
 	}()
 	p.where = w
@@ -1132872,13 +1133313,13 @@ func (p *tparser) i226() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3017 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3018 := func() any {
+				f_3018 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3019 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k5 }()))
 				}()
-				f_3019 := func() any { return c.concat(func() any { return k17 }()) }()
-				return tmk_Type(c, true, f_3017, f_3018, nil, nil, f_3019, nil)
+				f_3020 := func() any { return c.concat(func() any { return k17 }()) }()
+				return tmk_Type(c, true, f_3018, f_3019, nil, nil, f_3020, nil)
 			}()
 		}()
 		p.where = w
@@ -1133013,13 +1133454,13 @@ L23:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3017 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3018 := func() any {
+			f_3018 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3019 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k5 }()))
 			}()
-			f_3019 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_Type(c, true, f_3017, f_3018, nil, nil, f_3019, nil)
+			f_3020 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_Type(c, true, f_3018, f_3019, nil, nil, f_3020, nil)
 		}()
 	}()
 	p.where = w
@@ -1133187,10 +1133628,10 @@ func (p *tparser) i227() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3020 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3021 := func() any { return c.concat(func() any { return k18 }()) }()
-				f_3022 := func() any { return c.concat(func() any { return k24 }()) }()
-				return tmk_Type(c, true, f_3020, f_3021, nil, nil, f_3022, nil)
+				f_3021 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3022 := func() any { return c.concat(func() any { return k18 }()) }()
+				f_3023 := func() any { return c.concat(func() any { return k24 }()) }()
+				return tmk_Type(c, true, f_3021, f_3022, nil, nil, f_3023, nil)
 			}()
 		}()
 		p.where = w
@@ -1133336,10 +1133777,10 @@ L30:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3020 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3021 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
-			f_3022 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k24 }()) }()
-			return tmk_Type(c, true, f_3020, f_3021, nil, nil, f_3022, nil)
+			f_3021 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3022 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
+			f_3023 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k24 }()) }()
+			return tmk_Type(c, true, f_3021, f_3022, nil, nil, f_3023, nil)
 		}()
 	}()
 	p.where = w
@@ -1133518,9 +1133959,9 @@ func (p *tparser) i228() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3023 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3024 := func() any { return c.concat(func() any { return k22 }()) }()
-				return tmk_Type(c, true, f_3023, nil, nil, nil, f_3024, nil)
+				f_3024 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3025 := func() any { return c.concat(func() any { return k22 }()) }()
+				return tmk_Type(c, true, f_3024, nil, nil, nil, f_3025, nil)
 			}()
 		}()
 		p.where = w
@@ -1133676,9 +1134117,9 @@ L28:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3023 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3024 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
-			return tmk_Type(c, true, f_3023, nil, nil, nil, f_3024, nil)
+			f_3024 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3025 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
+			return tmk_Type(c, true, f_3024, nil, nil, nil, f_3025, nil)
 		}()
 	}()
 	p.where = w
@@ -1133807,9 +1134248,9 @@ func (p *tparser) i229() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3025 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3026 := func() any { return c.concat(func() any { return k9 }()) }()
-				return tmk_Type(c, true, f_3025, nil, nil, nil, f_3026, nil)
+				f_3026 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3027 := func() any { return c.concat(func() any { return k9 }()) }()
+				return tmk_Type(c, true, f_3026, nil, nil, nil, f_3027, nil)
 			}()
 		}()
 		p.where = w
@@ -1133917,9 +1134358,9 @@ L15:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3025 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3026 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_Type(c, true, f_3025, nil, nil, nil, f_3026, nil)
+			f_3026 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3027 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_Type(c, true, f_3026, nil, nil, nil, f_3027, nil)
 		}()
 	}()
 	p.where = w
@@ -1134038,10 +1134479,10 @@ func (p *tparser) i230() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3027 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3028 := func() any { return c.concat(func() any { return k7 }()) }()
-				f_3029 := func() any { return c.concat(func() any { return k13 }()) }()
-				return tmk_Type(c, true, f_3027, f_3028, nil, nil, f_3029, nil)
+				f_3028 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3029 := func() any { return c.concat(func() any { return k7 }()) }()
+				f_3030 := func() any { return c.concat(func() any { return k13 }()) }()
+				return tmk_Type(c, true, f_3028, f_3029, nil, nil, f_3030, nil)
 			}()
 		}()
 		p.where = w
@@ -1134138,10 +1134579,10 @@ L19:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3027 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3028 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k7 }()) }()
-			f_3029 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k13 }()) }()
-			return tmk_Type(c, true, f_3027, f_3028, nil, nil, f_3029, nil)
+			f_3028 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3029 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k7 }()) }()
+			f_3030 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k13 }()) }()
+			return tmk_Type(c, true, f_3028, f_3029, nil, nil, f_3030, nil)
 		}()
 	}()
 	p.where = w
@@ -1134560,15 +1135001,15 @@ func (p *tparser) i232() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3030 := func() any {
+				f_3031 := func() any {
 
 					return func() any {
-						f_3031 := func() any { return c.text(func() any { return k1 }()) }()
-						return tmk_Type(c, false, f_3031, nil, nil, nil, nil, nil)
+						f_3032 := func() any { return c.text(func() any { return k1 }()) }()
+						return tmk_Type(c, false, f_3032, nil, nil, nil, nil, nil)
 					}()
 				}()
-				f_3032 := func() any { return k8 }()
-				return tmk_TypedLit(c, true, f_3030, f_3032)
+				f_3033 := func() any { return k8 }()
+				return tmk_TypedLit(c, true, f_3031, f_3033)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1134653,15 +1135094,15 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3030 := func() any {
+			f_3031 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3031 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-					return tmk_Type(c, false, f_3031, nil, nil, nil, nil, nil)
+					f_3032 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+					return tmk_Type(c, false, f_3032, nil, nil, nil, nil, nil)
 				}()
 			}()
-			f_3032 := func() any { c.p.stepWork(); return k8 }()
-			return tmk_TypedLit(c, true, f_3030, f_3032)
+			f_3033 := func() any { c.p.stepWork(); return k8 }()
+			return tmk_TypedLit(c, true, f_3031, f_3033)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1134741,9 +1135182,9 @@ func (p *tparser) i233() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3033 := func() any { return k1 }()
-				f_3034 := func() any { return k4 }()
-				return tmk_TypedLit(c, true, f_3033, f_3034)
+				f_3034 := func() any { return k1 }()
+				f_3035 := func() any { return k4 }()
+				return tmk_TypedLit(c, true, f_3034, f_3035)
 			}()
 		}()
 		p.where = w
@@ -1134799,9 +1135240,9 @@ func (p *tparser) i233() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3033 := func() any { c.p.stepWork(); return k1 }()
-			f_3034 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_TypedLit(c, true, f_3033, f_3034)
+			f_3034 := func() any { c.p.stepWork(); return k1 }()
+			f_3035 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_TypedLit(c, true, f_3034, f_3035)
 		}()
 	}()
 	p.where = w
@@ -1134913,15 +1135354,15 @@ func (p *tparser) i234() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3035 := func() any {
+				f_3036 := func() any {
 
 					return func() any {
-						f_3036 := func() any { return c.text(func() any { return k4 }()) }()
-						return tmk_Type(c, false, f_3036, nil, nil, nil, nil, nil)
+						f_3037 := func() any { return c.text(func() any { return k4 }()) }()
+						return tmk_Type(c, false, f_3037, nil, nil, nil, nil, nil)
 					}()
 				}()
-				f_3037 := func() any { return k7 }()
-				return tmk_TypedLit(c, true, f_3035, f_3037)
+				f_3038 := func() any { return k7 }()
+				return tmk_TypedLit(c, true, f_3036, f_3038)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1135012,15 +1135453,15 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3035 := func() any {
+			f_3036 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3036 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-					return tmk_Type(c, false, f_3036, nil, nil, nil, nil, nil)
+					f_3037 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+					return tmk_Type(c, false, f_3037, nil, nil, nil, nil, nil)
 				}()
 			}()
-			f_3037 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_TypedLit(c, true, f_3035, f_3037)
+			f_3038 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_TypedLit(c, true, f_3036, f_3038)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1135424,8 +1135865,8 @@ func (p *tparser) i237() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3038 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_Type(c, true, f_3038, nil, nil, nil, nil, nil)
+				f_3039 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_Type(c, true, f_3039, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1135479,8 +1135920,8 @@ func (p *tparser) i237() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3038 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_Type(c, true, f_3038, nil, nil, nil, nil, nil)
+			f_3039 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Type(c, true, f_3039, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1135743,12 +1136184,12 @@ func (p *tparser) i239() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3039 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3040 := func() any {
+				f_3040 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3041 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k5 }()))
 				}()
-				return tmk_Type(c, true, f_3039, f_3040, nil, nil, nil, nil)
+				return tmk_Type(c, true, f_3040, f_3041, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1135861,12 +1136302,12 @@ func (p *tparser) i239() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3039 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3040 := func() any {
+			f_3040 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3041 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k5 }()))
 			}()
-			return tmk_Type(c, true, f_3039, f_3040, nil, nil, nil, nil)
+			return tmk_Type(c, true, f_3040, f_3041, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1136012,9 +1136453,9 @@ func (p *tparser) i240() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3041 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3042 := func() any { return c.concat(func() any { return k18 }()) }()
-				return tmk_Type(c, true, f_3041, f_3042, nil, nil, nil, nil)
+				f_3042 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3043 := func() any { return c.concat(func() any { return k18 }()) }()
+				return tmk_Type(c, true, f_3042, f_3043, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1136138,9 +1136579,9 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3041 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3042 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
-			return tmk_Type(c, true, f_3041, f_3042, nil, nil, nil, nil)
+			f_3042 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3043 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
+			return tmk_Type(c, true, f_3042, f_3043, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1136297,8 +1136738,8 @@ func (p *tparser) i241() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3043 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_Type(c, true, f_3043, nil, nil, nil, nil, nil)
+				f_3044 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_Type(c, true, f_3044, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1136431,8 +1136872,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3043 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_Type(c, true, f_3043, nil, nil, nil, nil, nil)
+			f_3044 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Type(c, true, f_3044, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1136554,7 +1136995,7 @@ func (p *tparser) i242() (any, bool) {
 			}
 			v18 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v19 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x10)
-			v20 = p.attachCaptures(v19, scope3044, []any{k12}, x10, p.pos)
+			v20 = p.attachCaptures(v19, scope3045, []any{k12}, x10, p.pos)
 			x8++
 			p.pushKid(v20)
 			if p.pos == x10 {
@@ -1136574,14 +1137015,14 @@ func (p *tparser) i242() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3045 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3046 := func() any {
+				f_3046 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3047 := func() any {
 
-					return c.mapList(func() any { return k4 }(), func(l_3047 any) any {
-						return func() any { return c.member(func() any { return (l_3047) }(), "$n") }()
+					return c.mapList(func() any { return k4 }(), func(l_3048 any) any {
+						return func() any { return c.member(func() any { return (l_3048) }(), "$n") }()
 					})
 				}()
-				return tmk_Type(c, true, f_3045, f_3046, nil, nil, nil, nil)
+				return tmk_Type(c, true, f_3046, f_3047, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1136685,7 +1137126,7 @@ func (p *tparser) i242() (any, bool) {
 		}
 		v18 = p.newNode("Seq", x14, p.pos, x15)
 		v19 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v18, x10)
-		v20 = p.attachCaptures(v19, scope3044, []any{k12}, x10, p.pos)
+		v20 = p.attachCaptures(v19, scope3045, []any{k12}, x10, p.pos)
 		x8++
 		p.pushKid(v20)
 		if p.pos == x10 {
@@ -1136705,14 +1137146,14 @@ func (p *tparser) i242() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3045 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3046 := func() any {
+			f_3046 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3047 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k4 }(), func(l_3047 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3047) }(), "$n") }()
+				return c.mapList(func() any { c.p.stepWork(); return k4 }(), func(l_3048 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3048) }(), "$n") }()
 				})
 			}()
-			return tmk_Type(c, true, f_3045, f_3046, nil, nil, nil, nil)
+			return tmk_Type(c, true, f_3046, f_3047, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1136846,9 +1137287,9 @@ func (p *tparser) i243() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3048 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3049 := func() any { return c.concat(func() any { return k11 }()) }()
-				return tmk_Type(c, true, f_3048, f_3049, nil, nil, nil, nil)
+				f_3049 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3050 := func() any { return c.concat(func() any { return k11 }()) }()
+				return tmk_Type(c, true, f_3049, f_3050, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1136962,9 +1137403,9 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3048 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3049 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
-			return tmk_Type(c, true, f_3048, f_3049, nil, nil, nil, nil)
+			f_3049 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3050 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
+			return tmk_Type(c, true, f_3049, f_3050, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1137132,7 +1137573,7 @@ func (p *tparser) i244() (any, bool) {
 			}
 			v28 = p.newNodeOrdinary("Seq", x24, p.pos, x25)
 			v29 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20)
-			v30 = p.attachCaptures(v29, scope3050, []any{k22}, x20, p.pos)
+			v30 = p.attachCaptures(v29, scope3051, []any{k22}, x20, p.pos)
 			x18++
 			p.pushKid(v30)
 			if p.pos == x20 {
@@ -1137174,15 +1137615,15 @@ func (p *tparser) i244() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3051 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3052 := func() any {
+				f_3052 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3053 := func() any {
 
-					return c.mapList(func() any { return k14 }(), func(l_3053 any) any {
-						return func() any { return c.member(func() any { return (l_3053) }(), "$n") }()
+					return c.mapList(func() any { return k14 }(), func(l_3054 any) any {
+						return func() any { return c.member(func() any { return (l_3054) }(), "$n") }()
 					})
 				}()
-				f_3054 := func() any { return c.text(func() any { return k34 }()) }()
-				return tmk_Type(c, true, f_3051, f_3052, nil, nil, nil, f_3054)
+				f_3055 := func() any { return c.text(func() any { return k34 }()) }()
+				return tmk_Type(c, true, f_3052, f_3053, nil, nil, nil, f_3055)
 			}()
 		}()
 		p.where = w
@@ -1137332,7 +1137773,7 @@ L6:
 		}
 		v28 = p.newNode("Seq", x24, p.pos, x25)
 		v29 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v28, x20)
-		v30 = p.attachCaptures(v29, scope3050, []any{k22}, x20, p.pos)
+		v30 = p.attachCaptures(v29, scope3051, []any{k22}, x20, p.pos)
 		x18++
 		p.pushKid(v30)
 		if p.pos == x20 {
@@ -1137375,15 +1137816,15 @@ L37:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3051 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3052 := func() any {
+			f_3052 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3053 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k14 }(), func(l_3053 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3053) }(), "$n") }()
+				return c.mapList(func() any { c.p.stepWork(); return k14 }(), func(l_3054 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3054) }(), "$n") }()
 				})
 			}()
-			f_3054 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k34 }()) }()
-			return tmk_Type(c, true, f_3051, f_3052, nil, nil, nil, f_3054)
+			f_3055 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k34 }()) }()
+			return tmk_Type(c, true, f_3052, f_3053, nil, nil, nil, f_3055)
 		}()
 	}()
 	p.where = w
@@ -1137723,8 +1138164,8 @@ func (p *tparser) i246() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3055 := func() any { return k1 }()
-				return tmk_Select(c, true, nil, f_3055, nil, nil, nil, nil)
+				f_3056 := func() any { return k1 }()
+				return tmk_Select(c, true, nil, f_3056, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1137765,8 +1138206,8 @@ func (p *tparser) i246() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3055 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_Select(c, true, nil, f_3055, nil, nil, nil, nil)
+			f_3056 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_Select(c, true, nil, f_3056, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1137857,8 +1138298,8 @@ func (p *tparser) i247() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3056 := func() any { return k1 }()
-				return tmk_ParenQuery(c, true, f_3056)
+				f_3057 := func() any { return k1 }()
+				return tmk_ParenQuery(c, true, f_3057)
 			}()
 		}()
 		p.where = w
@@ -1137920,8 +1138361,8 @@ func (p *tparser) i247() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3056 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ParenQuery(c, true, f_3056)
+			f_3057 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ParenQuery(c, true, f_3057)
 		}()
 	}()
 	p.where = w
@@ -1138382,16 +1138823,16 @@ func (p *tparser) i249() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3057 := func() any { return k3 }()
-				f_3058 := func() any { return k9 }()
-				f_3059 := func() any { return k14 }()
-				f_3060 := func() any { return k30 }()
-				f_3061 := func() any { return k32 }()
-				f_3062 := func() any {
+				f_3058 := func() any { return k3 }()
+				f_3059 := func() any { return k9 }()
+				f_3060 := func() any { return k14 }()
+				f_3061 := func() any { return k30 }()
+				f_3062 := func() any { return k32 }()
+				f_3063 := func() any {
 
 					return c.concat(func() any { return k22 }(), func() any { return k63 }())
 				}()
-				return tmk_Select(c, true, f_3057, f_3058, f_3059, f_3060, f_3061, f_3062)
+				return tmk_Select(c, true, f_3058, f_3059, f_3060, f_3061, f_3062, f_3063)
 			}()
 		}()
 		p.where = w
@@ -1138679,16 +1139120,16 @@ L66:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3057 := func() any { c.p.stepWork(); return k3 }()
-			f_3058 := func() any { c.p.stepWork(); return k9 }()
-			f_3059 := func() any { c.p.stepWork(); return k14 }()
-			f_3060 := func() any { c.p.stepWork(); return k30 }()
-			f_3061 := func() any { c.p.stepWork(); return k32 }()
-			f_3062 := func() any {
+			f_3058 := func() any { c.p.stepWork(); return k3 }()
+			f_3059 := func() any { c.p.stepWork(); return k9 }()
+			f_3060 := func() any { c.p.stepWork(); return k14 }()
+			f_3061 := func() any { c.p.stepWork(); return k30 }()
+			f_3062 := func() any { c.p.stepWork(); return k32 }()
+			f_3063 := func() any {
 				c.p.stepWork()
 				return c.concat(func() any { c.p.stepWork(); return k22 }(), func() any { c.p.stepWork(); return k63 }())
 			}()
-			return tmk_Select(c, true, f_3057, f_3058, f_3059, f_3060, f_3061, f_3062)
+			return tmk_Select(c, true, f_3058, f_3059, f_3060, f_3061, f_3062, f_3063)
 		}()
 	}()
 	p.where = w
@@ -1139114,8 +1139555,8 @@ func (p *tparser) i251() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3063 := func() any { return any(true) }()
-				f_3064 := func() any {
+				f_3064 := func() any { return any(true) }()
+				f_3065 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1139124,7 +1139565,7 @@ func (p *tparser) i251() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_With(c, true, f_3063, f_3064)
+				return tmk_With(c, true, f_3064, f_3065)
 			}()
 		}()
 		p.where = w
@@ -1139236,8 +1139677,8 @@ func (p *tparser) i251() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3063 := func() any { c.p.stepWork(); return any(true) }()
-			f_3064 := func() any {
+			f_3064 := func() any { c.p.stepWork(); return any(true) }()
+			f_3065 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1139246,7 +1139687,7 @@ func (p *tparser) i251() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_With(c, true, f_3063, f_3064)
+			return tmk_With(c, true, f_3064, f_3065)
 		}()
 	}()
 	p.where = w
@@ -1139369,7 +1139810,7 @@ func (p *tparser) i252() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3065 := func() any {
+				f_3066 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1139378,7 +1139819,7 @@ func (p *tparser) i252() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_With(c, true, nil, f_3065)
+				return tmk_With(c, true, nil, f_3066)
 			}()
 		}()
 		p.where = w
@@ -1139482,7 +1139923,7 @@ func (p *tparser) i252() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3065 := func() any {
+			f_3066 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1139491,7 +1139932,7 @@ func (p *tparser) i252() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_With(c, true, nil, f_3065)
+			return tmk_With(c, true, nil, f_3066)
 		}()
 	}()
 	p.where = w
@@ -1139763,12 +1140204,12 @@ func (p *tparser) i253() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3066 := func() any { return k1 }()
-				f_3067 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_3068 := func() any { return c.concat(func() any { return k14 }()) }()
-				f_3069 := func() any { return k26 }()
-				f_3070 := func() any { return k32 }()
-				return tmk_CTE(c, true, f_3066, f_3067, f_3068, f_3069, f_3070)
+				f_3067 := func() any { return k1 }()
+				f_3068 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_3069 := func() any { return c.concat(func() any { return k14 }()) }()
+				f_3070 := func() any { return k26 }()
+				f_3071 := func() any { return k32 }()
+				return tmk_CTE(c, true, f_3067, f_3068, f_3069, f_3070, f_3071)
 			}()
 		}()
 		p.where = w
@@ -1140015,12 +1140456,12 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3066 := func() any { c.p.stepWork(); return k1 }()
-			f_3067 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3068 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			f_3069 := func() any { c.p.stepWork(); return k26 }()
-			f_3070 := func() any { c.p.stepWork(); return k32 }()
-			return tmk_CTE(c, true, f_3066, f_3067, f_3068, f_3069, f_3070)
+			f_3067 := func() any { c.p.stepWork(); return k1 }()
+			f_3068 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3069 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			f_3070 := func() any { c.p.stepWork(); return k26 }()
+			f_3071 := func() any { c.p.stepWork(); return k32 }()
+			return tmk_CTE(c, true, f_3067, f_3068, f_3069, f_3070, f_3071)
 		}()
 	}()
 	p.where = w
@@ -1140192,7 +1140633,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3985() (any, bool) {
+func (p *tparser) e3986() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140223,7 +1140664,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3986() (any, bool) {
+func (p *tparser) e3987() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140254,7 +1140695,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3987() (any, bool) {
+func (p *tparser) e3988() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140285,7 +1140726,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3988() (any, bool) {
+func (p *tparser) e3989() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140316,7 +1140757,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3989() (any, bool) {
+func (p *tparser) e3990() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140347,7 +1140788,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3990() (any, bool) {
+func (p *tparser) e3991() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140378,7 +1140819,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3991() (any, bool) {
+func (p *tparser) e3992() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140409,7 +1140850,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3992() (any, bool) {
+func (p *tparser) e3993() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1140782,7 +1141223,7 @@ fail:
 }
 
 // select_body (typed OperatorsRule body inlined)
-func (p *tparser) e3998() (any, bool) {
+func (p *tparser) e3999() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1141476,17 +1141917,17 @@ func (p *tparser) i256() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3071 := func() any { return k3 }()
-				f_3072 := func() any { return c.concat(func() any { return k5 }()) }()
-				f_3073 := func() any { return k27 }()
-				f_3074 := func() any { return c.concat(func() any { return k35 }()) }()
-				f_3075 := func() any { return k43 }()
-				f_3076 := func() any { return k51 }()
-				f_3077 := func() any { return k59 }()
-				f_3078 := func() any { return c.concat(func() any { return k67 }()) }()
-				f_3079 := func() any { return k75 }()
-				f_3080 := func() any { return k83 }()
-				return tmk_SelectCore(c, true, nil, f_3071, f_3072, f_3073, f_3074, f_3075, f_3076, f_3077, f_3078, f_3079, f_3080)
+				f_3072 := func() any { return k3 }()
+				f_3073 := func() any { return c.concat(func() any { return k5 }()) }()
+				f_3074 := func() any { return k27 }()
+				f_3075 := func() any { return c.concat(func() any { return k35 }()) }()
+				f_3076 := func() any { return k43 }()
+				f_3077 := func() any { return k51 }()
+				f_3078 := func() any { return k59 }()
+				f_3079 := func() any { return c.concat(func() any { return k67 }()) }()
+				f_3080 := func() any { return k75 }()
+				f_3081 := func() any { return k83 }()
+				return tmk_SelectCore(c, true, nil, f_3072, f_3073, f_3074, f_3075, f_3076, f_3077, f_3078, f_3079, f_3080, f_3081)
 			}()
 		}()
 		p.where = w
@@ -1141882,17 +1142323,17 @@ L86:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3071 := func() any { c.p.stepWork(); return k3 }()
-			f_3072 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
-			f_3073 := func() any { c.p.stepWork(); return k27 }()
-			f_3074 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k35 }()) }()
-			f_3075 := func() any { c.p.stepWork(); return k43 }()
-			f_3076 := func() any { c.p.stepWork(); return k51 }()
-			f_3077 := func() any { c.p.stepWork(); return k59 }()
-			f_3078 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k67 }()) }()
-			f_3079 := func() any { c.p.stepWork(); return k75 }()
-			f_3080 := func() any { c.p.stepWork(); return k83 }()
-			return tmk_SelectCore(c, true, nil, f_3071, f_3072, f_3073, f_3074, f_3075, f_3076, f_3077, f_3078, f_3079, f_3080)
+			f_3072 := func() any { c.p.stepWork(); return k3 }()
+			f_3073 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
+			f_3074 := func() any { c.p.stepWork(); return k27 }()
+			f_3075 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k35 }()) }()
+			f_3076 := func() any { c.p.stepWork(); return k43 }()
+			f_3077 := func() any { c.p.stepWork(); return k51 }()
+			f_3078 := func() any { c.p.stepWork(); return k59 }()
+			f_3079 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k67 }()) }()
+			f_3080 := func() any { c.p.stepWork(); return k75 }()
+			f_3081 := func() any { c.p.stepWork(); return k83 }()
+			return tmk_SelectCore(c, true, nil, f_3072, f_3073, f_3074, f_3075, f_3076, f_3077, f_3078, f_3079, f_3080, f_3081)
 		}()
 	}()
 	p.where = w
@@ -1142304,18 +1142745,18 @@ func (p *tparser) i257() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3081 := func() any { return any(true) }()
-				f_3082 := func() any { return k6 }()
-				f_3083 := func() any { return c.concat(func() any { return k8 }()) }()
-				f_3084 := func() any { return k36 }()
-				f_3085 := func() any { return k1 }()
-				f_3086 := func() any { return k44 }()
-				f_3087 := func() any { return k52 }()
-				f_3088 := func() any { return k60 }()
-				f_3089 := func() any { return c.concat(func() any { return k68 }()) }()
-				f_3090 := func() any { return k76 }()
-				f_3091 := func() any { return k84 }()
-				return tmk_SelectCore(c, true, f_3081, f_3082, f_3083, f_3084, f_3085, f_3086, f_3087, f_3088, f_3089, f_3090, f_3091)
+				f_3082 := func() any { return any(true) }()
+				f_3083 := func() any { return k6 }()
+				f_3084 := func() any { return c.concat(func() any { return k8 }()) }()
+				f_3085 := func() any { return k36 }()
+				f_3086 := func() any { return k1 }()
+				f_3087 := func() any { return k44 }()
+				f_3088 := func() any { return k52 }()
+				f_3089 := func() any { return k60 }()
+				f_3090 := func() any { return c.concat(func() any { return k68 }()) }()
+				f_3091 := func() any { return k76 }()
+				f_3092 := func() any { return k84 }()
+				return tmk_SelectCore(c, true, f_3082, f_3083, f_3084, f_3085, f_3086, f_3087, f_3088, f_3089, f_3090, f_3091, f_3092)
 			}()
 		}()
 		p.where = w
@@ -1142716,18 +1143157,18 @@ L87:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3081 := func() any { c.p.stepWork(); return any(true) }()
-			f_3082 := func() any { c.p.stepWork(); return k6 }()
-			f_3083 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			f_3084 := func() any { c.p.stepWork(); return k36 }()
-			f_3085 := func() any { c.p.stepWork(); return k1 }()
-			f_3086 := func() any { c.p.stepWork(); return k44 }()
-			f_3087 := func() any { c.p.stepWork(); return k52 }()
-			f_3088 := func() any { c.p.stepWork(); return k60 }()
-			f_3089 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k68 }()) }()
-			f_3090 := func() any { c.p.stepWork(); return k76 }()
-			f_3091 := func() any { c.p.stepWork(); return k84 }()
-			return tmk_SelectCore(c, true, f_3081, f_3082, f_3083, f_3084, f_3085, f_3086, f_3087, f_3088, f_3089, f_3090, f_3091)
+			f_3082 := func() any { c.p.stepWork(); return any(true) }()
+			f_3083 := func() any { c.p.stepWork(); return k6 }()
+			f_3084 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			f_3085 := func() any { c.p.stepWork(); return k36 }()
+			f_3086 := func() any { c.p.stepWork(); return k1 }()
+			f_3087 := func() any { c.p.stepWork(); return k44 }()
+			f_3088 := func() any { c.p.stepWork(); return k52 }()
+			f_3089 := func() any { c.p.stepWork(); return k60 }()
+			f_3090 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k68 }()) }()
+			f_3091 := func() any { c.p.stepWork(); return k76 }()
+			f_3092 := func() any { c.p.stepWork(); return k84 }()
+			return tmk_SelectCore(c, true, f_3082, f_3083, f_3084, f_3085, f_3086, f_3087, f_3088, f_3089, f_3090, f_3091, f_3092)
 		}()
 	}()
 	p.where = w
@@ -1142848,8 +1143289,8 @@ func (p *tparser) i258() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3092 := func() any { return c.concat(func() any { return k3 }()) }()
-				return tmk_DistinctClause(c, true, f_3092)
+				f_3093 := func() any { return c.concat(func() any { return k3 }()) }()
+				return tmk_DistinctClause(c, true, f_3093)
 			}()
 		}()
 		p.where = w
@@ -1142942,8 +1143383,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3092 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
-			return tmk_DistinctClause(c, true, f_3092)
+			f_3093 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
+			return tmk_DistinctClause(c, true, f_3093)
 		}()
 	}()
 	p.where = w
@@ -1143517,10 +1143958,10 @@ func (p *tparser) i261() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3093 := func() any { return k4 }()
-				f_3094 := func() any { return k1 }()
-				f_3095 := func() any { return any(true) }()
-				return tmk_SelectItem(c, true, f_3093, f_3094, nil, f_3095)
+				f_3094 := func() any { return k4 }()
+				f_3095 := func() any { return k1 }()
+				f_3096 := func() any { return any(true) }()
+				return tmk_SelectItem(c, true, f_3094, f_3095, nil, f_3096)
 			}()
 		}()
 		p.where = w
@@ -1143584,10 +1144025,10 @@ func (p *tparser) i261() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3093 := func() any { c.p.stepWork(); return k4 }()
-			f_3094 := func() any { c.p.stepWork(); return k1 }()
-			f_3095 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_SelectItem(c, true, f_3093, f_3094, nil, f_3095)
+			f_3094 := func() any { c.p.stepWork(); return k4 }()
+			f_3095 := func() any { c.p.stepWork(); return k1 }()
+			f_3096 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_SelectItem(c, true, f_3094, f_3095, nil, f_3096)
 		}()
 	}()
 	p.where = w
@@ -1143740,13 +1144181,13 @@ func (p *tparser) i262() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3096 := func() any { return k1 }()
-				f_3097 := func() any { return k8 }()
-				f_3098 := func() any {
+				f_3097 := func() any { return k1 }()
+				f_3098 := func() any { return k8 }()
+				f_3099 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_SelectItem(c, true, f_3096, f_3097, f_3098, nil)
+				return tmk_SelectItem(c, true, f_3097, f_3098, f_3099, nil)
 			}()
 		}()
 		p.where = w
@@ -1143878,13 +1144319,13 @@ L11:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3096 := func() any { c.p.stepWork(); return k1 }()
-			f_3097 := func() any { c.p.stepWork(); return k8 }()
-			f_3098 := func() any {
+			f_3097 := func() any { c.p.stepWork(); return k1 }()
+			f_3098 := func() any { c.p.stepWork(); return k8 }()
+			f_3099 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_SelectItem(c, true, f_3096, f_3097, f_3098, nil)
+			return tmk_SelectItem(c, true, f_3097, f_3098, f_3099, nil)
 		}()
 	}()
 	p.where = w
@@ -1143972,6 +1144413,7 @@ func (p *tparser) v263() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u13(); !ok {
@@ -1144058,6 +1144500,7 @@ func (p *tparser) i263() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
@@ -1144630,9 +1145073,9 @@ func (p *tparser) i266() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3099 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3100 := func() any { return k48 }()
-				return tmk_IntoClause(c, true, f_3099, f_3100)
+				f_3100 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3101 := func() any { return k48 }()
+				return tmk_IntoClause(c, true, f_3100, f_3101)
 			}()
 		}()
 		p.where = w
@@ -1144893,9 +1145336,9 @@ L47:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3099 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3100 := func() any { c.p.stepWork(); return k48 }()
-			return tmk_IntoClause(c, true, f_3099, f_3100)
+			f_3100 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3101 := func() any { c.p.stepWork(); return k48 }()
+			return tmk_IntoClause(c, true, f_3100, f_3101)
 		}()
 	}()
 	p.where = w
@@ -1144968,8 +1145411,8 @@ func (p *tparser) i267() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3101 := func() any { return k1 }()
-				return tmk_IntoClause(c, true, nil, f_3101)
+				f_3102 := func() any { return k1 }()
+				return tmk_IntoClause(c, true, nil, f_3102)
 			}()
 		}()
 		p.where = w
@@ -1145019,8 +1145462,8 @@ func (p *tparser) i267() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3101 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_IntoClause(c, true, nil, f_3101)
+			f_3102 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_IntoClause(c, true, nil, f_3102)
 		}()
 	}()
 	p.where = w
@@ -1145085,8 +1145528,8 @@ func (p *tparser) i268() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3102 := func() any { return k1 }()
-				return tmk_IntoClause(c, true, nil, f_3102)
+				f_3103 := func() any { return k1 }()
+				return tmk_IntoClause(c, true, nil, f_3103)
 			}()
 		}()
 		p.where = w
@@ -1145127,8 +1145570,8 @@ func (p *tparser) i268() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3102 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_IntoClause(c, true, nil, f_3102)
+			f_3103 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_IntoClause(c, true, nil, f_3103)
 		}()
 	}()
 	p.where = w
@@ -1145477,8 +1145920,8 @@ func (p *tparser) s270() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3103 := func() any { return any(true) }()
-				return tmk_GroupBy(c, true, f_3103, nil)
+				f_3104 := func() any { return any(true) }()
+				return tmk_GroupBy(c, true, f_3104, nil)
 			}()
 		}()
 		p.where = w
@@ -1145532,8 +1145975,8 @@ func (p *tparser) s270() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3103 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_GroupBy(c, true, f_3103, nil)
+			f_3104 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_GroupBy(c, true, f_3104, nil)
 		}()
 	}()
 	p.where = w
@@ -1145685,7 +1146128,7 @@ func (p *tparser) i271() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3104 := func() any {
+				f_3105 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1145694,7 +1146137,7 @@ func (p *tparser) i271() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_GroupBy(c, true, nil, f_3104)
+				return tmk_GroupBy(c, true, nil, f_3105)
 			}()
 		}()
 		p.where = w
@@ -1145826,7 +1146269,7 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3104 := func() any {
+			f_3105 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1145835,7 +1146278,7 @@ L18:
 					return c.endList(b)
 				}()
 			}()
-			return tmk_GroupBy(c, true, nil, f_3104)
+			return tmk_GroupBy(c, true, nil, f_3105)
 		}()
 	}()
 	p.where = w
@@ -1146586,9 +1147029,9 @@ func (p *tparser) i275() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3105 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3106 := func() any { return k14 }()
-				return tmk_GroupingSet(c, true, f_3105, f_3106)
+				f_3106 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3107 := func() any { return k14 }()
+				return tmk_GroupingSet(c, true, f_3106, f_3107)
 			}()
 		}()
 		p.where = w
@@ -1146704,9 +1147147,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3105 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3106 := func() any { c.p.stepWork(); return k14 }()
-			return tmk_GroupingSet(c, true, f_3105, f_3106)
+			f_3106 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3107 := func() any { c.p.stepWork(); return k14 }()
+			return tmk_GroupingSet(c, true, f_3106, f_3107)
 		}()
 	}()
 	p.where = w
@@ -1146817,9 +1147260,9 @@ func (p *tparser) i276() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3107 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3108 := func() any { return k5 }()
-				return tmk_GroupingSet(c, true, f_3107, f_3108)
+				f_3108 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3109 := func() any { return k5 }()
+				return tmk_GroupingSet(c, true, f_3108, f_3109)
 			}()
 		}()
 		p.where = w
@@ -1146908,9 +1147351,9 @@ func (p *tparser) i276() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3107 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3108 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_GroupingSet(c, true, f_3107, f_3108)
+			f_3108 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3109 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_GroupingSet(c, true, f_3108, f_3109)
 		}()
 	}()
 	p.where = w
@@ -1147594,9 +1148037,9 @@ func (p *tparser) i280() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3109 := func() any { return k1 }()
-				f_3110 := func() any { return k4 }()
-				return tmk_WindowDef(c, true, f_3109, f_3110)
+				f_3110 := func() any { return k1 }()
+				f_3111 := func() any { return k4 }()
+				return tmk_WindowDef(c, true, f_3110, f_3111)
 			}()
 		}()
 		p.where = w
@@ -1147660,9 +1148103,9 @@ func (p *tparser) i280() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3109 := func() any { c.p.stepWork(); return k1 }()
-			f_3110 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_WindowDef(c, true, f_3109, f_3110)
+			f_3110 := func() any { c.p.stepWork(); return k1 }()
+			f_3111 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_WindowDef(c, true, f_3110, f_3111)
 		}()
 	}()
 	p.where = w
@@ -1147810,7 +1148253,7 @@ func (p *tparser) i281() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3111 := func() any {
+				f_3112 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1147819,7 +1148262,7 @@ func (p *tparser) i281() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_ValuesClause(c, true, f_3111)
+				return tmk_ValuesClause(c, true, f_3112)
 			}()
 		}()
 		p.where = w
@@ -1147943,7 +1148386,7 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3111 := func() any {
+			f_3112 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1147952,7 +1148395,7 @@ L18:
 					return c.endList(b)
 				}()
 			}()
-			return tmk_ValuesClause(c, true, f_3111)
+			return tmk_ValuesClause(c, true, f_3112)
 		}()
 	}()
 	p.where = w
@@ -1148043,8 +1148486,8 @@ func (p *tparser) i282() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3112 := func() any { return k1 }()
-				return tmk_ValuesRow(c, true, f_3112)
+				f_3113 := func() any { return k1 }()
+				return tmk_ValuesRow(c, true, f_3113)
 			}()
 		}()
 		p.where = w
@@ -1148106,8 +1148549,8 @@ func (p *tparser) i282() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3112 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ValuesRow(c, true, f_3112)
+			f_3113 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ValuesRow(c, true, f_3113)
 		}()
 	}()
 	p.where = w
@@ -1148180,8 +1148623,8 @@ func (p *tparser) i283() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3113 := func() any { return k1 }()
-				return tmk_TableQuery(c, true, f_3113)
+				f_3114 := func() any { return k1 }()
+				return tmk_TableQuery(c, true, f_3114)
 			}()
 		}()
 		p.where = w
@@ -1148231,8 +1148674,8 @@ func (p *tparser) i283() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3113 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_TableQuery(c, true, f_3113)
+			f_3114 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_TableQuery(c, true, f_3114)
 		}()
 	}()
 	p.where = w
@@ -1148490,11 +1148933,11 @@ func (p *tparser) i284() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3114 := func() any { return k1 }()
-				f_3115 := func() any { return c.concat(func() any { return k20 }()) }()
-				f_3116 := func() any { return c.concat(func() any { return k28 }()) }()
-				f_3117 := func() any { return c.concat(func() any { return k36 }()) }()
-				return tmk_PivotQuery(c, true, f_3114, f_3115, f_3116, f_3117)
+				f_3115 := func() any { return k1 }()
+				f_3116 := func() any { return c.concat(func() any { return k20 }()) }()
+				f_3117 := func() any { return c.concat(func() any { return k28 }()) }()
+				f_3118 := func() any { return c.concat(func() any { return k36 }()) }()
+				return tmk_PivotQuery(c, true, f_3115, f_3116, f_3117, f_3118)
 			}()
 		}()
 		p.where = w
@@ -1148733,11 +1149176,11 @@ L39:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3114 := func() any { c.p.stepWork(); return k1 }()
-			f_3115 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k20 }()) }()
-			f_3116 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k28 }()) }()
-			f_3117 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k36 }()) }()
-			return tmk_PivotQuery(c, true, f_3114, f_3115, f_3116, f_3117)
+			f_3115 := func() any { c.p.stepWork(); return k1 }()
+			f_3116 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k20 }()) }()
+			f_3117 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k28 }()) }()
+			f_3118 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k36 }()) }()
+			return tmk_PivotQuery(c, true, f_3115, f_3116, f_3117, f_3118)
 		}()
 	}()
 	p.where = w
@@ -1149225,11 +1149668,11 @@ func (p *tparser) i287() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3118 := func() any { return k1 }()
-				f_3119 := func() any { return k4 }()
-				f_3120 := func() any { return k9 }()
-				f_3121 := func() any { return c.concat(func() any { return k11 }()) }()
-				return tmk_UnpivotQuery(c, true, f_3118, f_3119, f_3120, f_3121)
+				f_3119 := func() any { return k1 }()
+				f_3120 := func() any { return k4 }()
+				f_3121 := func() any { return k9 }()
+				f_3122 := func() any { return c.concat(func() any { return k11 }()) }()
+				return tmk_UnpivotQuery(c, true, f_3119, f_3120, f_3121, f_3122)
 			}()
 		}()
 		p.where = w
@@ -1149409,11 +1149852,11 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3118 := func() any { c.p.stepWork(); return k1 }()
-			f_3119 := func() any { c.p.stepWork(); return k4 }()
-			f_3120 := func() any { c.p.stepWork(); return k9 }()
-			f_3121 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
-			return tmk_UnpivotQuery(c, true, f_3118, f_3119, f_3120, f_3121)
+			f_3119 := func() any { c.p.stepWork(); return k1 }()
+			f_3120 := func() any { c.p.stepWork(); return k4 }()
+			f_3121 := func() any { c.p.stepWork(); return k9 }()
+			f_3122 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
+			return tmk_UnpivotQuery(c, true, f_3119, f_3120, f_3121, f_3122)
 		}()
 	}()
 	p.where = w
@@ -1150331,11 +1150774,11 @@ func (p *tparser) i291() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3122 := func() any { return k1 }()
-				f_3123 := func() any { return k6 }()
-				f_3124 := func() any { return c.concat(func() any { return k8 }()) }()
-				f_3125 := func() any { return k10 }()
-				return tmk_PivotColumn(c, true, f_3122, f_3124, f_3123, f_3125)
+				f_3123 := func() any { return k1 }()
+				f_3124 := func() any { return k6 }()
+				f_3125 := func() any { return c.concat(func() any { return k8 }()) }()
+				f_3126 := func() any { return k10 }()
+				return tmk_PivotColumn(c, true, f_3123, f_3125, f_3124, f_3126)
 			}()
 		}()
 		p.where = w
@@ -1150549,11 +1150992,11 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3122 := func() any { c.p.stepWork(); return k1 }()
-			f_3123 := func() any { c.p.stepWork(); return k6 }()
-			f_3124 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			f_3125 := func() any { c.p.stepWork(); return k10 }()
-			return tmk_PivotColumn(c, true, f_3122, f_3124, f_3123, f_3125)
+			f_3123 := func() any { c.p.stepWork(); return k1 }()
+			f_3124 := func() any { c.p.stepWork(); return k6 }()
+			f_3125 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			f_3126 := func() any { c.p.stepWork(); return k10 }()
+			return tmk_PivotColumn(c, true, f_3123, f_3125, f_3124, f_3126)
 		}()
 	}()
 	p.where = w
@@ -1150979,10 +1151422,10 @@ func (p *tparser) i293() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3126 := func() any { return any(true) }()
-				f_3127 := func() any { return c.text(func() any { return k3 }()) }()
-				f_3128 := func() any { return c.text(func() any { return k11 }()) }()
-				return tmk_OrderBy(c, true, nil, f_3126, f_3127, f_3128)
+				f_3127 := func() any { return any(true) }()
+				f_3128 := func() any { return c.text(func() any { return k3 }()) }()
+				f_3129 := func() any { return c.text(func() any { return k11 }()) }()
+				return tmk_OrderBy(c, true, nil, f_3127, f_3128, f_3129)
 			}()
 		}()
 		p.where = w
@@ -1151092,10 +1151535,10 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3126 := func() any { c.p.stepWork(); return any(true) }()
-			f_3127 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
-			f_3128 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			return tmk_OrderBy(c, true, nil, f_3126, f_3127, f_3128)
+			f_3127 := func() any { c.p.stepWork(); return any(true) }()
+			f_3128 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
+			f_3129 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			return tmk_OrderBy(c, true, nil, f_3127, f_3128, f_3129)
 		}()
 	}()
 	p.where = w
@@ -1151226,7 +1151669,7 @@ func (p *tparser) i294() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3129 := func() any {
+				f_3130 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1151235,7 +1151678,7 @@ func (p *tparser) i294() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_OrderBy(c, true, f_3129, nil, nil, nil)
+				return tmk_OrderBy(c, true, f_3130, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1151347,7 +1151790,7 @@ func (p *tparser) i294() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3129 := func() any {
+			f_3130 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1151356,7 +1151799,7 @@ func (p *tparser) i294() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_OrderBy(c, true, f_3129, nil, nil, nil)
+			return tmk_OrderBy(c, true, f_3130, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1151694,10 +1152137,10 @@ func (p *tparser) i296() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3130 := func() any { return k1 }()
-				f_3131 := func() any { return c.text(func() any { return k4 }()) }()
-				f_3132 := func() any { return c.text(func() any { return k9 }()) }()
-				return tmk_SortItem(c, true, f_3130, f_3131, nil, f_3132)
+				f_3131 := func() any { return k1 }()
+				f_3132 := func() any { return c.text(func() any { return k4 }()) }()
+				f_3133 := func() any { return c.text(func() any { return k9 }()) }()
+				return tmk_SortItem(c, true, f_3131, f_3132, nil, f_3133)
 			}()
 		}()
 		p.where = w
@@ -1151790,10 +1152233,10 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3130 := func() any { c.p.stepWork(); return k1 }()
-			f_3131 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_3132 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_SortItem(c, true, f_3130, f_3131, nil, f_3132)
+			f_3131 := func() any { c.p.stepWork(); return k1 }()
+			f_3132 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_3133 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_SortItem(c, true, f_3131, f_3132, nil, f_3133)
 		}()
 	}()
 	p.where = w
@@ -1151914,10 +1152357,10 @@ func (p *tparser) i297() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3133 := func() any { return k1 }()
-				f_3134 := func() any { return c.text(func() any { return k6 }()) }()
-				f_3135 := func() any { return c.text(func() any { return k14 }()) }()
-				return tmk_SortItem(c, true, f_3133, nil, f_3134, f_3135)
+				f_3134 := func() any { return k1 }()
+				f_3135 := func() any { return c.text(func() any { return k6 }()) }()
+				f_3136 := func() any { return c.text(func() any { return k14 }()) }()
+				return tmk_SortItem(c, true, f_3134, nil, f_3135, f_3136)
 			}()
 		}()
 		p.where = w
@@ -1152017,10 +1152460,10 @@ L17:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3133 := func() any { c.p.stepWork(); return k1 }()
-			f_3134 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3135 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k14 }()) }()
-			return tmk_SortItem(c, true, f_3133, nil, f_3134, f_3135)
+			f_3134 := func() any { c.p.stepWork(); return k1 }()
+			f_3135 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3136 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k14 }()) }()
+			return tmk_SortItem(c, true, f_3134, nil, f_3135, f_3136)
 		}()
 	}()
 	p.where = w
@@ -1153617,10 +1154060,10 @@ func (p *tparser) i302() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3136 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3137 := func() any { return k4 }()
-				f_3138 := func() any { return k7 }()
-				return tmk_LimitClause(c, true, f_3136, nil, f_3137, nil, f_3138)
+				f_3137 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3138 := func() any { return k4 }()
+				f_3139 := func() any { return k7 }()
+				return tmk_LimitClause(c, true, f_3137, nil, f_3138, nil, f_3139)
 			}()
 		}()
 		p.where = w
@@ -1153700,10 +1154143,10 @@ func (p *tparser) i302() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3136 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3137 := func() any { c.p.stepWork(); return k4 }()
-			f_3138 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_LimitClause(c, true, f_3136, nil, f_3137, nil, f_3138)
+			f_3137 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3138 := func() any { c.p.stepWork(); return k4 }()
+			f_3139 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_LimitClause(c, true, f_3137, nil, f_3138, nil, f_3139)
 		}()
 	}()
 	p.where = w
@@ -1153776,9 +1154219,9 @@ func (p *tparser) i303() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3139 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3140 := func() any { return any(true) }()
-				return tmk_LimitClause(c, true, f_3139, f_3140, nil, nil, nil)
+				f_3140 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3141 := func() any { return any(true) }()
+				return tmk_LimitClause(c, true, f_3140, f_3141, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1153828,9 +1154271,9 @@ func (p *tparser) i303() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3139 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3140 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_LimitClause(c, true, f_3139, f_3140, nil, nil, nil)
+			f_3140 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3141 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_LimitClause(c, true, f_3140, f_3141, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1153923,10 +1154366,10 @@ func (p *tparser) i304() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3141 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3142 := func() any { return k4 }()
-				f_3143 := func() any { return c.text(func() any { return k7 }()) }()
-				return tmk_LimitClause(c, true, f_3141, nil, f_3142, f_3143, nil)
+				f_3142 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3143 := func() any { return k4 }()
+				f_3144 := func() any { return c.text(func() any { return k7 }()) }()
+				return tmk_LimitClause(c, true, f_3142, nil, f_3143, f_3144, nil)
 			}()
 		}()
 		p.where = w
@@ -1153996,10 +1154439,10 @@ func (p *tparser) i304() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3141 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3142 := func() any { c.p.stepWork(); return k4 }()
-			f_3143 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
-			return tmk_LimitClause(c, true, f_3141, nil, f_3142, f_3143, nil)
+			f_3142 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3143 := func() any { c.p.stepWork(); return k4 }()
+			f_3144 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
+			return tmk_LimitClause(c, true, f_3142, nil, f_3143, f_3144, nil)
 		}()
 	}()
 	p.where = w
@@ -1154140,10 +1154583,10 @@ func (p *tparser) i305() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3144 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3145 := func() any { return k15 }()
-				f_3146 := func() any { return c.text(func() any { return k18 }()) }()
-				return tmk_LimitClause(c, true, f_3144, nil, f_3145, f_3146, nil)
+				f_3145 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3146 := func() any { return k15 }()
+				f_3147 := func() any { return c.text(func() any { return k18 }()) }()
+				return tmk_LimitClause(c, true, f_3145, nil, f_3146, f_3147, nil)
 			}()
 		}()
 		p.where = w
@@ -1154261,10 +1154704,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3144 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3145 := func() any { c.p.stepWork(); return k15 }()
-			f_3146 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k18 }()) }()
-			return tmk_LimitClause(c, true, f_3144, nil, f_3145, f_3146, nil)
+			f_3145 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3146 := func() any { c.p.stepWork(); return k15 }()
+			f_3147 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k18 }()) }()
+			return tmk_LimitClause(c, true, f_3145, nil, f_3146, f_3147, nil)
 		}()
 	}()
 	p.where = w
@@ -1154364,9 +1154807,9 @@ func (p *tparser) i306() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3147 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3148 := func() any { return k4 }()
-				return tmk_LimitClause(c, true, f_3147, nil, f_3148, nil, nil)
+				f_3148 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3149 := func() any { return k4 }()
+				return tmk_LimitClause(c, true, f_3148, nil, f_3149, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1154444,9 +1154887,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3147 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3148 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_LimitClause(c, true, f_3147, nil, f_3148, nil, nil)
+			f_3148 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3149 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_LimitClause(c, true, f_3148, nil, f_3149, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1154621,9 +1155064,9 @@ func (p *tparser) i307() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3149 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3150 := func() any { return k13 }()
-				return tmk_LimitClause(c, true, f_3149, nil, f_3150, nil, nil)
+				f_3150 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3151 := func() any { return k13 }()
+				return tmk_LimitClause(c, true, f_3150, nil, f_3151, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1154775,9 +1155218,9 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3149 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3150 := func() any { c.p.stepWork(); return k13 }()
-			return tmk_LimitClause(c, true, f_3149, nil, f_3150, nil, nil)
+			f_3150 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3151 := func() any { c.p.stepWork(); return k13 }()
+			return tmk_LimitClause(c, true, f_3150, nil, f_3151, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1154938,8 +1155381,8 @@ func (p *tparser) i308() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3151 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_LimitClause(c, true, f_3151, nil, nil, nil, nil)
+				f_3152 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_LimitClause(c, true, f_3152, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1155077,8 +1155520,8 @@ L15:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3151 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_LimitClause(c, true, f_3151, nil, nil, nil, nil)
+			f_3152 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_LimitClause(c, true, f_3152, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1155856,8 +1156299,8 @@ func (p *tparser) i312() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3152 := func() any { return k1 }()
-				return tmk_OffsetClause(c, true, f_3152, nil)
+				f_3153 := func() any { return k1 }()
+				return tmk_OffsetClause(c, true, f_3153, nil)
 			}()
 		}()
 		p.where = w
@@ -1155907,8 +1156350,8 @@ func (p *tparser) i312() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3152 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_OffsetClause(c, true, f_3152, nil)
+			f_3153 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_OffsetClause(c, true, f_3153, nil)
 		}()
 	}()
 	p.where = w
@@ -1156035,9 +1156478,9 @@ func (p *tparser) i313() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3153 := func() any { return k1 }()
-				f_3154 := func() any { return c.text(func() any { return k4 }()) }()
-				return tmk_OffsetClause(c, true, f_3153, f_3154)
+				f_3154 := func() any { return k1 }()
+				f_3155 := func() any { return c.text(func() any { return k4 }()) }()
+				return tmk_OffsetClause(c, true, f_3154, f_3155)
 			}()
 		}()
 		p.where = w
@@ -1156141,9 +1156584,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3153 := func() any { c.p.stepWork(); return k1 }()
-			f_3154 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_OffsetClause(c, true, f_3153, f_3154)
+			f_3154 := func() any { c.p.stepWork(); return k1 }()
+			f_3155 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_OffsetClause(c, true, f_3154, f_3155)
 		}()
 	}()
 	p.where = w
@@ -1156726,8 +1157169,8 @@ func (p *tparser) i316() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3155 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_LockClause(c, true, f_3155, nil, nil)
+				f_3156 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_LockClause(c, true, f_3156, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1156789,8 +1157232,8 @@ func (p *tparser) i316() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3155 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_LockClause(c, true, f_3155, nil, nil)
+			f_3156 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_LockClause(c, true, f_3156, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1157069,10 +1157512,10 @@ func (p *tparser) i317() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3156 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3157 := func() any { return c.concat(func() any { return k20 }()) }()
-				f_3158 := func() any { return c.text(func() any { return k28 }()) }()
-				return tmk_LockClause(c, true, f_3156, f_3157, f_3158)
+				f_3157 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3158 := func() any { return c.concat(func() any { return k20 }()) }()
+				f_3159 := func() any { return c.text(func() any { return k28 }()) }()
+				return tmk_LockClause(c, true, f_3157, f_3158, f_3159)
 			}()
 		}()
 		p.where = w
@@ -1157334,10 +1157777,10 @@ L31:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3156 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3157 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k20 }()) }()
-			f_3158 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
-			return tmk_LockClause(c, true, f_3156, f_3157, f_3158)
+			f_3157 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3158 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k20 }()) }()
+			f_3159 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
+			return tmk_LockClause(c, true, f_3157, f_3158, f_3159)
 		}()
 	}()
 	p.where = w
@@ -1158497,11 +1158940,11 @@ func (p *tparser) i323() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3159 := func() any { return k3 }()
-				f_3160 := func() any { return k9 }()
-				f_3161 := func() any { return c.text(func() any { return k14 }()) }()
-				f_3162 := func() any { return k22 }()
-				return tmk_SampleClause(c, true, f_3159, f_3160, f_3161, f_3162, nil)
+				f_3160 := func() any { return k3 }()
+				f_3161 := func() any { return k9 }()
+				f_3162 := func() any { return c.text(func() any { return k14 }()) }()
+				f_3163 := func() any { return k22 }()
+				return tmk_SampleClause(c, true, f_3160, f_3161, f_3162, f_3163, nil)
 			}()
 		}()
 		p.where = w
@@ -1158678,11 +1159121,11 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3159 := func() any { c.p.stepWork(); return k3 }()
-			f_3160 := func() any { c.p.stepWork(); return k9 }()
-			f_3161 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k14 }()) }()
-			f_3162 := func() any { c.p.stepWork(); return k22 }()
-			return tmk_SampleClause(c, true, f_3159, f_3160, f_3161, f_3162, nil)
+			f_3160 := func() any { c.p.stepWork(); return k3 }()
+			f_3161 := func() any { c.p.stepWork(); return k9 }()
+			f_3162 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k14 }()) }()
+			f_3163 := func() any { c.p.stepWork(); return k22 }()
+			return tmk_SampleClause(c, true, f_3160, f_3161, f_3162, f_3163, nil)
 		}()
 	}()
 	p.where = w
@@ -1158847,11 +1159290,11 @@ func (p *tparser) i324() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3163 := func() any { return k12 }()
-				f_3164 := func() any { return k1 }()
-				f_3165 := func() any { return c.text(func() any { return k6 }()) }()
-				f_3166 := func() any { return k17 }()
-				return tmk_SampleClause(c, true, f_3163, f_3164, f_3165, nil, f_3166)
+				f_3164 := func() any { return k12 }()
+				f_3165 := func() any { return k1 }()
+				f_3166 := func() any { return c.text(func() any { return k6 }()) }()
+				f_3167 := func() any { return k17 }()
+				return tmk_SampleClause(c, true, f_3164, f_3165, f_3166, nil, f_3167)
 			}()
 		}()
 		p.where = w
@@ -1158995,11 +1159438,11 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3163 := func() any { c.p.stepWork(); return k12 }()
-			f_3164 := func() any { c.p.stepWork(); return k1 }()
-			f_3165 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3166 := func() any { c.p.stepWork(); return k17 }()
-			return tmk_SampleClause(c, true, f_3163, f_3164, f_3165, nil, f_3166)
+			f_3164 := func() any { c.p.stepWork(); return k12 }()
+			f_3165 := func() any { c.p.stepWork(); return k1 }()
+			f_3166 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3167 := func() any { c.p.stepWork(); return k17 }()
+			return tmk_SampleClause(c, true, f_3164, f_3165, f_3166, nil, f_3167)
 		}()
 	}()
 	p.where = w
@@ -1159092,9 +1159535,9 @@ func (p *tparser) i325() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3167 := func() any { return k1 }()
-				f_3168 := func() any { return c.text(func() any { return k6 }()) }()
-				return tmk_SampleClause(c, true, nil, f_3167, f_3168, nil, nil)
+				f_3168 := func() any { return k1 }()
+				f_3169 := func() any { return c.text(func() any { return k6 }()) }()
+				return tmk_SampleClause(c, true, nil, f_3168, f_3169, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1159165,9 +1159608,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3167 := func() any { c.p.stepWork(); return k1 }()
-			f_3168 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_SampleClause(c, true, nil, f_3167, f_3168, nil, nil)
+			f_3168 := func() any { c.p.stepWork(); return k1 }()
+			f_3169 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_SampleClause(c, true, nil, f_3168, f_3169, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1160017,7 +1160460,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4004() (any, bool) {
+func (p *tparser) e4005() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160048,7 +1160491,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4005() (any, bool) {
+func (p *tparser) e4006() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160169,7 +1160612,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4009() (any, bool) {
+func (p *tparser) e4010() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160318,7 +1160761,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4013() (any, bool) {
+func (p *tparser) e4014() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160439,7 +1160882,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4017() (any, bool) {
+func (p *tparser) e4018() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160620,7 +1161063,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4022() (any, bool) {
+func (p *tparser) e4023() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160801,7 +1161244,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4027() (any, bool) {
+func (p *tparser) e4028() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1160965,7 +1161408,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4032() (any, bool) {
+func (p *tparser) e4033() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1161129,7 +1161572,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4037() (any, bool) {
+func (p *tparser) e4038() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1161526,7 +1161969,7 @@ fail:
 }
 
 // table_ref (typed OperatorsRule body inlined)
-func (p *tparser) e4043() (any, bool) {
+func (p *tparser) e4044() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -1163707,9 +1164150,9 @@ func (p *tparser) i337() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3169 := func() any { return k1 }()
-				f_3170 := func() any { return k4 }()
-				return tmk_UnpivotValue(c, true, f_3169, f_3170)
+				f_3170 := func() any { return k1 }()
+				f_3171 := func() any { return k4 }()
+				return tmk_UnpivotValue(c, true, f_3170, f_3171)
 			}()
 		}()
 		p.where = w
@@ -1163793,9 +1164236,9 @@ func (p *tparser) i337() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3169 := func() any { c.p.stepWork(); return k1 }()
-			f_3170 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_UnpivotValue(c, true, f_3169, f_3170)
+			f_3170 := func() any { c.p.stepWork(); return k1 }()
+			f_3171 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_UnpivotValue(c, true, f_3170, f_3171)
 		}()
 	}()
 	p.where = w
@@ -1164156,10 +1164599,10 @@ func (p *tparser) i339() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3171 := func() any { return k1 }()
-				f_3172 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_3173 := func() any { return k8 }()
-				return tmk_PivotValue(c, true, f_3171, f_3172, f_3173)
+				f_3172 := func() any { return k1 }()
+				f_3173 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_3174 := func() any { return k8 }()
+				return tmk_PivotValue(c, true, f_3172, f_3173, f_3174)
 			}()
 		}()
 		p.where = w
@@ -1164295,10 +1164738,10 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3171 := func() any { c.p.stepWork(); return k1 }()
-			f_3172 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3173 := func() any { c.p.stepWork(); return k8 }()
-			return tmk_PivotValue(c, true, f_3171, f_3172, f_3173)
+			f_3172 := func() any { c.p.stepWork(); return k1 }()
+			f_3173 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3174 := func() any { c.p.stepWork(); return k8 }()
+			return tmk_PivotValue(c, true, f_3172, f_3173, f_3174)
 		}()
 	}()
 	p.where = w
@@ -1165720,7 +1166163,7 @@ func (p *tparser) i346() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return k3 }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L51_ordinary
@@ -1165782,20 +1166225,20 @@ func (p *tparser) i346() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3174 := func() any { return k3 }()
-				f_3175 := func() any { return k11 }()
-				f_3176 := func() any {
+				f_3175 := func() any { return k3 }()
+				f_3176 := func() any { return k11 }()
+				f_3177 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k15 }()) }(), func() any { return any(0) }())
 				}()
-				f_3177 := func() any {
+				f_3178 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k13 }()) }(), func() any { return any(0) }())
 				}()
-				f_3178 := func() any { return k49 }()
-				f_3179 := func() any { return k57 }()
-				f_3180 := func() any { return k65 }()
-				return tmk_BaseTable(c, true, f_3174, f_3175, f_3176, f_3177, f_3178, f_3179, f_3180)
+				f_3179 := func() any { return k49 }()
+				f_3180 := func() any { return k57 }()
+				f_3181 := func() any { return k65 }()
+				return tmk_BaseTable(c, true, f_3175, f_3176, f_3177, f_3178, f_3179, f_3180, f_3181)
 			}()
 		}()
 		p.where = w
@@ -1166067,7 +1166510,7 @@ L17:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return k3 }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L51
@@ -1166131,20 +1166574,20 @@ L68:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3174 := func() any { c.p.stepWork(); return k3 }()
-			f_3175 := func() any { c.p.stepWork(); return k11 }()
-			f_3176 := func() any {
+			f_3175 := func() any { c.p.stepWork(); return k3 }()
+			f_3176 := func() any { c.p.stepWork(); return k11 }()
+			f_3177 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k15 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3177 := func() any {
+			f_3178 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k13 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3178 := func() any { c.p.stepWork(); return k49 }()
-			f_3179 := func() any { c.p.stepWork(); return k57 }()
-			f_3180 := func() any { c.p.stepWork(); return k65 }()
-			return tmk_BaseTable(c, true, f_3174, f_3175, f_3176, f_3177, f_3178, f_3179, f_3180)
+			f_3179 := func() any { c.p.stepWork(); return k49 }()
+			f_3180 := func() any { c.p.stepWork(); return k57 }()
+			f_3181 := func() any { c.p.stepWork(); return k65 }()
+			return tmk_BaseTable(c, true, f_3175, f_3176, f_3177, f_3178, f_3179, f_3180, f_3181)
 		}()
 	}()
 	p.where = w
@@ -1166299,9 +1166742,9 @@ func (p *tparser) i347() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3181 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3182 := func() any { return k14 }()
-				return tmk_AtClause(c, true, f_3181, f_3182)
+				f_3182 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3183 := func() any { return k14 }()
+				return tmk_AtClause(c, true, f_3182, f_3183)
 			}()
 		}()
 		p.where = w
@@ -1166433,9 +1166876,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3181 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3182 := func() any { c.p.stepWork(); return k14 }()
-			return tmk_AtClause(c, true, f_3181, f_3182)
+			f_3182 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3183 := func() any { c.p.stepWork(); return k14 }()
+			return tmk_AtClause(c, true, f_3182, f_3183)
 		}()
 	}()
 	p.where = w
@@ -1166581,7 +1167024,7 @@ func (p *tparser) i348() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return k3 }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L24_ordinary
@@ -1166621,15 +1167064,15 @@ func (p *tparser) i348() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3183 := func() any { return k3 }()
-				f_3184 := func() any { return k17 }()
-				f_3185 := func() any {
+				f_3184 := func() any { return k3 }()
+				f_3185 := func() any { return k17 }()
+				f_3186 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3186 := func() any { return k22 }()
-				f_3187 := func() any { return k30 }()
-				return tmk_SubqueryRef(c, true, f_3183, f_3184, f_3185, f_3186, f_3187)
+				f_3187 := func() any { return k22 }()
+				f_3188 := func() any { return k30 }()
+				return tmk_SubqueryRef(c, true, f_3184, f_3185, f_3186, f_3187, f_3188)
 			}()
 		}()
 		p.where = w
@@ -1166755,7 +1167198,7 @@ L14:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return k3 }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L24
@@ -1166796,15 +1167239,15 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3183 := func() any { c.p.stepWork(); return k3 }()
-			f_3184 := func() any { c.p.stepWork(); return k17 }()
-			f_3185 := func() any {
+			f_3184 := func() any { c.p.stepWork(); return k3 }()
+			f_3185 := func() any { c.p.stepWork(); return k17 }()
+			f_3186 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3186 := func() any { c.p.stepWork(); return k22 }()
-			f_3187 := func() any { c.p.stepWork(); return k30 }()
-			return tmk_SubqueryRef(c, true, f_3183, f_3184, f_3185, f_3186, f_3187)
+			f_3187 := func() any { c.p.stepWork(); return k22 }()
+			f_3188 := func() any { c.p.stepWork(); return k30 }()
+			return tmk_SubqueryRef(c, true, f_3184, f_3185, f_3186, f_3187, f_3188)
 		}()
 	}()
 	p.where = w
@@ -1166960,7 +1167403,7 @@ func (p *tparser) i349() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return k3 }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L19_ordinary
@@ -1166978,10 +1167421,10 @@ func (p *tparser) i349() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3188 := func() any { return k3 }()
-				f_3189 := func() any { return k12 }()
-				f_3190 := func() any { return k17 }()
-				return tmk_ParenTable(c, true, f_3188, f_3189, f_3190)
+				f_3189 := func() any { return k3 }()
+				f_3190 := func() any { return k12 }()
+				f_3191 := func() any { return k17 }()
+				return tmk_ParenTable(c, true, f_3189, f_3190, f_3191)
 			}()
 		}()
 		p.where = w
@@ -1167117,7 +1167560,7 @@ L11:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return k3 }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L19
@@ -1167135,10 +1167578,10 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3188 := func() any { c.p.stepWork(); return k3 }()
-			f_3189 := func() any { c.p.stepWork(); return k12 }()
-			f_3190 := func() any { c.p.stepWork(); return k17 }()
-			return tmk_ParenTable(c, true, f_3188, f_3189, f_3190)
+			f_3189 := func() any { c.p.stepWork(); return k3 }()
+			f_3190 := func() any { c.p.stepWork(); return k12 }()
+			f_3191 := func() any { c.p.stepWork(); return k17 }()
+			return tmk_ParenTable(c, true, f_3189, f_3190, f_3191)
 		}()
 	}()
 	p.where = w
@@ -1167686,11 +1168129,11 @@ func (p *tparser) i351() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3191 := func() any { return k3 }()
-				f_3192 := func() any { return k9 }()
-				f_3193 := func() any { return k12 }()
-				f_3194 := func() any { return k17 }()
-				return tmk_ValuesRef(c, true, f_3191, f_3192, f_3193, f_3194)
+				f_3192 := func() any { return k3 }()
+				f_3193 := func() any { return k9 }()
+				f_3194 := func() any { return k12 }()
+				f_3195 := func() any { return k17 }()
+				return tmk_ValuesRef(c, true, f_3192, f_3193, f_3194, f_3195)
 			}()
 		}()
 		p.where = w
@@ -1167804,11 +1168247,11 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3191 := func() any { c.p.stepWork(); return k3 }()
-			f_3192 := func() any { c.p.stepWork(); return k9 }()
-			f_3193 := func() any { c.p.stepWork(); return k12 }()
-			f_3194 := func() any { c.p.stepWork(); return k17 }()
-			return tmk_ValuesRef(c, true, f_3191, f_3192, f_3193, f_3194)
+			f_3192 := func() any { c.p.stepWork(); return k3 }()
+			f_3193 := func() any { c.p.stepWork(); return k9 }()
+			f_3194 := func() any { c.p.stepWork(); return k12 }()
+			f_3195 := func() any { c.p.stepWork(); return k17 }()
+			return tmk_ValuesRef(c, true, f_3192, f_3193, f_3194, f_3195)
 		}()
 	}()
 	p.where = w
@@ -1167990,7 +1168433,7 @@ func (p *tparser) i352() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return k3 }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L32_ordinary
@@ -1168030,19 +1168473,19 @@ func (p *tparser) i352() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3195 := func() any { return k3 }()
-				f_3196 := func() any { return k17 }()
-				f_3197 := func() any {
+				f_3196 := func() any { return k3 }()
+				f_3197 := func() any { return k17 }()
+				f_3198 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3198 := func() any {
+				f_3199 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k22 }()) }(), func() any { return any(0) }())
 				}()
-				f_3199 := func() any { return k30 }()
-				f_3200 := func() any { return k38 }()
-				return tmk_FuncTable(c, true, f_3195, f_3196, nil, f_3197, f_3198, f_3199, f_3200)
+				f_3200 := func() any { return k30 }()
+				f_3201 := func() any { return k38 }()
+				return tmk_FuncTable(c, true, f_3196, f_3197, nil, f_3198, f_3199, f_3200, f_3201)
 			}()
 		}()
 		p.where = w
@@ -1168205,7 +1168648,7 @@ L25:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return k3 }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L32
@@ -1168246,19 +1168689,19 @@ L41:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3195 := func() any { c.p.stepWork(); return k3 }()
-			f_3196 := func() any { c.p.stepWork(); return k17 }()
-			f_3197 := func() any {
+			f_3196 := func() any { c.p.stepWork(); return k3 }()
+			f_3197 := func() any { c.p.stepWork(); return k17 }()
+			f_3198 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3198 := func() any {
+			f_3199 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k22 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3199 := func() any { c.p.stepWork(); return k30 }()
-			f_3200 := func() any { c.p.stepWork(); return k38 }()
-			return tmk_FuncTable(c, true, f_3195, f_3196, nil, f_3197, f_3198, f_3199, f_3200)
+			f_3200 := func() any { c.p.stepWork(); return k30 }()
+			f_3201 := func() any { c.p.stepWork(); return k38 }()
+			return tmk_FuncTable(c, true, f_3196, f_3197, nil, f_3198, f_3199, f_3200, f_3201)
 		}()
 	}()
 	p.where = w
@@ -1168498,7 +1168941,7 @@ func (p *tparser) i353() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
+				return c.binary("==", func() any { return k3 }(), func() any { return any(nil) }())
 			}()
 		}) {
 			goto L35_ordinary
@@ -1168538,8 +1168981,8 @@ func (p *tparser) i353() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3201 := func() any { return k3 }()
-				f_3202 := func() any {
+				f_3202 := func() any { return k3 }()
+				f_3203 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1168548,13 +1168991,13 @@ func (p *tparser) i353() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_3203 := func() any {
+				f_3204 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k25 }()) }(), func() any { return any(0) }())
 				}()
-				f_3204 := func() any { return k33 }()
-				f_3205 := func() any { return k41 }()
-				return tmk_FuncTable(c, true, f_3201, nil, f_3202, nil, f_3203, f_3204, f_3205)
+				f_3205 := func() any { return k33 }()
+				f_3206 := func() any { return k41 }()
+				return tmk_FuncTable(c, true, f_3202, nil, f_3203, nil, f_3204, f_3205, f_3206)
 			}()
 		}()
 		p.where = w
@@ -1168778,7 +1169221,7 @@ L28:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
+			return c.binary("==", func() any { c.p.stepWork(); return k3 }(), func() any { c.p.stepWork(); return any(nil) }())
 		}()
 	}) {
 		goto L35
@@ -1168819,8 +1169262,8 @@ L44:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3201 := func() any { c.p.stepWork(); return k3 }()
-			f_3202 := func() any {
+			f_3202 := func() any { c.p.stepWork(); return k3 }()
+			f_3203 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1168829,13 +1169272,13 @@ L44:
 					return c.endList(b)
 				}()
 			}()
-			f_3203 := func() any {
+			f_3204 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k25 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3204 := func() any { c.p.stepWork(); return k33 }()
-			f_3205 := func() any { c.p.stepWork(); return k41 }()
-			return tmk_FuncTable(c, true, f_3201, nil, f_3202, nil, f_3203, f_3204, f_3205)
+			f_3205 := func() any { c.p.stepWork(); return k33 }()
+			f_3206 := func() any { c.p.stepWork(); return k41 }()
+			return tmk_FuncTable(c, true, f_3202, nil, f_3203, nil, f_3204, f_3205, f_3206)
 		}()
 	}()
 	p.where = w
@@ -1168962,9 +1169405,9 @@ func (p *tparser) i354() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3206 := func() any { return k1 }()
-				f_3207 := func() any { return c.concat(func() any { return k6 }()) }()
-				return tmk_RowsFromItem(c, true, f_3206, f_3207)
+				f_3207 := func() any { return k1 }()
+				f_3208 := func() any { return c.concat(func() any { return k6 }()) }()
+				return tmk_RowsFromItem(c, true, f_3207, f_3208)
 			}()
 		}()
 		p.where = w
@@ -1169063,9 +1169506,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3206 := func() any { c.p.stepWork(); return k1 }()
-			f_3207 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_RowsFromItem(c, true, f_3206, f_3207)
+			f_3207 := func() any { c.p.stepWork(); return k1 }()
+			f_3208 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_RowsFromItem(c, true, f_3207, f_3208)
 		}()
 	}()
 	p.where = w
@@ -1169736,13 +1170179,13 @@ func (p *tparser) i356() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3208 := func() any { return k1 }()
-				f_3209 := func() any { return c.text(func() any { return k6 }()) }()
-				f_3210 := func() any { return c.concat(func() any { return k8 }()) }()
-				f_3211 := func() any { return k10 }()
-				f_3212 := func() any { return k61 }()
-				f_3213 := func() any { return c.text(func() any { return k69 }()) }()
-				return tmk_FuncCall(c, true, f_3208, f_3209, f_3210, f_3211, f_3212, f_3213, nil, nil, nil, nil)
+				f_3209 := func() any { return k1 }()
+				f_3210 := func() any { return c.text(func() any { return k6 }()) }()
+				f_3211 := func() any { return c.concat(func() any { return k8 }()) }()
+				f_3212 := func() any { return k10 }()
+				f_3213 := func() any { return k61 }()
+				f_3214 := func() any { return c.text(func() any { return k69 }()) }()
+				return tmk_FuncCall(c, true, f_3209, f_3210, f_3211, f_3212, f_3213, f_3214, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1170134,13 +1170577,13 @@ L72:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3208 := func() any { c.p.stepWork(); return k1 }()
-			f_3209 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3210 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			f_3211 := func() any { c.p.stepWork(); return k10 }()
-			f_3212 := func() any { c.p.stepWork(); return k61 }()
-			f_3213 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k69 }()) }()
-			return tmk_FuncCall(c, true, f_3208, f_3209, f_3210, f_3211, f_3212, f_3213, nil, nil, nil, nil)
+			f_3209 := func() any { c.p.stepWork(); return k1 }()
+			f_3210 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3211 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			f_3212 := func() any { c.p.stepWork(); return k10 }()
+			f_3213 := func() any { c.p.stepWork(); return k61 }()
+			f_3214 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k69 }()) }()
+			return tmk_FuncCall(c, true, f_3209, f_3210, f_3211, f_3212, f_3213, f_3214, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1170628,10 +1171071,10 @@ func (p *tparser) i358() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3214 := func() any { return k1 }()
-				f_3215 := func() any { return k4 }()
-				f_3216 := func() any { return any(true) }()
-				return tmk_TableAlias(c, true, f_3214, f_3215, nil, f_3216)
+				f_3215 := func() any { return k1 }()
+				f_3216 := func() any { return k4 }()
+				f_3217 := func() any { return any(true) }()
+				return tmk_TableAlias(c, true, f_3215, f_3216, nil, f_3217)
 			}()
 		}()
 		p.where = w
@@ -1170715,10 +1171158,10 @@ func (p *tparser) i358() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3214 := func() any { c.p.stepWork(); return k1 }()
-			f_3215 := func() any { c.p.stepWork(); return k4 }()
-			f_3216 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_TableAlias(c, true, f_3214, f_3215, nil, f_3216)
+			f_3215 := func() any { c.p.stepWork(); return k1 }()
+			f_3216 := func() any { c.p.stepWork(); return k4 }()
+			f_3217 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_TableAlias(c, true, f_3215, f_3216, nil, f_3217)
 		}()
 	}()
 	p.where = w
@@ -1170797,9 +1171240,9 @@ func (p *tparser) i359() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3217 := func() any { return k1 }()
-				f_3218 := func() any { return any(true) }()
-				return tmk_TableAlias(c, true, f_3217, nil, nil, f_3218)
+				f_3218 := func() any { return k1 }()
+				f_3219 := func() any { return any(true) }()
+				return tmk_TableAlias(c, true, f_3218, nil, nil, f_3219)
 			}()
 		}()
 		p.where = w
@@ -1170849,9 +1171292,9 @@ func (p *tparser) i359() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3217 := func() any { c.p.stepWork(); return k1 }()
-			f_3218 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_TableAlias(c, true, f_3217, nil, nil, f_3218)
+			f_3218 := func() any { c.p.stepWork(); return k1 }()
+			f_3219 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_TableAlias(c, true, f_3218, nil, nil, f_3219)
 		}()
 	}()
 	p.where = w
@@ -1170956,9 +1171399,9 @@ func (p *tparser) i360() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3219 := func() any { return k1 }()
-				f_3220 := func() any { return k4 }()
-				return tmk_TableAlias(c, true, f_3219, f_3220, nil, nil)
+				f_3220 := func() any { return k1 }()
+				f_3221 := func() any { return k4 }()
+				return tmk_TableAlias(c, true, f_3220, f_3221, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1171034,9 +1171477,9 @@ func (p *tparser) i360() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3219 := func() any { c.p.stepWork(); return k1 }()
-			f_3220 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_TableAlias(c, true, f_3219, f_3220, nil, nil)
+			f_3220 := func() any { c.p.stepWork(); return k1 }()
+			f_3221 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_TableAlias(c, true, f_3220, f_3221, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1171107,8 +1171550,8 @@ func (p *tparser) i361() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3221 := func() any { return k1 }()
-				return tmk_TableAlias(c, true, f_3221, nil, nil, nil)
+				f_3222 := func() any { return k1 }()
+				return tmk_TableAlias(c, true, f_3222, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1171149,8 +1171592,8 @@ func (p *tparser) i361() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3221 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_TableAlias(c, true, f_3221, nil, nil, nil)
+			f_3222 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_TableAlias(c, true, f_3222, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1171792,10 +1172235,10 @@ func (p *tparser) i363() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3222 := func() any { return k1 }()
-				f_3223 := func() any { return k4 }()
-				f_3224 := func() any { return any(true) }()
-				return tmk_TableAlias(c, true, f_3222, nil, f_3223, f_3224)
+				f_3223 := func() any { return k1 }()
+				f_3224 := func() any { return k4 }()
+				f_3225 := func() any { return any(true) }()
+				return tmk_TableAlias(c, true, f_3223, nil, f_3224, f_3225)
 			}()
 		}()
 		p.where = w
@@ -1171879,10 +1172322,10 @@ func (p *tparser) i363() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3222 := func() any { c.p.stepWork(); return k1 }()
-			f_3223 := func() any { c.p.stepWork(); return k4 }()
-			f_3224 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_TableAlias(c, true, f_3222, nil, f_3223, f_3224)
+			f_3223 := func() any { c.p.stepWork(); return k1 }()
+			f_3224 := func() any { c.p.stepWork(); return k4 }()
+			f_3225 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_TableAlias(c, true, f_3223, nil, f_3224, f_3225)
 		}()
 	}()
 	p.where = w
@@ -1171975,9 +1172418,9 @@ func (p *tparser) i364() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3225 := func() any { return k1 }()
-				f_3226 := func() any { return any(true) }()
-				return tmk_TableAlias(c, true, nil, nil, f_3225, f_3226)
+				f_3226 := func() any { return k1 }()
+				f_3227 := func() any { return any(true) }()
+				return tmk_TableAlias(c, true, nil, nil, f_3226, f_3227)
 			}()
 		}()
 		p.where = w
@@ -1172047,9 +1172490,9 @@ func (p *tparser) i364() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3225 := func() any { c.p.stepWork(); return k1 }()
-			f_3226 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_TableAlias(c, true, nil, nil, f_3225, f_3226)
+			f_3226 := func() any { c.p.stepWork(); return k1 }()
+			f_3227 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_TableAlias(c, true, nil, nil, f_3226, f_3227)
 		}()
 	}()
 	p.where = w
@@ -1172148,9 +1172591,9 @@ func (p *tparser) i365() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3227 := func() any { return k1 }()
-				f_3228 := func() any { return k4 }()
-				return tmk_TableAlias(c, true, f_3227, nil, f_3228, nil)
+				f_3228 := func() any { return k1 }()
+				f_3229 := func() any { return k4 }()
+				return tmk_TableAlias(c, true, f_3228, nil, f_3229, nil)
 			}()
 		}()
 		p.where = w
@@ -1172226,9 +1172669,9 @@ func (p *tparser) i365() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3227 := func() any { c.p.stepWork(); return k1 }()
-			f_3228 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_TableAlias(c, true, f_3227, nil, f_3228, nil)
+			f_3228 := func() any { c.p.stepWork(); return k1 }()
+			f_3229 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_TableAlias(c, true, f_3228, nil, f_3229, nil)
 		}()
 	}()
 	p.where = w
@@ -1172574,10 +1173017,10 @@ func (p *tparser) i367() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3229 := func() any { return k1 }()
-				f_3230 := func() any { return k4 }()
-				f_3231 := func() any { return k9 }()
-				return tmk_ColDef(c, true, f_3229, f_3230, f_3231)
+				f_3230 := func() any { return k1 }()
+				f_3231 := func() any { return k4 }()
+				f_3232 := func() any { return k9 }()
+				return tmk_ColDef(c, true, f_3230, f_3231, f_3232)
 			}()
 		}()
 		p.where = w
@@ -1172670,10 +1173113,10 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3229 := func() any { c.p.stepWork(); return k1 }()
-			f_3230 := func() any { c.p.stepWork(); return k4 }()
-			f_3231 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_ColDef(c, true, f_3229, f_3230, f_3231)
+			f_3230 := func() any { c.p.stepWork(); return k1 }()
+			f_3231 := func() any { c.p.stepWork(); return k4 }()
+			f_3232 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_ColDef(c, true, f_3230, f_3231, f_3232)
 		}()
 	}()
 	p.where = w
@@ -1173413,21 +1173856,21 @@ func (p *tparser) i369() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3232 := func() any { return k3 }()
-				f_3233 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3234 := func() any { return k27 }()
-				f_3235 := func() any { return k32 }()
-				f_3236 := func() any { return c.text(func() any { return k40 }()) }()
-				f_3237 := func() any { return c.concat(func() any { return k60 }()) }()
-				f_3238 := func() any { return c.text(func() any { return k62 }()) }()
-				f_3239 := func() any { return k64 }()
-				f_3240 := func() any {
+				f_3233 := func() any { return k3 }()
+				f_3234 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3235 := func() any { return k27 }()
+				f_3236 := func() any { return k32 }()
+				f_3237 := func() any { return c.text(func() any { return k40 }()) }()
+				f_3238 := func() any { return c.concat(func() any { return k60 }()) }()
+				f_3239 := func() any { return c.text(func() any { return k62 }()) }()
+				f_3240 := func() any { return k64 }()
+				f_3241 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k58 }()) }(), func() any { return any(0) }())
 				}()
-				f_3241 := func() any { return k93 }()
-				f_3242 := func() any { return c.concat(func() any { return k101 }()) }()
-				return tmk_InsertStmt(c, true, f_3232, f_3233, f_3234, f_3235, f_3236, f_3237, f_3238, f_3239, f_3240, f_3241, f_3242)
+				f_3242 := func() any { return k93 }()
+				f_3243 := func() any { return c.concat(func() any { return k101 }()) }()
+				return tmk_InsertStmt(c, true, f_3233, f_3234, f_3235, f_3236, f_3237, f_3238, f_3239, f_3240, f_3241, f_3242, f_3243)
 			}()
 		}()
 		p.where = w
@@ -1173924,21 +1174367,21 @@ L104:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3232 := func() any { c.p.stepWork(); return k3 }()
-			f_3233 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3234 := func() any { c.p.stepWork(); return k27 }()
-			f_3235 := func() any { c.p.stepWork(); return k32 }()
-			f_3236 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k40 }()) }()
-			f_3237 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k60 }()) }()
-			f_3238 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k62 }()) }()
-			f_3239 := func() any { c.p.stepWork(); return k64 }()
-			f_3240 := func() any {
+			f_3233 := func() any { c.p.stepWork(); return k3 }()
+			f_3234 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3235 := func() any { c.p.stepWork(); return k27 }()
+			f_3236 := func() any { c.p.stepWork(); return k32 }()
+			f_3237 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k40 }()) }()
+			f_3238 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k60 }()) }()
+			f_3239 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k62 }()) }()
+			f_3240 := func() any { c.p.stepWork(); return k64 }()
+			f_3241 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k58 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3241 := func() any { c.p.stepWork(); return k93 }()
-			f_3242 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k101 }()) }()
-			return tmk_InsertStmt(c, true, f_3232, f_3233, f_3234, f_3235, f_3236, f_3237, f_3238, f_3239, f_3240, f_3241, f_3242)
+			f_3242 := func() any { c.p.stepWork(); return k93 }()
+			f_3243 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k101 }()) }()
+			return tmk_InsertStmt(c, true, f_3233, f_3234, f_3235, f_3236, f_3237, f_3238, f_3239, f_3240, f_3241, f_3242, f_3243)
 		}()
 	}()
 	p.where = w
@@ -1174970,16 +1175413,16 @@ func (p *tparser) i374() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3243 := func() any { return c.concat(func() any { return k3 }()) }()
-				f_3244 := func() any { return k5 }()
-				f_3245 := func() any { return k7 }()
-				f_3246 := func() any {
+				f_3244 := func() any { return c.concat(func() any { return k3 }()) }()
+				f_3245 := func() any { return k5 }()
+				f_3246 := func() any { return k7 }()
+				f_3247 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k36 }()) }(), func() any { return any(0) }())
 				}()
-				f_3247 := func() any { return c.concat(func() any { return k32 }()) }()
-				f_3248 := func() any { return k34 }()
-				return tmk_OnConflict(c, true, f_3243, f_3244, f_3245, f_3246, f_3247, f_3248)
+				f_3248 := func() any { return c.concat(func() any { return k32 }()) }()
+				f_3249 := func() any { return k34 }()
+				return tmk_OnConflict(c, true, f_3244, f_3245, f_3246, f_3247, f_3248, f_3249)
 			}()
 		}()
 		p.where = w
@@ -1175324,16 +1175767,16 @@ L38:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3243 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
-			f_3244 := func() any { c.p.stepWork(); return k5 }()
-			f_3245 := func() any { c.p.stepWork(); return k7 }()
-			f_3246 := func() any {
+			f_3244 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k3 }()) }()
+			f_3245 := func() any { c.p.stepWork(); return k5 }()
+			f_3246 := func() any { c.p.stepWork(); return k7 }()
+			f_3247 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k36 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3247 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k32 }()) }()
-			f_3248 := func() any { c.p.stepWork(); return k34 }()
-			return tmk_OnConflict(c, true, f_3243, f_3244, f_3245, f_3246, f_3247, f_3248)
+			f_3248 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k32 }()) }()
+			f_3249 := func() any { c.p.stepWork(); return k34 }()
+			return tmk_OnConflict(c, true, f_3244, f_3245, f_3246, f_3247, f_3248, f_3249)
 		}()
 	}()
 	p.where = w
@@ -1176058,18 +1176501,18 @@ func (p *tparser) i377() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3249 := func() any {
+				f_3250 := func() any {
 
 					return func() any {
-						f_3250 := func() any { return c.list(func() any { return k1 }()) }()
-						return tmk_ColumnRef(c, false, f_3250)
+						f_3251 := func() any { return c.list(func() any { return k1 }()) }()
+						return tmk_ColumnRef(c, false, f_3251)
 					}()
 				}()
-				f_3251 := func() any { return k6 }()
-				f_3252 := func() any { return k14 }()
-				f_3253 := func() any { return c.text(func() any { return k22 }()) }()
-				f_3254 := func() any { return c.text(func() any { return k30 }()) }()
-				return tmk_IndexElem(c, true, f_3249, f_3251, f_3252, f_3253, f_3254)
+				f_3252 := func() any { return k6 }()
+				f_3253 := func() any { return k14 }()
+				f_3254 := func() any { return c.text(func() any { return k22 }()) }()
+				f_3255 := func() any { return c.text(func() any { return k30 }()) }()
+				return tmk_IndexElem(c, true, f_3250, f_3252, f_3253, f_3254, f_3255)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1176236,18 +1176679,18 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3249 := func() any {
+			f_3250 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3250 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-					return tmk_ColumnRef(c, false, f_3250)
+					f_3251 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+					return tmk_ColumnRef(c, false, f_3251)
 				}()
 			}()
-			f_3251 := func() any { c.p.stepWork(); return k6 }()
-			f_3252 := func() any { c.p.stepWork(); return k14 }()
-			f_3253 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
-			f_3254 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
-			return tmk_IndexElem(c, true, f_3249, f_3251, f_3252, f_3253, f_3254)
+			f_3252 := func() any { c.p.stepWork(); return k6 }()
+			f_3253 := func() any { c.p.stepWork(); return k14 }()
+			f_3254 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
+			f_3255 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
+			return tmk_IndexElem(c, true, f_3250, f_3252, f_3253, f_3254, f_3255)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1176433,12 +1176876,12 @@ func (p *tparser) i378() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3255 := func() any { return k1 }()
-				f_3256 := func() any { return k6 }()
-				f_3257 := func() any { return k14 }()
-				f_3258 := func() any { return c.text(func() any { return k22 }()) }()
-				f_3259 := func() any { return c.text(func() any { return k30 }()) }()
-				return tmk_IndexElem(c, true, f_3255, f_3256, f_3257, f_3258, f_3259)
+				f_3256 := func() any { return k1 }()
+				f_3257 := func() any { return k6 }()
+				f_3258 := func() any { return k14 }()
+				f_3259 := func() any { return c.text(func() any { return k22 }()) }()
+				f_3260 := func() any { return c.text(func() any { return k30 }()) }()
+				return tmk_IndexElem(c, true, f_3256, f_3257, f_3258, f_3259, f_3260)
 			}()
 		}()
 		p.where = w
@@ -1176604,12 +1177047,12 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3255 := func() any { c.p.stepWork(); return k1 }()
-			f_3256 := func() any { c.p.stepWork(); return k6 }()
-			f_3257 := func() any { c.p.stepWork(); return k14 }()
-			f_3258 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
-			f_3259 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
-			return tmk_IndexElem(c, true, f_3255, f_3256, f_3257, f_3258, f_3259)
+			f_3256 := func() any { c.p.stepWork(); return k1 }()
+			f_3257 := func() any { c.p.stepWork(); return k6 }()
+			f_3258 := func() any { c.p.stepWork(); return k14 }()
+			f_3259 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
+			f_3260 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
+			return tmk_IndexElem(c, true, f_3256, f_3257, f_3258, f_3259, f_3260)
 		}()
 	}()
 	p.where = w
@@ -1176814,12 +1177257,12 @@ func (p *tparser) i379() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3260 := func() any { return k1 }()
-				f_3261 := func() any { return k6 }()
-				f_3262 := func() any { return k14 }()
-				f_3263 := func() any { return c.text(func() any { return k22 }()) }()
-				f_3264 := func() any { return c.text(func() any { return k30 }()) }()
-				return tmk_IndexElem(c, true, f_3260, f_3261, f_3262, f_3263, f_3264)
+				f_3261 := func() any { return k1 }()
+				f_3262 := func() any { return k6 }()
+				f_3263 := func() any { return k14 }()
+				f_3264 := func() any { return c.text(func() any { return k22 }()) }()
+				f_3265 := func() any { return c.text(func() any { return k30 }()) }()
+				return tmk_IndexElem(c, true, f_3261, f_3262, f_3263, f_3264, f_3265)
 			}()
 		}()
 		p.where = w
@@ -1177005,12 +1177448,12 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3260 := func() any { c.p.stepWork(); return k1 }()
-			f_3261 := func() any { c.p.stepWork(); return k6 }()
-			f_3262 := func() any { c.p.stepWork(); return k14 }()
-			f_3263 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
-			f_3264 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
-			return tmk_IndexElem(c, true, f_3260, f_3261, f_3262, f_3263, f_3264)
+			f_3261 := func() any { c.p.stepWork(); return k1 }()
+			f_3262 := func() any { c.p.stepWork(); return k6 }()
+			f_3263 := func() any { c.p.stepWork(); return k14 }()
+			f_3264 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
+			f_3265 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k30 }()) }()
+			return tmk_IndexElem(c, true, f_3261, f_3262, f_3263, f_3264, f_3265)
 		}()
 	}()
 	p.where = w
@@ -1177864,9 +1178307,9 @@ func (p *tparser) i383() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3265 := func() any { return c.list(func() any { return k1 }()) }()
-				f_3266 := func() any { return k4 }()
-				return tmk_SetClause(c, true, f_3265, f_3266, nil)
+				f_3266 := func() any { return c.list(func() any { return k1 }()) }()
+				f_3267 := func() any { return k4 }()
+				return tmk_SetClause(c, true, f_3266, f_3267, nil)
 			}()
 		}()
 		p.where = w
@@ -1177930,9 +1178373,9 @@ func (p *tparser) i383() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3265 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3266 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SetClause(c, true, f_3265, f_3266, nil)
+			f_3266 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3267 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SetClause(c, true, f_3266, f_3267, nil)
 		}()
 	}()
 	p.where = w
@@ -1178089,7 +1178532,7 @@ func (p *tparser) i384() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3267 := func() any {
+				f_3268 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1178098,9 +1178541,9 @@ func (p *tparser) i384() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_3268 := func() any { return k15 }()
-				f_3269 := func() any { return any(true) }()
-				return tmk_SetClause(c, true, f_3267, f_3268, f_3269)
+				f_3269 := func() any { return k15 }()
+				f_3270 := func() any { return any(true) }()
+				return tmk_SetClause(c, true, f_3268, f_3269, f_3270)
 			}()
 		}()
 		p.where = w
@@ -1178238,7 +1178681,7 @@ func (p *tparser) i384() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3267 := func() any {
+			f_3268 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1178247,9 +1178690,9 @@ func (p *tparser) i384() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			f_3268 := func() any { c.p.stepWork(); return k15 }()
-			f_3269 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_SetClause(c, true, f_3267, f_3268, f_3269)
+			f_3269 := func() any { c.p.stepWork(); return k15 }()
+			f_3270 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_SetClause(c, true, f_3268, f_3269, f_3270)
 		}()
 	}()
 	p.where = w
@@ -1178591,21 +1179034,21 @@ func (p *tparser) i385() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3270 := func() any { return k3 }()
-				f_3271 := func() any {
+				f_3271 := func() any { return k3 }()
+				f_3272 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k7 }()) }(), func() any { return any(0) }())
 				}()
-				f_3272 := func() any {
+				f_3273 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k5 }()) }(), func() any { return any(0) }())
 				}()
-				f_3273 := func() any { return k43 }()
-				f_3274 := func() any {
+				f_3274 := func() any { return k43 }()
+				f_3275 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k41 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_TargetTable(c, true, f_3270, f_3271, f_3272, f_3273, f_3274)
+				return tmk_TargetTable(c, true, f_3271, f_3272, f_3273, f_3274, f_3275)
 			}()
 		}()
 		p.where = w
@@ -1178923,21 +1179366,21 @@ L46:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3270 := func() any { c.p.stepWork(); return k3 }()
-			f_3271 := func() any {
+			f_3271 := func() any { c.p.stepWork(); return k3 }()
+			f_3272 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k7 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3272 := func() any {
+			f_3273 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k5 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3273 := func() any { c.p.stepWork(); return k43 }()
-			f_3274 := func() any {
+			f_3274 := func() any { c.p.stepWork(); return k43 }()
+			f_3275 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k41 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_TargetTable(c, true, f_3270, f_3271, f_3272, f_3273, f_3274)
+			return tmk_TargetTable(c, true, f_3271, f_3272, f_3273, f_3274, f_3275)
 		}()
 	}()
 	p.where = w
@@ -1179174,13 +1179617,13 @@ func (p *tparser) i386() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3275 := func() any { return k3 }()
-				f_3276 := func() any { return k9 }()
-				f_3277 := func() any { return k12 }()
-				f_3278 := func() any { return c.concat(func() any { return k17 }()) }()
-				f_3279 := func() any { return k25 }()
-				f_3280 := func() any { return c.concat(func() any { return k33 }()) }()
-				return tmk_UpdateStmt(c, true, f_3275, f_3276, f_3277, f_3278, f_3279, f_3280)
+				f_3276 := func() any { return k3 }()
+				f_3277 := func() any { return k9 }()
+				f_3278 := func() any { return k12 }()
+				f_3279 := func() any { return c.concat(func() any { return k17 }()) }()
+				f_3280 := func() any { return k25 }()
+				f_3281 := func() any { return c.concat(func() any { return k33 }()) }()
+				return tmk_UpdateStmt(c, true, f_3276, f_3277, f_3278, f_3279, f_3280, f_3281)
 			}()
 		}()
 		p.where = w
@@ -1179392,13 +1179835,13 @@ L36:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3275 := func() any { c.p.stepWork(); return k3 }()
-			f_3276 := func() any { c.p.stepWork(); return k9 }()
-			f_3277 := func() any { c.p.stepWork(); return k12 }()
-			f_3278 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
-			f_3279 := func() any { c.p.stepWork(); return k25 }()
-			f_3280 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k33 }()) }()
-			return tmk_UpdateStmt(c, true, f_3275, f_3276, f_3277, f_3278, f_3279, f_3280)
+			f_3276 := func() any { c.p.stepWork(); return k3 }()
+			f_3277 := func() any { c.p.stepWork(); return k9 }()
+			f_3278 := func() any { c.p.stepWork(); return k12 }()
+			f_3279 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
+			f_3280 := func() any { c.p.stepWork(); return k25 }()
+			f_3281 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k33 }()) }()
+			return tmk_UpdateStmt(c, true, f_3276, f_3277, f_3278, f_3279, f_3280, f_3281)
 		}()
 	}()
 	p.where = w
@@ -1179621,12 +1180064,12 @@ func (p *tparser) i387() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3281 := func() any { return k3 }()
-				f_3282 := func() any { return k9 }()
-				f_3283 := func() any { return c.concat(func() any { return k14 }()) }()
-				f_3284 := func() any { return k22 }()
-				f_3285 := func() any { return c.concat(func() any { return k30 }()) }()
-				return tmk_DeleteStmt(c, true, f_3281, f_3282, f_3283, f_3284, f_3285, nil)
+				f_3282 := func() any { return k3 }()
+				f_3283 := func() any { return k9 }()
+				f_3284 := func() any { return c.concat(func() any { return k14 }()) }()
+				f_3285 := func() any { return k22 }()
+				f_3286 := func() any { return c.concat(func() any { return k30 }()) }()
+				return tmk_DeleteStmt(c, true, f_3282, f_3283, f_3284, f_3285, f_3286, nil)
 			}()
 		}()
 		p.where = w
@@ -1179824,12 +1180267,12 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3281 := func() any { c.p.stepWork(); return k3 }()
-			f_3282 := func() any { c.p.stepWork(); return k9 }()
-			f_3283 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			f_3284 := func() any { c.p.stepWork(); return k22 }()
-			f_3285 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
-			return tmk_DeleteStmt(c, true, f_3281, f_3282, f_3283, f_3284, f_3285, nil)
+			f_3282 := func() any { c.p.stepWork(); return k3 }()
+			f_3283 := func() any { c.p.stepWork(); return k9 }()
+			f_3284 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			f_3285 := func() any { c.p.stepWork(); return k22 }()
+			f_3286 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
+			return tmk_DeleteStmt(c, true, f_3282, f_3283, f_3284, f_3285, f_3286, nil)
 		}()
 	}()
 	p.where = w
@@ -1179925,9 +1180368,9 @@ func (p *tparser) i388() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3286 := func() any { return k5 }()
-				f_3287 := func() any { return any(true) }()
-				return tmk_DeleteStmt(c, true, nil, f_3286, nil, nil, nil, f_3287)
+				f_3287 := func() any { return k5 }()
+				f_3288 := func() any { return any(true) }()
+				return tmk_DeleteStmt(c, true, nil, f_3287, nil, nil, nil, f_3288)
 			}()
 		}()
 		p.where = w
@@ -1179995,9 +1180438,9 @@ L4:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3286 := func() any { c.p.stepWork(); return k5 }()
-			f_3287 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_DeleteStmt(c, true, nil, f_3286, nil, nil, nil, f_3287)
+			f_3287 := func() any { c.p.stepWork(); return k5 }()
+			f_3288 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_DeleteStmt(c, true, nil, f_3287, nil, nil, nil, f_3288)
 		}()
 	}()
 	p.where = w
@@ -1180330,12 +1180773,12 @@ func (p *tparser) i389() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3288 := func() any { return k3 }()
-				f_3289 := func() any { return k9 }()
-				f_3290 := func() any { return k12 }()
-				f_3291 := func() any { return k17 }()
-				f_3292 := func() any { return c.concat(func() any { return k19 }()) }()
-				f_3293 := func() any {
+				f_3289 := func() any { return k3 }()
+				f_3290 := func() any { return k9 }()
+				f_3291 := func() any { return k12 }()
+				f_3292 := func() any { return k17 }()
+				f_3293 := func() any { return c.concat(func() any { return k19 }()) }()
+				f_3294 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1180344,8 +1180787,8 @@ func (p *tparser) i389() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_3294 := func() any { return c.concat(func() any { return k48 }()) }()
-				return tmk_MergeStmt(c, true, f_3288, f_3289, f_3290, f_3291, f_3292, f_3293, f_3294)
+				f_3295 := func() any { return c.concat(func() any { return k48 }()) }()
+				return tmk_MergeStmt(c, true, f_3289, f_3290, f_3291, f_3292, f_3293, f_3294, f_3295)
 			}()
 		}()
 		p.where = w
@@ -1180655,12 +1181098,12 @@ L51:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3288 := func() any { c.p.stepWork(); return k3 }()
-			f_3289 := func() any { c.p.stepWork(); return k9 }()
-			f_3290 := func() any { c.p.stepWork(); return k12 }()
-			f_3291 := func() any { c.p.stepWork(); return k17 }()
-			f_3292 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
-			f_3293 := func() any {
+			f_3289 := func() any { c.p.stepWork(); return k3 }()
+			f_3290 := func() any { c.p.stepWork(); return k9 }()
+			f_3291 := func() any { c.p.stepWork(); return k12 }()
+			f_3292 := func() any { c.p.stepWork(); return k17 }()
+			f_3293 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k19 }()) }()
+			f_3294 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1180669,8 +1181112,8 @@ L51:
 					return c.endList(b)
 				}()
 			}()
-			f_3294 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k48 }()) }()
-			return tmk_MergeStmt(c, true, f_3288, f_3289, f_3290, f_3291, f_3292, f_3293, f_3294)
+			f_3295 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k48 }()) }()
+			return tmk_MergeStmt(c, true, f_3289, f_3290, f_3291, f_3292, f_3293, f_3294, f_3295)
 		}()
 	}()
 	p.where = w
@@ -1181090,10 +1181533,10 @@ func (p *tparser) i391() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3295 := func() any { return any(false) }()
-				f_3296 := func() any { return k3 }()
-				f_3297 := func() any { return k9 }()
-				return tmk_MergeWhen(c, true, f_3295, nil, f_3296, f_3297)
+				f_3296 := func() any { return any(false) }()
+				f_3297 := func() any { return k3 }()
+				f_3298 := func() any { return k9 }()
+				return tmk_MergeWhen(c, true, f_3296, nil, f_3297, f_3298)
 			}()
 		}()
 		p.where = w
@@ -1181196,10 +1181639,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3295 := func() any { c.p.stepWork(); return any(false) }()
-			f_3296 := func() any { c.p.stepWork(); return k3 }()
-			f_3297 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_MergeWhen(c, true, f_3295, nil, f_3296, f_3297)
+			f_3296 := func() any { c.p.stepWork(); return any(false) }()
+			f_3297 := func() any { c.p.stepWork(); return k3 }()
+			f_3298 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_MergeWhen(c, true, f_3296, nil, f_3297, f_3298)
 		}()
 	}()
 	p.where = w
@@ -1181408,11 +1181851,11 @@ func (p *tparser) i392() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3298 := func() any { return any(true) }()
-				f_3299 := func() any { return c.text(func() any { return k3 }()) }()
-				f_3300 := func() any { return k21 }()
-				f_3301 := func() any { return k27 }()
-				return tmk_MergeWhen(c, true, f_3298, f_3299, f_3300, f_3301)
+				f_3299 := func() any { return any(true) }()
+				f_3300 := func() any { return c.text(func() any { return k3 }()) }()
+				f_3301 := func() any { return k21 }()
+				f_3302 := func() any { return k27 }()
+				return tmk_MergeWhen(c, true, f_3299, f_3300, f_3301, f_3302)
 			}()
 		}()
 		p.where = w
@@ -1181601,11 +1182044,11 @@ L24:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3298 := func() any { c.p.stepWork(); return any(true) }()
-			f_3299 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
-			f_3300 := func() any { c.p.stepWork(); return k21 }()
-			f_3301 := func() any { c.p.stepWork(); return k27 }()
-			return tmk_MergeWhen(c, true, f_3298, f_3299, f_3300, f_3301)
+			f_3299 := func() any { c.p.stepWork(); return any(true) }()
+			f_3300 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
+			f_3301 := func() any { c.p.stepWork(); return k21 }()
+			f_3302 := func() any { c.p.stepWork(); return k27 }()
+			return tmk_MergeWhen(c, true, f_3299, f_3300, f_3301, f_3302)
 		}()
 	}()
 	p.where = w
@@ -1182407,9 +1182850,9 @@ func (p *tparser) i394() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3302 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3303 := func() any { return k4 }()
-				return tmk_MergeAction(c, true, f_3302, f_3303, nil, nil, nil, nil, nil, nil)
+				f_3303 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3304 := func() any { return k4 }()
+				return tmk_MergeAction(c, true, f_3303, f_3304, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1182473,9 +1182916,9 @@ func (p *tparser) i394() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3302 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3303 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_MergeAction(c, true, f_3302, f_3303, nil, nil, nil, nil, nil, nil)
+			f_3303 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3304 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_MergeAction(c, true, f_3303, f_3304, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1182556,9 +1182999,9 @@ func (p *tparser) i395() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3304 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3305 := func() any { return any(true) }()
-				return tmk_MergeAction(c, true, f_3304, nil, nil, f_3305, nil, nil, nil, nil)
+				f_3305 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3306 := func() any { return any(true) }()
+				return tmk_MergeAction(c, true, f_3305, nil, nil, f_3306, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1182616,9 +1183059,9 @@ func (p *tparser) i395() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3304 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3305 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_MergeAction(c, true, f_3304, nil, nil, f_3305, nil, nil, nil, nil)
+			f_3305 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3306 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_MergeAction(c, true, f_3305, nil, nil, f_3306, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1182759,9 +1183202,9 @@ func (p *tparser) i396() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3306 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3307 := func() any { return c.text(func() any { return k6 }()) }()
-				return tmk_MergeAction(c, true, f_3306, nil, f_3307, nil, nil, nil, nil, nil)
+				f_3307 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3308 := func() any { return c.text(func() any { return k6 }()) }()
+				return tmk_MergeAction(c, true, f_3307, nil, f_3308, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1182881,9 +1183324,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3306 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3307 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_MergeAction(c, true, f_3306, nil, f_3307, nil, nil, nil, nil, nil)
+			f_3307 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3308 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_MergeAction(c, true, f_3307, nil, f_3308, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1182948,8 +1183391,8 @@ func (p *tparser) i397() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3308 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_MergeAction(c, true, f_3308, nil, nil, nil, nil, nil, nil, nil)
+				f_3309 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_MergeAction(c, true, f_3309, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1182990,8 +1183433,8 @@ func (p *tparser) i397() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3308 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_MergeAction(c, true, f_3308, nil, nil, nil, nil, nil, nil, nil)
+			f_3309 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_MergeAction(c, true, f_3309, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1183146,10 +1183589,10 @@ func (p *tparser) i398() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3309 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3310 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_3311 := func() any { return k12 }()
-				return tmk_MergeAction(c, true, f_3309, nil, nil, nil, f_3310, f_3311, nil, nil)
+				f_3310 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3311 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_3312 := func() any { return k12 }()
+				return tmk_MergeAction(c, true, f_3310, nil, nil, nil, f_3311, f_3312, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1183282,10 +1183725,10 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3309 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3310 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3311 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_MergeAction(c, true, f_3309, nil, nil, nil, f_3310, f_3311, nil, nil)
+			f_3310 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3311 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3312 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_MergeAction(c, true, f_3310, nil, nil, nil, f_3311, f_3312, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1183585,9 +1184028,9 @@ func (p *tparser) i400() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3312 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3313 := func() any { return any(true) }()
-				return tmk_MergeAction(c, true, f_3312, nil, nil, nil, nil, nil, f_3313, nil)
+				f_3313 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3314 := func() any { return any(true) }()
+				return tmk_MergeAction(c, true, f_3313, nil, nil, nil, nil, nil, f_3314, nil)
 			}()
 		}()
 		p.where = w
@@ -1183645,9 +1184088,9 @@ func (p *tparser) i400() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3312 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3313 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_MergeAction(c, true, f_3312, nil, nil, nil, nil, nil, f_3313, nil)
+			f_3313 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3314 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_MergeAction(c, true, f_3313, nil, nil, nil, nil, nil, f_3314, nil)
 		}()
 	}()
 	p.where = w
@@ -1183816,13 +1184259,13 @@ func (p *tparser) i401() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3314 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3315 := func() any { return c.text(func() any { return k6 }()) }()
-				f_3316 := func() any {
+				f_3315 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3316 := func() any { return c.text(func() any { return k6 }()) }()
+				f_3317 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k24 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_MergeAction(c, true, f_3314, nil, f_3315, f_3316, nil, nil, nil, nil)
+				return tmk_MergeAction(c, true, f_3315, nil, f_3316, f_3317, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1183971,13 +1184414,13 @@ L27:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3314 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3315 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3316 := func() any {
+			f_3315 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3316 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3317 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k24 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_MergeAction(c, true, f_3314, nil, f_3315, f_3316, nil, nil, nil, nil)
+			return tmk_MergeAction(c, true, f_3315, nil, f_3316, f_3317, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1184054,8 +1184497,8 @@ func (p *tparser) i402() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3317 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_MergeAction(c, true, f_3317, nil, nil, nil, nil, nil, nil, nil)
+				f_3318 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_MergeAction(c, true, f_3318, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1184109,8 +1184552,8 @@ func (p *tparser) i402() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3317 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_MergeAction(c, true, f_3317, nil, nil, nil, nil, nil, nil, nil)
+			f_3318 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_MergeAction(c, true, f_3318, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1184203,9 +1184646,9 @@ func (p *tparser) i403() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3318 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3319 := func() any { return k6 }()
-				return tmk_MergeAction(c, true, f_3318, nil, nil, nil, nil, nil, nil, f_3319)
+				f_3319 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3320 := func() any { return k6 }()
+				return tmk_MergeAction(c, true, f_3319, nil, nil, nil, nil, nil, nil, f_3320)
 			}()
 		}()
 		p.where = w
@@ -1184276,9 +1184719,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3318 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3319 := func() any { c.p.stepWork(); return k6 }()
-			return tmk_MergeAction(c, true, f_3318, nil, nil, nil, nil, nil, nil, f_3319)
+			f_3319 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3320 := func() any { c.p.stepWork(); return k6 }()
+			return tmk_MergeAction(c, true, f_3319, nil, nil, nil, nil, nil, nil, f_3320)
 		}()
 	}()
 	p.where = w
@@ -1185982,24 +1186425,24 @@ func (p *tparser) i408() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3320 := func() any {
+				f_3321 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3321 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3322 := func() any {
+				f_3322 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3323 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3323 := func() any { return k25 }()
-				f_3324 := func() any { return k28 }()
-				f_3325 := func() any {
+				f_3324 := func() any { return k25 }()
+				f_3325 := func() any { return k28 }()
+				f_3326 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k31 }()))
 				}()
-				f_3326 := func() any { return c.concat(func() any { return k44 }()) }()
-				f_3327 := func() any { return c.text(func() any { return k52 }()) }()
-				return tmk_CreateTableStmt(c, true, f_3320, f_3321, f_3322, f_3323, f_3324, f_3325, f_3326, f_3327)
+				f_3327 := func() any { return c.concat(func() any { return k44 }()) }()
+				f_3328 := func() any { return c.text(func() any { return k52 }()) }()
+				return tmk_CreateTableStmt(c, true, f_3321, f_3322, f_3323, f_3324, f_3325, f_3326, f_3327, f_3328)
 			}()
 		}()
 		p.where = w
@@ -1186287,24 +1186730,24 @@ L55:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3320 := func() any {
+			f_3321 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3321 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3322 := func() any {
+			f_3322 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3323 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3323 := func() any { c.p.stepWork(); return k25 }()
-			f_3324 := func() any { c.p.stepWork(); return k28 }()
-			f_3325 := func() any {
+			f_3324 := func() any { c.p.stepWork(); return k25 }()
+			f_3325 := func() any { c.p.stepWork(); return k28 }()
+			f_3326 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k31 }()))
 			}()
-			f_3326 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k44 }()) }()
-			f_3327 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k52 }()) }()
-			return tmk_CreateTableStmt(c, true, f_3320, f_3321, f_3322, f_3323, f_3324, f_3325, f_3326, f_3327)
+			f_3327 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k44 }()) }()
+			f_3328 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k52 }()) }()
+			return tmk_CreateTableStmt(c, true, f_3321, f_3322, f_3323, f_3324, f_3325, f_3326, f_3327, f_3328)
 		}()
 	}()
 	p.where = w
@@ -1187030,9 +1187473,9 @@ func (p *tparser) i411() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3328 := func() any { return k1 }()
-				f_3329 := func() any { return k14 }()
-				return tmk_PartitionSorted(c, true, f_3328, f_3329)
+				f_3329 := func() any { return k1 }()
+				f_3330 := func() any { return k14 }()
+				return tmk_PartitionSorted(c, true, f_3329, f_3330)
 			}()
 		}()
 		p.where = w
@@ -1187156,9 +1187599,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3328 := func() any { c.p.stepWork(); return k1 }()
-			f_3329 := func() any { c.p.stepWork(); return k14 }()
-			return tmk_PartitionSorted(c, true, f_3328, f_3329)
+			f_3329 := func() any { c.p.stepWork(); return k1 }()
+			f_3330 := func() any { c.p.stepWork(); return k14 }()
+			return tmk_PartitionSorted(c, true, f_3329, f_3330)
 		}()
 	}()
 	p.where = w
@@ -1188817,18 +1189260,18 @@ func (p *tparser) i418() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3330 := func() any {
+				f_3331 := func() any {
 
 					return func() any {
-						f_3331 := func() any {
+						f_3332 := func() any {
 
 							return c.list(func() any { return k1 }(), func() any { return k4 }())
 						}()
-						return tmk_Name(c, false, f_3331)
+						return tmk_Name(c, false, f_3332)
 					}()
 				}()
-				f_3332 := func() any { return k9 }()
-				return tmk_Reloption(c, true, f_3330, nil, f_3332)
+				f_3333 := func() any { return k9 }()
+				return tmk_Reloption(c, true, f_3331, nil, f_3333)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1188932,18 +1189375,18 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3330 := func() any {
+			f_3331 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3331 := func() any {
+					f_3332 := func() any {
 						c.p.stepWork()
 						return c.list(func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }())
 					}()
-					return tmk_Name(c, false, f_3331)
+					return tmk_Name(c, false, f_3332)
 				}()
 			}()
-			f_3332 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_Reloption(c, true, f_3330, nil, f_3332)
+			f_3333 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_Reloption(c, true, f_3331, nil, f_3333)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1189045,9 +1189488,9 @@ func (p *tparser) i419() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3333 := func() any { return k1 }()
-				f_3334 := func() any { return k6 }()
-				return tmk_Reloption(c, true, f_3333, f_3334, nil)
+				f_3334 := func() any { return k1 }()
+				f_3335 := func() any { return k6 }()
+				return tmk_Reloption(c, true, f_3334, f_3335, nil)
 			}()
 		}()
 		p.where = w
@@ -1189126,9 +1189569,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3333 := func() any { c.p.stepWork(); return k1 }()
-			f_3334 := func() any { c.p.stepWork(); return k6 }()
-			return tmk_Reloption(c, true, f_3333, f_3334, nil)
+			f_3334 := func() any { c.p.stepWork(); return k1 }()
+			f_3335 := func() any { c.p.stepWork(); return k6 }()
+			return tmk_Reloption(c, true, f_3334, f_3335, nil)
 		}()
 	}()
 	p.where = w
@@ -1189193,8 +1189636,8 @@ func (p *tparser) i420() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3335 := func() any { return c.list(func() any { return k1 }()) }()
-				return tmk_Name(c, true, f_3335)
+				f_3336 := func() any { return c.list(func() any { return k1 }()) }()
+				return tmk_Name(c, true, f_3336)
 			}()
 		}()
 		p.where = w
@@ -1189235,8 +1189678,8 @@ func (p *tparser) i420() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3335 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_Name(c, true, f_3335)
+			f_3336 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_Name(c, true, f_3336)
 		}()
 	}()
 	p.where = w
@@ -1190396,9 +1190839,9 @@ func (p *tparser) i424() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3336 := func() any { return k1 }()
-				f_3337 := func() any { return c.text(func() any { return k6 }()) }()
-				return tmk_DefElem(c, true, f_3336, f_3337)
+				f_3337 := func() any { return k1 }()
+				f_3338 := func() any { return c.text(func() any { return k6 }()) }()
+				return tmk_DefElem(c, true, f_3337, f_3338)
 			}()
 		}()
 		p.where = w
@@ -1190477,9 +1190920,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3336 := func() any { c.p.stepWork(); return k1 }()
-			f_3337 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_DefElem(c, true, f_3336, f_3337)
+			f_3337 := func() any { c.p.stepWork(); return k1 }()
+			f_3338 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_DefElem(c, true, f_3337, f_3338)
 		}()
 	}()
 	p.where = w
@@ -1190965,13 +1191408,13 @@ func (p *tparser) i428() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3338 := func() any { return k1 }()
-				f_3339 := func() any { return k4 }()
-				f_3340 := func() any {
+				f_3339 := func() any { return k1 }()
+				f_3340 := func() any { return k4 }()
+				f_3341 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k7 }()))
 				}()
-				return tmk_ColumnDef(c, true, f_3338, f_3339, nil, f_3340)
+				return tmk_ColumnDef(c, true, f_3339, f_3340, nil, f_3341)
 			}()
 		}()
 		p.where = w
@@ -1191069,13 +1191512,13 @@ func (p *tparser) i428() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3338 := func() any { c.p.stepWork(); return k1 }()
-			f_3339 := func() any { c.p.stepWork(); return k4 }()
-			f_3340 := func() any {
+			f_3339 := func() any { c.p.stepWork(); return k1 }()
+			f_3340 := func() any { c.p.stepWork(); return k4 }()
+			f_3341 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k7 }()))
 			}()
-			return tmk_ColumnDef(c, true, f_3338, f_3339, nil, f_3340)
+			return tmk_ColumnDef(c, true, f_3339, f_3340, nil, f_3341)
 		}()
 	}()
 	p.where = w
@@ -1191222,14 +1191665,14 @@ func (p *tparser) i429() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3341 := func() any { return k1 }()
-				f_3342 := func() any { return k6 }()
-				f_3343 := func() any { return k12 }()
-				f_3344 := func() any {
+				f_3342 := func() any { return k1 }()
+				f_3343 := func() any { return k6 }()
+				f_3344 := func() any { return k12 }()
+				f_3345 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k15 }()))
 				}()
-				return tmk_ColumnDef(c, true, f_3341, f_3342, f_3343, f_3344)
+				return tmk_ColumnDef(c, true, f_3342, f_3343, f_3344, f_3345)
 			}()
 		}()
 		p.where = w
@@ -1191356,14 +1191799,14 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3341 := func() any { c.p.stepWork(); return k1 }()
-			f_3342 := func() any { c.p.stepWork(); return k6 }()
-			f_3343 := func() any { c.p.stepWork(); return k12 }()
-			f_3344 := func() any {
+			f_3342 := func() any { c.p.stepWork(); return k1 }()
+			f_3343 := func() any { c.p.stepWork(); return k6 }()
+			f_3344 := func() any { c.p.stepWork(); return k12 }()
+			f_3345 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k15 }()))
 			}()
-			return tmk_ColumnDef(c, true, f_3341, f_3342, f_3343, f_3344)
+			return tmk_ColumnDef(c, true, f_3342, f_3343, f_3344, f_3345)
 		}()
 	}()
 	p.where = w
@@ -1191855,10 +1192298,10 @@ func (p *tparser) i431() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3345 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3346 := func() any { return any(true) }()
-				f_3347 := func() any { return c.concat(func() any { return k6 }()) }()
-				return tmk_GeneratedColumn(c, true, f_3345, f_3346, f_3347, nil, nil)
+				f_3346 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3347 := func() any { return any(true) }()
+				f_3348 := func() any { return c.concat(func() any { return k6 }()) }()
+				return tmk_GeneratedColumn(c, true, f_3346, f_3347, f_3348, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1191973,10 +1192416,10 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3345 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3346 := func() any { c.p.stepWork(); return any(true) }()
-			f_3347 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_GeneratedColumn(c, true, f_3345, f_3346, f_3347, nil, nil)
+			f_3346 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3347 := func() any { c.p.stepWork(); return any(true) }()
+			f_3348 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_GeneratedColumn(c, true, f_3346, f_3347, f_3348, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1192119,10 +1192562,10 @@ func (p *tparser) i432() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3348 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3349 := func() any { return k4 }()
-				f_3350 := func() any { return c.text(func() any { return k9 }()) }()
-				return tmk_GeneratedColumn(c, true, f_3348, nil, nil, f_3349, f_3350)
+				f_3349 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3350 := func() any { return k4 }()
+				f_3351 := func() any { return c.text(func() any { return k9 }()) }()
+				return tmk_GeneratedColumn(c, true, f_3349, nil, nil, f_3350, f_3351)
 			}()
 		}()
 		p.where = w
@@ -1192243,10 +1192686,10 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3348 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3349 := func() any { c.p.stepWork(); return k4 }()
-			f_3350 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_GeneratedColumn(c, true, f_3348, nil, nil, f_3349, f_3350)
+			f_3349 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3350 := func() any { c.p.stepWork(); return k4 }()
+			f_3351 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_GeneratedColumn(c, true, f_3349, nil, nil, f_3350, f_3351)
 		}()
 	}()
 	p.where = w
@@ -1192367,9 +1192810,9 @@ func (p *tparser) i433() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3351 := func() any { return k1 }()
-				f_3352 := func() any { return c.text(func() any { return k6 }()) }()
-				return tmk_GeneratedColumn(c, true, nil, nil, nil, f_3351, f_3352)
+				f_3352 := func() any { return k1 }()
+				f_3353 := func() any { return c.text(func() any { return k6 }()) }()
+				return tmk_GeneratedColumn(c, true, nil, nil, nil, f_3352, f_3353)
 			}()
 		}()
 		p.where = w
@@ -1192468,9 +1192911,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3351 := func() any { c.p.stepWork(); return k1 }()
-			f_3352 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_GeneratedColumn(c, true, nil, nil, nil, f_3351, f_3352)
+			f_3352 := func() any { c.p.stepWork(); return k1 }()
+			f_3353 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_GeneratedColumn(c, true, nil, nil, nil, f_3352, f_3353)
 		}()
 	}()
 	p.where = w
@@ -1193915,9 +1194358,9 @@ func (p *tparser) i438() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3353 := func() any { return k3 }()
-				f_3354 := func() any { return c.text(func() any { return k9 }()) }()
-				return tmk_ColumnConstraint(c, true, f_3353, f_3354, nil, nil, nil, nil, nil)
+				f_3354 := func() any { return k3 }()
+				f_3355 := func() any { return c.text(func() any { return k9 }()) }()
+				return tmk_ColumnConstraint(c, true, f_3354, f_3355, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1194001,9 +1194444,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3353 := func() any { c.p.stepWork(); return k3 }()
-			f_3354 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_ColumnConstraint(c, true, f_3353, f_3354, nil, nil, nil, nil, nil)
+			f_3354 := func() any { c.p.stepWork(); return k3 }()
+			f_3355 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_ColumnConstraint(c, true, f_3354, f_3355, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1194096,9 +1194539,9 @@ func (p *tparser) i439() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3355 := func() any { return k3 }()
-				f_3356 := func() any { return c.text(func() any { return k9 }()) }()
-				return tmk_ColumnConstraint(c, true, f_3355, f_3356, nil, nil, nil, nil, nil)
+				f_3356 := func() any { return k3 }()
+				f_3357 := func() any { return c.text(func() any { return k9 }()) }()
+				return tmk_ColumnConstraint(c, true, f_3356, f_3357, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1194169,9 +1194612,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3355 := func() any { c.p.stepWork(); return k3 }()
-			f_3356 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_ColumnConstraint(c, true, f_3355, f_3356, nil, nil, nil, nil, nil)
+			f_3356 := func() any { c.p.stepWork(); return k3 }()
+			f_3357 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_ColumnConstraint(c, true, f_3356, f_3357, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1194292,10 +1194735,10 @@ func (p *tparser) i440() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3357 := func() any { return k3 }()
-				f_3358 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3359 := func() any { return c.concat(func() any { return k14 }()) }()
-				return tmk_ColumnConstraint(c, true, f_3357, f_3358, nil, nil, nil, nil, f_3359)
+				f_3358 := func() any { return k3 }()
+				f_3359 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3360 := func() any { return c.concat(func() any { return k14 }()) }()
+				return tmk_ColumnConstraint(c, true, f_3358, f_3359, nil, nil, nil, nil, f_3360)
 			}()
 		}()
 		p.where = w
@@ -1194395,10 +1194838,10 @@ L17:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3357 := func() any { c.p.stepWork(); return k3 }()
-			f_3358 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3359 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			return tmk_ColumnConstraint(c, true, f_3357, f_3358, nil, nil, nil, nil, f_3359)
+			f_3358 := func() any { c.p.stepWork(); return k3 }()
+			f_3359 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3360 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			return tmk_ColumnConstraint(c, true, f_3358, f_3359, nil, nil, nil, nil, f_3360)
 		}()
 	}()
 	p.where = w
@@ -1194531,10 +1194974,10 @@ func (p *tparser) i441() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3360 := func() any { return k3 }()
-				f_3361 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3362 := func() any { return c.concat(func() any { return k15 }()) }()
-				return tmk_ColumnConstraint(c, true, f_3360, f_3361, nil, nil, nil, nil, f_3362)
+				f_3361 := func() any { return k3 }()
+				f_3362 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3363 := func() any { return c.concat(func() any { return k15 }()) }()
+				return tmk_ColumnConstraint(c, true, f_3361, f_3362, nil, nil, nil, nil, f_3363)
 			}()
 		}()
 		p.where = w
@@ -1194647,10 +1195090,10 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3360 := func() any { c.p.stepWork(); return k3 }()
-			f_3361 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3362 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k15 }()) }()
-			return tmk_ColumnConstraint(c, true, f_3360, f_3361, nil, nil, nil, nil, f_3362)
+			f_3361 := func() any { c.p.stepWork(); return k3 }()
+			f_3362 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3363 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k15 }()) }()
+			return tmk_ColumnConstraint(c, true, f_3361, f_3362, nil, nil, nil, nil, f_3363)
 		}()
 	}()
 	p.where = w
@@ -1194802,10 +1195245,10 @@ func (p *tparser) i442() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3363 := func() any { return k3 }()
-				f_3364 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3365 := func() any { return k12 }()
-				return tmk_ColumnConstraint(c, true, f_3363, f_3364, f_3365, nil, nil, nil, nil)
+				f_3364 := func() any { return k3 }()
+				f_3365 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3366 := func() any { return k12 }()
+				return tmk_ColumnConstraint(c, true, f_3364, f_3365, f_3366, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1194936,10 +1195379,10 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3363 := func() any { c.p.stepWork(); return k3 }()
-			f_3364 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3365 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_ColumnConstraint(c, true, f_3363, f_3364, f_3365, nil, nil, nil, nil)
+			f_3364 := func() any { c.p.stepWork(); return k3 }()
+			f_3365 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3366 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_ColumnConstraint(c, true, f_3364, f_3365, f_3366, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1195058,10 +1195501,10 @@ func (p *tparser) i443() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3366 := func() any { return k3 }()
-				f_3367 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3368 := func() any { return k13 }()
-				return tmk_ColumnConstraint(c, true, f_3366, f_3367, nil, nil, nil, f_3368, nil)
+				f_3367 := func() any { return k3 }()
+				f_3368 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3369 := func() any { return k13 }()
+				return tmk_ColumnConstraint(c, true, f_3367, f_3368, nil, nil, nil, f_3369, nil)
 			}()
 		}()
 		p.where = w
@@ -1195159,10 +1195602,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3366 := func() any { c.p.stepWork(); return k3 }()
-			f_3367 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3368 := func() any { c.p.stepWork(); return k13 }()
-			return tmk_ColumnConstraint(c, true, f_3366, f_3367, nil, nil, nil, f_3368, nil)
+			f_3367 := func() any { c.p.stepWork(); return k3 }()
+			f_3368 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3369 := func() any { c.p.stepWork(); return k13 }()
+			return tmk_ColumnConstraint(c, true, f_3367, f_3368, nil, nil, nil, f_3369, nil)
 		}()
 	}()
 	p.where = w
@@ -1195269,10 +1195712,10 @@ func (p *tparser) i444() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3369 := func() any { return k3 }()
-				f_3370 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3371 := func() any { return k12 }()
-				return tmk_ColumnConstraint(c, true, f_3369, f_3370, f_3371, nil, nil, nil, nil)
+				f_3370 := func() any { return k3 }()
+				f_3371 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3372 := func() any { return k12 }()
+				return tmk_ColumnConstraint(c, true, f_3370, f_3371, f_3372, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1195357,10 +1195800,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3369 := func() any { c.p.stepWork(); return k3 }()
-			f_3370 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3371 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_ColumnConstraint(c, true, f_3369, f_3370, f_3371, nil, nil, nil, nil)
+			f_3370 := func() any { c.p.stepWork(); return k3 }()
+			f_3371 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3372 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_ColumnConstraint(c, true, f_3370, f_3371, f_3372, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1195467,10 +1195910,10 @@ func (p *tparser) i445() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3372 := func() any { return k3 }()
-				f_3373 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3374 := func() any { return k12 }()
-				return tmk_ColumnConstraint(c, true, f_3372, f_3373, nil, f_3374, nil, nil, nil)
+				f_3373 := func() any { return k3 }()
+				f_3374 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3375 := func() any { return k12 }()
+				return tmk_ColumnConstraint(c, true, f_3373, f_3374, nil, f_3375, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1195555,10 +1195998,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3372 := func() any { c.p.stepWork(); return k3 }()
-			f_3373 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3374 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_ColumnConstraint(c, true, f_3372, f_3373, nil, f_3374, nil, nil, nil)
+			f_3373 := func() any { c.p.stepWork(); return k3 }()
+			f_3374 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3375 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_ColumnConstraint(c, true, f_3373, f_3374, nil, f_3375, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1195623,8 +1196066,8 @@ func (p *tparser) i446() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3375 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_ColumnConstraint(c, true, nil, f_3375, nil, nil, nil, nil, nil)
+				f_3376 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_ColumnConstraint(c, true, nil, f_3376, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1195665,8 +1196108,8 @@ func (p *tparser) i446() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3375 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_ColumnConstraint(c, true, nil, f_3375, nil, nil, nil, nil, nil)
+			f_3376 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_ColumnConstraint(c, true, nil, f_3376, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1195745,9 +1196188,9 @@ func (p *tparser) i447() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3376 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3377 := func() any { return k4 }()
-				return tmk_ColumnConstraint(c, true, nil, f_3376, nil, nil, f_3377, nil, nil)
+				f_3377 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3378 := func() any { return k4 }()
+				return tmk_ColumnConstraint(c, true, nil, f_3377, nil, nil, f_3378, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1195803,9 +1196246,9 @@ func (p *tparser) i447() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3376 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3377 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ColumnConstraint(c, true, nil, f_3376, nil, nil, f_3377, nil, nil)
+			f_3377 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3378 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ColumnConstraint(c, true, nil, f_3377, nil, nil, f_3378, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1196370,12 +1196813,12 @@ func (p *tparser) i449() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3378 := func() any { return k1 }()
-				f_3379 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_3380 := func() any { return k14 }()
-				f_3381 := func() any { return k22 }()
-				f_3382 := func() any { return k24 }()
-				return tmk_Reference(c, true, f_3378, f_3379, f_3380, f_3381, f_3382)
+				f_3379 := func() any { return k1 }()
+				f_3380 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_3381 := func() any { return k14 }()
+				f_3382 := func() any { return k22 }()
+				f_3383 := func() any { return k24 }()
+				return tmk_Reference(c, true, f_3379, f_3380, f_3381, f_3382, f_3383)
 			}()
 		}()
 		p.where = w
@@ -1196643,12 +1197086,12 @@ L27:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3378 := func() any { c.p.stepWork(); return k1 }()
-			f_3379 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3380 := func() any { c.p.stepWork(); return k14 }()
-			f_3381 := func() any { c.p.stepWork(); return k22 }()
-			f_3382 := func() any { c.p.stepWork(); return k24 }()
-			return tmk_Reference(c, true, f_3378, f_3379, f_3380, f_3381, f_3382)
+			f_3379 := func() any { c.p.stepWork(); return k1 }()
+			f_3380 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3381 := func() any { c.p.stepWork(); return k14 }()
+			f_3382 := func() any { c.p.stepWork(); return k22 }()
+			f_3383 := func() any { c.p.stepWork(); return k24 }()
+			return tmk_Reference(c, true, f_3379, f_3380, f_3381, f_3382, f_3383)
 		}()
 	}()
 	p.where = w
@@ -1199304,11 +1199747,11 @@ func (p *tparser) i459() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3383 := func() any { return k3 }()
-				f_3384 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3385 := func() any { return k12 }()
-				f_3386 := func() any { return k15 }()
-				return tmk_TableConstraint(c, true, f_3383, f_3384, nil, f_3385, nil, nil, nil, f_3386)
+				f_3384 := func() any { return k3 }()
+				f_3385 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3386 := func() any { return k12 }()
+				f_3387 := func() any { return k15 }()
+				return tmk_TableConstraint(c, true, f_3384, f_3385, nil, f_3386, nil, nil, nil, f_3387)
 			}()
 		}()
 		p.where = w
@@ -1199423,11 +1199866,11 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3383 := func() any { c.p.stepWork(); return k3 }()
-			f_3384 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3385 := func() any { c.p.stepWork(); return k12 }()
-			f_3386 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_TableConstraint(c, true, f_3383, f_3384, nil, f_3385, nil, nil, nil, f_3386)
+			f_3384 := func() any { c.p.stepWork(); return k3 }()
+			f_3385 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3386 := func() any { c.p.stepWork(); return k12 }()
+			f_3387 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_TableConstraint(c, true, f_3384, f_3385, nil, f_3386, nil, nil, nil, f_3387)
 		}()
 	}()
 	p.where = w
@@ -1199592,12 +1200035,12 @@ func (p *tparser) i460() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3387 := func() any { return k3 }()
-				f_3388 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3389 := func() any { return k12 }()
-				f_3390 := func() any { return c.concat(func() any { return k17 }()) }()
-				f_3391 := func() any { return k23 }()
-				return tmk_TableConstraint(c, true, f_3387, f_3388, f_3389, nil, nil, nil, f_3390, f_3391)
+				f_3388 := func() any { return k3 }()
+				f_3389 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3390 := func() any { return k12 }()
+				f_3391 := func() any { return c.concat(func() any { return k17 }()) }()
+				f_3392 := func() any { return k23 }()
+				return tmk_TableConstraint(c, true, f_3388, f_3389, f_3390, nil, nil, nil, f_3391, f_3392)
 			}()
 		}()
 		p.where = w
@@ -1199741,12 +1200184,12 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3387 := func() any { c.p.stepWork(); return k3 }()
-			f_3388 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3389 := func() any { c.p.stepWork(); return k12 }()
-			f_3390 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
-			f_3391 := func() any { c.p.stepWork(); return k23 }()
-			return tmk_TableConstraint(c, true, f_3387, f_3388, f_3389, nil, nil, nil, f_3390, f_3391)
+			f_3388 := func() any { c.p.stepWork(); return k3 }()
+			f_3389 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3390 := func() any { c.p.stepWork(); return k12 }()
+			f_3391 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
+			f_3392 := func() any { c.p.stepWork(); return k23 }()
+			return tmk_TableConstraint(c, true, f_3388, f_3389, f_3390, nil, nil, nil, f_3391, f_3392)
 		}()
 	}()
 	p.where = w
@@ -1199879,11 +1200322,11 @@ func (p *tparser) i461() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3392 := func() any { return k3 }()
-				f_3393 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3394 := func() any { return k12 }()
-				f_3395 := func() any { return k15 }()
-				return tmk_TableConstraint(c, true, f_3392, f_3393, nil, nil, nil, f_3394, nil, f_3395)
+				f_3393 := func() any { return k3 }()
+				f_3394 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3395 := func() any { return k12 }()
+				f_3396 := func() any { return k15 }()
+				return tmk_TableConstraint(c, true, f_3393, f_3394, nil, nil, nil, f_3395, nil, f_3396)
 			}()
 		}()
 		p.where = w
@@ -1199994,11 +1200437,11 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3392 := func() any { c.p.stepWork(); return k3 }()
-			f_3393 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3394 := func() any { c.p.stepWork(); return k12 }()
-			f_3395 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_TableConstraint(c, true, f_3392, f_3393, nil, nil, nil, f_3394, nil, f_3395)
+			f_3393 := func() any { c.p.stepWork(); return k3 }()
+			f_3394 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3395 := func() any { c.p.stepWork(); return k12 }()
+			f_3396 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_TableConstraint(c, true, f_3393, f_3394, nil, nil, nil, f_3395, nil, f_3396)
 		}()
 	}()
 	p.where = w
@@ -1200175,12 +1200618,12 @@ func (p *tparser) i462() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3396 := func() any { return k3 }()
-				f_3397 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3398 := func() any { return k13 }()
-				f_3399 := func() any { return c.concat(func() any { return k18 }()) }()
-				f_3400 := func() any { return k24 }()
-				return tmk_TableConstraint(c, true, f_3396, f_3397, f_3398, nil, nil, nil, f_3399, f_3400)
+				f_3397 := func() any { return k3 }()
+				f_3398 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3399 := func() any { return k13 }()
+				f_3400 := func() any { return c.concat(func() any { return k18 }()) }()
+				f_3401 := func() any { return k24 }()
+				return tmk_TableConstraint(c, true, f_3397, f_3398, f_3399, nil, nil, nil, f_3400, f_3401)
 			}()
 		}()
 		p.where = w
@@ -1200337,12 +1200780,12 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3396 := func() any { c.p.stepWork(); return k3 }()
-			f_3397 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3398 := func() any { c.p.stepWork(); return k13 }()
-			f_3399 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
-			f_3400 := func() any { c.p.stepWork(); return k24 }()
-			return tmk_TableConstraint(c, true, f_3396, f_3397, f_3398, nil, nil, nil, f_3399, f_3400)
+			f_3397 := func() any { c.p.stepWork(); return k3 }()
+			f_3398 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3399 := func() any { c.p.stepWork(); return k13 }()
+			f_3400 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k18 }()) }()
+			f_3401 := func() any { c.p.stepWork(); return k24 }()
+			return tmk_TableConstraint(c, true, f_3397, f_3398, f_3399, nil, nil, nil, f_3400, f_3401)
 		}()
 	}()
 	p.where = w
@@ -1200487,11 +1200930,11 @@ func (p *tparser) i463() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3401 := func() any { return k3 }()
-				f_3402 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3403 := func() any { return k13 }()
-				f_3404 := func() any { return k16 }()
-				return tmk_TableConstraint(c, true, f_3401, f_3402, nil, nil, nil, f_3403, nil, f_3404)
+				f_3402 := func() any { return k3 }()
+				f_3403 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3404 := func() any { return k13 }()
+				f_3405 := func() any { return k16 }()
+				return tmk_TableConstraint(c, true, f_3402, f_3403, nil, nil, nil, f_3404, nil, f_3405)
 			}()
 		}()
 		p.where = w
@@ -1200615,11 +1201058,11 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3401 := func() any { c.p.stepWork(); return k3 }()
-			f_3402 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3403 := func() any { c.p.stepWork(); return k13 }()
-			f_3404 := func() any { c.p.stepWork(); return k16 }()
-			return tmk_TableConstraint(c, true, f_3401, f_3402, nil, nil, nil, f_3403, nil, f_3404)
+			f_3402 := func() any { c.p.stepWork(); return k3 }()
+			f_3403 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3404 := func() any { c.p.stepWork(); return k13 }()
+			f_3405 := func() any { c.p.stepWork(); return k16 }()
+			return tmk_TableConstraint(c, true, f_3402, f_3403, nil, nil, nil, f_3404, nil, f_3405)
 		}()
 	}()
 	p.where = w
@@ -1200790,12 +1201233,12 @@ func (p *tparser) i464() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3405 := func() any { return k3 }()
-				f_3406 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3407 := func() any { return k13 }()
-				f_3408 := func() any { return k16 }()
-				f_3409 := func() any { return k19 }()
-				return tmk_TableConstraint(c, true, f_3405, f_3406, f_3407, nil, f_3408, nil, nil, f_3409)
+				f_3406 := func() any { return k3 }()
+				f_3407 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3408 := func() any { return k13 }()
+				f_3409 := func() any { return k16 }()
+				f_3410 := func() any { return k19 }()
+				return tmk_TableConstraint(c, true, f_3406, f_3407, f_3408, nil, f_3409, nil, nil, f_3410)
 			}()
 		}()
 		p.where = w
@@ -1200945,12 +1201388,12 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3405 := func() any { c.p.stepWork(); return k3 }()
-			f_3406 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3407 := func() any { c.p.stepWork(); return k13 }()
-			f_3408 := func() any { c.p.stepWork(); return k16 }()
-			f_3409 := func() any { c.p.stepWork(); return k19 }()
-			return tmk_TableConstraint(c, true, f_3405, f_3406, f_3407, nil, f_3408, nil, nil, f_3409)
+			f_3406 := func() any { c.p.stepWork(); return k3 }()
+			f_3407 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3408 := func() any { c.p.stepWork(); return k13 }()
+			f_3409 := func() any { c.p.stepWork(); return k16 }()
+			f_3410 := func() any { c.p.stepWork(); return k19 }()
+			return tmk_TableConstraint(c, true, f_3406, f_3407, f_3408, nil, f_3409, nil, nil, f_3410)
 		}()
 	}()
 	p.where = w
@@ -1201063,12 +1201506,12 @@ func (p *tparser) i465() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3410 := func() any { return k1 }()
-				f_3411 := func() any {
+				f_3411 := func() any { return k1 }()
+				f_3412 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k4 }()))
 				}()
-				return tmk_TableLike(c, true, f_3410, f_3411)
+				return tmk_TableLike(c, true, f_3411, f_3412)
 			}()
 		}()
 		p.where = w
@@ -1201160,12 +1201603,12 @@ func (p *tparser) i465() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3410 := func() any { c.p.stepWork(); return k1 }()
-			f_3411 := func() any {
+			f_3411 := func() any { c.p.stepWork(); return k1 }()
+			f_3412 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k4 }()))
 			}()
-			return tmk_TableLike(c, true, f_3410, f_3411)
+			return tmk_TableLike(c, true, f_3411, f_3412)
 		}()
 	}()
 	p.where = w
@@ -1201962,26 +1202405,26 @@ func (p *tparser) i467() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3412 := func() any {
+				f_3413 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3413 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3414 := func() any {
+				f_3414 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3415 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3415 := func() any { return k25 }()
-				f_3416 := func() any { return c.concat(func() any { return k30 }()) }()
-				f_3417 := func() any {
+				f_3416 := func() any { return k25 }()
+				f_3417 := func() any { return c.concat(func() any { return k30 }()) }()
+				f_3418 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k36 }()))
 				}()
-				f_3418 := func() any { return c.concat(func() any { return k49 }()) }()
-				f_3419 := func() any { return c.text(func() any { return k57 }()) }()
-				f_3420 := func() any { return k63 }()
-				f_3421 := func() any { return c.text(func() any { return k78 }()) }()
-				return tmk_CreateTableAsStmt(c, true, f_3412, f_3413, f_3414, f_3415, f_3416, f_3417, f_3418, f_3419, f_3420, f_3421)
+				f_3419 := func() any { return c.concat(func() any { return k49 }()) }()
+				f_3420 := func() any { return c.text(func() any { return k57 }()) }()
+				f_3421 := func() any { return k63 }()
+				f_3422 := func() any { return c.text(func() any { return k78 }()) }()
+				return tmk_CreateTableAsStmt(c, true, f_3413, f_3414, f_3415, f_3416, f_3417, f_3418, f_3419, f_3420, f_3421, f_3422)
 			}()
 		}()
 		p.where = w
@@ -1202370,26 +1202813,26 @@ L81:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3412 := func() any {
+			f_3413 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3413 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3414 := func() any {
+			f_3414 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3415 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3415 := func() any { c.p.stepWork(); return k25 }()
-			f_3416 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
-			f_3417 := func() any {
+			f_3416 := func() any { c.p.stepWork(); return k25 }()
+			f_3417 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
+			f_3418 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k36 }()))
 			}()
-			f_3418 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k49 }()) }()
-			f_3419 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k57 }()) }()
-			f_3420 := func() any { c.p.stepWork(); return k63 }()
-			f_3421 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k78 }()) }()
-			return tmk_CreateTableAsStmt(c, true, f_3412, f_3413, f_3414, f_3415, f_3416, f_3417, f_3418, f_3419, f_3420, f_3421)
+			f_3419 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k49 }()) }()
+			f_3420 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k57 }()) }()
+			f_3421 := func() any { c.p.stepWork(); return k63 }()
+			f_3422 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k78 }()) }()
+			return tmk_CreateTableAsStmt(c, true, f_3413, f_3414, f_3415, f_3416, f_3417, f_3418, f_3419, f_3420, f_3421, f_3422)
 		}()
 	}()
 	p.where = w
@@ -1202874,25 +1203317,25 @@ func (p *tparser) i469() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3422 := func() any {
+				f_3423 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3423 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3424 := func() any {
+				f_3424 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3425 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3425 := func() any {
+				f_3426 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k27 }()) }(), func() any { return any(0) }())
 				}()
-				f_3426 := func() any { return k33 }()
-				f_3427 := func() any { return c.concat(func() any { return k38 }()) }()
-				f_3428 := func() any { return c.concat(func() any { return k46 }()) }()
-				f_3429 := func() any { return k52 }()
-				f_3430 := func() any { return c.text(func() any { return k57 }()) }()
-				return tmk_CreateViewStmt(c, true, f_3422, f_3423, f_3424, f_3425, f_3426, f_3427, f_3428, f_3429, f_3430)
+				f_3427 := func() any { return k33 }()
+				f_3428 := func() any { return c.concat(func() any { return k38 }()) }()
+				f_3429 := func() any { return c.concat(func() any { return k46 }()) }()
+				f_3430 := func() any { return k52 }()
+				f_3431 := func() any { return c.text(func() any { return k57 }()) }()
+				return tmk_CreateViewStmt(c, true, f_3423, f_3424, f_3425, f_3426, f_3427, f_3428, f_3429, f_3430, f_3431)
 			}()
 		}()
 		p.where = w
@@ -1203232,25 +1203675,25 @@ L60:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3422 := func() any {
+			f_3423 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3423 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3424 := func() any {
+			f_3424 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3425 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3425 := func() any {
+			f_3426 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k27 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3426 := func() any { c.p.stepWork(); return k33 }()
-			f_3427 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k38 }()) }()
-			f_3428 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k46 }()) }()
-			f_3429 := func() any { c.p.stepWork(); return k52 }()
-			f_3430 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k57 }()) }()
-			return tmk_CreateViewStmt(c, true, f_3422, f_3423, f_3424, f_3425, f_3426, f_3427, f_3428, f_3429, f_3430)
+			f_3427 := func() any { c.p.stepWork(); return k33 }()
+			f_3428 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k38 }()) }()
+			f_3429 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k46 }()) }()
+			f_3430 := func() any { c.p.stepWork(); return k52 }()
+			f_3431 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k57 }()) }()
+			return tmk_CreateViewStmt(c, true, f_3423, f_3424, f_3425, f_3426, f_3427, f_3428, f_3429, f_3430, f_3431)
 		}()
 	}()
 	p.where = w
@@ -1203871,25 +1204314,25 @@ func (p *tparser) i471() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3431 := func() any {
+				f_3432 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3432 := func() any {
+				f_3433 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3433 := func() any {
+				f_3434 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3434 := func() any { return k21 }()
-				f_3435 := func() any { return k38 }()
-				f_3436 := func() any { return k43 }()
-				f_3437 := func() any { return k49 }()
-				f_3438 := func() any { return c.concat(func() any { return k54 }()) }()
-				f_3439 := func() any { return k62 }()
-				return tmk_CreateIndexStmt(c, true, f_3431, f_3432, f_3433, f_3434, f_3435, f_3436, f_3437, f_3438, f_3439)
+				f_3435 := func() any { return k21 }()
+				f_3436 := func() any { return k38 }()
+				f_3437 := func() any { return k43 }()
+				f_3438 := func() any { return k49 }()
+				f_3439 := func() any { return c.concat(func() any { return k54 }()) }()
+				f_3440 := func() any { return k62 }()
+				return tmk_CreateIndexStmt(c, true, f_3432, f_3433, f_3434, f_3435, f_3436, f_3437, f_3438, f_3439, f_3440)
 			}()
 		}()
 		p.where = w
@@ -1204268,25 +1204711,25 @@ L65:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3431 := func() any {
+			f_3432 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3432 := func() any {
+			f_3433 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3433 := func() any {
+			f_3434 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3434 := func() any { c.p.stepWork(); return k21 }()
-			f_3435 := func() any { c.p.stepWork(); return k38 }()
-			f_3436 := func() any { c.p.stepWork(); return k43 }()
-			f_3437 := func() any { c.p.stepWork(); return k49 }()
-			f_3438 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k54 }()) }()
-			f_3439 := func() any { c.p.stepWork(); return k62 }()
-			return tmk_CreateIndexStmt(c, true, f_3431, f_3432, f_3433, f_3434, f_3435, f_3436, f_3437, f_3438, f_3439)
+			f_3435 := func() any { c.p.stepWork(); return k21 }()
+			f_3436 := func() any { c.p.stepWork(); return k38 }()
+			f_3437 := func() any { c.p.stepWork(); return k43 }()
+			f_3438 := func() any { c.p.stepWork(); return k49 }()
+			f_3439 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k54 }()) }()
+			f_3440 := func() any { c.p.stepWork(); return k62 }()
+			return tmk_CreateIndexStmt(c, true, f_3432, f_3433, f_3434, f_3435, f_3436, f_3437, f_3438, f_3439, f_3440)
 		}()
 	}()
 	p.where = w
@@ -1204478,20 +1204921,20 @@ func (p *tparser) i472() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3440 := func() any {
+				f_3441 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3441 := func() any {
+				f_3442 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3442 := func() any { return k17 }()
-				f_3443 := func() any {
+				f_3443 := func() any { return k17 }()
+				f_3444 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k20 }()))
 				}()
-				return tmk_CreateSchemaStmt(c, true, f_3440, f_3441, f_3442, f_3443)
+				return tmk_CreateSchemaStmt(c, true, f_3441, f_3442, f_3443, f_3444)
 			}()
 		}()
 		p.where = w
@@ -1204658,20 +1205101,20 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3440 := func() any {
+			f_3441 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3441 := func() any {
+			f_3442 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3442 := func() any { c.p.stepWork(); return k17 }()
-			f_3443 := func() any {
+			f_3443 := func() any { c.p.stepWork(); return k17 }()
+			f_3444 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k20 }()))
 			}()
-			return tmk_CreateSchemaStmt(c, true, f_3440, f_3441, f_3442, f_3443)
+			return tmk_CreateSchemaStmt(c, true, f_3441, f_3442, f_3443, f_3444)
 		}()
 	}()
 	p.where = w
@@ -1205082,18 +1205525,18 @@ func (p *tparser) i474() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3444 := func() any {
+				f_3445 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3445 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3446 := func() any {
+				f_3446 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3447 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3447 := func() any { return k25 }()
-				f_3448 := func() any { return c.concat(func() any { return k30 }()) }()
-				return tmk_CreateSequenceStmt(c, true, f_3444, f_3445, f_3446, f_3447, f_3448)
+				f_3448 := func() any { return k25 }()
+				f_3449 := func() any { return c.concat(func() any { return k30 }()) }()
+				return tmk_CreateSequenceStmt(c, true, f_3445, f_3446, f_3447, f_3448, f_3449)
 			}()
 		}()
 		p.where = w
@@ -1205276,18 +1205719,18 @@ L33:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3444 := func() any {
+			f_3445 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3445 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3446 := func() any {
+			f_3446 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3447 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3447 := func() any { c.p.stepWork(); return k25 }()
-			f_3448 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
-			return tmk_CreateSequenceStmt(c, true, f_3444, f_3445, f_3446, f_3447, f_3448)
+			f_3448 := func() any { c.p.stepWork(); return k25 }()
+			f_3449 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k30 }()) }()
+			return tmk_CreateSequenceStmt(c, true, f_3445, f_3446, f_3447, f_3448, f_3449)
 		}()
 	}()
 	p.where = w
@@ -1206064,9 +1206507,9 @@ func (p *tparser) i477() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3449 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3450 := func() any { return k4 }()
-				return tmk_SeqOption(c, true, f_3449, f_3450, nil, nil)
+				f_3450 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3451 := func() any { return k4 }()
+				return tmk_SeqOption(c, true, f_3450, f_3451, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1206122,9 +1206565,9 @@ func (p *tparser) i477() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3449 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3450 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SeqOption(c, true, f_3449, f_3450, nil, nil)
+			f_3450 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3451 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SeqOption(c, true, f_3450, f_3451, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1206316,9 +1206759,9 @@ func (p *tparser) i478() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3451 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3452 := func() any { return c.text(func() any { return k28 }()) }()
-				return tmk_SeqOption(c, true, f_3451, nil, f_3452, nil)
+				f_3452 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3453 := func() any { return c.text(func() any { return k28 }()) }()
+				return tmk_SeqOption(c, true, f_3452, nil, f_3453, nil)
 			}()
 		}()
 		p.where = w
@@ -1206491,9 +1206934,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3451 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3452 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
-			return tmk_SeqOption(c, true, f_3451, nil, f_3452, nil)
+			f_3452 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3453 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
+			return tmk_SeqOption(c, true, f_3452, nil, f_3453, nil)
 		}()
 	}()
 	p.where = w
@@ -1206655,8 +1207098,8 @@ func (p *tparser) i479() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3453 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_SeqOption(c, true, f_3453, nil, nil, nil)
+				f_3454 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_SeqOption(c, true, f_3454, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1206795,8 +1207238,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3453 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_SeqOption(c, true, f_3453, nil, nil, nil)
+			f_3454 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_SeqOption(c, true, f_3454, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1206887,9 +1207330,9 @@ func (p *tparser) i480() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3454 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3455 := func() any { return k5 }()
-				return tmk_SeqOption(c, true, f_3454, nil, nil, f_3455)
+				f_3455 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3456 := func() any { return k5 }()
+				return tmk_SeqOption(c, true, f_3455, nil, nil, f_3456)
 			}()
 		}()
 		p.where = w
@@ -1206958,9 +1207401,9 @@ func (p *tparser) i480() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3454 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3455 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_SeqOption(c, true, f_3454, nil, nil, f_3455)
+			f_3455 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3456 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_SeqOption(c, true, f_3455, nil, nil, f_3456)
 		}()
 	}()
 	p.where = w
@@ -1207051,9 +1207494,9 @@ func (p *tparser) i481() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3456 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3457 := func() any { return k5 }()
-				return tmk_SeqOption(c, true, f_3456, nil, nil, f_3457)
+				f_3457 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3458 := func() any { return k5 }()
+				return tmk_SeqOption(c, true, f_3457, nil, nil, f_3458)
 			}()
 		}()
 		p.where = w
@@ -1207122,9 +1207565,9 @@ func (p *tparser) i481() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3456 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3457 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_SeqOption(c, true, f_3456, nil, nil, f_3457)
+			f_3457 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3458 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_SeqOption(c, true, f_3457, nil, nil, f_3458)
 		}()
 	}()
 	p.where = w
@@ -1207240,9 +1207683,9 @@ func (p *tparser) i482() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3458 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3459 := func() any { return c.text(func() any { return k6 }()) }()
-				return tmk_SeqOption(c, true, f_3458, nil, f_3459, nil)
+				f_3459 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3460 := func() any { return c.text(func() any { return k6 }()) }()
+				return tmk_SeqOption(c, true, f_3459, nil, f_3460, nil)
 			}()
 		}()
 		p.where = w
@@ -1207331,9 +1207774,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3458 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3459 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_SeqOption(c, true, f_3458, nil, f_3459, nil)
+			f_3459 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3460 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_SeqOption(c, true, f_3459, nil, f_3460, nil)
 		}()
 	}()
 	p.where = w
@@ -1207730,24 +1208173,24 @@ func (p *tparser) i483() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3460 := func() any {
+				f_3461 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3461 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3462 := func() any {
+				f_3462 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3463 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3463 := func() any { return k25 }()
-				f_3464 := func() any {
+				f_3464 := func() any { return k25 }()
+				f_3465 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k30 }()) }(), func() any { return any(0) }())
 				}()
-				f_3465 := func() any { return c.concat(func() any { return k34 }()) }()
-				f_3466 := func() any { return k32 }()
-				f_3467 := func() any { return k36 }()
-				return tmk_CreateTypeStmt(c, true, f_3460, f_3461, f_3462, f_3463, f_3464, f_3465, f_3466, f_3467)
+				f_3466 := func() any { return c.concat(func() any { return k34 }()) }()
+				f_3467 := func() any { return k32 }()
+				f_3468 := func() any { return k36 }()
+				return tmk_CreateTypeStmt(c, true, f_3461, f_3462, f_3463, f_3464, f_3465, f_3466, f_3467, f_3468)
 			}()
 		}()
 		p.where = w
@@ -1208121,24 +1208564,24 @@ L38:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3460 := func() any {
+			f_3461 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3461 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3462 := func() any {
+			f_3462 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3463 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3463 := func() any { c.p.stepWork(); return k25 }()
-			f_3464 := func() any {
+			f_3464 := func() any { c.p.stepWork(); return k25 }()
+			f_3465 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k30 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3465 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k34 }()) }()
-			f_3466 := func() any { c.p.stepWork(); return k32 }()
-			f_3467 := func() any { c.p.stepWork(); return k36 }()
-			return tmk_CreateTypeStmt(c, true, f_3460, f_3461, f_3462, f_3463, f_3464, f_3465, f_3466, f_3467)
+			f_3466 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k34 }()) }()
+			f_3467 := func() any { c.p.stepWork(); return k32 }()
+			f_3468 := func() any { c.p.stepWork(); return k36 }()
+			return tmk_CreateTypeStmt(c, true, f_3461, f_3462, f_3463, f_3464, f_3465, f_3466, f_3467, f_3468)
 		}()
 	}()
 	p.where = w
@@ -1208600,22 +1209043,22 @@ func (p *tparser) i485() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3468 := func() any {
+				f_3469 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3469 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3470 := func() any {
+				f_3470 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3471 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3471 := func() any {
+				f_3472 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k32 }()) }(), func() any { return any(0) }())
 				}()
-				f_3472 := func() any { return k38 }()
-				f_3473 := func() any { return k41 }()
-				return tmk_CreateMacroStmt(c, true, f_3468, f_3469, f_3470, f_3471, f_3472, f_3473)
+				f_3473 := func() any { return k38 }()
+				f_3474 := func() any { return k41 }()
+				return tmk_CreateMacroStmt(c, true, f_3469, f_3470, f_3471, f_3472, f_3473, f_3474)
 			}()
 		}()
 		p.where = w
@@ -1208832,22 +1209275,22 @@ L35:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3468 := func() any {
+			f_3469 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3469 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3470 := func() any {
+			f_3470 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3471 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3471 := func() any {
+			f_3472 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k32 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3472 := func() any { c.p.stepWork(); return k38 }()
-			f_3473 := func() any { c.p.stepWork(); return k41 }()
-			return tmk_CreateMacroStmt(c, true, f_3468, f_3469, f_3470, f_3471, f_3472, f_3473)
+			f_3473 := func() any { c.p.stepWork(); return k38 }()
+			f_3474 := func() any { c.p.stepWork(); return k41 }()
+			return tmk_CreateMacroStmt(c, true, f_3469, f_3470, f_3471, f_3472, f_3473, f_3474)
 		}()
 	}()
 	p.where = w
@@ -1209292,9 +1209735,9 @@ func (p *tparser) i488() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3474 := func() any { return k1 }()
-				f_3475 := func() any { return k4 }()
-				return tmk_MacroDef(c, true, f_3474, f_3475, nil)
+				f_3475 := func() any { return k1 }()
+				f_3476 := func() any { return k4 }()
+				return tmk_MacroDef(c, true, f_3475, f_3476, nil)
 			}()
 		}()
 		p.where = w
@@ -1209358,9 +1209801,9 @@ func (p *tparser) i488() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3474 := func() any { c.p.stepWork(); return k1 }()
-			f_3475 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_MacroDef(c, true, f_3474, f_3475, nil)
+			f_3475 := func() any { c.p.stepWork(); return k1 }()
+			f_3476 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_MacroDef(c, true, f_3475, f_3476, nil)
 		}()
 	}()
 	p.where = w
@@ -1209731,9 +1210174,9 @@ func (p *tparser) i491() (any, bool) {
 			return c.list(func() any {
 
 				return func() any {
-					f_3476 := func() any { return k1 }()
-					f_3477 := func() any { return k4 }()
-					return tmk_MacroDef(c, false, f_3476, nil, f_3477)
+					f_3477 := func() any { return k1 }()
+					f_3478 := func() any { return k4 }()
+					return tmk_MacroDef(c, false, f_3477, nil, f_3478)
 				}()
 			}())
 		}()
@@ -1209809,9 +1210252,9 @@ func (p *tparser) i491() (any, bool) {
 		return c.list(func() any {
 			c.p.stepWork()
 			return func() any {
-				f_3476 := func() any { c.p.stepWork(); return k1 }()
-				f_3477 := func() any { c.p.stepWork(); return k4 }()
-				return tmk_MacroDef(c, false, f_3476, nil, f_3477)
+				f_3477 := func() any { c.p.stepWork(); return k1 }()
+				f_3478 := func() any { c.p.stepWork(); return k4 }()
+				return tmk_MacroDef(c, false, f_3477, nil, f_3478)
 			}()
 		}())
 	}()
@@ -1210133,9 +1210576,9 @@ func (p *tparser) i493() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3478 := func() any { return k1 }()
-				f_3479 := func() any { return k4 }()
-				return tmk_MacroDef(c, true, f_3478, nil, f_3479)
+				f_3479 := func() any { return k1 }()
+				f_3480 := func() any { return k4 }()
+				return tmk_MacroDef(c, true, f_3479, nil, f_3480)
 			}()
 		}()
 		p.where = w
@@ -1210207,9 +1210650,9 @@ func (p *tparser) i493() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3478 := func() any { c.p.stepWork(); return k1 }()
-			f_3479 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_MacroDef(c, true, f_3478, nil, f_3479)
+			f_3479 := func() any { c.p.stepWork(); return k1 }()
+			f_3480 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_MacroDef(c, true, f_3479, nil, f_3480)
 		}()
 	}()
 	p.where = w
@@ -1210827,14 +1211270,14 @@ func (p *tparser) i496() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3480 := func() any { return k1 }()
-				f_3481 := func() any { return k6 }()
-				f_3482 := func() any { return k16 }()
-				f_3483 := func() any {
+				f_3481 := func() any { return k1 }()
+				f_3482 := func() any { return k6 }()
+				f_3483 := func() any { return k16 }()
+				f_3484 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k14 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_MacroParam(c, true, f_3480, f_3481, f_3482, f_3483)
+				return tmk_MacroParam(c, true, f_3481, f_3482, f_3483, f_3484)
 			}()
 		}()
 		p.where = w
@@ -1210998,14 +1211441,14 @@ L19:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3480 := func() any { c.p.stepWork(); return k1 }()
-			f_3481 := func() any { c.p.stepWork(); return k6 }()
-			f_3482 := func() any { c.p.stepWork(); return k16 }()
-			f_3483 := func() any {
+			f_3481 := func() any { c.p.stepWork(); return k1 }()
+			f_3482 := func() any { c.p.stepWork(); return k6 }()
+			f_3483 := func() any { c.p.stepWork(); return k16 }()
+			f_3484 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k14 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_MacroParam(c, true, f_3480, f_3481, f_3482, f_3483)
+			return tmk_MacroParam(c, true, f_3481, f_3482, f_3483, f_3484)
 		}()
 	}()
 	p.where = w
@@ -1211303,19 +1211746,19 @@ func (p *tparser) i497() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3484 := func() any {
+				f_3485 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3485 := func() any { return c.text(func() any { return k11 }()) }()
-				f_3486 := func() any {
+				f_3486 := func() any { return c.text(func() any { return k11 }()) }()
+				f_3487 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k29 }()) }(), func() any { return any(0) }())
 				}()
-				f_3487 := func() any { return k37 }()
-				f_3488 := func() any { return k45 }()
-				f_3489 := func() any { return k51 }()
-				return tmk_CreateSecretStmt(c, true, f_3484, f_3485, f_3486, f_3487, f_3488, f_3489)
+				f_3488 := func() any { return k37 }()
+				f_3489 := func() any { return k45 }()
+				f_3490 := func() any { return k51 }()
+				return tmk_CreateSecretStmt(c, true, f_3485, f_3486, f_3487, f_3488, f_3489, f_3490)
 			}()
 		}()
 		p.where = w
@@ -1211595,19 +1212038,19 @@ L48:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3484 := func() any {
+			f_3485 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3485 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
-			f_3486 := func() any {
+			f_3486 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k11 }()) }()
+			f_3487 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k29 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3487 := func() any { c.p.stepWork(); return k37 }()
-			f_3488 := func() any { c.p.stepWork(); return k45 }()
-			f_3489 := func() any { c.p.stepWork(); return k51 }()
-			return tmk_CreateSecretStmt(c, true, f_3484, f_3485, f_3486, f_3487, f_3488, f_3489)
+			f_3488 := func() any { c.p.stepWork(); return k37 }()
+			f_3489 := func() any { c.p.stepWork(); return k45 }()
+			f_3490 := func() any { c.p.stepWork(); return k51 }()
+			return tmk_CreateSecretStmt(c, true, f_3485, f_3486, f_3487, f_3488, f_3489, f_3490)
 		}()
 	}()
 	p.where = w
@@ -1211911,9 +1212354,9 @@ func (p *tparser) i499() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3490 := func() any { return k1 }()
-				f_3491 := func() any { return k4 }()
-				return tmk_SecretOption(c, true, f_3490, f_3491)
+				f_3491 := func() any { return k1 }()
+				f_3492 := func() any { return k4 }()
+				return tmk_SecretOption(c, true, f_3491, f_3492)
 			}()
 		}()
 		p.where = w
@@ -1211969,9 +1212412,9 @@ func (p *tparser) i499() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3490 := func() any { c.p.stepWork(); return k1 }()
-			f_3491 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SecretOption(c, true, f_3490, f_3491)
+			f_3491 := func() any { c.p.stepWork(); return k1 }()
+			f_3492 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SecretOption(c, true, f_3491, f_3492)
 		}()
 	}()
 	p.where = w
@@ -1212561,22 +1213004,22 @@ func (p *tparser) i501() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3492 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3493 := func() any {
+				f_3493 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3494 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3494 := func() any { return k14 }()
-				f_3495 := func() any {
+				f_3495 := func() any { return k14 }()
+				f_3496 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k18 }()) }(), func() any { return any(0) }())
 				}()
-				f_3496 := func() any {
+				f_3497 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k16 }()) }(), func() any { return any(0) }())
 				}()
-				f_3497 := func() any { return k50 }()
-				return tmk_AlterTableStmt(c, true, f_3492, f_3493, f_3494, f_3495, f_3496, f_3497)
+				f_3498 := func() any { return k50 }()
+				return tmk_AlterTableStmt(c, true, f_3493, f_3494, f_3495, f_3496, f_3497, f_3498)
 			}()
 		}()
 		p.where = w
@@ -1212852,22 +1213295,22 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3492 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3493 := func() any {
+			f_3493 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3494 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3494 := func() any { c.p.stepWork(); return k14 }()
-			f_3495 := func() any {
+			f_3495 := func() any { c.p.stepWork(); return k14 }()
+			f_3496 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k18 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3496 := func() any {
+			f_3497 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k16 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3497 := func() any { c.p.stepWork(); return k50 }()
-			return tmk_AlterTableStmt(c, true, f_3492, f_3493, f_3494, f_3495, f_3496, f_3497)
+			f_3498 := func() any { c.p.stepWork(); return k50 }()
+			return tmk_AlterTableStmt(c, true, f_3493, f_3494, f_3495, f_3496, f_3497, f_3498)
 		}()
 	}()
 	p.where = w
@@ -1213051,14 +1213494,14 @@ func (p *tparser) i502() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3498 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3499 := func() any {
+				f_3499 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3500 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k20 }()) }(), func() any { return any(0) }())
 				}()
-				f_3500 := func() any { return k26 }()
-				f_3501 := func() any { return k29 }()
-				return tmk_AlterTableStmt(c, true, f_3498, f_3499, f_3500, nil, nil, f_3501)
+				f_3501 := func() any { return k26 }()
+				f_3502 := func() any { return k29 }()
+				return tmk_AlterTableStmt(c, true, f_3499, f_3500, f_3501, nil, nil, f_3502)
 			}()
 		}()
 		p.where = w
@@ -1213220,14 +1213663,14 @@ L23:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3498 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3499 := func() any {
+			f_3499 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3500 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k20 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3500 := func() any { c.p.stepWork(); return k26 }()
-			f_3501 := func() any { c.p.stepWork(); return k29 }()
-			return tmk_AlterTableStmt(c, true, f_3498, f_3499, f_3500, nil, nil, f_3501)
+			f_3501 := func() any { c.p.stepWork(); return k26 }()
+			f_3502 := func() any { c.p.stepWork(); return k29 }()
+			return tmk_AlterTableStmt(c, true, f_3499, f_3500, f_3501, nil, nil, f_3502)
 		}()
 	}()
 	p.where = w
@@ -1214750,9 +1215193,9 @@ func (p *tparser) i506() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3502 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3503 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3502, nil, nil, nil, nil, nil, nil, f_3503, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3503 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3504 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3503, nil, nil, nil, nil, nil, nil, f_3504, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1214808,9 +1215251,9 @@ func (p *tparser) i506() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3502 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3503 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3502, nil, nil, nil, nil, nil, nil, f_3503, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3503 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3504 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3503, nil, nil, nil, nil, nil, nil, f_3504, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1214992,18 +1215435,18 @@ func (p *tparser) i507() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3504 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3505 := func() any {
+				f_3505 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3506 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3506 := func() any { return k17 }()
-				f_3507 := func() any { return k20 }()
-				f_3508 := func() any {
+				f_3507 := func() any { return k17 }()
+				f_3508 := func() any { return k20 }()
+				f_3509 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k23 }()))
 				}()
-				return tmk_AlterCmd(c, true, f_3504, nil, f_3505, f_3506, f_3507, nil, f_3508, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				return tmk_AlterCmd(c, true, f_3505, nil, f_3506, f_3507, f_3508, nil, f_3509, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1215167,18 +1215610,18 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3504 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3505 := func() any {
+			f_3505 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3506 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3506 := func() any { c.p.stepWork(); return k17 }()
-			f_3507 := func() any { c.p.stepWork(); return k20 }()
-			f_3508 := func() any {
+			f_3507 := func() any { c.p.stepWork(); return k17 }()
+			f_3508 := func() any { c.p.stepWork(); return k20 }()
+			f_3509 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k23 }()))
 			}()
-			return tmk_AlterCmd(c, true, f_3504, nil, f_3505, f_3506, f_3507, nil, f_3508, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			return tmk_AlterCmd(c, true, f_3505, nil, f_3506, f_3507, f_3508, nil, f_3509, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1215388,19 +1215831,19 @@ func (p *tparser) i508() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3509 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3510 := func() any {
+				f_3510 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3511 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3511 := func() any { return k17 }()
-				f_3512 := func() any { return k22 }()
-				f_3513 := func() any { return k28 }()
-				f_3514 := func() any {
+				f_3512 := func() any { return k17 }()
+				f_3513 := func() any { return k22 }()
+				f_3514 := func() any { return k28 }()
+				f_3515 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k31 }()))
 				}()
-				return tmk_AlterCmd(c, true, f_3509, nil, f_3510, f_3511, f_3512, f_3513, f_3514, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				return tmk_AlterCmd(c, true, f_3510, nil, f_3511, f_3512, f_3513, f_3514, f_3515, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1215593,19 +1216036,19 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3509 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3510 := func() any {
+			f_3510 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3511 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3511 := func() any { c.p.stepWork(); return k17 }()
-			f_3512 := func() any { c.p.stepWork(); return k22 }()
-			f_3513 := func() any { c.p.stepWork(); return k28 }()
-			f_3514 := func() any {
+			f_3512 := func() any { c.p.stepWork(); return k17 }()
+			f_3513 := func() any { c.p.stepWork(); return k22 }()
+			f_3514 := func() any { c.p.stepWork(); return k28 }()
+			f_3515 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k31 }()))
 			}()
-			return tmk_AlterCmd(c, true, f_3509, nil, f_3510, f_3511, f_3512, f_3513, f_3514, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			return tmk_AlterCmd(c, true, f_3510, nil, f_3511, f_3512, f_3513, f_3514, f_3515, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1215724,9 +1216167,9 @@ func (p *tparser) i509() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3515 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3516 := func() any { return k5 }()
-				return tmk_AlterCmd(c, true, f_3515, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3516, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3516 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3517 := func() any { return k5 }()
+				return tmk_AlterCmd(c, true, f_3516, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3517, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1215823,9 +1216266,9 @@ func (p *tparser) i509() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3515 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3516 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_AlterCmd(c, true, f_3515, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3516, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3516 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3517 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_AlterCmd(c, true, f_3516, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3517, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1215910,8 +1216353,8 @@ func (p *tparser) i510() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3517 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_AlterCmd(c, true, f_3517, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3518 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_AlterCmd(c, true, f_3518, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1215973,8 +1216416,8 @@ func (p *tparser) i510() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3517 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_AlterCmd(c, true, f_3517, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3518 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_AlterCmd(c, true, f_3518, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1216093,9 +1216536,9 @@ func (p *tparser) i511() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3518 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3519 := func() any { return k5 }()
-				return tmk_AlterCmd(c, true, f_3518, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3519, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3519 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3520 := func() any { return k5 }()
+				return tmk_AlterCmd(c, true, f_3519, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3520, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1216192,9 +1216635,9 @@ func (p *tparser) i511() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3518 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3519 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_AlterCmd(c, true, f_3518, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3519, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3519 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3520 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_AlterCmd(c, true, f_3519, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3520, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1216279,8 +1216722,8 @@ func (p *tparser) i512() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3520 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_AlterCmd(c, true, f_3520, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3521 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_AlterCmd(c, true, f_3521, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1216342,8 +1216785,8 @@ func (p *tparser) i512() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3520 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_AlterCmd(c, true, f_3520, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3521 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_AlterCmd(c, true, f_3521, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1217337,10 +1217780,10 @@ func (p *tparser) i516() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3521 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3522 := func() any { return k4 }()
-				f_3523 := func() any { return k7 }()
-				return tmk_AlterCmd(c, true, f_3521, nil, nil, nil, nil, nil, nil, nil, f_3522, f_3523, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3522 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3523 := func() any { return k4 }()
+				f_3524 := func() any { return k7 }()
+				return tmk_AlterCmd(c, true, f_3522, nil, nil, nil, nil, nil, nil, nil, f_3523, f_3524, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1217426,10 +1217869,10 @@ func (p *tparser) i516() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3521 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3522 := func() any { c.p.stepWork(); return k4 }()
-			f_3523 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AlterCmd(c, true, f_3521, nil, nil, nil, nil, nil, nil, nil, f_3522, f_3523, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3522 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3523 := func() any { c.p.stepWork(); return k4 }()
+			f_3524 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AlterCmd(c, true, f_3522, nil, nil, nil, nil, nil, nil, nil, f_3523, f_3524, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1217524,9 +1217967,9 @@ func (p *tparser) i517() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3524 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3525 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3524, nil, nil, nil, nil, nil, nil, nil, f_3525, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3525 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3526 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3525, nil, nil, nil, nil, nil, nil, nil, f_3526, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1217598,9 +1218041,9 @@ func (p *tparser) i517() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3524 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3525 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3524, nil, nil, nil, nil, nil, nil, nil, f_3525, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3525 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3526 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3525, nil, nil, nil, nil, nil, nil, nil, f_3526, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1217739,9 +1218182,9 @@ func (p *tparser) i518() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3526 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3527 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3526, nil, nil, nil, nil, nil, nil, nil, f_3527, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3527 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3528 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3527, nil, nil, nil, nil, nil, nil, nil, f_3528, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1217857,9 +1218300,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3526 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3527 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3526, nil, nil, nil, nil, nil, nil, nil, f_3527, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3527 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3528 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3527, nil, nil, nil, nil, nil, nil, nil, f_3528, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1217968,10 +1218411,10 @@ func (p *tparser) i519() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3528 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3529 := func() any { return k4 }()
-				f_3530 := func() any { return c.text(func() any { return k7 }()) }()
-				return tmk_AlterCmd(c, true, f_3528, nil, nil, nil, nil, nil, nil, nil, f_3529, nil, nil, nil, nil, nil, f_3530, nil, nil, nil, nil, nil)
+				f_3529 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3530 := func() any { return k4 }()
+				f_3531 := func() any { return c.text(func() any { return k7 }()) }()
+				return tmk_AlterCmd(c, true, f_3529, nil, nil, nil, nil, nil, nil, nil, f_3530, nil, nil, nil, nil, nil, f_3531, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1218057,10 +1218500,10 @@ func (p *tparser) i519() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3528 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3529 := func() any { c.p.stepWork(); return k4 }()
-			f_3530 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
-			return tmk_AlterCmd(c, true, f_3528, nil, nil, nil, nil, nil, nil, nil, f_3529, nil, nil, nil, nil, nil, f_3530, nil, nil, nil, nil, nil)
+			f_3529 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3530 := func() any { c.p.stepWork(); return k4 }()
+			f_3531 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
+			return tmk_AlterCmd(c, true, f_3529, nil, nil, nil, nil, nil, nil, nil, f_3530, nil, nil, nil, nil, nil, f_3531, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1218181,10 +1218624,10 @@ func (p *tparser) i520() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3531 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3532 := func() any { return k4 }()
-				f_3533 := func() any { return k7 }()
-				return tmk_AlterCmd(c, true, f_3531, nil, nil, nil, nil, nil, nil, nil, f_3532, nil, nil, nil, nil, nil, nil, f_3533, nil, nil, nil, nil)
+				f_3532 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3533 := func() any { return k4 }()
+				f_3534 := func() any { return k7 }()
+				return tmk_AlterCmd(c, true, f_3532, nil, nil, nil, nil, nil, nil, nil, f_3533, nil, nil, nil, nil, nil, nil, f_3534, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1218282,10 +1218725,10 @@ func (p *tparser) i520() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3531 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3532 := func() any { c.p.stepWork(); return k4 }()
-			f_3533 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AlterCmd(c, true, f_3531, nil, nil, nil, nil, nil, nil, nil, f_3532, nil, nil, nil, nil, nil, nil, f_3533, nil, nil, nil, nil)
+			f_3532 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3533 := func() any { c.p.stepWork(); return k4 }()
+			f_3534 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AlterCmd(c, true, f_3532, nil, nil, nil, nil, nil, nil, nil, f_3533, nil, nil, nil, nil, nil, nil, f_3534, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1218406,10 +1218849,10 @@ func (p *tparser) i521() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3534 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3535 := func() any { return k4 }()
-				f_3536 := func() any { return k7 }()
-				return tmk_AlterCmd(c, true, f_3534, nil, nil, nil, nil, nil, nil, nil, f_3535, nil, nil, nil, nil, nil, nil, f_3536, nil, nil, nil, nil)
+				f_3535 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3536 := func() any { return k4 }()
+				f_3537 := func() any { return k7 }()
+				return tmk_AlterCmd(c, true, f_3535, nil, nil, nil, nil, nil, nil, nil, f_3536, nil, nil, nil, nil, nil, nil, f_3537, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1218507,10 +1218950,10 @@ func (p *tparser) i521() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3534 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3535 := func() any { c.p.stepWork(); return k4 }()
-			f_3536 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AlterCmd(c, true, f_3534, nil, nil, nil, nil, nil, nil, nil, f_3535, nil, nil, nil, nil, nil, nil, f_3536, nil, nil, nil, nil)
+			f_3535 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3536 := func() any { c.p.stepWork(); return k4 }()
+			f_3537 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AlterCmd(c, true, f_3535, nil, nil, nil, nil, nil, nil, nil, f_3536, nil, nil, nil, nil, nil, nil, f_3537, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1218623,10 +1219066,10 @@ func (p *tparser) i522() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3537 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3538 := func() any { return k4 }()
-				f_3539 := func() any { return c.text(func() any { return k7 }()) }()
-				return tmk_AlterCmd(c, true, f_3537, nil, nil, nil, nil, nil, nil, nil, f_3538, nil, nil, nil, nil, nil, f_3539, nil, nil, nil, nil, nil)
+				f_3538 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3539 := func() any { return k4 }()
+				f_3540 := func() any { return c.text(func() any { return k7 }()) }()
+				return tmk_AlterCmd(c, true, f_3538, nil, nil, nil, nil, nil, nil, nil, f_3539, nil, nil, nil, nil, nil, f_3540, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1218716,10 +1219159,10 @@ func (p *tparser) i522() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3537 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3538 := func() any { c.p.stepWork(); return k4 }()
-			f_3539 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
-			return tmk_AlterCmd(c, true, f_3537, nil, nil, nil, nil, nil, nil, nil, f_3538, nil, nil, nil, nil, nil, f_3539, nil, nil, nil, nil, nil)
+			f_3538 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3539 := func() any { c.p.stepWork(); return k4 }()
+			f_3540 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
+			return tmk_AlterCmd(c, true, f_3538, nil, nil, nil, nil, nil, nil, nil, f_3539, nil, nil, nil, nil, nil, f_3540, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1218892,11 +1219335,11 @@ func (p *tparser) i523() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3540 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3541 := func() any { return k4 }()
-				f_3542 := func() any { return c.text(func() any { return k7 }()) }()
-				f_3543 := func() any { return c.concat(func() any { return k12 }()) }()
-				return tmk_AlterCmd(c, true, f_3540, nil, nil, nil, nil, nil, nil, nil, f_3541, nil, nil, nil, nil, nil, nil, nil, f_3543, f_3542, nil, nil)
+				f_3541 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3542 := func() any { return k4 }()
+				f_3543 := func() any { return c.text(func() any { return k7 }()) }()
+				f_3544 := func() any { return c.concat(func() any { return k12 }()) }()
+				return tmk_AlterCmd(c, true, f_3541, nil, nil, nil, nil, nil, nil, nil, f_3542, nil, nil, nil, nil, nil, nil, nil, f_3544, f_3543, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1219047,11 +1219490,11 @@ L15:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3540 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3541 := func() any { c.p.stepWork(); return k4 }()
-			f_3542 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
-			f_3543 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k12 }()) }()
-			return tmk_AlterCmd(c, true, f_3540, nil, nil, nil, nil, nil, nil, nil, f_3541, nil, nil, nil, nil, nil, nil, nil, f_3543, f_3542, nil, nil)
+			f_3541 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3542 := func() any { c.p.stepWork(); return k4 }()
+			f_3543 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
+			f_3544 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k12 }()) }()
+			return tmk_AlterCmd(c, true, f_3541, nil, nil, nil, nil, nil, nil, nil, f_3542, nil, nil, nil, nil, nil, nil, nil, f_3544, f_3543, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1219174,13 +1219617,13 @@ func (p *tparser) i524() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3544 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3545 := func() any { return k4 }()
-				f_3546 := func() any {
+				f_3545 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3546 := func() any { return k4 }()
+				f_3547 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k9 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_AlterCmd(c, true, f_3544, f_3546, nil, nil, nil, nil, nil, nil, f_3545, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				return tmk_AlterCmd(c, true, f_3545, f_3547, nil, nil, nil, nil, nil, nil, f_3546, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1219281,13 +1219724,13 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3544 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3545 := func() any { c.p.stepWork(); return k4 }()
-			f_3546 := func() any {
+			f_3545 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3546 := func() any { c.p.stepWork(); return k4 }()
+			f_3547 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k9 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_AlterCmd(c, true, f_3544, f_3546, nil, nil, nil, nil, nil, nil, f_3545, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			return tmk_AlterCmd(c, true, f_3545, f_3547, nil, nil, nil, nil, nil, nil, f_3546, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1219380,10 +1219823,10 @@ func (p *tparser) i525() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3547 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3548 := func() any { return k4 }()
-				f_3549 := func() any { return k7 }()
-				return tmk_AlterCmd(c, true, f_3547, nil, nil, nil, nil, nil, nil, nil, f_3548, nil, nil, nil, nil, nil, nil, nil, f_3549, nil, nil, nil)
+				f_3548 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3549 := func() any { return k4 }()
+				f_3550 := func() any { return k7 }()
+				return tmk_AlterCmd(c, true, f_3548, nil, nil, nil, nil, nil, nil, nil, f_3549, nil, nil, nil, nil, nil, nil, nil, f_3550, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1219453,10 +1219896,10 @@ func (p *tparser) i525() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3547 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3548 := func() any { c.p.stepWork(); return k4 }()
-			f_3549 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AlterCmd(c, true, f_3547, nil, nil, nil, nil, nil, nil, nil, f_3548, nil, nil, nil, nil, nil, nil, nil, f_3549, nil, nil, nil)
+			f_3548 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3549 := func() any { c.p.stepWork(); return k4 }()
+			f_3550 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AlterCmd(c, true, f_3548, nil, nil, nil, nil, nil, nil, nil, f_3549, nil, nil, nil, nil, nil, nil, nil, f_3550, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1220214,9 +1220657,9 @@ func (p *tparser) i529() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3550 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3551 := func() any { return c.text(func() any { return k5 }()) }()
-				return tmk_SeqOption(c, true, f_3550, nil, f_3551, nil)
+				f_3551 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3552 := func() any { return c.text(func() any { return k5 }()) }()
+				return tmk_SeqOption(c, true, f_3551, nil, f_3552, nil)
 			}()
 		}()
 		p.where = w
@@ -1220285,9 +1220728,9 @@ func (p *tparser) i529() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3550 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3551 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_SeqOption(c, true, f_3550, nil, f_3551, nil)
+			f_3551 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3552 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_SeqOption(c, true, f_3551, nil, f_3552, nil)
 		}()
 	}()
 	p.where = w
@@ -1220539,12 +1220982,12 @@ func (p *tparser) i530() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3552 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3553 := func() any { return k4 }()
-				f_3554 := func() any { return k22 }()
-				f_3555 := func() any { return k30 }()
-				f_3556 := func() any { return k38 }()
-				return tmk_AlterCmd(c, true, f_3552, nil, nil, nil, f_3554, nil, nil, nil, f_3553, nil, nil, nil, f_3555, f_3556, nil, nil, nil, nil, nil, nil)
+				f_3553 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3554 := func() any { return k4 }()
+				f_3555 := func() any { return k22 }()
+				f_3556 := func() any { return k30 }()
+				f_3557 := func() any { return k38 }()
+				return tmk_AlterCmd(c, true, f_3553, nil, nil, nil, f_3555, nil, nil, nil, f_3554, nil, nil, nil, f_3556, f_3557, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1220778,12 +1221221,12 @@ L41:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3552 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3553 := func() any { c.p.stepWork(); return k4 }()
-			f_3554 := func() any { c.p.stepWork(); return k22 }()
-			f_3555 := func() any { c.p.stepWork(); return k30 }()
-			f_3556 := func() any { c.p.stepWork(); return k38 }()
-			return tmk_AlterCmd(c, true, f_3552, nil, nil, nil, f_3554, nil, nil, nil, f_3553, nil, nil, nil, f_3555, f_3556, nil, nil, nil, nil, nil, nil)
+			f_3553 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3554 := func() any { c.p.stepWork(); return k4 }()
+			f_3555 := func() any { c.p.stepWork(); return k22 }()
+			f_3556 := func() any { c.p.stepWork(); return k30 }()
+			f_3557 := func() any { c.p.stepWork(); return k38 }()
+			return tmk_AlterCmd(c, true, f_3553, nil, nil, nil, f_3555, nil, nil, nil, f_3554, nil, nil, nil, f_3556, f_3557, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1220876,10 +1221319,10 @@ func (p *tparser) i531() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3557 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3558 := func() any { return k4 }()
-				f_3559 := func() any { return k7 }()
-				return tmk_AlterCmd(c, true, f_3557, nil, nil, nil, nil, nil, nil, nil, f_3558, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3559)
+				f_3558 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3559 := func() any { return k4 }()
+				f_3560 := func() any { return k7 }()
+				return tmk_AlterCmd(c, true, f_3558, nil, nil, nil, nil, nil, nil, nil, f_3559, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3560)
 			}()
 		}()
 		p.where = w
@@ -1220949,10 +1221392,10 @@ func (p *tparser) i531() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3557 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3558 := func() any { c.p.stepWork(); return k4 }()
-			f_3559 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AlterCmd(c, true, f_3557, nil, nil, nil, nil, nil, nil, nil, f_3558, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3559)
+			f_3558 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3559 := func() any { c.p.stepWork(); return k4 }()
+			f_3560 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AlterCmd(c, true, f_3558, nil, nil, nil, nil, nil, nil, nil, f_3559, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3560)
 		}()
 	}()
 	p.where = w
@@ -1221286,14 +1221729,14 @@ func (p *tparser) i533() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3560 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3561 := func() any {
+				f_3561 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3562 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3562 := func() any { return k17 }()
-				f_3563 := func() any { return c.text(func() any { return k22 }()) }()
-				return tmk_AlterCmd(c, true, f_3560, f_3561, nil, f_3562, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3563, nil)
+				f_3563 := func() any { return k17 }()
+				f_3564 := func() any { return c.text(func() any { return k22 }()) }()
+				return tmk_AlterCmd(c, true, f_3561, f_3562, nil, f_3563, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3564, nil)
 			}()
 		}()
 		p.where = w
@@ -1221430,14 +1221873,14 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3560 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3561 := func() any {
+			f_3561 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3562 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3562 := func() any { c.p.stepWork(); return k17 }()
-			f_3563 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
-			return tmk_AlterCmd(c, true, f_3560, f_3561, nil, f_3562, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3563, nil)
+			f_3563 := func() any { c.p.stepWork(); return k17 }()
+			f_3564 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k22 }()) }()
+			return tmk_AlterCmd(c, true, f_3561, f_3562, nil, f_3563, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3564, nil)
 		}()
 	}()
 	p.where = w
@@ -1221532,9 +1221975,9 @@ func (p *tparser) i534() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3564 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3565 := func() any { return k5 }()
-				return tmk_AlterCmd(c, true, f_3564, nil, nil, nil, nil, nil, nil, nil, f_3565, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3565 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3566 := func() any { return k5 }()
+				return tmk_AlterCmd(c, true, f_3565, nil, nil, nil, nil, nil, nil, nil, f_3566, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1221607,9 +1222050,9 @@ func (p *tparser) i534() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3564 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3565 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_AlterCmd(c, true, f_3564, nil, nil, nil, nil, nil, nil, nil, f_3565, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3565 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3566 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_AlterCmd(c, true, f_3565, nil, nil, nil, nil, nil, nil, nil, f_3566, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1221700,9 +1222143,9 @@ func (p *tparser) i535() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3566 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3567 := func() any { return k5 }()
-				return tmk_AlterCmd(c, true, f_3566, nil, nil, nil, nil, nil, nil, nil, f_3567, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3567 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3568 := func() any { return k5 }()
+				return tmk_AlterCmd(c, true, f_3567, nil, nil, nil, nil, nil, nil, nil, f_3568, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1221771,9 +1222214,9 @@ func (p *tparser) i535() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3566 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3567 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_AlterCmd(c, true, f_3566, nil, nil, nil, nil, nil, nil, nil, f_3567, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3567 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3568 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_AlterCmd(c, true, f_3567, nil, nil, nil, nil, nil, nil, nil, f_3568, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1221920,14 +1222363,14 @@ func (p *tparser) i536() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3568 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3569 := func() any {
+				f_3569 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3570 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k7 }()) }(), func() any { return any(0) }())
 				}()
-				f_3570 := func() any { return k13 }()
-				f_3571 := func() any { return c.text(func() any { return k18 }()) }()
-				return tmk_AlterCmd(c, true, f_3568, f_3569, nil, nil, nil, nil, nil, nil, f_3570, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3571, nil)
+				f_3571 := func() any { return k13 }()
+				f_3572 := func() any { return c.text(func() any { return k18 }()) }()
+				return tmk_AlterCmd(c, true, f_3569, f_3570, nil, nil, nil, nil, nil, nil, f_3571, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3572, nil)
 			}()
 		}()
 		p.where = w
@@ -1222054,14 +1222497,14 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3568 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3569 := func() any {
+			f_3569 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3570 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k7 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3570 := func() any { c.p.stepWork(); return k13 }()
-			f_3571 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k18 }()) }()
-			return tmk_AlterCmd(c, true, f_3568, f_3569, nil, nil, nil, nil, nil, nil, f_3570, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3571, nil)
+			f_3571 := func() any { c.p.stepWork(); return k13 }()
+			f_3572 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k18 }()) }()
+			return tmk_AlterCmd(c, true, f_3569, f_3570, nil, nil, nil, nil, nil, nil, f_3571, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3572, nil)
 		}()
 	}()
 	p.where = w
@@ -1222174,8 +1222617,8 @@ func (p *tparser) i537() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3572 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_AlterCmd(c, true, f_3572, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+				f_3573 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_AlterCmd(c, true, f_3573, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1222265,8 +1222708,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3572 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_AlterCmd(c, true, f_3572, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			f_3573 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_AlterCmd(c, true, f_3573, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1222365,9 +1222808,9 @@ func (p *tparser) i538() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3573 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3574 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3573, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3574, nil, nil, nil, nil)
+				f_3574 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3575 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3574, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3575, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1222443,9 +1222886,9 @@ func (p *tparser) i538() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3573 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3574 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3573, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3574, nil, nil, nil, nil)
+			f_3574 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3575 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3574, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3575, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1222544,9 +1222987,9 @@ func (p *tparser) i539() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3575 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3576 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3575, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3576, nil, nil, nil, nil)
+				f_3576 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3577 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3576, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3577, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1222622,9 +1223065,9 @@ func (p *tparser) i539() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3575 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3576 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3575, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3576, nil, nil, nil, nil)
+			f_3576 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3577 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3576, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3577, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1222703,9 +1223146,9 @@ func (p *tparser) i540() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3577 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3578 := func() any { return k4 }()
-				return tmk_AlterCmd(c, true, f_3577, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3578)
+				f_3578 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3579 := func() any { return k4 }()
+				return tmk_AlterCmd(c, true, f_3578, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3579)
 			}()
 		}()
 		p.where = w
@@ -1222761,9 +1223204,9 @@ func (p *tparser) i540() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3577 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3578 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_AlterCmd(c, true, f_3577, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3578)
+			f_3578 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3579 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_AlterCmd(c, true, f_3578, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, f_3579)
 		}()
 	}()
 	p.where = w
@@ -1223565,10 +1224008,10 @@ func (p *tparser) i544() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3579 := func() any { return c.text(func() any { return k3 }()) }()
-				f_3580 := func() any { return k20 }()
-				f_3581 := func() any { return k23 }()
-				return tmk_GenericAlterOption(c, true, f_3579, f_3580, f_3581)
+				f_3580 := func() any { return c.text(func() any { return k3 }()) }()
+				f_3581 := func() any { return k20 }()
+				f_3582 := func() any { return k23 }()
+				return tmk_GenericAlterOption(c, true, f_3580, f_3581, f_3582)
 			}()
 		}()
 		p.where = w
@@ -1223693,10 +1224136,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3579 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
-			f_3580 := func() any { c.p.stepWork(); return k20 }()
-			f_3581 := func() any { c.p.stepWork(); return k23 }()
-			return tmk_GenericAlterOption(c, true, f_3579, f_3580, f_3581)
+			f_3580 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
+			f_3581 := func() any { c.p.stepWork(); return k20 }()
+			f_3582 := func() any { c.p.stepWork(); return k23 }()
+			return tmk_GenericAlterOption(c, true, f_3580, f_3581, f_3582)
 		}()
 	}()
 	p.where = w
@@ -1223775,9 +1224218,9 @@ func (p *tparser) i545() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3582 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3583 := func() any { return k4 }()
-				return tmk_GenericAlterOption(c, true, f_3582, f_3583, nil)
+				f_3583 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3584 := func() any { return k4 }()
+				return tmk_GenericAlterOption(c, true, f_3583, f_3584, nil)
 			}()
 		}()
 		p.where = w
@@ -1223833,9 +1224276,9 @@ func (p *tparser) i545() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3582 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3583 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_GenericAlterOption(c, true, f_3582, f_3583, nil)
+			f_3583 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3584 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_GenericAlterOption(c, true, f_3583, f_3584, nil)
 		}()
 	}()
 	p.where = w
@@ -1224259,13 +1224702,13 @@ func (p *tparser) i547() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3584 := func() any {
+				f_3585 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3585 := func() any { return k9 }()
-				f_3586 := func() any { return k12 }()
-				return tmk_AlterSequenceStmt(c, true, f_3584, f_3585, f_3586)
+				f_3586 := func() any { return k9 }()
+				f_3587 := func() any { return k12 }()
+				return tmk_AlterSequenceStmt(c, true, f_3585, f_3586, f_3587)
 			}()
 		}()
 		p.where = w
@@ -1224366,13 +1224809,13 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3584 := func() any {
+			f_3585 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3585 := func() any { c.p.stepWork(); return k9 }()
-			f_3586 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_AlterSequenceStmt(c, true, f_3584, f_3585, f_3586)
+			f_3586 := func() any { c.p.stepWork(); return k9 }()
+			f_3587 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_AlterSequenceStmt(c, true, f_3585, f_3586, f_3587)
 		}()
 	}()
 	p.where = w
@@ -1224525,14 +1224968,14 @@ func (p *tparser) i548() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3587 := func() any {
+				f_3588 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3588 := func() any { return k9 }()
-				f_3589 := func() any { return k12 }()
-				f_3590 := func() any { return k15 }()
-				return tmk_AlterDatabaseStmt(c, true, f_3587, f_3588, f_3589, f_3590)
+				f_3589 := func() any { return k9 }()
+				f_3590 := func() any { return k12 }()
+				f_3591 := func() any { return k15 }()
+				return tmk_AlterDatabaseStmt(c, true, f_3588, f_3589, f_3590, f_3591)
 			}()
 		}()
 		p.where = w
@@ -1224663,14 +1225106,14 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3587 := func() any {
+			f_3588 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3588 := func() any { c.p.stepWork(); return k9 }()
-			f_3589 := func() any { c.p.stepWork(); return k12 }()
-			f_3590 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_AlterDatabaseStmt(c, true, f_3587, f_3588, f_3589, f_3590)
+			f_3589 := func() any { c.p.stepWork(); return k9 }()
+			f_3590 := func() any { c.p.stepWork(); return k12 }()
+			f_3591 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_AlterDatabaseStmt(c, true, f_3588, f_3589, f_3590, f_3591)
 		}()
 	}()
 	p.where = w
@@ -1225227,14 +1225670,14 @@ func (p *tparser) i550() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3591 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3592 := func() any {
+				f_3592 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3593 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3593 := func() any { return k14 }()
-				f_3594 := func() any { return k34 }()
-				return tmk_AlterObjectSchemaStmt(c, true, f_3591, f_3592, f_3593, f_3594)
+				f_3594 := func() any { return k14 }()
+				f_3595 := func() any { return k34 }()
+				return tmk_AlterObjectSchemaStmt(c, true, f_3592, f_3593, f_3594, f_3595)
 			}()
 		}()
 		p.where = w
@@ -1225477,14 +1225920,14 @@ L16:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3591 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3592 := func() any {
+			f_3592 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3593 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3593 := func() any { c.p.stepWork(); return k14 }()
-			f_3594 := func() any { c.p.stepWork(); return k34 }()
-			return tmk_AlterObjectSchemaStmt(c, true, f_3591, f_3592, f_3593, f_3594)
+			f_3594 := func() any { c.p.stepWork(); return k14 }()
+			f_3595 := func() any { c.p.stepWork(); return k34 }()
+			return tmk_AlterObjectSchemaStmt(c, true, f_3592, f_3593, f_3594, f_3595)
 		}()
 	}()
 	p.where = w
@@ -1225669,14 +1226112,14 @@ func (p *tparser) i551() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3595 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3596 := func() any {
+				f_3596 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3597 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k17 }()) }(), func() any { return any(0) }())
 				}()
-				f_3597 := func() any { return k23 }()
-				f_3598 := func() any { return k26 }()
-				return tmk_AlterObjectSchemaStmt(c, true, f_3595, f_3596, f_3597, f_3598)
+				f_3598 := func() any { return k23 }()
+				f_3599 := func() any { return k26 }()
+				return tmk_AlterObjectSchemaStmt(c, true, f_3596, f_3597, f_3598, f_3599)
 			}()
 		}()
 		p.where = w
@@ -1225839,14 +1226282,14 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3595 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3596 := func() any {
+			f_3596 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3597 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k17 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3597 := func() any { c.p.stepWork(); return k23 }()
-			f_3598 := func() any { c.p.stepWork(); return k26 }()
-			return tmk_AlterObjectSchemaStmt(c, true, f_3595, f_3596, f_3597, f_3598)
+			f_3598 := func() any { c.p.stepWork(); return k23 }()
+			f_3599 := func() any { c.p.stepWork(); return k26 }()
+			return tmk_AlterObjectSchemaStmt(c, true, f_3596, f_3597, f_3598, f_3599)
 		}()
 	}()
 	p.where = w
@@ -1226362,16 +1226805,16 @@ func (p *tparser) i553() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3599 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3600 := func() any {
+				f_3600 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3601 := func() any {
 
 					return func() any {
-						f_3601 := func() any { return c.list(func() any { return k5 }()) }()
-						return tmk_Name(c, false, f_3601)
+						f_3602 := func() any { return c.list(func() any { return k5 }()) }()
+						return tmk_Name(c, false, f_3602)
 					}()
 				}()
-				f_3602 := func() any { return k8 }()
-				return tmk_RenameStmt(c, true, f_3599, nil, f_3600, nil, nil, f_3602)
+				f_3603 := func() any { return k8 }()
+				return tmk_RenameStmt(c, true, f_3600, nil, f_3601, nil, nil, f_3603)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1226471,16 +1226914,16 @@ func (p *tparser) i553() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3599 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3600 := func() any {
+			f_3600 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3601 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3601 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k5 }()) }()
-					return tmk_Name(c, false, f_3601)
+					f_3602 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k5 }()) }()
+					return tmk_Name(c, false, f_3602)
 				}()
 			}()
-			f_3602 := func() any { c.p.stepWork(); return k8 }()
-			return tmk_RenameStmt(c, true, f_3599, nil, f_3600, nil, nil, f_3602)
+			f_3603 := func() any { c.p.stepWork(); return k8 }()
+			return tmk_RenameStmt(c, true, f_3600, nil, f_3601, nil, nil, f_3603)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1226886,14 +1227329,14 @@ func (p *tparser) i555() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3603 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3604 := func() any {
+				f_3604 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3605 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3605 := func() any { return k14 }()
-				f_3606 := func() any { return k34 }()
-				return tmk_RenameStmt(c, true, f_3603, f_3604, f_3605, nil, nil, f_3606)
+				f_3606 := func() any { return k14 }()
+				f_3607 := func() any { return k34 }()
+				return tmk_RenameStmt(c, true, f_3604, f_3605, f_3606, nil, nil, f_3607)
 			}()
 		}()
 		p.where = w
@@ -1227136,14 +1227579,14 @@ L16:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3603 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3604 := func() any {
+			f_3604 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3605 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3605 := func() any { c.p.stepWork(); return k14 }()
-			f_3606 := func() any { c.p.stepWork(); return k34 }()
-			return tmk_RenameStmt(c, true, f_3603, f_3604, f_3605, nil, nil, f_3606)
+			f_3606 := func() any { c.p.stepWork(); return k14 }()
+			f_3607 := func() any { c.p.stepWork(); return k34 }()
+			return tmk_RenameStmt(c, true, f_3604, f_3605, f_3606, nil, nil, f_3607)
 		}()
 	}()
 	p.where = w
@@ -1227343,14 +1227786,14 @@ func (p *tparser) i556() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3607 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3608 := func() any {
+				f_3608 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3609 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k20 }()) }(), func() any { return any(0) }())
 				}()
-				f_3609 := func() any { return k26 }()
-				f_3610 := func() any { return k29 }()
-				return tmk_RenameStmt(c, true, f_3607, f_3608, f_3609, nil, nil, f_3610)
+				f_3610 := func() any { return k26 }()
+				f_3611 := func() any { return k29 }()
+				return tmk_RenameStmt(c, true, f_3608, f_3609, f_3610, nil, nil, f_3611)
 			}()
 		}()
 		p.where = w
@@ -1227528,14 +1227971,14 @@ L23:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3607 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3608 := func() any {
+			f_3608 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3609 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k20 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3609 := func() any { c.p.stepWork(); return k26 }()
-			f_3610 := func() any { c.p.stepWork(); return k29 }()
-			return tmk_RenameStmt(c, true, f_3607, f_3608, f_3609, nil, nil, f_3610)
+			f_3610 := func() any { c.p.stepWork(); return k26 }()
+			f_3611 := func() any { c.p.stepWork(); return k29 }()
+			return tmk_RenameStmt(c, true, f_3608, f_3609, f_3610, nil, nil, f_3611)
 		}()
 	}()
 	p.where = w
@@ -1227828,15 +1228271,15 @@ func (p *tparser) i557() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3611 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3612 := func() any {
+				f_3612 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3613 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3613 := func() any { return k14 }()
-				f_3614 := func() any { return k38 }()
-				f_3615 := func() any { return k41 }()
-				return tmk_RenameStmt(c, true, f_3611, f_3612, f_3613, f_3614, nil, f_3615)
+				f_3614 := func() any { return k14 }()
+				f_3615 := func() any { return k38 }()
+				f_3616 := func() any { return k41 }()
+				return tmk_RenameStmt(c, true, f_3612, f_3613, f_3614, f_3615, nil, f_3616)
 			}()
 		}()
 		p.where = w
@@ -1228111,15 +1228554,15 @@ L37:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3611 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3612 := func() any {
+			f_3612 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3613 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3613 := func() any { c.p.stepWork(); return k14 }()
-			f_3614 := func() any { c.p.stepWork(); return k38 }()
-			f_3615 := func() any { c.p.stepWork(); return k41 }()
-			return tmk_RenameStmt(c, true, f_3611, f_3612, f_3613, f_3614, nil, f_3615)
+			f_3614 := func() any { c.p.stepWork(); return k14 }()
+			f_3615 := func() any { c.p.stepWork(); return k38 }()
+			f_3616 := func() any { c.p.stepWork(); return k41 }()
+			return tmk_RenameStmt(c, true, f_3612, f_3613, f_3614, f_3615, nil, f_3616)
 		}()
 	}()
 	p.where = w
@@ -1228403,15 +1228846,15 @@ func (p *tparser) i558() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3616 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3617 := func() any {
+				f_3617 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3618 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3618 := func() any { return k14 }()
-				f_3619 := func() any { return k34 }()
-				f_3620 := func() any { return k37 }()
-				return tmk_RenameStmt(c, true, f_3616, f_3617, f_3618, nil, f_3619, f_3620)
+				f_3619 := func() any { return k14 }()
+				f_3620 := func() any { return k34 }()
+				f_3621 := func() any { return k37 }()
+				return tmk_RenameStmt(c, true, f_3617, f_3618, f_3619, nil, f_3620, f_3621)
 			}()
 		}()
 		p.where = w
@@ -1228676,15 +1229119,15 @@ L16:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3616 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3617 := func() any {
+			f_3617 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3618 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3618 := func() any { c.p.stepWork(); return k14 }()
-			f_3619 := func() any { c.p.stepWork(); return k34 }()
-			f_3620 := func() any { c.p.stepWork(); return k37 }()
-			return tmk_RenameStmt(c, true, f_3616, f_3617, f_3618, nil, f_3619, f_3620)
+			f_3619 := func() any { c.p.stepWork(); return k14 }()
+			f_3620 := func() any { c.p.stepWork(); return k34 }()
+			f_3621 := func() any { c.p.stepWork(); return k37 }()
+			return tmk_RenameStmt(c, true, f_3617, f_3618, f_3619, nil, f_3620, f_3621)
 		}()
 	}()
 	p.where = w
@@ -1229182,14 +1229625,14 @@ func (p *tparser) i560() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3621 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3622 := func() any {
+				f_3622 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3623 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3623 := func() any { return k12 }()
-				f_3624 := func() any { return c.text(func() any { return k17 }()) }()
-				return tmk_DropStmt(c, true, f_3621, f_3622, f_3623, nil, f_3624)
+				f_3624 := func() any { return k12 }()
+				f_3625 := func() any { return c.text(func() any { return k17 }()) }()
+				return tmk_DropStmt(c, true, f_3622, f_3623, f_3624, nil, f_3625)
 			}()
 		}()
 		p.where = w
@@ -1229311,14 +1229754,14 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3621 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3622 := func() any {
+			f_3622 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3623 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3623 := func() any { c.p.stepWork(); return k12 }()
-			f_3624 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_DropStmt(c, true, f_3621, f_3622, f_3623, nil, f_3624)
+			f_3624 := func() any { c.p.stepWork(); return k12 }()
+			f_3625 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_DropStmt(c, true, f_3622, f_3623, f_3624, nil, f_3625)
 		}()
 	}()
 	p.where = w
@@ -1229461,14 +1229904,14 @@ func (p *tparser) i561() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3625 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3626 := func() any {
+				f_3626 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3627 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3627 := func() any { return k12 }()
-				f_3628 := func() any { return c.text(func() any { return k17 }()) }()
-				return tmk_DropStmt(c, true, f_3625, f_3626, f_3627, nil, f_3628)
+				f_3628 := func() any { return k12 }()
+				f_3629 := func() any { return c.text(func() any { return k17 }()) }()
+				return tmk_DropStmt(c, true, f_3626, f_3627, f_3628, nil, f_3629)
 			}()
 		}()
 		p.where = w
@@ -1229590,14 +1230033,14 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3625 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3626 := func() any {
+			f_3626 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3627 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3627 := func() any { c.p.stepWork(); return k12 }()
-			f_3628 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_DropStmt(c, true, f_3625, f_3626, f_3627, nil, f_3628)
+			f_3628 := func() any { c.p.stepWork(); return k12 }()
+			f_3629 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_DropStmt(c, true, f_3626, f_3627, f_3628, nil, f_3629)
 		}()
 	}()
 	p.where = w
@@ -1229815,24 +1230258,24 @@ func (p *tparser) i562() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3629 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3630 := func() any {
+				f_3630 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3631 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k18 }()) }(), func() any { return any(0) }())
 				}()
-				f_3631 := func() any {
+				f_3632 := func() any {
 
 					return c.list(func() any {
 
 						return func() any {
-							f_3632 := func() any { return c.list(func() any { return k24 }()) }()
-							return tmk_Name(c, false, f_3632)
+							f_3633 := func() any { return c.list(func() any { return k24 }()) }()
+							return tmk_Name(c, false, f_3633)
 						}()
 					}())
 				}()
-				f_3633 := func() any { return k27 }()
-				f_3634 := func() any { return c.text(func() any { return k32 }()) }()
-				return tmk_DropStmt(c, true, f_3629, f_3630, f_3631, f_3633, f_3634)
+				f_3634 := func() any { return k27 }()
+				f_3635 := func() any { return c.text(func() any { return k32 }()) }()
+				return tmk_DropStmt(c, true, f_3630, f_3631, f_3632, f_3634, f_3635)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -1230030,24 +1230473,24 @@ L35:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3629 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3630 := func() any {
+			f_3630 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3631 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k18 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3631 := func() any {
+			f_3632 := func() any {
 				c.p.stepWork()
 				return c.list(func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3632 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k24 }()) }()
-						return tmk_Name(c, false, f_3632)
+						f_3633 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k24 }()) }()
+						return tmk_Name(c, false, f_3633)
 					}()
 				}())
 			}()
-			f_3633 := func() any { c.p.stepWork(); return k27 }()
-			f_3634 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k32 }()) }()
-			return tmk_DropStmt(c, true, f_3629, f_3630, f_3631, f_3633, f_3634)
+			f_3634 := func() any { c.p.stepWork(); return k27 }()
+			f_3635 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k32 }()) }()
+			return tmk_DropStmt(c, true, f_3630, f_3631, f_3632, f_3634, f_3635)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -1231374,7 +1231817,7 @@ func (p *tparser) i566() (any, bool) {
 			x14 = append(x14, v16)
 			v17 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
-			v19 = p.attachCaptures(v18, scope3635, []any{k11}, x9, p.pos)
+			v19 = p.attachCaptures(v18, scope3636, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v19)
 			if p.pos == x9 {
@@ -1231398,19 +1231841,19 @@ func (p *tparser) i566() (any, bool) {
 				c.pushList(func() any {
 
 					return func() any {
-						f_3636 := func() any { return c.list(func() any { return k1 }()) }()
-						return tmk_Name(c, false, f_3636)
+						f_3637 := func() any { return c.list(func() any { return k1 }()) }()
+						return tmk_Name(c, false, f_3637)
 					}()
 				}())
-				c.pushMap(func() any { return k4 }(), func(l_3637 any) any {
+				c.pushMap(func() any { return k4 }(), func(l_3638 any) any {
 					return func() any {
 
 						return func() any {
-							f_3638 := func() any {
+							f_3639 := func() any {
 
-								return c.list(func() any { return c.member(func() any { return (l_3637) }(), "$n") }())
+								return c.list(func() any { return c.member(func() any { return (l_3638) }(), "$n") }())
 							}()
-							return tmk_Name(c, false, f_3638)
+							return tmk_Name(c, false, f_3639)
 						}()
 					}()
 				})
@@ -1231506,7 +1231949,7 @@ func (p *tparser) i566() (any, bool) {
 		x14 = append(x14, v16)
 		v17 = p.newNode("Seq", x13, p.pos, x14)
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
-		v19 = p.attachCaptures(v18, scope3635, []any{k11}, x9, p.pos)
+		v19 = p.attachCaptures(v18, scope3636, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v19)
 		if p.pos == x9 {
@@ -1231530,19 +1231973,19 @@ func (p *tparser) i566() (any, bool) {
 			c.pushList(func() any {
 				c.p.stepWork()
 				return func() any {
-					f_3636 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-					return tmk_Name(c, false, f_3636)
+					f_3637 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+					return tmk_Name(c, false, f_3637)
 				}()
 			}())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_3637 any) any {
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_3638 any) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_3638 := func() any {
+						f_3639 := func() any {
 							c.p.stepWork()
-							return c.list(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3637) }(), "$n") }())
+							return c.list(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_3638) }(), "$n") }())
 						}()
-						return tmk_Name(c, false, f_3638)
+						return tmk_Name(c, false, f_3639)
 					}()
 				}()
 			})
@@ -1231760,14 +1232203,14 @@ func (p *tparser) i567() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3639 := func() any { return c.text(func() any { return k3 }()) }()
-				f_3640 := func() any {
+				f_3640 := func() any { return c.text(func() any { return k3 }()) }()
+				f_3641 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k21 }()) }(), func() any { return any(0) }())
 				}()
-				f_3641 := func() any { return k27 }()
-				f_3642 := func() any { return k32 }()
-				return tmk_DropSecretStmt(c, true, f_3639, f_3640, f_3641, f_3642)
+				f_3642 := func() any { return k27 }()
+				f_3643 := func() any { return k32 }()
+				return tmk_DropSecretStmt(c, true, f_3640, f_3641, f_3642, f_3643)
 			}()
 		}()
 		p.where = w
@@ -1231960,14 +1232403,14 @@ L35:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3639 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
-			f_3640 := func() any {
+			f_3640 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k3 }()) }()
+			f_3641 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k21 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3641 := func() any { c.p.stepWork(); return k27 }()
-			f_3642 := func() any { c.p.stepWork(); return k32 }()
-			return tmk_DropSecretStmt(c, true, f_3639, f_3640, f_3641, f_3642)
+			f_3642 := func() any { c.p.stepWork(); return k27 }()
+			f_3643 := func() any { c.p.stepWork(); return k32 }()
+			return tmk_DropSecretStmt(c, true, f_3640, f_3641, f_3642, f_3643)
 		}()
 	}()
 	p.where = w
@@ -1232814,26 +1233257,26 @@ func (p *tparser) i569() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3643 := func() any {
+				f_3644 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3644 := func() any { return k9 }()
-				f_3645 := func() any { return c.concat(func() any { return k14 }()) }()
-				f_3646 := func() any { return c.text(func() any { return k24 }()) }()
-				f_3647 := func() any {
+				f_3645 := func() any { return k9 }()
+				f_3646 := func() any { return c.concat(func() any { return k14 }()) }()
+				f_3647 := func() any { return c.text(func() any { return k24 }()) }()
+				f_3648 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k40 }()) }(), func() any { return any(0) }())
 				}()
-				f_3648 := func() any { return k48 }()
-				f_3649 := func() any { return c.text(func() any { return k50 }()) }()
-				f_3650 := func() any { return k71 }()
-				f_3651 := func() any {
+				f_3649 := func() any { return k48 }()
+				f_3650 := func() any { return c.text(func() any { return k50 }()) }()
+				f_3651 := func() any { return k71 }()
+				f_3652 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k89 }()))
 				}()
-				f_3652 := func() any { return c.concat(func() any { return k87 }()) }()
-				return tmk_CopyStmt(c, true, f_3643, f_3644, f_3645, nil, f_3646, f_3647, f_3648, f_3649, f_3650, f_3651, f_3652)
+				f_3653 := func() any { return c.concat(func() any { return k87 }()) }()
+				return tmk_CopyStmt(c, true, f_3644, f_3645, f_3646, nil, f_3647, f_3648, f_3649, f_3650, f_3651, f_3652, f_3653)
 			}()
 		}()
 		p.where = w
@@ -1233312,26 +1233755,26 @@ L91:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3643 := func() any {
+			f_3644 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3644 := func() any { c.p.stepWork(); return k9 }()
-			f_3645 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			f_3646 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k24 }()) }()
-			f_3647 := func() any {
+			f_3645 := func() any { c.p.stepWork(); return k9 }()
+			f_3646 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			f_3647 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k24 }()) }()
+			f_3648 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k40 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3648 := func() any { c.p.stepWork(); return k48 }()
-			f_3649 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k50 }()) }()
-			f_3650 := func() any { c.p.stepWork(); return k71 }()
-			f_3651 := func() any {
+			f_3649 := func() any { c.p.stepWork(); return k48 }()
+			f_3650 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k50 }()) }()
+			f_3651 := func() any { c.p.stepWork(); return k71 }()
+			f_3652 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k89 }()))
 			}()
-			f_3652 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k87 }()) }()
-			return tmk_CopyStmt(c, true, f_3643, f_3644, f_3645, nil, f_3646, f_3647, f_3648, f_3649, f_3650, f_3651, f_3652)
+			f_3653 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k87 }()) }()
+			return tmk_CopyStmt(c, true, f_3644, f_3645, f_3646, nil, f_3647, f_3648, f_3649, f_3650, f_3651, f_3652, f_3653)
 		}()
 	}()
 	p.where = w
@@ -1233649,20 +1234092,20 @@ func (p *tparser) i570() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3653 := func() any { return k1 }()
-				f_3654 := func() any { return c.text(func() any { return k4 }()) }()
-				f_3655 := func() any {
+				f_3654 := func() any { return k1 }()
+				f_3655 := func() any { return c.text(func() any { return k4 }()) }()
+				f_3656 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k9 }()) }(), func() any { return any(0) }())
 				}()
-				f_3656 := func() any { return k17 }()
-				f_3657 := func() any { return c.text(func() any { return k19 }()) }()
-				f_3658 := func() any {
+				f_3657 := func() any { return k17 }()
+				f_3658 := func() any { return c.text(func() any { return k19 }()) }()
+				f_3659 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k46 }()))
 				}()
-				f_3659 := func() any { return c.concat(func() any { return k44 }()) }()
-				return tmk_CopyStmt(c, true, nil, nil, nil, f_3653, f_3654, f_3655, f_3656, f_3657, nil, f_3658, f_3659)
+				f_3660 := func() any { return c.concat(func() any { return k44 }()) }()
+				return tmk_CopyStmt(c, true, nil, nil, nil, f_3654, f_3655, f_3656, f_3657, f_3658, nil, f_3659, f_3660)
 			}()
 		}()
 		p.where = w
@@ -1233962,20 +1234405,20 @@ L48:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3653 := func() any { c.p.stepWork(); return k1 }()
-			f_3654 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_3655 := func() any {
+			f_3654 := func() any { c.p.stepWork(); return k1 }()
+			f_3655 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_3656 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k9 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3656 := func() any { c.p.stepWork(); return k17 }()
-			f_3657 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k19 }()) }()
-			f_3658 := func() any {
+			f_3657 := func() any { c.p.stepWork(); return k17 }()
+			f_3658 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k19 }()) }()
+			f_3659 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k46 }()))
 			}()
-			f_3659 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k44 }()) }()
-			return tmk_CopyStmt(c, true, nil, nil, nil, f_3653, f_3654, f_3655, f_3656, f_3657, nil, f_3658, f_3659)
+			f_3660 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k44 }()) }()
+			return tmk_CopyStmt(c, true, nil, nil, nil, f_3654, f_3655, f_3656, f_3657, f_3658, nil, f_3659, f_3660)
 		}()
 	}()
 	p.where = w
@@ -1234114,10 +1234557,10 @@ func (p *tparser) i571() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3660 := func() any { return k1 }()
-				f_3661 := func() any { return k4 }()
-				f_3662 := func() any { return c.text(func() any { return k9 }()) }()
-				return tmk_CopyDatabaseStmt(c, true, f_3660, f_3661, f_3662)
+				f_3661 := func() any { return k1 }()
+				f_3662 := func() any { return k4 }()
+				f_3663 := func() any { return c.text(func() any { return k9 }()) }()
+				return tmk_CopyDatabaseStmt(c, true, f_3661, f_3662, f_3663)
 			}()
 		}()
 		p.where = w
@@ -1234234,10 +1234677,10 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3660 := func() any { c.p.stepWork(); return k1 }()
-			f_3661 := func() any { c.p.stepWork(); return k4 }()
-			f_3662 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			return tmk_CopyDatabaseStmt(c, true, f_3660, f_3661, f_3662)
+			f_3661 := func() any { c.p.stepWork(); return k1 }()
+			f_3662 := func() any { c.p.stepWork(); return k4 }()
+			f_3663 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			return tmk_CopyDatabaseStmt(c, true, f_3661, f_3662, f_3663)
 		}()
 	}()
 	p.where = w
@@ -1234892,7 +1235335,7 @@ func (p *tparser) i574() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3663 := func() any {
+				f_3664 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1234901,7 +1235344,7 @@ func (p *tparser) i574() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_ColumnRef(c, true, f_3663)
+				return tmk_ColumnRef(c, true, f_3664)
 			}()
 		}()
 		p.where = w
@@ -1234998,7 +1235441,7 @@ func (p *tparser) i574() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3663 := func() any {
+			f_3664 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1235007,7 +1235450,7 @@ func (p *tparser) i574() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_ColumnRef(c, true, f_3663)
+			return tmk_ColumnRef(c, true, f_3664)
 		}()
 	}()
 	p.where = w
@@ -1235371,9 +1235814,9 @@ func (p *tparser) i576() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3664 := func() any { return k1 }()
-				f_3665 := func() any { return k6 }()
-				return tmk_GenericOption(c, true, f_3664, f_3665)
+				f_3665 := func() any { return k1 }()
+				f_3666 := func() any { return k6 }()
+				return tmk_GenericOption(c, true, f_3665, f_3666)
 			}()
 		}()
 		p.where = w
@@ -1235444,9 +1235887,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3664 := func() any { c.p.stepWork(); return k1 }()
-			f_3665 := func() any { c.p.stepWork(); return k6 }()
-			return tmk_GenericOption(c, true, f_3664, f_3665)
+			f_3665 := func() any { c.p.stepWork(); return k1 }()
+			f_3666 := func() any { c.p.stepWork(); return k6 }()
+			return tmk_GenericOption(c, true, f_3665, f_3666)
 		}()
 	}()
 	p.where = w
@@ -1236091,8 +1236534,8 @@ func (p *tparser) i578() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3666 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_CopyOption(c, true, f_3666, nil, nil)
+				f_3667 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_CopyOption(c, true, f_3667, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1236218,8 +1236661,8 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3666 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_CopyOption(c, true, f_3666, nil, nil)
+			f_3667 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_CopyOption(c, true, f_3667, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1236404,9 +1236847,9 @@ func (p *tparser) i579() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3667 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3668 := func() any { return c.text(func() any { return k28 }()) }()
-				return tmk_CopyOption(c, true, f_3667, f_3668, nil)
+				f_3668 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3669 := func() any { return c.text(func() any { return k28 }()) }()
+				return tmk_CopyOption(c, true, f_3668, f_3669, nil)
 			}()
 		}()
 		p.where = w
@@ -1236569,9 +1237012,9 @@ L27:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3667 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3668 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
-			return tmk_CopyOption(c, true, f_3667, f_3668, nil)
+			f_3668 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3669 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k28 }()) }()
+			return tmk_CopyOption(c, true, f_3668, f_3669, nil)
 		}()
 	}()
 	p.where = w
@@ -1236719,9 +1237162,9 @@ func (p *tparser) i580() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3669 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3670 := func() any { return k16 }()
-				return tmk_CopyOption(c, true, f_3669, nil, f_3670)
+				f_3670 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3671 := func() any { return k16 }()
+				return tmk_CopyOption(c, true, f_3670, nil, f_3671)
 			}()
 		}()
 		p.where = w
@@ -1236848,9 +1237291,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3669 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3670 := func() any { c.p.stepWork(); return k16 }()
-			return tmk_CopyOption(c, true, f_3669, nil, f_3670)
+			f_3670 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3671 := func() any { c.p.stepWork(); return k16 }()
+			return tmk_CopyOption(c, true, f_3670, nil, f_3671)
 		}()
 	}()
 	p.where = w
@@ -1236941,9 +1237384,9 @@ func (p *tparser) i581() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3671 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3672 := func() any { return c.text(func() any { return k5 }()) }()
-				return tmk_CopyOption(c, true, f_3671, f_3672, nil)
+				f_3672 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3673 := func() any { return c.text(func() any { return k5 }()) }()
+				return tmk_CopyOption(c, true, f_3672, f_3673, nil)
 			}()
 		}()
 		p.where = w
@@ -1237012,9 +1237455,9 @@ func (p *tparser) i581() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3671 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3672 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_CopyOption(c, true, f_3671, f_3672, nil)
+			f_3672 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3673 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_CopyOption(c, true, f_3672, f_3673, nil)
 		}()
 	}()
 	p.where = w
@@ -1237105,9 +1237548,9 @@ func (p *tparser) i582() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3673 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3674 := func() any { return k5 }()
-				return tmk_CopyOption(c, true, f_3673, nil, f_3674)
+				f_3674 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3675 := func() any { return k5 }()
+				return tmk_CopyOption(c, true, f_3674, nil, f_3675)
 			}()
 		}()
 		p.where = w
@@ -1237176,9 +1237619,9 @@ func (p *tparser) i582() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3673 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3674 := func() any { c.p.stepWork(); return k5 }()
-			return tmk_CopyOption(c, true, f_3673, nil, f_3674)
+			f_3674 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3675 := func() any { c.p.stepWork(); return k5 }()
+			return tmk_CopyOption(c, true, f_3674, nil, f_3675)
 		}()
 	}()
 	p.where = w
@@ -1237269,9 +1237712,9 @@ func (p *tparser) i583() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3675 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3676 := func() any { return c.text(func() any { return k5 }()) }()
-				return tmk_CopyOption(c, true, f_3675, f_3676, nil)
+				f_3676 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3677 := func() any { return c.text(func() any { return k5 }()) }()
+				return tmk_CopyOption(c, true, f_3676, f_3677, nil)
 			}()
 		}()
 		p.where = w
@@ -1237340,9 +1237783,9 @@ func (p *tparser) i583() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3675 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3676 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_CopyOption(c, true, f_3675, f_3676, nil)
+			f_3676 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3677 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_CopyOption(c, true, f_3676, f_3677, nil)
 		}()
 	}()
 	p.where = w
@@ -1237533,14 +1237976,14 @@ func (p *tparser) i584() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3677 := func() any { return k3 }()
-				f_3678 := func() any { return k9 }()
-				f_3679 := func() any {
+				f_3678 := func() any { return k3 }()
+				f_3679 := func() any { return k9 }()
+				f_3680 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k16 }()))
 				}()
-				f_3680 := func() any { return c.concat(func() any { return k14 }()) }()
-				return tmk_ExportStmt(c, true, f_3677, f_3678, f_3679, f_3680)
+				f_3681 := func() any { return c.concat(func() any { return k14 }()) }()
+				return tmk_ExportStmt(c, true, f_3678, f_3679, f_3680, f_3681)
 			}()
 		}()
 		p.where = w
@@ -1237712,14 +1238155,14 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3677 := func() any { c.p.stepWork(); return k3 }()
-			f_3678 := func() any { c.p.stepWork(); return k9 }()
-			f_3679 := func() any {
+			f_3678 := func() any { c.p.stepWork(); return k3 }()
+			f_3679 := func() any { c.p.stepWork(); return k9 }()
+			f_3680 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k16 }()))
 			}()
-			f_3680 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			return tmk_ExportStmt(c, true, f_3677, f_3678, f_3679, f_3680)
+			f_3681 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			return tmk_ExportStmt(c, true, f_3678, f_3679, f_3680, f_3681)
 		}()
 	}()
 	p.where = w
@@ -1237800,8 +1238243,8 @@ func (p *tparser) i585() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3681 := func() any { return k1 }()
-				return tmk_ImportStmt(c, true, f_3681)
+				f_3682 := func() any { return k1 }()
+				return tmk_ImportStmt(c, true, f_3682)
 			}()
 		}()
 		p.where = w
@@ -1237859,8 +1238302,8 @@ func (p *tparser) i585() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3681 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ImportStmt(c, true, f_3681)
+			f_3682 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ImportStmt(c, true, f_3682)
 		}()
 	}()
 	p.where = w
@@ -1238100,22 +1238543,22 @@ func (p *tparser) i586() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3682 := func() any {
+				f_3683 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k5 }()) }(), func() any { return any(0) }())
 				}()
-				f_3683 := func() any {
+				f_3684 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3684 := func() any {
+				f_3685 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k22 }()) }(), func() any { return any(0) }())
 				}()
-				f_3685 := func() any { return k28 }()
-				f_3686 := func() any { return k33 }()
-				f_3687 := func() any { return c.concat(func() any { return k41 }()) }()
-				return tmk_AttachStmt(c, true, f_3682, f_3683, f_3684, f_3685, f_3686, f_3687)
+				f_3686 := func() any { return k28 }()
+				f_3687 := func() any { return k33 }()
+				f_3688 := func() any { return c.concat(func() any { return k41 }()) }()
+				return tmk_AttachStmt(c, true, f_3683, f_3684, f_3685, f_3686, f_3687, f_3688)
 			}()
 		}()
 		p.where = w
@@ -1238337,22 +1238780,22 @@ L44:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3682 := func() any {
+			f_3683 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k5 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3683 := func() any {
+			f_3684 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3684 := func() any {
+			f_3685 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k22 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3685 := func() any { c.p.stepWork(); return k28 }()
-			f_3686 := func() any { c.p.stepWork(); return k33 }()
-			f_3687 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k41 }()) }()
-			return tmk_AttachStmt(c, true, f_3682, f_3683, f_3684, f_3685, f_3686, f_3687)
+			f_3686 := func() any { c.p.stepWork(); return k28 }()
+			f_3687 := func() any { c.p.stepWork(); return k33 }()
+			f_3688 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k41 }()) }()
+			return tmk_AttachStmt(c, true, f_3683, f_3684, f_3685, f_3686, f_3687, f_3688)
 		}()
 	}()
 	p.where = w
@@ -1238604,13 +1239047,13 @@ func (p *tparser) i588() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3688 := func() any { return any(true) }()
-				f_3689 := func() any {
+				f_3689 := func() any { return any(true) }()
+				f_3690 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3690 := func() any { return k9 }()
-				return tmk_DetachStmt(c, true, f_3688, f_3689, f_3690)
+				f_3691 := func() any { return k9 }()
+				return tmk_DetachStmt(c, true, f_3689, f_3690, f_3691)
 			}()
 		}()
 		p.where = w
@@ -1238697,13 +1239140,13 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3688 := func() any { c.p.stepWork(); return any(true) }()
-			f_3689 := func() any {
+			f_3689 := func() any { c.p.stepWork(); return any(true) }()
+			f_3690 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3690 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_DetachStmt(c, true, f_3688, f_3689, f_3690)
+			f_3691 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_DetachStmt(c, true, f_3689, f_3690, f_3691)
 		}()
 	}()
 	p.where = w
@@ -1238776,8 +1239219,8 @@ func (p *tparser) i589() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3691 := func() any { return k1 }()
-				return tmk_DetachStmt(c, true, nil, nil, f_3691)
+				f_3692 := func() any { return k1 }()
+				return tmk_DetachStmt(c, true, nil, nil, f_3692)
 			}()
 		}()
 		p.where = w
@@ -1238827,8 +1239270,8 @@ func (p *tparser) i589() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3691 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_DetachStmt(c, true, nil, nil, f_3691)
+			f_3692 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_DetachStmt(c, true, nil, nil, f_3692)
 		}()
 	}()
 	p.where = w
@@ -1238900,7 +1239343,7 @@ func (p *tparser) i590() (any, bool) {
 		p.where = "use_stmt"
 		v = func() any {
 
-			return func() any { f_3692 := func() any { return k1 }(); return tmk_UseStmt(c, true, f_3692) }()
+			return func() any { f_3693 := func() any { return k1 }(); return tmk_UseStmt(c, true, f_3693) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1238948,7 +1239391,7 @@ func (p *tparser) i590() (any, bool) {
 	p.where = "use_stmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_3692 := func() any { c.p.stepWork(); return k1 }(); return tmk_UseStmt(c, true, f_3692) }()
+		return func() any { f_3693 := func() any { c.p.stepWork(); return k1 }(); return tmk_UseStmt(c, true, f_3693) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1239295,8 +1239738,8 @@ func (p *tparser) i592() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3693 := func() any { return k1 }()
-				return tmk_LoadStmt(c, true, nil, nil, f_3693, nil, nil)
+				f_3694 := func() any { return k1 }()
+				return tmk_LoadStmt(c, true, nil, nil, f_3694, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1239346,8 +1239789,8 @@ func (p *tparser) i592() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3693 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_LoadStmt(c, true, nil, nil, f_3693, nil, nil)
+			f_3694 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_LoadStmt(c, true, nil, nil, f_3694, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1239520,15 +1239963,15 @@ func (p *tparser) i593() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3694 := func() any { return any(true) }()
-				f_3695 := func() any {
+				f_3695 := func() any { return any(true) }()
+				f_3696 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3696 := func() any { return k9 }()
-				f_3697 := func() any { return k14 }()
-				f_3698 := func() any { return k22 }()
-				return tmk_LoadStmt(c, true, f_3694, f_3695, f_3696, f_3697, f_3698)
+				f_3697 := func() any { return k9 }()
+				f_3698 := func() any { return k14 }()
+				f_3699 := func() any { return k22 }()
+				return tmk_LoadStmt(c, true, f_3695, f_3696, f_3697, f_3698, f_3699)
 			}()
 		}()
 		p.where = w
@@ -1239681,15 +1240124,15 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3694 := func() any { c.p.stepWork(); return any(true) }()
-			f_3695 := func() any {
+			f_3695 := func() any { c.p.stepWork(); return any(true) }()
+			f_3696 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3696 := func() any { c.p.stepWork(); return k9 }()
-			f_3697 := func() any { c.p.stepWork(); return k14 }()
-			f_3698 := func() any { c.p.stepWork(); return k22 }()
-			return tmk_LoadStmt(c, true, f_3694, f_3695, f_3696, f_3697, f_3698)
+			f_3697 := func() any { c.p.stepWork(); return k9 }()
+			f_3698 := func() any { c.p.stepWork(); return k14 }()
+			f_3699 := func() any { c.p.stepWork(); return k22 }()
+			return tmk_LoadStmt(c, true, f_3695, f_3696, f_3697, f_3698, f_3699)
 		}()
 	}()
 	p.where = w
@@ -1240151,10 +1240594,10 @@ func (p *tparser) i595() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3699 := func() any { return k1 }()
-				f_3700 := func() any { return k4 }()
-				f_3701 := func() any { return any(true) }()
-				return tmk_PragmaStmt(c, true, f_3699, nil, f_3700, f_3701)
+				f_3700 := func() any { return k1 }()
+				f_3701 := func() any { return k4 }()
+				f_3702 := func() any { return any(true) }()
+				return tmk_PragmaStmt(c, true, f_3700, nil, f_3701, f_3702)
 			}()
 		}()
 		p.where = w
@@ -1240238,10 +1240681,10 @@ func (p *tparser) i595() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3699 := func() any { c.p.stepWork(); return k1 }()
-			f_3700 := func() any { c.p.stepWork(); return k4 }()
-			f_3701 := func() any { c.p.stepWork(); return any(true) }()
-			return tmk_PragmaStmt(c, true, f_3699, nil, f_3700, f_3701)
+			f_3700 := func() any { c.p.stepWork(); return k1 }()
+			f_3701 := func() any { c.p.stepWork(); return k4 }()
+			f_3702 := func() any { c.p.stepWork(); return any(true) }()
+			return tmk_PragmaStmt(c, true, f_3700, nil, f_3701, f_3702)
 		}()
 	}()
 	p.where = w
@@ -1240336,9 +1240779,9 @@ func (p *tparser) i596() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3702 := func() any { return k1 }()
-				f_3703 := func() any { return k4 }()
-				return tmk_PragmaStmt(c, true, f_3702, f_3703, nil, nil)
+				f_3703 := func() any { return k1 }()
+				f_3704 := func() any { return k4 }()
+				return tmk_PragmaStmt(c, true, f_3703, f_3704, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1240410,9 +1240853,9 @@ func (p *tparser) i596() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3702 := func() any { c.p.stepWork(); return k1 }()
-			f_3703 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_PragmaStmt(c, true, f_3702, f_3703, nil, nil)
+			f_3703 := func() any { c.p.stepWork(); return k1 }()
+			f_3704 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_PragmaStmt(c, true, f_3703, f_3704, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1240485,8 +1240928,8 @@ func (p *tparser) i597() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3704 := func() any { return k1 }()
-				return tmk_PragmaStmt(c, true, f_3704, nil, nil, nil)
+				f_3705 := func() any { return k1 }()
+				return tmk_PragmaStmt(c, true, f_3705, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1240536,8 +1240979,8 @@ func (p *tparser) i597() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3704 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_PragmaStmt(c, true, f_3704, nil, nil, nil)
+			f_3705 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_PragmaStmt(c, true, f_3705, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1240658,7 +1241101,7 @@ func (p *tparser) i598() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3705 := func() any {
+				f_3706 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -1240667,7 +1241110,7 @@ func (p *tparser) i598() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Name(c, true, f_3705)
+				return tmk_Name(c, true, f_3706)
 			}()
 		}()
 		p.where = w
@@ -1240763,7 +1241206,7 @@ func (p *tparser) i598() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3705 := func() any {
+			f_3706 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -1240772,7 +1241215,7 @@ func (p *tparser) i598() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_3705)
+			return tmk_Name(c, true, f_3706)
 		}()
 	}()
 	p.where = w
@@ -1241801,16 +1242244,16 @@ func (p *tparser) i601() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3706 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3707 := func() any { return k6 }()
-				f_3708 := func() any { return c.concat(func() any { return k8 }()) }()
-				f_3709 := func() any { return c.text(func() any { return k12 }()) }()
-				f_3710 := func() any {
+				f_3707 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3708 := func() any { return k6 }()
+				f_3709 := func() any { return c.concat(func() any { return k8 }()) }()
+				f_3710 := func() any { return c.text(func() any { return k12 }()) }()
+				f_3711 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k10 }()) }(), func() any { return any(0) }())
 				}()
-				f_3711 := func() any { return k14 }()
-				return tmk_SetStmt(c, true, f_3706, f_3707, f_3708, f_3709, f_3710, f_3711)
+				f_3712 := func() any { return k14 }()
+				return tmk_SetStmt(c, true, f_3707, f_3708, f_3709, f_3710, f_3711, f_3712)
 			}()
 		}()
 		p.where = w
@@ -1242111,16 +1242554,16 @@ L16:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3706 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3707 := func() any { c.p.stepWork(); return k6 }()
-			f_3708 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			f_3709 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k12 }()) }()
-			f_3710 := func() any {
+			f_3707 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3708 := func() any { c.p.stepWork(); return k6 }()
+			f_3709 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			f_3710 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k12 }()) }()
+			f_3711 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k10 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3711 := func() any { c.p.stepWork(); return k14 }()
-			return tmk_SetStmt(c, true, f_3706, f_3707, f_3708, f_3709, f_3710, f_3711)
+			f_3712 := func() any { c.p.stepWork(); return k14 }()
+			return tmk_SetStmt(c, true, f_3707, f_3708, f_3709, f_3710, f_3711, f_3712)
 		}()
 	}()
 	p.where = w
@@ -1242425,15 +1242868,15 @@ func (p *tparser) i602() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3712 := func() any { return k3 }()
-				f_3713 := func() any { return c.concat(func() any { return k5 }()) }()
-				f_3714 := func() any { return c.text(func() any { return k9 }()) }()
-				f_3715 := func() any {
+				f_3713 := func() any { return k3 }()
+				f_3714 := func() any { return c.concat(func() any { return k5 }()) }()
+				f_3715 := func() any { return c.text(func() any { return k9 }()) }()
+				f_3716 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k7 }()) }(), func() any { return any(0) }())
 				}()
-				f_3716 := func() any { return k11 }()
-				return tmk_SetStmt(c, true, nil, f_3712, f_3713, f_3714, f_3715, f_3716)
+				f_3717 := func() any { return k11 }()
+				return tmk_SetStmt(c, true, nil, f_3713, f_3714, f_3715, f_3716, f_3717)
 			}()
 		}()
 		p.where = w
@@ -1242720,15 +1243163,15 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3712 := func() any { c.p.stepWork(); return k3 }()
-			f_3713 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
-			f_3714 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
-			f_3715 := func() any {
+			f_3713 := func() any { c.p.stepWork(); return k3 }()
+			f_3714 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k5 }()) }()
+			f_3715 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k9 }()) }()
+			f_3716 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k7 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3716 := func() any { c.p.stepWork(); return k11 }()
-			return tmk_SetStmt(c, true, nil, f_3712, f_3713, f_3714, f_3715, f_3716)
+			f_3717 := func() any { c.p.stepWork(); return k11 }()
+			return tmk_SetStmt(c, true, nil, f_3713, f_3714, f_3715, f_3716, f_3717)
 		}()
 	}()
 	p.where = w
@@ -1243997,14 +1244440,14 @@ func (p *tparser) i605() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3717 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3718 := func() any { return k10 }()
-				f_3719 := func() any {
+				f_3718 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3719 := func() any { return k10 }()
+				f_3720 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				f_3720 := func() any { return c.text(func() any { return k8 }()) }()
-				return tmk_ResetStmt(c, true, f_3717, f_3718, f_3719, f_3720)
+				f_3721 := func() any { return c.text(func() any { return k8 }()) }()
+				return tmk_ResetStmt(c, true, f_3718, f_3719, f_3720, f_3721)
 			}()
 		}()
 		p.where = w
@@ -1244212,14 +1244655,14 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3717 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3718 := func() any { c.p.stepWork(); return k10 }()
-			f_3719 := func() any {
+			f_3718 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3719 := func() any { c.p.stepWork(); return k10 }()
+			f_3720 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3720 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k8 }()) }()
-			return tmk_ResetStmt(c, true, f_3717, f_3718, f_3719, f_3720)
+			f_3721 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k8 }()) }()
+			return tmk_ResetStmt(c, true, f_3718, f_3719, f_3720, f_3721)
 		}()
 	}()
 	p.where = w
@@ -1244434,13 +1244877,13 @@ func (p *tparser) i606() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3721 := func() any { return k7 }()
-				f_3722 := func() any {
+				f_3722 := func() any { return k7 }()
+				f_3723 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3723 := func() any { return c.text(func() any { return k5 }()) }()
-				return tmk_ResetStmt(c, true, nil, f_3721, f_3722, f_3723)
+				f_3724 := func() any { return c.text(func() any { return k5 }()) }()
+				return tmk_ResetStmt(c, true, nil, f_3722, f_3723, f_3724)
 			}()
 		}()
 		p.where = w
@@ -1244634,13 +1245077,13 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3721 := func() any { c.p.stepWork(); return k7 }()
-			f_3722 := func() any {
+			f_3722 := func() any { c.p.stepWork(); return k7 }()
+			f_3723 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3723 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
-			return tmk_ResetStmt(c, true, nil, f_3721, f_3722, f_3723)
+			f_3724 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k5 }()) }()
+			return tmk_ResetStmt(c, true, nil, f_3722, f_3723, f_3724)
 		}()
 	}()
 	p.where = w
@@ -1245649,9 +1246092,9 @@ func (p *tparser) i609() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3724 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3725 := func() any { return k4 }()
-				return tmk_ShowStmt(c, true, f_3724, f_3725, nil, nil, nil, nil, nil)
+				f_3725 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3726 := func() any { return k4 }()
+				return tmk_ShowStmt(c, true, f_3725, f_3726, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1245707,9 +1246150,9 @@ func (p *tparser) i609() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3724 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3725 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ShowStmt(c, true, f_3724, f_3725, nil, nil, nil, nil, nil)
+			f_3725 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3726 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ShowStmt(c, true, f_3725, f_3726, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1245788,9 +1246231,9 @@ func (p *tparser) i610() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3726 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3727 := func() any { return k4 }()
-				return tmk_ShowStmt(c, true, f_3726, f_3727, nil, nil, nil, nil, nil)
+				f_3727 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3728 := func() any { return k4 }()
+				return tmk_ShowStmt(c, true, f_3727, f_3728, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1245846,9 +1246289,9 @@ func (p *tparser) i610() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3726 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3727 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ShowStmt(c, true, f_3726, f_3727, nil, nil, nil, nil, nil)
+			f_3727 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3728 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ShowStmt(c, true, f_3727, f_3728, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1245927,9 +1246370,9 @@ func (p *tparser) i611() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3728 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3729 := func() any { return k4 }()
-				return tmk_ShowStmt(c, true, f_3728, nil, f_3729, nil, nil, nil, nil)
+				f_3729 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3730 := func() any { return k4 }()
+				return tmk_ShowStmt(c, true, f_3729, nil, f_3730, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1245985,9 +1246428,9 @@ func (p *tparser) i611() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3728 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3729 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ShowStmt(c, true, f_3728, nil, f_3729, nil, nil, nil, nil)
+			f_3729 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3730 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ShowStmt(c, true, f_3729, nil, f_3730, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1246082,10 +1246525,10 @@ func (p *tparser) i612() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3730 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3731 := func() any { return any(true) }()
-				f_3732 := func() any { return k4 }()
-				return tmk_ShowStmt(c, true, f_3730, nil, nil, f_3731, f_3732, nil, nil)
+				f_3731 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3732 := func() any { return any(true) }()
+				f_3733 := func() any { return k4 }()
+				return tmk_ShowStmt(c, true, f_3731, nil, nil, f_3732, f_3733, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1246157,10 +1246600,10 @@ func (p *tparser) i612() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3730 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3731 := func() any { c.p.stepWork(); return any(true) }()
-			f_3732 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ShowStmt(c, true, f_3730, nil, nil, f_3731, f_3732, nil, nil)
+			f_3731 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3732 := func() any { c.p.stepWork(); return any(true) }()
+			f_3733 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ShowStmt(c, true, f_3731, nil, nil, f_3732, f_3733, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1246251,9 +1246694,9 @@ func (p *tparser) i613() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3733 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3734 := func() any { return c.text(func() any { return k4 }()) }()
-				return tmk_ShowStmt(c, true, f_3733, nil, nil, nil, nil, f_3734, nil)
+				f_3734 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3735 := func() any { return c.text(func() any { return k4 }()) }()
+				return tmk_ShowStmt(c, true, f_3734, nil, nil, nil, nil, f_3735, nil)
 			}()
 		}()
 		p.where = w
@@ -1246322,9 +1246765,9 @@ func (p *tparser) i613() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3733 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3734 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_ShowStmt(c, true, f_3733, nil, nil, nil, nil, f_3734, nil)
+			f_3734 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3735 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_ShowStmt(c, true, f_3734, nil, nil, nil, nil, f_3735, nil)
 		}()
 	}()
 	p.where = w
@@ -1246423,9 +1246866,9 @@ func (p *tparser) i614() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3735 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3736 := func() any { return c.text(func() any { return k4 }()) }()
-				return tmk_ShowStmt(c, true, f_3735, nil, nil, nil, nil, f_3736, nil)
+				f_3736 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3737 := func() any { return c.text(func() any { return k4 }()) }()
+				return tmk_ShowStmt(c, true, f_3736, nil, nil, nil, nil, f_3737, nil)
 			}()
 		}()
 		p.where = w
@@ -1246502,9 +1246945,9 @@ func (p *tparser) i614() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3735 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3736 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_ShowStmt(c, true, f_3735, nil, nil, nil, nil, f_3736, nil)
+			f_3736 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3737 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_ShowStmt(c, true, f_3736, nil, nil, nil, nil, f_3737, nil)
 		}()
 	}()
 	p.where = w
@@ -1246605,13 +1247048,13 @@ func (p *tparser) i615() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3737 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3738 := func() any { return any(true) }()
-				f_3739 := func() any {
+				f_3738 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3739 := func() any { return any(true) }()
+				f_3740 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k6 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_ShowStmt(c, true, f_3737, nil, nil, f_3739, nil, nil, f_3738)
+				return tmk_ShowStmt(c, true, f_3738, nil, nil, f_3740, nil, nil, f_3739)
 			}()
 		}()
 		p.where = w
@@ -1246690,13 +1247133,13 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3737 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3738 := func() any { c.p.stepWork(); return any(true) }()
-			f_3739 := func() any {
+			f_3738 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3739 := func() any { c.p.stepWork(); return any(true) }()
+			f_3740 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k6 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_ShowStmt(c, true, f_3737, nil, nil, f_3739, nil, nil, f_3738)
+			return tmk_ShowStmt(c, true, f_3738, nil, nil, f_3740, nil, nil, f_3739)
 		}()
 	}()
 	p.where = w
@@ -1246775,9 +1247218,9 @@ func (p *tparser) i616() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3740 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3741 := func() any { return k4 }()
-				return tmk_ShowStmt(c, true, f_3740, nil, f_3741, nil, nil, nil, nil)
+				f_3741 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3742 := func() any { return k4 }()
+				return tmk_ShowStmt(c, true, f_3741, nil, f_3742, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1246833,9 +1247276,9 @@ func (p *tparser) i616() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3740 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3741 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ShowStmt(c, true, f_3740, nil, f_3741, nil, nil, nil, nil)
+			f_3741 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3742 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ShowStmt(c, true, f_3741, nil, f_3742, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1246900,8 +1247343,8 @@ func (p *tparser) i617() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3742 := func() any { return c.text(func() any { return k1 }()) }()
-				return tmk_ShowStmt(c, true, f_3742, nil, nil, nil, nil, nil, nil)
+				f_3743 := func() any { return c.text(func() any { return k1 }()) }()
+				return tmk_ShowStmt(c, true, f_3743, nil, nil, nil, nil, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -1246942,8 +1247385,8 @@ func (p *tparser) i617() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3742 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_ShowStmt(c, true, f_3742, nil, nil, nil, nil, nil, nil)
+			f_3743 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_ShowStmt(c, true, f_3743, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -1247253,9 +1247696,9 @@ func (p *tparser) i619() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3743 := func() any { return k1 }()
-				f_3744 := func() any { return k4 }()
-				return tmk_ExplainStmt(c, true, nil, nil, f_3743, f_3744)
+				f_3744 := func() any { return k1 }()
+				f_3745 := func() any { return k4 }()
+				return tmk_ExplainStmt(c, true, nil, nil, f_3744, f_3745)
 			}()
 		}()
 		p.where = w
@@ -1247339,9 +1247782,9 @@ func (p *tparser) i619() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3743 := func() any { c.p.stepWork(); return k1 }()
-			f_3744 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ExplainStmt(c, true, nil, nil, f_3743, f_3744)
+			f_3744 := func() any { c.p.stepWork(); return k1 }()
+			f_3745 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ExplainStmt(c, true, nil, nil, f_3744, f_3745)
 		}()
 	}()
 	p.where = w
@@ -1247496,13 +1247939,13 @@ func (p *tparser) i620() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3745 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3746 := func() any {
+				f_3746 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3747 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k17 }()) }(), func() any { return any(0) }())
 				}()
-				f_3747 := func() any { return k23 }()
-				return tmk_ExplainStmt(c, true, f_3745, f_3746, nil, f_3747)
+				f_3748 := func() any { return k23 }()
+				return tmk_ExplainStmt(c, true, f_3746, f_3747, nil, f_3748)
 			}()
 		}()
 		p.where = w
@@ -1247635,13 +1248078,13 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3745 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3746 := func() any {
+			f_3746 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3747 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k17 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3747 := func() any { c.p.stepWork(); return k23 }()
-			return tmk_ExplainStmt(c, true, f_3745, f_3746, nil, f_3747)
+			f_3748 := func() any { c.p.stepWork(); return k23 }()
+			return tmk_ExplainStmt(c, true, f_3746, f_3747, nil, f_3748)
 		}()
 	}()
 	p.where = w
@@ -1247722,9 +1248165,9 @@ func (p *tparser) i621() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3748 := func() any { return any(true) }()
-				f_3749 := func() any { return k1 }()
-				return tmk_ExplainStmt(c, true, nil, f_3748, nil, f_3749)
+				f_3749 := func() any { return any(true) }()
+				f_3750 := func() any { return k1 }()
+				return tmk_ExplainStmt(c, true, nil, f_3749, nil, f_3750)
 			}()
 		}()
 		p.where = w
@@ -1247782,9 +1248225,9 @@ func (p *tparser) i621() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3748 := func() any { c.p.stepWork(); return any(true) }()
-			f_3749 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ExplainStmt(c, true, nil, f_3748, nil, f_3749)
+			f_3749 := func() any { c.p.stepWork(); return any(true) }()
+			f_3750 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ExplainStmt(c, true, nil, f_3749, nil, f_3750)
 		}()
 	}()
 	p.where = w
@@ -1247857,8 +1248300,8 @@ func (p *tparser) i622() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3750 := func() any { return k1 }()
-				return tmk_ExplainStmt(c, true, nil, nil, nil, f_3750)
+				f_3751 := func() any { return k1 }()
+				return tmk_ExplainStmt(c, true, nil, nil, nil, f_3751)
 			}()
 		}()
 		p.where = w
@@ -1247908,8 +1248351,8 @@ func (p *tparser) i622() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3750 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ExplainStmt(c, true, nil, nil, nil, f_3750)
+			f_3751 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ExplainStmt(c, true, nil, nil, nil, f_3751)
 		}()
 	}()
 	p.where = w
@@ -1248352,9 +1248795,9 @@ func (p *tparser) i624() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3751 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3752 := func() any { return c.text(func() any { return k17 }()) }()
-				return tmk_ExplainOption(c, true, f_3751, f_3752)
+				f_3752 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3753 := func() any { return c.text(func() any { return k17 }()) }()
+				return tmk_ExplainOption(c, true, f_3752, f_3753)
 			}()
 		}()
 		p.where = w
@@ -1248550,9 +1248993,9 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3751 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3752 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_ExplainOption(c, true, f_3751, f_3752)
+			f_3752 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3753 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_ExplainOption(c, true, f_3752, f_3753)
 		}()
 	}()
 	p.where = w
@@ -1250456,10 +1250899,10 @@ func (p *tparser) i626() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3753 := func() any { return k1 }()
-				f_3754 := func() any { return c.concat(func() any { return k6 }()) }()
-				f_3755 := func() any { return k12 }()
-				return tmk_PrepareStmt(c, true, f_3753, f_3754, f_3755)
+				f_3754 := func() any { return k1 }()
+				f_3755 := func() any { return c.concat(func() any { return k6 }()) }()
+				f_3756 := func() any { return k12 }()
+				return tmk_PrepareStmt(c, true, f_3754, f_3755, f_3756)
 			}()
 		}()
 		p.where = w
@@ -1250580,10 +1251023,10 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3753 := func() any { c.p.stepWork(); return k1 }()
-			f_3754 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			f_3755 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_PrepareStmt(c, true, f_3753, f_3754, f_3755)
+			f_3754 := func() any { c.p.stepWork(); return k1 }()
+			f_3755 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			f_3756 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_PrepareStmt(c, true, f_3754, f_3755, f_3756)
 		}()
 	}()
 	p.where = w
@@ -1251185,9 +1251628,9 @@ func (p *tparser) i628() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3756 := func() any { return k1 }()
-				f_3757 := func() any { return c.concat(func() any { return k6 }()) }()
-				return tmk_ExecuteStmt(c, true, f_3756, f_3757)
+				f_3757 := func() any { return k1 }()
+				f_3758 := func() any { return c.concat(func() any { return k6 }()) }()
+				return tmk_ExecuteStmt(c, true, f_3757, f_3758)
 			}()
 		}()
 		p.where = w
@@ -1251286,9 +1251729,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3756 := func() any { c.p.stepWork(); return k1 }()
-			f_3757 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
-			return tmk_ExecuteStmt(c, true, f_3756, f_3757)
+			f_3757 := func() any { c.p.stepWork(); return k1 }()
+			f_3758 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k6 }()) }()
+			return tmk_ExecuteStmt(c, true, f_3757, f_3758)
 		}()
 	}()
 	p.where = w
@@ -1252157,12 +1252600,12 @@ func (p *tparser) i632() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3758 := func() any { return k5 }()
-				f_3759 := func() any {
+				f_3759 := func() any { return k5 }()
+				f_3760 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_DeallocateStmt(c, true, f_3758, f_3759)
+				return tmk_DeallocateStmt(c, true, f_3759, f_3760)
 			}()
 		}()
 		p.where = w
@@ -1252271,12 +1252714,12 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3758 := func() any { c.p.stepWork(); return k5 }()
-			f_3759 := func() any {
+			f_3759 := func() any { c.p.stepWork(); return k5 }()
+			f_3760 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_DeallocateStmt(c, true, f_3758, f_3759)
+			return tmk_DeallocateStmt(c, true, f_3759, f_3760)
 		}()
 	}()
 	p.where = w
@@ -1252400,12 +1252843,12 @@ func (p *tparser) i633() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3760 := func() any { return k5 }()
-				f_3761 := func() any {
+				f_3761 := func() any { return k5 }()
+				f_3762 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				return tmk_DeallocateStmt(c, true, f_3760, f_3761)
+				return tmk_DeallocateStmt(c, true, f_3761, f_3762)
 			}()
 		}()
 		p.where = w
@@ -1252506,12 +1252949,12 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3760 := func() any { c.p.stepWork(); return k5 }()
-			f_3761 := func() any {
+			f_3761 := func() any { c.p.stepWork(); return k5 }()
+			f_3762 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			return tmk_DeallocateStmt(c, true, f_3760, f_3761)
+			return tmk_DeallocateStmt(c, true, f_3761, f_3762)
 		}()
 	}()
 	p.where = w
@@ -1252983,10 +1253426,10 @@ func (p *tparser) i635() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3762 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3763 := func() any { return c.text(func() any { return k17 }()) }()
-				f_3764 := func() any { return c.text(func() any { return k36 }()) }()
-				return tmk_TransactionStmt(c, true, f_3762, f_3763, f_3764)
+				f_3763 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3764 := func() any { return c.text(func() any { return k17 }()) }()
+				f_3765 := func() any { return c.text(func() any { return k36 }()) }()
+				return tmk_TransactionStmt(c, true, f_3763, f_3764, f_3765)
 			}()
 		}()
 		p.where = w
@@ -1253215,10 +1253658,10 @@ L39:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3762 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3763 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
-			f_3764 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k36 }()) }()
-			return tmk_TransactionStmt(c, true, f_3762, f_3763, f_3764)
+			f_3763 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3764 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k17 }()) }()
+			f_3765 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k36 }()) }()
+			return tmk_TransactionStmt(c, true, f_3763, f_3764, f_3765)
 		}()
 	}()
 	p.where = w
@@ -1253421,9 +1253864,9 @@ func (p *tparser) i636() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3765 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3766 := func() any { return c.text(func() any { return k23 }()) }()
-				return tmk_TransactionStmt(c, true, f_3765, f_3766, nil)
+				f_3766 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3767 := func() any { return c.text(func() any { return k23 }()) }()
+				return tmk_TransactionStmt(c, true, f_3766, f_3767, nil)
 			}()
 		}()
 		p.where = w
@@ -1253604,9 +1254047,9 @@ L26:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3765 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3766 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k23 }()) }()
-			return tmk_TransactionStmt(c, true, f_3765, f_3766, nil)
+			f_3766 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3767 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k23 }()) }()
+			return tmk_TransactionStmt(c, true, f_3766, f_3767, nil)
 		}()
 	}()
 	p.where = w
@@ -1254075,10 +1254518,10 @@ func (p *tparser) i638() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3767 := func() any { return k1 }()
-				f_3768 := func() any { return k6 }()
-				f_3769 := func() any { return c.concat(func() any { return k8 }()) }()
-				return tmk_VacuumStmt(c, true, nil, nil, nil, f_3767, nil, f_3768, f_3769)
+				f_3768 := func() any { return k1 }()
+				f_3769 := func() any { return k6 }()
+				f_3770 := func() any { return c.concat(func() any { return k8 }()) }()
+				return tmk_VacuumStmt(c, true, nil, nil, nil, f_3768, nil, f_3769, f_3770)
 			}()
 		}()
 		p.where = w
@@ -1254231,10 +1254674,10 @@ L11:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3767 := func() any { c.p.stepWork(); return k1 }()
-			f_3768 := func() any { c.p.stepWork(); return k6 }()
-			f_3769 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
-			return tmk_VacuumStmt(c, true, nil, nil, nil, f_3767, nil, f_3768, f_3769)
+			f_3768 := func() any { c.p.stepWork(); return k1 }()
+			f_3769 := func() any { c.p.stepWork(); return k6 }()
+			f_3770 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k8 }()) }()
+			return tmk_VacuumStmt(c, true, nil, nil, nil, f_3768, nil, f_3769, f_3770)
 		}()
 	}()
 	p.where = w
@@ -1255210,22 +1255653,22 @@ func (p *tparser) i641() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3770 := func() any {
+				f_3771 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3771 := func() any {
+				f_3772 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k11 }()) }(), func() any { return any(0) }())
 				}()
-				f_3772 := func() any {
+				f_3773 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k19 }()) }(), func() any { return any(0) }())
 				}()
-				f_3773 := func() any { return k27 }()
-				f_3774 := func() any { return k29 }()
-				f_3775 := func() any { return c.concat(func() any { return k31 }()) }()
-				return tmk_VacuumStmt(c, true, f_3770, f_3771, f_3772, nil, f_3773, f_3774, f_3775)
+				f_3774 := func() any { return k27 }()
+				f_3775 := func() any { return k29 }()
+				f_3776 := func() any { return c.concat(func() any { return k31 }()) }()
+				return tmk_VacuumStmt(c, true, f_3771, f_3772, f_3773, nil, f_3774, f_3775, f_3776)
 			}()
 		}()
 		p.where = w
@@ -1255482,22 +1255925,22 @@ L34:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3770 := func() any {
+			f_3771 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3771 := func() any {
+			f_3772 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k11 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3772 := func() any {
+			f_3773 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k19 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3773 := func() any { c.p.stepWork(); return k27 }()
-			f_3774 := func() any { c.p.stepWork(); return k29 }()
-			f_3775 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k31 }()) }()
-			return tmk_VacuumStmt(c, true, f_3770, f_3771, f_3772, nil, f_3773, f_3774, f_3775)
+			f_3774 := func() any { c.p.stepWork(); return k27 }()
+			f_3775 := func() any { c.p.stepWork(); return k29 }()
+			f_3776 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k31 }()) }()
+			return tmk_VacuumStmt(c, true, f_3771, f_3772, f_3773, nil, f_3774, f_3775, f_3776)
 		}()
 	}()
 	p.where = w
@@ -1255707,13 +1256150,13 @@ func (p *tparser) i642() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3776 := func() any {
+				f_3777 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k12 }()) }(), func() any { return any(0) }())
 				}()
-				f_3777 := func() any { return k20 }()
-				f_3778 := func() any { return c.concat(func() any { return k22 }()) }()
-				return tmk_AnalyzeStmt(c, true, f_3776, f_3777, f_3778)
+				f_3778 := func() any { return k20 }()
+				f_3779 := func() any { return c.concat(func() any { return k22 }()) }()
+				return tmk_AnalyzeStmt(c, true, f_3777, f_3778, f_3779)
 			}()
 		}()
 		p.where = w
@@ -1255897,13 +1256340,13 @@ L25:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3776 := func() any {
+			f_3777 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k12 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3777 := func() any { c.p.stepWork(); return k20 }()
-			f_3778 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
-			return tmk_AnalyzeStmt(c, true, f_3776, f_3777, f_3778)
+			f_3778 := func() any { c.p.stepWork(); return k20 }()
+			f_3779 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k22 }()) }()
+			return tmk_AnalyzeStmt(c, true, f_3777, f_3778, f_3779)
 		}()
 	}()
 	p.where = w
@@ -1256024,12 +1256467,12 @@ func (p *tparser) i643() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3779 := func() any {
+				f_3780 := func() any {
 
 					return c.binary(">", func() any { return c.length(func() any { return k3 }()) }(), func() any { return any(0) }())
 				}()
-				f_3780 := func() any { return k11 }()
-				return tmk_CheckpointStmt(c, true, f_3779, f_3780)
+				f_3781 := func() any { return k11 }()
+				return tmk_CheckpointStmt(c, true, f_3780, f_3781)
 			}()
 		}()
 		p.where = w
@@ -1256123,12 +1256566,12 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3779 := func() any {
+			f_3780 := func() any {
 				c.p.stepWork()
 				return c.binary(">", func() any { c.p.stepWork(); return c.length(func() any { c.p.stepWork(); return k3 }()) }(), func() any { c.p.stepWork(); return any(0) }())
 			}()
-			f_3780 := func() any { c.p.stepWork(); return k11 }()
-			return tmk_CheckpointStmt(c, true, f_3779, f_3780)
+			f_3781 := func() any { c.p.stepWork(); return k11 }()
+			return tmk_CheckpointStmt(c, true, f_3780, f_3781)
 		}()
 	}()
 	p.where = w
@@ -1256206,7 +1256649,7 @@ func (p *tparser) i644() (any, bool) {
 		p.where = "call_stmt"
 		v = func() any {
 
-			return func() any { f_3781 := func() any { return k1 }(); return tmk_CallStmt(c, true, f_3781) }()
+			return func() any { f_3782 := func() any { return k1 }(); return tmk_CallStmt(c, true, f_3782) }()
 		}()
 		p.where = w
 		p.depth--
@@ -1256254,7 +1256697,7 @@ func (p *tparser) i644() (any, bool) {
 	p.where = "call_stmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_3781 := func() any { c.p.stepWork(); return k1 }(); return tmk_CallStmt(c, true, f_3781) }()
+		return func() any { f_3782 := func() any { c.p.stepWork(); return k1 }(); return tmk_CallStmt(c, true, f_3782) }()
 	}()
 	p.where = w
 	p.depth--
@@ -1256517,10 +1256960,10 @@ func (p *tparser) i646() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3782 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3783 := func() any { return k5 }()
-				f_3784 := func() any { return k8 }()
-				return tmk_CommentStmt(c, true, f_3782, nil, f_3783, f_3784)
+				f_3783 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3784 := func() any { return k5 }()
+				f_3785 := func() any { return k8 }()
+				return tmk_CommentStmt(c, true, f_3783, nil, f_3784, f_3785)
 			}()
 		}()
 		p.where = w
@@ -1256619,10 +1257062,10 @@ func (p *tparser) i646() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3782 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3783 := func() any { c.p.stepWork(); return k5 }()
-			f_3784 := func() any { c.p.stepWork(); return k8 }()
-			return tmk_CommentStmt(c, true, f_3782, nil, f_3783, f_3784)
+			f_3783 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3784 := func() any { c.p.stepWork(); return k5 }()
+			f_3785 := func() any { c.p.stepWork(); return k8 }()
+			return tmk_CommentStmt(c, true, f_3783, nil, f_3784, f_3785)
 		}()
 	}()
 	p.where = w
@@ -1256887,10 +1257330,10 @@ func (p *tparser) i647() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3785 := func() any { return c.text(func() any { return k1 }()) }()
-				f_3786 := func() any { return k32 }()
-				f_3787 := func() any { return k35 }()
-				return tmk_CommentStmt(c, true, f_3785, f_3786, nil, f_3787)
+				f_3786 := func() any { return c.text(func() any { return k1 }()) }()
+				f_3787 := func() any { return k32 }()
+				f_3788 := func() any { return k35 }()
+				return tmk_CommentStmt(c, true, f_3786, f_3787, nil, f_3788)
 			}()
 		}()
 		p.where = w
@@ -1257134,10 +1257577,10 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3785 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_3786 := func() any { c.p.stepWork(); return k32 }()
-			f_3787 := func() any { c.p.stepWork(); return k35 }()
-			return tmk_CommentStmt(c, true, f_3785, f_3786, nil, f_3787)
+			f_3786 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_3787 := func() any { c.p.stepWork(); return k32 }()
+			f_3788 := func() any { c.p.stepWork(); return k35 }()
+			return tmk_CommentStmt(c, true, f_3786, f_3787, nil, f_3788)
 		}()
 	}()
 	p.where = w
@@ -1257239,6 +1257682,7 @@ func (p *tparser) v648() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
@@ -1257353,6 +1257797,7 @@ func (p *tparser) i648() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u25(); !ok {
@@ -1257432,6 +1257877,7 @@ func (p *tparser) s649() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.s1106(); !ok {
 		goto fail
@@ -1257584,9 +1258030,9 @@ func (p *tparser) i650() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3788 := func() any { return k3 }()
-				f_3789 := func() any { return c.concat(func() any { return k11 }()) }()
-				return tmk_UpdateExtensionsStmt(c, true, f_3788, f_3789)
+				f_3789 := func() any { return k3 }()
+				f_3790 := func() any { return c.concat(func() any { return k11 }()) }()
+				return tmk_UpdateExtensionsStmt(c, true, f_3789, f_3790)
 			}()
 		}()
 		p.where = w
@@ -1257708,9 +1258154,9 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3788 := func() any { c.p.stepWork(); return k3 }()
-			f_3789 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
-			return tmk_UpdateExtensionsStmt(c, true, f_3788, f_3789)
+			f_3789 := func() any { c.p.stepWork(); return k3 }()
+			f_3790 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k11 }()) }()
+			return tmk_UpdateExtensionsStmt(c, true, f_3789, f_3790)
 		}()
 	}()
 	p.where = w
@@ -1258120,14 +1258566,14 @@ func (p *tparser) i652() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_3790 := func() any {
+				f_3791 := func() any {
 
 					return c.concat(func() any { return k5 }(), func() any {
 
 						return c.newList(c.listItems("map", func() any { return k17 }()))
 					}())
 				}()
-				return tmk_Script(c, true, f_3790)
+				return tmk_Script(c, true, f_3791)
 			}()
 		}()
 		p.where = w
@@ -1258348,14 +1258794,14 @@ func (p *tparser) i652() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_3790 := func() any {
+			f_3791 := func() any {
 				c.p.stepWork()
 				return c.concat(func() any { c.p.stepWork(); return k5 }(), func() any {
 					c.p.stepWork()
 					return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k17 }()))
 				}())
 			}()
-			return tmk_Script(c, true, f_3790)
+			return tmk_Script(c, true, f_3791)
 		}()
 	}()
 	p.where = w

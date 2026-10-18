@@ -15,12 +15,12 @@ type Block = { Body []Stmt }
 type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error
 
 // --- Expressions ---
-type Ident terminal
-type Number terminal
-type String terminal
-type Bool terminal
-type Binary = { Left Expr; Op Match; Right Expr }
-type Unary = { Op Match; X Expr }
+type Ident = { Text string }
+type Number = { Text string }
+type String = { Text string }
+type Bool = { Text string }
+type Binary = { Left Expr; Op node[string]; Right Expr }
+type Unary = { Op node[string]; X Expr }
 type Call = { Fn Expr; Args []Expr }
 type Index = { X Expr; Index Expr }
 type Member = { X Expr; Name Ident }
@@ -79,15 +79,15 @@ rule operation Expr = operators {
 rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => r.$x))
 
 // --- Lexical structure ---
-rule ident Ident = !keyword [a-zA-Z_] idchar*
+rule ident Ident = t:(!keyword [a-zA-Z_] idchar*) #atomic => Ident{Text: text($t)}
 // A name in a declaration, parameter list or member access.
 rule name Ident = i:ident @error(message="expected a name") => $i
 rule keyword = ("let" / "fn" / "if" / "else" / "while" / "return" / "true" / "false") !idchar
 rule idchar = [a-zA-Z0-9_]
-rule number Number = [0-9]+ ("." [0-9]+)?
+rule number Number = t:([0-9]+ ("." [0-9]+)?) #atomic => Number{Text: text($t)}
 rule string = "\"" s:strchars "\"" => $s
-rule strchars String = ([^"\\\n] / "\\" .)*
-rule bool Bool = ("true" / "false") !idchar
+rule strchars String = t:(([^"\\\n] / "\\" .)*) #atomic => String{Text: text($t)}
+rule bool Bool = t:(("true" / "false") !idchar) #atomic => Bool{Text: text($t)}
 
 rule kw_let = "let" !idchar
 rule kw_fn = "fn" !idchar

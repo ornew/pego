@@ -43,7 +43,7 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 				}
 				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: metadata.Field("Leading").(string), Trailing: metadata.Field("Trailing").(string), Detached: detached}
 				adapted := &grammar.Grammar{}
-				if err := sourceast.NewPositions(src).PackageClause(adapted, sourceField(t, pkg, "Name").Text(), m); err != nil {
+				if err := sourceast.NewPositions(src).PackageClause(adapted, sourceText(t, pkg, "Name"), m); err != nil {
 					t.Fatal(err)
 				}
 				if adapted.Package != manual.Package || !reflect.DeepEqual(adapted.PackageSource, manual.PackageSource) {

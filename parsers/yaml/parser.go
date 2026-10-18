@@ -6893,32 +6893,14 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Alias is the terminal type Alias.
+// Alias is the struct type Alias.
 type Alias struct {
 	Span
 	Text string
 }
 
-// Anchor is the terminal type Anchor.
+// Anchor is the struct type Anchor.
 type Anchor struct {
-	Span
-	Text string
-}
-
-// Marker is the terminal type Marker.
-type Marker struct {
-	Span
-	Text string
-}
-
-// Tag is the terminal type Tag.
-type Tag struct {
-	Span
-	Text string
-}
-
-// Word is the terminal type Word.
-type Word struct {
 	Span
 	Text string
 }
@@ -6945,6 +6927,12 @@ type Mapping struct {
 	Props *Properties
 	Flow  bool
 	Pairs []*Pair
+}
+
+// Marker is the struct type Marker.
+type Marker struct {
+	Span
+	Text string
 }
 
 // Pair is the struct type Pair.
@@ -6984,6 +6972,18 @@ type Stream struct {
 	Documents []*Document
 }
 
+// Tag is the struct type Tag.
+type Tag struct {
+	Span
+	Text string
+}
+
+// Word is the struct type Word.
+type Word struct {
+	Span
+	Text string
+}
+
 // Value is the union type Value ~ Mapping | Sequence | Scalar | Alias. Error (left by #recover) also implements it.
 type Value interface{ isValue() }
 
@@ -6993,45 +6993,49 @@ func (*Mapping) isValue()  {}
 func (*Scalar) isValue()   {}
 func (*Sequence) isValue() {}
 
-func (v *Alias) tname() string             { return "Alias" }
-func (v *Alias) ttext() (string, bool)     { return v.Text, true }
-func (v *Alias) tkids() []any              { return nil }
-func (v *Alias) tfield(string) (any, bool) { return nil, true }
-func (v *Alias) tstruct() bool             { return false }
-func (v *Alias) tfresh() bool              { return false }
-func (v *Alias) tsetFresh(bool)            {}
+func (v *Alias) tname() string         { return "Alias" }
+func (v *Alias) ttext() (string, bool) { return "", false }
+func (v *Alias) tkids() []any          { return nil }
+func (v *Alias) tstruct() bool         { return true }
+func (v *Alias) tfresh() bool          { return false }
+func (v *Alias) tsetFresh(bool)        {}
+func (v *Alias) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
 
-func (v *Anchor) tname() string             { return "Anchor" }
-func (v *Anchor) ttext() (string, bool)     { return v.Text, true }
-func (v *Anchor) tkids() []any              { return nil }
-func (v *Anchor) tfield(string) (any, bool) { return nil, true }
-func (v *Anchor) tstruct() bool             { return false }
-func (v *Anchor) tfresh() bool              { return false }
-func (v *Anchor) tsetFresh(bool)            {}
+func (v *Alias) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
 
-func (v *Marker) tname() string             { return "Marker" }
-func (v *Marker) ttext() (string, bool)     { return v.Text, true }
-func (v *Marker) tkids() []any              { return nil }
-func (v *Marker) tfield(string) (any, bool) { return nil, true }
-func (v *Marker) tstruct() bool             { return false }
-func (v *Marker) tfresh() bool              { return false }
-func (v *Marker) tsetFresh(bool)            {}
+func (v *Anchor) tname() string         { return "Anchor" }
+func (v *Anchor) ttext() (string, bool) { return "", false }
+func (v *Anchor) tkids() []any          { return nil }
+func (v *Anchor) tstruct() bool         { return true }
+func (v *Anchor) tfresh() bool          { return false }
+func (v *Anchor) tsetFresh(bool)        {}
+func (v *Anchor) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
 
-func (v *Tag) tname() string             { return "Tag" }
-func (v *Tag) ttext() (string, bool)     { return v.Text, true }
-func (v *Tag) tkids() []any              { return nil }
-func (v *Tag) tfield(string) (any, bool) { return nil, true }
-func (v *Tag) tstruct() bool             { return false }
-func (v *Tag) tfresh() bool              { return false }
-func (v *Tag) tsetFresh(bool)            {}
-
-func (v *Word) tname() string             { return "Word" }
-func (v *Word) ttext() (string, bool)     { return v.Text, true }
-func (v *Word) tkids() []any              { return nil }
-func (v *Word) tfield(string) (any, bool) { return nil, true }
-func (v *Word) tstruct() bool             { return false }
-func (v *Word) tfresh() bool              { return false }
-func (v *Word) tsetFresh(bool)            {}
+func (v *Anchor) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
 
 func (v *Directive) tname() string         { return "Directive" }
 func (v *Directive) ttext() (string, bool) { return "", false }
@@ -7176,6 +7180,28 @@ func (v *Mapping) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *Marker) tname() string         { return "Marker" }
+func (v *Marker) ttext() (string, bool) { return "", false }
+func (v *Marker) tkids() []any          { return nil }
+func (v *Marker) tstruct() bool         { return true }
+func (v *Marker) tfresh() bool          { return false }
+func (v *Marker) tsetFresh(bool)        {}
+func (v *Marker) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Marker) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7356,6 +7382,50 @@ func (v *Stream) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Tag) tname() string         { return "Tag" }
+func (v *Tag) ttext() (string, bool) { return "", false }
+func (v *Tag) tkids() []any          { return nil }
+func (v *Tag) tstruct() bool         { return true }
+func (v *Tag) tfresh() bool          { return false }
+func (v *Tag) tsetFresh(bool)        {}
+func (v *Tag) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Tag) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Word) tname() string         { return "Word" }
+func (v *Word) ttext() (string, bool) { return "", false }
+func (v *Word) tkids() []any          { return nil }
+func (v *Word) tstruct() bool         { return true }
+func (v *Word) tfresh() bool          { return false }
+func (v *Word) tsetFresh(bool)        {}
+func (v *Word) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Word) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func astNode(v any) *Node { n, _ := v.(*Node); return n }
 func astIsNil(v any) bool { n, ok := v.(*Node); return v == nil || ok && n == nil }
 
@@ -7463,12 +7533,6 @@ func tinit() {
 		*v = Marker{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[13].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tMarker)
-		*v = Marker{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[16].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tWord)
@@ -7529,6 +7593,40 @@ func tinit() {
 		*v = Alias{Span: Span{start, end}, Text: text}
 		return v
 	}
+}
+
+// tmk_Alias makes a Alias in an action (newStruct in the typed runtime).
+func tmk_Alias(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tAlias)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Anchor makes a Anchor in an action (newStruct in the typed runtime).
+func tmk_Anchor(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tAnchor)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
 }
 
 // tmk_Directive makes a Directive in an action (newStruct in the typed runtime).
@@ -7603,6 +7701,23 @@ func tmk_Mapping(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Marker makes a Marker in an action (newStruct in the typed runtime).
+func tmk_Marker(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tMarker)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -7709,6 +7824,40 @@ func tmk_Stream(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tStream)
 	c.p.stepWork()
 	v.Documents = tl4(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Tag makes a Tag in an action (newStruct in the typed runtime).
+func tmk_Tag(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tTag)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Word makes a Word in an action (newStruct in the typed runtime).
+func tmk_Word(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tWord)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9464,17 +9613,17 @@ type tslabs struct {
 	control     *workControl
 	tAlias      astChunk[Alias]
 	tAnchor     astChunk[Anchor]
-	tMarker     astChunk[Marker]
-	tTag        astChunk[Tag]
-	tWord       astChunk[Word]
 	tDirective  astChunk[Directive]
 	tDocument   astChunk[Document]
 	tMapping    astChunk[Mapping]
+	tMarker     astChunk[Marker]
 	tPair       astChunk[Pair]
 	tProperties astChunk[Properties]
 	tScalar     astChunk[Scalar]
 	tSequence   astChunk[Sequence]
 	tStream     astChunk[Stream]
+	tTag        astChunk[Tag]
+	tWord       astChunk[Word]
 	tl0Chunk    astChunk[Value]
 	tl1Chunk    astChunk[*Pair]
 	tl2Chunk    astChunk[*Word]
@@ -10453,8 +10602,8 @@ func init() {
 		{id: 1, name: "l_yaml_stream", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"c", "n"}},
 		{id: 2, name: "l_document_prefix", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
 		{id: 3, name: "l_document_suffix", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
-		{id: 4, name: "c_directives_end", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Marker", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "c_document_end", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Marker", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 4, name: "c_directives_end", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Marker", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "c_document_end", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Marker", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 6, name: "c_forbidden", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 7, name: "l_any_document", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{"c", "n"}},
 		{id: 8, name: "l_directive_document", scope: []string{"ds", "m", "r", "e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"c", "n"}},
@@ -10462,23 +10611,23 @@ func init() {
 		{id: 10, name: "explicit_root", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{"c", "n"}},
 		{id: 11, name: "l_bare_document", scope: []string{"r", "e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"c", "n"}},
 		{id: 12, name: "bare_root", scope: []string{"r"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{"c", "n"}},
-		{id: 13, name: "document_end", scope: []string{"m"}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "Marker", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
+		{id: 13, name: "document_end", scope: []string{"m"}, value: shaper{elems: false, k: 0, mode: 0, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
 		{id: 14, name: "l_directive", scope: []string{"d"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 15, name: "ns_yaml_directive", scope: []string{"name", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 16, name: "yaml_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 17, name: "ns_yaml_version", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 16, name: "yaml_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 17, name: "ns_yaml_version", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 18, name: "ns_tag_directive", scope: []string{"name", "h", "p"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 19, name: "tag_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 20, name: "tag_handle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 21, name: "ns_tag_prefix", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 19, name: "tag_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 20, name: "tag_handle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 21, name: "ns_tag_prefix", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 22, name: "ns_reserved_directive", scope: []string{"name", "ps"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 23, name: "ns_directive_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 24, name: "ns_directive_parameter", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 23, name: "ns_directive_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 24, name: "ns_directive_parameter", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Word", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 25, name: "c_ns_properties", scope: []string{"t", "a"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{"c", "n"}},
-		{id: 26, name: "c_ns_tag_property", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Tag", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
+		{id: 26, name: "c_ns_tag_property", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Tag", memo: true, leader: false, textStruct: true, seen: 8, novalue: false, vars: []string{}},
 		{id: 27, name: "c_tag_handle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 28, name: "c_ns_anchor_property", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Anchor", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
-		{id: 29, name: "c_ns_alias_node", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Alias", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 28, name: "c_ns_anchor_property", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Anchor", memo: true, leader: false, textStruct: true, seen: 9, novalue: false, vars: []string{}},
+		{id: 29, name: "c_ns_alias_node", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Alias", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 30, name: "ns_anchor_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 31, name: "ns_uri_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
 		{id: 32, name: "ns_tag_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
@@ -11126,12 +11275,18 @@ func init() {
 	rules[182].body = func(p *parser, _ int) (*Node, bool) { return p.e245() }
 	rules[183].body = func(p *parser, _ int) (*Node, bool) { return p.e246() }
 	rules[184].body = func(p *parser, _ int) (*Node, bool) { return p.e247() }
+	structFields["Alias"] = map[string]bool{"Text": true}
+	typeKinds["Alias"] = kindOf("Alias", "")
+	structFields["Anchor"] = map[string]bool{"Text": true}
+	typeKinds["Anchor"] = kindOf("Anchor", "")
 	structFields["Directive"] = map[string]bool{"Name": true, "Params": true}
 	typeKinds["Directive"] = kindOf("Directive", "")
 	structFields["Document"] = map[string]bool{"Directives": true, "Start": true, "Root": true, "End": true}
 	typeKinds["Document"] = kindOf("Document", "")
 	structFields["Mapping"] = map[string]bool{"Props": true, "Flow": true, "Pairs": true}
 	typeKinds["Mapping"] = kindOf("Mapping", "")
+	structFields["Marker"] = map[string]bool{"Text": true}
+	typeKinds["Marker"] = kindOf("Marker", "")
 	structFields["Pair"] = map[string]bool{"Key": true, "Value": true}
 	typeKinds["Pair"] = kindOf("Pair", "")
 	structFields["Properties"] = map[string]bool{"Tag": true, "Anchor": true}
@@ -11142,6 +11297,10 @@ func init() {
 	typeKinds["Sequence"] = kindOf("Sequence", "")
 	structFields["Stream"] = map[string]bool{"Documents": true}
 	typeKinds["Stream"] = kindOf("Stream", "")
+	structFields["Tag"] = map[string]bool{"Text": true}
+	typeKinds["Tag"] = kindOf("Tag", "")
+	structFields["Word"] = map[string]bool{"Text": true}
+	typeKinds["Word"] = kindOf("Word", "")
 	recRules = []*rule{
 		{id: 0, name: "main", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"c", "n"}},
 		{id: 1, name: "l_yaml_stream", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"c", "n"}},
@@ -11160,7 +11319,7 @@ func init() {
 		{id: 14, name: "l_directive", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 15, name: "ns_yaml_directive", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 16, name: "yaml_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 17, name: "ns_yaml_version", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 17, name: "ns_yaml_version", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 18, name: "ns_tag_directive", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 19, name: "tag_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 20, name: "tag_handle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -11171,8 +11330,8 @@ func init() {
 		{id: 25, name: "c_ns_properties", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{"c", "n"}},
 		{id: 26, name: "c_ns_tag_property", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 8, novalue: true, vars: []string{}},
 		{id: 27, name: "c_tag_handle", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 28, name: "c_ns_anchor_property", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
-		{id: 29, name: "c_ns_alias_node", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 28, name: "c_ns_anchor_property", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
+		{id: 29, name: "c_ns_alias_node", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 30, name: "ns_anchor_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 31, name: "ns_uri_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: true, vars: []string{}},
 		{id: 32, name: "ns_tag_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 11, novalue: true, vars: []string{}},
@@ -12725,6 +12884,7 @@ func (p *parser) e8() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 && p.in[p.pos+2] == 45) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit7, "---", 7, false); !ok {
@@ -12757,6 +12917,7 @@ func (p *parser) e10() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -13927,6 +14088,7 @@ func (p *parser) e23() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 89 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 77 && p.in[p.pos+3] == 76) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit22, "YAML", 10, false); !ok {
@@ -14005,6 +14167,7 @@ func (p *parser) e25() (*Node, bool) {
 		x1   int
 		x2   int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -14172,6 +14335,7 @@ func (p *parser) e28() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 84 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 71) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit27, "TAG", 11, false); !ok {
@@ -14202,6 +14366,7 @@ func (p *parser) e29() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.r144(); !ok {
 		goto fail
@@ -14309,6 +14474,7 @@ func (p *parser) e31() (*Node, bool) {
 		x12 mark
 	)
 	_, _ = x7, x11
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -14744,6 +14910,7 @@ func (p *parser) e35() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -15083,6 +15250,7 @@ func (p *parser) e39() (*Node, bool) {
 		x11 int
 		x12 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -15526,6 +15694,7 @@ func (p *parser) e43() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit42, "&", 16, false); !ok {
@@ -15602,6 +15771,7 @@ func (p *parser) e45() (*Node, bool) {
 		x1 int
 		x2 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
@@ -48622,6 +48792,7 @@ func (p *parser) e256() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 && p.in[p.pos+2] == 45) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit7, "---", 7, false); !ok {
@@ -48658,6 +48829,7 @@ func (p *parser) e257() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -49401,6 +49573,7 @@ func (p *parser) e267() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 89 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 77 && p.in[p.pos+3] == 76) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit22, "YAML", 10, false); !ok {
@@ -49483,6 +49656,7 @@ func (p *parser) e268() (*Node, bool) {
 		x1   int
 		x2   int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -49629,6 +49803,7 @@ func (p *parser) e270() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 84 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 71) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit27, "TAG", 11, false); !ok {
@@ -49663,6 +49838,7 @@ func (p *parser) e271() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q27(); !ok {
 		goto fail
@@ -49784,6 +49960,7 @@ func (p *parser) e272() (*Node, bool) {
 		x15 int
 	)
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -50223,6 +50400,7 @@ func (p *parser) e274() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -50527,6 +50705,7 @@ func (p *parser) e276() (*Node, bool) {
 		x12 mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -50672,6 +50851,7 @@ func (p *parser) e277() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit42, "&", 16, false); !ok {
@@ -50756,6 +50936,7 @@ func (p *parser) e278() (*Node, bool) {
 		x3 int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
@@ -65853,6 +66034,7 @@ func (p *parser) q4() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 && p.in[p.pos+2] == 45) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit7, "---", 7, false); !ok {
@@ -65911,6 +66093,7 @@ func (p *parser) q5() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -66676,6 +66859,7 @@ func (p *parser) q16() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 89 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 77 && p.in[p.pos+3] == 76) {
 		p.pos += 4
 	} else if _, ok = p.matchLiteral(lit22, "YAML", 10, false); !ok {
@@ -66780,6 +66964,7 @@ func (p *parser) q17() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -66970,6 +67155,7 @@ func (p *parser) q19() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 84 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 71) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit27, "TAG", 11, false); !ok {
@@ -67026,6 +67212,7 @@ func (p *parser) q20() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.q27(); !ok {
 		goto fail
@@ -67169,6 +67356,7 @@ func (p *parser) q21() (*Node, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -67652,6 +67840,7 @@ func (p *parser) q23() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -67748,6 +67937,7 @@ func (p *parser) q24() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -68073,6 +68263,7 @@ func (p *parser) q29() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {
@@ -76450,6 +76641,7 @@ func (p *tparser) s4() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 && p.in[p.pos+2] == 45) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit7, "---", 7, false); !ok {
@@ -76508,6 +76700,7 @@ func (p *tparser) s5() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46) {
 		p.pos += 3
@@ -78625,6 +78818,7 @@ func (p *tparser) s16() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+4 <= len(p.in) && p.in[p.pos] == 89 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 77 && p.in[p.pos+3] == 76) {
 		p.pos += 4
 	} else if _, ok = p.parser.matchLiteral(lit22, "YAML", 10, false); !ok {
@@ -78729,6 +78923,7 @@ func (p *tparser) s17() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = 0
@@ -79001,6 +79196,7 @@ func (p *tparser) s19() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 84 && p.in[p.pos+1] == 65 && p.in[p.pos+2] == 71) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit27, "TAG", 11, false); !ok {
@@ -79057,6 +79253,7 @@ func (p *tparser) s20() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.s144(); !ok {
 		goto fail
@@ -79200,6 +79397,7 @@ func (p *tparser) s21() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -79769,6 +79967,7 @@ func (p *tparser) s23() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -79865,6 +80064,7 @@ func (p *tparser) s24() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -80400,6 +80600,7 @@ func (p *tparser) v26() (any, bool) {
 	}
 	_, _ = x8, x13
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -80659,6 +80860,7 @@ func (p *tparser) i26() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -81197,6 +81399,7 @@ func (p *tparser) v28() (any, bool) {
 	_ = x1
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit42, "&", 16, false); !ok {
@@ -81301,6 +81504,7 @@ func (p *tparser) i28() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -81409,6 +81613,7 @@ func (p *tparser) s29() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 42) {

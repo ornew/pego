@@ -2,16 +2,16 @@
 // Compared with a Operators Rule, every precedence level needs its own rule.
 package calc
 
-type Number terminal
+type Number = { Text string }
 
 type Binary = {
     Left  Expr
-    Op    Match
+    Op    node[string]
     Right Expr
 }
 
 type Unary = {
-    Op Match
+    Op node[string]
     X  Expr
 }
 
@@ -35,5 +35,5 @@ rule pow Expr = l:primary ws op:"^" r:unary => Binary{Left: $l, Op: $op, Right: 
 rule primary Expr = ws p:(number / group) => $p
 rule group Expr = "(" e:expr ws ")" => $e
 
-rule number Number = [0-9]+ ("." [0-9]+)?
+rule number Number = t:([0-9]+ ("." [0-9]+)?) #atomic => Number{Text: text($t)}
 rule ws = [ \t\r\n]*

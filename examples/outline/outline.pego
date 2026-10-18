@@ -8,7 +8,7 @@
 package outline
 
 type Item = {
-    Text     Match
+    Text     node[string]
     Children []Item
 }
 

@@ -6893,42 +6893,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// CharLit is the terminal type CharLit.
-type CharLit struct {
-	Span
-	Text string
-}
-
-// FloatLit is the terminal type FloatLit.
-type FloatLit struct {
-	Span
-	Text string
-}
-
-// Ident is the terminal type Ident.
-type Ident struct {
-	Span
-	Text string
-}
-
-// ImagLit is the terminal type ImagLit.
-type ImagLit struct {
-	Span
-	Text string
-}
-
-// IntLit is the terminal type IntLit.
-type IntLit struct {
-	Span
-	Text string
-}
-
-// StringLit is the terminal type StringLit.
-type StringLit struct {
-	Span
-	Text string
-}
-
 // ArrayType is the struct type ArrayType.
 type ArrayType struct {
 	Span
@@ -6985,6 +6949,12 @@ type ChanType struct {
 	Span
 	Dir   int
 	Value Expr
+}
+
+// CharLit is the struct type CharLit.
+type CharLit struct {
+	Span
+	Text string
 }
 
 // CommClause is the struct type CommClause.
@@ -7051,6 +7021,12 @@ type File struct {
 	Decls []Decl
 }
 
+// FloatLit is the struct type FloatLit.
+type FloatLit struct {
+	Span
+	Text string
+}
+
 // ForStmt is the struct type ForStmt.
 type ForStmt struct {
 	Span
@@ -7097,6 +7073,12 @@ type GoStmt struct {
 	Call *CallExpr
 }
 
+// Ident is the struct type Ident.
+type Ident struct {
+	Span
+	Text string
+}
+
 // IfStmt is the struct type IfStmt.
 type IfStmt struct {
 	Span
@@ -7104,6 +7086,12 @@ type IfStmt struct {
 	Cond Expr
 	Body *BlockStmt
 	Else Stmt
+}
+
+// ImagLit is the struct type ImagLit.
+type ImagLit struct {
+	Span
+	Text string
 }
 
 // ImportSpec is the struct type ImportSpec.
@@ -7132,6 +7120,12 @@ type IndexListExpr struct {
 	Span
 	X       Expr
 	Indices []Expr
+}
+
+// IntLit is the struct type IntLit.
+type IntLit struct {
+	Span
+	Text string
 }
 
 // InterfaceType is the struct type InterfaceType.
@@ -7216,6 +7210,12 @@ type SliceExpr struct {
 type StarExpr struct {
 	Span
 	X Expr
+}
+
+// StringLit is the struct type StringLit.
+type StringLit struct {
+	Span
+	Text string
 }
 
 // StructType is the struct type StructType.
@@ -7338,54 +7338,6 @@ func (*TypeSpec) isSpec()       {}
 func (*TypeSwitchStmt) isStmt() {}
 func (*UnaryExpr) isExpr()      {}
 func (*ValueSpec) isSpec()      {}
-
-func (v *CharLit) tname() string             { return "CharLit" }
-func (v *CharLit) ttext() (string, bool)     { return v.Text, true }
-func (v *CharLit) tkids() []any              { return nil }
-func (v *CharLit) tfield(string) (any, bool) { return nil, true }
-func (v *CharLit) tstruct() bool             { return false }
-func (v *CharLit) tfresh() bool              { return false }
-func (v *CharLit) tsetFresh(bool)            {}
-
-func (v *FloatLit) tname() string             { return "FloatLit" }
-func (v *FloatLit) ttext() (string, bool)     { return v.Text, true }
-func (v *FloatLit) tkids() []any              { return nil }
-func (v *FloatLit) tfield(string) (any, bool) { return nil, true }
-func (v *FloatLit) tstruct() bool             { return false }
-func (v *FloatLit) tfresh() bool              { return false }
-func (v *FloatLit) tsetFresh(bool)            {}
-
-func (v *Ident) tname() string             { return "Ident" }
-func (v *Ident) ttext() (string, bool)     { return v.Text, true }
-func (v *Ident) tkids() []any              { return nil }
-func (v *Ident) tfield(string) (any, bool) { return nil, true }
-func (v *Ident) tstruct() bool             { return false }
-func (v *Ident) tfresh() bool              { return false }
-func (v *Ident) tsetFresh(bool)            {}
-
-func (v *ImagLit) tname() string             { return "ImagLit" }
-func (v *ImagLit) ttext() (string, bool)     { return v.Text, true }
-func (v *ImagLit) tkids() []any              { return nil }
-func (v *ImagLit) tfield(string) (any, bool) { return nil, true }
-func (v *ImagLit) tstruct() bool             { return false }
-func (v *ImagLit) tfresh() bool              { return false }
-func (v *ImagLit) tsetFresh(bool)            {}
-
-func (v *IntLit) tname() string             { return "IntLit" }
-func (v *IntLit) ttext() (string, bool)     { return v.Text, true }
-func (v *IntLit) tkids() []any              { return nil }
-func (v *IntLit) tfield(string) (any, bool) { return nil, true }
-func (v *IntLit) tstruct() bool             { return false }
-func (v *IntLit) tfresh() bool              { return false }
-func (v *IntLit) tsetFresh(bool)            {}
-
-func (v *StringLit) tname() string             { return "StringLit" }
-func (v *StringLit) ttext() (string, bool)     { return v.Text, true }
-func (v *StringLit) tkids() []any              { return nil }
-func (v *StringLit) tfield(string) (any, bool) { return nil, true }
-func (v *StringLit) tstruct() bool             { return false }
-func (v *StringLit) tfresh() bool              { return false }
-func (v *StringLit) tsetFresh(bool)            {}
 
 func (v *ArrayType) tname() string         { return "ArrayType" }
 func (v *ArrayType) ttext() (string, bool) { return "", false }
@@ -7713,6 +7665,28 @@ func (v *ChanType) tfieldWork(p *tparser, name string) (any, bool) {
 		return any(v.Dir), true
 	case "Value":
 		return tback(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *CharLit) tname() string         { return "CharLit" }
+func (v *CharLit) ttext() (string, bool) { return "", false }
+func (v *CharLit) tkids() []any          { return nil }
+func (v *CharLit) tstruct() bool         { return true }
+func (v *CharLit) tfresh() bool          { return false }
+func (v *CharLit) tsetFresh(bool)        {}
+func (v *CharLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CharLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8048,6 +8022,28 @@ func (v *File) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *FloatLit) tname() string         { return "FloatLit" }
+func (v *FloatLit) ttext() (string, bool) { return "", false }
+func (v *FloatLit) tkids() []any          { return nil }
+func (v *FloatLit) tstruct() bool         { return true }
+func (v *FloatLit) tfresh() bool          { return false }
+func (v *FloatLit) tsetFresh(bool)        {}
+func (v *FloatLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *FloatLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *ForStmt) tname() string         { return "ForStmt" }
 func (v *ForStmt) ttext() (string, bool) { return "", false }
 func (v *ForStmt) tkids() []any          { return nil }
@@ -8239,6 +8235,28 @@ func (v *GoStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Ident) tname() string         { return "Ident" }
+func (v *Ident) ttext() (string, bool) { return "", false }
+func (v *Ident) tkids() []any          { return nil }
+func (v *Ident) tstruct() bool         { return true }
+func (v *Ident) tfresh() bool          { return false }
+func (v *Ident) tsetFresh(bool)        {}
+func (v *Ident) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Ident) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *IfStmt) tname() string         { return "IfStmt" }
 func (v *IfStmt) ttext() (string, bool) { return "", false }
 func (v *IfStmt) tkids() []any          { return nil }
@@ -8269,6 +8287,28 @@ func (v *IfStmt) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Body), true
 	case "Else":
 		return tback(v.Else), true
+	}
+	return nil, false
+}
+
+func (v *ImagLit) tname() string         { return "ImagLit" }
+func (v *ImagLit) ttext() (string, bool) { return "", false }
+func (v *ImagLit) tkids() []any          { return nil }
+func (v *ImagLit) tstruct() bool         { return true }
+func (v *ImagLit) tfresh() bool          { return false }
+func (v *ImagLit) tsetFresh(bool)        {}
+func (v *ImagLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *ImagLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8392,6 +8432,28 @@ func (v *IndexListExpr) tfieldWork(p *tparser, name string) (any, bool) {
 			}
 			return p.listField(kids)
 		}(), true
+	}
+	return nil, false
+}
+
+func (v *IntLit) tname() string         { return "IntLit" }
+func (v *IntLit) ttext() (string, bool) { return "", false }
+func (v *IntLit) tkids() []any          { return nil }
+func (v *IntLit) tstruct() bool         { return true }
+func (v *IntLit) tfresh() bool          { return false }
+func (v *IntLit) tsetFresh(bool)        {}
+func (v *IntLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *IntLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8727,6 +8789,28 @@ func (v *StarExpr) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *StringLit) tname() string         { return "StringLit" }
+func (v *StringLit) ttext() (string, bool) { return "", false }
+func (v *StringLit) tkids() []any          { return nil }
+func (v *StringLit) tstruct() bool         { return true }
+func (v *StringLit) tfresh() bool          { return false }
+func (v *StringLit) tsetFresh(bool)        {}
+func (v *StringLit) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *StringLit) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *StructType) tname() string         { return "StructType" }
 func (v *StructType) ttext() (string, bool) { return "", false }
 func (v *StructType) tkids() []any          { return nil }
@@ -9058,25 +9142,7 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
-	trules[6].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdent)
-		*v = Ident{Span: Span{start, end}, Text: text}
-		return v
-	}
 	trules[7].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tIdent)
-		*v = Ident{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[106].term = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tStringLit)
-		*v = StringLit{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[154].term = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tIdent)
 		*v = Ident{Span: Span{start, end}, Text: text}
@@ -9296,6 +9362,23 @@ func tmk_ChanType(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_CharLit makes a CharLit in an action (newStruct in the typed runtime).
+func tmk_CharLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tCharLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_CommClause makes a CommClause in an action (newStruct in the typed runtime).
 func tmk_CommClause(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -9482,6 +9565,23 @@ func tmk_File(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_FloatLit makes a FloatLit in an action (newStruct in the typed runtime).
+func tmk_FloatLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tFloatLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_ForStmt makes a ForStmt in an action (newStruct in the typed runtime).
 func tmk_ForStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	c.p.stepWork()
@@ -9624,6 +9724,23 @@ func tmk_GoStmt(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Ident makes a Ident in an action (newStruct in the typed runtime).
+func tmk_Ident(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIdent)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_IfStmt makes a IfStmt in an action (newStruct in the typed runtime).
 func tmk_IfStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	c.p.stepWork()
@@ -9650,6 +9767,23 @@ func tmk_IfStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	spanOf(f2, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f3, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_ImagLit makes a ImagLit in an action (newStruct in the typed runtime).
+func tmk_ImagLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tImagLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9734,6 +9868,23 @@ func tmk_IndexListExpr(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_IntLit makes a IntLit in an action (newStruct in the typed runtime).
+func tmk_IntLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tIntLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9979,6 +10130,23 @@ func tmk_StarExpr(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tStarExpr)
 	c.p.stepWork()
 	v.X = tAs[Expr](tpub(f0))
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_StringLit makes a StringLit in an action (newStruct in the typed runtime).
+func tmk_StringLit(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tStringLit)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11784,12 +11952,6 @@ func tv129(a *tslabs, v any) Tuple2[*TNode[string], *TNode[string]] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control         *workControl
-	tCharLit        astChunk[CharLit]
-	tFloatLit       astChunk[FloatLit]
-	tIdent          astChunk[Ident]
-	tImagLit        astChunk[ImagLit]
-	tIntLit         astChunk[IntLit]
-	tStringLit      astChunk[StringLit]
 	tArrayType      astChunk[ArrayType]
 	tAssignStmt     astChunk[AssignStmt]
 	tBinaryExpr     astChunk[BinaryExpr]
@@ -11798,6 +11960,7 @@ type tslabs struct {
 	tCallExpr       astChunk[CallExpr]
 	tCaseClause     astChunk[CaseClause]
 	tChanType       astChunk[ChanType]
+	tCharLit        astChunk[CharLit]
 	tCommClause     astChunk[CommClause]
 	tCompositeLit   astChunk[CompositeLit]
 	tDeclStmt       astChunk[DeclStmt]
@@ -11808,17 +11971,21 @@ type tslabs struct {
 	tField          astChunk[Field]
 	tFieldList      astChunk[FieldList]
 	tFile           astChunk[File]
+	tFloatLit       astChunk[FloatLit]
 	tForStmt        astChunk[ForStmt]
 	tFuncDecl       astChunk[FuncDecl]
 	tFuncLit        astChunk[FuncLit]
 	tFuncType       astChunk[FuncType]
 	tGenDecl        astChunk[GenDecl]
 	tGoStmt         astChunk[GoStmt]
+	tIdent          astChunk[Ident]
 	tIfStmt         astChunk[IfStmt]
+	tImagLit        astChunk[ImagLit]
 	tImportSpec     astChunk[ImportSpec]
 	tIncDecStmt     astChunk[IncDecStmt]
 	tIndexExpr      astChunk[IndexExpr]
 	tIndexListExpr  astChunk[IndexListExpr]
+	tIntLit         astChunk[IntLit]
 	tInterfaceType  astChunk[InterfaceType]
 	tKeyValueExpr   astChunk[KeyValueExpr]
 	tLabeledStmt    astChunk[LabeledStmt]
@@ -11831,6 +11998,7 @@ type tslabs struct {
 	tSendStmt       astChunk[SendStmt]
 	tSliceExpr      astChunk[SliceExpr]
 	tStarExpr       astChunk[StarExpr]
+	tStringLit      astChunk[StringLit]
 	tStructType     astChunk[StructType]
 	tSwitchStmt     astChunk[SwitchStmt]
 	tTypeAssertExpr astChunk[TypeAssertExpr]
@@ -13344,127 +13512,127 @@ var scope485 = []string{"c4"}
 var scope486 = []string{"c5"}
 var scope487 = []string{"c6"}
 var scope481 = []string{"n1", "n2", "n3", "n4"}
-var scope680 = []string{"s"}
-var scope684 = []string{"n"}
-var scope689 = []string{"s"}
-var scope696 = []string{"s"}
-var scope706 = []string{"g"}
-var scope708 = []string{"t"}
-var scope725 = []string{"g"}
-var scope732 = []string{"p"}
-var scope741 = []string{"g"}
-var scope743 = []string{"p"}
-var scope746 = []string{"g"}
-var scope749 = []string{"t"}
-var scope757 = []string{"e"}
-var scope766 = []string{"t"}
-var scope779 = []string{"f"}
-var scope785 = []string{"n"}
-var scope792 = []string{"e"}
-var scope797 = []string{"t"}
-var scope800 = []string{"t"}
-var scope802 = []string{"s"}
-var scope808 = []string{"s"}
-var scope851 = []string{"c"}
-var scope857 = []string{"c"}
-var scope862 = []string{"x"}
-var scope871 = []string{"x"}
-var scope873 = []string{"o", "r"}
-var scope875 = []string{"o", "r"}
-var scope877 = []string{"o", "r"}
-var scope879 = []string{"o", "r"}
-var scope881 = []string{"o", "r"}
-var scope890 = []string{"t"}
-var scope895 = []string{"e"}
-var scope903 = []string{"x"}
-var scope905 = []string{"o", "r"}
-var scope907 = []string{"o", "r"}
-var scope909 = []string{"o", "r"}
-var scope911 = []string{"o", "r"}
-var scope913 = []string{"o", "r"}
-var scope929 = []string{"c1"}
-var scope930 = []string{"c2"}
-var scope931 = []string{"c3"}
-var scope932 = []string{"c4"}
-var scope933 = []string{"c5"}
-var scope934 = []string{"c6"}
-var scope928 = []string{"n1", "n2", "n3", "n4"}
-var scope937 = []string{"c1"}
-var scope938 = []string{"c2"}
-var scope939 = []string{"c3"}
-var scope940 = []string{"c4"}
-var scope941 = []string{"c5"}
-var scope942 = []string{"c6"}
-var scope943 = []string{"c7"}
-var scope944 = []string{"c8"}
-var scope945 = []string{"c9"}
-var scope946 = []string{"c10"}
-var scope936 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
-var scope998 = []string{"c1"}
-var scope999 = []string{"c2"}
-var scope1000 = []string{"c3"}
-var scope1001 = []string{"c4"}
-var scope1002 = []string{"c5"}
-var scope1003 = []string{"c6"}
-var scope1004 = []string{"c7"}
-var scope1005 = []string{"c8"}
-var scope1006 = []string{"c9"}
-var scope1007 = []string{"c10"}
-var scope997 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
-var scope1010 = []string{"c1"}
-var scope1011 = []string{"c2"}
-var scope1012 = []string{"c3"}
-var scope1013 = []string{"c4"}
-var scope1014 = []string{"c5"}
-var scope1015 = []string{"c6"}
-var scope1009 = []string{"n1", "n2", "n3", "n4"}
-var scope1182 = []string{"d"}
+var scope681 = []string{"s"}
+var scope685 = []string{"n"}
+var scope690 = []string{"s"}
+var scope697 = []string{"s"}
+var scope707 = []string{"g"}
+var scope709 = []string{"t"}
+var scope726 = []string{"g"}
+var scope733 = []string{"p"}
+var scope742 = []string{"g"}
+var scope744 = []string{"p"}
+var scope747 = []string{"g"}
+var scope750 = []string{"t"}
+var scope758 = []string{"e"}
+var scope767 = []string{"t"}
+var scope780 = []string{"f"}
+var scope786 = []string{"n"}
+var scope793 = []string{"e"}
+var scope798 = []string{"t"}
+var scope801 = []string{"t"}
+var scope803 = []string{"s"}
+var scope809 = []string{"s"}
+var scope852 = []string{"c"}
+var scope858 = []string{"c"}
+var scope863 = []string{"x"}
+var scope872 = []string{"x"}
+var scope874 = []string{"o", "r"}
+var scope876 = []string{"o", "r"}
+var scope878 = []string{"o", "r"}
+var scope880 = []string{"o", "r"}
+var scope882 = []string{"o", "r"}
+var scope891 = []string{"t"}
+var scope896 = []string{"e"}
+var scope904 = []string{"x"}
+var scope906 = []string{"o", "r"}
+var scope908 = []string{"o", "r"}
+var scope910 = []string{"o", "r"}
+var scope912 = []string{"o", "r"}
+var scope914 = []string{"o", "r"}
+var scope930 = []string{"c1"}
+var scope931 = []string{"c2"}
+var scope932 = []string{"c3"}
+var scope933 = []string{"c4"}
+var scope934 = []string{"c5"}
+var scope935 = []string{"c6"}
+var scope929 = []string{"n1", "n2", "n3", "n4"}
+var scope938 = []string{"c1"}
+var scope939 = []string{"c2"}
+var scope940 = []string{"c3"}
+var scope941 = []string{"c4"}
+var scope942 = []string{"c5"}
+var scope943 = []string{"c6"}
+var scope944 = []string{"c7"}
+var scope945 = []string{"c8"}
+var scope946 = []string{"c9"}
+var scope947 = []string{"c10"}
+var scope937 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
+var scope999 = []string{"c1"}
+var scope1000 = []string{"c2"}
+var scope1001 = []string{"c3"}
+var scope1002 = []string{"c4"}
+var scope1003 = []string{"c5"}
+var scope1004 = []string{"c6"}
+var scope1005 = []string{"c7"}
+var scope1006 = []string{"c8"}
+var scope1007 = []string{"c9"}
+var scope1008 = []string{"c10"}
+var scope998 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
+var scope1011 = []string{"c1"}
+var scope1012 = []string{"c2"}
+var scope1013 = []string{"c3"}
+var scope1014 = []string{"c4"}
+var scope1015 = []string{"c5"}
+var scope1016 = []string{"c6"}
+var scope1010 = []string{"n1", "n2", "n3", "n4"}
 var scope1183 = []string{"d"}
-var scope1218 = []string{"t"}
-var scope1234 = []string{"g"}
-var scope1249 = []string{"t"}
-var scope1261 = []string{"e"}
-var scope1269 = []string{"t"}
-var scope1311 = []string{"t"}
-var scope1320 = []string{"t"}
-var scope1324 = []string{"s"}
-var scope1331 = []string{"s"}
-var scope1388 = []string{"x"}
-var scope1405 = []string{"x"}
-var scope1407 = []string{"o", "r"}
-var scope1413 = []string{"o", "r"}
-var scope1419 = []string{"o", "r"}
-var scope1425 = []string{"o", "r"}
-var scope1431 = []string{"o", "r"}
-var scope1442 = []string{"t"}
-var scope1447 = []string{"e"}
-var scope1452 = []string{"x"}
-var scope1454 = []string{"o", "r"}
-var scope1460 = []string{"o", "r"}
-var scope1466 = []string{"o", "r"}
-var scope1472 = []string{"o", "r"}
-var scope1478 = []string{"o", "r"}
-var scope1491 = []string{"c1"}
-var scope1492 = []string{"c2"}
-var scope1493 = []string{"c3"}
-var scope1494 = []string{"c4"}
-var scope1495 = []string{"c5"}
-var scope1496 = []string{"c6"}
-var scope1497 = []string{"n1", "n2", "n3", "n4"}
-var scope1498 = []string{"c1"}
-var scope1499 = []string{"c2"}
-var scope1500 = []string{"c3"}
-var scope1501 = []string{"c4"}
-var scope1502 = []string{"c5"}
-var scope1503 = []string{"c6"}
-var scope1504 = []string{"c7"}
-var scope1505 = []string{"c8"}
-var scope1506 = []string{"c9"}
-var scope1507 = []string{"c10"}
-var scope1508 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
-var scope1509 = []string{"c"}
-var scope1510 = []string{"n"}
+var scope1184 = []string{"d"}
+var scope1219 = []string{"t"}
+var scope1235 = []string{"g"}
+var scope1250 = []string{"t"}
+var scope1262 = []string{"e"}
+var scope1270 = []string{"t"}
+var scope1312 = []string{"t"}
+var scope1321 = []string{"t"}
+var scope1325 = []string{"s"}
+var scope1332 = []string{"s"}
+var scope1389 = []string{"x"}
+var scope1406 = []string{"x"}
+var scope1408 = []string{"o", "r"}
+var scope1414 = []string{"o", "r"}
+var scope1420 = []string{"o", "r"}
+var scope1426 = []string{"o", "r"}
+var scope1432 = []string{"o", "r"}
+var scope1443 = []string{"t"}
+var scope1448 = []string{"e"}
+var scope1453 = []string{"x"}
+var scope1455 = []string{"o", "r"}
+var scope1461 = []string{"o", "r"}
+var scope1467 = []string{"o", "r"}
+var scope1473 = []string{"o", "r"}
+var scope1479 = []string{"o", "r"}
+var scope1492 = []string{"c1"}
+var scope1493 = []string{"c2"}
+var scope1494 = []string{"c3"}
+var scope1495 = []string{"c4"}
+var scope1496 = []string{"c5"}
+var scope1497 = []string{"c6"}
+var scope1498 = []string{"n1", "n2", "n3", "n4"}
+var scope1499 = []string{"c1"}
+var scope1500 = []string{"c2"}
+var scope1501 = []string{"c3"}
+var scope1502 = []string{"c4"}
+var scope1503 = []string{"c5"}
+var scope1504 = []string{"c6"}
+var scope1505 = []string{"c7"}
+var scope1506 = []string{"c8"}
+var scope1507 = []string{"c9"}
+var scope1508 = []string{"c10"}
+var scope1509 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
+var scope1510 = []string{"c"}
 var scope1511 = []string{"n"}
+var scope1512 = []string{"n"}
 
 func init() {
 	rules = []*rule{
@@ -13474,8 +13642,8 @@ func init() {
 		{id: 3, name: "importOne", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 4, name: "importGroup", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 5, name: "importSpec", scope: []string{"n", "p"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 6, name: "importName", scope: []string{"i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "Ident", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "dotName", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Ident", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "importName", scope: []string{"i"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "dotName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 8, name: "constDecl", scope: []string{"ss"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
 		{id: 9, name: "constOne", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 10, name: "constGroup", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -13574,7 +13742,7 @@ func init() {
 		{id: 103, name: "arrayNameField", scope: []string{"n", "t", "g"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 104, name: "oneNameField", scope: []string{"n", "t", "g"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 105, name: "instanceField", scope: []string{"t", "g"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 106, name: "tagSp", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "StringLit", memo: true, leader: false, seen: 43, novalue: false, vars: []string{}},
+		{id: 106, name: "tagSp", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 43, novalue: false, vars: []string{}},
 		{id: 107, name: "interfaceType", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 44, novalue: false, vars: []string{}},
 		{id: 108, name: "methodBlock", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 109, name: "interfaceElem", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -13622,7 +13790,7 @@ func init() {
 		{id: 151, name: "continueStmt", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 152, name: "gotoStmt", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 153, name: "fallthroughStmt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 154, name: "labelSp", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 55, novalue: false, vars: []string{}},
+		{id: 154, name: "labelSp", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 55, novalue: false, vars: []string{}},
 		{id: 155, name: "ifStmt", scope: []string{"i", "c", "b", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 56, novalue: false, vars: []string{}},
 		{id: 156, name: "hsimpleSemi", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 157, name: "elseSp", scope: []string{"s"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -13722,7 +13890,7 @@ func init() {
 		{id: 251, name: "dirMidBlock", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 252, name: "dirNum", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 253, name: "dirUint", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 254, name: "ident", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 94, novalue: false, vars: []string{}},
+		{id: 254, name: "ident", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, textStruct: true, seen: 94, novalue: false, vars: []string{}},
 		{id: 255, name: "idStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 256, name: "idRest", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 257, name: "idChar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -13753,9 +13921,9 @@ func init() {
 		{id: 282, name: "kw_type", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 105, novalue: false, vars: []string{}},
 		{id: 283, name: "kw_var", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 284, name: "basicLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 106, novalue: false, vars: []string{}},
-		{id: 285, name: "intLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "IntLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 286, name: "floatLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FloatLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 287, name: "imagLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ImagLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 285, name: "intLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "IntLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 286, name: "floatLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FloatLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 287, name: "imagLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ImagLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 288, name: "imagInt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 289, name: "decimalFloat", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 107, novalue: false, vars: []string{}},
 		{id: 290, name: "decimalExp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 108, novalue: false, vars: []string{}},
@@ -13764,8 +13932,8 @@ func init() {
 		{id: 293, name: "hexDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 294, name: "octDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 295, name: "binDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 296, name: "charLit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "CharLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 297, name: "stringLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, seen: 110, novalue: false, vars: []string{}},
+		{id: 296, name: "charLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharLit", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 297, name: "stringLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, textStruct: true, seen: 110, novalue: false, vars: []string{}},
 		{id: 298, name: "srcChar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 111, novalue: false, vars: []string{}},
 		{id: 299, name: "charEscape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 300, name: "stringEscape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -15749,6 +15917,8 @@ func init() {
 	typeKinds["CaseClause"] = kindOf("CaseClause", "")
 	structFields["ChanType"] = map[string]bool{"Dir": true, "Value": true}
 	typeKinds["ChanType"] = kindOf("ChanType", "")
+	structFields["CharLit"] = map[string]bool{"Text": true}
+	typeKinds["CharLit"] = kindOf("CharLit", "")
 	structFields["CommClause"] = map[string]bool{"Comm": true, "Body": true}
 	typeKinds["CommClause"] = kindOf("CommClause", "")
 	structFields["CompositeLit"] = map[string]bool{"Type": true, "Elts": true}
@@ -15769,6 +15939,8 @@ func init() {
 	typeKinds["FieldList"] = kindOf("FieldList", "")
 	structFields["File"] = map[string]bool{"Name": true, "Decls": true}
 	typeKinds["File"] = kindOf("File", "")
+	structFields["FloatLit"] = map[string]bool{"Text": true}
+	typeKinds["FloatLit"] = kindOf("FloatLit", "")
 	structFields["ForStmt"] = map[string]bool{"Init": true, "Cond": true, "Post": true, "Body": true}
 	typeKinds["ForStmt"] = kindOf("ForStmt", "")
 	structFields["FuncDecl"] = map[string]bool{"Recv": true, "Name": true, "Type": true, "Body": true}
@@ -15781,8 +15953,12 @@ func init() {
 	typeKinds["GenDecl"] = kindOf("GenDecl", "")
 	structFields["GoStmt"] = map[string]bool{"Call": true}
 	typeKinds["GoStmt"] = kindOf("GoStmt", "")
+	structFields["Ident"] = map[string]bool{"Text": true}
+	typeKinds["Ident"] = kindOf("Ident", "")
 	structFields["IfStmt"] = map[string]bool{"Init": true, "Cond": true, "Body": true, "Else": true}
 	typeKinds["IfStmt"] = kindOf("IfStmt", "")
+	structFields["ImagLit"] = map[string]bool{"Text": true}
+	typeKinds["ImagLit"] = kindOf("ImagLit", "")
 	structFields["ImportSpec"] = map[string]bool{"Name": true, "Path": true}
 	typeKinds["ImportSpec"] = kindOf("ImportSpec", "")
 	structFields["IncDecStmt"] = map[string]bool{"X": true, "Tok": true}
@@ -15791,6 +15967,8 @@ func init() {
 	typeKinds["IndexExpr"] = kindOf("IndexExpr", "")
 	structFields["IndexListExpr"] = map[string]bool{"X": true, "Indices": true}
 	typeKinds["IndexListExpr"] = kindOf("IndexListExpr", "")
+	structFields["IntLit"] = map[string]bool{"Text": true}
+	typeKinds["IntLit"] = kindOf("IntLit", "")
 	structFields["InterfaceType"] = map[string]bool{"Methods": true}
 	typeKinds["InterfaceType"] = kindOf("InterfaceType", "")
 	structFields["KeyValueExpr"] = map[string]bool{"Key": true, "Value": true}
@@ -15815,6 +15993,8 @@ func init() {
 	typeKinds["SliceExpr"] = kindOf("SliceExpr", "")
 	structFields["StarExpr"] = map[string]bool{"X": true}
 	typeKinds["StarExpr"] = kindOf("StarExpr", "")
+	structFields["StringLit"] = map[string]bool{"Text": true}
+	typeKinds["StringLit"] = kindOf("StringLit", "")
 	structFields["StructType"] = map[string]bool{"Fields": true}
 	typeKinds["StructType"] = kindOf("StructType", "")
 	structFields["SwitchStmt"] = map[string]bool{"Init": true, "Tag": true, "Body": true}
@@ -15837,7 +16017,7 @@ func init() {
 		{id: 4, name: "importGroup", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 5, name: "importSpec", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
 		{id: 6, name: "importName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "dotName", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "dotName", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 8, name: "constDecl", scope: []string{"ss"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
 		{id: 9, name: "constOne", scope: []string{"s"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 10, name: "constGroup", scope: []string{"ss"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -15936,7 +16116,7 @@ func init() {
 		{id: 103, name: "arrayNameField", scope: []string{"n", "t", "g"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 104, name: "oneNameField", scope: []string{"n", "t", "g"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 105, name: "instanceField", scope: []string{"t", "g"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 106, name: "tagSp", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "StringLit", memo: true, leader: false, seen: 43, novalue: false, vars: []string{}},
+		{id: 106, name: "tagSp", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 43, novalue: false, vars: []string{}},
 		{id: 107, name: "interfaceType", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 44, novalue: false, vars: []string{}},
 		{id: 108, name: "methodBlock", scope: []string{"es"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 109, name: "interfaceElem", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -15984,7 +16164,7 @@ func init() {
 		{id: 151, name: "continueStmt", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 152, name: "gotoStmt", scope: []string{"l"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 153, name: "fallthroughStmt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 154, name: "labelSp", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 55, novalue: false, vars: []string{}},
+		{id: 154, name: "labelSp", scope: []string{"l"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 55, novalue: false, vars: []string{}},
 		{id: 155, name: "ifStmt", scope: []string{"i", "c", "b", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 56, novalue: false, vars: []string{}},
 		{id: 156, name: "hsimpleSemi", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 157, name: "elseSp", scope: []string{"s"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -16084,7 +16264,7 @@ func init() {
 		{id: 251, name: "dirMidBlock", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 252, name: "dirNum", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 253, name: "dirUint", scope: []string{"n"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 254, name: "ident", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Ident", memo: true, leader: false, seen: 94, novalue: false, vars: []string{}},
+		{id: 254, name: "ident", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Ident", memo: true, leader: false, seen: 94, novalue: false, vars: []string{}},
 		{id: 255, name: "idStart", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 256, name: "idRest", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 257, name: "idChar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -16115,9 +16295,9 @@ func init() {
 		{id: 282, name: "kw_type", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 105, novalue: false, vars: []string{}},
 		{id: 283, name: "kw_var", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 284, name: "basicLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 106, novalue: false, vars: []string{}},
-		{id: 285, name: "intLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "IntLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 286, name: "floatLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "FloatLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 287, name: "imagLit", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "ImagLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 285, name: "intLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "IntLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 286, name: "floatLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "FloatLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 287, name: "imagLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "ImagLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 288, name: "imagInt", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 289, name: "decimalFloat", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 107, novalue: false, vars: []string{}},
 		{id: 290, name: "decimalExp", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 108, novalue: false, vars: []string{}},
@@ -16126,7 +16306,7 @@ func init() {
 		{id: 293, name: "hexDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 294, name: "octDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 295, name: "binDigits", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 296, name: "charLit", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "CharLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 296, name: "charLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharLit", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 297, name: "stringLit", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "StringLit", memo: true, leader: false, seen: 110, novalue: false, vars: []string{}},
 		{id: 298, name: "srcChar", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 111, novalue: false, vars: []string{}},
 		{id: 299, name: "charEscape", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -16227,109 +16407,71 @@ func init() {
 	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e675() }
 	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e676() }
 	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e677() }
-	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e497() }
-	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e678() }
+	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e678() }
+	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e679() }
 	recRules[8].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("GenDecl", "Tok", func() any { c.p.stepWork(); return any("const") }(), "Specs", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[9].body = func(p *parser, _ int) (*Node, bool) { return p.e679() }
+	recRules[9].body = func(p *parser, _ int) (*Node, bool) { return p.e680() }
 	recRules[9].action = func(c *actx) any {
 		return func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }()
 	}
-	recRules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e681() }
+	recRules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e682() }
 	recRules[10].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1075 any) any {
+			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1076 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.member(func() any { c.p.stepWork(); return unboxValue(l_1075) }(), "$s")
+					return c.member(func() any { c.p.stepWork(); return unboxValue(l_1076) }(), "$s")
 				}()
 			})
 		}()
 	}
-	recRules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e682() }
+	recRules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e683() }
 	recRules[11].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ValueSpec", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }(), "Values", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }())
 		}()
 	}
-	recRules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e683() }
+	recRules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e684() }
 	recRules[12].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e685() }
+	recRules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e686() }
 	recRules[13].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1076 any) any {
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1077 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1076) }(), "$n")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1077) }(), "$n")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[14].body = func(p *parser, _ int) (*Node, bool) { return p.e686() }
+	recRules[14].body = func(p *parser, _ int) (*Node, bool) { return p.e687() }
 	recRules[14].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[15].body = func(p *parser, _ int) (*Node, bool) { return p.e687() }
+	recRules[15].body = func(p *parser, _ int) (*Node, bool) { return p.e688() }
 	recRules[15].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("GenDecl", "Tok", func() any { c.p.stepWork(); return any("var") }(), "Specs", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[16].body = func(p *parser, _ int) (*Node, bool) { return p.e688() }
+	recRules[16].body = func(p *parser, _ int) (*Node, bool) { return p.e689() }
 	recRules[16].action = func(c *actx) any {
 		return func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }()
 	}
-	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e690() }
+	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e691() }
 	recRules[17].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1077 any) any {
-				return func() any {
-					c.p.stepWork()
-					return c.member(func() any { c.p.stepWork(); return unboxValue(l_1077) }(), "$s")
-				}()
-			})
-		}()
-	}
-	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e691() }
-	recRules[19].body = func(p *parser, _ int) (*Node, bool) { return p.e692() }
-	recRules[19].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("ValueSpec", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }(), "Values", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }())
-		}()
-	}
-	recRules[20].body = func(p *parser, _ int) (*Node, bool) { return p.e693() }
-	recRules[20].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("ValueSpec", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Values", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[21].body = func(p *parser, _ int) (*Node, bool) { return p.e694() }
-	recRules[21].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("GenDecl", "Tok", func() any { c.p.stepWork(); return any("type") }(), "Specs", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[22].body = func(p *parser, _ int) (*Node, bool) { return p.e695() }
-	recRules[22].action = func(c *actx) any {
-		return func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-	}
-	recRules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e697() }
-	recRules[23].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1078 any) any {
@@ -16340,35 +16482,73 @@ func init() {
 			})
 		}()
 	}
-	recRules[24].body = func(p *parser, _ int) (*Node, bool) { return p.e698() }
-	recRules[25].body = func(p *parser, _ int) (*Node, bool) { return p.e699() }
+	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e692() }
+	recRules[19].body = func(p *parser, _ int) (*Node, bool) { return p.e693() }
+	recRules[19].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("ValueSpec", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }(), "Values", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(2) }()) }())
+		}()
+	}
+	recRules[20].body = func(p *parser, _ int) (*Node, bool) { return p.e694() }
+	recRules[20].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("ValueSpec", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Values", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[21].body = func(p *parser, _ int) (*Node, bool) { return p.e695() }
+	recRules[21].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("GenDecl", "Tok", func() any { c.p.stepWork(); return any("type") }(), "Specs", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[22].body = func(p *parser, _ int) (*Node, bool) { return p.e696() }
+	recRules[22].action = func(c *actx) any {
+		return func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+	}
+	recRules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e698() }
+	recRules[23].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1079 any) any {
+				return func() any {
+					c.p.stepWork()
+					return c.member(func() any { c.p.stepWork(); return unboxValue(l_1079) }(), "$s")
+				}()
+			})
+		}()
+	}
+	recRules[24].body = func(p *parser, _ int) (*Node, bool) { return p.e699() }
+	recRules[25].body = func(p *parser, _ int) (*Node, bool) { return p.e700() }
 	recRules[25].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("TypeSpec", "Name", func() any { c.p.stepWork(); return c.cap(0) }(), "TypeParams", func() any { c.p.stepWork(); return c.cap(1) }(), "Assign", func() any { c.p.stepWork(); return c.cap(2) }(), "Type", func() any { c.p.stepWork(); return c.cap(3) }())
 		}()
 	}
-	recRules[26].body = func(p *parser, _ int) (*Node, bool) { return p.e700() }
+	recRules[26].body = func(p *parser, _ int) (*Node, bool) { return p.e701() }
 	recRules[26].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("TypeSpec", "Name", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[27].body = func(p *parser, _ int) (*Node, bool) { return p.e701() }
+	recRules[27].body = func(p *parser, _ int) (*Node, bool) { return p.e702() }
 	recRules[27].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("TypeSpec", "Name", func() any { c.p.stepWork(); return c.cap(0) }(), "Assign", func() any { c.p.stepWork(); return c.cap(1) }(), "Type", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e702() }
+	recRules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e703() }
 	recRules[28].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e703() }
-	recRules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e704() }
-	recRules[31].body = func(p *parser, _ int) (*Node, bool) { return p.e705() }
+	recRules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e704() }
+	recRules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e705() }
+	recRules[31].body = func(p *parser, _ int) (*Node, bool) { return p.e706() }
 	recRules[31].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[32].body = func(p *parser, _ int) (*Node, bool) { return p.e707() }
+	recRules[32].body = func(p *parser, _ int) (*Node, bool) { return p.e708() }
 	recRules[32].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -16380,10 +16560,10 @@ func init() {
 						c.p.stepWork()
 						return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
 					}())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1079 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1080 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1079) }(), "$g")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1080) }(), "$g")
 						}()
 					})
 					return c.endList(b)
@@ -16391,98 +16571,56 @@ func init() {
 			}())
 		}()
 	}
-	recRules[33].body = func(p *parser, _ int) (*Node, bool) { return p.e709() }
+	recRules[33].body = func(p *parser, _ int) (*Node, bool) { return p.e710() }
 	recRules[33].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1080, l_1081 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1081, l_1082 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1080) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1081) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1081) }(), "$t")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1082) }(), "$t")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[34].body = func(p *parser, _ int) (*Node, bool) { return p.e710() }
-	recRules[35].body = func(p *parser, _ int) (*Node, bool) { return p.e711() }
+	recRules[34].body = func(p *parser, _ int) (*Node, bool) { return p.e711() }
+	recRules[35].body = func(p *parser, _ int) (*Node, bool) { return p.e712() }
 	recRules[35].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[36].body = func(p *parser, _ int) (*Node, bool) { return p.e712() }
+	recRules[36].body = func(p *parser, _ int) (*Node, bool) { return p.e713() }
 	recRules[36].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ParenExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[37].body = func(p *parser, _ int) (*Node, bool) { return p.e713() }
-	recRules[38].body = func(p *parser, _ int) (*Node, bool) { return p.e714() }
-	recRules[39].body = func(p *parser, _ int) (*Node, bool) { return p.e715() }
-	recRules[40].body = func(p *parser, _ int) (*Node, bool) { return p.e716() }
-	recRules[41].body = func(p *parser, _ int) (*Node, bool) { return p.e717() }
-	recRules[42].body = func(p *parser, _ int) (*Node, bool) { return p.e718() }
-	recRules[43].body = func(p *parser, _ int) (*Node, bool) { return p.e719() }
-	recRules[44].body = func(p *parser, _ int) (*Node, bool) { return p.e720() }
-	recRules[45].body = func(p *parser, _ int) (*Node, bool) { return p.e721() }
-	recRules[46].body = func(p *parser, _ int) (*Node, bool) { return p.e722() }
-	recRules[47].body = func(p *parser, _ int) (*Node, bool) { return p.e723() }
+	recRules[37].body = func(p *parser, _ int) (*Node, bool) { return p.e714() }
+	recRules[38].body = func(p *parser, _ int) (*Node, bool) { return p.e715() }
+	recRules[39].body = func(p *parser, _ int) (*Node, bool) { return p.e716() }
+	recRules[40].body = func(p *parser, _ int) (*Node, bool) { return p.e717() }
+	recRules[41].body = func(p *parser, _ int) (*Node, bool) { return p.e718() }
+	recRules[42].body = func(p *parser, _ int) (*Node, bool) { return p.e719() }
+	recRules[43].body = func(p *parser, _ int) (*Node, bool) { return p.e720() }
+	recRules[44].body = func(p *parser, _ int) (*Node, bool) { return p.e721() }
+	recRules[45].body = func(p *parser, _ int) (*Node, bool) { return p.e722() }
+	recRules[46].body = func(p *parser, _ int) (*Node, bool) { return p.e723() }
+	recRules[47].body = func(p *parser, _ int) (*Node, bool) { return p.e724() }
 	recRules[47].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FieldList", "List", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(0) }()) }())
 		}()
 	}
-	recRules[48].body = func(p *parser, _ int) (*Node, bool) { return p.e724() }
-	recRules[49].body = func(p *parser, _ int) (*Node, bool) { return p.e726() }
+	recRules[48].body = func(p *parser, _ int) (*Node, bool) { return p.e725() }
+	recRules[49].body = func(p *parser, _ int) (*Node, bool) { return p.e727() }
 	recRules[49].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return func() any {
-				b := len(c.p.kidStack)
-				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1082 any) any {
-					return func() any {
-						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1082) }(), "$g")
-					}()
-				})
-				return c.endList(b)
-			}()
-		}()
-	}
-	recRules[50].body = func(p *parser, _ int) (*Node, bool) { return p.e727() }
-	recRules[50].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[51].body = func(p *parser, _ int) (*Node, bool) { return p.e728() }
-	recRules[51].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[52].body = func(p *parser, _ int) (*Node, bool) { return p.e729() }
-	recRules[52].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[53].body = func(p *parser, _ int) (*Node, bool) { return p.e730() }
-	recRules[53].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[54].body = func(p *parser, _ int) (*Node, bool) { return p.e731() }
-	recRules[54].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("Ellipsis", "Elt", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[55].body = func(p *parser, _ int) (*Node, bool) { return p.e733() }
-	recRules[55].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
@@ -16491,26 +16629,68 @@ func init() {
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1083 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1083) }(), "$p")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1083) }(), "$g")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[56].body = func(p *parser, _ int) (*Node, bool) { return p.e734() }
+	recRules[50].body = func(p *parser, _ int) (*Node, bool) { return p.e728() }
+	recRules[50].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
+	recRules[51].body = func(p *parser, _ int) (*Node, bool) { return p.e729() }
+	recRules[51].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[52].body = func(p *parser, _ int) (*Node, bool) { return p.e730() }
+	recRules[52].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[53].body = func(p *parser, _ int) (*Node, bool) { return p.e731() }
+	recRules[53].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
+	recRules[54].body = func(p *parser, _ int) (*Node, bool) { return p.e732() }
+	recRules[54].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("Ellipsis", "Elt", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[55].body = func(p *parser, _ int) (*Node, bool) { return p.e734() }
+	recRules[55].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return func() any {
+				b := len(c.p.kidStack)
+				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1084 any) any {
+					return func() any {
+						c.p.stepWork()
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1084) }(), "$p")
+					}()
+				})
+				return c.endList(b)
+			}()
+		}()
+	}
+	recRules[56].body = func(p *parser, _ int) (*Node, bool) { return p.e735() }
 	recRules[56].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[57].body = func(p *parser, _ int) (*Node, bool) { return p.e735() }
+	recRules[57].body = func(p *parser, _ int) (*Node, bool) { return p.e736() }
 	recRules[57].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[58].body = func(p *parser, _ int) (*Node, bool) { return p.e736() }
+	recRules[58].body = func(p *parser, _ int) (*Node, bool) { return p.e737() }
 	recRules[58].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[59].body = func(p *parser, _ int) (*Node, bool) { return p.e737() }
-	recRules[60].body = func(p *parser, _ int) (*Node, bool) { return p.e738() }
+	recRules[59].body = func(p *parser, _ int) (*Node, bool) { return p.e738() }
+	recRules[60].body = func(p *parser, _ int) (*Node, bool) { return p.e739() }
 	recRules[60].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -16523,33 +16703,16 @@ func init() {
 			}())
 		}()
 	}
-	recRules[61].body = func(p *parser, _ int) (*Node, bool) { return p.e739() }
+	recRules[61].body = func(p *parser, _ int) (*Node, bool) { return p.e740() }
 	recRules[61].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FieldList", "List", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(0) }()) }())
 		}()
 	}
-	recRules[62].body = func(p *parser, _ int) (*Node, bool) { return p.e740() }
-	recRules[63].body = func(p *parser, _ int) (*Node, bool) { return p.e742() }
+	recRules[62].body = func(p *parser, _ int) (*Node, bool) { return p.e741() }
+	recRules[63].body = func(p *parser, _ int) (*Node, bool) { return p.e743() }
 	recRules[63].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return func() any {
-				b := len(c.p.kidStack)
-				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1084 any) any {
-					return func() any {
-						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1084) }(), "$g")
-					}()
-				})
-				return c.endList(b)
-			}()
-		}()
-	}
-	recRules[64].body = func(p *parser, _ int) (*Node, bool) { return p.e744() }
-	recRules[64].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
@@ -16558,21 +16721,38 @@ func init() {
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1085 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1085) }(), "$p")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1085) }(), "$g")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[65].body = func(p *parser, _ int) (*Node, bool) { return p.e745() }
+	recRules[64].body = func(p *parser, _ int) (*Node, bool) { return p.e745() }
+	recRules[64].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return func() any {
+				b := len(c.p.kidStack)
+				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1086 any) any {
+					return func() any {
+						c.p.stepWork()
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1086) }(), "$p")
+					}()
+				})
+				return c.endList(b)
+			}()
+		}()
+	}
+	recRules[65].body = func(p *parser, _ int) (*Node, bool) { return p.e746() }
 	recRules[65].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[66].body = func(p *parser, _ int) (*Node, bool) { return p.e747() }
+	recRules[66].body = func(p *parser, _ int) (*Node, bool) { return p.e748() }
 	recRules[66].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -16581,10 +16761,10 @@ func init() {
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1086 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1087 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1086) }(), "$g")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1087) }(), "$g")
 						}()
 					})
 					return c.endList(b)
@@ -16592,104 +16772,56 @@ func init() {
 			}())
 		}()
 	}
-	recRules[67].body = func(p *parser, _ int) (*Node, bool) { return p.e748() }
+	recRules[67].body = func(p *parser, _ int) (*Node, bool) { return p.e749() }
 	recRules[67].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.cap(0) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[68].body = func(p *parser, _ int) (*Node, bool) { return p.e750() }
+	recRules[68].body = func(p *parser, _ int) (*Node, bool) { return p.e751() }
 	recRules[68].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1087, l_1088 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1088, l_1089 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1087) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1088) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1088) }(), "$t")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1089) }(), "$t")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[69].body = func(p *parser, _ int) (*Node, bool) { return p.e751() }
+	recRules[69].body = func(p *parser, _ int) (*Node, bool) { return p.e752() }
 	recRules[69].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[70].body = func(p *parser, _ int) (*Node, bool) { return p.e752() }
-	recRules[71].body = func(p *parser, _ int) (*Node, bool) { return p.e753() }
+	recRules[70].body = func(p *parser, _ int) (*Node, bool) { return p.e753() }
+	recRules[71].body = func(p *parser, _ int) (*Node, bool) { return p.e754() }
 	recRules[71].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("UnaryExpr", "Op", func() any { c.p.stepWork(); return any("~") }(), "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[72].body = func(p *parser, _ int) (*Node, bool) { return p.e754() }
+	recRules[72].body = func(p *parser, _ int) (*Node, bool) { return p.e755() }
 	recRules[72].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ArrayType", "Len", func() any { c.p.stepWork(); return c.cap(0) }(), "Elt", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[73].body = func(p *parser, _ int) (*Node, bool) { return p.e755() }
+	recRules[73].body = func(p *parser, _ int) (*Node, bool) { return p.e756() }
 	recRules[73].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[74].body = func(p *parser, _ int) (*Node, bool) { return p.e756() }
+	recRules[74].body = func(p *parser, _ int) (*Node, bool) { return p.e757() }
 	recRules[74].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Index", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[75].body = func(p *parser, _ int) (*Node, bool) { return p.e758() }
+	recRules[75].body = func(p *parser, _ int) (*Node, bool) { return p.e759() }
 	recRules[75].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Indices", func() any {
-				c.p.stepWork()
-				return func() any {
-					b := len(c.p.kidStack)
-					c.pushList(func() any { c.p.stepWork(); return c.cap(1) }())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1089 any) any {
-						return func() any {
-							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1089) }(), "$e")
-						}()
-					})
-					return c.endList(b)
-				}()
-			}())
-		}()
-	}
-	recRules[76].body = func(p *parser, _ int) (*Node, bool) { return p.e759() }
-	recRules[76].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[77].body = func(p *parser, _ int) (*Node, bool) { return p.e109() }
-	recRules[78].body = func(p *parser, _ int) (*Node, bool) { return p.e760() }
-	recRules[79].body = func(p *parser, _ int) (*Node, bool) { return p.e761() }
-	recRules[79].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("ParenExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[80].body = func(p *parser, _ int) (*Node, bool) { return p.e762() }
-	recRules[80].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[81].body = func(p *parser, _ int) (*Node, bool) { return p.e763() }
-	recRules[81].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[82].body = func(p *parser, _ int) (*Node, bool) { return p.e764() }
-	recRules[83].body = func(p *parser, _ int) (*Node, bool) { return p.e765() }
-	recRules[83].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Index", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[84].body = func(p *parser, _ int) (*Node, bool) { return p.e767() }
-	recRules[84].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Indices", func() any {
@@ -16700,7 +16832,7 @@ func init() {
 					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1090 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1090) }(), "$t")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1090) }(), "$e")
 						}()
 					})
 					return c.endList(b)
@@ -16708,107 +16840,155 @@ func init() {
 			}())
 		}()
 	}
-	recRules[85].body = func(p *parser, _ int) (*Node, bool) { return p.e768() }
+	recRules[76].body = func(p *parser, _ int) (*Node, bool) { return p.e760() }
+	recRules[76].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
+	recRules[77].body = func(p *parser, _ int) (*Node, bool) { return p.e109() }
+	recRules[78].body = func(p *parser, _ int) (*Node, bool) { return p.e761() }
+	recRules[79].body = func(p *parser, _ int) (*Node, bool) { return p.e762() }
+	recRules[79].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("ParenExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[80].body = func(p *parser, _ int) (*Node, bool) { return p.e763() }
+	recRules[80].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[81].body = func(p *parser, _ int) (*Node, bool) { return p.e764() }
+	recRules[81].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
+	recRules[82].body = func(p *parser, _ int) (*Node, bool) { return p.e765() }
+	recRules[83].body = func(p *parser, _ int) (*Node, bool) { return p.e766() }
+	recRules[83].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Index", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[84].body = func(p *parser, _ int) (*Node, bool) { return p.e768() }
+	recRules[84].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Indices", func() any {
+				c.p.stepWork()
+				return func() any {
+					b := len(c.p.kidStack)
+					c.pushList(func() any { c.p.stepWork(); return c.cap(1) }())
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1091 any) any {
+						return func() any {
+							c.p.stepWork()
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1091) }(), "$t")
+						}()
+					})
+					return c.endList(b)
+				}()
+			}())
+		}()
+	}
+	recRules[85].body = func(p *parser, _ int) (*Node, bool) { return p.e769() }
 	recRules[85].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[86].body = func(p *parser, _ int) (*Node, bool) { return p.e769() }
+	recRules[86].body = func(p *parser, _ int) (*Node, bool) { return p.e770() }
 	recRules[86].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("SelectorExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Sel", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[87].body = func(p *parser, _ int) (*Node, bool) { return p.e770() }
+	recRules[87].body = func(p *parser, _ int) (*Node, bool) { return p.e771() }
 	recRules[87].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ArrayType", "Len", func() any { c.p.stepWork(); return c.cap(0) }(), "Elt", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[88].body = func(p *parser, _ int) (*Node, bool) { return p.e771() }
+	recRules[88].body = func(p *parser, _ int) (*Node, bool) { return p.e772() }
 	recRules[88].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
 	recRules[89].body = func(p *parser, _ int) (*Node, bool) { return p.e123() }
 	recRules[89].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.newStruct("Ellipsis") }() }
-	recRules[90].body = func(p *parser, _ int) (*Node, bool) { return p.e772() }
+	recRules[90].body = func(p *parser, _ int) (*Node, bool) { return p.e773() }
 	recRules[90].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("MapType", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[91].body = func(p *parser, _ int) (*Node, bool) { return p.e773() }
-	recRules[92].body = func(p *parser, _ int) (*Node, bool) { return p.e774() }
+	recRules[91].body = func(p *parser, _ int) (*Node, bool) { return p.e774() }
+	recRules[92].body = func(p *parser, _ int) (*Node, bool) { return p.e775() }
 	recRules[92].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ChanType", "Dir", func() any { c.p.stepWork(); return any(1) }(), "Value", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[93].body = func(p *parser, _ int) (*Node, bool) { return p.e775() }
+	recRules[93].body = func(p *parser, _ int) (*Node, bool) { return p.e776() }
 	recRules[93].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ChanType", "Dir", func() any { c.p.stepWork(); return any(3) }(), "Value", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[94].body = func(p *parser, _ int) (*Node, bool) { return p.e776() }
+	recRules[94].body = func(p *parser, _ int) (*Node, bool) { return p.e777() }
 	recRules[94].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ChanType", "Dir", func() any { c.p.stepWork(); return any(2) }(), "Value", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[95].body = func(p *parser, _ int) (*Node, bool) { return p.e777() }
+	recRules[95].body = func(p *parser, _ int) (*Node, bool) { return p.e778() }
 	recRules[95].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FuncType", "Params", func() any { c.p.stepWork(); return c.cap(0) }(), "Results", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[96].body = func(p *parser, _ int) (*Node, bool) { return p.e778() }
+	recRules[96].body = func(p *parser, _ int) (*Node, bool) { return p.e779() }
 	recRules[96].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("StructType", "Fields", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[97].body = func(p *parser, _ int) (*Node, bool) { return p.e780() }
+	recRules[97].body = func(p *parser, _ int) (*Node, bool) { return p.e781() }
 	recRules[97].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FieldList", "List", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1091 any) any {
+				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1092 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1091) }(), "$f")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1092) }(), "$f")
 					}()
 				})
 			}())
 		}()
 	}
-	recRules[98].body = func(p *parser, _ int) (*Node, bool) { return p.e781() }
-	recRules[99].body = func(p *parser, _ int) (*Node, bool) { return p.e782() }
+	recRules[98].body = func(p *parser, _ int) (*Node, bool) { return p.e782() }
+	recRules[99].body = func(p *parser, _ int) (*Node, bool) { return p.e783() }
 	recRules[99].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Tag", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[100].body = func(p *parser, _ int) (*Node, bool) { return p.e783() }
+	recRules[100].body = func(p *parser, _ int) (*Node, bool) { return p.e784() }
 	recRules[100].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Tag", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[101].body = func(p *parser, _ int) (*Node, bool) { return p.e784() }
+	recRules[101].body = func(p *parser, _ int) (*Node, bool) { return p.e785() }
 	recRules[101].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[102].body = func(p *parser, _ int) (*Node, bool) { return p.e786() }
+	recRules[102].body = func(p *parser, _ int) (*Node, bool) { return p.e787() }
 	recRules[102].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -16817,10 +16997,10 @@ func init() {
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1092 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1093 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1092) }(), "$n")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1093) }(), "$n")
 						}()
 					})
 					return c.endList(b)
@@ -16828,93 +17008,93 @@ func init() {
 			}(), "Type", func() any { c.p.stepWork(); return c.cap(2) }(), "Tag", func() any { c.p.stepWork(); return c.cap(3) }())
 		}()
 	}
-	recRules[103].body = func(p *parser, _ int) (*Node, bool) { return p.e787() }
+	recRules[103].body = func(p *parser, _ int) (*Node, bool) { return p.e788() }
 	recRules[103].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }(), "Tag", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[104].body = func(p *parser, _ int) (*Node, bool) { return p.e788() }
+	recRules[104].body = func(p *parser, _ int) (*Node, bool) { return p.e789() }
 	recRules[104].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }(), "Tag", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[105].body = func(p *parser, _ int) (*Node, bool) { return p.e789() }
+	recRules[105].body = func(p *parser, _ int) (*Node, bool) { return p.e790() }
 	recRules[105].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Tag", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[106].body = func(p *parser, _ int) (*Node, bool) { return p.e790() }
+	recRules[106].body = func(p *parser, _ int) (*Node, bool) { return p.e791() }
 	recRules[106].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[107].body = func(p *parser, _ int) (*Node, bool) { return p.e791() }
+	recRules[107].body = func(p *parser, _ int) (*Node, bool) { return p.e792() }
 	recRules[107].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("InterfaceType", "Methods", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[108].body = func(p *parser, _ int) (*Node, bool) { return p.e793() }
+	recRules[108].body = func(p *parser, _ int) (*Node, bool) { return p.e794() }
 	recRules[108].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FieldList", "List", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1093 any) any {
+				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1094 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1093) }(), "$e")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1094) }(), "$e")
 					}()
 				})
 			}())
 		}()
 	}
-	recRules[109].body = func(p *parser, _ int) (*Node, bool) { return p.e794() }
-	recRules[110].body = func(p *parser, _ int) (*Node, bool) { return p.e795() }
+	recRules[109].body = func(p *parser, _ int) (*Node, bool) { return p.e795() }
+	recRules[110].body = func(p *parser, _ int) (*Node, bool) { return p.e796() }
 	recRules[110].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Names", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Type", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[111].body = func(p *parser, _ int) (*Node, bool) { return p.e796() }
+	recRules[111].body = func(p *parser, _ int) (*Node, bool) { return p.e797() }
 	recRules[111].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("FuncType", "Params", func() any { c.p.stepWork(); return c.cap(0) }(), "Results", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[112].body = func(p *parser, _ int) (*Node, bool) { return p.e798() }
+	recRules[112].body = func(p *parser, _ int) (*Node, bool) { return p.e799() }
 	recRules[112].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("Field", "Type", func() any {
 				c.p.stepWork()
-				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1094, l_1095 any) any {
+				return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1095, l_1096 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1094) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
+						return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1095) }(), "Op", func() any { c.p.stepWork(); return any("|") }(), "Y", func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1095) }(), "$t")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1096) }(), "$t")
 						}())
 					}()
 				})
 			}())
 		}()
 	}
-	recRules[113].body = func(p *parser, _ int) (*Node, bool) { return p.e799() }
-	recRules[114].body = func(p *parser, _ int) (*Node, bool) { return p.e756() }
+	recRules[113].body = func(p *parser, _ int) (*Node, bool) { return p.e800() }
+	recRules[114].body = func(p *parser, _ int) (*Node, bool) { return p.e757() }
 	recRules[114].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Index", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[115].body = func(p *parser, _ int) (*Node, bool) { return p.e801() }
+	recRules[115].body = func(p *parser, _ int) (*Node, bool) { return p.e802() }
 	recRules[115].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -16923,10 +17103,10 @@ func init() {
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(1) }())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1096 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(2) }(), func(l_1097 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1096) }(), "$t")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1097) }(), "$t")
 						}()
 					})
 					return c.endList(b)
@@ -16934,47 +17114,11 @@ func init() {
 			}())
 		}()
 	}
-	recRules[116].body = func(p *parser, _ int) (*Node, bool) { return p.e803() }
+	recRules[116].body = func(p *parser, _ int) (*Node, bool) { return p.e804() }
 	recRules[116].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BlockStmt", "List", func() any {
-				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1097 any) any {
-					return func() any {
-						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1097) }(), "$s")
-					}()
-				})
-			}())
-		}()
-	}
-	recRules[117].body = func(p *parser, _ int) (*Node, bool) { return p.e804() }
-	recRules[118].body = func(p *parser, _ int) (*Node, bool) { return p.e805() }
-	recRules[118].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[119].body = func(p *parser, _ int) (*Node, bool) { return p.e162() }
-	recRules[119].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.newStruct("EmptyStmt") }() }
-	recRules[120].body = func(p *parser, _ int) (*Node, bool) { return p.e163() }
-	recRules[120].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.newStruct("EmptyStmt") }() }
-	recRules[121].body = func(p *parser, _ int) (*Node, bool) { return p.e806() }
-	recRules[121].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("LabeledStmt", "Label", func() any { c.p.stepWork(); return c.cap(0) }(), "Stmt", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[122].body = func(p *parser, _ int) (*Node, bool) { return p.e807() }
-	recRules[122].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("LabeledStmt", "Label", func() any { c.p.stepWork(); return c.cap(0) }(), "Stmt", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[123].body = func(p *parser, _ int) (*Node, bool) { return p.e809() }
-	recRules[123].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.concat(func() any {
 				c.p.stepWork()
 				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1098 any) any {
 					return func() any {
@@ -16982,247 +17126,246 @@ func init() {
 						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1098) }(), "$s")
 					}()
 				})
+			}())
+		}()
+	}
+	recRules[117].body = func(p *parser, _ int) (*Node, bool) { return p.e805() }
+	recRules[118].body = func(p *parser, _ int) (*Node, bool) { return p.e806() }
+	recRules[118].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
+	recRules[119].body = func(p *parser, _ int) (*Node, bool) { return p.e162() }
+	recRules[119].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.newStruct("EmptyStmt") }() }
+	recRules[120].body = func(p *parser, _ int) (*Node, bool) { return p.e163() }
+	recRules[120].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.newStruct("EmptyStmt") }() }
+	recRules[121].body = func(p *parser, _ int) (*Node, bool) { return p.e807() }
+	recRules[121].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("LabeledStmt", "Label", func() any { c.p.stepWork(); return c.cap(0) }(), "Stmt", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[122].body = func(p *parser, _ int) (*Node, bool) { return p.e808() }
+	recRules[122].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("LabeledStmt", "Label", func() any { c.p.stepWork(); return c.cap(0) }(), "Stmt", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[123].body = func(p *parser, _ int) (*Node, bool) { return p.e810() }
+	recRules[123].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.concat(func() any {
+				c.p.stepWork()
+				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1099 any) any {
+					return func() any {
+						c.p.stepWork()
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1099) }(), "$s")
+					}()
+				})
 			}(), func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[124].body = func(p *parser, _ int) (*Node, bool) { return p.e810() }
+	recRules[124].body = func(p *parser, _ int) (*Node, bool) { return p.e811() }
 	recRules[124].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[125].body = func(p *parser, _ int) (*Node, bool) { return p.e805() }
+	recRules[125].body = func(p *parser, _ int) (*Node, bool) { return p.e806() }
 	recRules[125].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[126].body = func(p *parser, _ int) (*Node, bool) { return p.e811() }
+	recRules[126].body = func(p *parser, _ int) (*Node, bool) { return p.e812() }
 	recRules[126].action = func(c *actx) any {
 		return func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }()
 	}
-	recRules[127].body = func(p *parser, _ int) (*Node, bool) { return p.e812() }
+	recRules[127].body = func(p *parser, _ int) (*Node, bool) { return p.e813() }
 	recRules[127].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[128].body = func(p *parser, _ int) (*Node, bool) { return p.e813() }
-	recRules[129].body = func(p *parser, _ int) (*Node, bool) { return p.e814() }
+	recRules[128].body = func(p *parser, _ int) (*Node, bool) { return p.e814() }
+	recRules[129].body = func(p *parser, _ int) (*Node, bool) { return p.e815() }
 	recRules[129].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[130].body = func(p *parser, _ int) (*Node, bool) { return p.e815() }
+	recRules[130].body = func(p *parser, _ int) (*Node, bool) { return p.e816() }
 	recRules[130].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("DeclStmt", "Decl", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[131].body = func(p *parser, _ int) (*Node, bool) { return p.e816() }
-	recRules[132].body = func(p *parser, _ int) (*Node, bool) { return p.e817() }
+	recRules[131].body = func(p *parser, _ int) (*Node, bool) { return p.e817() }
+	recRules[132].body = func(p *parser, _ int) (*Node, bool) { return p.e818() }
 	recRules[132].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("AssignStmt", "Lhs", func() any { c.p.stepWork(); return c.cap(0) }(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }(), "Rhs", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[133].body = func(p *parser, _ int) (*Node, bool) { return p.e818() }
+	recRules[133].body = func(p *parser, _ int) (*Node, bool) { return p.e819() }
 	recRules[133].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("SendStmt", "Chan", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[134].body = func(p *parser, _ int) (*Node, bool) { return p.e819() }
+	recRules[134].body = func(p *parser, _ int) (*Node, bool) { return p.e820() }
 	recRules[134].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IncDecStmt", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 		}()
 	}
-	recRules[135].body = func(p *parser, _ int) (*Node, bool) { return p.e820() }
+	recRules[135].body = func(p *parser, _ int) (*Node, bool) { return p.e821() }
 	recRules[135].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ExprStmt", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[136].body = func(p *parser, _ int) (*Node, bool) { return p.e821() }
-	recRules[137].body = func(p *parser, _ int) (*Node, bool) { return p.e822() }
+	recRules[136].body = func(p *parser, _ int) (*Node, bool) { return p.e822() }
+	recRules[137].body = func(p *parser, _ int) (*Node, bool) { return p.e823() }
 	recRules[137].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("AssignStmt", "Lhs", func() any { c.p.stepWork(); return c.cap(0) }(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }(), "Rhs", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[138].body = func(p *parser, _ int) (*Node, bool) { return p.e823() }
+	recRules[138].body = func(p *parser, _ int) (*Node, bool) { return p.e824() }
 	recRules[138].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("SendStmt", "Chan", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[139].body = func(p *parser, _ int) (*Node, bool) { return p.e824() }
+	recRules[139].body = func(p *parser, _ int) (*Node, bool) { return p.e825() }
 	recRules[139].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IncDecStmt", "X", func() any { c.p.stepWork(); return c.cap(0) }(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 		}()
 	}
-	recRules[140].body = func(p *parser, _ int) (*Node, bool) { return p.e825() }
+	recRules[140].body = func(p *parser, _ int) (*Node, bool) { return p.e826() }
 	recRules[140].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ExprStmt", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[141].body = func(p *parser, _ int) (*Node, bool) { return p.e826() }
+	recRules[141].body = func(p *parser, _ int) (*Node, bool) { return p.e827() }
 	recRules[141].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("GoStmt", "Call", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[142].body = func(p *parser, _ int) (*Node, bool) { return p.e827() }
+	recRules[142].body = func(p *parser, _ int) (*Node, bool) { return p.e828() }
 	recRules[142].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("DeferStmt", "Call", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[143].body = func(p *parser, _ int) (*Node, bool) { return p.e828() }
-	recRules[144].body = func(p *parser, _ int) (*Node, bool) { return p.e829() }
+	recRules[143].body = func(p *parser, _ int) (*Node, bool) { return p.e829() }
+	recRules[144].body = func(p *parser, _ int) (*Node, bool) { return p.e830() }
 	recRules[144].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[145].body = func(p *parser, _ int) (*Node, bool) { return p.e830() }
+	recRules[145].body = func(p *parser, _ int) (*Node, bool) { return p.e831() }
 	recRules[145].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return c.cap(0) }(), "Args", func() any { c.p.stepWork(); return c.cap(1) }(), "Ellipsis", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[146].body = func(p *parser, _ int) (*Node, bool) { return p.e831() }
+	recRules[146].body = func(p *parser, _ int) (*Node, bool) { return p.e832() }
 	recRules[146].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[147].body = func(p *parser, _ int) (*Node, bool) { return p.e832() }
+	recRules[147].body = func(p *parser, _ int) (*Node, bool) { return p.e833() }
 	recRules[147].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ReturnStmt", "Results", func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(0) }()) }())
 		}()
 	}
-	recRules[148].body = func(p *parser, _ int) (*Node, bool) { return p.e833() }
+	recRules[148].body = func(p *parser, _ int) (*Node, bool) { return p.e834() }
 	recRules[148].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[149].body = func(p *parser, _ int) (*Node, bool) { return p.e834() }
-	recRules[150].body = func(p *parser, _ int) (*Node, bool) { return p.e835() }
+	recRules[149].body = func(p *parser, _ int) (*Node, bool) { return p.e835() }
+	recRules[150].body = func(p *parser, _ int) (*Node, bool) { return p.e836() }
 	recRules[150].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BranchStmt", "Tok", func() any { c.p.stepWork(); return any("break") }(), "Label", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[151].body = func(p *parser, _ int) (*Node, bool) { return p.e836() }
+	recRules[151].body = func(p *parser, _ int) (*Node, bool) { return p.e837() }
 	recRules[151].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BranchStmt", "Tok", func() any { c.p.stepWork(); return any("continue") }(), "Label", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[152].body = func(p *parser, _ int) (*Node, bool) { return p.e837() }
+	recRules[152].body = func(p *parser, _ int) (*Node, bool) { return p.e838() }
 	recRules[152].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BranchStmt", "Tok", func() any { c.p.stepWork(); return any("goto") }(), "Label", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[153].body = func(p *parser, _ int) (*Node, bool) { return p.e838() }
+	recRules[153].body = func(p *parser, _ int) (*Node, bool) { return p.e839() }
 	recRules[153].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BranchStmt", "Tok", func() any { c.p.stepWork(); return any("fallthrough") }())
 		}()
 	}
-	recRules[154].body = func(p *parser, _ int) (*Node, bool) { return p.e839() }
+	recRules[154].body = func(p *parser, _ int) (*Node, bool) { return p.e840() }
 	recRules[154].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[155].body = func(p *parser, _ int) (*Node, bool) { return p.e840() }
+	recRules[155].body = func(p *parser, _ int) (*Node, bool) { return p.e841() }
 	recRules[155].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("IfStmt", "Init", func() any { c.p.stepWork(); return c.cap(0) }(), "Cond", func() any { c.p.stepWork(); return c.cap(1) }(), "Body", func() any { c.p.stepWork(); return c.cap(2) }(), "Else", func() any { c.p.stepWork(); return c.cap(3) }())
 		}()
 	}
-	recRules[156].body = func(p *parser, _ int) (*Node, bool) { return p.e841() }
+	recRules[156].body = func(p *parser, _ int) (*Node, bool) { return p.e842() }
 	recRules[156].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[157].body = func(p *parser, _ int) (*Node, bool) { return p.e842() }
+	recRules[157].body = func(p *parser, _ int) (*Node, bool) { return p.e843() }
 	recRules[157].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[158].body = func(p *parser, _ int) (*Node, bool) { return p.e843() }
-	recRules[159].body = func(p *parser, _ int) (*Node, bool) { return p.e844() }
+	recRules[158].body = func(p *parser, _ int) (*Node, bool) { return p.e844() }
+	recRules[159].body = func(p *parser, _ int) (*Node, bool) { return p.e845() }
 	recRules[159].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[160].body = func(p *parser, _ int) (*Node, bool) { return p.e845() }
+	recRules[160].body = func(p *parser, _ int) (*Node, bool) { return p.e846() }
 	recRules[160].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("SwitchStmt", "Init", func() any { c.p.stepWork(); return c.cap(0) }(), "Tag", func() any { c.p.stepWork(); return c.cap(1) }(), "Body", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[161].body = func(p *parser, _ int) (*Node, bool) { return p.e846() }
+	recRules[161].body = func(p *parser, _ int) (*Node, bool) { return p.e847() }
 	recRules[161].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("TypeSwitchStmt", "Init", func() any { c.p.stepWork(); return c.cap(0) }(), "Assign", func() any { c.p.stepWork(); return c.cap(1) }(), "Body", func() any { c.p.stepWork(); return c.cap(2) }())
 		}()
 	}
-	recRules[162].body = func(p *parser, _ int) (*Node, bool) { return p.e847() }
-	recRules[163].body = func(p *parser, _ int) (*Node, bool) { return p.e848() }
+	recRules[162].body = func(p *parser, _ int) (*Node, bool) { return p.e848() }
+	recRules[163].body = func(p *parser, _ int) (*Node, bool) { return p.e849() }
 	recRules[163].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("AssignStmt", "Lhs", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "Tok", func() any { c.p.stepWork(); return any(":=") }(), "Rhs", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(1) }()) }())
 		}()
 	}
-	recRules[164].body = func(p *parser, _ int) (*Node, bool) { return p.e849() }
+	recRules[164].body = func(p *parser, _ int) (*Node, bool) { return p.e850() }
 	recRules[164].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ExprStmt", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[165].body = func(p *parser, _ int) (*Node, bool) { return p.e850() }
+	recRules[165].body = func(p *parser, _ int) (*Node, bool) { return p.e851() }
 	recRules[165].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[166].body = func(p *parser, _ int) (*Node, bool) { return p.e852() }
+	recRules[166].body = func(p *parser, _ int) (*Node, bool) { return p.e853() }
 	recRules[166].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("BlockStmt", "List", func() any {
-				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1099 any) any {
-					return func() any {
-						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1099) }(), "$c")
-					}()
-				})
-			}())
-		}()
-	}
-	recRules[167].body = func(p *parser, _ int) (*Node, bool) { return p.e853() }
-	recRules[168].body = func(p *parser, _ int) (*Node, bool) { return p.e854() }
-	recRules[168].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("CaseClause", "List", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[169].body = func(p *parser, _ int) (*Node, bool) { return p.e855() }
-	recRules[169].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("CaseClause", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[170].body = func(p *parser, _ int) (*Node, bool) { return p.e856() }
-	recRules[170].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("SelectStmt", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[171].body = func(p *parser, _ int) (*Node, bool) { return p.e858() }
-	recRules[171].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("BlockStmt", "List", func() any {
@@ -17236,23 +17379,60 @@ func init() {
 			}())
 		}()
 	}
-	recRules[172].body = func(p *parser, _ int) (*Node, bool) { return p.e859() }
-	recRules[173].body = func(p *parser, _ int) (*Node, bool) { return p.e860() }
+	recRules[167].body = func(p *parser, _ int) (*Node, bool) { return p.e854() }
+	recRules[168].body = func(p *parser, _ int) (*Node, bool) { return p.e855() }
+	recRules[168].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("CaseClause", "List", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[169].body = func(p *parser, _ int) (*Node, bool) { return p.e856() }
+	recRules[169].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("CaseClause", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[170].body = func(p *parser, _ int) (*Node, bool) { return p.e857() }
+	recRules[170].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("SelectStmt", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[171].body = func(p *parser, _ int) (*Node, bool) { return p.e859() }
+	recRules[171].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("BlockStmt", "List", func() any {
+				c.p.stepWork()
+				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_1101 any) any {
+					return func() any {
+						c.p.stepWork()
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1101) }(), "$c")
+					}()
+				})
+			}())
+		}()
+	}
+	recRules[172].body = func(p *parser, _ int) (*Node, bool) { return p.e860() }
+	recRules[173].body = func(p *parser, _ int) (*Node, bool) { return p.e861() }
 	recRules[173].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("CommClause", "Comm", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[174].body = func(p *parser, _ int) (*Node, bool) { return p.e855() }
+	recRules[174].body = func(p *parser, _ int) (*Node, bool) { return p.e856() }
 	recRules[174].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("CommClause", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[175].body = func(p *parser, _ int) (*Node, bool) { return p.e861() }
-	recRules[176].body = func(p *parser, _ int) (*Node, bool) { return p.e863() }
+	recRules[175].body = func(p *parser, _ int) (*Node, bool) { return p.e862() }
+	recRules[176].body = func(p *parser, _ int) (*Node, bool) { return p.e864() }
 	recRules[176].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -17261,10 +17441,10 @@ func init() {
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1101 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1102 any) any {
 						return func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1101) }(), "$x")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1102) }(), "$x")
 						}()
 					})
 					return c.endList(b)
@@ -17272,249 +17452,249 @@ func init() {
 			}(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(2) }()) }(), "Rhs", func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return c.cap(3) }()) }())
 		}()
 	}
-	recRules[177].body = func(p *parser, _ int) (*Node, bool) { return p.e864() }
-	recRules[178].body = func(p *parser, _ int) (*Node, bool) { return p.e865() }
+	recRules[177].body = func(p *parser, _ int) (*Node, bool) { return p.e865() }
+	recRules[178].body = func(p *parser, _ int) (*Node, bool) { return p.e866() }
 	recRules[178].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ForStmt", "Body", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[179].body = func(p *parser, _ int) (*Node, bool) { return p.e866() }
+	recRules[179].body = func(p *parser, _ int) (*Node, bool) { return p.e867() }
 	recRules[179].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ForStmt", "Cond", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[180].body = func(p *parser, _ int) (*Node, bool) { return p.e867() }
+	recRules[180].body = func(p *parser, _ int) (*Node, bool) { return p.e868() }
 	recRules[180].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("ForStmt", "Init", func() any { c.p.stepWork(); return c.cap(0) }(), "Cond", func() any { c.p.stepWork(); return c.cap(1) }(), "Post", func() any { c.p.stepWork(); return c.cap(2) }(), "Body", func() any { c.p.stepWork(); return c.cap(3) }())
 		}()
 	}
-	recRules[181].body = func(p *parser, _ int) (*Node, bool) { return p.e868() }
+	recRules[181].body = func(p *parser, _ int) (*Node, bool) { return p.e869() }
 	recRules[181].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("RangeStmt", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.cap(1) }(), "Tok", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(2) }()) }(), "X", func() any { c.p.stepWork(); return c.cap(3) }(), "Body", func() any { c.p.stepWork(); return c.cap(4) }())
 		}()
 	}
-	recRules[182].body = func(p *parser, _ int) (*Node, bool) { return p.e869() }
+	recRules[182].body = func(p *parser, _ int) (*Node, bool) { return p.e870() }
 	recRules[182].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[183].body = func(p *parser, _ int) (*Node, bool) { return p.e870() }
+	recRules[183].body = func(p *parser, _ int) (*Node, bool) { return p.e871() }
 	recRules[183].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[184].body = func(p *parser, _ int) (*Node, bool) { return p.e872() }
+	recRules[184].body = func(p *parser, _ int) (*Node, bool) { return p.e873() }
 	recRules[184].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1102 any) any {
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1103 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1102) }(), "$x")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1103) }(), "$x")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[185].body = func(p *parser, _ int) (*Node, bool) { return p.e874() }
+	recRules[185].body = func(p *parser, _ int) (*Node, bool) { return p.e875() }
 	recRules[185].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1103, l_1104 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1104, l_1105 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1103) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1104) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1104) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1105) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1104) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1105) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[186].body = func(p *parser, _ int) (*Node, bool) { return p.e876() }
+	recRules[186].body = func(p *parser, _ int) (*Node, bool) { return p.e877() }
 	recRules[186].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1105, l_1106 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1106, l_1107 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1105) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1106) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1106) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1107) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1106) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1107) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[187].body = func(p *parser, _ int) (*Node, bool) { return p.e878() }
+	recRules[187].body = func(p *parser, _ int) (*Node, bool) { return p.e879() }
 	recRules[187].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1107, l_1108 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1108, l_1109 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1107) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1108) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1108) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1109) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1108) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1109) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[188].body = func(p *parser, _ int) (*Node, bool) { return p.e880() }
+	recRules[188].body = func(p *parser, _ int) (*Node, bool) { return p.e881() }
 	recRules[188].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1109, l_1110 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1110, l_1111 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1109) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1110) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1110) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1111) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1110) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1111) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[189].body = func(p *parser, _ int) (*Node, bool) { return p.e882() }
+	recRules[189].body = func(p *parser, _ int) (*Node, bool) { return p.e883() }
 	recRules[189].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1111, l_1112 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1112, l_1113 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1111) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1112) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1112) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1113) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1112) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1113) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[190].body = func(p *parser, _ int) (*Node, bool) { return p.e883() }
+	recRules[190].body = func(p *parser, _ int) (*Node, bool) { return p.e884() }
 	recRules[190].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[191].body = func(p *parser, _ int) (*Node, bool) { return p.e884() }
+	recRules[191].body = func(p *parser, _ int) (*Node, bool) { return p.e885() }
 	recRules[191].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[192].body = func(p *parser, _ int) (*Node, bool) { return p.e885() }
+	recRules[192].body = func(p *parser, _ int) (*Node, bool) { return p.e886() }
 	recRules[192].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("UnaryExpr", "Op", func() any { c.p.stepWork(); return any("<-") }(), "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[193].body = func(p *parser, _ int) (*Node, bool) { return p.e886() }
+	recRules[193].body = func(p *parser, _ int) (*Node, bool) { return p.e887() }
 	recRules[193].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("UnaryExpr", "Op", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "X", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[194].body = func(p *parser, _ int) (*Node, bool) { return p.e711() }
+	recRules[194].body = func(p *parser, _ int) (*Node, bool) { return p.e712() }
 	recRules[194].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[195].body = func(p *parser, _ int) (*Node, bool) { return p.e887() }
+	recRules[195].body = func(p *parser, _ int) (*Node, bool) { return p.e888() }
 	recRules[195].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
 	recRules[196].operatorsRule = &operatorsRule{
-		skip: (*parser).e1113,
+		skip: (*parser).e1114,
 		operands: []*operatorsRuleLine{
-			&operatorsRuleLine{scope: []string{}, m: (*parser).e1114, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1115, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*operatorsRuleOp{},
-		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1120, action: func(c *actx) any {
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1121, action: func(c *actx) any {
 			return func() any {
 				c.p.stepWork()
 				return c.newStruct("SelectorExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Sel", func() any { c.p.stepWork(); return c.cap(0) }())
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1125, action: func(c *actx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1126, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1128, action: func(c *actx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1129, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1134, action: func(c *actx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1135, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Index", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1137, action: func(c *actx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1138, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Indices", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1142, action: func(c *actx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1143, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1145, action: func(c *actx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1146, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }(), "Max", func() any { c.p.stepWork(); return c.cap(2) }())
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1146, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1147, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1152, action: func(c *actx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1153, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Args", func() any { c.p.stepWork(); return c.cap(0) }(), "Ellipsis", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1155, action: func(c *actx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1156, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CompositeLit", "Type", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Elts", func() any { c.p.stepWork(); return c.cap(0) }())
@@ -17522,47 +17702,12 @@ func init() {
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}}},
 	}
 	recRules[196].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[196], min) }
-	recRules[197].body = func(p *parser, _ int) (*Node, bool) { return p.e888() }
+	recRules[197].body = func(p *parser, _ int) (*Node, bool) { return p.e889() }
 	recRules[197].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
 	recRules[198].body = func(p *parser, _ int) (*Node, bool) { return p.e251() }
-	recRules[199].body = func(p *parser, _ int) (*Node, bool) { return p.e889() }
-	recRules[200].body = func(p *parser, _ int) (*Node, bool) { return p.e891() }
+	recRules[199].body = func(p *parser, _ int) (*Node, bool) { return p.e890() }
+	recRules[200].body = func(p *parser, _ int) (*Node, bool) { return p.e892() }
 	recRules[200].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return func() any {
-				b := len(c.p.kidStack)
-				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1156 any) any {
-					return func() any {
-						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1156) }(), "$t")
-					}()
-				})
-				return c.endList(b)
-			}()
-		}()
-	}
-	recRules[201].body = func(p *parser, _ int) (*Node, bool) { return p.e892() }
-	recRules[201].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("ParenExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
-		}()
-	}
-	recRules[202].body = func(p *parser, _ int) (*Node, bool) { return p.e893() }
-	recRules[202].action = func(c *actx) any {
-		return func() any {
-			c.p.stepWork()
-			return c.newStruct("FuncLit", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
-		}()
-	}
-	recRules[203].body = func(p *parser, _ int) (*Node, bool) { return p.e894() }
-	recRules[203].action = func(c *actx) any {
-		return func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(0) }()) }()
-	}
-	recRules[204].body = func(p *parser, _ int) (*Node, bool) { return p.e896() }
-	recRules[204].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
@@ -17571,23 +17716,58 @@ func init() {
 				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1157 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1157) }(), "$e")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1157) }(), "$t")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[205].body = func(p *parser, _ int) (*Node, bool) { return p.e897() }
-	recRules[206].body = func(p *parser, _ int) (*Node, bool) { return p.e898() }
+	recRules[201].body = func(p *parser, _ int) (*Node, bool) { return p.e893() }
+	recRules[201].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("ParenExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
+	recRules[202].body = func(p *parser, _ int) (*Node, bool) { return p.e894() }
+	recRules[202].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("FuncLit", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Body", func() any { c.p.stepWork(); return c.cap(1) }())
+		}()
+	}
+	recRules[203].body = func(p *parser, _ int) (*Node, bool) { return p.e895() }
+	recRules[203].action = func(c *actx) any {
+		return func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return c.cap(0) }()) }()
+	}
+	recRules[204].body = func(p *parser, _ int) (*Node, bool) { return p.e897() }
+	recRules[204].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return func() any {
+				b := len(c.p.kidStack)
+				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1158 any) any {
+					return func() any {
+						c.p.stepWork()
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1158) }(), "$e")
+					}()
+				})
+				return c.endList(b)
+			}()
+		}()
+	}
+	recRules[205].body = func(p *parser, _ int) (*Node, bool) { return p.e898() }
+	recRules[206].body = func(p *parser, _ int) (*Node, bool) { return p.e899() }
 	recRules[206].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("KeyValueExpr", "Key", func() any { c.p.stepWork(); return c.cap(0) }(), "Value", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[207].body = func(p *parser, _ int) (*Node, bool) { return p.e899() }
-	recRules[208].body = func(p *parser, _ int) (*Node, bool) { return p.e900() }
+	recRules[207].body = func(p *parser, _ int) (*Node, bool) { return p.e900() }
+	recRules[208].body = func(p *parser, _ int) (*Node, bool) { return p.e901() }
 	recRules[208].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
@@ -17595,66 +17775,66 @@ func init() {
 		}()
 	}
 	recRules[209].operatorsRule = &operatorsRule{
-		skip: (*parser).e1113,
+		skip: (*parser).e1114,
 		operands: []*operatorsRuleLine{
-			&operatorsRuleLine{scope: []string{}, m: (*parser).e1114, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1115, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*operatorsRuleOp{},
-		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1120, action: func(c *actx) any {
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1121, action: func(c *actx) any {
 			return func() any {
 				c.p.stepWork()
 				return c.newStruct("SelectorExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Sel", func() any { c.p.stepWork(); return c.cap(0) }())
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1125, action: func(c *actx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1126, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1128, action: func(c *actx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1129, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1134, action: func(c *actx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1135, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Index", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1137, action: func(c *actx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1138, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Indices", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1142, action: func(c *actx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1143, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1145, action: func(c *actx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1146, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }(), "Max", func() any { c.p.stepWork(); return c.cap(2) }())
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1162, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1163, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1163, action: func(c *actx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1164, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Args", func() any { c.p.stepWork(); return c.cap(0) }(), "Ellipsis", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1155, action: func(c *actx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1156, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CompositeLit", "Type", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Elts", func() any { c.p.stepWork(); return c.cap(0) }())
@@ -17662,211 +17842,211 @@ func init() {
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}}},
 	}
 	recRules[209].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[209], min) }
-	recRules[210].body = func(p *parser, _ int) (*Node, bool) { return p.e901() }
-	recRules[211].body = func(p *parser, _ int) (*Node, bool) { return p.e902() }
+	recRules[210].body = func(p *parser, _ int) (*Node, bool) { return p.e902() }
+	recRules[211].body = func(p *parser, _ int) (*Node, bool) { return p.e903() }
 	recRules[211].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[212].body = func(p *parser, _ int) (*Node, bool) { return p.e904() }
+	recRules[212].body = func(p *parser, _ int) (*Node, bool) { return p.e905() }
 	recRules[212].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
-				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1164 any) any {
+				c.pushMap(func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1165 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1164) }(), "$x")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1165) }(), "$x")
 					}()
 				})
 				return c.endList(b)
 			}()
 		}()
 	}
-	recRules[213].body = func(p *parser, _ int) (*Node, bool) { return p.e906() }
+	recRules[213].body = func(p *parser, _ int) (*Node, bool) { return p.e907() }
 	recRules[213].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1165, l_1166 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1166, l_1167 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1165) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1166) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1166) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1167) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1166) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1167) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[214].body = func(p *parser, _ int) (*Node, bool) { return p.e908() }
+	recRules[214].body = func(p *parser, _ int) (*Node, bool) { return p.e909() }
 	recRules[214].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1167, l_1168 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1168, l_1169 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1167) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1168) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1168) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1169) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1168) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1169) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[215].body = func(p *parser, _ int) (*Node, bool) { return p.e910() }
+	recRules[215].body = func(p *parser, _ int) (*Node, bool) { return p.e911() }
 	recRules[215].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1169, l_1170 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1170, l_1171 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1169) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1170) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1170) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1171) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1170) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1171) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[216].body = func(p *parser, _ int) (*Node, bool) { return p.e912() }
+	recRules[216].body = func(p *parser, _ int) (*Node, bool) { return p.e913() }
 	recRules[216].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1171, l_1172 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1172, l_1173 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1171) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1172) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1172) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1173) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1172) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1173) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[217].body = func(p *parser, _ int) (*Node, bool) { return p.e914() }
+	recRules[217].body = func(p *parser, _ int) (*Node, bool) { return p.e915() }
 	recRules[217].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1173, l_1174 any) any {
+			return c.fold("foldl", false, func() any { c.p.stepWork(); return c.cap(0) }(), func() any { c.p.stepWork(); return c.cap(1) }(), func(l_1174, l_1175 any) any {
 				return func() any {
 					c.p.stepWork()
-					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1173) }(), "Op", func() any {
+					return c.newStruct("BinaryExpr", "X", func() any { c.p.stepWork(); return unboxValue(l_1174) }(), "Op", func() any {
 						c.p.stepWork()
 						return c.text(func() any {
 							c.p.stepWork()
-							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1174) }(), "$o")
+							return c.member(func() any { c.p.stepWork(); return unboxValue(l_1175) }(), "$o")
 						}())
 					}(), "Y", func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1174) }(), "$r")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_1175) }(), "$r")
 					}())
 				}()
 			})
 		}()
 	}
-	recRules[218].body = func(p *parser, _ int) (*Node, bool) { return p.e915() }
+	recRules[218].body = func(p *parser, _ int) (*Node, bool) { return p.e916() }
 	recRules[218].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[219].body = func(p *parser, _ int) (*Node, bool) { return p.e916() }
+	recRules[219].body = func(p *parser, _ int) (*Node, bool) { return p.e917() }
 	recRules[219].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("UnaryExpr", "Op", func() any { c.p.stepWork(); return any("<-") }(), "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[220].body = func(p *parser, _ int) (*Node, bool) { return p.e917() }
+	recRules[220].body = func(p *parser, _ int) (*Node, bool) { return p.e918() }
 	recRules[220].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("UnaryExpr", "Op", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), "X", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[221].body = func(p *parser, _ int) (*Node, bool) { return p.e918() }
+	recRules[221].body = func(p *parser, _ int) (*Node, bool) { return p.e919() }
 	recRules[221].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("StarExpr", "X", func() any { c.p.stepWork(); return c.cap(0) }())
 		}()
 	}
-	recRules[222].body = func(p *parser, _ int) (*Node, bool) { return p.e919() }
+	recRules[222].body = func(p *parser, _ int) (*Node, bool) { return p.e920() }
 	recRules[222].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
 	recRules[223].operatorsRule = &operatorsRule{
-		skip: (*parser).e1113,
+		skip: (*parser).e1114,
 		operands: []*operatorsRuleLine{
-			&operatorsRuleLine{scope: []string{}, m: (*parser).e1175, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1176, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*operatorsRuleOp{},
-		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1120, action: func(c *actx) any {
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1121, action: func(c *actx) any {
 			return func() any {
 				c.p.stepWork()
 				return c.newStruct("SelectorExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Sel", func() any { c.p.stepWork(); return c.cap(0) }())
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1176, action: func(c *actx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1177, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1177, action: func(c *actx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1178, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1134, action: func(c *actx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1135, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Index", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1137, action: func(c *actx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1138, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Indices", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1178, action: func(c *actx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1179, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1179, action: func(c *actx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1180, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }(), "Max", func() any { c.p.stepWork(); return c.cap(2) }())
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1180, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1181, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1181, action: func(c *actx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1182, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Args", func() any { c.p.stepWork(); return c.cap(0) }(), "Ellipsis", func() any { c.p.stepWork(); return c.cap(1) }())
@@ -17874,71 +18054,71 @@ func init() {
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}}},
 	}
 	recRules[223].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[223], min) }
-	recRules[224].body = func(p *parser, _ int) (*Node, bool) { return p.e920() }
+	recRules[224].body = func(p *parser, _ int) (*Node, bool) { return p.e921() }
 	recRules[224].action = func(c *actx) any { return func() any { c.p.stepWork(); return c.cap(0) }() }
-	recRules[225].body = func(p *parser, _ int) (*Node, bool) { return p.e921() }
+	recRules[225].body = func(p *parser, _ int) (*Node, bool) { return p.e922() }
 	recRules[225].action = func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
 			return c.newStruct("CompositeLit", "Type", func() any { c.p.stepWork(); return c.cap(0) }(), "Elts", func() any { c.p.stepWork(); return c.cap(1) }())
 		}()
 	}
-	recRules[226].body = func(p *parser, _ int) (*Node, bool) { return p.e922() }
+	recRules[226].body = func(p *parser, _ int) (*Node, bool) { return p.e923() }
 	recRules[227].operatorsRule = &operatorsRule{
-		skip: (*parser).e1113,
+		skip: (*parser).e1114,
 		operands: []*operatorsRuleLine{
-			&operatorsRuleLine{scope: []string{}, m: (*parser).e1175, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1176, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*operatorsRuleOp{},
-		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1120, action: func(c *actx) any {
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1121, action: func(c *actx) any {
 			return func() any {
 				c.p.stepWork()
 				return c.newStruct("SelectorExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Sel", func() any { c.p.stepWork(); return c.cap(0) }())
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1125, action: func(c *actx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1126, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1177, action: func(c *actx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1178, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("TypeAssertExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Type", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1134, action: func(c *actx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1135, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Index", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1137, action: func(c *actx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1138, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("IndexListExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Indices", func() any { c.p.stepWork(); return c.cap(0) }())
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1178, action: func(c *actx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1179, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }())
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1179, action: func(c *actx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1180, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("SliceExpr", "X", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Low", func() any { c.p.stepWork(); return c.cap(0) }(), "High", func() any { c.p.stepWork(); return c.cap(1) }(), "Max", func() any { c.p.stepWork(); return c.cap(2) }())
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1180, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1181, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }())
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1181, action: func(c *actx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1182, action: func(c *actx) any {
 				return func() any {
 					c.p.stepWork()
 					return c.newStruct("CallExpr", "Fun", func() any { c.p.stepWork(); return unboxValue(c.lhs) }(), "Args", func() any { c.p.stepWork(); return c.cap(0) }(), "Ellipsis", func() any { c.p.stepWork(); return c.cap(1) }())
@@ -17947,7 +18127,7 @@ func init() {
 	}
 	recRules[227].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[227], min) }
 	recRules[228].body = func(p *parser, _ int) (*Node, bool) { return p.e286() }
-	recRules[229].body = func(p *parser, _ int) (*Node, bool) { return p.e923() }
+	recRules[229].body = func(p *parser, _ int) (*Node, bool) { return p.e924() }
 	recRules[230].body = func(p *parser, _ int) (*Node, bool) { return p.e290() }
 	recRules[231].body = func(p *parser, _ int) (*Node, bool) { return p.e293() }
 	recRules[232].body = func(p *parser, _ int) (*Node, bool) { return p.e300() }
@@ -17956,152 +18136,152 @@ func init() {
 	recRules[235].body = func(p *parser, _ int) (*Node, bool) { return p.e314() }
 	recRules[236].body = func(p *parser, _ int) (*Node, bool) { return p.e327() }
 	recRules[237].body = func(p *parser, _ int) (*Node, bool) { return p.e330() }
-	recRules[238].body = func(p *parser, _ int) (*Node, bool) { return p.e924() }
-	recRules[239].body = func(p *parser, _ int) (*Node, bool) { return p.e925() }
-	recRules[240].body = func(p *parser, _ int) (*Node, bool) { return p.e925() }
-	recRules[241].body = func(p *parser, _ int) (*Node, bool) { return p.e926() }
-	recRules[242].body = func(p *parser, _ int) (*Node, bool) { return p.e927() }
-	recRules[243].body = func(p *parser, _ int) (*Node, bool) { return p.e935() }
-	recRules[244].body = func(p *parser, _ int) (*Node, bool) { return p.e947() }
-	recRules[245].body = func(p *parser, _ int) (*Node, bool) { return p.e948() }
-	recRules[246].body = func(p *parser, _ int) (*Node, bool) { return p.e949() }
+	recRules[238].body = func(p *parser, _ int) (*Node, bool) { return p.e925() }
+	recRules[239].body = func(p *parser, _ int) (*Node, bool) { return p.e926() }
+	recRules[240].body = func(p *parser, _ int) (*Node, bool) { return p.e926() }
+	recRules[241].body = func(p *parser, _ int) (*Node, bool) { return p.e927() }
+	recRules[242].body = func(p *parser, _ int) (*Node, bool) { return p.e928() }
+	recRules[243].body = func(p *parser, _ int) (*Node, bool) { return p.e936() }
+	recRules[244].body = func(p *parser, _ int) (*Node, bool) { return p.e948() }
+	recRules[245].body = func(p *parser, _ int) (*Node, bool) { return p.e949() }
+	recRules[246].body = func(p *parser, _ int) (*Node, bool) { return p.e950() }
 	recRules[247].body = func(p *parser, _ int) (*Node, bool) { return p.e369() }
-	recRules[248].body = func(p *parser, _ int) (*Node, bool) { return p.e950() }
-	recRules[249].body = func(p *parser, _ int) (*Node, bool) { return p.e951() }
-	recRules[250].body = func(p *parser, _ int) (*Node, bool) { return p.e952() }
-	recRules[251].body = func(p *parser, _ int) (*Node, bool) { return p.e953() }
+	recRules[248].body = func(p *parser, _ int) (*Node, bool) { return p.e951() }
+	recRules[249].body = func(p *parser, _ int) (*Node, bool) { return p.e952() }
+	recRules[250].body = func(p *parser, _ int) (*Node, bool) { return p.e953() }
+	recRules[251].body = func(p *parser, _ int) (*Node, bool) { return p.e954() }
 	recRules[252].body = func(p *parser, _ int) (*Node, bool) { return p.e374() }
 	recRules[253].body = func(p *parser, _ int) (*Node, bool) { return p.e375() }
-	recRules[254].body = func(p *parser, _ int) (*Node, bool) { return p.e954() }
-	recRules[255].body = func(p *parser, _ int) (*Node, bool) { return p.e955() }
-	recRules[256].body = func(p *parser, _ int) (*Node, bool) { return p.e956() }
+	recRules[254].body = func(p *parser, _ int) (*Node, bool) { return p.e955() }
+	recRules[255].body = func(p *parser, _ int) (*Node, bool) { return p.e956() }
+	recRules[256].body = func(p *parser, _ int) (*Node, bool) { return p.e957() }
 	recRules[257].body = func(p *parser, _ int) (*Node, bool) { return p.e380() }
-	recRules[258].body = func(p *parser, _ int) (*Node, bool) { return p.e957() }
-	recRules[259].body = func(p *parser, _ int) (*Node, bool) { return p.e958() }
-	recRules[260].body = func(p *parser, _ int) (*Node, bool) { return p.e959() }
-	recRules[261].body = func(p *parser, _ int) (*Node, bool) { return p.e960() }
-	recRules[262].body = func(p *parser, _ int) (*Node, bool) { return p.e961() }
-	recRules[263].body = func(p *parser, _ int) (*Node, bool) { return p.e962() }
-	recRules[264].body = func(p *parser, _ int) (*Node, bool) { return p.e963() }
-	recRules[265].body = func(p *parser, _ int) (*Node, bool) { return p.e964() }
-	recRules[266].body = func(p *parser, _ int) (*Node, bool) { return p.e965() }
-	recRules[267].body = func(p *parser, _ int) (*Node, bool) { return p.e966() }
-	recRules[268].body = func(p *parser, _ int) (*Node, bool) { return p.e967() }
-	recRules[269].body = func(p *parser, _ int) (*Node, bool) { return p.e968() }
-	recRules[270].body = func(p *parser, _ int) (*Node, bool) { return p.e969() }
-	recRules[271].body = func(p *parser, _ int) (*Node, bool) { return p.e970() }
-	recRules[272].body = func(p *parser, _ int) (*Node, bool) { return p.e971() }
-	recRules[273].body = func(p *parser, _ int) (*Node, bool) { return p.e972() }
-	recRules[274].body = func(p *parser, _ int) (*Node, bool) { return p.e973() }
-	recRules[275].body = func(p *parser, _ int) (*Node, bool) { return p.e974() }
-	recRules[276].body = func(p *parser, _ int) (*Node, bool) { return p.e975() }
-	recRules[277].body = func(p *parser, _ int) (*Node, bool) { return p.e976() }
-	recRules[278].body = func(p *parser, _ int) (*Node, bool) { return p.e977() }
-	recRules[279].body = func(p *parser, _ int) (*Node, bool) { return p.e978() }
-	recRules[280].body = func(p *parser, _ int) (*Node, bool) { return p.e979() }
-	recRules[281].body = func(p *parser, _ int) (*Node, bool) { return p.e980() }
-	recRules[282].body = func(p *parser, _ int) (*Node, bool) { return p.e981() }
-	recRules[283].body = func(p *parser, _ int) (*Node, bool) { return p.e982() }
-	recRules[284].body = func(p *parser, _ int) (*Node, bool) { return p.e983() }
-	recRules[285].body = func(p *parser, _ int) (*Node, bool) { return p.e984() }
-	recRules[286].body = func(p *parser, _ int) (*Node, bool) { return p.e985() }
-	recRules[287].body = func(p *parser, _ int) (*Node, bool) { return p.e986() }
-	recRules[288].body = func(p *parser, _ int) (*Node, bool) { return p.e987() }
-	recRules[289].body = func(p *parser, _ int) (*Node, bool) { return p.e988() }
-	recRules[290].body = func(p *parser, _ int) (*Node, bool) { return p.e989() }
-	recRules[291].body = func(p *parser, _ int) (*Node, bool) { return p.e990() }
+	recRules[258].body = func(p *parser, _ int) (*Node, bool) { return p.e958() }
+	recRules[259].body = func(p *parser, _ int) (*Node, bool) { return p.e959() }
+	recRules[260].body = func(p *parser, _ int) (*Node, bool) { return p.e960() }
+	recRules[261].body = func(p *parser, _ int) (*Node, bool) { return p.e961() }
+	recRules[262].body = func(p *parser, _ int) (*Node, bool) { return p.e962() }
+	recRules[263].body = func(p *parser, _ int) (*Node, bool) { return p.e963() }
+	recRules[264].body = func(p *parser, _ int) (*Node, bool) { return p.e964() }
+	recRules[265].body = func(p *parser, _ int) (*Node, bool) { return p.e965() }
+	recRules[266].body = func(p *parser, _ int) (*Node, bool) { return p.e966() }
+	recRules[267].body = func(p *parser, _ int) (*Node, bool) { return p.e967() }
+	recRules[268].body = func(p *parser, _ int) (*Node, bool) { return p.e968() }
+	recRules[269].body = func(p *parser, _ int) (*Node, bool) { return p.e969() }
+	recRules[270].body = func(p *parser, _ int) (*Node, bool) { return p.e970() }
+	recRules[271].body = func(p *parser, _ int) (*Node, bool) { return p.e971() }
+	recRules[272].body = func(p *parser, _ int) (*Node, bool) { return p.e972() }
+	recRules[273].body = func(p *parser, _ int) (*Node, bool) { return p.e973() }
+	recRules[274].body = func(p *parser, _ int) (*Node, bool) { return p.e974() }
+	recRules[275].body = func(p *parser, _ int) (*Node, bool) { return p.e975() }
+	recRules[276].body = func(p *parser, _ int) (*Node, bool) { return p.e976() }
+	recRules[277].body = func(p *parser, _ int) (*Node, bool) { return p.e977() }
+	recRules[278].body = func(p *parser, _ int) (*Node, bool) { return p.e978() }
+	recRules[279].body = func(p *parser, _ int) (*Node, bool) { return p.e979() }
+	recRules[280].body = func(p *parser, _ int) (*Node, bool) { return p.e980() }
+	recRules[281].body = func(p *parser, _ int) (*Node, bool) { return p.e981() }
+	recRules[282].body = func(p *parser, _ int) (*Node, bool) { return p.e982() }
+	recRules[283].body = func(p *parser, _ int) (*Node, bool) { return p.e983() }
+	recRules[284].body = func(p *parser, _ int) (*Node, bool) { return p.e984() }
+	recRules[285].body = func(p *parser, _ int) (*Node, bool) { return p.e985() }
+	recRules[286].body = func(p *parser, _ int) (*Node, bool) { return p.e986() }
+	recRules[287].body = func(p *parser, _ int) (*Node, bool) { return p.e987() }
+	recRules[288].body = func(p *parser, _ int) (*Node, bool) { return p.e988() }
+	recRules[289].body = func(p *parser, _ int) (*Node, bool) { return p.e989() }
+	recRules[290].body = func(p *parser, _ int) (*Node, bool) { return p.e990() }
+	recRules[291].body = func(p *parser, _ int) (*Node, bool) { return p.e991() }
 	recRules[292].body = func(p *parser, _ int) (*Node, bool) { return p.e443() }
 	recRules[293].body = func(p *parser, _ int) (*Node, bool) { return p.e444() }
 	recRules[294].body = func(p *parser, _ int) (*Node, bool) { return p.e445() }
 	recRules[295].body = func(p *parser, _ int) (*Node, bool) { return p.e446() }
-	recRules[296].body = func(p *parser, _ int) (*Node, bool) { return p.e991() }
-	recRules[297].body = func(p *parser, _ int) (*Node, bool) { return p.e992() }
-	recRules[298].body = func(p *parser, _ int) (*Node, bool) { return p.e993() }
-	recRules[299].body = func(p *parser, _ int) (*Node, bool) { return p.e994() }
-	recRules[300].body = func(p *parser, _ int) (*Node, bool) { return p.e995() }
-	recRules[301].body = func(p *parser, _ int) (*Node, bool) { return p.e996() }
+	recRules[296].body = func(p *parser, _ int) (*Node, bool) { return p.e992() }
+	recRules[297].body = func(p *parser, _ int) (*Node, bool) { return p.e993() }
+	recRules[298].body = func(p *parser, _ int) (*Node, bool) { return p.e994() }
+	recRules[299].body = func(p *parser, _ int) (*Node, bool) { return p.e995() }
+	recRules[300].body = func(p *parser, _ int) (*Node, bool) { return p.e996() }
+	recRules[301].body = func(p *parser, _ int) (*Node, bool) { return p.e997() }
 	recRules[302].body = func(p *parser, _ int) (*Node, bool) { return p.e463() }
 	recRules[303].body = func(p *parser, _ int) (*Node, bool) { return p.e465() }
 	recRules[304].body = func(p *parser, _ int) (*Node, bool) { return p.e467() }
-	recRules[305].body = func(p *parser, _ int) (*Node, bool) { return p.e1008() }
-	recRules[306].body = func(p *parser, _ int) (*Node, bool) { return p.e1016() }
-	recRules[307].body = func(p *parser, _ int) (*Node, bool) { return p.e1017() }
-	recRules[308].body = func(p *parser, _ int) (*Node, bool) { return p.e1018() }
-	recRules[309].body = func(p *parser, _ int) (*Node, bool) { return p.e1019() }
-	recRules[310].body = func(p *parser, _ int) (*Node, bool) { return p.e1020() }
-	recRules[311].body = func(p *parser, _ int) (*Node, bool) { return p.e1021() }
-	recRules[312].body = func(p *parser, _ int) (*Node, bool) { return p.e1022() }
-	recRules[313].body = func(p *parser, _ int) (*Node, bool) { return p.e1023() }
+	recRules[305].body = func(p *parser, _ int) (*Node, bool) { return p.e1009() }
+	recRules[306].body = func(p *parser, _ int) (*Node, bool) { return p.e1017() }
+	recRules[307].body = func(p *parser, _ int) (*Node, bool) { return p.e1018() }
+	recRules[308].body = func(p *parser, _ int) (*Node, bool) { return p.e1019() }
+	recRules[309].body = func(p *parser, _ int) (*Node, bool) { return p.e1020() }
+	recRules[310].body = func(p *parser, _ int) (*Node, bool) { return p.e1021() }
+	recRules[311].body = func(p *parser, _ int) (*Node, bool) { return p.e1022() }
+	recRules[312].body = func(p *parser, _ int) (*Node, bool) { return p.e1023() }
+	recRules[313].body = func(p *parser, _ int) (*Node, bool) { return p.e1024() }
 	recRules[314].body = func(p *parser, _ int) (*Node, bool) { return p.e497() }
-	recRules[315].body = func(p *parser, _ int) (*Node, bool) { return p.e1024() }
-	recRules[316].body = func(p *parser, _ int) (*Node, bool) { return p.e1025() }
-	recRules[317].body = func(p *parser, _ int) (*Node, bool) { return p.e1026() }
-	recRules[318].body = func(p *parser, _ int) (*Node, bool) { return p.e1027() }
-	recRules[319].body = func(p *parser, _ int) (*Node, bool) { return p.e1028() }
-	recRules[320].body = func(p *parser, _ int) (*Node, bool) { return p.e1029() }
-	recRules[321].body = func(p *parser, _ int) (*Node, bool) { return p.e1030() }
+	recRules[315].body = func(p *parser, _ int) (*Node, bool) { return p.e1025() }
+	recRules[316].body = func(p *parser, _ int) (*Node, bool) { return p.e1026() }
+	recRules[317].body = func(p *parser, _ int) (*Node, bool) { return p.e1027() }
+	recRules[318].body = func(p *parser, _ int) (*Node, bool) { return p.e1028() }
+	recRules[319].body = func(p *parser, _ int) (*Node, bool) { return p.e1029() }
+	recRules[320].body = func(p *parser, _ int) (*Node, bool) { return p.e1030() }
+	recRules[321].body = func(p *parser, _ int) (*Node, bool) { return p.e1031() }
 	recRules[322].body = func(p *parser, _ int) (*Node, bool) { return p.e505() }
-	recRules[323].body = func(p *parser, _ int) (*Node, bool) { return p.e1031() }
-	recRules[324].body = func(p *parser, _ int) (*Node, bool) { return p.e1032() }
-	recRules[325].body = func(p *parser, _ int) (*Node, bool) { return p.e1033() }
-	recRules[326].body = func(p *parser, _ int) (*Node, bool) { return p.e1034() }
-	recRules[327].body = func(p *parser, _ int) (*Node, bool) { return p.e1035() }
-	recRules[328].body = func(p *parser, _ int) (*Node, bool) { return p.e1034() }
-	recRules[329].body = func(p *parser, _ int) (*Node, bool) { return p.e1036() }
-	recRules[330].body = func(p *parser, _ int) (*Node, bool) { return p.e1037() }
-	recRules[331].body = func(p *parser, _ int) (*Node, bool) { return p.e1038() }
-	recRules[332].body = func(p *parser, _ int) (*Node, bool) { return p.e1039() }
-	recRules[333].body = func(p *parser, _ int) (*Node, bool) { return p.e1040() }
-	recRules[334].body = func(p *parser, _ int) (*Node, bool) { return p.e1041() }
-	recRules[335].body = func(p *parser, _ int) (*Node, bool) { return p.e1042() }
-	recRules[336].body = func(p *parser, _ int) (*Node, bool) { return p.e1043() }
-	recRules[337].body = func(p *parser, _ int) (*Node, bool) { return p.e1044() }
-	recRules[338].body = func(p *parser, _ int) (*Node, bool) { return p.e1045() }
-	recRules[339].body = func(p *parser, _ int) (*Node, bool) { return p.e1046() }
-	recRules[340].body = func(p *parser, _ int) (*Node, bool) { return p.e1047() }
-	recRules[341].body = func(p *parser, _ int) (*Node, bool) { return p.e1048() }
-	recRules[342].body = func(p *parser, _ int) (*Node, bool) { return p.e1049() }
-	recRules[343].body = func(p *parser, _ int) (*Node, bool) { return p.e1050() }
-	recRules[344].body = func(p *parser, _ int) (*Node, bool) { return p.e1051() }
-	recRules[345].body = func(p *parser, _ int) (*Node, bool) { return p.e1052() }
-	recRules[346].body = func(p *parser, _ int) (*Node, bool) { return p.e1053() }
-	recRules[347].body = func(p *parser, _ int) (*Node, bool) { return p.e1054() }
+	recRules[323].body = func(p *parser, _ int) (*Node, bool) { return p.e1032() }
+	recRules[324].body = func(p *parser, _ int) (*Node, bool) { return p.e1033() }
+	recRules[325].body = func(p *parser, _ int) (*Node, bool) { return p.e1034() }
+	recRules[326].body = func(p *parser, _ int) (*Node, bool) { return p.e1035() }
+	recRules[327].body = func(p *parser, _ int) (*Node, bool) { return p.e1036() }
+	recRules[328].body = func(p *parser, _ int) (*Node, bool) { return p.e1035() }
+	recRules[329].body = func(p *parser, _ int) (*Node, bool) { return p.e1037() }
+	recRules[330].body = func(p *parser, _ int) (*Node, bool) { return p.e1038() }
+	recRules[331].body = func(p *parser, _ int) (*Node, bool) { return p.e1039() }
+	recRules[332].body = func(p *parser, _ int) (*Node, bool) { return p.e1040() }
+	recRules[333].body = func(p *parser, _ int) (*Node, bool) { return p.e1041() }
+	recRules[334].body = func(p *parser, _ int) (*Node, bool) { return p.e1042() }
+	recRules[335].body = func(p *parser, _ int) (*Node, bool) { return p.e1043() }
+	recRules[336].body = func(p *parser, _ int) (*Node, bool) { return p.e1044() }
+	recRules[337].body = func(p *parser, _ int) (*Node, bool) { return p.e1045() }
+	recRules[338].body = func(p *parser, _ int) (*Node, bool) { return p.e1046() }
+	recRules[339].body = func(p *parser, _ int) (*Node, bool) { return p.e1047() }
+	recRules[340].body = func(p *parser, _ int) (*Node, bool) { return p.e1048() }
+	recRules[341].body = func(p *parser, _ int) (*Node, bool) { return p.e1049() }
+	recRules[342].body = func(p *parser, _ int) (*Node, bool) { return p.e1050() }
+	recRules[343].body = func(p *parser, _ int) (*Node, bool) { return p.e1051() }
+	recRules[344].body = func(p *parser, _ int) (*Node, bool) { return p.e1052() }
+	recRules[345].body = func(p *parser, _ int) (*Node, bool) { return p.e1053() }
+	recRules[346].body = func(p *parser, _ int) (*Node, bool) { return p.e1054() }
+	recRules[347].body = func(p *parser, _ int) (*Node, bool) { return p.e1055() }
 	recRules[348].body = func(p *parser, _ int) (*Node, bool) { return p.e530() }
-	recRules[349].body = func(p *parser, _ int) (*Node, bool) { return p.e1055() }
-	recRules[350].body = func(p *parser, _ int) (*Node, bool) { return p.e1056() }
-	recRules[351].body = func(p *parser, _ int) (*Node, bool) { return p.e1057() }
+	recRules[349].body = func(p *parser, _ int) (*Node, bool) { return p.e1056() }
+	recRules[350].body = func(p *parser, _ int) (*Node, bool) { return p.e1057() }
+	recRules[351].body = func(p *parser, _ int) (*Node, bool) { return p.e1058() }
 	recRules[352].body = func(p *parser, _ int) (*Node, bool) { return p.e534() }
-	recRules[353].body = func(p *parser, _ int) (*Node, bool) { return p.e1058() }
-	recRules[354].body = func(p *parser, _ int) (*Node, bool) { return p.e1059() }
+	recRules[353].body = func(p *parser, _ int) (*Node, bool) { return p.e1059() }
+	recRules[354].body = func(p *parser, _ int) (*Node, bool) { return p.e1060() }
 	recRules[355].body = func(p *parser, _ int) (*Node, bool) { return p.e537() }
 	recRules[356].body = func(p *parser, _ int) (*Node, bool) { return p.e538() }
 	recRules[357].body = func(p *parser, _ int) (*Node, bool) { return p.e539() }
 	recRules[358].body = func(p *parser, _ int) (*Node, bool) { return p.e540() }
-	recRules[359].body = func(p *parser, _ int) (*Node, bool) { return p.e1060() }
-	recRules[360].body = func(p *parser, _ int) (*Node, bool) { return p.e1061() }
-	recRules[361].body = func(p *parser, _ int) (*Node, bool) { return p.e1062() }
-	recRules[362].body = func(p *parser, _ int) (*Node, bool) { return p.e1063() }
-	recRules[363].body = func(p *parser, _ int) (*Node, bool) { return p.e1064() }
-	recRules[364].body = func(p *parser, _ int) (*Node, bool) { return p.e1065() }
+	recRules[359].body = func(p *parser, _ int) (*Node, bool) { return p.e1061() }
+	recRules[360].body = func(p *parser, _ int) (*Node, bool) { return p.e1062() }
+	recRules[361].body = func(p *parser, _ int) (*Node, bool) { return p.e1063() }
+	recRules[362].body = func(p *parser, _ int) (*Node, bool) { return p.e1064() }
+	recRules[363].body = func(p *parser, _ int) (*Node, bool) { return p.e1065() }
+	recRules[364].body = func(p *parser, _ int) (*Node, bool) { return p.e1066() }
 	recRules[365].body = func(p *parser, _ int) (*Node, bool) { return p.e547() }
-	recRules[366].body = func(p *parser, _ int) (*Node, bool) { return p.e1066() }
+	recRules[366].body = func(p *parser, _ int) (*Node, bool) { return p.e1067() }
 	recRules[367].body = func(p *parser, _ int) (*Node, bool) { return p.e549() }
 	recRules[368].body = func(p *parser, _ int) (*Node, bool) { return p.e550() }
 	recRules[369].body = func(p *parser, _ int) (*Node, bool) { return p.e551() }
 	recRules[370].body = func(p *parser, _ int) (*Node, bool) { return p.e552() }
 	recRules[371].body = func(p *parser, _ int) (*Node, bool) { return p.e553() }
-	recRules[372].body = func(p *parser, _ int) (*Node, bool) { return p.e1067() }
-	recRules[373].body = func(p *parser, _ int) (*Node, bool) { return p.e1068() }
+	recRules[372].body = func(p *parser, _ int) (*Node, bool) { return p.e1068() }
+	recRules[373].body = func(p *parser, _ int) (*Node, bool) { return p.e1069() }
 	recRules[374].body = func(p *parser, _ int) (*Node, bool) { return p.e556() }
 	recRules[375].body = func(p *parser, _ int) (*Node, bool) { return p.e557() }
 	recRules[376].body = func(p *parser, _ int) (*Node, bool) { return p.e558() }
-	recRules[377].body = func(p *parser, _ int) (*Node, bool) { return p.e1069() }
-	recRules[378].body = func(p *parser, _ int) (*Node, bool) { return p.e1070() }
-	recRules[379].body = func(p *parser, _ int) (*Node, bool) { return p.e1071() }
-	recRules[380].body = func(p *parser, _ int) (*Node, bool) { return p.e1072() }
+	recRules[377].body = func(p *parser, _ int) (*Node, bool) { return p.e1070() }
+	recRules[378].body = func(p *parser, _ int) (*Node, bool) { return p.e1071() }
+	recRules[379].body = func(p *parser, _ int) (*Node, bool) { return p.e1072() }
+	recRules[380].body = func(p *parser, _ int) (*Node, bool) { return p.e1073() }
 	recRules[381].body = func(p *parser, _ int) (*Node, bool) { return p.e563() }
-	recRules[382].body = func(p *parser, _ int) (*Node, bool) { return p.e1073() }
-	recRules[383].body = func(p *parser, _ int) (*Node, bool) { return p.e1074() }
+	recRules[382].body = func(p *parser, _ int) (*Node, bool) { return p.e1074() }
+	recRules[383].body = func(p *parser, _ int) (*Node, bool) { return p.e1075() }
 	recRules[384].body = func(p *parser, _ int) (*Node, bool) { return p.e566() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"func\"", "\"const\"", "\"var\"", "\"type\"", "\"(\"", "\")\"", "\".\"", "\"..\"", "\",\"", "\"=\"", "\"[\"", "\"]\"", "\"{\"", "\"|\"", "[|=]", "\"*\"", "[.\\[(]", "\"~\"", "\"<-\"", "\"struct\"", "\"map\"", "[.\\[({]", "\"interface\"", "\"...\"", "[a-zA-Z_\\[*<(\\u0080-\\U0010ffff]", "expected type", "\"chan\"", "\"}\"", "\"\\\"\"", "\"`\"", "\";\"", "\":\"", "\"case\"", "\"default\"", "\"go\"", "\"defer\"", "\"return\"", "\"if\"", "\"select\"", "\"break\"", "\"continue\"", "\"goto\"", "\"fallthrough\"", "\"switch\"", "\":=\"", "\"for\"", "[<+\\-!\\^&~*]", "[a-zA-Z_0-9.\\'\"`(\\[<\\u0080-\\U0010ffff]", "expected operand", "[|&=!<>+\\-\\^*/%]", "\"||\"", "\"&\"", "\"&&\"", "[=!<>]", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "[<\\-]", "\">\"", "[+\\-|\\^]", "\"+\"", "[+=]", "\"-\"", "[\\-=]", "\"^\"", "[*/%<>&]", "\"/\"", "[/*=]", "\"%\"", "\"<<\"", "\">>\"", "\"&^\"", "[&=\\^]", "[+\\-!\\^&~]", "\"!\"", "[=:+\\-*/%&|\\^<>]", "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\"%=\"", "\"&=\"", "\"|=\"", "\"^=\"", "\"<<=\"", "\">>=\"", "\"&^=\"", "[+\\-]", "\"++\"", "\"--\"", "\"\\n\"", "\"/*\"", "[ \\t\\r/]", "[ \\t\\r]", "\"//\"", "[^\\n\\x00\\ufeff�]", "\"�\"", "\"*/\"", "[^\\n]", "\"line \"", "[^:*\\x00\\ufeff�]", "[^:*]", "[^*\\x00\\ufeff�]", "\"0\"", "[1-9]", "[0-9]", "[ \\t\\r\\n/]", "[ \\t\\r\\n]", "\"//line \"", "[^:\\n\\r\\x00\\ufeff�]", "\"\\r\"", "[^:\\n\\r]", "[a-zA-Z_]", "[\\u0080-\\U0010ffff]", "[a-zA-Z0-9_\\u0080-\\U0010ffff]", "[a-zA-Z0-9_]", "\"else\"", "\"import\"", "\"package\"", "\"range\"", "\"'\"", "[xX]", "\"_\"", "[oO]", "[bB]", "[0-7]", "[0-9a-zA-Z_.]", "[0-9a-zA-Z_]", "\"i\"", "[oObB]", "[eE]", "[pP]", "[0-9a-fA-F]", "[01]", "\"\\\\\"", "[\\'\\\\\\n]", "[^\"\\\\\\n\\x00\\ufeff�]", "[^\\x00\\ufeff�]", "[abfnrtv\\\\\\']", "[abfnrtv\\\\\"]", "[0-3]", "\"x\"", "\"u\"", "[dD]", "[89a-fA-F]", "\"U\"", "\"00\"", "\"10\"", "[ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-࢏ࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚ౜-ౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽ೜-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛱ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢄᢇ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃ-ↄⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々-〆〱-〵〻-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋ-Ƛ꟱-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍀𐍂-𐍉𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐥀-𐥙𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻇𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑶰-𑷛𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖺠-𖺸𖺻-𖻓𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𖿲-𖿳𗀀-𘳕𘳿-𘴞𘶀-𘷲𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞛀-𞛞𞛠-𞛢𞛤-𞛥𞛧-𞛭𞛰-𞛴𞛾-𞛿𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫠝𫠠-𬺭𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𳑹]", "[٠-٩۰-۹߀-߉०-९০-৯੦-੯૦-૯୦-୯௦-௯౦-౯೦-೯൦-൯෦-෯๐-๙໐-໙༠-༩၀-၉႐-႙០-៩᠐-᠙᥆-᥏᧐-᧙᪀-᪉᪐-᪙᭐-᭙᮰-᮹᱀-᱉᱐-᱙꘠-꘩꣐-꣙꤀-꤉꧐-꧙꧰-꧹꩐-꩙꯰-꯹０-９𐒠-𐒩𐴰-𐴹𐵀-𐵉𑁦-𑁯𑃰-𑃹𑄶-𑄿𑇐-𑇙𑋰-𑋹𑑐-𑑙𑓐-𑓙𑙐-𑙙𑛀-𑛉𑛐-𑛣𑜰-𑜹𑣠-𑣩𑥐-𑥙𑯰-𑯹𑱐-𑱙𑵐-𑵙𑶠-𑶩𑷠-𑷩𑽐-𑽙𖄰-𖄹𖩠-𖩩𖫀-𖫉𖭐-𖭙𖵰-𖵹𜳰-𜳹𝟎-𝟿𞅀-𞅉𞋰-𞋹𞓰-𞓹𞗱-𞗺𞥐-𞥙🯰-🯹]"}
 	trules = []*trule{
@@ -18691,110 +18871,110 @@ func init() {
 	trules[194].entry = (*tparser).u194
 	trules[195].entry = (*tparser).u195
 	trules[196].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e1512,
+		skip: (*tparser).e1513,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1513, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1514, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1514, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1515, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1515 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_1516 := func() any { c.p.stepWork(); return c.cap(0) }()
-					return tmk_SelectorExpr(c, true, f_1515, f_1516)
+					f_1516 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_1517 := func() any { c.p.stepWork(); return c.cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1516, f_1517)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1517, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1518, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1518 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_1518, nil)
+						f_1519 := func() any { c.p.stepWork(); return (c.lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_1519, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1519, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1520, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1520 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1521 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_1520, f_1521)
+						f_1521 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1522 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1521, f_1522)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1522, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1523, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1523 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1524 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexExpr(c, true, f_1523, f_1524)
+						f_1524 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1525 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexExpr(c, true, f_1524, f_1525)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1525, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1526, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1526 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1527 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexListExpr(c, true, f_1526, f_1527)
+						f_1527 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1528 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1527, f_1528)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1528, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1529, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1529 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1530 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1531 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_SliceExpr(c, true, f_1529, f_1530, f_1531, nil)
+						f_1530 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1531 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1532 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_SliceExpr(c, true, f_1530, f_1531, f_1532, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1532, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1533, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1533 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1534 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1535 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_1536 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_SliceExpr(c, true, f_1533, f_1534, f_1535, f_1536)
+						f_1534 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1535 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1536 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_1537 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_SliceExpr(c, true, f_1534, f_1535, f_1536, f_1537)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1537, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1538, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1538 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_CallExpr(c, true, f_1538, nil, nil)
+						f_1539 := func() any { c.p.stepWork(); return (c.lhs) }()
+						return tmk_CallExpr(c, true, f_1539, nil, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1539, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1540, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1540 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1541 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1542 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_CallExpr(c, true, f_1540, f_1541, f_1542)
+						f_1541 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1542 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1543 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_CallExpr(c, true, f_1541, f_1542, f_1543)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1543, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1544, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1544 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1545 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_CompositeLit(c, true, f_1544, f_1545)
+						f_1545 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1546 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_CompositeLit(c, true, f_1545, f_1546)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}}},
@@ -18813,110 +18993,110 @@ func init() {
 	trules[207].entry = (*tparser).u207
 	trules[208].entry = (*tparser).u208
 	trules[209].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e1512,
+		skip: (*tparser).e1513,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1513, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1514, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1514, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1515, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1546 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_1547 := func() any { c.p.stepWork(); return c.cap(0) }()
-					return tmk_SelectorExpr(c, true, f_1546, f_1547)
+					f_1547 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_1548 := func() any { c.p.stepWork(); return c.cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1547, f_1548)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1517, action: func(c *tctx) any {
-				return func() any {
-					c.p.stepWork()
-					return func() any {
-						f_1548 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_1548, nil)
-					}()
-				}()
-			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1519, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1518, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
 						f_1549 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1550 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_1549, f_1550)
+						return tmk_TypeAssertExpr(c, true, f_1549, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1522, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1520, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1551 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1552 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexExpr(c, true, f_1551, f_1552)
+						f_1550 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1551 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1550, f_1551)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1525, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1523, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1553 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1554 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexListExpr(c, true, f_1553, f_1554)
+						f_1552 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1553 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexExpr(c, true, f_1552, f_1553)
+					}()
+				}()
+			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1526, action: func(c *tctx) any {
+				return func() any {
+					c.p.stepWork()
+					return func() any {
+						f_1554 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1555 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1554, f_1555)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1528, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1529, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1555 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1556 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1557 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_SliceExpr(c, true, f_1555, f_1556, f_1557, nil)
+						f_1556 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1557 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1558 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_SliceExpr(c, true, f_1556, f_1557, f_1558, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1532, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1533, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1558 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1559 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1560 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_1561 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_SliceExpr(c, true, f_1558, f_1559, f_1560, f_1561)
+						f_1559 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1560 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1561 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_1562 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_SliceExpr(c, true, f_1559, f_1560, f_1561, f_1562)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1562, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1563, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1563 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_CallExpr(c, true, f_1563, nil, nil)
+						f_1564 := func() any { c.p.stepWork(); return (c.lhs) }()
+						return tmk_CallExpr(c, true, f_1564, nil, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1564, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1565, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1565 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1566 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1567 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_CallExpr(c, true, f_1565, f_1566, f_1567)
+						f_1566 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1567 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1568 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_CallExpr(c, true, f_1566, f_1567, f_1568)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1543, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1544, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1568 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1569 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_CompositeLit(c, true, f_1568, f_1569)
+						f_1569 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1570 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_CompositeLit(c, true, f_1569, f_1570)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}}}},
@@ -18936,100 +19116,100 @@ func init() {
 	trules[221].entry = (*tparser).u221
 	trules[222].entry = (*tparser).u222
 	trules[223].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e1512,
+		skip: (*tparser).e1513,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1570, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1571, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1514, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1515, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1571 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_1572 := func() any { c.p.stepWork(); return c.cap(0) }()
-					return tmk_SelectorExpr(c, true, f_1571, f_1572)
+					f_1572 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_1573 := func() any { c.p.stepWork(); return c.cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1572, f_1573)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1573, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1574, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1574 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_1574, nil)
+						f_1575 := func() any { c.p.stepWork(); return (c.lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_1575, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1575, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1576, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1576 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1577 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_1576, f_1577)
+						f_1577 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1578 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1577, f_1578)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1522, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1523, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1578 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1579 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexExpr(c, true, f_1578, f_1579)
+						f_1579 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1580 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexExpr(c, true, f_1579, f_1580)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1525, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1526, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1580 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1581 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexListExpr(c, true, f_1580, f_1581)
+						f_1581 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1582 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1581, f_1582)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1582, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1583, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1583 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1584 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1585 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_SliceExpr(c, true, f_1583, f_1584, f_1585, nil)
+						f_1584 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1585 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1586 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_SliceExpr(c, true, f_1584, f_1585, f_1586, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1586, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1587, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1587 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1588 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1589 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_1590 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_SliceExpr(c, true, f_1587, f_1588, f_1589, f_1590)
+						f_1588 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1589 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1590 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_1591 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_SliceExpr(c, true, f_1588, f_1589, f_1590, f_1591)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1591, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1592, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1592 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_CallExpr(c, true, f_1592, nil, nil)
+						f_1593 := func() any { c.p.stepWork(); return (c.lhs) }()
+						return tmk_CallExpr(c, true, f_1593, nil, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1593, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1594, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1594 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1595 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1596 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_CallExpr(c, true, f_1594, f_1595, f_1596)
+						f_1595 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1596 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1597 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_CallExpr(c, true, f_1595, f_1596, f_1597)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}}},
@@ -19039,100 +19219,100 @@ func init() {
 	trules[225].entry = (*tparser).u225
 	trules[226].entry = (*tparser).u226
 	trules[227].operatorsRule = &toperatorsRule{
-		skip: (*tparser).e1512,
+		skip: (*tparser).e1513,
 		operands: []*toperatorsRuleLine{
-			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1570, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1571, action: nil, value: shaper{elems: false, k: 1, mode: 1, tuple: false}},
 		},
 		prefix: []*toperatorsRuleOp{},
-		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1514, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1515, action: func(c *tctx) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1597 := func() any { c.p.stepWork(); return (c.lhs) }()
-					f_1598 := func() any { c.p.stepWork(); return c.cap(0) }()
-					return tmk_SelectorExpr(c, true, f_1597, f_1598)
+					f_1598 := func() any { c.p.stepWork(); return (c.lhs) }()
+					f_1599 := func() any { c.p.stepWork(); return c.cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1598, f_1599)
 				}()
 			}()
 		}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1517, action: func(c *tctx) any {
-				return func() any {
-					c.p.stepWork()
-					return func() any {
-						f_1599 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_1599, nil)
-					}()
-				}()
-			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1575, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1518, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
 						f_1600 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1601 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_1600, f_1601)
+						return tmk_TypeAssertExpr(c, true, f_1600, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1522, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1576, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1602 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1603 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexExpr(c, true, f_1602, f_1603)
+						f_1601 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1602 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1601, f_1602)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1525, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1523, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1604 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1605 := func() any { c.p.stepWork(); return c.cap(0) }()
-						return tmk_IndexListExpr(c, true, f_1604, f_1605)
+						f_1603 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1604 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexExpr(c, true, f_1603, f_1604)
+					}()
+				}()
+			}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1526, action: func(c *tctx) any {
+				return func() any {
+					c.p.stepWork()
+					return func() any {
+						f_1605 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1606 := func() any { c.p.stepWork(); return c.cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1605, f_1606)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1582, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1583, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1606 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1607 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1608 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_SliceExpr(c, true, f_1606, f_1607, f_1608, nil)
+						f_1607 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1608 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1609 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_SliceExpr(c, true, f_1607, f_1608, f_1609, nil)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1586, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1587, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1609 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1610 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1611 := func() any { c.p.stepWork(); return c.cap(1) }()
-						f_1612 := func() any { c.p.stepWork(); return c.cap(2) }()
-						return tmk_SliceExpr(c, true, f_1609, f_1610, f_1611, f_1612)
+						f_1610 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1611 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1612 := func() any { c.p.stepWork(); return c.cap(1) }()
+						f_1613 := func() any { c.p.stepWork(); return c.cap(2) }()
+						return tmk_SliceExpr(c, true, f_1610, f_1611, f_1612, f_1613)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1591, action: func(c *tctx) any {
-				return func() any {
-					c.p.stepWork()
-					return func() any {
-						f_1613 := func() any { c.p.stepWork(); return (c.lhs) }()
-						return tmk_CallExpr(c, true, f_1613, nil, nil)
-					}()
-				}()
-			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1593, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1592, action: func(c *tctx) any {
 				return func() any {
 					c.p.stepWork()
 					return func() any {
 						f_1614 := func() any { c.p.stepWork(); return (c.lhs) }()
-						f_1615 := func() any { c.p.stepWork(); return c.cap(0) }()
-						f_1616 := func() any { c.p.stepWork(); return c.cap(1) }()
-						return tmk_CallExpr(c, true, f_1614, f_1615, f_1616)
+						return tmk_CallExpr(c, true, f_1614, nil, nil)
+					}()
+				}()
+			}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1594, action: func(c *tctx) any {
+				return func() any {
+					c.p.stepWork()
+					return func() any {
+						f_1615 := func() any { c.p.stepWork(); return (c.lhs) }()
+						f_1616 := func() any { c.p.stepWork(); return c.cap(0) }()
+						f_1617 := func() any { c.p.stepWork(); return c.cap(1) }()
+						return tmk_CallExpr(c, true, f_1615, f_1616, f_1617)
 					}()
 				}()
 			}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}}}},
@@ -20432,6 +20612,7 @@ func (p *parser) e16() (*Node, bool) {
 		ok bool
 		x1 mark
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
@@ -71077,6 +71258,7 @@ func (p *parser) e376() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.silent++
 	p.stepWork()
@@ -75279,6 +75461,7 @@ func (p *parser) e435() (*Node, bool) {
 	_, _ = x22, x30
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -75635,6 +75818,7 @@ func (p *parser) e436() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(rules[361], 0); !ok {
@@ -75793,6 +75977,7 @@ func (p *parser) e438() (*Node, bool) {
 		ch   rune
 		size int
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
@@ -78148,6 +78333,7 @@ func (p *parser) e448() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 39) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit447, "'", 128, false); !ok {
@@ -78412,6 +78598,7 @@ func (p *parser) e450() (*Node, bool) {
 		x22  bool
 	)
 	_, _ = x7, x14
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -118014,8 +118201,85 @@ fail:
 	return nil, false
 }
 
-// constDecl (Node body inlined)
+// dotName (value-free body inlined)
 func (p *parser) e678() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v  *Node
+			ok bool
+			x1 int
+			x2 int
+		)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit14, ".", 12, false); !ok {
+			goto fail_ordinary
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		p.silent++
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit15, "..", 13, false); !ok {
+			goto L3_ordinary
+		}
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		goto fail_ordinary
+	L3_ordinary:
+		p.silent--
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		v  *Node
+		ok bool
+		x1 int
+		x2 int
+	)
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit14, ".", 12, false); !ok {
+		goto fail
+	}
+	p.stepWork()
+	x1, x2 = p.pos, len(p.recovered)
+	p.silent++
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46) {
+		p.pos += 2
+	} else if _, ok = p.matchLiteral(lit15, "..", 13, false); !ok {
+		goto L3
+	}
+	p.silent--
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+	goto fail
+L3:
+	p.silent--
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+	v = nil
+	return v, true
+fail:
+	return nil, false
+}
+
+// constDecl (Node body inlined)
+func (p *parser) e679() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118138,7 +118402,7 @@ fail:
 }
 
 // constOne (Node body inlined)
-func (p *parser) e679() (*Node, bool) {
+func (p *parser) e680() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118179,7 +118443,7 @@ fail:
 }
 
 // constGroup (Node body inlined)
-func (p *parser) e681() (*Node, bool) {
+func (p *parser) e682() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118219,7 +118483,7 @@ func (p *parser) e681() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope680))
+			x4 = p.newFrame(len(scope681))
 			p.frame = x4
 
 			x9 = p.pos
@@ -118247,7 +118511,7 @@ func (p *parser) e681() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope680, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope681, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -118312,7 +118576,7 @@ func (p *parser) e681() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope680))
+		x4 = p.newFrame(len(scope681))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -118343,7 +118607,7 @@ func (p *parser) e681() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope680, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope681, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -118369,7 +118633,7 @@ fail:
 }
 
 // constSpec (Node body inlined)
-func (p *parser) e682() (*Node, bool) {
+func (p *parser) e683() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118487,7 +118751,7 @@ fail:
 }
 
 // typeSp (Node body inlined)
-func (p *parser) e683() (*Node, bool) {
+func (p *parser) e684() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118538,7 +118802,7 @@ fail:
 }
 
 // identList (Node body inlined)
-func (p *parser) e685() (*Node, bool) {
+func (p *parser) e686() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118579,7 +118843,7 @@ func (p *parser) e685() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope684))
+			x6 = p.newFrame(len(scope685))
 			p.frame = x6
 
 			x11 = p.pos
@@ -118612,7 +118876,7 @@ func (p *parser) e685() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope684, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope685, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -118671,7 +118935,7 @@ func (p *parser) e685() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope684))
+		x6 = p.newFrame(len(scope685))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -118706,7 +118970,7 @@ func (p *parser) e685() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope684, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope685, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -118726,7 +118990,7 @@ fail:
 }
 
 // valuesSp (Node body inlined)
-func (p *parser) e686() (*Node, bool) {
+func (p *parser) e687() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118830,7 +119094,7 @@ fail:
 }
 
 // varDecl (Node body inlined)
-func (p *parser) e687() (*Node, bool) {
+func (p *parser) e688() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118953,7 +119217,7 @@ fail:
 }
 
 // varOne (Node body inlined)
-func (p *parser) e688() (*Node, bool) {
+func (p *parser) e689() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -118994,7 +119258,7 @@ fail:
 }
 
 // varGroup (Node body inlined)
-func (p *parser) e690() (*Node, bool) {
+func (p *parser) e691() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119034,7 +119298,7 @@ func (p *parser) e690() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope689))
+			x4 = p.newFrame(len(scope690))
 			p.frame = x4
 
 			x9 = p.pos
@@ -119062,7 +119326,7 @@ func (p *parser) e690() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope689, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope690, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -119127,7 +119391,7 @@ func (p *parser) e690() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope689))
+		x4 = p.newFrame(len(scope690))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -119158,7 +119422,7 @@ func (p *parser) e690() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope689, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope690, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -119184,7 +119448,7 @@ fail:
 }
 
 // varSpec (Node body inlined)
-func (p *parser) e691() (*Node, bool) {
+func (p *parser) e692() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119253,7 +119517,7 @@ fail:
 }
 
 // varSpecTyped (Node body inlined)
-func (p *parser) e692() (*Node, bool) {
+func (p *parser) e693() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119360,7 +119624,7 @@ fail:
 }
 
 // varSpecUntyped (Node body inlined)
-func (p *parser) e693() (*Node, bool) {
+func (p *parser) e694() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119482,7 +119746,7 @@ fail:
 }
 
 // typeDecl (Node body inlined)
-func (p *parser) e694() (*Node, bool) {
+func (p *parser) e695() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119605,7 +119869,7 @@ fail:
 }
 
 // typeOne (Node body inlined)
-func (p *parser) e695() (*Node, bool) {
+func (p *parser) e696() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119646,7 +119910,7 @@ fail:
 }
 
 // typeGroup (Node body inlined)
-func (p *parser) e697() (*Node, bool) {
+func (p *parser) e698() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119686,7 +119950,7 @@ func (p *parser) e697() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope696))
+			x4 = p.newFrame(len(scope697))
 			p.frame = x4
 
 			x9 = p.pos
@@ -119714,7 +119978,7 @@ func (p *parser) e697() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope696, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope697, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -119779,7 +120043,7 @@ func (p *parser) e697() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope696))
+		x4 = p.newFrame(len(scope697))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -119810,7 +120074,7 @@ func (p *parser) e697() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope696, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope697, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -119836,7 +120100,7 @@ fail:
 }
 
 // typeSpec (Node body inlined)
-func (p *parser) e698() (*Node, bool) {
+func (p *parser) e699() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -119923,7 +120187,7 @@ fail:
 }
 
 // typeSpecGeneric (Node body inlined)
-func (p *parser) e699() (*Node, bool) {
+func (p *parser) e700() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120057,7 +120321,7 @@ fail:
 }
 
 // typeSpecArray (Node body inlined)
-func (p *parser) e700() (*Node, bool) {
+func (p *parser) e701() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120154,7 +120418,7 @@ fail:
 }
 
 // typeSpecPlain (Node body inlined)
-func (p *parser) e701() (*Node, bool) {
+func (p *parser) e702() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120293,7 +120557,7 @@ fail:
 }
 
 // aliasEq (Node body inlined)
-func (p *parser) e702() (*Node, bool) {
+func (p *parser) e703() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120389,7 +120653,7 @@ fail:
 }
 
 // genericStart (Node body inlined)
-func (p *parser) e703() (*Node, bool) {
+func (p *parser) e704() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120655,7 +120919,7 @@ fail:
 }
 
 // generalStart (Node body inlined)
-func (p *parser) e704() (*Node, bool) {
+func (p *parser) e705() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -120938,7 +121202,7 @@ fail:
 }
 
 // genericParams (Node body inlined)
-func (p *parser) e705() (*Node, bool) {
+func (p *parser) e706() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -121152,7 +121416,7 @@ fail:
 }
 
 // splitParams (Node body inlined)
-func (p *parser) e707() (*Node, bool) {
+func (p *parser) e708() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -121243,7 +121507,7 @@ func (p *parser) e707() (*Node, bool) {
 		for {
 			x14 = p.mark()
 			x12 = p.frame
-			x11 = p.newFrame(len(scope706))
+			x11 = p.newFrame(len(scope707))
 			p.frame = x11
 
 			x16 = p.pos
@@ -121276,7 +121540,7 @@ func (p *parser) e707() (*Node, bool) {
 			v22 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x14.pos)
 			p.frame = x12
-			v24 = p.attachCaptures(v23, scope706, x11, x14.pos, p.pos)
+			v24 = p.attachCaptures(v23, scope707, x11, x14.pos, p.pos)
 			x13++
 			p.kidStack = append(p.kidStack, v24)
 			if p.pos == x14.pos {
@@ -121415,7 +121679,7 @@ L3:
 	for {
 		x14 = p.mark()
 		x12 = p.frame
-		x11 = p.newFrame(len(scope706))
+		x11 = p.newFrame(len(scope707))
 		p.frame = x11
 		p.stepWork()
 		x16 = p.pos
@@ -121450,7 +121714,7 @@ L3:
 		v22 = p.newNode(Node{kind: kindSeq, start: int32(x16), end: int32(p.pos), children: x17, fresh: true})
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x14.pos)
 		p.frame = x12
-		v24 = p.attachCaptures(v23, scope706, x11, x14.pos, p.pos)
+		v24 = p.attachCaptures(v23, scope707, x11, x14.pos, p.pos)
 		x13++
 		p.kidStack = append(p.kidStack, v24)
 		if p.pos == x14.pos {
@@ -121499,7 +121763,7 @@ fail:
 }
 
 // splitType (Node body inlined)
-func (p *parser) e709() (*Node, bool) {
+func (p *parser) e710() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -121543,7 +121807,7 @@ func (p *parser) e709() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope708))
+			x6 = p.newFrame(len(scope709))
 			p.frame = x6
 
 			x11 = p.pos
@@ -121597,7 +121861,7 @@ func (p *parser) e709() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 			p.frame = x7
-			v21 = p.attachCaptures(v20, scope708, x6, x9.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope709, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x9.pos {
@@ -121659,7 +121923,7 @@ func (p *parser) e709() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope708))
+		x6 = p.newFrame(len(scope709))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -121715,7 +121979,7 @@ func (p *parser) e709() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 		p.frame = x7
-		v21 = p.attachCaptures(v20, scope708, x6, x9.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope709, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x9.pos {
@@ -121735,7 +121999,7 @@ fail:
 }
 
 // splitHead (Node body inlined)
-func (p *parser) e710() (*Node, bool) {
+func (p *parser) e711() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -121840,7 +122104,7 @@ fail:
 }
 
 // splitStar (Node body inlined)
-func (p *parser) e711() (*Node, bool) {
+func (p *parser) e712() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -121935,7 +122199,7 @@ fail:
 }
 
 // splitParen (Node body inlined)
-func (p *parser) e712() (*Node, bool) {
+func (p *parser) e713() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -122113,7 +122377,7 @@ fail:
 }
 
 // splitDecision (Node body inlined)
-func (p *parser) e713() (*Node, bool) {
+func (p *parser) e714() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -123178,7 +123442,7 @@ fail:
 }
 
 // splitHeadShape (Node body inlined)
-func (p *parser) e714() (*Node, bool) {
+func (p *parser) e715() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -123577,7 +123841,7 @@ fail:
 }
 
 // splitHeadTE (Node body inlined)
-func (p *parser) e715() (*Node, bool) {
+func (p *parser) e716() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -124040,7 +124304,7 @@ fail:
 }
 
 // unaryTE (Node body inlined)
-func (p *parser) e716() (*Node, bool) {
+func (p *parser) e717() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -124742,7 +125006,7 @@ fail:
 }
 
 // exprTE (Node body inlined)
-func (p *parser) e717() (*Node, bool) {
+func (p *parser) e718() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125027,7 +125291,7 @@ fail:
 }
 
 // termTE (Node body inlined)
-func (p *parser) e718() (*Node, bool) {
+func (p *parser) e719() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125312,7 +125576,7 @@ fail:
 }
 
 // funcDecl (Node body inlined)
-func (p *parser) e719() (*Node, bool) {
+func (p *parser) e720() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125568,7 +125832,7 @@ fail:
 }
 
 // recvSp (value-free body inlined)
-func (p *parser) e720() (*Node, bool) {
+func (p *parser) e721() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125612,7 +125876,7 @@ fail:
 }
 
 // typeParamsSp (value-free body inlined)
-func (p *parser) e721() (*Node, bool) {
+func (p *parser) e722() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125656,7 +125920,7 @@ fail:
 }
 
 // bodySp (value-free body inlined)
-func (p *parser) e722() (*Node, bool) {
+func (p *parser) e723() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125700,7 +125964,7 @@ fail:
 }
 
 // params (Node body inlined)
-func (p *parser) e723() (*Node, bool) {
+func (p *parser) e724() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125795,7 +126059,7 @@ fail:
 }
 
 // paramList (Node body inlined)
-func (p *parser) e724() (*Node, bool) {
+func (p *parser) e725() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125864,7 +126128,7 @@ fail:
 }
 
 // namedParams (Node body inlined)
-func (p *parser) e726() (*Node, bool) {
+func (p *parser) e727() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -125906,7 +126170,7 @@ func (p *parser) e726() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope725))
+			x6 = p.newFrame(len(scope726))
 			p.frame = x6
 
 			x11 = p.pos
@@ -125939,7 +126203,7 @@ func (p *parser) e726() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope725, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope726, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -126019,7 +126283,7 @@ func (p *parser) e726() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope725))
+		x6 = p.newFrame(len(scope726))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -126054,7 +126318,7 @@ func (p *parser) e726() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope725, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope726, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -126097,7 +126361,7 @@ fail:
 }
 
 // paramGroup (Node body inlined)
-func (p *parser) e727() (*Node, bool) {
+func (p *parser) e728() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126261,7 +126525,7 @@ fail:
 }
 
 // variadicGroup (Node body inlined)
-func (p *parser) e728() (*Node, bool) {
+func (p *parser) e729() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126330,7 +126594,7 @@ fail:
 }
 
 // namedGroup (Node body inlined)
-func (p *parser) e729() (*Node, bool) {
+func (p *parser) e730() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126399,7 +126663,7 @@ fail:
 }
 
 // namedParamType (Node body inlined)
-func (p *parser) e730() (*Node, bool) {
+func (p *parser) e731() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126572,7 +126836,7 @@ fail:
 }
 
 // variadicType (Node body inlined)
-func (p *parser) e731() (*Node, bool) {
+func (p *parser) e732() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126635,7 +126899,7 @@ fail:
 }
 
 // unnamedParams (Node body inlined)
-func (p *parser) e733() (*Node, bool) {
+func (p *parser) e734() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -126677,7 +126941,7 @@ func (p *parser) e733() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope732))
+			x6 = p.newFrame(len(scope733))
 			p.frame = x6
 
 			x11 = p.pos
@@ -126710,7 +126974,7 @@ func (p *parser) e733() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope732, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope733, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -126790,7 +127054,7 @@ func (p *parser) e733() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope732))
+		x6 = p.newFrame(len(scope733))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -126825,7 +127089,7 @@ func (p *parser) e733() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope732, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope733, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -126868,7 +127132,7 @@ fail:
 }
 
 // unnamedParam (Node body inlined)
-func (p *parser) e734() (*Node, bool) {
+func (p *parser) e735() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127058,7 +127322,7 @@ fail:
 }
 
 // unnamedType (Node body inlined)
-func (p *parser) e735() (*Node, bool) {
+func (p *parser) e736() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127349,7 +127613,7 @@ fail:
 }
 
 // resultsSp (Node body inlined)
-func (p *parser) e736() (*Node, bool) {
+func (p *parser) e737() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127400,7 +127664,7 @@ fail:
 }
 
 // results (Node body inlined)
-func (p *parser) e737() (*Node, bool) {
+func (p *parser) e738() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127495,7 +127759,7 @@ fail:
 }
 
 // resultType (Node body inlined)
-func (p *parser) e738() (*Node, bool) {
+func (p *parser) e739() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127536,7 +127800,7 @@ fail:
 }
 
 // resultParams (Node body inlined)
-func (p *parser) e739() (*Node, bool) {
+func (p *parser) e740() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127631,7 +127895,7 @@ fail:
 }
 
 // resultList (Node body inlined)
-func (p *parser) e740() (*Node, bool) {
+func (p *parser) e741() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127700,7 +127964,7 @@ fail:
 }
 
 // namedResults (Node body inlined)
-func (p *parser) e742() (*Node, bool) {
+func (p *parser) e743() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127742,7 +128006,7 @@ func (p *parser) e742() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope741))
+			x6 = p.newFrame(len(scope742))
 			p.frame = x6
 
 			x11 = p.pos
@@ -127775,7 +128039,7 @@ func (p *parser) e742() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope741, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope742, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -127855,7 +128119,7 @@ func (p *parser) e742() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope741))
+		x6 = p.newFrame(len(scope742))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -127890,7 +128154,7 @@ func (p *parser) e742() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope741, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope742, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -127933,7 +128197,7 @@ fail:
 }
 
 // unnamedResults (Node body inlined)
-func (p *parser) e744() (*Node, bool) {
+func (p *parser) e745() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -127975,7 +128239,7 @@ func (p *parser) e744() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope743))
+			x6 = p.newFrame(len(scope744))
 			p.frame = x6
 
 			x11 = p.pos
@@ -128008,7 +128272,7 @@ func (p *parser) e744() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope743, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope744, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -128088,7 +128352,7 @@ func (p *parser) e744() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope743))
+		x6 = p.newFrame(len(scope744))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -128123,7 +128387,7 @@ func (p *parser) e744() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope743, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope744, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -128166,7 +128430,7 @@ fail:
 }
 
 // unnamedResult (Node body inlined)
-func (p *parser) e745() (*Node, bool) {
+func (p *parser) e746() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -128207,7 +128471,7 @@ fail:
 }
 
 // typeParams (Node body inlined)
-func (p *parser) e747() (*Node, bool) {
+func (p *parser) e748() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -128259,7 +128523,7 @@ func (p *parser) e747() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope746))
+			x6 = p.newFrame(len(scope747))
 			p.frame = x6
 
 			x11 = p.pos
@@ -128292,7 +128556,7 @@ func (p *parser) e747() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope746, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope747, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -128389,7 +128653,7 @@ func (p *parser) e747() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope746))
+		x6 = p.newFrame(len(scope747))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -128424,7 +128688,7 @@ func (p *parser) e747() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope746, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope747, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -128473,7 +128737,7 @@ fail:
 }
 
 // typeParam (Node body inlined)
-func (p *parser) e748() (*Node, bool) {
+func (p *parser) e749() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -128542,7 +128806,7 @@ fail:
 }
 
 // constraint (Node body inlined)
-func (p *parser) e750() (*Node, bool) {
+func (p *parser) e751() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -128586,7 +128850,7 @@ func (p *parser) e750() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope749))
+			x6 = p.newFrame(len(scope750))
 			p.frame = x6
 
 			x11 = p.pos
@@ -128640,7 +128904,7 @@ func (p *parser) e750() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 			p.frame = x7
-			v21 = p.attachCaptures(v20, scope749, x6, x9.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope750, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x9.pos {
@@ -128702,7 +128966,7 @@ func (p *parser) e750() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope749))
+		x6 = p.newFrame(len(scope750))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -128758,7 +129022,7 @@ func (p *parser) e750() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 		p.frame = x7
-		v21 = p.attachCaptures(v20, scope749, x6, x9.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope750, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x9.pos {
@@ -128778,7 +129042,7 @@ fail:
 }
 
 // constraintFirst (Node body inlined)
-func (p *parser) e751() (*Node, bool) {
+func (p *parser) e752() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -128985,7 +129249,7 @@ fail:
 }
 
 // embeddedTerm (Node body inlined)
-func (p *parser) e752() (*Node, bool) {
+func (p *parser) e753() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129080,7 +129344,7 @@ fail:
 }
 
 // tildeTerm (Node body inlined)
-func (p *parser) e753() (*Node, bool) {
+func (p *parser) e754() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129143,7 +129407,7 @@ fail:
 }
 
 // arrayFieldType (Node body inlined)
-func (p *parser) e754() (*Node, bool) {
+func (p *parser) e755() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129265,7 +129529,7 @@ fail:
 }
 
 // exprSp (Node body inlined)
-func (p *parser) e755() (*Node, bool) {
+func (p *parser) e756() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129316,7 +129580,7 @@ fail:
 }
 
 // identIndex (Node body inlined)
-func (p *parser) e756() (*Node, bool) {
+func (p *parser) e757() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129463,7 +129727,7 @@ fail:
 }
 
 // identIndexList (Node body inlined)
-func (p *parser) e758() (*Node, bool) {
+func (p *parser) e759() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -129528,7 +129792,7 @@ func (p *parser) e758() (*Node, bool) {
 		for {
 			x11 = p.mark()
 			x9 = p.frame
-			x8 = p.newFrame(len(scope757))
+			x8 = p.newFrame(len(scope758))
 			p.frame = x8
 
 			x13 = p.pos
@@ -129561,7 +129825,7 @@ func (p *parser) e758() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 			p.frame = x9
-			v21 = p.attachCaptures(v20, scope757, x8, x11.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope758, x8, x11.pos, p.pos)
 			x10++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x11.pos {
@@ -129676,7 +129940,7 @@ func (p *parser) e758() (*Node, bool) {
 	for {
 		x11 = p.mark()
 		x9 = p.frame
-		x8 = p.newFrame(len(scope757))
+		x8 = p.newFrame(len(scope758))
 		p.frame = x8
 		p.stepWork()
 		x13 = p.pos
@@ -129711,7 +129975,7 @@ func (p *parser) e758() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 		p.frame = x9
-		v21 = p.attachCaptures(v20, scope757, x8, x11.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope758, x8, x11.pos, p.pos)
 		x10++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x11.pos {
@@ -129764,7 +130028,7 @@ fail:
 }
 
 // typ (Node body inlined)
-func (p *parser) e759() (*Node, bool) {
+func (p *parser) e760() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130108,7 +130372,7 @@ fail:
 }
 
 // typeStart (Node body inlined)
-func (p *parser) e760() (*Node, bool) {
+func (p *parser) e761() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130519,7 +130783,7 @@ fail:
 }
 
 // parenType (Node body inlined)
-func (p *parser) e761() (*Node, bool) {
+func (p *parser) e762() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130603,7 +130867,7 @@ fail:
 }
 
 // pointerType (Node body inlined)
-func (p *parser) e762() (*Node, bool) {
+func (p *parser) e763() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130698,7 +130962,7 @@ fail:
 }
 
 // typeName (Node body inlined)
-func (p *parser) e763() (*Node, bool) {
+func (p *parser) e764() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130822,7 +131086,7 @@ fail:
 }
 
 // qualifiedInstance (Node body inlined)
-func (p *parser) e764() (*Node, bool) {
+func (p *parser) e765() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -130891,7 +131155,7 @@ fail:
 }
 
 // typeInstance (Node body inlined)
-func (p *parser) e765() (*Node, bool) {
+func (p *parser) e766() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131038,7 +131302,7 @@ fail:
 }
 
 // typeInstanceList (Node body inlined)
-func (p *parser) e767() (*Node, bool) {
+func (p *parser) e768() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131103,7 +131367,7 @@ func (p *parser) e767() (*Node, bool) {
 		for {
 			x11 = p.mark()
 			x9 = p.frame
-			x8 = p.newFrame(len(scope766))
+			x8 = p.newFrame(len(scope767))
 			p.frame = x8
 
 			x13 = p.pos
@@ -131136,7 +131400,7 @@ func (p *parser) e767() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 			p.frame = x9
-			v21 = p.attachCaptures(v20, scope766, x8, x11.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope767, x8, x11.pos, p.pos)
 			x10++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x11.pos {
@@ -131251,7 +131515,7 @@ func (p *parser) e767() (*Node, bool) {
 	for {
 		x11 = p.mark()
 		x9 = p.frame
-		x8 = p.newFrame(len(scope766))
+		x8 = p.newFrame(len(scope767))
 		p.frame = x8
 		p.stepWork()
 		x13 = p.pos
@@ -131286,7 +131550,7 @@ func (p *parser) e767() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 		p.frame = x9
-		v21 = p.attachCaptures(v20, scope766, x8, x11.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope767, x8, x11.pos, p.pos)
 		x10++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x11.pos {
@@ -131339,7 +131603,7 @@ fail:
 }
 
 // qualifiedIdent (Node body inlined)
-func (p *parser) e768() (*Node, bool) {
+func (p *parser) e769() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131495,7 +131759,7 @@ fail:
 }
 
 // selectorIdent (Node body inlined)
-func (p *parser) e769() (*Node, bool) {
+func (p *parser) e770() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131617,7 +131881,7 @@ fail:
 }
 
 // arrayType (Node body inlined)
-func (p *parser) e770() (*Node, bool) {
+func (p *parser) e771() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131739,7 +132003,7 @@ fail:
 }
 
 // arrayLen (Node body inlined)
-func (p *parser) e771() (*Node, bool) {
+func (p *parser) e772() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131867,7 +132131,7 @@ fail:
 }
 
 // mapType (Node body inlined)
-func (p *parser) e772() (*Node, bool) {
+func (p *parser) e773() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -131995,7 +132259,7 @@ fail:
 }
 
 // chanType (Node body inlined)
-func (p *parser) e773() (*Node, bool) {
+func (p *parser) e774() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132128,7 +132392,7 @@ fail:
 }
 
 // sendChanType (Node body inlined)
-func (p *parser) e774() (*Node, bool) {
+func (p *parser) e775() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132208,7 +132472,7 @@ fail:
 }
 
 // bothChanType (Node body inlined)
-func (p *parser) e775() (*Node, bool) {
+func (p *parser) e776() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132299,7 +132563,7 @@ fail:
 }
 
 // recvChanTypeT (Node body inlined)
-func (p *parser) e776() (*Node, bool) {
+func (p *parser) e777() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132379,7 +132643,7 @@ fail:
 }
 
 // funcType (Node body inlined)
-func (p *parser) e777() (*Node, bool) {
+func (p *parser) e778() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132554,7 +132818,7 @@ fail:
 }
 
 // structType (Node body inlined)
-func (p *parser) e778() (*Node, bool) {
+func (p *parser) e779() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132613,7 +132877,7 @@ fail:
 }
 
 // fieldBlock (Node body inlined)
-func (p *parser) e780() (*Node, bool) {
+func (p *parser) e781() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132653,7 +132917,7 @@ func (p *parser) e780() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope779))
+			x4 = p.newFrame(len(scope780))
 			p.frame = x4
 
 			x9 = p.pos
@@ -132681,7 +132945,7 @@ func (p *parser) e780() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope779, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope780, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -132746,7 +133010,7 @@ func (p *parser) e780() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope779))
+		x4 = p.newFrame(len(scope780))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -132777,7 +133041,7 @@ func (p *parser) e780() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope779, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope780, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -132803,7 +133067,7 @@ fail:
 }
 
 // fieldDecl (Node body inlined)
-func (p *parser) e781() (*Node, bool) {
+func (p *parser) e782() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -132970,7 +133234,7 @@ fail:
 }
 
 // embeddedField (Node body inlined)
-func (p *parser) e782() (*Node, bool) {
+func (p *parser) e783() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133240,7 +133504,7 @@ fail:
 }
 
 // starField (Node body inlined)
-func (p *parser) e783() (*Node, bool) {
+func (p *parser) e784() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133320,7 +133584,7 @@ fail:
 }
 
 // starEmbedded (Node body inlined)
-func (p *parser) e784() (*Node, bool) {
+func (p *parser) e785() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133415,7 +133679,7 @@ fail:
 }
 
 // multiNameField (Node body inlined)
-func (p *parser) e786() (*Node, bool) {
+func (p *parser) e787() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133462,7 +133726,7 @@ func (p *parser) e786() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope785))
+			x6 = p.newFrame(len(scope786))
 			p.frame = x6
 
 			x11 = p.pos
@@ -133495,7 +133759,7 @@ func (p *parser) e786() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope785, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope786, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -133590,7 +133854,7 @@ func (p *parser) e786() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope785))
+		x6 = p.newFrame(len(scope786))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -133625,7 +133889,7 @@ func (p *parser) e786() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope785, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope786, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -133676,7 +133940,7 @@ fail:
 }
 
 // arrayNameField (Node body inlined)
-func (p *parser) e787() (*Node, bool) {
+func (p *parser) e788() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133783,7 +134047,7 @@ fail:
 }
 
 // oneNameField (Node body inlined)
-func (p *parser) e788() (*Node, bool) {
+func (p *parser) e789() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -133922,7 +134186,7 @@ fail:
 }
 
 // instanceField (Node body inlined)
-func (p *parser) e789() (*Node, bool) {
+func (p *parser) e790() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134040,7 +134304,7 @@ fail:
 }
 
 // tagSp (Node body inlined)
-func (p *parser) e790() (*Node, bool) {
+func (p *parser) e791() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134091,7 +134355,7 @@ fail:
 }
 
 // interfaceType (Node body inlined)
-func (p *parser) e791() (*Node, bool) {
+func (p *parser) e792() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134150,7 +134414,7 @@ fail:
 }
 
 // methodBlock (Node body inlined)
-func (p *parser) e793() (*Node, bool) {
+func (p *parser) e794() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134190,7 +134454,7 @@ func (p *parser) e793() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope792))
+			x4 = p.newFrame(len(scope793))
 			p.frame = x4
 
 			x9 = p.pos
@@ -134218,7 +134482,7 @@ func (p *parser) e793() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope792, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope793, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -134283,7 +134547,7 @@ func (p *parser) e793() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope792))
+		x4 = p.newFrame(len(scope793))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -134314,7 +134578,7 @@ func (p *parser) e793() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope792, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope793, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -134340,7 +134604,7 @@ fail:
 }
 
 // interfaceElem (Node body inlined)
-func (p *parser) e794() (*Node, bool) {
+func (p *parser) e795() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134409,7 +134673,7 @@ fail:
 }
 
 // methodSpec (Node body inlined)
-func (p *parser) e795() (*Node, bool) {
+func (p *parser) e796() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134478,7 +134742,7 @@ fail:
 }
 
 // signature (Node body inlined)
-func (p *parser) e796() (*Node, bool) {
+func (p *parser) e797() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134636,7 +134900,7 @@ fail:
 }
 
 // embeddedElem (Node body inlined)
-func (p *parser) e798() (*Node, bool) {
+func (p *parser) e799() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134680,7 +134944,7 @@ func (p *parser) e798() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope797))
+			x6 = p.newFrame(len(scope798))
 			p.frame = x6
 
 			x11 = p.pos
@@ -134734,7 +134998,7 @@ func (p *parser) e798() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 			p.frame = x7
-			v21 = p.attachCaptures(v20, scope797, x6, x9.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope798, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x9.pos {
@@ -134796,7 +135060,7 @@ func (p *parser) e798() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope797))
+		x6 = p.newFrame(len(scope798))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -134852,7 +135116,7 @@ func (p *parser) e798() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9.pos)
 		p.frame = x7
-		v21 = p.attachCaptures(v20, scope797, x6, x9.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope798, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x9.pos {
@@ -134872,7 +135136,7 @@ fail:
 }
 
 // embeddedFirst (Node body inlined)
-func (p *parser) e799() (*Node, bool) {
+func (p *parser) e800() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -134959,7 +135223,7 @@ fail:
 }
 
 // embeddedIndexList (Node body inlined)
-func (p *parser) e801() (*Node, bool) {
+func (p *parser) e802() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -135024,7 +135288,7 @@ func (p *parser) e801() (*Node, bool) {
 		for {
 			x11 = p.mark()
 			x9 = p.frame
-			x8 = p.newFrame(len(scope800))
+			x8 = p.newFrame(len(scope801))
 			p.frame = x8
 
 			x13 = p.pos
@@ -135057,7 +135321,7 @@ func (p *parser) e801() (*Node, bool) {
 			v19 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 			p.frame = x9
-			v21 = p.attachCaptures(v20, scope800, x8, x11.pos, p.pos)
+			v21 = p.attachCaptures(v20, scope801, x8, x11.pos, p.pos)
 			x10++
 			p.kidStack = append(p.kidStack, v21)
 			if p.pos == x11.pos {
@@ -135172,7 +135436,7 @@ func (p *parser) e801() (*Node, bool) {
 	for {
 		x11 = p.mark()
 		x9 = p.frame
-		x8 = p.newFrame(len(scope800))
+		x8 = p.newFrame(len(scope801))
 		p.frame = x8
 		p.stepWork()
 		x13 = p.pos
@@ -135207,7 +135471,7 @@ func (p *parser) e801() (*Node, bool) {
 		v19 = p.newNode(Node{kind: kindSeq, start: int32(x13), end: int32(p.pos), children: x14, fresh: true})
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x11.pos)
 		p.frame = x9
-		v21 = p.attachCaptures(v20, scope800, x8, x11.pos, p.pos)
+		v21 = p.attachCaptures(v20, scope801, x8, x11.pos, p.pos)
 		x10++
 		p.kidStack = append(p.kidStack, v21)
 		if p.pos == x11.pos {
@@ -135260,7 +135524,7 @@ fail:
 }
 
 // block (Node body inlined)
-func (p *parser) e803() (*Node, bool) {
+func (p *parser) e804() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -135300,7 +135564,7 @@ func (p *parser) e803() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope802))
+			x4 = p.newFrame(len(scope803))
 			p.frame = x4
 
 			x9 = p.pos
@@ -135320,7 +135584,7 @@ func (p *parser) e803() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope802, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope803, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -135385,7 +135649,7 @@ func (p *parser) e803() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope802))
+		x4 = p.newFrame(len(scope803))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -135406,7 +135670,7 @@ func (p *parser) e803() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope802, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope803, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -135432,7 +135696,7 @@ fail:
 }
 
 // stmt (Node body inlined)
-func (p *parser) e804() (*Node, bool) {
+func (p *parser) e805() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -135545,7 +135809,7 @@ fail:
 }
 
 // terminatedStmt (Node body inlined)
-func (p *parser) e805() (*Node, bool) {
+func (p *parser) e806() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -135643,7 +135907,7 @@ fail:
 }
 
 // labeledEmpty (Node body inlined)
-func (p *parser) e806() (*Node, bool) {
+func (p *parser) e807() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -135847,7 +136111,7 @@ fail:
 }
 
 // labeledStmt (Node body inlined)
-func (p *parser) e807() (*Node, bool) {
+func (p *parser) e808() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136007,7 +136271,7 @@ fail:
 }
 
 // clauseBody (Node body inlined)
-func (p *parser) e809() (*Node, bool) {
+func (p *parser) e810() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136041,7 +136305,7 @@ func (p *parser) e809() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope808))
+			x4 = p.newFrame(len(scope809))
 			p.frame = x4
 
 			x9 = p.pos
@@ -136061,7 +136325,7 @@ func (p *parser) e809() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope808, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope809, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -136126,7 +136390,7 @@ func (p *parser) e809() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope808))
+		x4 = p.newFrame(len(scope809))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -136147,7 +136411,7 @@ func (p *parser) e809() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope808, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope809, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -136180,7 +136444,7 @@ L21:
 }
 
 // clauseStmt (Node body inlined)
-func (p *parser) e810() (*Node, bool) {
+func (p *parser) e811() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136366,7 +136630,7 @@ fail:
 }
 
 // lastClauseStmt (Node body inlined)
-func (p *parser) e811() (*Node, bool) {
+func (p *parser) e812() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136499,7 +136763,7 @@ fail:
 }
 
 // lastClauseTerminated (Node body inlined)
-func (p *parser) e812() (*Node, bool) {
+func (p *parser) e813() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136621,7 +136885,7 @@ fail:
 }
 
 // clauseEnd (Node body inlined)
-func (p *parser) e813() (*Node, bool) {
+func (p *parser) e814() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -136764,7 +137028,7 @@ fail:
 }
 
 // plainStmt (Node body inlined)
-func (p *parser) e814() (*Node, bool) {
+func (p *parser) e815() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137192,7 +137456,7 @@ fail:
 }
 
 // declStmt (Node body inlined)
-func (p *parser) e815() (*Node, bool) {
+func (p *parser) e816() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137335,7 +137599,7 @@ fail:
 }
 
 // simpleStmt (Node body inlined)
-func (p *parser) e816() (*Node, bool) {
+func (p *parser) e817() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137440,7 +137704,7 @@ fail:
 }
 
 // assignStmt (Node body inlined)
-func (p *parser) e817() (*Node, bool) {
+func (p *parser) e818() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137536,7 +137800,7 @@ fail:
 }
 
 // sendStmt (Node body inlined)
-func (p *parser) e818() (*Node, bool) {
+func (p *parser) e819() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137626,7 +137890,7 @@ fail:
 }
 
 // incDecStmt (Node body inlined)
-func (p *parser) e819() (*Node, bool) {
+func (p *parser) e820() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137695,7 +137959,7 @@ fail:
 }
 
 // exprStmt (Node body inlined)
-func (p *parser) e820() (*Node, bool) {
+func (p *parser) e821() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137736,7 +138000,7 @@ fail:
 }
 
 // hsimpleStmt (Node body inlined)
-func (p *parser) e821() (*Node, bool) {
+func (p *parser) e822() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137841,7 +138105,7 @@ fail:
 }
 
 // hassignStmt (Node body inlined)
-func (p *parser) e822() (*Node, bool) {
+func (p *parser) e823() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -137937,7 +138201,7 @@ fail:
 }
 
 // hsendStmt (Node body inlined)
-func (p *parser) e823() (*Node, bool) {
+func (p *parser) e824() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138027,7 +138291,7 @@ fail:
 }
 
 // hincDecStmt (Node body inlined)
-func (p *parser) e824() (*Node, bool) {
+func (p *parser) e825() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138096,7 +138360,7 @@ fail:
 }
 
 // hexprStmt (Node body inlined)
-func (p *parser) e825() (*Node, bool) {
+func (p *parser) e826() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138137,7 +138401,7 @@ fail:
 }
 
 // goStmt (Node body inlined)
-func (p *parser) e826() (*Node, bool) {
+func (p *parser) e827() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138196,7 +138460,7 @@ fail:
 }
 
 // deferStmt (Node body inlined)
-func (p *parser) e827() (*Node, bool) {
+func (p *parser) e828() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138255,7 +138519,7 @@ fail:
 }
 
 // goCall (Node body inlined)
-func (p *parser) e828() (*Node, bool) {
+func (p *parser) e829() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138324,7 +138588,7 @@ fail:
 }
 
 // goCallEmpty (Node body inlined)
-func (p *parser) e829() (*Node, bool) {
+func (p *parser) e830() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138408,7 +138672,7 @@ fail:
 }
 
 // goCallArgs (Node body inlined)
-func (p *parser) e830() (*Node, bool) {
+func (p *parser) e831() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138593,7 +138857,7 @@ fail:
 }
 
 // dotsWs (Node body inlined)
-func (p *parser) e831() (*Node, bool) {
+func (p *parser) e832() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138656,7 +138920,7 @@ fail:
 }
 
 // returnStmt (Node body inlined)
-func (p *parser) e832() (*Node, bool) {
+func (p *parser) e833() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138726,7 +138990,7 @@ fail:
 }
 
 // returnValues (Node body inlined)
-func (p *parser) e833() (*Node, bool) {
+func (p *parser) e834() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138777,7 +139041,7 @@ fail:
 }
 
 // branchStmt (Node body inlined)
-func (p *parser) e834() (*Node, bool) {
+func (p *parser) e835() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -138938,7 +139202,7 @@ fail:
 }
 
 // breakStmt (Node body inlined)
-func (p *parser) e835() (*Node, bool) {
+func (p *parser) e836() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139008,7 +139272,7 @@ fail:
 }
 
 // continueStmt (Node body inlined)
-func (p *parser) e836() (*Node, bool) {
+func (p *parser) e837() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139078,7 +139342,7 @@ fail:
 }
 
 // gotoStmt (Node body inlined)
-func (p *parser) e837() (*Node, bool) {
+func (p *parser) e838() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139137,7 +139401,7 @@ fail:
 }
 
 // fallthroughStmt (Node body inlined)
-func (p *parser) e838() (*Node, bool) {
+func (p *parser) e839() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139166,7 +139430,7 @@ fail:
 }
 
 // labelSp (Node body inlined)
-func (p *parser) e839() (*Node, bool) {
+func (p *parser) e840() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139217,7 +139481,7 @@ fail:
 }
 
 // ifStmt (Node body inlined)
-func (p *parser) e840() (*Node, bool) {
+func (p *parser) e841() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139444,7 +139708,7 @@ fail:
 }
 
 // hsimpleSemi (Node body inlined)
-func (p *parser) e841() (*Node, bool) {
+func (p *parser) e842() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139513,7 +139777,7 @@ fail:
 }
 
 // elseSp (Node body inlined)
-func (p *parser) e842() (*Node, bool) {
+func (p *parser) e843() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139655,7 +139919,7 @@ fail:
 }
 
 // switchStmt (Node body inlined)
-func (p *parser) e843() (*Node, bool) {
+func (p *parser) e844() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139760,7 +140024,7 @@ fail:
 }
 
 // switchInit (Node body inlined)
-func (p *parser) e844() (*Node, bool) {
+func (p *parser) e845() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139849,7 +140113,7 @@ fail:
 }
 
 // exprSwitchStmt (Node body inlined)
-func (p *parser) e845() (*Node, bool) {
+func (p *parser) e846() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -139993,7 +140257,7 @@ fail:
 }
 
 // typeSwitchStmt (Node body inlined)
-func (p *parser) e846() (*Node, bool) {
+func (p *parser) e847() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140117,7 +140381,7 @@ fail:
 }
 
 // typeSwitchGuard (Node body inlined)
-func (p *parser) e847() (*Node, bool) {
+func (p *parser) e848() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140186,7 +140450,7 @@ fail:
 }
 
 // guardAssign (Node body inlined)
-func (p *parser) e848() (*Node, bool) {
+func (p *parser) e849() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140276,7 +140540,7 @@ fail:
 }
 
 // guardExpr (Node body inlined)
-func (p *parser) e849() (*Node, bool) {
+func (p *parser) e850() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140317,7 +140581,7 @@ fail:
 }
 
 // guardAssert (Node body inlined)
-func (p *parser) e850() (*Node, bool) {
+func (p *parser) e851() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140435,7 +140699,7 @@ fail:
 }
 
 // caseBlock (Node body inlined)
-func (p *parser) e852() (*Node, bool) {
+func (p *parser) e853() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140481,7 +140745,7 @@ func (p *parser) e852() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope851))
+			x4 = p.newFrame(len(scope852))
 			p.frame = x4
 
 			x9 = p.pos
@@ -140523,7 +140787,7 @@ func (p *parser) e852() (*Node, bool) {
 			v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x7.pos)
 			p.frame = x5
-			v23 = p.attachCaptures(v22, scope851, x4, x7.pos, p.pos)
+			v23 = p.attachCaptures(v22, scope852, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v23)
 			if p.pos == x7.pos {
@@ -140594,7 +140858,7 @@ func (p *parser) e852() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope851))
+		x4 = p.newFrame(len(scope852))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -140638,7 +140902,7 @@ func (p *parser) e852() (*Node, bool) {
 		v21 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x7.pos)
 		p.frame = x5
-		v23 = p.attachCaptures(v22, scope851, x4, x7.pos, p.pos)
+		v23 = p.attachCaptures(v22, scope852, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v23)
 		if p.pos == x7.pos {
@@ -140664,7 +140928,7 @@ fail:
 }
 
 // caseClause (Node body inlined)
-func (p *parser) e853() (*Node, bool) {
+func (p *parser) e854() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140769,7 +141033,7 @@ fail:
 }
 
 // caseClauseList (Node body inlined)
-func (p *parser) e854() (*Node, bool) {
+func (p *parser) e855() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -140899,7 +141163,7 @@ fail:
 }
 
 // caseClauseDefault (Node body inlined)
-func (p *parser) e855() (*Node, bool) {
+func (p *parser) e856() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141002,7 +141266,7 @@ fail:
 }
 
 // selectStmt (Node body inlined)
-func (p *parser) e856() (*Node, bool) {
+func (p *parser) e857() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141061,7 +141325,7 @@ fail:
 }
 
 // commBlock (Node body inlined)
-func (p *parser) e858() (*Node, bool) {
+func (p *parser) e859() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141107,7 +141371,7 @@ func (p *parser) e858() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope857))
+			x4 = p.newFrame(len(scope858))
 			p.frame = x4
 
 			x9 = p.pos
@@ -141149,7 +141413,7 @@ func (p *parser) e858() (*Node, bool) {
 			v21 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x7.pos)
 			p.frame = x5
-			v23 = p.attachCaptures(v22, scope857, x4, x7.pos, p.pos)
+			v23 = p.attachCaptures(v22, scope858, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v23)
 			if p.pos == x7.pos {
@@ -141220,7 +141484,7 @@ func (p *parser) e858() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope857))
+		x4 = p.newFrame(len(scope858))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -141264,7 +141528,7 @@ func (p *parser) e858() (*Node, bool) {
 		v21 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x7.pos)
 		p.frame = x5
-		v23 = p.attachCaptures(v22, scope857, x4, x7.pos, p.pos)
+		v23 = p.attachCaptures(v22, scope858, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v23)
 		if p.pos == x7.pos {
@@ -141290,7 +141554,7 @@ fail:
 }
 
 // commClause (Node body inlined)
-func (p *parser) e859() (*Node, bool) {
+func (p *parser) e860() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141395,7 +141659,7 @@ fail:
 }
 
 // commClauseCase (Node body inlined)
-func (p *parser) e860() (*Node, bool) {
+func (p *parser) e861() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141525,7 +141789,7 @@ fail:
 }
 
 // commStmt (Node body inlined)
-func (p *parser) e861() (*Node, bool) {
+func (p *parser) e862() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141612,7 +141876,7 @@ fail:
 }
 
 // commRecv (Node body inlined)
-func (p *parser) e863() (*Node, bool) {
+func (p *parser) e864() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -141663,7 +141927,7 @@ func (p *parser) e863() (*Node, bool) {
 		for x9 = 0; x9 < 1; x9++ {
 			x10 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope862))
+			x6 = p.newFrame(len(scope863))
 			p.frame = x6
 
 			x12 = p.pos
@@ -141696,7 +141960,7 @@ func (p *parser) e863() (*Node, bool) {
 			v18 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 			v19 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v18, x10.pos)
 			p.frame = x7
-			v20 = p.attachCaptures(v19, scope862, x6, x10.pos, p.pos)
+			v20 = p.attachCaptures(v19, scope863, x6, x10.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v20)
 			if p.pos == x10.pos {
@@ -141839,7 +142103,7 @@ func (p *parser) e863() (*Node, bool) {
 	for x9 = 0; x9 < 1; x9++ {
 		x10 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope862))
+		x6 = p.newFrame(len(scope863))
 		p.frame = x6
 		p.stepWork()
 		x12 = p.pos
@@ -141874,7 +142138,7 @@ func (p *parser) e863() (*Node, bool) {
 		v18 = p.newNode(Node{kind: kindSeq, start: int32(x12), end: int32(p.pos), children: x13, fresh: true})
 		v19 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v18, x10.pos)
 		p.frame = x7
-		v20 = p.attachCaptures(v19, scope862, x6, x10.pos, p.pos)
+		v20 = p.attachCaptures(v19, scope863, x6, x10.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v20)
 		if p.pos == x10.pos {
@@ -141971,7 +142235,7 @@ fail:
 }
 
 // forStmt (Node body inlined)
-func (p *parser) e864() (*Node, bool) {
+func (p *parser) e865() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142132,7 +142396,7 @@ fail:
 }
 
 // forInfinite (Node body inlined)
-func (p *parser) e865() (*Node, bool) {
+func (p *parser) e866() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142191,7 +142455,7 @@ fail:
 }
 
 // forCond (Node body inlined)
-func (p *parser) e866() (*Node, bool) {
+func (p *parser) e867() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142277,7 +142541,7 @@ fail:
 }
 
 // forClause (Node body inlined)
-func (p *parser) e867() (*Node, bool) {
+func (p *parser) e868() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142513,7 +142777,7 @@ fail:
 }
 
 // forRange (Node body inlined)
-func (p *parser) e868() (*Node, bool) {
+func (p *parser) e869() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142838,7 +143102,7 @@ fail:
 }
 
 // rangeValue (Node body inlined)
-func (p *parser) e869() (*Node, bool) {
+func (p *parser) e870() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -142910,7 +143174,7 @@ fail:
 }
 
 // expr (Node body inlined)
-func (p *parser) e870() (*Node, bool) {
+func (p *parser) e871() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143030,7 +143294,7 @@ fail:
 }
 
 // exprList (Node body inlined)
-func (p *parser) e872() (*Node, bool) {
+func (p *parser) e873() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143071,7 +143335,7 @@ func (p *parser) e872() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope871))
+			x6 = p.newFrame(len(scope872))
 			p.frame = x6
 
 			x11 = p.pos
@@ -143104,7 +143368,7 @@ func (p *parser) e872() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope871, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope872, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -143163,7 +143427,7 @@ func (p *parser) e872() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope871))
+		x6 = p.newFrame(len(scope872))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -143198,7 +143462,7 @@ func (p *parser) e872() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope871, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope872, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -143218,7 +143482,7 @@ fail:
 }
 
 // orExpr (Node body inlined)
-func (p *parser) e874() (*Node, bool) {
+func (p *parser) e875() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143259,7 +143523,7 @@ func (p *parser) e874() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope873))
+			x6 = p.newFrame(len(scope874))
 			p.frame = x6
 
 			x11 = p.pos
@@ -143291,7 +143555,7 @@ func (p *parser) e874() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope873, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope874, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -143350,7 +143614,7 @@ func (p *parser) e874() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope873))
+		x6 = p.newFrame(len(scope874))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -143384,7 +143648,7 @@ func (p *parser) e874() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope873, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope874, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -143404,7 +143668,7 @@ fail:
 }
 
 // andExpr (Node body inlined)
-func (p *parser) e876() (*Node, bool) {
+func (p *parser) e877() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143445,7 +143709,7 @@ func (p *parser) e876() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope875))
+			x6 = p.newFrame(len(scope876))
 			p.frame = x6
 
 			x11 = p.pos
@@ -143477,7 +143741,7 @@ func (p *parser) e876() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope875, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope876, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -143536,7 +143800,7 @@ func (p *parser) e876() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope875))
+		x6 = p.newFrame(len(scope876))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -143570,7 +143834,7 @@ func (p *parser) e876() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope875, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope876, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -143590,7 +143854,7 @@ fail:
 }
 
 // cmpExpr (Node body inlined)
-func (p *parser) e878() (*Node, bool) {
+func (p *parser) e879() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143631,7 +143895,7 @@ func (p *parser) e878() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope877))
+			x6 = p.newFrame(len(scope878))
 			p.frame = x6
 
 			x11 = p.pos
@@ -143663,7 +143927,7 @@ func (p *parser) e878() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope877, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope878, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -143722,7 +143986,7 @@ func (p *parser) e878() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope877))
+		x6 = p.newFrame(len(scope878))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -143756,7 +144020,7 @@ func (p *parser) e878() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope877, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope878, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -143776,7 +144040,7 @@ fail:
 }
 
 // addExpr (Node body inlined)
-func (p *parser) e880() (*Node, bool) {
+func (p *parser) e881() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -143817,7 +144081,7 @@ func (p *parser) e880() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope879))
+			x6 = p.newFrame(len(scope880))
 			p.frame = x6
 
 			x11 = p.pos
@@ -143849,7 +144113,7 @@ func (p *parser) e880() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope879, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope880, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -143908,7 +144172,7 @@ func (p *parser) e880() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope879))
+		x6 = p.newFrame(len(scope880))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -143942,7 +144206,7 @@ func (p *parser) e880() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope879, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope880, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -143962,7 +144226,7 @@ fail:
 }
 
 // mulExpr (Node body inlined)
-func (p *parser) e882() (*Node, bool) {
+func (p *parser) e883() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144003,7 +144267,7 @@ func (p *parser) e882() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope881))
+			x6 = p.newFrame(len(scope882))
 			p.frame = x6
 
 			x11 = p.pos
@@ -144035,7 +144299,7 @@ func (p *parser) e882() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope881, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope882, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -144094,7 +144358,7 @@ func (p *parser) e882() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope881))
+		x6 = p.newFrame(len(scope882))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -144128,7 +144392,7 @@ func (p *parser) e882() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope881, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope882, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -144148,7 +144412,7 @@ fail:
 }
 
 // unaryExpr (Node body inlined)
-func (p *parser) e883() (*Node, bool) {
+func (p *parser) e884() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144402,7 +144666,7 @@ fail:
 }
 
 // recvChanType (Node body inlined)
-func (p *parser) e884() (*Node, bool) {
+func (p *parser) e885() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144502,7 +144766,7 @@ fail:
 }
 
 // recvExpr (Node body inlined)
-func (p *parser) e885() (*Node, bool) {
+func (p *parser) e886() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144652,7 +144916,7 @@ fail:
 }
 
 // unaryOpExpr (Node body inlined)
-func (p *parser) e886() (*Node, bool) {
+func (p *parser) e887() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144721,7 +144985,7 @@ fail:
 }
 
 // primaryExpr (Node body inlined)
-func (p *parser) e887() (*Node, bool) {
+func (p *parser) e888() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -144861,7 +145125,7 @@ fail:
 }
 
 // primaryOperand (Node body inlined)
-func (p *parser) e888() (*Node, bool) {
+func (p *parser) e889() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145112,7 +145376,7 @@ fail:
 }
 
 // literalOperand (Node body inlined)
-func (p *parser) e889() (*Node, bool) {
+func (p *parser) e890() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145309,7 +145573,7 @@ fail:
 }
 
 // indexList (Node body inlined)
-func (p *parser) e891() (*Node, bool) {
+func (p *parser) e892() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145351,7 +145615,7 @@ func (p *parser) e891() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope890))
+			x6 = p.newFrame(len(scope891))
 			p.frame = x6
 
 			x11 = p.pos
@@ -145384,7 +145648,7 @@ func (p *parser) e891() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope890, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope891, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -145468,7 +145732,7 @@ func (p *parser) e891() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope890))
+		x6 = p.newFrame(len(scope891))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -145503,7 +145767,7 @@ func (p *parser) e891() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope890, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope891, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -145550,7 +145814,7 @@ fail:
 }
 
 // parenExpr (Node body inlined)
-func (p *parser) e892() (*Node, bool) {
+func (p *parser) e893() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145634,7 +145898,7 @@ fail:
 }
 
 // funcLit (Node body inlined)
-func (p *parser) e893() (*Node, bool) {
+func (p *parser) e894() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145703,7 +145967,7 @@ fail:
 }
 
 // litValue (Node body inlined)
-func (p *parser) e894() (*Node, bool) {
+func (p *parser) e895() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145798,7 +146062,7 @@ fail:
 }
 
 // elements (Node body inlined)
-func (p *parser) e896() (*Node, bool) {
+func (p *parser) e897() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -145840,7 +146104,7 @@ func (p *parser) e896() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope895))
+			x6 = p.newFrame(len(scope896))
 			p.frame = x6
 
 			x11 = p.pos
@@ -145873,7 +146137,7 @@ func (p *parser) e896() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope895, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope896, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -145953,7 +146217,7 @@ func (p *parser) e896() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope895))
+		x6 = p.newFrame(len(scope896))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -145988,7 +146252,7 @@ func (p *parser) e896() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope895, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope896, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -146031,7 +146295,7 @@ fail:
 }
 
 // element (Node body inlined)
-func (p *parser) e897() (*Node, bool) {
+func (p *parser) e898() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146100,7 +146364,7 @@ fail:
 }
 
 // keyValue (Node body inlined)
-func (p *parser) e898() (*Node, bool) {
+func (p *parser) e899() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146222,7 +146486,7 @@ fail:
 }
 
 // elementValue (Node body inlined)
-func (p *parser) e899() (*Node, bool) {
+func (p *parser) e900() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146317,7 +146581,7 @@ fail:
 }
 
 // elidedLit (Node body inlined)
-func (p *parser) e900() (*Node, bool) {
+func (p *parser) e901() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146358,7 +146622,7 @@ fail:
 }
 
 // goEnd (Node body inlined)
-func (p *parser) e901() (*Node, bool) {
+func (p *parser) e902() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146501,7 +146765,7 @@ fail:
 }
 
 // hexpr (Node body inlined)
-func (p *parser) e902() (*Node, bool) {
+func (p *parser) e903() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146621,7 +146885,7 @@ fail:
 }
 
 // hexprList (Node body inlined)
-func (p *parser) e904() (*Node, bool) {
+func (p *parser) e905() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146662,7 +146926,7 @@ func (p *parser) e904() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope903))
+			x6 = p.newFrame(len(scope904))
 			p.frame = x6
 
 			x11 = p.pos
@@ -146695,7 +146959,7 @@ func (p *parser) e904() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope903, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope904, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -146754,7 +147018,7 @@ func (p *parser) e904() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope903))
+		x6 = p.newFrame(len(scope904))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -146789,7 +147053,7 @@ func (p *parser) e904() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope903, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope904, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -146809,7 +147073,7 @@ fail:
 }
 
 // horExpr (Node body inlined)
-func (p *parser) e906() (*Node, bool) {
+func (p *parser) e907() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -146850,7 +147114,7 @@ func (p *parser) e906() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope905))
+			x6 = p.newFrame(len(scope906))
 			p.frame = x6
 
 			x11 = p.pos
@@ -146882,7 +147146,7 @@ func (p *parser) e906() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope905, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope906, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -146941,7 +147205,7 @@ func (p *parser) e906() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope905))
+		x6 = p.newFrame(len(scope906))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -146975,7 +147239,7 @@ func (p *parser) e906() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope905, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope906, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -146995,7 +147259,7 @@ fail:
 }
 
 // handExpr (Node body inlined)
-func (p *parser) e908() (*Node, bool) {
+func (p *parser) e909() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -147036,7 +147300,7 @@ func (p *parser) e908() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope907))
+			x6 = p.newFrame(len(scope908))
 			p.frame = x6
 
 			x11 = p.pos
@@ -147068,7 +147332,7 @@ func (p *parser) e908() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope907, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope908, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -147127,7 +147391,7 @@ func (p *parser) e908() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope907))
+		x6 = p.newFrame(len(scope908))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -147161,7 +147425,7 @@ func (p *parser) e908() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope907, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope908, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -147181,7 +147445,7 @@ fail:
 }
 
 // hcmpExpr (Node body inlined)
-func (p *parser) e910() (*Node, bool) {
+func (p *parser) e911() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -147222,7 +147486,7 @@ func (p *parser) e910() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope909))
+			x6 = p.newFrame(len(scope910))
 			p.frame = x6
 
 			x11 = p.pos
@@ -147254,7 +147518,7 @@ func (p *parser) e910() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope909, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope910, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -147313,7 +147577,7 @@ func (p *parser) e910() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope909))
+		x6 = p.newFrame(len(scope910))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -147347,7 +147611,7 @@ func (p *parser) e910() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope909, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope910, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -147367,7 +147631,7 @@ fail:
 }
 
 // haddExpr (Node body inlined)
-func (p *parser) e912() (*Node, bool) {
+func (p *parser) e913() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -147408,7 +147672,7 @@ func (p *parser) e912() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope911))
+			x6 = p.newFrame(len(scope912))
 			p.frame = x6
 
 			x11 = p.pos
@@ -147440,7 +147704,7 @@ func (p *parser) e912() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope911, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope912, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -147499,7 +147763,7 @@ func (p *parser) e912() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope911))
+		x6 = p.newFrame(len(scope912))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -147533,7 +147797,7 @@ func (p *parser) e912() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope911, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope912, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -147553,7 +147817,7 @@ fail:
 }
 
 // hmulExpr (Node body inlined)
-func (p *parser) e914() (*Node, bool) {
+func (p *parser) e915() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -147594,7 +147858,7 @@ func (p *parser) e914() (*Node, bool) {
 		for {
 			x9 = p.mark()
 			x7 = p.frame
-			x6 = p.newFrame(len(scope913))
+			x6 = p.newFrame(len(scope914))
 			p.frame = x6
 
 			x11 = p.pos
@@ -147626,7 +147890,7 @@ func (p *parser) e914() (*Node, bool) {
 			v17 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 			v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 			p.frame = x7
-			v19 = p.attachCaptures(v18, scope913, x6, x9.pos, p.pos)
+			v19 = p.attachCaptures(v18, scope914, x6, x9.pos, p.pos)
 			x8++
 			p.kidStack = append(p.kidStack, v19)
 			if p.pos == x9.pos {
@@ -147685,7 +147949,7 @@ func (p *parser) e914() (*Node, bool) {
 	for {
 		x9 = p.mark()
 		x7 = p.frame
-		x6 = p.newFrame(len(scope913))
+		x6 = p.newFrame(len(scope914))
 		p.frame = x6
 		p.stepWork()
 		x11 = p.pos
@@ -147719,7 +147983,7 @@ func (p *parser) e914() (*Node, bool) {
 		v17 = p.newNode(Node{kind: kindSeq, start: int32(x11), end: int32(p.pos), children: x12, fresh: true})
 		v18 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, x9.pos)
 		p.frame = x7
-		v19 = p.attachCaptures(v18, scope913, x6, x9.pos, p.pos)
+		v19 = p.attachCaptures(v18, scope914, x6, x9.pos, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
 		if p.pos == x9.pos {
@@ -147739,7 +148003,7 @@ fail:
 }
 
 // hunaryExpr (Node body inlined)
-func (p *parser) e915() (*Node, bool) {
+func (p *parser) e916() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -147993,7 +148257,7 @@ fail:
 }
 
 // hrecvExpr (Node body inlined)
-func (p *parser) e916() (*Node, bool) {
+func (p *parser) e917() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -148143,7 +148407,7 @@ fail:
 }
 
 // hunaryOpExpr (Node body inlined)
-func (p *parser) e917() (*Node, bool) {
+func (p *parser) e918() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -148212,7 +148476,7 @@ fail:
 }
 
 // hstarExpr (Node body inlined)
-func (p *parser) e918() (*Node, bool) {
+func (p *parser) e919() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -148307,7 +148571,7 @@ fail:
 }
 
 // hprimaryExpr (Node body inlined)
-func (p *parser) e919() (*Node, bool) {
+func (p *parser) e920() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -148447,7 +148711,7 @@ fail:
 }
 
 // hoperand (Node body inlined)
-func (p *parser) e920() (*Node, bool) {
+func (p *parser) e921() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149009,7 +149273,7 @@ fail:
 }
 
 // compositeLitH (Node body inlined)
-func (p *parser) e921() (*Node, bool) {
+func (p *parser) e922() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149180,7 +149444,7 @@ fail:
 }
 
 // parenCompositeType (Node body inlined)
-func (p *parser) e922() (*Node, bool) {
+func (p *parser) e923() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149419,7 +149683,7 @@ fail:
 }
 
 // binaryOp (Node body inlined)
-func (p *parser) e923() (*Node, bool) {
+func (p *parser) e924() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149610,7 +149874,7 @@ fail:
 }
 
 // semi (Node body inlined)
-func (p *parser) e924() (*Node, bool) {
+func (p *parser) e925() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149785,7 +150049,7 @@ fail:
 }
 
 // stmtTerm (Node body inlined)
-func (p *parser) e925() (*Node, bool) {
+func (p *parser) e926() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149884,7 +150148,7 @@ fail:
 }
 
 // groupTerm (Node body inlined)
-func (p *parser) e926() (*Node, bool) {
+func (p *parser) e927() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -149983,7 +150247,7 @@ fail:
 }
 
 // hsemi (Node body inlined)
-func (p *parser) e927() (*Node, bool) {
+func (p *parser) e928() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -150136,7 +150400,7 @@ fail:
 }
 
 // sp (Node body inlined)
-func (p *parser) e935() (*Node, bool) {
+func (p *parser) e936() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -150519,7 +150783,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x6 = p.mark()
 			x4 = p.frame
-			x3 = p.newFrame(len(scope928))
+			x3 = p.newFrame(len(scope929))
 			p.frame = x3
 
 			x8 = p.pos
@@ -150666,7 +150930,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x52 = p.mark()
 				x50 = p.frame
-				x49 = p.newFrame(len(scope929))
+				x49 = p.newFrame(len(scope930))
 				p.frame = x49
 
 				x54 = p.mark()
@@ -150754,7 +151018,7 @@ func (p *parser) e935() (*Node, bool) {
 			L56_ordinary:
 				v78 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v55, x52.pos)
 				p.frame = x50
-				v79 = p.attachCaptures(v78, scope929, x49, x52.pos, p.pos)
+				v79 = p.attachCaptures(v78, scope930, x49, x52.pos, p.pos)
 				x51++
 				p.kidStack = append(p.kidStack, v79)
 				if p.pos == x52.pos {
@@ -150881,7 +151145,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x117 = p.mark()
 				x115 = p.frame
-				x114 = p.newFrame(len(scope930))
+				x114 = p.newFrame(len(scope931))
 				p.frame = x114
 
 				x119 = p.mark()
@@ -151007,7 +151271,7 @@ func (p *parser) e935() (*Node, bool) {
 			L121_ordinary:
 				v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v120, x117.pos)
 				p.frame = x115
-				v154 = p.attachCaptures(v153, scope930, x114, x117.pos, p.pos)
+				v154 = p.attachCaptures(v153, scope931, x114, x117.pos, p.pos)
 				x116++
 				p.kidStack = append(p.kidStack, v154)
 				if p.pos == x117.pos {
@@ -151053,7 +151317,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x169 = p.mark()
 				x167 = p.frame
-				x166 = p.newFrame(len(scope931))
+				x166 = p.newFrame(len(scope932))
 				p.frame = x166
 
 				x171 = p.pos
@@ -151343,7 +151607,7 @@ func (p *parser) e935() (*Node, bool) {
 				v229 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x171), end: int32(p.pos), children: x172, fresh: true})
 				v230 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v229, x169.pos)
 				p.frame = x167
-				v231 = p.attachCaptures(v230, scope931, x166, x169.pos, p.pos)
+				v231 = p.attachCaptures(v230, scope932, x166, x169.pos, p.pos)
 				x168++
 				p.kidStack = append(p.kidStack, v231)
 				if p.pos == x169.pos {
@@ -151663,7 +151927,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x289 = p.mark()
 				x287 = p.frame
-				x286 = p.newFrame(len(scope932))
+				x286 = p.newFrame(len(scope933))
 				p.frame = x286
 
 				x291 = p.mark()
@@ -151789,7 +152053,7 @@ func (p *parser) e935() (*Node, bool) {
 			L293_ordinary:
 				v325 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v292, x289.pos)
 				p.frame = x287
-				v326 = p.attachCaptures(v325, scope932, x286, x289.pos, p.pos)
+				v326 = p.attachCaptures(v325, scope933, x286, x289.pos, p.pos)
 				x288++
 				p.kidStack = append(p.kidStack, v326)
 				if p.pos == x289.pos {
@@ -151969,7 +152233,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x357 = p.mark()
 				x355 = p.frame
-				x354 = p.newFrame(len(scope933))
+				x354 = p.newFrame(len(scope934))
 				p.frame = x354
 
 				x359 = p.mark()
@@ -152095,7 +152359,7 @@ func (p *parser) e935() (*Node, bool) {
 			L361_ordinary:
 				v393 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v360, x357.pos)
 				p.frame = x355
-				v394 = p.attachCaptures(v393, scope933, x354, x357.pos, p.pos)
+				v394 = p.attachCaptures(v393, scope934, x354, x357.pos, p.pos)
 				x356++
 				p.kidStack = append(p.kidStack, v394)
 				if p.pos == x357.pos {
@@ -152289,7 +152553,7 @@ func (p *parser) e935() (*Node, bool) {
 			for {
 				x427 = p.mark()
 				x425 = p.frame
-				x424 = p.newFrame(len(scope934))
+				x424 = p.newFrame(len(scope935))
 				p.frame = x424
 
 				x429 = p.mark()
@@ -152415,7 +152679,7 @@ func (p *parser) e935() (*Node, bool) {
 			L431_ordinary:
 				v463 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v430, x427.pos)
 				p.frame = x425
-				v464 = p.attachCaptures(v463, scope934, x424, x427.pos, p.pos)
+				v464 = p.attachCaptures(v463, scope935, x424, x427.pos, p.pos)
 				x426++
 				p.kidStack = append(p.kidStack, v464)
 				if p.pos == x427.pos {
@@ -152459,7 +152723,7 @@ func (p *parser) e935() (*Node, bool) {
 			v472 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 			v473 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v472, x6.pos)
 			p.frame = x4
-			v474 = p.attachCaptures(v473, scope928, x3, x6.pos, p.pos)
+			v474 = p.attachCaptures(v473, scope929, x3, x6.pos, p.pos)
 			x5++
 			p.kidStack = append(p.kidStack, v474)
 			if p.pos == x6.pos {
@@ -152856,7 +153120,7 @@ func (p *parser) e935() (*Node, bool) {
 	for {
 		x6 = p.mark()
 		x4 = p.frame
-		x3 = p.newFrame(len(scope928))
+		x3 = p.newFrame(len(scope929))
 		p.frame = x3
 		p.stepWork()
 		x8 = p.pos
@@ -153003,7 +153267,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x52 = p.mark()
 			x50 = p.frame
-			x49 = p.newFrame(len(scope929))
+			x49 = p.newFrame(len(scope930))
 			p.frame = x49
 			p.stepWork()
 			x54 = p.mark()
@@ -153091,7 +153355,7 @@ func (p *parser) e935() (*Node, bool) {
 		L56:
 			v78 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v55, x52.pos)
 			p.frame = x50
-			v79 = p.attachCaptures(v78, scope929, x49, x52.pos, p.pos)
+			v79 = p.attachCaptures(v78, scope930, x49, x52.pos, p.pos)
 			x51++
 			p.kidStack = append(p.kidStack, v79)
 			if p.pos == x52.pos {
@@ -153220,7 +153484,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x117 = p.mark()
 			x115 = p.frame
-			x114 = p.newFrame(len(scope930))
+			x114 = p.newFrame(len(scope931))
 			p.frame = x114
 			p.stepWork()
 			x119 = p.mark()
@@ -153346,7 +153610,7 @@ func (p *parser) e935() (*Node, bool) {
 		L121:
 			v153 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v120, x117.pos)
 			p.frame = x115
-			v154 = p.attachCaptures(v153, scope930, x114, x117.pos, p.pos)
+			v154 = p.attachCaptures(v153, scope931, x114, x117.pos, p.pos)
 			x116++
 			p.kidStack = append(p.kidStack, v154)
 			if p.pos == x117.pos {
@@ -153392,7 +153656,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x169 = p.mark()
 			x167 = p.frame
-			x166 = p.newFrame(len(scope931))
+			x166 = p.newFrame(len(scope932))
 			p.frame = x166
 			p.stepWork()
 			x171 = p.pos
@@ -153685,7 +153949,7 @@ func (p *parser) e935() (*Node, bool) {
 			v229 = p.newNode(Node{kind: kindSeq, start: int32(x171), end: int32(p.pos), children: x172, fresh: true})
 			v230 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v229, x169.pos)
 			p.frame = x167
-			v231 = p.attachCaptures(v230, scope931, x166, x169.pos, p.pos)
+			v231 = p.attachCaptures(v230, scope932, x166, x169.pos, p.pos)
 			x168++
 			p.kidStack = append(p.kidStack, v231)
 			if p.pos == x169.pos {
@@ -154008,7 +154272,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x289 = p.mark()
 			x287 = p.frame
-			x286 = p.newFrame(len(scope932))
+			x286 = p.newFrame(len(scope933))
 			p.frame = x286
 			p.stepWork()
 			x291 = p.mark()
@@ -154134,7 +154398,7 @@ func (p *parser) e935() (*Node, bool) {
 		L293:
 			v325 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v292, x289.pos)
 			p.frame = x287
-			v326 = p.attachCaptures(v325, scope932, x286, x289.pos, p.pos)
+			v326 = p.attachCaptures(v325, scope933, x286, x289.pos, p.pos)
 			x288++
 			p.kidStack = append(p.kidStack, v326)
 			if p.pos == x289.pos {
@@ -154315,7 +154579,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x357 = p.mark()
 			x355 = p.frame
-			x354 = p.newFrame(len(scope933))
+			x354 = p.newFrame(len(scope934))
 			p.frame = x354
 			p.stepWork()
 			x359 = p.mark()
@@ -154441,7 +154705,7 @@ func (p *parser) e935() (*Node, bool) {
 		L361:
 			v393 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v360, x357.pos)
 			p.frame = x355
-			v394 = p.attachCaptures(v393, scope933, x354, x357.pos, p.pos)
+			v394 = p.attachCaptures(v393, scope934, x354, x357.pos, p.pos)
 			x356++
 			p.kidStack = append(p.kidStack, v394)
 			if p.pos == x357.pos {
@@ -154636,7 +154900,7 @@ func (p *parser) e935() (*Node, bool) {
 		for {
 			x427 = p.mark()
 			x425 = p.frame
-			x424 = p.newFrame(len(scope934))
+			x424 = p.newFrame(len(scope935))
 			p.frame = x424
 			p.stepWork()
 			x429 = p.mark()
@@ -154762,7 +155026,7 @@ func (p *parser) e935() (*Node, bool) {
 		L431:
 			v463 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v430, x427.pos)
 			p.frame = x425
-			v464 = p.attachCaptures(v463, scope934, x424, x427.pos, p.pos)
+			v464 = p.attachCaptures(v463, scope935, x424, x427.pos, p.pos)
 			x426++
 			p.kidStack = append(p.kidStack, v464)
 			if p.pos == x427.pos {
@@ -154806,7 +155070,7 @@ func (p *parser) e935() (*Node, bool) {
 		v472 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v473 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v472, x6.pos)
 		p.frame = x4
-		v474 = p.attachCaptures(v473, scope928, x3, x6.pos, p.pos)
+		v474 = p.attachCaptures(v473, scope929, x3, x6.pos, p.pos)
 		x5++
 		p.kidStack = append(p.kidStack, v474)
 		if p.pos == x6.pos {
@@ -154823,7 +155087,7 @@ func (p *parser) e935() (*Node, bool) {
 }
 
 // ws (Node body inlined)
-func (p *parser) e947() (*Node, bool) {
+func (p *parser) e948() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -155480,7 +155744,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x6 = p.mark()
 			x4 = p.frame
-			x3 = p.newFrame(len(scope936))
+			x3 = p.newFrame(len(scope937))
 			p.frame = x3
 
 			x8 = p.pos
@@ -155631,7 +155895,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x57 = p.mark()
 				x55 = p.frame
-				x54 = p.newFrame(len(scope937))
+				x54 = p.newFrame(len(scope938))
 				p.frame = x54
 
 				x59 = p.mark()
@@ -155783,7 +156047,7 @@ func (p *parser) e947() (*Node, bool) {
 			L61_ordinary:
 				v100 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v60, x57.pos)
 				p.frame = x55
-				v101 = p.attachCaptures(v100, scope937, x54, x57.pos, p.pos)
+				v101 = p.attachCaptures(v100, scope938, x54, x57.pos, p.pos)
 				x56++
 				p.kidStack = append(p.kidStack, v101)
 				if p.pos == x57.pos {
@@ -155872,7 +156136,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x129 = p.mark()
 				x127 = p.frame
-				x126 = p.newFrame(len(scope938))
+				x126 = p.newFrame(len(scope939))
 				p.frame = x126
 
 				x131 = p.pos
@@ -156225,7 +156489,7 @@ func (p *parser) e947() (*Node, bool) {
 				v206 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 				v207 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v206, x129.pos)
 				p.frame = x127
-				v208 = p.attachCaptures(v207, scope938, x126, x129.pos, p.pos)
+				v208 = p.attachCaptures(v207, scope939, x126, x129.pos, p.pos)
 				x128++
 				p.kidStack = append(p.kidStack, v208)
 				if p.pos == x129.pos {
@@ -156545,7 +156809,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x266 = p.mark()
 				x264 = p.frame
-				x263 = p.newFrame(len(scope939))
+				x263 = p.newFrame(len(scope940))
 				p.frame = x263
 
 				x268 = p.mark()
@@ -156697,7 +156961,7 @@ func (p *parser) e947() (*Node, bool) {
 			L270_ordinary:
 				v309 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v269, x266.pos)
 				p.frame = x264
-				v310 = p.attachCaptures(v309, scope939, x263, x266.pos, p.pos)
+				v310 = p.attachCaptures(v309, scope940, x263, x266.pos, p.pos)
 				x265++
 				p.kidStack = append(p.kidStack, v310)
 				if p.pos == x266.pos {
@@ -156920,7 +157184,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x354 = p.mark()
 				x352 = p.frame
-				x351 = p.newFrame(len(scope940))
+				x351 = p.newFrame(len(scope941))
 				p.frame = x351
 
 				x356 = p.mark()
@@ -157072,7 +157336,7 @@ func (p *parser) e947() (*Node, bool) {
 			L358_ordinary:
 				v397 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v357, x354.pos)
 				p.frame = x352
-				v398 = p.attachCaptures(v397, scope940, x351, x354.pos, p.pos)
+				v398 = p.attachCaptures(v397, scope941, x351, x354.pos, p.pos)
 				x353++
 				p.kidStack = append(p.kidStack, v398)
 				if p.pos == x354.pos {
@@ -157322,7 +157586,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x446 = p.mark()
 				x444 = p.frame
-				x443 = p.newFrame(len(scope941))
+				x443 = p.newFrame(len(scope942))
 				p.frame = x443
 
 				x448 = p.mark()
@@ -157410,7 +157674,7 @@ func (p *parser) e947() (*Node, bool) {
 			L450_ordinary:
 				v472 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v449, x446.pos)
 				p.frame = x444
-				v473 = p.attachCaptures(v472, scope941, x443, x446.pos, p.pos)
+				v473 = p.attachCaptures(v472, scope942, x443, x446.pos, p.pos)
 				x445++
 				p.kidStack = append(p.kidStack, v473)
 				if p.pos == x446.pos {
@@ -157479,7 +157743,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x505 = p.mark()
 				x503 = p.frame
-				x502 = p.newFrame(len(scope942))
+				x502 = p.newFrame(len(scope943))
 				p.frame = x502
 
 				x507 = p.mark()
@@ -157605,7 +157869,7 @@ func (p *parser) e947() (*Node, bool) {
 			L509_ordinary:
 				v541 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v508, x505.pos)
 				p.frame = x503
-				v542 = p.attachCaptures(v541, scope942, x502, x505.pos, p.pos)
+				v542 = p.attachCaptures(v541, scope943, x502, x505.pos, p.pos)
 				x504++
 				p.kidStack = append(p.kidStack, v542)
 				if p.pos == x505.pos {
@@ -157651,7 +157915,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x557 = p.mark()
 				x555 = p.frame
-				x554 = p.newFrame(len(scope943))
+				x554 = p.newFrame(len(scope944))
 				p.frame = x554
 
 				x559 = p.pos
@@ -157941,7 +158205,7 @@ func (p *parser) e947() (*Node, bool) {
 				v617 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x559), end: int32(p.pos), children: x560, fresh: true})
 				v618 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v617, x557.pos)
 				p.frame = x555
-				v619 = p.attachCaptures(v618, scope943, x554, x557.pos, p.pos)
+				v619 = p.attachCaptures(v618, scope944, x554, x557.pos, p.pos)
 				x556++
 				p.kidStack = append(p.kidStack, v619)
 				if p.pos == x557.pos {
@@ -158261,7 +158525,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x677 = p.mark()
 				x675 = p.frame
-				x674 = p.newFrame(len(scope944))
+				x674 = p.newFrame(len(scope945))
 				p.frame = x674
 
 				x679 = p.mark()
@@ -158387,7 +158651,7 @@ func (p *parser) e947() (*Node, bool) {
 			L681_ordinary:
 				v713 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v680, x677.pos)
 				p.frame = x675
-				v714 = p.attachCaptures(v713, scope944, x674, x677.pos, p.pos)
+				v714 = p.attachCaptures(v713, scope945, x674, x677.pos, p.pos)
 				x676++
 				p.kidStack = append(p.kidStack, v714)
 				if p.pos == x677.pos {
@@ -158567,7 +158831,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x745 = p.mark()
 				x743 = p.frame
-				x742 = p.newFrame(len(scope945))
+				x742 = p.newFrame(len(scope946))
 				p.frame = x742
 
 				x747 = p.mark()
@@ -158693,7 +158957,7 @@ func (p *parser) e947() (*Node, bool) {
 			L749_ordinary:
 				v781 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v748, x745.pos)
 				p.frame = x743
-				v782 = p.attachCaptures(v781, scope945, x742, x745.pos, p.pos)
+				v782 = p.attachCaptures(v781, scope946, x742, x745.pos, p.pos)
 				x744++
 				p.kidStack = append(p.kidStack, v782)
 				if p.pos == x745.pos {
@@ -158887,7 +159151,7 @@ func (p *parser) e947() (*Node, bool) {
 			for {
 				x815 = p.mark()
 				x813 = p.frame
-				x812 = p.newFrame(len(scope946))
+				x812 = p.newFrame(len(scope947))
 				p.frame = x812
 
 				x817 = p.mark()
@@ -159013,7 +159277,7 @@ func (p *parser) e947() (*Node, bool) {
 			L819_ordinary:
 				v851 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v818, x815.pos)
 				p.frame = x813
-				v852 = p.attachCaptures(v851, scope946, x812, x815.pos, p.pos)
+				v852 = p.attachCaptures(v851, scope947, x812, x815.pos, p.pos)
 				x814++
 				p.kidStack = append(p.kidStack, v852)
 				if p.pos == x815.pos {
@@ -159058,7 +159322,7 @@ func (p *parser) e947() (*Node, bool) {
 			v860 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 			v861 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v860, x6.pos)
 			p.frame = x4
-			v862 = p.attachCaptures(v861, scope936, x3, x6.pos, p.pos)
+			v862 = p.attachCaptures(v861, scope937, x3, x6.pos, p.pos)
 			x5++
 			p.kidStack = append(p.kidStack, v862)
 			if p.pos == x6.pos {
@@ -159729,7 +159993,7 @@ func (p *parser) e947() (*Node, bool) {
 	for {
 		x6 = p.mark()
 		x4 = p.frame
-		x3 = p.newFrame(len(scope936))
+		x3 = p.newFrame(len(scope937))
 		p.frame = x3
 		p.stepWork()
 		x8 = p.pos
@@ -159880,7 +160144,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x57 = p.mark()
 			x55 = p.frame
-			x54 = p.newFrame(len(scope937))
+			x54 = p.newFrame(len(scope938))
 			p.frame = x54
 			p.stepWork()
 			x59 = p.mark()
@@ -160032,7 +160296,7 @@ func (p *parser) e947() (*Node, bool) {
 		L61:
 			v100 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v60, x57.pos)
 			p.frame = x55
-			v101 = p.attachCaptures(v100, scope937, x54, x57.pos, p.pos)
+			v101 = p.attachCaptures(v100, scope938, x54, x57.pos, p.pos)
 			x56++
 			p.kidStack = append(p.kidStack, v101)
 			if p.pos == x57.pos {
@@ -160121,7 +160385,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x129 = p.mark()
 			x127 = p.frame
-			x126 = p.newFrame(len(scope938))
+			x126 = p.newFrame(len(scope939))
 			p.frame = x126
 			p.stepWork()
 			x131 = p.pos
@@ -160477,7 +160741,7 @@ func (p *parser) e947() (*Node, bool) {
 			v206 = p.newNode(Node{kind: kindSeq, start: int32(x131), end: int32(p.pos), children: x132, fresh: true})
 			v207 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v206, x129.pos)
 			p.frame = x127
-			v208 = p.attachCaptures(v207, scope938, x126, x129.pos, p.pos)
+			v208 = p.attachCaptures(v207, scope939, x126, x129.pos, p.pos)
 			x128++
 			p.kidStack = append(p.kidStack, v208)
 			if p.pos == x129.pos {
@@ -160800,7 +161064,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x266 = p.mark()
 			x264 = p.frame
-			x263 = p.newFrame(len(scope939))
+			x263 = p.newFrame(len(scope940))
 			p.frame = x263
 			p.stepWork()
 			x268 = p.mark()
@@ -160952,7 +161216,7 @@ func (p *parser) e947() (*Node, bool) {
 		L270:
 			v309 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v269, x266.pos)
 			p.frame = x264
-			v310 = p.attachCaptures(v309, scope939, x263, x266.pos, p.pos)
+			v310 = p.attachCaptures(v309, scope940, x263, x266.pos, p.pos)
 			x265++
 			p.kidStack = append(p.kidStack, v310)
 			if p.pos == x266.pos {
@@ -161176,7 +161440,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x354 = p.mark()
 			x352 = p.frame
-			x351 = p.newFrame(len(scope940))
+			x351 = p.newFrame(len(scope941))
 			p.frame = x351
 			p.stepWork()
 			x356 = p.mark()
@@ -161328,7 +161592,7 @@ func (p *parser) e947() (*Node, bool) {
 		L358:
 			v397 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v357, x354.pos)
 			p.frame = x352
-			v398 = p.attachCaptures(v397, scope940, x351, x354.pos, p.pos)
+			v398 = p.attachCaptures(v397, scope941, x351, x354.pos, p.pos)
 			x353++
 			p.kidStack = append(p.kidStack, v398)
 			if p.pos == x354.pos {
@@ -161580,7 +161844,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x446 = p.mark()
 			x444 = p.frame
-			x443 = p.newFrame(len(scope941))
+			x443 = p.newFrame(len(scope942))
 			p.frame = x443
 			p.stepWork()
 			x448 = p.mark()
@@ -161668,7 +161932,7 @@ func (p *parser) e947() (*Node, bool) {
 		L450:
 			v472 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v449, x446.pos)
 			p.frame = x444
-			v473 = p.attachCaptures(v472, scope941, x443, x446.pos, p.pos)
+			v473 = p.attachCaptures(v472, scope942, x443, x446.pos, p.pos)
 			x445++
 			p.kidStack = append(p.kidStack, v473)
 			if p.pos == x446.pos {
@@ -161737,7 +162001,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x505 = p.mark()
 			x503 = p.frame
-			x502 = p.newFrame(len(scope942))
+			x502 = p.newFrame(len(scope943))
 			p.frame = x502
 			p.stepWork()
 			x507 = p.mark()
@@ -161863,7 +162127,7 @@ func (p *parser) e947() (*Node, bool) {
 		L509:
 			v541 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v508, x505.pos)
 			p.frame = x503
-			v542 = p.attachCaptures(v541, scope942, x502, x505.pos, p.pos)
+			v542 = p.attachCaptures(v541, scope943, x502, x505.pos, p.pos)
 			x504++
 			p.kidStack = append(p.kidStack, v542)
 			if p.pos == x505.pos {
@@ -161909,7 +162173,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x557 = p.mark()
 			x555 = p.frame
-			x554 = p.newFrame(len(scope943))
+			x554 = p.newFrame(len(scope944))
 			p.frame = x554
 			p.stepWork()
 			x559 = p.pos
@@ -162202,7 +162466,7 @@ func (p *parser) e947() (*Node, bool) {
 			v617 = p.newNode(Node{kind: kindSeq, start: int32(x559), end: int32(p.pos), children: x560, fresh: true})
 			v618 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v617, x557.pos)
 			p.frame = x555
-			v619 = p.attachCaptures(v618, scope943, x554, x557.pos, p.pos)
+			v619 = p.attachCaptures(v618, scope944, x554, x557.pos, p.pos)
 			x556++
 			p.kidStack = append(p.kidStack, v619)
 			if p.pos == x557.pos {
@@ -162525,7 +162789,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x677 = p.mark()
 			x675 = p.frame
-			x674 = p.newFrame(len(scope944))
+			x674 = p.newFrame(len(scope945))
 			p.frame = x674
 			p.stepWork()
 			x679 = p.mark()
@@ -162651,7 +162915,7 @@ func (p *parser) e947() (*Node, bool) {
 		L681:
 			v713 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v680, x677.pos)
 			p.frame = x675
-			v714 = p.attachCaptures(v713, scope944, x674, x677.pos, p.pos)
+			v714 = p.attachCaptures(v713, scope945, x674, x677.pos, p.pos)
 			x676++
 			p.kidStack = append(p.kidStack, v714)
 			if p.pos == x677.pos {
@@ -162832,7 +163096,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x745 = p.mark()
 			x743 = p.frame
-			x742 = p.newFrame(len(scope945))
+			x742 = p.newFrame(len(scope946))
 			p.frame = x742
 			p.stepWork()
 			x747 = p.mark()
@@ -162958,7 +163222,7 @@ func (p *parser) e947() (*Node, bool) {
 		L749:
 			v781 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v748, x745.pos)
 			p.frame = x743
-			v782 = p.attachCaptures(v781, scope945, x742, x745.pos, p.pos)
+			v782 = p.attachCaptures(v781, scope946, x742, x745.pos, p.pos)
 			x744++
 			p.kidStack = append(p.kidStack, v782)
 			if p.pos == x745.pos {
@@ -163153,7 +163417,7 @@ func (p *parser) e947() (*Node, bool) {
 		for {
 			x815 = p.mark()
 			x813 = p.frame
-			x812 = p.newFrame(len(scope946))
+			x812 = p.newFrame(len(scope947))
 			p.frame = x812
 			p.stepWork()
 			x817 = p.mark()
@@ -163279,7 +163543,7 @@ func (p *parser) e947() (*Node, bool) {
 		L819:
 			v851 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v818, x815.pos)
 			p.frame = x813
-			v852 = p.attachCaptures(v851, scope946, x812, x815.pos, p.pos)
+			v852 = p.attachCaptures(v851, scope947, x812, x815.pos, p.pos)
 			x814++
 			p.kidStack = append(p.kidStack, v852)
 			if p.pos == x815.pos {
@@ -163324,7 +163588,7 @@ func (p *parser) e947() (*Node, bool) {
 		v860 = p.newNode(Node{kind: kindSeq, start: int32(x8), end: int32(p.pos), children: x9, fresh: true})
 		v861 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v860, x6.pos)
 		p.frame = x4
-		v862 = p.attachCaptures(v861, scope936, x3, x6.pos, p.pos)
+		v862 = p.attachCaptures(v861, scope937, x3, x6.pos, p.pos)
 		x5++
 		p.kidStack = append(p.kidStack, v862)
 		if p.pos == x6.pos {
@@ -163341,7 +163605,7 @@ func (p *parser) e947() (*Node, bool) {
 }
 
 // blockComment (Node body inlined)
-func (p *parser) e948() (*Node, bool) {
+func (p *parser) e949() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -163582,7 +163846,7 @@ fail:
 }
 
 // blockText (Node body inlined)
-func (p *parser) e949() (*Node, bool) {
+func (p *parser) e950() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -163891,7 +164155,7 @@ func (p *parser) e949() (*Node, bool) {
 }
 
 // dirBlock (Node body inlined)
-func (p *parser) e950() (*Node, bool) {
+func (p *parser) e951() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -164385,7 +164649,7 @@ fail:
 }
 
 // dirCharBlock (Node body inlined)
-func (p *parser) e951() (*Node, bool) {
+func (p *parser) e952() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -164606,7 +164870,7 @@ fail:
 }
 
 // dirSegBlock (Node body inlined)
-func (p *parser) e952() (*Node, bool) {
+func (p *parser) e953() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -164915,7 +165179,7 @@ func (p *parser) e952() (*Node, bool) {
 }
 
 // dirMidBlock (Node body inlined)
-func (p *parser) e953() (*Node, bool) {
+func (p *parser) e954() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -165125,7 +165389,7 @@ fail:
 }
 
 // ident (Node body inlined)
-func (p *parser) e954() (*Node, bool) {
+func (p *parser) e955() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -165165,6 +165429,7 @@ func (p *parser) e954() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.silent++
 	p.stepWork()
@@ -165191,7 +165456,7 @@ fail:
 }
 
 // idStart (Node body inlined)
-func (p *parser) e955() (*Node, bool) {
+func (p *parser) e956() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -165380,7 +165645,7 @@ fail:
 }
 
 // idRest (Node body inlined)
-func (p *parser) e956() (*Node, bool) {
+func (p *parser) e957() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -165791,7 +166056,7 @@ func (p *parser) e956() (*Node, bool) {
 }
 
 // keyword (Node body inlined)
-func (p *parser) e957() (*Node, bool) {
+func (p *parser) e958() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -166778,7 +167043,7 @@ fail:
 }
 
 // kw_break (Node body inlined)
-func (p *parser) e958() (*Node, bool) {
+func (p *parser) e959() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -166859,7 +167124,7 @@ fail:
 }
 
 // kw_case (Node body inlined)
-func (p *parser) e959() (*Node, bool) {
+func (p *parser) e960() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -166944,7 +167209,7 @@ fail:
 }
 
 // kw_chan (Node body inlined)
-func (p *parser) e960() (*Node, bool) {
+func (p *parser) e961() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167029,7 +167294,7 @@ fail:
 }
 
 // kw_const (Node body inlined)
-func (p *parser) e961() (*Node, bool) {
+func (p *parser) e962() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167110,7 +167375,7 @@ fail:
 }
 
 // kw_continue (Node body inlined)
-func (p *parser) e962() (*Node, bool) {
+func (p *parser) e963() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167191,7 +167456,7 @@ fail:
 }
 
 // kw_default (Node body inlined)
-func (p *parser) e963() (*Node, bool) {
+func (p *parser) e964() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167272,7 +167537,7 @@ fail:
 }
 
 // kw_defer (Node body inlined)
-func (p *parser) e964() (*Node, bool) {
+func (p *parser) e965() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167353,7 +167618,7 @@ fail:
 }
 
 // kw_else (Node body inlined)
-func (p *parser) e965() (*Node, bool) {
+func (p *parser) e966() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167438,7 +167703,7 @@ fail:
 }
 
 // kw_fallthrough (Node body inlined)
-func (p *parser) e966() (*Node, bool) {
+func (p *parser) e967() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167519,7 +167784,7 @@ fail:
 }
 
 // kw_for (Node body inlined)
-func (p *parser) e967() (*Node, bool) {
+func (p *parser) e968() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167604,7 +167869,7 @@ fail:
 }
 
 // kw_func (Node body inlined)
-func (p *parser) e968() (*Node, bool) {
+func (p *parser) e969() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167689,7 +167954,7 @@ fail:
 }
 
 // kw_go (Node body inlined)
-func (p *parser) e969() (*Node, bool) {
+func (p *parser) e970() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167774,7 +168039,7 @@ fail:
 }
 
 // kw_goto (Node body inlined)
-func (p *parser) e970() (*Node, bool) {
+func (p *parser) e971() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167859,7 +168124,7 @@ fail:
 }
 
 // kw_if (Node body inlined)
-func (p *parser) e971() (*Node, bool) {
+func (p *parser) e972() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -167944,7 +168209,7 @@ fail:
 }
 
 // kw_import (value-free body inlined)
-func (p *parser) e972() (*Node, bool) {
+func (p *parser) e973() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168012,7 +168277,7 @@ fail:
 }
 
 // kw_interface (Node body inlined)
-func (p *parser) e973() (*Node, bool) {
+func (p *parser) e974() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168093,7 +168358,7 @@ fail:
 }
 
 // kw_map (Node body inlined)
-func (p *parser) e974() (*Node, bool) {
+func (p *parser) e975() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168178,7 +168443,7 @@ fail:
 }
 
 // kw_package (value-free body inlined)
-func (p *parser) e975() (*Node, bool) {
+func (p *parser) e976() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168246,7 +168511,7 @@ fail:
 }
 
 // kw_range (Node body inlined)
-func (p *parser) e976() (*Node, bool) {
+func (p *parser) e977() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168327,7 +168592,7 @@ fail:
 }
 
 // kw_return (Node body inlined)
-func (p *parser) e977() (*Node, bool) {
+func (p *parser) e978() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168408,7 +168673,7 @@ fail:
 }
 
 // kw_select (Node body inlined)
-func (p *parser) e978() (*Node, bool) {
+func (p *parser) e979() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168489,7 +168754,7 @@ fail:
 }
 
 // kw_struct (Node body inlined)
-func (p *parser) e979() (*Node, bool) {
+func (p *parser) e980() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168570,7 +168835,7 @@ fail:
 }
 
 // kw_switch (Node body inlined)
-func (p *parser) e980() (*Node, bool) {
+func (p *parser) e981() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168651,7 +168916,7 @@ fail:
 }
 
 // kw_type (Node body inlined)
-func (p *parser) e981() (*Node, bool) {
+func (p *parser) e982() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168736,7 +169001,7 @@ fail:
 }
 
 // kw_var (Node body inlined)
-func (p *parser) e982() (*Node, bool) {
+func (p *parser) e983() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168821,7 +169086,7 @@ fail:
 }
 
 // basicLit (Node body inlined)
-func (p *parser) e983() (*Node, bool) {
+func (p *parser) e984() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -168970,7 +169235,7 @@ fail:
 }
 
 // intLit (Node body inlined)
-func (p *parser) e984() (*Node, bool) {
+func (p *parser) e985() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -169284,6 +169549,7 @@ func (p *parser) e984() (*Node, bool) {
 	_, _ = x22, x30
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -169561,7 +169827,7 @@ fail:
 }
 
 // floatLit (Node body inlined)
-func (p *parser) e985() (*Node, bool) {
+func (p *parser) e986() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -169640,6 +169906,7 @@ func (p *parser) e985() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	if _, ok = p.call(recRules[359], 0); !ok {
@@ -169695,7 +169962,7 @@ fail:
 }
 
 // imagLit (Node body inlined)
-func (p *parser) e986() (*Node, bool) {
+func (p *parser) e987() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -169800,6 +170067,7 @@ func (p *parser) e986() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
 	p.stepWork()
@@ -169883,7 +170151,7 @@ fail:
 }
 
 // imagInt (Node body inlined)
-func (p *parser) e987() (*Node, bool) {
+func (p *parser) e988() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -170256,7 +170524,7 @@ fail:
 }
 
 // decimalFloat (Node body inlined)
-func (p *parser) e988() (*Node, bool) {
+func (p *parser) e989() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -170601,7 +170869,7 @@ fail:
 }
 
 // decimalExp (Node body inlined)
-func (p *parser) e989() (*Node, bool) {
+func (p *parser) e990() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -170740,7 +171008,7 @@ fail:
 }
 
 // hexFloat (Node body inlined)
-func (p *parser) e990() (*Node, bool) {
+func (p *parser) e991() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -171209,7 +171477,7 @@ fail:
 }
 
 // charLit (Node body inlined)
-func (p *parser) e991() (*Node, bool) {
+func (p *parser) e992() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -171301,6 +171569,7 @@ func (p *parser) e991() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 39) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit447, "'", 128, false); !ok {
@@ -171369,7 +171638,7 @@ fail:
 }
 
 // stringLit (Node body inlined)
-func (p *parser) e992() (*Node, bool) {
+func (p *parser) e993() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -171566,6 +171835,7 @@ func (p *parser) e992() (*Node, bool) {
 	)
 	_, _ = x7, x14
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -171725,7 +171995,7 @@ fail:
 }
 
 // srcChar (Node body inlined)
-func (p *parser) e993() (*Node, bool) {
+func (p *parser) e994() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -171856,7 +172126,7 @@ fail:
 }
 
 // charEscape (Node body inlined)
-func (p *parser) e994() (*Node, bool) {
+func (p *parser) e995() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -172015,7 +172285,7 @@ fail:
 }
 
 // stringEscape (Node body inlined)
-func (p *parser) e995() (*Node, bool) {
+func (p *parser) e996() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -172174,7 +172444,7 @@ fail:
 }
 
 // escapeValue (Node body inlined)
-func (p *parser) e996() (*Node, bool) {
+func (p *parser) e997() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -173037,7 +173307,7 @@ fail:
 }
 
 // ws (Node body inlined)
-func (p *parser) e1008() (*Node, bool) {
+func (p *parser) e1009() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -173303,7 +173573,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope997))
+			x1 = p.newFrame(len(scope998))
 			p.frame = x1
 
 			x6 = p.pos
@@ -173421,7 +173691,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x28 = p.mark()
 				x26 = p.frame
-				x25 = p.newFrame(len(scope998))
+				x25 = p.newFrame(len(scope999))
 				p.frame = x25
 
 				x30 = p.mark()
@@ -173612,7 +173882,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x69 = p.mark()
 				x67 = p.frame
-				x66 = p.newFrame(len(scope999))
+				x66 = p.newFrame(len(scope1000))
 				p.frame = x66
 
 				x71 = p.mark()
@@ -174230,7 +174500,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x166 = p.mark()
 				x164 = p.frame
-				x163 = p.newFrame(len(scope1000))
+				x163 = p.newFrame(len(scope1001))
 				p.frame = x163
 
 				x168 = p.mark()
@@ -174540,7 +174810,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x213 = p.mark()
 				x211 = p.frame
-				x210 = p.newFrame(len(scope1001))
+				x210 = p.newFrame(len(scope1002))
 				p.frame = x210
 
 				x215 = p.mark()
@@ -174874,7 +175144,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x262 = p.mark()
 				x260 = p.frame
-				x259 = p.newFrame(len(scope1002))
+				x259 = p.newFrame(len(scope1003))
 				p.frame = x259
 
 				x264 = p.mark()
@@ -174983,7 +175253,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x289 = p.mark()
 				x287 = p.frame
-				x286 = p.newFrame(len(scope1003))
+				x286 = p.newFrame(len(scope1004))
 				p.frame = x286
 
 				x291 = p.mark()
@@ -175110,7 +175380,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x313 = p.mark()
 				x311 = p.frame
-				x310 = p.newFrame(len(scope1004))
+				x310 = p.newFrame(len(scope1005))
 				p.frame = x310
 
 				x315 = p.mark()
@@ -175656,7 +175926,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x387 = p.mark()
 				x385 = p.frame
-				x384 = p.newFrame(len(scope1005))
+				x384 = p.newFrame(len(scope1006))
 				p.frame = x384
 
 				x389 = p.mark()
@@ -175902,7 +176172,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x417 = p.mark()
 				x415 = p.frame
-				x414 = p.newFrame(len(scope1006))
+				x414 = p.newFrame(len(scope1007))
 				p.frame = x414
 
 				x419 = p.mark()
@@ -176163,7 +176433,7 @@ func (p *parser) e1008() (*Node, bool) {
 			for {
 				x449 = p.mark()
 				x447 = p.frame
-				x446 = p.newFrame(len(scope1007))
+				x446 = p.newFrame(len(scope1008))
 				p.frame = x446
 
 				x451 = p.mark()
@@ -176560,7 +176830,7 @@ func (p *parser) e1008() (*Node, bool) {
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope997))
+		x1 = p.newFrame(len(scope998))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -176682,7 +176952,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x28 = p.mark()
 			x26 = p.frame
-			x25 = p.newFrame(len(scope998))
+			x25 = p.newFrame(len(scope999))
 			p.frame = x25
 			p.stepWork()
 			x30 = p.mark()
@@ -176876,7 +177146,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x69 = p.mark()
 			x67 = p.frame
-			x66 = p.newFrame(len(scope999))
+			x66 = p.newFrame(len(scope1000))
 			p.frame = x66
 			p.stepWork()
 			p.stepWork()
@@ -177505,7 +177775,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x166 = p.mark()
 			x164 = p.frame
-			x163 = p.newFrame(len(scope1000))
+			x163 = p.newFrame(len(scope1001))
 			p.frame = x163
 			p.stepWork()
 			x168 = p.mark()
@@ -177819,7 +178089,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x213 = p.mark()
 			x211 = p.frame
-			x210 = p.newFrame(len(scope1001))
+			x210 = p.newFrame(len(scope1002))
 			p.frame = x210
 			p.stepWork()
 			x215 = p.mark()
@@ -178158,7 +178428,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x262 = p.mark()
 			x260 = p.frame
-			x259 = p.newFrame(len(scope1002))
+			x259 = p.newFrame(len(scope1003))
 			p.frame = x259
 			p.stepWork()
 			x264 = p.mark()
@@ -178271,7 +178541,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x289 = p.mark()
 			x287 = p.frame
-			x286 = p.newFrame(len(scope1003))
+			x286 = p.newFrame(len(scope1004))
 			p.frame = x286
 			p.stepWork()
 			x291 = p.mark()
@@ -178401,7 +178671,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x313 = p.mark()
 			x311 = p.frame
-			x310 = p.newFrame(len(scope1004))
+			x310 = p.newFrame(len(scope1005))
 			p.frame = x310
 			p.stepWork()
 			p.stepWork()
@@ -178959,7 +179229,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x387 = p.mark()
 			x385 = p.frame
-			x384 = p.newFrame(len(scope1005))
+			x384 = p.newFrame(len(scope1006))
 			p.frame = x384
 			p.stepWork()
 			x389 = p.mark()
@@ -179209,7 +179479,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x417 = p.mark()
 			x415 = p.frame
-			x414 = p.newFrame(len(scope1006))
+			x414 = p.newFrame(len(scope1007))
 			p.frame = x414
 			p.stepWork()
 			x419 = p.mark()
@@ -179473,7 +179743,7 @@ func (p *parser) e1008() (*Node, bool) {
 		for {
 			x449 = p.mark()
 			x447 = p.frame
-			x446 = p.newFrame(len(scope1007))
+			x446 = p.newFrame(len(scope1008))
 			p.frame = x446
 			p.stepWork()
 			x451 = p.mark()
@@ -179609,7 +179879,7 @@ func (p *parser) e1008() (*Node, bool) {
 }
 
 // sp (Node body inlined)
-func (p *parser) e1016() (*Node, bool) {
+func (p *parser) e1017() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -179756,7 +180026,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope1009))
+			x1 = p.newFrame(len(scope1010))
 			p.frame = x1
 
 			x6 = p.pos
@@ -179872,7 +180142,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x26 = p.mark()
 				x24 = p.frame
-				x23 = p.newFrame(len(scope1010))
+				x23 = p.newFrame(len(scope1011))
 				p.frame = x23
 
 				x28 = p.mark()
@@ -180040,7 +180310,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x59 = p.mark()
 				x57 = p.frame
-				x56 = p.newFrame(len(scope1011))
+				x56 = p.newFrame(len(scope1012))
 				p.frame = x56
 
 				x61 = p.mark()
@@ -180167,7 +180437,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x83 = p.mark()
 				x81 = p.frame
-				x80 = p.newFrame(len(scope1012))
+				x80 = p.newFrame(len(scope1013))
 				p.frame = x80
 
 				x85 = p.mark()
@@ -180713,7 +180983,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x157 = p.mark()
 				x155 = p.frame
-				x154 = p.newFrame(len(scope1013))
+				x154 = p.newFrame(len(scope1014))
 				p.frame = x154
 
 				x159 = p.mark()
@@ -180959,7 +181229,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x187 = p.mark()
 				x185 = p.frame
-				x184 = p.newFrame(len(scope1014))
+				x184 = p.newFrame(len(scope1015))
 				p.frame = x184
 
 				x189 = p.mark()
@@ -181220,7 +181490,7 @@ func (p *parser) e1016() (*Node, bool) {
 			for {
 				x219 = p.mark()
 				x217 = p.frame
-				x216 = p.newFrame(len(scope1015))
+				x216 = p.newFrame(len(scope1016))
 				p.frame = x216
 
 				x221 = p.mark()
@@ -181497,7 +181767,7 @@ func (p *parser) e1016() (*Node, bool) {
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope1009))
+		x1 = p.newFrame(len(scope1010))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -181617,7 +181887,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x26 = p.mark()
 			x24 = p.frame
-			x23 = p.newFrame(len(scope1010))
+			x23 = p.newFrame(len(scope1011))
 			p.frame = x23
 			p.stepWork()
 			x28 = p.mark()
@@ -181790,7 +182060,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x59 = p.mark()
 			x57 = p.frame
-			x56 = p.newFrame(len(scope1011))
+			x56 = p.newFrame(len(scope1012))
 			p.frame = x56
 			p.stepWork()
 			x61 = p.mark()
@@ -181920,7 +182190,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x83 = p.mark()
 			x81 = p.frame
-			x80 = p.newFrame(len(scope1012))
+			x80 = p.newFrame(len(scope1013))
 			p.frame = x80
 			p.stepWork()
 			p.stepWork()
@@ -182478,7 +182748,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x157 = p.mark()
 			x155 = p.frame
-			x154 = p.newFrame(len(scope1013))
+			x154 = p.newFrame(len(scope1014))
 			p.frame = x154
 			p.stepWork()
 			x159 = p.mark()
@@ -182728,7 +182998,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x187 = p.mark()
 			x185 = p.frame
-			x184 = p.newFrame(len(scope1014))
+			x184 = p.newFrame(len(scope1015))
 			p.frame = x184
 			p.stepWork()
 			x189 = p.mark()
@@ -182992,7 +183262,7 @@ func (p *parser) e1016() (*Node, bool) {
 		for {
 			x219 = p.mark()
 			x217 = p.frame
-			x216 = p.newFrame(len(scope1015))
+			x216 = p.newFrame(len(scope1016))
 			p.frame = x216
 			p.stepWork()
 			x221 = p.mark()
@@ -183127,7 +183397,7 @@ func (p *parser) e1016() (*Node, bool) {
 }
 
 // semi (Node body inlined)
-func (p *parser) e1017() (*Node, bool) {
+func (p *parser) e1018() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183270,7 +183540,7 @@ fail:
 }
 
 // groupTerm (Node body inlined)
-func (p *parser) e1018() (*Node, bool) {
+func (p *parser) e1019() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183357,7 +183627,7 @@ fail:
 }
 
 // kw_const (value-free body inlined)
-func (p *parser) e1019() (*Node, bool) {
+func (p *parser) e1020() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183425,7 +183695,7 @@ fail:
 }
 
 // kw_var (value-free body inlined)
-func (p *parser) e1020() (*Node, bool) {
+func (p *parser) e1021() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183497,7 +183767,7 @@ fail:
 }
 
 // kw_type (Node body inlined)
-func (p *parser) e1021() (*Node, bool) {
+func (p *parser) e1022() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183559,7 +183829,7 @@ fail:
 }
 
 // genericStart (value-free body inlined)
-func (p *parser) e1022() (*Node, bool) {
+func (p *parser) e1023() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183755,7 +184025,7 @@ fail:
 }
 
 // binaryOp (Node body inlined)
-func (p *parser) e1023() (*Node, bool) {
+func (p *parser) e1024() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -183909,7 +184179,7 @@ fail:
 }
 
 // generalStart (Node body inlined)
-func (p *parser) e1024() (*Node, bool) {
+func (p *parser) e1025() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -184165,7 +184435,7 @@ fail:
 }
 
 // splitDecision (Node body inlined)
-func (p *parser) e1025() (*Node, bool) {
+func (p *parser) e1026() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -184923,7 +185193,7 @@ fail:
 }
 
 // termTE (Node body inlined)
-func (p *parser) e1026() (*Node, bool) {
+func (p *parser) e1027() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -185113,7 +185383,7 @@ fail:
 }
 
 // unaryTE (Node body inlined)
-func (p *parser) e1027() (*Node, bool) {
+func (p *parser) e1028() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -185664,7 +185934,7 @@ fail:
 }
 
 // exprTE (Node body inlined)
-func (p *parser) e1028() (*Node, bool) {
+func (p *parser) e1029() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -185854,7 +186124,7 @@ fail:
 }
 
 // kw_func (Node body inlined)
-func (p *parser) e1029() (*Node, bool) {
+func (p *parser) e1030() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -185916,7 +186186,7 @@ fail:
 }
 
 // typeStart (Node body inlined)
-func (p *parser) e1030() (*Node, bool) {
+func (p *parser) e1031() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186242,7 +186512,7 @@ fail:
 }
 
 // kw_map (Node body inlined)
-func (p *parser) e1031() (*Node, bool) {
+func (p *parser) e1032() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186304,7 +186574,7 @@ fail:
 }
 
 // kw_chan (Node body inlined)
-func (p *parser) e1032() (*Node, bool) {
+func (p *parser) e1033() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186366,7 +186636,7 @@ fail:
 }
 
 // kw_struct (Node body inlined)
-func (p *parser) e1033() (*Node, bool) {
+func (p *parser) e1034() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186424,7 +186694,7 @@ fail:
 }
 
 // fieldTerm (Node body inlined)
-func (p *parser) e1034() (*Node, bool) {
+func (p *parser) e1035() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186511,7 +186781,7 @@ fail:
 }
 
 // kw_interface (Node body inlined)
-func (p *parser) e1035() (*Node, bool) {
+func (p *parser) e1036() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186569,7 +186839,7 @@ fail:
 }
 
 // clauseEnd (value-free body inlined)
-func (p *parser) e1036() (*Node, bool) {
+func (p *parser) e1037() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -186704,7 +186974,7 @@ fail:
 }
 
 // keyword (Node body inlined)
-func (p *parser) e1037() (*Node, bool) {
+func (p *parser) e1038() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187424,7 +187694,7 @@ fail:
 }
 
 // kw_go (value-free body inlined)
-func (p *parser) e1038() (*Node, bool) {
+func (p *parser) e1039() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187496,7 +187766,7 @@ fail:
 }
 
 // kw_defer (value-free body inlined)
-func (p *parser) e1039() (*Node, bool) {
+func (p *parser) e1040() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187564,7 +187834,7 @@ fail:
 }
 
 // kw_return (value-free body inlined)
-func (p *parser) e1040() (*Node, bool) {
+func (p *parser) e1041() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187632,7 +187902,7 @@ fail:
 }
 
 // kw_break (value-free body inlined)
-func (p *parser) e1041() (*Node, bool) {
+func (p *parser) e1042() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187700,7 +187970,7 @@ fail:
 }
 
 // kw_continue (value-free body inlined)
-func (p *parser) e1042() (*Node, bool) {
+func (p *parser) e1043() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187768,7 +188038,7 @@ fail:
 }
 
 // kw_goto (value-free body inlined)
-func (p *parser) e1043() (*Node, bool) {
+func (p *parser) e1044() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187840,7 +188110,7 @@ fail:
 }
 
 // kw_fallthrough (value-free body inlined)
-func (p *parser) e1044() (*Node, bool) {
+func (p *parser) e1045() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187908,7 +188178,7 @@ fail:
 }
 
 // kw_if (value-free body inlined)
-func (p *parser) e1045() (*Node, bool) {
+func (p *parser) e1046() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -187980,7 +188250,7 @@ fail:
 }
 
 // hsemi (Node body inlined)
-func (p *parser) e1046() (*Node, bool) {
+func (p *parser) e1047() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188107,7 +188377,7 @@ fail:
 }
 
 // kw_else (value-free body inlined)
-func (p *parser) e1047() (*Node, bool) {
+func (p *parser) e1048() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188179,7 +188449,7 @@ fail:
 }
 
 // kw_switch (Node body inlined)
-func (p *parser) e1048() (*Node, bool) {
+func (p *parser) e1049() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188237,7 +188507,7 @@ fail:
 }
 
 // kw_case (Node body inlined)
-func (p *parser) e1049() (*Node, bool) {
+func (p *parser) e1050() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188299,7 +188569,7 @@ fail:
 }
 
 // kw_default (Node body inlined)
-func (p *parser) e1050() (*Node, bool) {
+func (p *parser) e1051() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188357,7 +188627,7 @@ fail:
 }
 
 // kw_select (value-free body inlined)
-func (p *parser) e1051() (*Node, bool) {
+func (p *parser) e1052() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188425,7 +188695,7 @@ fail:
 }
 
 // kw_for (Node body inlined)
-func (p *parser) e1052() (*Node, bool) {
+func (p *parser) e1053() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188487,7 +188757,7 @@ fail:
 }
 
 // kw_range (value-free body inlined)
-func (p *parser) e1053() (*Node, bool) {
+func (p *parser) e1054() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188555,7 +188825,7 @@ fail:
 }
 
 // chanType (Node body inlined)
-func (p *parser) e1054() (*Node, bool) {
+func (p *parser) e1055() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188674,7 +188944,7 @@ fail:
 }
 
 // goEnd (Node body inlined)
-func (p *parser) e1055() (*Node, bool) {
+func (p *parser) e1056() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188791,7 +189061,7 @@ fail:
 }
 
 // parenCompositeType (Node body inlined)
-func (p *parser) e1056() (*Node, bool) {
+func (p *parser) e1057() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -188978,7 +189248,7 @@ fail:
 }
 
 // dirSegBlock (Node body inlined)
-func (p *parser) e1057() (*Node, bool) {
+func (p *parser) e1058() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -189188,7 +189458,7 @@ func (p *parser) e1057() (*Node, bool) {
 }
 
 // idStart (value-free body inlined)
-func (p *parser) e1058() (*Node, bool) {
+func (p *parser) e1059() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -189353,7 +189623,7 @@ fail:
 }
 
 // idRest (value-free body inlined)
-func (p *parser) e1059() (*Node, bool) {
+func (p *parser) e1060() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -189673,7 +189943,7 @@ func (p *parser) e1059() (*Node, bool) {
 }
 
 // decimalFloat (Node body inlined)
-func (p *parser) e1060() (*Node, bool) {
+func (p *parser) e1061() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -189893,7 +190163,7 @@ fail:
 }
 
 // hexFloat (Node body inlined)
-func (p *parser) e1061() (*Node, bool) {
+func (p *parser) e1062() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190178,7 +190448,7 @@ fail:
 }
 
 // imagInt (value-free body inlined)
-func (p *parser) e1062() (*Node, bool) {
+func (p *parser) e1063() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190447,7 +190717,7 @@ fail:
 }
 
 // charEscape (value-free body inlined)
-func (p *parser) e1063() (*Node, bool) {
+func (p *parser) e1064() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190575,7 +190845,7 @@ fail:
 }
 
 // srcChar (Node body inlined)
-func (p *parser) e1064() (*Node, bool) {
+func (p *parser) e1065() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190690,7 +190960,7 @@ fail:
 }
 
 // stringEscape (value-free body inlined)
-func (p *parser) e1065() (*Node, bool) {
+func (p *parser) e1066() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190818,7 +191088,7 @@ fail:
 }
 
 // blockComment (Node body inlined)
-func (p *parser) e1066() (*Node, bool) {
+func (p *parser) e1067() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -190967,7 +191237,7 @@ fail:
 }
 
 // splitHeadShape (Node body inlined)
-func (p *parser) e1067() (*Node, bool) {
+func (p *parser) e1068() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -191253,7 +191523,7 @@ fail:
 }
 
 // splitHeadTE (value-free body inlined)
-func (p *parser) e1068() (*Node, bool) {
+func (p *parser) e1069() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -191629,7 +191899,7 @@ fail:
 }
 
 // decimalExp (Node body inlined)
-func (p *parser) e1069() (*Node, bool) {
+func (p *parser) e1070() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -191725,7 +191995,7 @@ fail:
 }
 
 // escapeValue (Node body inlined)
-func (p *parser) e1070() (*Node, bool) {
+func (p *parser) e1071() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -192318,7 +192588,7 @@ fail:
 }
 
 // dirBlock (value-free body inlined)
-func (p *parser) e1071() (*Node, bool) {
+func (p *parser) e1072() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -192690,7 +192960,7 @@ fail:
 }
 
 // blockText (value-free body inlined)
-func (p *parser) e1072() (*Node, bool) {
+func (p *parser) e1073() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -192922,7 +193192,7 @@ func (p *parser) e1072() (*Node, bool) {
 }
 
 // dirCharBlock (value-free body inlined)
-func (p *parser) e1073() (*Node, bool) {
+func (p *parser) e1074() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -193116,7 +193386,7 @@ fail:
 }
 
 // dirMidBlock (value-free body inlined)
-func (p *parser) e1074() (*Node, bool) {
+func (p *parser) e1075() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -194322,6 +194592,7 @@ func (p *parser) q7() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit14, ".", 12, false); !ok {
@@ -194365,7 +194636,7 @@ func (p *parser) q29() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e703()
+		v, ok := p.e704()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194387,7 +194658,7 @@ func (p *parser) q29() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e703()
+	v, ok := p.e704()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194412,7 +194683,7 @@ func (p *parser) q34() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e710()
+		v, ok := p.e711()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194434,7 +194705,7 @@ func (p *parser) q34() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e710()
+	v, ok := p.e711()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194459,7 +194730,7 @@ func (p *parser) q39() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e715()
+		v, ok := p.e716()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194481,7 +194752,7 @@ func (p *parser) q39() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e715()
+	v, ok := p.e716()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194704,7 +194975,7 @@ func (p *parser) q48() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e724()
+		v, ok := p.e725()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194726,7 +194997,7 @@ func (p *parser) q48() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e724()
+	v, ok := p.e725()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194751,7 +195022,7 @@ func (p *parser) q59() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e737()
+		v, ok := p.e738()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194773,7 +195044,7 @@ func (p *parser) q59() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e737()
+	v, ok := p.e738()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194798,7 +195069,7 @@ func (p *parser) q62() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e740()
+		v, ok := p.e741()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194820,7 +195091,7 @@ func (p *parser) q62() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e740()
+	v, ok := p.e741()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194939,7 +195210,7 @@ func (p *parser) q98() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e781()
+		v, ok := p.e782()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -194961,7 +195232,7 @@ func (p *parser) q98() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e781()
+	v, ok := p.e782()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -194986,7 +195257,7 @@ func (p *parser) q109() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e794()
+		v, ok := p.e795()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195008,7 +195279,7 @@ func (p *parser) q109() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e794()
+	v, ok := p.e795()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195033,7 +195304,7 @@ func (p *parser) q113() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e799()
+		v, ok := p.e800()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195055,7 +195326,7 @@ func (p *parser) q113() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e799()
+	v, ok := p.e800()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195080,7 +195351,7 @@ func (p *parser) q117() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e804()
+		v, ok := p.e805()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195102,7 +195373,7 @@ func (p *parser) q117() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e804()
+	v, ok := p.e805()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195221,7 +195492,7 @@ func (p *parser) q128() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e813()
+		v, ok := p.e814()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195243,7 +195514,7 @@ func (p *parser) q128() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e813()
+	v, ok := p.e814()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195268,7 +195539,7 @@ func (p *parser) q131() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e816()
+		v, ok := p.e817()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195290,7 +195561,7 @@ func (p *parser) q131() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e816()
+	v, ok := p.e817()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195315,7 +195586,7 @@ func (p *parser) q149() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e834()
+		v, ok := p.e835()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195337,7 +195608,7 @@ func (p *parser) q149() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e834()
+	v, ok := p.e835()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195362,7 +195633,7 @@ func (p *parser) q153() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e838()
+		v, ok := p.e839()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195384,7 +195655,7 @@ func (p *parser) q153() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e838()
+	v, ok := p.e839()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195409,7 +195680,7 @@ func (p *parser) q158() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e843()
+		v, ok := p.e844()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195431,7 +195702,7 @@ func (p *parser) q158() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e843()
+	v, ok := p.e844()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195456,7 +195727,7 @@ func (p *parser) q162() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e847()
+		v, ok := p.e848()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195478,7 +195749,7 @@ func (p *parser) q162() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e847()
+	v, ok := p.e848()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195503,7 +195774,7 @@ func (p *parser) q167() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e853()
+		v, ok := p.e854()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195525,7 +195796,7 @@ func (p *parser) q167() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e853()
+	v, ok := p.e854()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195550,7 +195821,7 @@ func (p *parser) q172() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e859()
+		v, ok := p.e860()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195572,7 +195843,7 @@ func (p *parser) q172() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e859()
+	v, ok := p.e860()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195597,7 +195868,7 @@ func (p *parser) q175() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e861()
+		v, ok := p.e862()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195619,7 +195890,7 @@ func (p *parser) q175() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e861()
+	v, ok := p.e862()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195644,7 +195915,7 @@ func (p *parser) q177() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e864()
+		v, ok := p.e865()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -195666,7 +195937,7 @@ func (p *parser) q177() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e864()
+	v, ok := p.e865()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -195681,7 +195952,7 @@ func (p *parser) q177() (*Node, bool) {
 }
 
 // sp
-func (p *parser) e1113() (*Node, bool) {
+func (p *parser) e1114() (*Node, bool) {
 	if p.control == nil {
 
 		return p.q306()
@@ -195692,7 +195963,7 @@ func (p *parser) e1113() (*Node, bool) {
 }
 
 // primaryOperand
-func (p *parser) e1114() (*Node, bool) {
+func (p *parser) e1115() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[197], 0)
@@ -195703,7 +195974,7 @@ func (p *parser) e1114() (*Node, bool) {
 }
 
 // dot
-func (p *parser) e1115() (*Node, bool) {
+func (p *parser) e1116() (*Node, bool) {
 	if p.control == nil {
 
 		return p.q228()
@@ -195714,7 +195985,7 @@ func (p *parser) e1115() (*Node, bool) {
 }
 
 // ws
-func (p *parser) e1116() (*Node, bool) {
+func (p *parser) e1117() (*Node, bool) {
 	if p.control == nil {
 
 		return p.q305()
@@ -195725,20 +195996,20 @@ func (p *parser) e1116() (*Node, bool) {
 }
 
 // -ws
-func (p *parser) e1117() (*Node, bool) {
+func (p *parser) e1118() (*Node, bool) {
 	if p.control == nil {
 
-		_, ok := p.e1116()
+		_, ok := p.e1117()
 		return nil, ok
 	}
 
 	p.stepWork()
-	_, ok := p.e1116()
+	_, ok := p.e1117()
 	return nil, ok
 }
 
 // ident
-func (p *parser) e1118() (*Node, bool) {
+func (p *parser) e1119() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[254], 0)
@@ -195749,10 +196020,10 @@ func (p *parser) e1118() (*Node, bool) {
 }
 
 // s:ident
-func (p *parser) e1119() (*Node, bool) {
+func (p *parser) e1120() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1118()
+		v, ok := p.e1119()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -195760,7 +196031,7 @@ func (p *parser) e1119() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1118()
+	v, ok := p.e1119()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -195768,20 +196039,20 @@ func (p *parser) e1119() (*Node, bool) {
 }
 
 // dot -ws s:ident
-func (p *parser) e1120() (*Node, bool) {
+func (p *parser) e1121() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(2)[:0]
-		if v, ok := p.e1115(); !ok {
+		if v, ok := p.e1116(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1119(); !ok {
+		if v, ok := p.e1120(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -195792,15 +196063,15 @@ func (p *parser) e1120() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(2)[:0]
-	if v, ok := p.e1115(); !ok {
+	if v, ok := p.e1116(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1119(); !ok {
+	if v, ok := p.e1120(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -195809,7 +196080,7 @@ func (p *parser) e1120() (*Node, bool) {
 }
 
 // kw_type
-func (p *parser) e1121() (*Node, bool) {
+func (p *parser) e1122() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[282], 0)
@@ -195820,23 +196091,23 @@ func (p *parser) e1121() (*Node, bool) {
 }
 
 // -sp
-func (p *parser) e1122() (*Node, bool) {
+func (p *parser) e1123() (*Node, bool) {
 	if p.control == nil {
 
-		_, ok := p.e1113()
+		_, ok := p.e1114()
 		return nil, ok
 	}
 
 	p.stepWork()
-	_, ok := p.e1113()
+	_, ok := p.e1114()
 	return nil, ok
 }
 
 // -sp "{"
-func (p *parser) e1123() (*Node, bool) {
+func (p *parser) e1124() (*Node, bool) {
 	if p.control == nil {
 
-		if _, ok := p.e1122(); !ok {
+		if _, ok := p.e1123(); !ok {
 			return nil, false
 		}
 		if _, ok := p.e605(); !ok {
@@ -195846,7 +196117,7 @@ func (p *parser) e1123() (*Node, bool) {
 	}
 
 	p.stepWork()
-	if _, ok := p.e1122(); !ok {
+	if _, ok := p.e1123(); !ok {
 		return nil, false
 	}
 	if _, ok := p.e605(); !ok {
@@ -195856,13 +196127,13 @@ func (p *parser) e1123() (*Node, bool) {
 }
 
 // !(-sp "{")
-func (p *parser) e1124() (*Node, bool) {
+func (p *parser) e1125() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
 		prevCut := p.cut
 		p.silent++
-		_, ok := p.e1123()
+		_, ok := p.e1124()
 		p.silent--
 		p.cut = prevCut
 		p.reset(m0)
@@ -195873,7 +196144,7 @@ func (p *parser) e1124() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
 	p.silent++
-	_, ok := p.e1123()
+	_, ok := p.e1124()
 	p.silent--
 	p.cut = prevCut
 	p.reset(m0)
@@ -195881,17 +196152,17 @@ func (p *parser) e1124() (*Node, bool) {
 }
 
 // dot -ws "(" -ws kw_type -ws ")" !(-sp "{")
-func (p *parser) e1125() (*Node, bool) {
+func (p *parser) e1126() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(4)[:0]
-		if v, ok := p.e1115(); !ok {
+		if v, ok := p.e1116(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e601(); !ok {
@@ -195899,15 +196170,15 @@ func (p *parser) e1125() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1121(); !ok {
+		if v, ok := p.e1122(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -195915,7 +196186,7 @@ func (p *parser) e1125() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -195924,12 +196195,12 @@ func (p *parser) e1125() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(4)[:0]
-	if v, ok := p.e1115(); !ok {
+	if v, ok := p.e1116(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e601(); !ok {
@@ -195937,15 +196208,15 @@ func (p *parser) e1125() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1121(); !ok {
+	if v, ok := p.e1122(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -195953,14 +196224,14 @@ func (p *parser) e1125() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // typ
-func (p *parser) e1126() (*Node, bool) {
+func (p *parser) e1127() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[76], 0)
@@ -195971,10 +196242,10 @@ func (p *parser) e1126() (*Node, bool) {
 }
 
 // t:typ
-func (p *parser) e1127() (*Node, bool) {
+func (p *parser) e1128() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1126()
+		v, ok := p.e1127()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -195982,7 +196253,7 @@ func (p *parser) e1127() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1126()
+	v, ok := p.e1127()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -195990,17 +196261,17 @@ func (p *parser) e1127() (*Node, bool) {
 }
 
 // dot -ws "(" -ws t:typ -sp ")" !(-sp "{")
-func (p *parser) e1128() (*Node, bool) {
+func (p *parser) e1129() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(4)[:0]
-		if v, ok := p.e1115(); !ok {
+		if v, ok := p.e1116(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e601(); !ok {
@@ -196008,15 +196279,15 @@ func (p *parser) e1128() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1127(); !ok {
+		if v, ok := p.e1128(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1122(); !ok {
+		if _, ok := p.e1123(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -196024,7 +196295,7 @@ func (p *parser) e1128() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196033,12 +196304,12 @@ func (p *parser) e1128() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(4)[:0]
-	if v, ok := p.e1115(); !ok {
+	if v, ok := p.e1116(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e601(); !ok {
@@ -196046,15 +196317,15 @@ func (p *parser) e1128() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1127(); !ok {
+	if v, ok := p.e1128(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1122(); !ok {
+	if _, ok := p.e1123(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -196062,14 +196333,14 @@ func (p *parser) e1128() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // expr
-func (p *parser) e1129() (*Node, bool) {
+func (p *parser) e1130() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[183], 0)
@@ -196080,10 +196351,10 @@ func (p *parser) e1129() (*Node, bool) {
 }
 
 // i:expr
-func (p *parser) e1130() (*Node, bool) {
+func (p *parser) e1131() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1129()
+		v, ok := p.e1130()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -196091,7 +196362,7 @@ func (p *parser) e1130() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1129()
+	v, ok := p.e1130()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -196099,7 +196370,7 @@ func (p *parser) e1130() (*Node, bool) {
 }
 
 // "," -ws
-func (p *parser) e1131() (*Node, bool) {
+func (p *parser) e1132() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196109,7 +196380,7 @@ func (p *parser) e1131() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196123,18 +196394,18 @@ func (p *parser) e1131() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // "," -ws
-func (p *parser) e1132() (*Node, bool) {
+func (p *parser) e1133() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
-		v, ok := p.e1131()
+		v, ok := p.e1132()
 		if !ok {
 			return nil, false
 		}
@@ -196144,7 +196415,7 @@ func (p *parser) e1132() (*Node, bool) {
 
 	p.stepWork()
 	start := p.pos
-	v, ok := p.e1131()
+	v, ok := p.e1132()
 	if !ok {
 		return nil, false
 	}
@@ -196153,13 +196424,13 @@ func (p *parser) e1132() (*Node, bool) {
 }
 
 // ("," -ws)?
-func (p *parser) e1133() (*Node, bool) {
+func (p *parser) e1134() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e1132()
+		v, ok := p.e1133()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -196176,7 +196447,7 @@ func (p *parser) e1133() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
 	p.cut = false
-	v, ok := p.e1132()
+	v, ok := p.e1133()
 	cut := p.cut
 	p.cut = prevCut
 	if ok {
@@ -196190,7 +196461,7 @@ func (p *parser) e1133() (*Node, bool) {
 }
 
 // "[" -ws i:expr -sp ("," -ws)? "]"
-func (p *parser) e1134() (*Node, bool) {
+func (p *parser) e1135() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196200,18 +196471,18 @@ func (p *parser) e1134() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1130(); !ok {
+		if v, ok := p.e1131(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1122(); !ok {
+		if _, ok := p.e1123(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1133(); !ok {
+		if v, ok := p.e1134(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196232,18 +196503,18 @@ func (p *parser) e1134() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1130(); !ok {
+	if v, ok := p.e1131(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1122(); !ok {
+	if _, ok := p.e1123(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1133(); !ok {
+	if v, ok := p.e1134(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196257,7 +196528,7 @@ func (p *parser) e1134() (*Node, bool) {
 }
 
 // indexList
-func (p *parser) e1135() (*Node, bool) {
+func (p *parser) e1136() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[200], 0)
@@ -196268,10 +196539,10 @@ func (p *parser) e1135() (*Node, bool) {
 }
 
 // i:indexList
-func (p *parser) e1136() (*Node, bool) {
+func (p *parser) e1137() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1135()
+		v, ok := p.e1136()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -196279,7 +196550,7 @@ func (p *parser) e1136() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1135()
+	v, ok := p.e1136()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -196287,7 +196558,7 @@ func (p *parser) e1136() (*Node, bool) {
 }
 
 // "[" -ws i:indexList "]"
-func (p *parser) e1137() (*Node, bool) {
+func (p *parser) e1138() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196297,10 +196568,10 @@ func (p *parser) e1137() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1136(); !ok {
+		if v, ok := p.e1137(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196321,10 +196592,10 @@ func (p *parser) e1137() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1136(); !ok {
+	if v, ok := p.e1137(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196338,7 +196609,7 @@ func (p *parser) e1137() (*Node, bool) {
 }
 
 // exprSp
-func (p *parser) e1138() (*Node, bool) {
+func (p *parser) e1139() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[73], 0)
@@ -196349,13 +196620,13 @@ func (p *parser) e1138() (*Node, bool) {
 }
 
 // exprSp?
-func (p *parser) e1139() (*Node, bool) {
+func (p *parser) e1140() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e1138()
+		v, ok := p.e1139()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -196372,7 +196643,7 @@ func (p *parser) e1139() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
 	p.cut = false
-	v, ok := p.e1138()
+	v, ok := p.e1139()
 	cut := p.cut
 	p.cut = prevCut
 	if ok {
@@ -196386,10 +196657,10 @@ func (p *parser) e1139() (*Node, bool) {
 }
 
 // l:exprSp?
-func (p *parser) e1140() (*Node, bool) {
+func (p *parser) e1141() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1139()
+		v, ok := p.e1140()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -196397,7 +196668,7 @@ func (p *parser) e1140() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1139()
+	v, ok := p.e1140()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -196405,10 +196676,10 @@ func (p *parser) e1140() (*Node, bool) {
 }
 
 // h:exprSp?
-func (p *parser) e1141() (*Node, bool) {
+func (p *parser) e1142() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1139()
+		v, ok := p.e1140()
 		if ok {
 			p.setCaptureOrdinary(1, v)
 		}
@@ -196416,7 +196687,7 @@ func (p *parser) e1141() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1139()
+	v, ok := p.e1140()
 	if ok {
 		p.setCapture(1, v)
 	}
@@ -196424,7 +196695,7 @@ func (p *parser) e1141() (*Node, bool) {
 }
 
 // "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{")
-func (p *parser) e1142() (*Node, bool) {
+func (p *parser) e1143() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196434,10 +196705,10 @@ func (p *parser) e1142() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1140(); !ok {
+		if v, ok := p.e1141(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196450,10 +196721,10 @@ func (p *parser) e1142() (*Node, bool) {
 		if _, ok := p.e629(); !ok {
 			return nil, false
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1141(); !ok {
+		if v, ok := p.e1142(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196463,7 +196734,7 @@ func (p *parser) e1142() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196477,10 +196748,10 @@ func (p *parser) e1142() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1140(); !ok {
+	if v, ok := p.e1141(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196493,10 +196764,10 @@ func (p *parser) e1142() (*Node, bool) {
 	if _, ok := p.e629(); !ok {
 		return nil, false
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1141(); !ok {
+	if v, ok := p.e1142(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196506,17 +196777,17 @@ func (p *parser) e1142() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // h:exprSp
-func (p *parser) e1143() (*Node, bool) {
+func (p *parser) e1144() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1138()
+		v, ok := p.e1139()
 		if ok {
 			p.setCaptureOrdinary(1, v)
 		}
@@ -196524,7 +196795,7 @@ func (p *parser) e1143() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1138()
+	v, ok := p.e1139()
 	if ok {
 		p.setCapture(1, v)
 	}
@@ -196532,10 +196803,10 @@ func (p *parser) e1143() (*Node, bool) {
 }
 
 // m:exprSp
-func (p *parser) e1144() (*Node, bool) {
+func (p *parser) e1145() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1138()
+		v, ok := p.e1139()
 		if ok {
 			p.setCaptureOrdinary(2, v)
 		}
@@ -196543,7 +196814,7 @@ func (p *parser) e1144() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1138()
+	v, ok := p.e1139()
 	if ok {
 		p.setCapture(2, v)
 	}
@@ -196551,7 +196822,7 @@ func (p *parser) e1144() (*Node, bool) {
 }
 
 // "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
-func (p *parser) e1145() (*Node, bool) {
+func (p *parser) e1146() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196561,26 +196832,10 @@ func (p *parser) e1145() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1140(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if v, ok := p.e627(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if _, ok := p.e629(); !ok {
-			return nil, false
-		}
-		if _, ok := p.e1117(); !ok {
-			return nil, false
-		}
-		if v, ok := p.e1143(); !ok {
+		if v, ok := p.e1141(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196593,10 +196848,26 @@ func (p *parser) e1145() (*Node, bool) {
 		if _, ok := p.e629(); !ok {
 			return nil, false
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e1144(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if v, ok := p.e627(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if _, ok := p.e629(); !ok {
+			return nil, false
+		}
+		if _, ok := p.e1118(); !ok {
+			return nil, false
+		}
+		if v, ok := p.e1145(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196606,7 +196877,7 @@ func (p *parser) e1145() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196620,26 +196891,10 @@ func (p *parser) e1145() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1140(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if v, ok := p.e627(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e629(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e1117(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e1143(); !ok {
+	if v, ok := p.e1141(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196652,10 +196907,26 @@ func (p *parser) e1145() (*Node, bool) {
 	if _, ok := p.e629(); !ok {
 		return nil, false
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e1144(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e627(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if _, ok := p.e629(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e1118(); !ok {
+		return nil, false
+	}
+	if v, ok := p.e1145(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196665,14 +196936,14 @@ func (p *parser) e1145() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // "(" -ws ")" !(-sp "{")
-func (p *parser) e1146() (*Node, bool) {
+func (p *parser) e1147() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196682,7 +196953,7 @@ func (p *parser) e1146() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -196690,7 +196961,7 @@ func (p *parser) e1146() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196704,7 +196975,7 @@ func (p *parser) e1146() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -196712,14 +196983,14 @@ func (p *parser) e1146() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // exprList
-func (p *parser) e1147() (*Node, bool) {
+func (p *parser) e1148() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[184], 0)
@@ -196730,10 +197001,10 @@ func (p *parser) e1147() (*Node, bool) {
 }
 
 // as:exprList
-func (p *parser) e1148() (*Node, bool) {
+func (p *parser) e1149() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1147()
+		v, ok := p.e1148()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -196741,7 +197012,7 @@ func (p *parser) e1148() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1147()
+	v, ok := p.e1148()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -196749,7 +197020,7 @@ func (p *parser) e1148() (*Node, bool) {
 }
 
 // dotsWs
-func (p *parser) e1149() (*Node, bool) {
+func (p *parser) e1150() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[146], 0)
@@ -196760,13 +197031,13 @@ func (p *parser) e1149() (*Node, bool) {
 }
 
 // dotsWs?
-func (p *parser) e1150() (*Node, bool) {
+func (p *parser) e1151() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e1149()
+		v, ok := p.e1150()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -196783,7 +197054,7 @@ func (p *parser) e1150() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
 	p.cut = false
-	v, ok := p.e1149()
+	v, ok := p.e1150()
 	cut := p.cut
 	p.cut = prevCut
 	if ok {
@@ -196797,10 +197068,10 @@ func (p *parser) e1150() (*Node, bool) {
 }
 
 // e:dotsWs?
-func (p *parser) e1151() (*Node, bool) {
+func (p *parser) e1152() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1150()
+		v, ok := p.e1151()
 		if ok {
 			p.setCaptureOrdinary(1, v)
 		}
@@ -196808,7 +197079,7 @@ func (p *parser) e1151() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1150()
+	v, ok := p.e1151()
 	if ok {
 		p.setCapture(1, v)
 	}
@@ -196816,7 +197087,7 @@ func (p *parser) e1151() (*Node, bool) {
 }
 
 // "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{")
-func (p *parser) e1152() (*Node, bool) {
+func (p *parser) e1153() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -196826,23 +197097,23 @@ func (p *parser) e1152() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1148(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if _, ok := p.e1122(); !ok {
-			return nil, false
-		}
-		if v, ok := p.e1151(); !ok {
+		if v, ok := p.e1149(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := p.e1133(); !ok {
+		if _, ok := p.e1123(); !ok {
+			return nil, false
+		}
+		if v, ok := p.e1152(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if v, ok := p.e1134(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -196852,7 +197123,7 @@ func (p *parser) e1152() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196866,23 +197137,23 @@ func (p *parser) e1152() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1148(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e1122(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e1151(); !ok {
+	if v, ok := p.e1149(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := p.e1133(); !ok {
+	if _, ok := p.e1123(); !ok {
+		return nil, false
+	}
+	if v, ok := p.e1152(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e1134(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -196892,14 +197163,14 @@ func (p *parser) e1152() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // litValue
-func (p *parser) e1153() (*Node, bool) {
+func (p *parser) e1154() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[203], 0)
@@ -196910,10 +197181,10 @@ func (p *parser) e1153() (*Node, bool) {
 }
 
 // v:litValue
-func (p *parser) e1154() (*Node, bool) {
+func (p *parser) e1155() (*Node, bool) {
 	if p.control == nil {
 
-		v, ok := p.e1153()
+		v, ok := p.e1154()
 		if ok {
 			p.setCaptureOrdinary(0, v)
 		}
@@ -196921,7 +197192,7 @@ func (p *parser) e1154() (*Node, bool) {
 	}
 
 	p.stepWork()
-	v, ok := p.e1153()
+	v, ok := p.e1154()
 	if ok {
 		p.setCapture(0, v)
 	}
@@ -196929,17 +197200,17 @@ func (p *parser) e1154() (*Node, bool) {
 }
 
 // v:litValue !(-sp "{")
-func (p *parser) e1155() (*Node, bool) {
+func (p *parser) e1156() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(1)[:0]
-		if v, ok := p.e1154(); !ok {
+		if v, ok := p.e1155(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1124(); !ok {
+		if _, ok := p.e1125(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -196948,12 +197219,12 @@ func (p *parser) e1155() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(1)[:0]
-	if v, ok := p.e1154(); !ok {
+	if v, ok := p.e1155(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1124(); !ok {
+	if _, ok := p.e1125(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -197017,7 +197288,7 @@ func (p *parser) q199() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e889()
+		v, ok := p.e890()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -197039,7 +197310,7 @@ func (p *parser) q199() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e889()
+	v, ok := p.e890()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -197054,7 +197325,7 @@ func (p *parser) q199() (*Node, bool) {
 }
 
 // goEnd
-func (p *parser) e1158() (*Node, bool) {
+func (p *parser) e1159() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[349], 0)
@@ -197065,7 +197336,7 @@ func (p *parser) e1158() (*Node, bool) {
 }
 
 // "{" / goEnd
-func (p *parser) e1159() (*Node, bool) {
+func (p *parser) e1160() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
@@ -197090,7 +197361,7 @@ func (p *parser) e1159() (*Node, bool) {
 		{
 			prevCut := p.cut
 			p.cut = false
-			v, ok := p.e1158()
+			v, ok := p.e1159()
 			cut := p.cut
 			p.cut = prevCut
 			if ok {
@@ -197127,7 +197398,7 @@ func (p *parser) e1159() (*Node, bool) {
 	{
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e1158()
+		v, ok := p.e1159()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -197142,36 +197413,36 @@ func (p *parser) e1159() (*Node, bool) {
 }
 
 // -sp ("{" / goEnd)
-func (p *parser) e1160() (*Node, bool) {
+func (p *parser) e1161() (*Node, bool) {
 	if p.control == nil {
 
-		if _, ok := p.e1122(); !ok {
+		if _, ok := p.e1123(); !ok {
 			return nil, false
 		}
-		if _, ok := p.e1159(); !ok {
+		if _, ok := p.e1160(); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.stepWork()
-	if _, ok := p.e1122(); !ok {
+	if _, ok := p.e1123(); !ok {
 		return nil, false
 	}
-	if _, ok := p.e1159(); !ok {
+	if _, ok := p.e1160(); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
 // !(-sp ("{" / goEnd))
-func (p *parser) e1161() (*Node, bool) {
+func (p *parser) e1162() (*Node, bool) {
 	if p.control == nil {
 
 		m0 := p.mark()
 		prevCut := p.cut
 		p.silent++
-		_, ok := p.e1160()
+		_, ok := p.e1161()
 		p.silent--
 		p.cut = prevCut
 		p.reset(m0)
@@ -197182,7 +197453,7 @@ func (p *parser) e1161() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
 	p.silent++
-	_, ok := p.e1160()
+	_, ok := p.e1161()
 	p.silent--
 	p.cut = prevCut
 	p.reset(m0)
@@ -197190,7 +197461,7 @@ func (p *parser) e1161() (*Node, bool) {
 }
 
 // "(" -ws ")" !(-sp ("{" / goEnd))
-func (p *parser) e1162() (*Node, bool) {
+func (p *parser) e1163() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197200,7 +197471,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -197208,7 +197479,7 @@ func (p *parser) e1162() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1161(); !ok {
+		if _, ok := p.e1162(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -197222,7 +197493,7 @@ func (p *parser) e1162() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -197230,14 +197501,14 @@ func (p *parser) e1162() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1161(); !ok {
+	if _, ok := p.e1162(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
-func (p *parser) e1163() (*Node, bool) {
+func (p *parser) e1164() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197247,23 +197518,23 @@ func (p *parser) e1163() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1148(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if _, ok := p.e1122(); !ok {
-			return nil, false
-		}
-		if v, ok := p.e1151(); !ok {
+		if v, ok := p.e1149(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := p.e1133(); !ok {
+		if _, ok := p.e1123(); !ok {
+			return nil, false
+		}
+		if v, ok := p.e1152(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if v, ok := p.e1134(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197273,7 +197544,7 @@ func (p *parser) e1163() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1161(); !ok {
+		if _, ok := p.e1162(); !ok {
 			return nil, false
 		}
 		return p.newNodeOrdinary(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
@@ -197287,23 +197558,23 @@ func (p *parser) e1163() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1148(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e1122(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e1151(); !ok {
+	if v, ok := p.e1149(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := p.e1133(); !ok {
+	if _, ok := p.e1123(); !ok {
+		return nil, false
+	}
+	if v, ok := p.e1152(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e1134(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -197313,14 +197584,14 @@ func (p *parser) e1163() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1161(); !ok {
+	if _, ok := p.e1162(); !ok {
 		return nil, false
 	}
 	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
 }
 
 // hoperand
-func (p *parser) e1175() (*Node, bool) {
+func (p *parser) e1176() (*Node, bool) {
 	if p.control == nil {
 
 		return p.call(recRules[224], 0)
@@ -197331,17 +197602,17 @@ func (p *parser) e1175() (*Node, bool) {
 }
 
 // dot -ws "(" -ws kw_type -ws ")"
-func (p *parser) e1176() (*Node, bool) {
+func (p *parser) e1177() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(4)[:0]
-		if v, ok := p.e1115(); !ok {
+		if v, ok := p.e1116(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e601(); !ok {
@@ -197349,15 +197620,15 @@ func (p *parser) e1176() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1121(); !ok {
+		if v, ok := p.e1122(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -197371,12 +197642,12 @@ func (p *parser) e1176() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(4)[:0]
-	if v, ok := p.e1115(); !ok {
+	if v, ok := p.e1116(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e601(); !ok {
@@ -197384,15 +197655,15 @@ func (p *parser) e1176() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1121(); !ok {
+	if v, ok := p.e1122(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -197404,17 +197675,17 @@ func (p *parser) e1176() (*Node, bool) {
 }
 
 // dot -ws "(" -ws t:typ -sp ")"
-func (p *parser) e1177() (*Node, bool) {
+func (p *parser) e1178() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
 		kids := p.nodes(4)[:0]
-		if v, ok := p.e1115(); !ok {
+		if v, ok := p.e1116(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e601(); !ok {
@@ -197422,15 +197693,15 @@ func (p *parser) e1177() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1127(); !ok {
+		if v, ok := p.e1128(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1122(); !ok {
+		if _, ok := p.e1123(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -197444,12 +197715,12 @@ func (p *parser) e1177() (*Node, bool) {
 	p.stepWork()
 	start := p.pos
 	kids := p.nodes(4)[:0]
-	if v, ok := p.e1115(); !ok {
+	if v, ok := p.e1116(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e601(); !ok {
@@ -197457,15 +197728,15 @@ func (p *parser) e1177() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1127(); !ok {
+	if v, ok := p.e1128(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1122(); !ok {
+	if _, ok := p.e1123(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -197477,7 +197748,7 @@ func (p *parser) e1177() (*Node, bool) {
 }
 
 // "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]"
-func (p *parser) e1178() (*Node, bool) {
+func (p *parser) e1179() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197487,10 +197758,10 @@ func (p *parser) e1178() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1140(); !ok {
+		if v, ok := p.e1141(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197503,10 +197774,10 @@ func (p *parser) e1178() (*Node, bool) {
 		if _, ok := p.e629(); !ok {
 			return nil, false
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1141(); !ok {
+		if v, ok := p.e1142(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197527,10 +197798,10 @@ func (p *parser) e1178() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1140(); !ok {
+	if v, ok := p.e1141(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -197543,10 +197814,10 @@ func (p *parser) e1178() (*Node, bool) {
 	if _, ok := p.e629(); !ok {
 		return nil, false
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1141(); !ok {
+	if v, ok := p.e1142(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -197560,7 +197831,7 @@ func (p *parser) e1178() (*Node, bool) {
 }
 
 // "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
-func (p *parser) e1179() (*Node, bool) {
+func (p *parser) e1180() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197570,26 +197841,10 @@ func (p *parser) e1179() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1140(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if v, ok := p.e627(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if _, ok := p.e629(); !ok {
-			return nil, false
-		}
-		if _, ok := p.e1117(); !ok {
-			return nil, false
-		}
-		if v, ok := p.e1143(); !ok {
+		if v, ok := p.e1141(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197602,10 +197857,26 @@ func (p *parser) e1179() (*Node, bool) {
 		if _, ok := p.e629(); !ok {
 			return nil, false
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e1144(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if v, ok := p.e627(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if _, ok := p.e629(); !ok {
+			return nil, false
+		}
+		if _, ok := p.e1118(); !ok {
+			return nil, false
+		}
+		if v, ok := p.e1145(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197626,26 +197897,10 @@ func (p *parser) e1179() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1140(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if v, ok := p.e627(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e629(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e1117(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e1143(); !ok {
+	if v, ok := p.e1141(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -197658,10 +197913,26 @@ func (p *parser) e1179() (*Node, bool) {
 	if _, ok := p.e629(); !ok {
 		return nil, false
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e1144(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e627(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if _, ok := p.e629(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e1118(); !ok {
+		return nil, false
+	}
+	if v, ok := p.e1145(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -197675,7 +197946,7 @@ func (p *parser) e1179() (*Node, bool) {
 }
 
 // "(" -ws ")"
-func (p *parser) e1180() (*Node, bool) {
+func (p *parser) e1181() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197685,7 +197956,7 @@ func (p *parser) e1180() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
 		if v, ok := p.e603(); !ok {
@@ -197704,7 +197975,7 @@ func (p *parser) e1180() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
 	if v, ok := p.e603(); !ok {
@@ -197716,7 +197987,7 @@ func (p *parser) e1180() (*Node, bool) {
 }
 
 // "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")"
-func (p *parser) e1181() (*Node, bool) {
+func (p *parser) e1182() (*Node, bool) {
 	if p.control == nil {
 
 		start := p.pos
@@ -197726,23 +197997,23 @@ func (p *parser) e1181() (*Node, bool) {
 		} else {
 			kids = append(kids, v)
 		}
-		if _, ok := p.e1117(); !ok {
+		if _, ok := p.e1118(); !ok {
 			return nil, false
 		}
-		if v, ok := p.e1148(); !ok {
-			return nil, false
-		} else {
-			kids = append(kids, v)
-		}
-		if _, ok := p.e1122(); !ok {
-			return nil, false
-		}
-		if v, ok := p.e1151(); !ok {
+		if v, ok := p.e1149(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := p.e1133(); !ok {
+		if _, ok := p.e1123(); !ok {
+			return nil, false
+		}
+		if v, ok := p.e1152(); !ok {
+			return nil, false
+		} else {
+			kids = append(kids, v)
+		}
+		if v, ok := p.e1134(); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -197763,23 +198034,23 @@ func (p *parser) e1181() (*Node, bool) {
 	} else {
 		kids = append(kids, v)
 	}
-	if _, ok := p.e1117(); !ok {
+	if _, ok := p.e1118(); !ok {
 		return nil, false
 	}
-	if v, ok := p.e1148(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e1122(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e1151(); !ok {
+	if v, ok := p.e1149(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := p.e1133(); !ok {
+	if _, ok := p.e1123(); !ok {
+		return nil, false
+	}
+	if v, ok := p.e1152(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e1134(); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -198226,7 +198497,7 @@ func (p *parser) q243() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e935()
+		v, ok := p.e936()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198248,7 +198519,7 @@ func (p *parser) q243() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e935()
+	v, ok := p.e936()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198273,7 +198544,7 @@ func (p *parser) q244() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e947()
+		v, ok := p.e948()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198295,7 +198566,7 @@ func (p *parser) q244() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e947()
+	v, ok := p.e948()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198320,7 +198591,7 @@ func (p *parser) q246() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e949()
+		v, ok := p.e950()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198342,7 +198613,7 @@ func (p *parser) q246() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e949()
+	v, ok := p.e950()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198367,7 +198638,7 @@ func (p *parser) q248() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e950()
+		v, ok := p.e951()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198389,7 +198660,7 @@ func (p *parser) q248() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e950()
+	v, ok := p.e951()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198414,7 +198685,7 @@ func (p *parser) q249() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e951()
+		v, ok := p.e952()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198436,7 +198707,7 @@ func (p *parser) q249() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e951()
+	v, ok := p.e952()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198461,7 +198732,7 @@ func (p *parser) q251() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e953()
+		v, ok := p.e954()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198483,7 +198754,7 @@ func (p *parser) q251() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e953()
+	v, ok := p.e954()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198508,7 +198779,7 @@ func (p *parser) q255() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e955()
+		v, ok := p.e956()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198530,7 +198801,7 @@ func (p *parser) q255() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e955()
+	v, ok := p.e956()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198555,7 +198826,7 @@ func (p *parser) q256() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e956()
+		v, ok := p.e957()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198577,7 +198848,7 @@ func (p *parser) q256() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e956()
+	v, ok := p.e957()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198649,7 +198920,7 @@ func (p *parser) q259() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e958()
+		v, ok := p.e959()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198671,7 +198942,7 @@ func (p *parser) q259() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e958()
+	v, ok := p.e959()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198696,7 +198967,7 @@ func (p *parser) q262() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e961()
+		v, ok := p.e962()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198718,7 +198989,7 @@ func (p *parser) q262() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e961()
+	v, ok := p.e962()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198743,7 +199014,7 @@ func (p *parser) q263() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e962()
+		v, ok := p.e963()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198765,7 +199036,7 @@ func (p *parser) q263() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e962()
+	v, ok := p.e963()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198790,7 +199061,7 @@ func (p *parser) q265() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e964()
+		v, ok := p.e965()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198812,7 +199083,7 @@ func (p *parser) q265() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e964()
+	v, ok := p.e965()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198837,7 +199108,7 @@ func (p *parser) q266() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e965()
+		v, ok := p.e966()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198859,7 +199130,7 @@ func (p *parser) q266() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e965()
+	v, ok := p.e966()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198884,7 +199155,7 @@ func (p *parser) q267() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e966()
+		v, ok := p.e967()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198906,7 +199177,7 @@ func (p *parser) q267() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e966()
+	v, ok := p.e967()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198931,7 +199202,7 @@ func (p *parser) q270() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e969()
+		v, ok := p.e970()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -198953,7 +199224,7 @@ func (p *parser) q270() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e969()
+	v, ok := p.e970()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -198978,7 +199249,7 @@ func (p *parser) q271() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e970()
+		v, ok := p.e971()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199000,7 +199271,7 @@ func (p *parser) q271() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e970()
+	v, ok := p.e971()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199025,7 +199296,7 @@ func (p *parser) q272() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e971()
+		v, ok := p.e972()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199047,7 +199318,7 @@ func (p *parser) q272() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e971()
+	v, ok := p.e972()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199252,7 +199523,7 @@ func (p *parser) q277() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e976()
+		v, ok := p.e977()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199274,7 +199545,7 @@ func (p *parser) q277() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e976()
+	v, ok := p.e977()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199299,7 +199570,7 @@ func (p *parser) q278() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e977()
+		v, ok := p.e978()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199321,7 +199592,7 @@ func (p *parser) q278() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e977()
+	v, ok := p.e978()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199346,7 +199617,7 @@ func (p *parser) q279() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e978()
+		v, ok := p.e979()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199368,7 +199639,7 @@ func (p *parser) q279() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e978()
+	v, ok := p.e979()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199393,7 +199664,7 @@ func (p *parser) q283() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e982()
+		v, ok := p.e983()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199415,7 +199686,7 @@ func (p *parser) q283() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e982()
+	v, ok := p.e983()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199440,7 +199711,7 @@ func (p *parser) q285() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e984()
+		v, ok := p.e985()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199462,7 +199733,7 @@ func (p *parser) q285() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e984()
+	v, ok := p.e985()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199487,7 +199758,7 @@ func (p *parser) q286() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e985()
+		v, ok := p.e986()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199509,7 +199780,7 @@ func (p *parser) q286() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e985()
+	v, ok := p.e986()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199534,7 +199805,7 @@ func (p *parser) q287() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e986()
+		v, ok := p.e987()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199556,7 +199827,7 @@ func (p *parser) q287() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e986()
+	v, ok := p.e987()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199581,7 +199852,7 @@ func (p *parser) q288() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e987()
+		v, ok := p.e988()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199603,7 +199874,7 @@ func (p *parser) q288() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e987()
+	v, ok := p.e988()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199816,7 +200087,7 @@ func (p *parser) q296() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e991()
+		v, ok := p.e992()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199838,7 +200109,7 @@ func (p *parser) q296() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e991()
+	v, ok := p.e992()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199863,7 +200134,7 @@ func (p *parser) q299() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e994()
+		v, ok := p.e995()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199885,7 +200156,7 @@ func (p *parser) q299() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e994()
+	v, ok := p.e995()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -199910,7 +200181,7 @@ func (p *parser) q300() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e995()
+		v, ok := p.e996()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -199932,7 +200203,7 @@ func (p *parser) q300() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e995()
+	v, ok := p.e996()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -200098,7 +200369,7 @@ func (p *parser) q305() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e1008()
+		v, ok := p.e1009()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -200120,7 +200391,7 @@ func (p *parser) q305() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e1008()
+	v, ok := p.e1009()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -200145,7 +200416,7 @@ func (p *parser) q306() (*Node, bool) {
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		v, ok := p.e1016()
+		v, ok := p.e1017()
 		p.depth--
 		p.cut = prevCut
 		p.trail = p.trail[:trail]
@@ -200167,7 +200438,7 @@ func (p *parser) q306() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e1016()
+	v, ok := p.e1017()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -207595,7 +207866,7 @@ func (p *tparser) i0() (any, bool) {
 			}
 			v21 = p.newNodeOrdinary("Seq", x17, p.pos, x18)
 			v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13)
-			v23 = p.attachCaptures(v22, scope1182, []any{k15}, x13, p.pos)
+			v23 = p.attachCaptures(v22, scope1183, []any{k15}, x13, p.pos)
 			x12++
 			p.pushKid(v23)
 			if p.pos == x13 {
@@ -207643,7 +207914,7 @@ func (p *tparser) i0() (any, bool) {
 			}
 			v38 = p.newNodeOrdinary("Seq", x34, p.pos, x35)
 			v39 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30)
-			v40 = p.attachCaptures(v39, scope1183, []any{k32}, x30, p.pos)
+			v40 = p.attachCaptures(v39, scope1184, []any{k32}, x30, p.pos)
 			x29++
 			p.pushKid(v40)
 			if p.pos == x30 {
@@ -207668,21 +207939,21 @@ func (p *tparser) i0() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1184 := func() any { return k5 }()
-				f_1185 := func() any {
+				f_1185 := func() any { return k5 }()
+				f_1186 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
-						c.pushMap(func() any { return k8 }(), func(l_1186 any) any {
-							return func() any { return c.member(func() any { return (l_1186) }(), "$d") }()
-						})
-						c.pushMap(func() any { return k25 }(), func(l_1187 any) any {
+						c.pushMap(func() any { return k8 }(), func(l_1187 any) any {
 							return func() any { return c.member(func() any { return (l_1187) }(), "$d") }()
+						})
+						c.pushMap(func() any { return k25 }(), func(l_1188 any) any {
+							return func() any { return c.member(func() any { return (l_1188) }(), "$d") }()
 						})
 						return c.endList(b)
 					}()
 				}()
-				return tmk_File(c, true, f_1184, f_1185)
+				return tmk_File(c, true, f_1185, f_1186)
 			}()
 		}()
 		p.where = w
@@ -207832,7 +208103,7 @@ L4:
 		}
 		v21 = p.newNode("Seq", x17, p.pos, x18)
 		v22 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v21, x13)
-		v23 = p.attachCaptures(v22, scope1182, []any{k15}, x13, p.pos)
+		v23 = p.attachCaptures(v22, scope1183, []any{k15}, x13, p.pos)
 		x12++
 		p.pushKid(v23)
 		if p.pos == x13 {
@@ -207883,7 +208154,7 @@ L4:
 		}
 		v38 = p.newNode("Seq", x34, p.pos, x35)
 		v39 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v38, x30)
-		v40 = p.attachCaptures(v39, scope1183, []any{k32}, x30, p.pos)
+		v40 = p.attachCaptures(v39, scope1184, []any{k32}, x30, p.pos)
 		x29++
 		p.pushKid(v40)
 		if p.pos == x30 {
@@ -207908,21 +208179,21 @@ L4:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1184 := func() any { c.p.stepWork(); return k5 }()
-			f_1185 := func() any {
+			f_1185 := func() any { c.p.stepWork(); return k5 }()
+			f_1186 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
-					c.pushMap(func() any { c.p.stepWork(); return k8 }(), func(l_1186 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1186) }(), "$d") }()
-					})
-					c.pushMap(func() any { c.p.stepWork(); return k25 }(), func(l_1187 any) any {
+					c.pushMap(func() any { c.p.stepWork(); return k8 }(), func(l_1187 any) any {
 						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1187) }(), "$d") }()
+					})
+					c.pushMap(func() any { c.p.stepWork(); return k25 }(), func(l_1188 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1188) }(), "$d") }()
 					})
 					return c.endList(b)
 				}()
 			}()
-			return tmk_File(c, true, f_1184, f_1185)
+			return tmk_File(c, true, f_1185, f_1186)
 		}()
 	}()
 	p.where = w
@@ -208233,9 +208504,9 @@ func (p *tparser) i2() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1188 := func() any { return any("import") }()
-				f_1189 := func() any { return k1 }()
-				return tmk_GenDecl(c, true, f_1188, f_1189)
+				f_1189 := func() any { return any("import") }()
+				f_1190 := func() any { return k1 }()
+				return tmk_GenDecl(c, true, f_1189, f_1190)
 			}()
 		}()
 		p.where = w
@@ -208321,9 +208592,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1188 := func() any { c.p.stepWork(); return any("import") }()
-			f_1189 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_GenDecl(c, true, f_1188, f_1189)
+			f_1189 := func() any { c.p.stepWork(); return any("import") }()
+			f_1190 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_GenDecl(c, true, f_1189, f_1190)
 		}()
 	}()
 	p.where = w
@@ -208732,9 +209003,9 @@ func (p *tparser) i5() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1190 := func() any { return k1 }()
-				f_1191 := func() any { return k9 }()
-				return tmk_ImportSpec(c, true, f_1190, f_1191)
+				f_1191 := func() any { return k1 }()
+				f_1192 := func() any { return k9 }()
+				return tmk_ImportSpec(c, true, f_1191, f_1192)
 			}()
 		}()
 		p.where = w
@@ -208798,9 +209069,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1190 := func() any { c.p.stepWork(); return k1 }()
-			f_1191 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_ImportSpec(c, true, f_1190, f_1191)
+			f_1191 := func() any { c.p.stepWork(); return k1 }()
+			f_1192 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_ImportSpec(c, true, f_1191, f_1192)
 		}()
 	}()
 	p.where = w
@@ -209081,6 +209352,7 @@ func (p *tparser) s7() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit14, ".", 12, false); !ok {
@@ -209216,9 +209488,9 @@ func (p *tparser) i8() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1192 := func() any { return any("const") }()
-				f_1193 := func() any { return k1 }()
-				return tmk_GenDecl(c, true, f_1192, f_1193)
+				f_1193 := func() any { return any("const") }()
+				f_1194 := func() any { return k1 }()
+				return tmk_GenDecl(c, true, f_1193, f_1194)
 			}()
 		}()
 		p.where = w
@@ -209304,9 +209576,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1192 := func() any { c.p.stepWork(); return any("const") }()
-			f_1193 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_GenDecl(c, true, f_1192, f_1193)
+			f_1193 := func() any { c.p.stepWork(); return any("const") }()
+			f_1194 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_GenDecl(c, true, f_1193, f_1194)
 		}()
 	}()
 	p.where = w
@@ -209737,10 +210009,10 @@ func (p *tparser) i11() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1194 := func() any { return k1 }()
-				f_1195 := func() any { return k4 }()
-				f_1196 := func() any { return c.concat(func() any { return k12 }()) }()
-				return tmk_ValueSpec(c, true, f_1194, f_1195, f_1196)
+				f_1195 := func() any { return k1 }()
+				f_1196 := func() any { return k4 }()
+				f_1197 := func() any { return c.concat(func() any { return k12 }()) }()
+				return tmk_ValueSpec(c, true, f_1195, f_1196, f_1197)
 			}()
 		}()
 		p.where = w
@@ -209826,10 +210098,10 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1194 := func() any { c.p.stepWork(); return k1 }()
-			f_1195 := func() any { c.p.stepWork(); return k4 }()
-			f_1196 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k12 }()) }()
-			return tmk_ValueSpec(c, true, f_1194, f_1195, f_1196)
+			f_1195 := func() any { c.p.stepWork(); return k1 }()
+			f_1196 := func() any { c.p.stepWork(); return k4 }()
+			f_1197 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k12 }()) }()
+			return tmk_ValueSpec(c, true, f_1195, f_1196, f_1197)
 		}()
 	}()
 	p.where = w
@@ -210448,9 +210720,9 @@ func (p *tparser) i15() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1197 := func() any { return any("var") }()
-				f_1198 := func() any { return k1 }()
-				return tmk_GenDecl(c, true, f_1197, f_1198)
+				f_1198 := func() any { return any("var") }()
+				f_1199 := func() any { return k1 }()
+				return tmk_GenDecl(c, true, f_1198, f_1199)
 			}()
 		}()
 		p.where = w
@@ -210536,9 +210808,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1197 := func() any { c.p.stepWork(); return any("var") }()
-			f_1198 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_GenDecl(c, true, f_1197, f_1198)
+			f_1198 := func() any { c.p.stepWork(); return any("var") }()
+			f_1199 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_GenDecl(c, true, f_1198, f_1199)
 		}()
 	}()
 	p.where = w
@@ -211178,10 +211450,10 @@ func (p *tparser) i19() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1199 := func() any { return k1 }()
-				f_1200 := func() any { return k4 }()
-				f_1201 := func() any { return c.concat(func() any { return k7 }()) }()
-				return tmk_ValueSpec(c, true, f_1199, f_1200, f_1201)
+				f_1200 := func() any { return k1 }()
+				f_1201 := func() any { return k4 }()
+				f_1202 := func() any { return c.concat(func() any { return k7 }()) }()
+				return tmk_ValueSpec(c, true, f_1200, f_1201, f_1202)
 			}()
 		}()
 		p.where = w
@@ -211260,10 +211532,10 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1199 := func() any { c.p.stepWork(); return k1 }()
-			f_1200 := func() any { c.p.stepWork(); return k4 }()
-			f_1201 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k7 }()) }()
-			return tmk_ValueSpec(c, true, f_1199, f_1200, f_1201)
+			f_1200 := func() any { c.p.stepWork(); return k1 }()
+			f_1201 := func() any { c.p.stepWork(); return k4 }()
+			f_1202 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k7 }()) }()
+			return tmk_ValueSpec(c, true, f_1200, f_1201, f_1202)
 		}()
 	}()
 	p.where = w
@@ -211371,9 +211643,9 @@ func (p *tparser) i20() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1202 := func() any { return k1 }()
-				f_1203 := func() any { return k7 }()
-				return tmk_ValueSpec(c, true, f_1202, nil, f_1203)
+				f_1203 := func() any { return k1 }()
+				f_1204 := func() any { return k7 }()
+				return tmk_ValueSpec(c, true, f_1203, nil, f_1204)
 			}()
 		}()
 		p.where = w
@@ -211460,9 +211732,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1202 := func() any { c.p.stepWork(); return k1 }()
-			f_1203 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_ValueSpec(c, true, f_1202, nil, f_1203)
+			f_1203 := func() any { c.p.stepWork(); return k1 }()
+			f_1204 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_ValueSpec(c, true, f_1203, nil, f_1204)
 		}()
 	}()
 	p.where = w
@@ -211576,9 +211848,9 @@ func (p *tparser) i21() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1204 := func() any { return any("type") }()
-				f_1205 := func() any { return k1 }()
-				return tmk_GenDecl(c, true, f_1204, f_1205)
+				f_1205 := func() any { return any("type") }()
+				f_1206 := func() any { return k1 }()
+				return tmk_GenDecl(c, true, f_1205, f_1206)
 			}()
 		}()
 		p.where = w
@@ -211664,9 +211936,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1204 := func() any { c.p.stepWork(); return any("type") }()
-			f_1205 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_GenDecl(c, true, f_1204, f_1205)
+			f_1205 := func() any { c.p.stepWork(); return any("type") }()
+			f_1206 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_GenDecl(c, true, f_1205, f_1206)
 		}()
 	}()
 	p.where = w
@@ -212360,11 +212632,11 @@ func (p *tparser) i25() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1206 := func() any { return k1 }()
-				f_1207 := func() any { return k4 }()
-				f_1208 := func() any { return k7 }()
-				f_1209 := func() any { return k15 }()
-				return tmk_TypeSpec(c, true, f_1206, f_1207, f_1208, f_1209)
+				f_1207 := func() any { return k1 }()
+				f_1208 := func() any { return k4 }()
+				f_1209 := func() any { return k7 }()
+				f_1210 := func() any { return k15 }()
+				return tmk_TypeSpec(c, true, f_1207, f_1208, f_1209, f_1210)
 			}()
 		}()
 		p.where = w
@@ -212458,11 +212730,11 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1206 := func() any { c.p.stepWork(); return k1 }()
-			f_1207 := func() any { c.p.stepWork(); return k4 }()
-			f_1208 := func() any { c.p.stepWork(); return k7 }()
-			f_1209 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_TypeSpec(c, true, f_1206, f_1207, f_1208, f_1209)
+			f_1207 := func() any { c.p.stepWork(); return k1 }()
+			f_1208 := func() any { c.p.stepWork(); return k4 }()
+			f_1209 := func() any { c.p.stepWork(); return k7 }()
+			f_1210 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_TypeSpec(c, true, f_1207, f_1208, f_1209, f_1210)
 		}()
 	}()
 	p.where = w
@@ -212558,9 +212830,9 @@ func (p *tparser) i26() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1210 := func() any { return k1 }()
-				f_1211 := func() any { return k7 }()
-				return tmk_TypeSpec(c, true, f_1210, nil, nil, f_1211)
+				f_1211 := func() any { return k1 }()
+				f_1212 := func() any { return k7 }()
+				return tmk_TypeSpec(c, true, f_1211, nil, nil, f_1212)
 			}()
 		}()
 		p.where = w
@@ -212634,9 +212906,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1210 := func() any { c.p.stepWork(); return k1 }()
-			f_1211 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_TypeSpec(c, true, f_1210, nil, nil, f_1211)
+			f_1211 := func() any { c.p.stepWork(); return k1 }()
+			f_1212 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_TypeSpec(c, true, f_1211, nil, nil, f_1212)
 		}()
 	}()
 	p.where = w
@@ -212756,10 +213028,10 @@ func (p *tparser) i27() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1212 := func() any { return k1 }()
-				f_1213 := func() any { return k7 }()
-				f_1214 := func() any { return k15 }()
-				return tmk_TypeSpec(c, true, f_1212, nil, f_1213, f_1214)
+				f_1213 := func() any { return k1 }()
+				f_1214 := func() any { return k7 }()
+				f_1215 := func() any { return k15 }()
+				return tmk_TypeSpec(c, true, f_1213, nil, f_1214, f_1215)
 			}()
 		}()
 		p.where = w
@@ -212857,10 +213129,10 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1212 := func() any { c.p.stepWork(); return k1 }()
-			f_1213 := func() any { c.p.stepWork(); return k7 }()
-			f_1214 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_TypeSpec(c, true, f_1212, nil, f_1213, f_1214)
+			f_1213 := func() any { c.p.stepWork(); return k1 }()
+			f_1214 := func() any { c.p.stepWork(); return k7 }()
+			f_1215 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_TypeSpec(c, true, f_1213, nil, f_1214, f_1215)
 		}()
 	}()
 	p.where = w
@@ -214501,23 +214773,23 @@ func (p *tparser) i32() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1215 := func() any {
+				f_1216 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushList(func() any {
 
 							return func() any {
-								f_1216 := func() any { return c.list(func() any { return k4 }()) }()
-								f_1217 := func() any { return k7 }()
-								return tmk_Field(c, false, f_1216, f_1217, nil)
+								f_1217 := func() any { return c.list(func() any { return k4 }()) }()
+								f_1218 := func() any { return k7 }()
+								return tmk_Field(c, false, f_1217, f_1218, nil)
 							}()
 						}())
 						c.pushItems(func() any { return k10 }())
 						return c.endList(b)
 					}()
 				}()
-				return tmk_FieldList(c, true, f_1215)
+				return tmk_FieldList(c, true, f_1216)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -214699,23 +214971,23 @@ L24:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1215 := func() any {
+			f_1216 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any {
 						c.p.stepWork()
 						return func() any {
-							f_1216 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-							f_1217 := func() any { c.p.stepWork(); return k7 }()
-							return tmk_Field(c, false, f_1216, f_1217, nil)
+							f_1217 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+							f_1218 := func() any { c.p.stepWork(); return k7 }()
+							return tmk_Field(c, false, f_1217, f_1218, nil)
 						}()
 					}())
 					c.pushItems(func() any { c.p.stepWork(); return k10 }())
 					return c.endList(b)
 				}()
 			}()
-			return tmk_FieldList(c, true, f_1215)
+			return tmk_FieldList(c, true, f_1216)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -214859,7 +215131,7 @@ func (p *tparser) i33() (any, bool) {
 			x14 = append(x14, v21)
 			v22 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-			v24 = p.attachCaptures(v23, scope1218, []any{k11}, x9, p.pos)
+			v24 = p.attachCaptures(v23, scope1219, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v24)
 			if p.pos == x9 {
@@ -214878,14 +215150,14 @@ func (p *tparser) i33() (any, bool) {
 		p.where = "splitType"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1219, l_1220 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1220, l_1221 any) any {
 				return func() any {
 
 					return func() any {
-						f_1221 := func() any { return (l_1219) }()
-						f_1222 := func() any { return any("|") }()
-						f_1223 := func() any { return c.member(func() any { return (l_1220) }(), "$t") }()
-						return tmk_BinaryExpr(c, false, f_1221, f_1222, f_1223)
+						f_1222 := func() any { return (l_1220) }()
+						f_1223 := func() any { return any("|") }()
+						f_1224 := func() any { return c.member(func() any { return (l_1221) }(), "$t") }()
+						return tmk_BinaryExpr(c, false, f_1222, f_1223, f_1224)
 					}()
 				}()
 			})
@@ -215010,7 +215282,7 @@ func (p *tparser) i33() (any, bool) {
 		x14 = append(x14, v21)
 		v22 = p.newNode("Seq", x13, p.pos, x14)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-		v24 = p.attachCaptures(v23, scope1218, []any{k11}, x9, p.pos)
+		v24 = p.attachCaptures(v23, scope1219, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v24)
 		if p.pos == x9 {
@@ -215029,14 +215301,14 @@ func (p *tparser) i33() (any, bool) {
 	p.where = "splitType"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1219, l_1220 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1220, l_1221 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1221 := func() any { c.p.stepWork(); return (l_1219) }()
-					f_1222 := func() any { c.p.stepWork(); return any("|") }()
-					f_1223 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1220) }(), "$t") }()
-					return tmk_BinaryExpr(c, false, f_1221, f_1222, f_1223)
+					f_1222 := func() any { c.p.stepWork(); return (l_1220) }()
+					f_1223 := func() any { c.p.stepWork(); return any("|") }()
+					f_1224 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1221) }(), "$t") }()
+					return tmk_BinaryExpr(c, false, f_1222, f_1223, f_1224)
 				}()
 			}()
 		})
@@ -215275,7 +215547,7 @@ func (p *tparser) i35() (any, bool) {
 		p.where = "splitStar"
 		v = func() any {
 
-			return func() any { f_1224 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1224) }()
+			return func() any { f_1225 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1225) }()
 		}()
 		p.where = w
 		p.depth--
@@ -215345,7 +215617,7 @@ L3:
 	p.where = "splitStar"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1224 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1224) }()
+		return func() any { f_1225 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1225) }()
 	}()
 	p.where = w
 	p.depth--
@@ -215479,8 +215751,8 @@ func (p *tparser) i36() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1225 := func() any { return k1 }()
-				return tmk_ParenExpr(c, true, f_1225)
+				f_1226 := func() any { return k1 }()
+				return tmk_ParenExpr(c, true, f_1226)
 			}()
 		}()
 		p.where = w
@@ -215598,8 +215870,8 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1225 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ParenExpr(c, true, f_1225)
+			f_1226 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ParenExpr(c, true, f_1226)
 		}()
 	}()
 	p.where = w
@@ -222484,19 +222756,19 @@ func (p *tparser) i43() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1226 := func() any { return k1 }()
-				f_1227 := func() any { return k9 }()
-				f_1228 := func() any {
+				f_1227 := func() any { return k1 }()
+				f_1228 := func() any { return k9 }()
+				f_1229 := func() any {
 
 					return func() any {
-						f_1229 := func() any { return k12 }()
-						f_1230 := func() any { return k20 }()
-						f_1231 := func() any { return k23 }()
-						return tmk_FuncType(c, false, f_1229, f_1230, f_1231)
+						f_1230 := func() any { return k12 }()
+						f_1231 := func() any { return k20 }()
+						f_1232 := func() any { return k23 }()
+						return tmk_FuncType(c, false, f_1230, f_1231, f_1232)
 					}()
 				}()
-				f_1232 := func() any { return k39 }()
-				return tmk_FuncDecl(c, true, f_1226, f_1227, f_1228, f_1232)
+				f_1233 := func() any { return k39 }()
+				return tmk_FuncDecl(c, true, f_1227, f_1228, f_1229, f_1233)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -222697,19 +222969,19 @@ L45:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1226 := func() any { c.p.stepWork(); return k1 }()
-			f_1227 := func() any { c.p.stepWork(); return k9 }()
-			f_1228 := func() any {
+			f_1227 := func() any { c.p.stepWork(); return k1 }()
+			f_1228 := func() any { c.p.stepWork(); return k9 }()
+			f_1229 := func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1229 := func() any { c.p.stepWork(); return k12 }()
-					f_1230 := func() any { c.p.stepWork(); return k20 }()
-					f_1231 := func() any { c.p.stepWork(); return k23 }()
-					return tmk_FuncType(c, false, f_1229, f_1230, f_1231)
+					f_1230 := func() any { c.p.stepWork(); return k12 }()
+					f_1231 := func() any { c.p.stepWork(); return k20 }()
+					f_1232 := func() any { c.p.stepWork(); return k23 }()
+					return tmk_FuncType(c, false, f_1230, f_1231, f_1232)
 				}()
 			}()
-			f_1232 := func() any { c.p.stepWork(); return k39 }()
-			return tmk_FuncDecl(c, true, f_1226, f_1227, f_1228, f_1232)
+			f_1233 := func() any { c.p.stepWork(); return k39 }()
+			return tmk_FuncDecl(c, true, f_1227, f_1228, f_1229, f_1233)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -223133,8 +223405,8 @@ func (p *tparser) i47() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1233 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_FieldList(c, true, f_1233)
+				f_1234 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_FieldList(c, true, f_1234)
 			}()
 		}()
 		p.where = w
@@ -223205,8 +223477,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1233 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_FieldList(c, true, f_1233)
+			f_1234 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_FieldList(c, true, f_1234)
 		}()
 	}()
 	p.where = w
@@ -223431,7 +223703,7 @@ func (p *tparser) i49() (any, bool) {
 			x14 = append(x14, v18)
 			v19 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-			v21 = p.attachCaptures(v20, scope1234, []any{k11}, x9, p.pos)
+			v21 = p.attachCaptures(v20, scope1235, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v21)
 			if p.pos == x9 {
@@ -223474,8 +223746,8 @@ func (p *tparser) i49() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_1235 any) any {
-					return func() any { return c.member(func() any { return (l_1235) }(), "$g") }()
+				c.pushMap(func() any { return k4 }(), func(l_1236 any) any {
+					return func() any { return c.member(func() any { return (l_1236) }(), "$g") }()
 				})
 				return c.endList(b)
 			}()
@@ -223575,7 +223847,7 @@ func (p *tparser) i49() (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.newNode("Seq", x13, p.pos, x14)
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-		v21 = p.attachCaptures(v20, scope1234, []any{k11}, x9, p.pos)
+		v21 = p.attachCaptures(v20, scope1235, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v21)
 		if p.pos == x9 {
@@ -223621,8 +223893,8 @@ L26:
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1235 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1235) }(), "$g") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1236 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1236) }(), "$g") }()
 			})
 			return c.endList(b)
 		}()
@@ -223955,9 +224227,9 @@ func (p *tparser) i51() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1236 := func() any { return c.list(func() any { return k1 }()) }()
-				f_1237 := func() any { return k4 }()
-				return tmk_Field(c, true, f_1236, f_1237, nil)
+				f_1237 := func() any { return c.list(func() any { return k1 }()) }()
+				f_1238 := func() any { return k4 }()
+				return tmk_Field(c, true, f_1237, f_1238, nil)
 			}()
 		}()
 		p.where = w
@@ -224014,9 +224286,9 @@ func (p *tparser) i51() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1236 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1237 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Field(c, true, f_1236, f_1237, nil)
+			f_1237 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1238 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Field(c, true, f_1237, f_1238, nil)
 		}()
 	}()
 	p.where = w
@@ -224101,9 +224373,9 @@ func (p *tparser) i52() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1238 := func() any { return k1 }()
-				f_1239 := func() any { return k4 }()
-				return tmk_Field(c, true, f_1238, f_1239, nil)
+				f_1239 := func() any { return k1 }()
+				f_1240 := func() any { return k4 }()
+				return tmk_Field(c, true, f_1239, f_1240, nil)
 			}()
 		}()
 		p.where = w
@@ -224160,9 +224432,9 @@ func (p *tparser) i52() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1238 := func() any { c.p.stepWork(); return k1 }()
-			f_1239 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Field(c, true, f_1238, f_1239, nil)
+			f_1239 := func() any { c.p.stepWork(); return k1 }()
+			f_1240 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Field(c, true, f_1239, f_1240, nil)
 		}()
 	}()
 	p.where = w
@@ -224504,7 +224776,7 @@ func (p *tparser) i54() (any, bool) {
 		p.where = "variadicType"
 		v = func() any {
 
-			return func() any { f_1240 := func() any { return k1 }(); return tmk_Ellipsis(c, true, f_1240) }()
+			return func() any { f_1241 := func() any { return k1 }(); return tmk_Ellipsis(c, true, f_1241) }()
 		}()
 		p.where = w
 		p.depth--
@@ -224555,7 +224827,7 @@ func (p *tparser) i54() (any, bool) {
 	p.where = "variadicType"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1240 := func() any { c.p.stepWork(); return k1 }(); return tmk_Ellipsis(c, true, f_1240) }()
+		return func() any { f_1241 := func() any { c.p.stepWork(); return k1 }(); return tmk_Ellipsis(c, true, f_1241) }()
 	}()
 	p.where = w
 	p.depth--
@@ -224976,8 +225248,8 @@ func (p *tparser) i56() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1241 := func() any { return k3 }()
-				return tmk_Field(c, true, nil, f_1241, nil)
+				f_1242 := func() any { return k3 }()
+				return tmk_Field(c, true, nil, f_1242, nil)
 			}()
 		}()
 		p.where = w
@@ -225107,8 +225379,8 @@ L5:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1241 := func() any { c.p.stepWork(); return k3 }()
-			return tmk_Field(c, true, nil, f_1241, nil)
+			f_1242 := func() any { c.p.stepWork(); return k3 }()
+			return tmk_Field(c, true, nil, f_1242, nil)
 		}()
 	}()
 	p.where = w
@@ -225830,17 +226102,17 @@ func (p *tparser) i60() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1242 := func() any {
+				f_1243 := func() any {
 
 					return c.list(func() any {
 
 						return func() any {
-							f_1243 := func() any { return k1 }()
-							return tmk_Field(c, false, nil, f_1243, nil)
+							f_1244 := func() any { return k1 }()
+							return tmk_Field(c, false, nil, f_1244, nil)
 						}()
 					}())
 				}()
-				return tmk_FieldList(c, true, f_1242)
+				return tmk_FieldList(c, true, f_1243)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -225882,17 +226154,17 @@ func (p *tparser) i60() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1242 := func() any {
+			f_1243 := func() any {
 				c.p.stepWork()
 				return c.list(func() any {
 					c.p.stepWork()
 					return func() any {
-						f_1243 := func() any { c.p.stepWork(); return k1 }()
-						return tmk_Field(c, false, nil, f_1243, nil)
+						f_1244 := func() any { c.p.stepWork(); return k1 }()
+						return tmk_Field(c, false, nil, f_1244, nil)
 					}()
 				}())
 			}()
-			return tmk_FieldList(c, true, f_1242)
+			return tmk_FieldList(c, true, f_1243)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -225986,8 +226258,8 @@ func (p *tparser) i61() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1244 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_FieldList(c, true, f_1244)
+				f_1245 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_FieldList(c, true, f_1245)
 			}()
 		}()
 		p.where = w
@@ -226058,8 +226330,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1244 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_FieldList(c, true, f_1244)
+			f_1245 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_FieldList(c, true, f_1245)
 		}()
 	}()
 	p.where = w
@@ -226771,8 +227043,8 @@ func (p *tparser) i65() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1245 := func() any { return k1 }()
-				return tmk_Field(c, true, nil, f_1245, nil)
+				f_1246 := func() any { return k1 }()
+				return tmk_Field(c, true, nil, f_1246, nil)
 			}()
 		}()
 		p.where = w
@@ -226813,8 +227085,8 @@ func (p *tparser) i65() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1245 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_Field(c, true, nil, f_1245, nil)
+			f_1246 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_Field(c, true, nil, f_1246, nil)
 		}()
 	}()
 	p.where = w
@@ -226974,7 +227246,7 @@ func (p *tparser) i66() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1246 := func() any {
+				f_1247 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -226983,7 +227255,7 @@ func (p *tparser) i66() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_FieldList(c, true, f_1246)
+				return tmk_FieldList(c, true, f_1247)
 			}()
 		}()
 		p.where = w
@@ -227121,7 +227393,7 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1246 := func() any {
+			f_1247 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -227130,7 +227402,7 @@ L18:
 					return c.endList(b)
 				}()
 			}()
-			return tmk_FieldList(c, true, f_1246)
+			return tmk_FieldList(c, true, f_1247)
 		}()
 	}()
 	p.where = w
@@ -227215,9 +227487,9 @@ func (p *tparser) i67() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1247 := func() any { return k1 }()
-				f_1248 := func() any { return k4 }()
-				return tmk_Field(c, true, f_1247, f_1248, nil)
+				f_1248 := func() any { return k1 }()
+				f_1249 := func() any { return k4 }()
+				return tmk_Field(c, true, f_1248, f_1249, nil)
 			}()
 		}()
 		p.where = w
@@ -227274,9 +227546,9 @@ func (p *tparser) i67() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1247 := func() any { c.p.stepWork(); return k1 }()
-			f_1248 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Field(c, true, f_1247, f_1248, nil)
+			f_1248 := func() any { c.p.stepWork(); return k1 }()
+			f_1249 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Field(c, true, f_1248, f_1249, nil)
 		}()
 	}()
 	p.where = w
@@ -227419,7 +227691,7 @@ func (p *tparser) i68() (any, bool) {
 			x14 = append(x14, v21)
 			v22 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-			v24 = p.attachCaptures(v23, scope1249, []any{k11}, x9, p.pos)
+			v24 = p.attachCaptures(v23, scope1250, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v24)
 			if p.pos == x9 {
@@ -227438,14 +227710,14 @@ func (p *tparser) i68() (any, bool) {
 		p.where = "constraint"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1250, l_1251 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1251, l_1252 any) any {
 				return func() any {
 
 					return func() any {
-						f_1252 := func() any { return (l_1250) }()
-						f_1253 := func() any { return any("|") }()
-						f_1254 := func() any { return c.member(func() any { return (l_1251) }(), "$t") }()
-						return tmk_BinaryExpr(c, false, f_1252, f_1253, f_1254)
+						f_1253 := func() any { return (l_1251) }()
+						f_1254 := func() any { return any("|") }()
+						f_1255 := func() any { return c.member(func() any { return (l_1252) }(), "$t") }()
+						return tmk_BinaryExpr(c, false, f_1253, f_1254, f_1255)
 					}()
 				}()
 			})
@@ -227570,7 +227842,7 @@ func (p *tparser) i68() (any, bool) {
 		x14 = append(x14, v21)
 		v22 = p.newNode("Seq", x13, p.pos, x14)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-		v24 = p.attachCaptures(v23, scope1249, []any{k11}, x9, p.pos)
+		v24 = p.attachCaptures(v23, scope1250, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v24)
 		if p.pos == x9 {
@@ -227589,14 +227861,14 @@ func (p *tparser) i68() (any, bool) {
 	p.where = "constraint"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1250, l_1251 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1251, l_1252 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1252 := func() any { c.p.stepWork(); return (l_1250) }()
-					f_1253 := func() any { c.p.stepWork(); return any("|") }()
-					f_1254 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1251) }(), "$t") }()
-					return tmk_BinaryExpr(c, false, f_1252, f_1253, f_1254)
+					f_1253 := func() any { c.p.stepWork(); return (l_1251) }()
+					f_1254 := func() any { c.p.stepWork(); return any("|") }()
+					f_1255 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1252) }(), "$t") }()
+					return tmk_BinaryExpr(c, false, f_1253, f_1254, f_1255)
 				}()
 			}()
 		})
@@ -228257,9 +228529,9 @@ func (p *tparser) i71() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1255 := func() any { return any("~") }()
-				f_1256 := func() any { return k1 }()
-				return tmk_UnaryExpr(c, true, f_1255, f_1256)
+				f_1256 := func() any { return any("~") }()
+				f_1257 := func() any { return k1 }()
+				return tmk_UnaryExpr(c, true, f_1256, f_1257)
 			}()
 		}()
 		p.where = w
@@ -228312,9 +228584,9 @@ func (p *tparser) i71() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1255 := func() any { c.p.stepWork(); return any("~") }()
-			f_1256 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_UnaryExpr(c, true, f_1255, f_1256)
+			f_1256 := func() any { c.p.stepWork(); return any("~") }()
+			f_1257 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_UnaryExpr(c, true, f_1256, f_1257)
 		}()
 	}()
 	p.where = w
@@ -228427,9 +228699,9 @@ func (p *tparser) i72() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1257 := func() any { return k1 }()
-				f_1258 := func() any { return k9 }()
-				return tmk_ArrayType(c, true, f_1257, f_1258)
+				f_1258 := func() any { return k1 }()
+				f_1259 := func() any { return k9 }()
+				return tmk_ArrayType(c, true, f_1258, f_1259)
 			}()
 		}()
 		p.where = w
@@ -228515,9 +228787,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1257 := func() any { c.p.stepWork(); return k1 }()
-			f_1258 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_ArrayType(c, true, f_1257, f_1258)
+			f_1258 := func() any { c.p.stepWork(); return k1 }()
+			f_1259 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_ArrayType(c, true, f_1258, f_1259)
 		}()
 	}()
 	p.where = w
@@ -228755,9 +229027,9 @@ func (p *tparser) i74() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1259 := func() any { return k1 }()
-				f_1260 := func() any { return k4 }()
-				return tmk_IndexExpr(c, true, f_1259, f_1260)
+				f_1260 := func() any { return k1 }()
+				f_1261 := func() any { return k4 }()
+				return tmk_IndexExpr(c, true, f_1260, f_1261)
 			}()
 		}()
 		p.where = w
@@ -228857,9 +229129,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1259 := func() any { c.p.stepWork(); return k1 }()
-			f_1260 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_IndexExpr(c, true, f_1259, f_1260)
+			f_1260 := func() any { c.p.stepWork(); return k1 }()
+			f_1261 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_IndexExpr(c, true, f_1260, f_1261)
 		}()
 	}()
 	p.where = w
@@ -229007,7 +229279,7 @@ func (p *tparser) i75() (any, bool) {
 			x17 = append(x17, v21)
 			v22 = p.newNodeOrdinary("Seq", x16, p.pos, x17)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-			v24 = p.attachCaptures(v23, scope1261, []any{k14}, x12, p.pos)
+			v24 = p.attachCaptures(v23, scope1262, []any{k14}, x12, p.pos)
 			x11++
 			p.pushKid(v24)
 			if p.pos == x12 {
@@ -229058,19 +229330,19 @@ func (p *tparser) i75() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1262 := func() any { return k1 }()
-				f_1263 := func() any {
+				f_1263 := func() any { return k1 }()
+				f_1264 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k4 }())
-						c.pushMap(func() any { return k7 }(), func(l_1264 any) any {
-							return func() any { return c.member(func() any { return (l_1264) }(), "$e") }()
+						c.pushMap(func() any { return k7 }(), func(l_1265 any) any {
+							return func() any { return c.member(func() any { return (l_1265) }(), "$e") }()
 						})
 						return c.endList(b)
 					}()
 				}()
-				return tmk_IndexListExpr(c, true, f_1262, f_1263)
+				return tmk_IndexListExpr(c, true, f_1263, f_1264)
 			}()
 		}()
 		p.where = w
@@ -229193,7 +229465,7 @@ func (p *tparser) i75() (any, bool) {
 		x17 = append(x17, v21)
 		v22 = p.newNode("Seq", x16, p.pos, x17)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-		v24 = p.attachCaptures(v23, scope1261, []any{k14}, x12, p.pos)
+		v24 = p.attachCaptures(v23, scope1262, []any{k14}, x12, p.pos)
 		x11++
 		p.pushKid(v24)
 		if p.pos == x12 {
@@ -229247,19 +229519,19 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1262 := func() any { c.p.stepWork(); return k1 }()
-			f_1263 := func() any {
+			f_1263 := func() any { c.p.stepWork(); return k1 }()
+			f_1264 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k4 }())
-					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1264 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1264) }(), "$e") }()
+					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1265 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1265) }(), "$e") }()
 					})
 					return c.endList(b)
 				}()
 			}()
-			return tmk_IndexListExpr(c, true, f_1262, f_1263)
+			return tmk_IndexListExpr(c, true, f_1263, f_1264)
 		}()
 	}()
 	p.where = w
@@ -230929,8 +231201,8 @@ func (p *tparser) i79() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1265 := func() any { return k1 }()
-				return tmk_ParenExpr(c, true, f_1265)
+				f_1266 := func() any { return k1 }()
+				return tmk_ParenExpr(c, true, f_1266)
 			}()
 		}()
 		p.where = w
@@ -230994,8 +231266,8 @@ func (p *tparser) i79() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1265 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ParenExpr(c, true, f_1265)
+			f_1266 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ParenExpr(c, true, f_1266)
 		}()
 	}()
 	p.where = w
@@ -231088,7 +231360,7 @@ func (p *tparser) i80() (any, bool) {
 		p.where = "pointerType"
 		v = func() any {
 
-			return func() any { f_1266 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1266) }()
+			return func() any { f_1267 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1267) }()
 		}()
 		p.where = w
 		p.depth--
@@ -231158,7 +231430,7 @@ L3:
 	p.where = "pointerType"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1266 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1266) }()
+		return func() any { f_1267 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1267) }()
 	}()
 	p.where = w
 	p.depth--
@@ -231711,9 +231983,9 @@ func (p *tparser) i83() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1267 := func() any { return k1 }()
-				f_1268 := func() any { return k4 }()
-				return tmk_IndexExpr(c, true, f_1267, f_1268)
+				f_1268 := func() any { return k1 }()
+				f_1269 := func() any { return k4 }()
+				return tmk_IndexExpr(c, true, f_1268, f_1269)
 			}()
 		}()
 		p.where = w
@@ -231813,9 +232085,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1267 := func() any { c.p.stepWork(); return k1 }()
-			f_1268 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_IndexExpr(c, true, f_1267, f_1268)
+			f_1268 := func() any { c.p.stepWork(); return k1 }()
+			f_1269 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_IndexExpr(c, true, f_1268, f_1269)
 		}()
 	}()
 	p.where = w
@@ -231957,7 +232229,7 @@ func (p *tparser) i84() (any, bool) {
 			x17 = append(x17, v21)
 			v22 = p.newNodeOrdinary("Seq", x16, p.pos, x17)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-			v24 = p.attachCaptures(v23, scope1269, []any{k14}, x12, p.pos)
+			v24 = p.attachCaptures(v23, scope1270, []any{k14}, x12, p.pos)
 			x11++
 			p.pushKid(v24)
 			if p.pos == x12 {
@@ -232008,19 +232280,19 @@ func (p *tparser) i84() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1270 := func() any { return k1 }()
-				f_1271 := func() any {
+				f_1271 := func() any { return k1 }()
+				f_1272 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k4 }())
-						c.pushMap(func() any { return k7 }(), func(l_1272 any) any {
-							return func() any { return c.member(func() any { return (l_1272) }(), "$t") }()
+						c.pushMap(func() any { return k7 }(), func(l_1273 any) any {
+							return func() any { return c.member(func() any { return (l_1273) }(), "$t") }()
 						})
 						return c.endList(b)
 					}()
 				}()
-				return tmk_IndexListExpr(c, true, f_1270, f_1271)
+				return tmk_IndexListExpr(c, true, f_1271, f_1272)
 			}()
 		}()
 		p.where = w
@@ -232143,7 +232415,7 @@ func (p *tparser) i84() (any, bool) {
 		x17 = append(x17, v21)
 		v22 = p.newNode("Seq", x16, p.pos, x17)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-		v24 = p.attachCaptures(v23, scope1269, []any{k14}, x12, p.pos)
+		v24 = p.attachCaptures(v23, scope1270, []any{k14}, x12, p.pos)
 		x11++
 		p.pushKid(v24)
 		if p.pos == x12 {
@@ -232197,19 +232469,19 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1270 := func() any { c.p.stepWork(); return k1 }()
-			f_1271 := func() any {
+			f_1271 := func() any { c.p.stepWork(); return k1 }()
+			f_1272 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k4 }())
-					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1272 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1272) }(), "$t") }()
+					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1273 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1273) }(), "$t") }()
 					})
 					return c.endList(b)
 				}()
 			}()
-			return tmk_IndexListExpr(c, true, f_1270, f_1271)
+			return tmk_IndexListExpr(c, true, f_1271, f_1272)
 		}()
 	}()
 	p.where = w
@@ -232568,9 +232840,9 @@ func (p *tparser) i86() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1273 := func() any { return k1 }()
-				f_1274 := func() any { return k7 }()
-				return tmk_SelectorExpr(c, true, f_1273, f_1274)
+				f_1274 := func() any { return k1 }()
+				f_1275 := func() any { return k7 }()
+				return tmk_SelectorExpr(c, true, f_1274, f_1275)
 			}()
 		}()
 		p.where = w
@@ -232657,9 +232929,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1273 := func() any { c.p.stepWork(); return k1 }()
-			f_1274 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_SelectorExpr(c, true, f_1273, f_1274)
+			f_1274 := func() any { c.p.stepWork(); return k1 }()
+			f_1275 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_SelectorExpr(c, true, f_1274, f_1275)
 		}()
 	}()
 	p.where = w
@@ -232772,9 +233044,9 @@ func (p *tparser) i87() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1275 := func() any { return k1 }()
-				f_1276 := func() any { return k9 }()
-				return tmk_ArrayType(c, true, f_1275, f_1276)
+				f_1276 := func() any { return k1 }()
+				f_1277 := func() any { return k9 }()
+				return tmk_ArrayType(c, true, f_1276, f_1277)
 			}()
 		}()
 		p.where = w
@@ -232860,9 +233132,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1275 := func() any { c.p.stepWork(); return k1 }()
-			f_1276 := func() any { c.p.stepWork(); return k9 }()
-			return tmk_ArrayType(c, true, f_1275, f_1276)
+			f_1276 := func() any { c.p.stepWork(); return k1 }()
+			f_1277 := func() any { c.p.stepWork(); return k9 }()
+			return tmk_ArrayType(c, true, f_1276, f_1277)
 		}()
 	}()
 	p.where = w
@@ -233251,9 +233523,9 @@ func (p *tparser) i90() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1277 := func() any { return k1 }()
-				f_1278 := func() any { return k4 }()
-				return tmk_MapType(c, true, f_1277, f_1278)
+				f_1278 := func() any { return k1 }()
+				f_1279 := func() any { return k4 }()
+				return tmk_MapType(c, true, f_1278, f_1279)
 			}()
 		}()
 		p.where = w
@@ -233341,9 +233613,9 @@ func (p *tparser) i90() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1277 := func() any { c.p.stepWork(); return k1 }()
-			f_1278 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_MapType(c, true, f_1277, f_1278)
+			f_1278 := func() any { c.p.stepWork(); return k1 }()
+			f_1279 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_MapType(c, true, f_1278, f_1279)
 		}()
 	}()
 	p.where = w
@@ -233781,9 +234053,9 @@ func (p *tparser) i92() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1279 := func() any { return any(1) }()
-				f_1280 := func() any { return k1 }()
-				return tmk_ChanType(c, true, f_1279, f_1280)
+				f_1280 := func() any { return any(1) }()
+				f_1281 := func() any { return k1 }()
+				return tmk_ChanType(c, true, f_1280, f_1281)
 			}()
 		}()
 		p.where = w
@@ -233845,9 +234117,9 @@ func (p *tparser) i92() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1279 := func() any { c.p.stepWork(); return any(1) }()
-			f_1280 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ChanType(c, true, f_1279, f_1280)
+			f_1280 := func() any { c.p.stepWork(); return any(1) }()
+			f_1281 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ChanType(c, true, f_1280, f_1281)
 		}()
 	}()
 	p.where = w
@@ -233939,9 +234211,9 @@ func (p *tparser) i93() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1281 := func() any { return any(3) }()
-				f_1282 := func() any { return k4 }()
-				return tmk_ChanType(c, true, f_1281, f_1282)
+				f_1282 := func() any { return any(3) }()
+				f_1283 := func() any { return k4 }()
+				return tmk_ChanType(c, true, f_1282, f_1283)
 			}()
 		}()
 		p.where = w
@@ -234011,9 +234283,9 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1281 := func() any { c.p.stepWork(); return any(3) }()
-			f_1282 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ChanType(c, true, f_1281, f_1282)
+			f_1282 := func() any { c.p.stepWork(); return any(3) }()
+			f_1283 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ChanType(c, true, f_1282, f_1283)
 		}()
 	}()
 	p.where = w
@@ -234102,9 +234374,9 @@ func (p *tparser) i94() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1283 := func() any { return any(2) }()
-				f_1284 := func() any { return k1 }()
-				return tmk_ChanType(c, true, f_1283, f_1284)
+				f_1284 := func() any { return any(2) }()
+				f_1285 := func() any { return k1 }()
+				return tmk_ChanType(c, true, f_1284, f_1285)
 			}()
 		}()
 		p.where = w
@@ -234166,9 +234438,9 @@ func (p *tparser) i94() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1283 := func() any { c.p.stepWork(); return any(2) }()
-			f_1284 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ChanType(c, true, f_1283, f_1284)
+			f_1284 := func() any { c.p.stepWork(); return any(2) }()
+			f_1285 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ChanType(c, true, f_1284, f_1285)
 		}()
 	}()
 	p.where = w
@@ -234313,9 +234585,9 @@ func (p *tparser) i95() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1285 := func() any { return k1 }()
-				f_1286 := func() any { return k4 }()
-				return tmk_FuncType(c, true, nil, f_1285, f_1286)
+				f_1286 := func() any { return k1 }()
+				f_1287 := func() any { return k4 }()
+				return tmk_FuncType(c, true, nil, f_1286, f_1287)
 			}()
 		}()
 		p.where = w
@@ -234434,9 +234706,9 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1285 := func() any { c.p.stepWork(); return k1 }()
-			f_1286 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_FuncType(c, true, nil, f_1285, f_1286)
+			f_1286 := func() any { c.p.stepWork(); return k1 }()
+			f_1287 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_FuncType(c, true, nil, f_1286, f_1287)
 		}()
 	}()
 	p.where = w
@@ -234515,8 +234787,8 @@ func (p *tparser) i96() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1287 := func() any { return k1 }()
-				return tmk_StructType(c, true, f_1287)
+				f_1288 := func() any { return k1 }()
+				return tmk_StructType(c, true, f_1288)
 			}()
 		}()
 		p.where = w
@@ -234567,8 +234839,8 @@ func (p *tparser) i96() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1287 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_StructType(c, true, f_1287)
+			f_1288 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_StructType(c, true, f_1288)
 		}()
 	}()
 	p.where = w
@@ -234687,11 +234959,11 @@ func (p *tparser) i97() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1288 := func() any {
+				f_1289 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k1 }()))
 				}()
-				return tmk_FieldList(c, true, f_1288)
+				return tmk_FieldList(c, true, f_1289)
 			}()
 		}()
 		p.where = w
@@ -234792,11 +235064,11 @@ func (p *tparser) i97() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1288 := func() any {
+			f_1289 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 			}()
-			return tmk_FieldList(c, true, f_1288)
+			return tmk_FieldList(c, true, f_1289)
 		}()
 	}()
 	p.where = w
@@ -235196,9 +235468,9 @@ func (p *tparser) i99() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1289 := func() any { return k18 }()
-				f_1290 := func() any { return k21 }()
-				return tmk_Field(c, true, nil, f_1289, f_1290)
+				f_1290 := func() any { return k18 }()
+				f_1291 := func() any { return k21 }()
+				return tmk_Field(c, true, nil, f_1290, f_1291)
 			}()
 		}()
 		p.where = w
@@ -235364,9 +235636,9 @@ L27:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1289 := func() any { c.p.stepWork(); return k18 }()
-			f_1290 := func() any { c.p.stepWork(); return k21 }()
-			return tmk_Field(c, true, nil, f_1289, f_1290)
+			f_1290 := func() any { c.p.stepWork(); return k18 }()
+			f_1291 := func() any { c.p.stepWork(); return k21 }()
+			return tmk_Field(c, true, nil, f_1290, f_1291)
 		}()
 	}()
 	p.where = w
@@ -235453,9 +235725,9 @@ func (p *tparser) i100() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1291 := func() any { return k1 }()
-				f_1292 := func() any { return k4 }()
-				return tmk_Field(c, true, nil, f_1291, f_1292)
+				f_1292 := func() any { return k1 }()
+				f_1293 := func() any { return k4 }()
+				return tmk_Field(c, true, nil, f_1292, f_1293)
 			}()
 		}()
 		p.where = w
@@ -235519,9 +235791,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1291 := func() any { c.p.stepWork(); return k1 }()
-			f_1292 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Field(c, true, nil, f_1291, f_1292)
+			f_1292 := func() any { c.p.stepWork(); return k1 }()
+			f_1293 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Field(c, true, nil, f_1292, f_1293)
 		}()
 	}()
 	p.where = w
@@ -235614,7 +235886,7 @@ func (p *tparser) i101() (any, bool) {
 		p.where = "starEmbedded"
 		v = func() any {
 
-			return func() any { f_1293 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1293) }()
+			return func() any { f_1294 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1294) }()
 		}()
 		p.where = w
 		p.depth--
@@ -235684,7 +235956,7 @@ L3:
 	p.where = "starEmbedded"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1293 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1293) }()
+		return func() any { f_1294 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1294) }()
 	}()
 	p.where = w
 	p.depth--
@@ -235838,7 +236110,7 @@ func (p *tparser) i102() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1294 := func() any {
+				f_1295 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -235847,9 +236119,9 @@ func (p *tparser) i102() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_1295 := func() any { return k15 }()
-				f_1296 := func() any { return k18 }()
-				return tmk_Field(c, true, f_1294, f_1295, f_1296)
+				f_1296 := func() any { return k15 }()
+				f_1297 := func() any { return k18 }()
+				return tmk_Field(c, true, f_1295, f_1296, f_1297)
 			}()
 		}()
 		p.where = w
@@ -235985,7 +236257,7 @@ L24:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1294 := func() any {
+			f_1295 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -235994,9 +236266,9 @@ L24:
 					return c.endList(b)
 				}()
 			}()
-			f_1295 := func() any { c.p.stepWork(); return k15 }()
-			f_1296 := func() any { c.p.stepWork(); return k18 }()
-			return tmk_Field(c, true, f_1294, f_1295, f_1296)
+			f_1296 := func() any { c.p.stepWork(); return k15 }()
+			f_1297 := func() any { c.p.stepWork(); return k18 }()
+			return tmk_Field(c, true, f_1295, f_1296, f_1297)
 		}()
 	}()
 	p.where = w
@@ -236097,10 +236369,10 @@ func (p *tparser) i103() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1297 := func() any { return c.list(func() any { return k1 }()) }()
-				f_1298 := func() any { return k4 }()
-				f_1299 := func() any { return k7 }()
-				return tmk_Field(c, true, f_1297, f_1298, f_1299)
+				f_1298 := func() any { return c.list(func() any { return k1 }()) }()
+				f_1299 := func() any { return k4 }()
+				f_1300 := func() any { return k7 }()
+				return tmk_Field(c, true, f_1298, f_1299, f_1300)
 			}()
 		}()
 		p.where = w
@@ -236179,10 +236451,10 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1297 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1298 := func() any { c.p.stepWork(); return k4 }()
-			f_1299 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_Field(c, true, f_1297, f_1298, f_1299)
+			f_1298 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1299 := func() any { c.p.stepWork(); return k4 }()
+			f_1300 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_Field(c, true, f_1298, f_1299, f_1300)
 		}()
 	}()
 	p.where = w
@@ -236302,10 +236574,10 @@ func (p *tparser) i104() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1300 := func() any { return c.list(func() any { return k1 }()) }()
-				f_1301 := func() any { return k7 }()
-				f_1302 := func() any { return k10 }()
-				return tmk_Field(c, true, f_1300, f_1301, f_1302)
+				f_1301 := func() any { return c.list(func() any { return k1 }()) }()
+				f_1302 := func() any { return k7 }()
+				f_1303 := func() any { return k10 }()
+				return tmk_Field(c, true, f_1301, f_1302, f_1303)
 			}()
 		}()
 		p.where = w
@@ -236403,10 +236675,10 @@ L16:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1300 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1301 := func() any { c.p.stepWork(); return k7 }()
-			f_1302 := func() any { c.p.stepWork(); return k10 }()
-			return tmk_Field(c, true, f_1300, f_1301, f_1302)
+			f_1301 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1302 := func() any { c.p.stepWork(); return k7 }()
+			f_1303 := func() any { c.p.stepWork(); return k10 }()
+			return tmk_Field(c, true, f_1301, f_1302, f_1303)
 		}()
 	}()
 	p.where = w
@@ -236515,9 +236787,9 @@ func (p *tparser) i105() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1303 := func() any { return k1 }()
-				f_1304 := func() any { return k11 }()
-				return tmk_Field(c, true, nil, f_1303, f_1304)
+				f_1304 := func() any { return k1 }()
+				f_1305 := func() any { return k11 }()
+				return tmk_Field(c, true, nil, f_1304, f_1305)
 			}()
 		}()
 		p.where = w
@@ -236603,9 +236875,9 @@ L17:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1303 := func() any { c.p.stepWork(); return k1 }()
-			f_1304 := func() any { c.p.stepWork(); return k11 }()
-			return tmk_Field(c, true, nil, f_1303, f_1304)
+			f_1304 := func() any { c.p.stepWork(); return k1 }()
+			f_1305 := func() any { c.p.stepWork(); return k11 }()
+			return tmk_Field(c, true, nil, f_1304, f_1305)
 		}()
 	}()
 	p.where = w
@@ -236798,8 +237070,8 @@ func (p *tparser) i107() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1305 := func() any { return k1 }()
-				return tmk_InterfaceType(c, true, f_1305)
+				f_1306 := func() any { return k1 }()
+				return tmk_InterfaceType(c, true, f_1306)
 			}()
 		}()
 		p.where = w
@@ -236850,8 +237122,8 @@ func (p *tparser) i107() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1305 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_InterfaceType(c, true, f_1305)
+			f_1306 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_InterfaceType(c, true, f_1306)
 		}()
 	}()
 	p.where = w
@@ -236970,11 +237242,11 @@ func (p *tparser) i108() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1306 := func() any {
+				f_1307 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k1 }()))
 				}()
-				return tmk_FieldList(c, true, f_1306)
+				return tmk_FieldList(c, true, f_1307)
 			}()
 		}()
 		p.where = w
@@ -237075,11 +237347,11 @@ func (p *tparser) i108() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1306 := func() any {
+			f_1307 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 			}()
-			return tmk_FieldList(c, true, f_1306)
+			return tmk_FieldList(c, true, f_1307)
 		}()
 	}()
 	p.where = w
@@ -237265,9 +237537,9 @@ func (p *tparser) i110() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1307 := func() any { return c.list(func() any { return k1 }()) }()
-				f_1308 := func() any { return k4 }()
-				return tmk_Field(c, true, f_1307, f_1308, nil)
+				f_1308 := func() any { return c.list(func() any { return k1 }()) }()
+				f_1309 := func() any { return k4 }()
+				return tmk_Field(c, true, f_1308, f_1309, nil)
 			}()
 		}()
 		p.where = w
@@ -237324,9 +237596,9 @@ func (p *tparser) i110() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1307 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1308 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Field(c, true, f_1307, f_1308, nil)
+			f_1308 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1309 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Field(c, true, f_1308, f_1309, nil)
 		}()
 	}()
 	p.where = w
@@ -237457,9 +237729,9 @@ func (p *tparser) i111() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1309 := func() any { return k1 }()
-				f_1310 := func() any { return k4 }()
-				return tmk_FuncType(c, true, nil, f_1309, f_1310)
+				f_1310 := func() any { return k1 }()
+				f_1311 := func() any { return k4 }()
+				return tmk_FuncType(c, true, nil, f_1310, f_1311)
 			}()
 		}()
 		p.where = w
@@ -237569,9 +237841,9 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1309 := func() any { c.p.stepWork(); return k1 }()
-			f_1310 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_FuncType(c, true, nil, f_1309, f_1310)
+			f_1310 := func() any { c.p.stepWork(); return k1 }()
+			f_1311 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_FuncType(c, true, nil, f_1310, f_1311)
 		}()
 	}()
 	p.where = w
@@ -237714,7 +237986,7 @@ func (p *tparser) i112() (any, bool) {
 			x14 = append(x14, v21)
 			v22 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-			v24 = p.attachCaptures(v23, scope1311, []any{k11}, x9, p.pos)
+			v24 = p.attachCaptures(v23, scope1312, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v24)
 			if p.pos == x9 {
@@ -237734,21 +238006,21 @@ func (p *tparser) i112() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1312 := func() any {
+				f_1313 := func() any {
 
-					return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1313, l_1314 any) any {
+					return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1314, l_1315 any) any {
 						return func() any {
 
 							return func() any {
-								f_1315 := func() any { return (l_1313) }()
-								f_1316 := func() any { return any("|") }()
-								f_1317 := func() any { return c.member(func() any { return (l_1314) }(), "$t") }()
-								return tmk_BinaryExpr(c, false, f_1315, f_1316, f_1317)
+								f_1316 := func() any { return (l_1314) }()
+								f_1317 := func() any { return any("|") }()
+								f_1318 := func() any { return c.member(func() any { return (l_1315) }(), "$t") }()
+								return tmk_BinaryExpr(c, false, f_1316, f_1317, f_1318)
 							}()
 						}()
 					})
 				}()
-				return tmk_Field(c, true, nil, f_1312, nil)
+				return tmk_Field(c, true, nil, f_1313, nil)
 			}()
 		}()
 		p.dropCreated(c.cbase)
@@ -237871,7 +238143,7 @@ func (p *tparser) i112() (any, bool) {
 		x14 = append(x14, v21)
 		v22 = p.newNode("Seq", x13, p.pos, x14)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x9)
-		v24 = p.attachCaptures(v23, scope1311, []any{k11}, x9, p.pos)
+		v24 = p.attachCaptures(v23, scope1312, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v24)
 		if p.pos == x9 {
@@ -237891,21 +238163,21 @@ func (p *tparser) i112() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1312 := func() any {
+			f_1313 := func() any {
 				c.p.stepWork()
-				return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1313, l_1314 any) any {
+				return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1314, l_1315 any) any {
 					return func() any {
 						c.p.stepWork()
 						return func() any {
-							f_1315 := func() any { c.p.stepWork(); return (l_1313) }()
-							f_1316 := func() any { c.p.stepWork(); return any("|") }()
-							f_1317 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1314) }(), "$t") }()
-							return tmk_BinaryExpr(c, false, f_1315, f_1316, f_1317)
+							f_1316 := func() any { c.p.stepWork(); return (l_1314) }()
+							f_1317 := func() any { c.p.stepWork(); return any("|") }()
+							f_1318 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1315) }(), "$t") }()
+							return tmk_BinaryExpr(c, false, f_1316, f_1317, f_1318)
 						}()
 					}()
 				})
 			}()
-			return tmk_Field(c, true, nil, f_1312, nil)
+			return tmk_Field(c, true, nil, f_1313, nil)
 		}()
 	}()
 	p.dropCreated(c.cbase)
@@ -238151,9 +238423,9 @@ func (p *tparser) i114() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1318 := func() any { return k1 }()
-				f_1319 := func() any { return k4 }()
-				return tmk_IndexExpr(c, true, f_1318, f_1319)
+				f_1319 := func() any { return k1 }()
+				f_1320 := func() any { return k4 }()
+				return tmk_IndexExpr(c, true, f_1319, f_1320)
 			}()
 		}()
 		p.where = w
@@ -238253,9 +238525,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1318 := func() any { c.p.stepWork(); return k1 }()
-			f_1319 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_IndexExpr(c, true, f_1318, f_1319)
+			f_1319 := func() any { c.p.stepWork(); return k1 }()
+			f_1320 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_IndexExpr(c, true, f_1319, f_1320)
 		}()
 	}()
 	p.where = w
@@ -238397,7 +238669,7 @@ func (p *tparser) i115() (any, bool) {
 			x17 = append(x17, v21)
 			v22 = p.newNodeOrdinary("Seq", x16, p.pos, x17)
 			v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-			v24 = p.attachCaptures(v23, scope1320, []any{k14}, x12, p.pos)
+			v24 = p.attachCaptures(v23, scope1321, []any{k14}, x12, p.pos)
 			x11++
 			p.pushKid(v24)
 			if p.pos == x12 {
@@ -238448,19 +238720,19 @@ func (p *tparser) i115() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1321 := func() any { return k1 }()
-				f_1322 := func() any {
+				f_1322 := func() any { return k1 }()
+				f_1323 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k4 }())
-						c.pushMap(func() any { return k7 }(), func(l_1323 any) any {
-							return func() any { return c.member(func() any { return (l_1323) }(), "$t") }()
+						c.pushMap(func() any { return k7 }(), func(l_1324 any) any {
+							return func() any { return c.member(func() any { return (l_1324) }(), "$t") }()
 						})
 						return c.endList(b)
 					}()
 				}()
-				return tmk_IndexListExpr(c, true, f_1321, f_1322)
+				return tmk_IndexListExpr(c, true, f_1322, f_1323)
 			}()
 		}()
 		p.where = w
@@ -238583,7 +238855,7 @@ func (p *tparser) i115() (any, bool) {
 		x17 = append(x17, v21)
 		v22 = p.newNode("Seq", x16, p.pos, x17)
 		v23 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v22, x12)
-		v24 = p.attachCaptures(v23, scope1320, []any{k14}, x12, p.pos)
+		v24 = p.attachCaptures(v23, scope1321, []any{k14}, x12, p.pos)
 		x11++
 		p.pushKid(v24)
 		if p.pos == x12 {
@@ -238637,19 +238909,19 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1321 := func() any { c.p.stepWork(); return k1 }()
-			f_1322 := func() any {
+			f_1322 := func() any { c.p.stepWork(); return k1 }()
+			f_1323 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k4 }())
-					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1323 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1323) }(), "$t") }()
+					c.pushMap(func() any { c.p.stepWork(); return k7 }(), func(l_1324 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1324) }(), "$t") }()
 					})
 					return c.endList(b)
 				}()
 			}()
-			return tmk_IndexListExpr(c, true, f_1321, f_1322)
+			return tmk_IndexListExpr(c, true, f_1322, f_1323)
 		}()
 	}()
 	p.where = w
@@ -238756,7 +239028,7 @@ func (p *tparser) i116() (any, bool) {
 			}
 			v14 = p.newNodeOrdinary("Seq", x10, p.pos, x11)
 			v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-			v16 = p.attachCaptures(v15, scope1324, []any{k8}, x6, p.pos)
+			v16 = p.attachCaptures(v15, scope1325, []any{k8}, x6, p.pos)
 			x5++
 			p.pushKid(v16)
 			if p.pos == x6 {
@@ -238782,13 +239054,13 @@ func (p *tparser) i116() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1325 := func() any {
+				f_1326 := func() any {
 
-					return c.mapList(func() any { return k1 }(), func(l_1326 any) any {
-						return func() any { return c.member(func() any { return (l_1326) }(), "$s") }()
+					return c.mapList(func() any { return k1 }(), func(l_1327 any) any {
+						return func() any { return c.member(func() any { return (l_1327) }(), "$s") }()
 					})
 				}()
-				return tmk_BlockStmt(c, true, f_1325)
+				return tmk_BlockStmt(c, true, f_1326)
 			}()
 		}()
 		p.where = w
@@ -238868,7 +239140,7 @@ func (p *tparser) i116() (any, bool) {
 		}
 		v14 = p.newNode("Seq", x10, p.pos, x11)
 		v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-		v16 = p.attachCaptures(v15, scope1324, []any{k8}, x6, p.pos)
+		v16 = p.attachCaptures(v15, scope1325, []any{k8}, x6, p.pos)
 		x5++
 		p.pushKid(v16)
 		if p.pos == x6 {
@@ -238894,13 +239166,13 @@ func (p *tparser) i116() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1325 := func() any {
+			f_1326 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1326 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1326) }(), "$s") }()
+				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1327 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1327) }(), "$s") }()
 				})
 			}()
-			return tmk_BlockStmt(c, true, f_1325)
+			return tmk_BlockStmt(c, true, f_1326)
 		}()
 	}()
 	p.where = w
@@ -239539,9 +239811,9 @@ func (p *tparser) i121() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1327 := func() any { return k1 }()
-				f_1328 := func() any { return k7 }()
-				return tmk_LabeledStmt(c, true, f_1327, f_1328)
+				f_1328 := func() any { return k1 }()
+				f_1329 := func() any { return k7 }()
+				return tmk_LabeledStmt(c, true, f_1328, f_1329)
 			}()
 		}()
 		p.where = w
@@ -239673,9 +239945,9 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1327 := func() any { c.p.stepWork(); return k1 }()
-			f_1328 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_LabeledStmt(c, true, f_1327, f_1328)
+			f_1328 := func() any { c.p.stepWork(); return k1 }()
+			f_1329 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_LabeledStmt(c, true, f_1328, f_1329)
 		}()
 	}()
 	p.where = w
@@ -239811,9 +240083,9 @@ func (p *tparser) i122() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1329 := func() any { return k1 }()
-				f_1330 := func() any { return k7 }()
-				return tmk_LabeledStmt(c, true, f_1329, f_1330)
+				f_1330 := func() any { return k1 }()
+				f_1331 := func() any { return k7 }()
+				return tmk_LabeledStmt(c, true, f_1330, f_1331)
 			}()
 		}()
 		p.where = w
@@ -239922,9 +240194,9 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1329 := func() any { c.p.stepWork(); return k1 }()
-			f_1330 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_LabeledStmt(c, true, f_1329, f_1330)
+			f_1330 := func() any { c.p.stepWork(); return k1 }()
+			f_1331 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_LabeledStmt(c, true, f_1330, f_1331)
 		}()
 	}()
 	p.where = w
@@ -240027,7 +240299,7 @@ func (p *tparser) i123() (any, bool) {
 			x11 = append(x11, v13)
 			v14 = p.newNodeOrdinary("Seq", x10, p.pos, x11)
 			v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-			v16 = p.attachCaptures(v15, scope1331, []any{k8}, x6, p.pos)
+			v16 = p.attachCaptures(v15, scope1332, []any{k8}, x6, p.pos)
 			x5++
 			p.pushKid(v16)
 			if p.pos == x6 {
@@ -240064,8 +240336,8 @@ func (p *tparser) i123() (any, bool) {
 
 			return c.concat(func() any {
 
-				return c.mapList(func() any { return k1 }(), func(l_1332 any) any {
-					return func() any { return c.member(func() any { return (l_1332) }(), "$s") }()
+				return c.mapList(func() any { return k1 }(), func(l_1333 any) any {
+					return func() any { return c.member(func() any { return (l_1333) }(), "$s") }()
 				})
 			}(), func() any { return k18 }())
 		}()
@@ -240139,7 +240411,7 @@ func (p *tparser) i123() (any, bool) {
 		x11 = append(x11, v13)
 		v14 = p.newNode("Seq", x10, p.pos, x11)
 		v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-		v16 = p.attachCaptures(v15, scope1331, []any{k8}, x6, p.pos)
+		v16 = p.attachCaptures(v15, scope1332, []any{k8}, x6, p.pos)
 		x5++
 		p.pushKid(v16)
 		if p.pos == x6 {
@@ -240176,8 +240448,8 @@ L24:
 		c.p.stepWork()
 		return c.concat(func() any {
 			c.p.stepWork()
-			return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1332 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1332) }(), "$s") }()
+			return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_1333 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1333) }(), "$s") }()
 			})
 		}(), func() any { c.p.stepWork(); return k18 }())
 	}()
@@ -241822,7 +242094,7 @@ func (p *tparser) i130() (any, bool) {
 		p.where = "declStmt"
 		v = func() any {
 
-			return func() any { f_1333 := func() any { return k1 }(); return tmk_DeclStmt(c, true, f_1333) }()
+			return func() any { f_1334 := func() any { return k1 }(); return tmk_DeclStmt(c, true, f_1334) }()
 		}()
 		p.where = w
 		p.depth--
@@ -241916,7 +242188,7 @@ L6:
 	p.where = "declStmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1333 := func() any { c.p.stepWork(); return k1 }(); return tmk_DeclStmt(c, true, f_1333) }()
+		return func() any { f_1334 := func() any { c.p.stepWork(); return k1 }(); return tmk_DeclStmt(c, true, f_1334) }()
 	}()
 	p.where = w
 	p.depth--
@@ -242155,10 +242427,10 @@ func (p *tparser) i132() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1334 := func() any { return k1 }()
-				f_1335 := func() any { return c.text(func() any { return k4 }()) }()
-				f_1336 := func() any { return k7 }()
-				return tmk_AssignStmt(c, true, f_1334, f_1335, f_1336)
+				f_1335 := func() any { return k1 }()
+				f_1336 := func() any { return c.text(func() any { return k4 }()) }()
+				f_1337 := func() any { return k7 }()
+				return tmk_AssignStmt(c, true, f_1335, f_1336, f_1337)
 			}()
 		}()
 		p.where = w
@@ -242230,10 +242502,10 @@ func (p *tparser) i132() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1334 := func() any { c.p.stepWork(); return k1 }()
-			f_1335 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_1336 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AssignStmt(c, true, f_1334, f_1335, f_1336)
+			f_1335 := func() any { c.p.stepWork(); return k1 }()
+			f_1336 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_1337 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AssignStmt(c, true, f_1335, f_1336, f_1337)
 		}()
 	}()
 	p.where = w
@@ -242328,9 +242600,9 @@ func (p *tparser) i133() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1337 := func() any { return k1 }()
-				f_1338 := func() any { return k4 }()
-				return tmk_SendStmt(c, true, f_1337, f_1338)
+				f_1338 := func() any { return k1 }()
+				f_1339 := func() any { return k4 }()
+				return tmk_SendStmt(c, true, f_1338, f_1339)
 			}()
 		}()
 		p.where = w
@@ -242398,9 +242670,9 @@ func (p *tparser) i133() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1337 := func() any { c.p.stepWork(); return k1 }()
-			f_1338 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SendStmt(c, true, f_1337, f_1338)
+			f_1338 := func() any { c.p.stepWork(); return k1 }()
+			f_1339 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SendStmt(c, true, f_1338, f_1339)
 		}()
 	}()
 	p.where = w
@@ -242479,9 +242751,9 @@ func (p *tparser) i134() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1339 := func() any { return k1 }()
-				f_1340 := func() any { return c.text(func() any { return k4 }()) }()
-				return tmk_IncDecStmt(c, true, f_1339, f_1340)
+				f_1340 := func() any { return k1 }()
+				f_1341 := func() any { return c.text(func() any { return k4 }()) }()
+				return tmk_IncDecStmt(c, true, f_1340, f_1341)
 			}()
 		}()
 		p.where = w
@@ -242538,9 +242810,9 @@ func (p *tparser) i134() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1339 := func() any { c.p.stepWork(); return k1 }()
-			f_1340 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_IncDecStmt(c, true, f_1339, f_1340)
+			f_1340 := func() any { c.p.stepWork(); return k1 }()
+			f_1341 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_IncDecStmt(c, true, f_1340, f_1341)
 		}()
 	}()
 	p.where = w
@@ -242610,7 +242882,7 @@ func (p *tparser) i135() (any, bool) {
 		p.where = "exprStmt"
 		v = func() any {
 
-			return func() any { f_1341 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1341) }()
+			return func() any { f_1342 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1342) }()
 		}()
 		p.where = w
 		p.depth--
@@ -242649,7 +242921,7 @@ func (p *tparser) i135() (any, bool) {
 	p.where = "exprStmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1341 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1341) }()
+		return func() any { f_1342 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1342) }()
 	}()
 	p.where = w
 	p.depth--
@@ -243044,10 +243316,10 @@ func (p *tparser) i137() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1342 := func() any { return k1 }()
-				f_1343 := func() any { return c.text(func() any { return k4 }()) }()
-				f_1344 := func() any { return k7 }()
-				return tmk_AssignStmt(c, true, f_1342, f_1343, f_1344)
+				f_1343 := func() any { return k1 }()
+				f_1344 := func() any { return c.text(func() any { return k4 }()) }()
+				f_1345 := func() any { return k7 }()
+				return tmk_AssignStmt(c, true, f_1343, f_1344, f_1345)
 			}()
 		}()
 		p.where = w
@@ -243119,10 +243391,10 @@ func (p *tparser) i137() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1342 := func() any { c.p.stepWork(); return k1 }()
-			f_1343 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			f_1344 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_AssignStmt(c, true, f_1342, f_1343, f_1344)
+			f_1343 := func() any { c.p.stepWork(); return k1 }()
+			f_1344 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			f_1345 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_AssignStmt(c, true, f_1343, f_1344, f_1345)
 		}()
 	}()
 	p.where = w
@@ -243211,9 +243483,9 @@ func (p *tparser) i138() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1345 := func() any { return k1 }()
-				f_1346 := func() any { return k4 }()
-				return tmk_SendStmt(c, true, f_1345, f_1346)
+				f_1346 := func() any { return k1 }()
+				f_1347 := func() any { return k4 }()
+				return tmk_SendStmt(c, true, f_1346, f_1347)
 			}()
 		}()
 		p.where = w
@@ -243281,9 +243553,9 @@ func (p *tparser) i138() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1345 := func() any { c.p.stepWork(); return k1 }()
-			f_1346 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_SendStmt(c, true, f_1345, f_1346)
+			f_1346 := func() any { c.p.stepWork(); return k1 }()
+			f_1347 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_SendStmt(c, true, f_1346, f_1347)
 		}()
 	}()
 	p.where = w
@@ -243362,9 +243634,9 @@ func (p *tparser) i139() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1347 := func() any { return k1 }()
-				f_1348 := func() any { return c.text(func() any { return k4 }()) }()
-				return tmk_IncDecStmt(c, true, f_1347, f_1348)
+				f_1348 := func() any { return k1 }()
+				f_1349 := func() any { return c.text(func() any { return k4 }()) }()
+				return tmk_IncDecStmt(c, true, f_1348, f_1349)
 			}()
 		}()
 		p.where = w
@@ -243421,9 +243693,9 @@ func (p *tparser) i139() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1347 := func() any { c.p.stepWork(); return k1 }()
-			f_1348 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_IncDecStmt(c, true, f_1347, f_1348)
+			f_1348 := func() any { c.p.stepWork(); return k1 }()
+			f_1349 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_IncDecStmt(c, true, f_1348, f_1349)
 		}()
 	}()
 	p.where = w
@@ -243487,7 +243759,7 @@ func (p *tparser) i140() (any, bool) {
 		p.where = "hexprStmt"
 		v = func() any {
 
-			return func() any { f_1349 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1349) }()
+			return func() any { f_1350 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1350) }()
 		}()
 		p.where = w
 		p.depth--
@@ -243526,7 +243798,7 @@ func (p *tparser) i140() (any, bool) {
 	p.where = "hexprStmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1349 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1349) }()
+		return func() any { f_1350 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1350) }()
 	}()
 	p.where = w
 	p.depth--
@@ -243597,7 +243869,7 @@ func (p *tparser) i141() (any, bool) {
 		p.where = "goStmt"
 		v = func() any {
 
-			return func() any { f_1350 := func() any { return k1 }(); return tmk_GoStmt(c, true, f_1350) }()
+			return func() any { f_1351 := func() any { return k1 }(); return tmk_GoStmt(c, true, f_1351) }()
 		}()
 		p.where = w
 		p.depth--
@@ -243646,7 +243918,7 @@ func (p *tparser) i141() (any, bool) {
 	p.where = "goStmt"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1350 := func() any { c.p.stepWork(); return k1 }(); return tmk_GoStmt(c, true, f_1350) }()
+		return func() any { f_1351 := func() any { c.p.stepWork(); return k1 }(); return tmk_GoStmt(c, true, f_1351) }()
 	}()
 	p.where = w
 	p.depth--
@@ -243718,8 +243990,8 @@ func (p *tparser) i142() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1351 := func() any { return k1 }()
-				return tmk_DeferStmt(c, true, f_1351)
+				f_1352 := func() any { return k1 }()
+				return tmk_DeferStmt(c, true, f_1352)
 			}()
 		}()
 		p.where = w
@@ -243770,8 +244042,8 @@ func (p *tparser) i142() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1351 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_DeferStmt(c, true, f_1351)
+			f_1352 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_DeferStmt(c, true, f_1352)
 		}()
 	}()
 	p.where = w
@@ -244079,8 +244351,8 @@ func (p *tparser) i144() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1352 := func() any { return k1 }()
-				return tmk_CallExpr(c, true, f_1352, nil, nil)
+				f_1353 := func() any { return k1 }()
+				return tmk_CallExpr(c, true, f_1353, nil, nil)
 			}()
 		}()
 		p.where = w
@@ -244144,8 +244416,8 @@ func (p *tparser) i144() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1352 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_CallExpr(c, true, f_1352, nil, nil)
+			f_1353 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_CallExpr(c, true, f_1353, nil, nil)
 		}()
 	}()
 	p.where = w
@@ -244285,10 +244557,10 @@ func (p *tparser) i145() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1353 := func() any { return k1 }()
-				f_1354 := func() any { return k4 }()
-				f_1355 := func() any { return k7 }()
-				return tmk_CallExpr(c, true, f_1353, f_1354, f_1355)
+				f_1354 := func() any { return k1 }()
+				f_1355 := func() any { return k4 }()
+				f_1356 := func() any { return k7 }()
+				return tmk_CallExpr(c, true, f_1354, f_1355, f_1356)
 			}()
 		}()
 		p.where = w
@@ -244410,10 +244682,10 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1353 := func() any { c.p.stepWork(); return k1 }()
-			f_1354 := func() any { c.p.stepWork(); return k4 }()
-			f_1355 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_CallExpr(c, true, f_1353, f_1354, f_1355)
+			f_1354 := func() any { c.p.stepWork(); return k1 }()
+			f_1355 := func() any { c.p.stepWork(); return k4 }()
+			f_1356 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_CallExpr(c, true, f_1354, f_1355, f_1356)
 		}()
 	}()
 	p.where = w
@@ -244620,8 +244892,8 @@ func (p *tparser) i147() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1356 := func() any { return c.concat(func() any { return k1 }()) }()
-				return tmk_ReturnStmt(c, true, f_1356)
+				f_1357 := func() any { return c.concat(func() any { return k1 }()) }()
+				return tmk_ReturnStmt(c, true, f_1357)
 			}()
 		}()
 		p.where = w
@@ -244679,8 +244951,8 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1356 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
-			return tmk_ReturnStmt(c, true, f_1356)
+			f_1357 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k1 }()) }()
+			return tmk_ReturnStmt(c, true, f_1357)
 		}()
 	}()
 	p.where = w
@@ -245072,9 +245344,9 @@ func (p *tparser) i150() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1357 := func() any { return any("break") }()
-				f_1358 := func() any { return k1 }()
-				return tmk_BranchStmt(c, true, f_1357, f_1358)
+				f_1358 := func() any { return any("break") }()
+				f_1359 := func() any { return k1 }()
+				return tmk_BranchStmt(c, true, f_1358, f_1359)
 			}()
 		}()
 		p.where = w
@@ -245132,9 +245404,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1357 := func() any { c.p.stepWork(); return any("break") }()
-			f_1358 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_BranchStmt(c, true, f_1357, f_1358)
+			f_1358 := func() any { c.p.stepWork(); return any("break") }()
+			f_1359 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_BranchStmt(c, true, f_1358, f_1359)
 		}()
 	}()
 	p.where = w
@@ -245215,9 +245487,9 @@ func (p *tparser) i151() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1359 := func() any { return any("continue") }()
-				f_1360 := func() any { return k1 }()
-				return tmk_BranchStmt(c, true, f_1359, f_1360)
+				f_1360 := func() any { return any("continue") }()
+				f_1361 := func() any { return k1 }()
+				return tmk_BranchStmt(c, true, f_1360, f_1361)
 			}()
 		}()
 		p.where = w
@@ -245275,9 +245547,9 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1359 := func() any { c.p.stepWork(); return any("continue") }()
-			f_1360 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_BranchStmt(c, true, f_1359, f_1360)
+			f_1360 := func() any { c.p.stepWork(); return any("continue") }()
+			f_1361 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_BranchStmt(c, true, f_1360, f_1361)
 		}()
 	}()
 	p.where = w
@@ -245350,9 +245622,9 @@ func (p *tparser) i152() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1361 := func() any { return any("goto") }()
-				f_1362 := func() any { return k1 }()
-				return tmk_BranchStmt(c, true, f_1361, f_1362)
+				f_1362 := func() any { return any("goto") }()
+				f_1363 := func() any { return k1 }()
+				return tmk_BranchStmt(c, true, f_1362, f_1363)
 			}()
 		}()
 		p.where = w
@@ -245403,9 +245675,9 @@ func (p *tparser) i152() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1361 := func() any { c.p.stepWork(); return any("goto") }()
-			f_1362 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_BranchStmt(c, true, f_1361, f_1362)
+			f_1362 := func() any { c.p.stepWork(); return any("goto") }()
+			f_1363 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_BranchStmt(c, true, f_1362, f_1363)
 		}()
 	}()
 	p.where = w
@@ -245443,8 +245715,8 @@ func (p *tparser) s153() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1363 := func() any { return any("fallthrough") }()
-				return tmk_BranchStmt(c, true, f_1363, nil)
+				f_1364 := func() any { return any("fallthrough") }()
+				return tmk_BranchStmt(c, true, f_1364, nil)
 			}()
 		}()
 		p.where = w
@@ -245481,8 +245753,8 @@ func (p *tparser) s153() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1363 := func() any { c.p.stepWork(); return any("fallthrough") }()
-			return tmk_BranchStmt(c, true, f_1363, nil)
+			f_1364 := func() any { c.p.stepWork(); return any("fallthrough") }()
+			return tmk_BranchStmt(c, true, f_1364, nil)
 		}()
 	}()
 	p.where = w
@@ -245781,11 +246053,11 @@ func (p *tparser) i155() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1364 := func() any { return k3 }()
-				f_1365 := func() any { return k18 }()
-				f_1366 := func() any { return k21 }()
-				f_1367 := func() any { return k24 }()
-				return tmk_IfStmt(c, true, f_1364, f_1365, f_1366, f_1367)
+				f_1365 := func() any { return k3 }()
+				f_1366 := func() any { return k18 }()
+				f_1367 := func() any { return k21 }()
+				f_1368 := func() any { return k24 }()
+				return tmk_IfStmt(c, true, f_1365, f_1366, f_1367, f_1368)
 			}()
 		}()
 		p.where = w
@@ -245944,11 +246216,11 @@ L30:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1364 := func() any { c.p.stepWork(); return k3 }()
-			f_1365 := func() any { c.p.stepWork(); return k18 }()
-			f_1366 := func() any { c.p.stepWork(); return k21 }()
-			f_1367 := func() any { c.p.stepWork(); return k24 }()
-			return tmk_IfStmt(c, true, f_1364, f_1365, f_1366, f_1367)
+			f_1365 := func() any { c.p.stepWork(); return k3 }()
+			f_1366 := func() any { c.p.stepWork(); return k18 }()
+			f_1367 := func() any { c.p.stepWork(); return k21 }()
+			f_1368 := func() any { c.p.stepWork(); return k24 }()
+			return tmk_IfStmt(c, true, f_1365, f_1366, f_1367, f_1368)
 		}()
 	}()
 	p.where = w
@@ -246699,10 +246971,10 @@ func (p *tparser) i160() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1368 := func() any { return k1 }()
-				f_1369 := func() any { return k9 }()
-				f_1370 := func() any { return k17 }()
-				return tmk_SwitchStmt(c, true, f_1368, f_1369, f_1370)
+				f_1369 := func() any { return k1 }()
+				f_1370 := func() any { return k9 }()
+				f_1371 := func() any { return k17 }()
+				return tmk_SwitchStmt(c, true, f_1369, f_1370, f_1371)
 			}()
 		}()
 		p.where = w
@@ -246802,10 +247074,10 @@ L15:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1368 := func() any { c.p.stepWork(); return k1 }()
-			f_1369 := func() any { c.p.stepWork(); return k9 }()
-			f_1370 := func() any { c.p.stepWork(); return k17 }()
-			return tmk_SwitchStmt(c, true, f_1368, f_1369, f_1370)
+			f_1369 := func() any { c.p.stepWork(); return k1 }()
+			f_1370 := func() any { c.p.stepWork(); return k9 }()
+			f_1371 := func() any { c.p.stepWork(); return k17 }()
+			return tmk_SwitchStmt(c, true, f_1369, f_1370, f_1371)
 		}()
 	}()
 	p.where = w
@@ -246914,10 +247186,10 @@ func (p *tparser) i161() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1371 := func() any { return k1 }()
-				f_1372 := func() any { return k9 }()
-				f_1373 := func() any { return k12 }()
-				return tmk_TypeSwitchStmt(c, true, f_1371, f_1372, f_1373)
+				f_1372 := func() any { return k1 }()
+				f_1373 := func() any { return k9 }()
+				f_1374 := func() any { return k12 }()
+				return tmk_TypeSwitchStmt(c, true, f_1372, f_1373, f_1374)
 			}()
 		}()
 		p.where = w
@@ -247005,10 +247277,10 @@ L7:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1371 := func() any { c.p.stepWork(); return k1 }()
-			f_1372 := func() any { c.p.stepWork(); return k9 }()
-			f_1373 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_TypeSwitchStmt(c, true, f_1371, f_1372, f_1373)
+			f_1372 := func() any { c.p.stepWork(); return k1 }()
+			f_1373 := func() any { c.p.stepWork(); return k9 }()
+			f_1374 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_TypeSwitchStmt(c, true, f_1372, f_1373, f_1374)
 		}()
 	}()
 	p.where = w
@@ -247204,10 +247476,10 @@ func (p *tparser) i163() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1374 := func() any { return c.list(func() any { return k1 }()) }()
-				f_1375 := func() any { return any(":=") }()
-				f_1376 := func() any { return c.list(func() any { return k4 }()) }()
-				return tmk_AssignStmt(c, true, f_1374, f_1375, f_1376)
+				f_1375 := func() any { return c.list(func() any { return k1 }()) }()
+				f_1376 := func() any { return any(":=") }()
+				f_1377 := func() any { return c.list(func() any { return k4 }()) }()
+				return tmk_AssignStmt(c, true, f_1375, f_1376, f_1377)
 			}()
 		}()
 		p.where = w
@@ -247275,10 +247547,10 @@ func (p *tparser) i163() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1374 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1375 := func() any { c.p.stepWork(); return any(":=") }()
-			f_1376 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
-			return tmk_AssignStmt(c, true, f_1374, f_1375, f_1376)
+			f_1375 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1376 := func() any { c.p.stepWork(); return any(":=") }()
+			f_1377 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k4 }()) }()
+			return tmk_AssignStmt(c, true, f_1375, f_1376, f_1377)
 		}()
 	}()
 	p.where = w
@@ -247342,7 +247614,7 @@ func (p *tparser) i164() (any, bool) {
 		p.where = "guardExpr"
 		v = func() any {
 
-			return func() any { f_1377 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1377) }()
+			return func() any { f_1378 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_1378) }()
 		}()
 		p.where = w
 		p.depth--
@@ -247381,7 +247653,7 @@ func (p *tparser) i164() (any, bool) {
 	p.where = "guardExpr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1377 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1377) }()
+		return func() any { f_1378 := func() any { c.p.stepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_1378) }()
 	}()
 	p.where = w
 	p.depth--
@@ -247487,8 +247759,8 @@ func (p *tparser) i165() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1378 := func() any { return k1 }()
-				return tmk_TypeAssertExpr(c, true, f_1378, nil)
+				f_1379 := func() any { return k1 }()
+				return tmk_TypeAssertExpr(c, true, f_1379, nil)
 			}()
 		}()
 		p.where = w
@@ -247570,8 +247842,8 @@ func (p *tparser) i165() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1378 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_TypeAssertExpr(c, true, f_1378, nil)
+			f_1379 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_TypeAssertExpr(c, true, f_1379, nil)
 		}()
 	}()
 	p.where = w
@@ -247706,11 +247978,11 @@ func (p *tparser) i166() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1379 := func() any {
+				f_1380 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k1 }()))
 				}()
-				return tmk_BlockStmt(c, true, f_1379)
+				return tmk_BlockStmt(c, true, f_1380)
 			}()
 		}()
 		p.where = w
@@ -247821,11 +248093,11 @@ func (p *tparser) i166() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1379 := func() any {
+			f_1380 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 			}()
-			return tmk_BlockStmt(c, true, f_1379)
+			return tmk_BlockStmt(c, true, f_1380)
 		}()
 	}()
 	p.where = w
@@ -248080,9 +248352,9 @@ func (p *tparser) i168() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1380 := func() any { return k1 }()
-				f_1381 := func() any { return k7 }()
-				return tmk_CaseClause(c, true, f_1380, f_1381)
+				f_1381 := func() any { return k1 }()
+				f_1382 := func() any { return k7 }()
+				return tmk_CaseClause(c, true, f_1381, f_1382)
 			}()
 		}()
 		p.where = w
@@ -248173,9 +248445,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1380 := func() any { c.p.stepWork(); return k1 }()
-			f_1381 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_CaseClause(c, true, f_1380, f_1381)
+			f_1381 := func() any { c.p.stepWork(); return k1 }()
+			f_1382 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_CaseClause(c, true, f_1381, f_1382)
 		}()
 	}()
 	p.where = w
@@ -248273,8 +248545,8 @@ func (p *tparser) i169() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1382 := func() any { return k4 }()
-				return tmk_CaseClause(c, true, nil, f_1382)
+				f_1383 := func() any { return k4 }()
+				return tmk_CaseClause(c, true, nil, f_1383)
 			}()
 		}()
 		p.where = w
@@ -248350,8 +248622,8 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1382 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_CaseClause(c, true, nil, f_1382)
+			f_1383 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_CaseClause(c, true, nil, f_1383)
 		}()
 	}()
 	p.where = w
@@ -248424,8 +248696,8 @@ func (p *tparser) i170() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1383 := func() any { return k1 }()
-				return tmk_SelectStmt(c, true, f_1383)
+				f_1384 := func() any { return k1 }()
+				return tmk_SelectStmt(c, true, f_1384)
 			}()
 		}()
 		p.where = w
@@ -248476,8 +248748,8 @@ func (p *tparser) i170() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1383 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_SelectStmt(c, true, f_1383)
+			f_1384 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_SelectStmt(c, true, f_1384)
 		}()
 	}()
 	p.where = w
@@ -248606,11 +248878,11 @@ func (p *tparser) i171() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1384 := func() any {
+				f_1385 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k1 }()))
 				}()
-				return tmk_BlockStmt(c, true, f_1384)
+				return tmk_BlockStmt(c, true, f_1385)
 			}()
 		}()
 		p.where = w
@@ -248721,11 +248993,11 @@ func (p *tparser) i171() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1384 := func() any {
+			f_1385 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k1 }()))
 			}()
-			return tmk_BlockStmt(c, true, f_1384)
+			return tmk_BlockStmt(c, true, f_1385)
 		}()
 	}()
 	p.where = w
@@ -248980,9 +249252,9 @@ func (p *tparser) i173() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1385 := func() any { return k1 }()
-				f_1386 := func() any { return k7 }()
-				return tmk_CommClause(c, true, f_1385, f_1386)
+				f_1386 := func() any { return k1 }()
+				f_1387 := func() any { return k7 }()
+				return tmk_CommClause(c, true, f_1386, f_1387)
 			}()
 		}()
 		p.where = w
@@ -249073,9 +249345,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1385 := func() any { c.p.stepWork(); return k1 }()
-			f_1386 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_CommClause(c, true, f_1385, f_1386)
+			f_1386 := func() any { c.p.stepWork(); return k1 }()
+			f_1387 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_CommClause(c, true, f_1386, f_1387)
 		}()
 	}()
 	p.where = w
@@ -249173,8 +249445,8 @@ func (p *tparser) i174() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1387 := func() any { return k4 }()
-				return tmk_CommClause(c, true, nil, f_1387)
+				f_1388 := func() any { return k4 }()
+				return tmk_CommClause(c, true, nil, f_1388)
 			}()
 		}()
 		p.where = w
@@ -249250,8 +249522,8 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1387 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_CommClause(c, true, nil, f_1387)
+			f_1388 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_CommClause(c, true, nil, f_1388)
 		}()
 	}()
 	p.where = w
@@ -249508,7 +249780,7 @@ func (p *tparser) i176() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x10)
-			v22 = p.attachCaptures(v21, scope1388, []any{k12}, x10, p.pos)
+			v22 = p.attachCaptures(v21, scope1389, []any{k12}, x10, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x10 {
@@ -249606,20 +249878,20 @@ func (p *tparser) i176() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1389 := func() any {
+				f_1390 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
 						c.pushList(func() any { return k1 }())
-						c.pushMap(func() any { return k4 }(), func(l_1390 any) any {
-							return func() any { return c.member(func() any { return (l_1390) }(), "$x") }()
+						c.pushMap(func() any { return k4 }(), func(l_1391 any) any {
+							return func() any { return c.member(func() any { return (l_1391) }(), "$x") }()
 						})
 						return c.endList(b)
 					}()
 				}()
-				f_1391 := func() any { return c.text(func() any { return k24 }()) }()
-				f_1392 := func() any { return c.list(func() any { return k40 }()) }()
-				return tmk_AssignStmt(c, true, f_1389, f_1391, f_1392)
+				f_1392 := func() any { return c.text(func() any { return k24 }()) }()
+				f_1393 := func() any { return c.list(func() any { return k40 }()) }()
+				return tmk_AssignStmt(c, true, f_1390, f_1392, f_1393)
 			}()
 		}()
 		p.where = w
@@ -249728,7 +250000,7 @@ func (p *tparser) i176() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x10)
-		v22 = p.attachCaptures(v21, scope1388, []any{k12}, x10, p.pos)
+		v22 = p.attachCaptures(v21, scope1389, []any{k12}, x10, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x10 {
@@ -249829,20 +250101,20 @@ L29:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1389 := func() any {
+			f_1390 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
 					c.pushList(func() any { c.p.stepWork(); return k1 }())
-					c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1390 any) any {
-						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1390) }(), "$x") }()
+					c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1391 any) any {
+						return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1391) }(), "$x") }()
 					})
 					return c.endList(b)
 				}()
 			}()
-			f_1391 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k24 }()) }()
-			f_1392 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k40 }()) }()
-			return tmk_AssignStmt(c, true, f_1389, f_1391, f_1392)
+			f_1392 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k24 }()) }()
+			f_1393 := func() any { c.p.stepWork(); return c.list(func() any { c.p.stepWork(); return k40 }()) }()
+			return tmk_AssignStmt(c, true, f_1390, f_1392, f_1393)
 		}()
 	}()
 	p.where = w
@@ -250118,8 +250390,8 @@ func (p *tparser) i178() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1393 := func() any { return k1 }()
-				return tmk_ForStmt(c, true, nil, nil, nil, f_1393)
+				f_1394 := func() any { return k1 }()
+				return tmk_ForStmt(c, true, nil, nil, nil, f_1394)
 			}()
 		}()
 		p.where = w
@@ -250170,8 +250442,8 @@ func (p *tparser) i178() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1393 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ForStmt(c, true, nil, nil, nil, f_1393)
+			f_1394 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ForStmt(c, true, nil, nil, nil, f_1394)
 		}()
 	}()
 	p.where = w
@@ -250258,9 +250530,9 @@ func (p *tparser) i179() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1394 := func() any { return k1 }()
-				f_1395 := func() any { return k4 }()
-				return tmk_ForStmt(c, true, nil, f_1394, nil, f_1395)
+				f_1395 := func() any { return k1 }()
+				f_1396 := func() any { return k4 }()
+				return tmk_ForStmt(c, true, nil, f_1395, nil, f_1396)
 			}()
 		}()
 		p.where = w
@@ -250326,9 +250598,9 @@ func (p *tparser) i179() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1394 := func() any { c.p.stepWork(); return k1 }()
-			f_1395 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ForStmt(c, true, nil, f_1394, nil, f_1395)
+			f_1395 := func() any { c.p.stepWork(); return k1 }()
+			f_1396 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ForStmt(c, true, nil, f_1395, nil, f_1396)
 		}()
 	}()
 	p.where = w
@@ -250495,11 +250767,11 @@ func (p *tparser) i180() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1396 := func() any { return k1 }()
-				f_1397 := func() any { return k9 }()
-				f_1398 := func() any { return k17 }()
-				f_1399 := func() any { return k25 }()
-				return tmk_ForStmt(c, true, f_1396, f_1397, f_1398, f_1399)
+				f_1397 := func() any { return k1 }()
+				f_1398 := func() any { return k9 }()
+				f_1399 := func() any { return k17 }()
+				f_1400 := func() any { return k25 }()
+				return tmk_ForStmt(c, true, f_1397, f_1398, f_1399, f_1400)
 			}()
 		}()
 		p.where = w
@@ -250651,11 +250923,11 @@ L23:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1396 := func() any { c.p.stepWork(); return k1 }()
-			f_1397 := func() any { c.p.stepWork(); return k9 }()
-			f_1398 := func() any { c.p.stepWork(); return k17 }()
-			f_1399 := func() any { c.p.stepWork(); return k25 }()
-			return tmk_ForStmt(c, true, f_1396, f_1397, f_1398, f_1399)
+			f_1397 := func() any { c.p.stepWork(); return k1 }()
+			f_1398 := func() any { c.p.stepWork(); return k9 }()
+			f_1399 := func() any { c.p.stepWork(); return k17 }()
+			f_1400 := func() any { c.p.stepWork(); return k25 }()
+			return tmk_ForStmt(c, true, f_1397, f_1398, f_1399, f_1400)
 		}()
 	}()
 	p.where = w
@@ -250887,12 +251159,12 @@ func (p *tparser) i181() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1400 := func() any { return k3 }()
-				f_1401 := func() any { return k5 }()
-				f_1402 := func() any { return c.text(func() any { return k7 }()) }()
-				f_1403 := func() any { return k35 }()
-				f_1404 := func() any { return k38 }()
-				return tmk_RangeStmt(c, true, f_1400, f_1401, f_1402, f_1403, f_1404)
+				f_1401 := func() any { return k3 }()
+				f_1402 := func() any { return k5 }()
+				f_1403 := func() any { return c.text(func() any { return k7 }()) }()
+				f_1404 := func() any { return k35 }()
+				f_1405 := func() any { return k38 }()
+				return tmk_RangeStmt(c, true, f_1401, f_1402, f_1403, f_1404, f_1405)
 			}()
 		}()
 		p.where = w
@@ -251108,12 +251380,12 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1400 := func() any { c.p.stepWork(); return k3 }()
-			f_1401 := func() any { c.p.stepWork(); return k5 }()
-			f_1402 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
-			f_1403 := func() any { c.p.stepWork(); return k35 }()
-			f_1404 := func() any { c.p.stepWork(); return k38 }()
-			return tmk_RangeStmt(c, true, f_1400, f_1401, f_1402, f_1403, f_1404)
+			f_1401 := func() any { c.p.stepWork(); return k3 }()
+			f_1402 := func() any { c.p.stepWork(); return k5 }()
+			f_1403 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k7 }()) }()
+			f_1404 := func() any { c.p.stepWork(); return k35 }()
+			f_1405 := func() any { c.p.stepWork(); return k38 }()
+			return tmk_RangeStmt(c, true, f_1401, f_1402, f_1403, f_1404, f_1405)
 		}()
 	}()
 	p.where = w
@@ -251573,7 +251845,7 @@ func (p *tparser) i184() (any, bool) {
 			x14 = append(x14, v18)
 			v19 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-			v21 = p.attachCaptures(v20, scope1405, []any{k11}, x9, p.pos)
+			v21 = p.attachCaptures(v20, scope1406, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v21)
 			if p.pos == x9 {
@@ -251595,8 +251867,8 @@ func (p *tparser) i184() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_1406 any) any {
-					return func() any { return c.member(func() any { return (l_1406) }(), "$x") }()
+				c.pushMap(func() any { return k4 }(), func(l_1407 any) any {
+					return func() any { return c.member(func() any { return (l_1407) }(), "$x") }()
 				})
 				return c.endList(b)
 			}()
@@ -251694,7 +251966,7 @@ func (p *tparser) i184() (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.newNode("Seq", x13, p.pos, x14)
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-		v21 = p.attachCaptures(v20, scope1405, []any{k11}, x9, p.pos)
+		v21 = p.attachCaptures(v20, scope1406, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v21)
 		if p.pos == x9 {
@@ -251716,8 +251988,8 @@ func (p *tparser) i184() (any, bool) {
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1406 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1406) }(), "$x") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1407 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1407) }(), "$x") }()
 			})
 			return c.endList(b)
 		}()
@@ -251838,7 +252110,7 @@ func (p *tparser) i185() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1407, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1408, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -251857,17 +252129,17 @@ func (p *tparser) i185() (any, bool) {
 		p.where = "orExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1408, l_1409 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1409, l_1410 any) any {
 				return func() any {
 
 					return func() any {
-						f_1410 := func() any { return (l_1408) }()
-						f_1411 := func() any {
+						f_1411 := func() any { return (l_1409) }()
+						f_1412 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1409) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1410) }(), "$o") }())
 						}()
-						f_1412 := func() any { return c.member(func() any { return (l_1409) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1410, f_1411, f_1412)
+						f_1413 := func() any { return c.member(func() any { return (l_1410) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1411, f_1412, f_1413)
 					}()
 				}()
 			})
@@ -251967,7 +252239,7 @@ func (p *tparser) i185() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1407, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1408, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -251986,17 +252258,17 @@ func (p *tparser) i185() (any, bool) {
 	p.where = "orExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1408, l_1409 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1409, l_1410 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1410 := func() any { c.p.stepWork(); return (l_1408) }()
-					f_1411 := func() any {
+					f_1411 := func() any { c.p.stepWork(); return (l_1409) }()
+					f_1412 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1409) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1410) }(), "$o") }())
 					}()
-					f_1412 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1409) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1410, f_1411, f_1412)
+					f_1413 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1410) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1411, f_1412, f_1413)
 				}()
 			}()
 		})
@@ -252123,7 +252395,7 @@ func (p *tparser) i186() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1413, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1414, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -252142,17 +252414,17 @@ func (p *tparser) i186() (any, bool) {
 		p.where = "andExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1414, l_1415 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1415, l_1416 any) any {
 				return func() any {
 
 					return func() any {
-						f_1416 := func() any { return (l_1414) }()
-						f_1417 := func() any {
+						f_1417 := func() any { return (l_1415) }()
+						f_1418 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1415) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1416) }(), "$o") }())
 						}()
-						f_1418 := func() any { return c.member(func() any { return (l_1415) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1416, f_1417, f_1418)
+						f_1419 := func() any { return c.member(func() any { return (l_1416) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1417, f_1418, f_1419)
 					}()
 				}()
 			})
@@ -252252,7 +252524,7 @@ func (p *tparser) i186() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1413, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1414, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -252271,17 +252543,17 @@ func (p *tparser) i186() (any, bool) {
 	p.where = "andExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1414, l_1415 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1415, l_1416 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1416 := func() any { c.p.stepWork(); return (l_1414) }()
-					f_1417 := func() any {
+					f_1417 := func() any { c.p.stepWork(); return (l_1415) }()
+					f_1418 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1415) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1416) }(), "$o") }())
 					}()
-					f_1418 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1415) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1416, f_1417, f_1418)
+					f_1419 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1416) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1417, f_1418, f_1419)
 				}()
 			}()
 		})
@@ -252408,7 +252680,7 @@ func (p *tparser) i187() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1419, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1420, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -252427,17 +252699,17 @@ func (p *tparser) i187() (any, bool) {
 		p.where = "cmpExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1420, l_1421 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1421, l_1422 any) any {
 				return func() any {
 
 					return func() any {
-						f_1422 := func() any { return (l_1420) }()
-						f_1423 := func() any {
+						f_1423 := func() any { return (l_1421) }()
+						f_1424 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1421) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1422) }(), "$o") }())
 						}()
-						f_1424 := func() any { return c.member(func() any { return (l_1421) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1422, f_1423, f_1424)
+						f_1425 := func() any { return c.member(func() any { return (l_1422) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1423, f_1424, f_1425)
 					}()
 				}()
 			})
@@ -252537,7 +252809,7 @@ func (p *tparser) i187() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1419, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1420, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -252556,17 +252828,17 @@ func (p *tparser) i187() (any, bool) {
 	p.where = "cmpExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1420, l_1421 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1421, l_1422 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1422 := func() any { c.p.stepWork(); return (l_1420) }()
-					f_1423 := func() any {
+					f_1423 := func() any { c.p.stepWork(); return (l_1421) }()
+					f_1424 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1421) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1422) }(), "$o") }())
 					}()
-					f_1424 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1421) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1422, f_1423, f_1424)
+					f_1425 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1422) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1423, f_1424, f_1425)
 				}()
 			}()
 		})
@@ -252693,7 +252965,7 @@ func (p *tparser) i188() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1425, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1426, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -252712,17 +252984,17 @@ func (p *tparser) i188() (any, bool) {
 		p.where = "addExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1426, l_1427 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1427, l_1428 any) any {
 				return func() any {
 
 					return func() any {
-						f_1428 := func() any { return (l_1426) }()
-						f_1429 := func() any {
+						f_1429 := func() any { return (l_1427) }()
+						f_1430 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1427) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1428) }(), "$o") }())
 						}()
-						f_1430 := func() any { return c.member(func() any { return (l_1427) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1428, f_1429, f_1430)
+						f_1431 := func() any { return c.member(func() any { return (l_1428) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1429, f_1430, f_1431)
 					}()
 				}()
 			})
@@ -252822,7 +253094,7 @@ func (p *tparser) i188() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1425, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1426, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -252841,17 +253113,17 @@ func (p *tparser) i188() (any, bool) {
 	p.where = "addExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1426, l_1427 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1427, l_1428 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1428 := func() any { c.p.stepWork(); return (l_1426) }()
-					f_1429 := func() any {
+					f_1429 := func() any { c.p.stepWork(); return (l_1427) }()
+					f_1430 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1427) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1428) }(), "$o") }())
 					}()
-					f_1430 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1427) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1428, f_1429, f_1430)
+					f_1431 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1428) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1429, f_1430, f_1431)
 				}()
 			}()
 		})
@@ -252978,7 +253250,7 @@ func (p *tparser) i189() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1431, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1432, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -252997,17 +253269,17 @@ func (p *tparser) i189() (any, bool) {
 		p.where = "mulExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1432, l_1433 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1433, l_1434 any) any {
 				return func() any {
 
 					return func() any {
-						f_1434 := func() any { return (l_1432) }()
-						f_1435 := func() any {
+						f_1435 := func() any { return (l_1433) }()
+						f_1436 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1433) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1434) }(), "$o") }())
 						}()
-						f_1436 := func() any { return c.member(func() any { return (l_1433) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1434, f_1435, f_1436)
+						f_1437 := func() any { return c.member(func() any { return (l_1434) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1435, f_1436, f_1437)
 					}()
 				}()
 			})
@@ -253107,7 +253379,7 @@ func (p *tparser) i189() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1431, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1432, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -253126,17 +253398,17 @@ func (p *tparser) i189() (any, bool) {
 	p.where = "mulExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1432, l_1433 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1433, l_1434 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1434 := func() any { c.p.stepWork(); return (l_1432) }()
-					f_1435 := func() any {
+					f_1435 := func() any { c.p.stepWork(); return (l_1433) }()
+					f_1436 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1433) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1434) }(), "$o") }())
 					}()
-					f_1436 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1433) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1434, f_1435, f_1436)
+					f_1437 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1434) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1435, f_1436, f_1437)
 				}()
 			}()
 		})
@@ -253778,9 +254050,9 @@ func (p *tparser) i192() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1437 := func() any { return any("<-") }()
-				f_1438 := func() any { return k7 }()
-				return tmk_UnaryExpr(c, true, f_1437, f_1438)
+				f_1438 := func() any { return any("<-") }()
+				f_1439 := func() any { return k7 }()
+				return tmk_UnaryExpr(c, true, f_1438, f_1439)
 			}()
 		}()
 		p.where = w
@@ -253884,9 +254156,9 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1437 := func() any { c.p.stepWork(); return any("<-") }()
-			f_1438 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_UnaryExpr(c, true, f_1437, f_1438)
+			f_1438 := func() any { c.p.stepWork(); return any("<-") }()
+			f_1439 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_UnaryExpr(c, true, f_1438, f_1439)
 		}()
 	}()
 	p.where = w
@@ -253965,9 +254237,9 @@ func (p *tparser) i193() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1439 := func() any { return c.text(func() any { return k1 }()) }()
-				f_1440 := func() any { return k4 }()
-				return tmk_UnaryExpr(c, true, f_1439, f_1440)
+				f_1440 := func() any { return c.text(func() any { return k1 }()) }()
+				f_1441 := func() any { return k4 }()
+				return tmk_UnaryExpr(c, true, f_1440, f_1441)
 			}()
 		}()
 		p.where = w
@@ -254024,9 +254296,9 @@ func (p *tparser) i193() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1439 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1440 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_UnaryExpr(c, true, f_1439, f_1440)
+			f_1440 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1441 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_UnaryExpr(c, true, f_1440, f_1441)
 		}()
 	}()
 	p.where = w
@@ -254119,7 +254391,7 @@ func (p *tparser) i194() (any, bool) {
 		p.where = "starExpr"
 		v = func() any {
 
-			return func() any { f_1441 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1441) }()
+			return func() any { f_1442 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1442) }()
 		}()
 		p.where = w
 		p.depth--
@@ -254189,7 +254461,7 @@ L3:
 	p.where = "starExpr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1441 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1441) }()
+		return func() any { f_1442 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1442) }()
 	}()
 	p.where = w
 	p.depth--
@@ -254423,7 +254695,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1512() (any, bool) {
+func (p *tparser) e1513() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -254452,7 +254724,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1513() (any, bool) {
+func (p *tparser) e1514() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -254483,7 +254755,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1514() (any, bool) {
+func (p *tparser) e1515() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -254561,7 +254833,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1517() (any, bool) {
+func (p *tparser) e1518() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -254733,7 +255005,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1519() (any, bool) {
+func (p *tparser) e1520() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -254915,7 +255187,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1522() (any, bool) {
+func (p *tparser) e1523() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -255105,7 +255377,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1525() (any, bool) {
+func (p *tparser) e1526() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -255215,7 +255487,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1528() (any, bool) {
+func (p *tparser) e1529() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -255490,7 +255762,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1532() (any, bool) {
+func (p *tparser) e1533() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -255828,7 +256100,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1537() (any, bool) {
+func (p *tparser) e1538() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -255958,7 +256230,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1539() (any, bool) {
+func (p *tparser) e1540() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -256230,7 +256502,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1543() (any, bool) {
+func (p *tparser) e1544() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -257207,7 +257479,7 @@ func (p *tparser) i200() (any, bool) {
 			x14 = append(x14, v18)
 			v19 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-			v21 = p.attachCaptures(v20, scope1442, []any{k11}, x9, p.pos)
+			v21 = p.attachCaptures(v20, scope1443, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v21)
 			if p.pos == x9 {
@@ -257254,8 +257526,8 @@ func (p *tparser) i200() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_1443 any) any {
-					return func() any { return c.member(func() any { return (l_1443) }(), "$t") }()
+				c.pushMap(func() any { return k4 }(), func(l_1444 any) any {
+					return func() any { return c.member(func() any { return (l_1444) }(), "$t") }()
 				})
 				return c.endList(b)
 			}()
@@ -257355,7 +257627,7 @@ func (p *tparser) i200() (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.newNode("Seq", x13, p.pos, x14)
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-		v21 = p.attachCaptures(v20, scope1442, []any{k11}, x9, p.pos)
+		v21 = p.attachCaptures(v20, scope1443, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v21)
 		if p.pos == x9 {
@@ -257405,8 +257677,8 @@ L26:
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1443 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1443) }(), "$t") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1444 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1444) }(), "$t") }()
 			})
 			return c.endList(b)
 		}()
@@ -257500,8 +257772,8 @@ func (p *tparser) i201() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1444 := func() any { return k1 }()
-				return tmk_ParenExpr(c, true, f_1444)
+				f_1445 := func() any { return k1 }()
+				return tmk_ParenExpr(c, true, f_1445)
 			}()
 		}()
 		p.where = w
@@ -257565,8 +257837,8 @@ func (p *tparser) i201() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1444 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ParenExpr(c, true, f_1444)
+			f_1445 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ParenExpr(c, true, f_1445)
 		}()
 	}()
 	p.where = w
@@ -257651,9 +257923,9 @@ func (p *tparser) i202() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1445 := func() any { return k1 }()
-				f_1446 := func() any { return k4 }()
-				return tmk_FuncLit(c, true, f_1445, f_1446)
+				f_1446 := func() any { return k1 }()
+				f_1447 := func() any { return k4 }()
+				return tmk_FuncLit(c, true, f_1446, f_1447)
 			}()
 		}()
 		p.where = w
@@ -257710,9 +257982,9 @@ func (p *tparser) i202() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1445 := func() any { c.p.stepWork(); return k1 }()
-			f_1446 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_FuncLit(c, true, f_1445, f_1446)
+			f_1446 := func() any { c.p.stepWork(); return k1 }()
+			f_1447 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_FuncLit(c, true, f_1446, f_1447)
 		}()
 	}()
 	p.where = w
@@ -257992,7 +258264,7 @@ func (p *tparser) i204() (any, bool) {
 			x14 = append(x14, v18)
 			v19 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-			v21 = p.attachCaptures(v20, scope1447, []any{k11}, x9, p.pos)
+			v21 = p.attachCaptures(v20, scope1448, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v21)
 			if p.pos == x9 {
@@ -258035,8 +258307,8 @@ func (p *tparser) i204() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_1448 any) any {
-					return func() any { return c.member(func() any { return (l_1448) }(), "$e") }()
+				c.pushMap(func() any { return k4 }(), func(l_1449 any) any {
+					return func() any { return c.member(func() any { return (l_1449) }(), "$e") }()
 				})
 				return c.endList(b)
 			}()
@@ -258136,7 +258408,7 @@ func (p *tparser) i204() (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.newNode("Seq", x13, p.pos, x14)
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-		v21 = p.attachCaptures(v20, scope1447, []any{k11}, x9, p.pos)
+		v21 = p.attachCaptures(v20, scope1448, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v21)
 		if p.pos == x9 {
@@ -258182,8 +258454,8 @@ L26:
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1448 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1448) }(), "$e") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1449 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1449) }(), "$e") }()
 			})
 			return c.endList(b)
 		}()
@@ -258517,9 +258789,9 @@ func (p *tparser) i206() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1449 := func() any { return k1 }()
-				f_1450 := func() any { return k7 }()
-				return tmk_KeyValueExpr(c, true, f_1449, f_1450)
+				f_1450 := func() any { return k1 }()
+				f_1451 := func() any { return k7 }()
+				return tmk_KeyValueExpr(c, true, f_1450, f_1451)
 			}()
 		}()
 		p.where = w
@@ -258606,9 +258878,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1449 := func() any { c.p.stepWork(); return k1 }()
-			f_1450 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_KeyValueExpr(c, true, f_1449, f_1450)
+			f_1450 := func() any { c.p.stepWork(); return k1 }()
+			f_1451 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_KeyValueExpr(c, true, f_1450, f_1451)
 		}()
 	}()
 	p.where = w
@@ -258948,8 +259220,8 @@ func (p *tparser) i208() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1451 := func() any { return k1 }()
-				return tmk_CompositeLit(c, true, nil, f_1451)
+				f_1452 := func() any { return k1 }()
+				return tmk_CompositeLit(c, true, nil, f_1452)
 			}()
 		}()
 		p.where = w
@@ -258990,8 +259262,8 @@ func (p *tparser) i208() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1451 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_CompositeLit(c, true, nil, f_1451)
+			f_1452 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_CompositeLit(c, true, nil, f_1452)
 		}()
 	}()
 	p.where = w
@@ -259003,7 +259275,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func (p *tparser) e1562() (any, bool) {
+func (p *tparser) e1563() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -259189,7 +259461,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func (p *tparser) e1564() (any, bool) {
+func (p *tparser) e1565() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -260211,7 +260483,7 @@ func (p *tparser) i212() (any, bool) {
 			x14 = append(x14, v18)
 			v19 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
 			v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-			v21 = p.attachCaptures(v20, scope1452, []any{k11}, x9, p.pos)
+			v21 = p.attachCaptures(v20, scope1453, []any{k11}, x9, p.pos)
 			x8++
 			p.pushKid(v21)
 			if p.pos == x9 {
@@ -260233,8 +260505,8 @@ func (p *tparser) i212() (any, bool) {
 			return func() any {
 				b := len(c.p.kidStack)
 				c.pushList(func() any { return k1 }())
-				c.pushMap(func() any { return k4 }(), func(l_1453 any) any {
-					return func() any { return c.member(func() any { return (l_1453) }(), "$x") }()
+				c.pushMap(func() any { return k4 }(), func(l_1454 any) any {
+					return func() any { return c.member(func() any { return (l_1454) }(), "$x") }()
 				})
 				return c.endList(b)
 			}()
@@ -260332,7 +260604,7 @@ func (p *tparser) i212() (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.newNode("Seq", x13, p.pos, x14)
 		v20 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v19, x9)
-		v21 = p.attachCaptures(v20, scope1452, []any{k11}, x9, p.pos)
+		v21 = p.attachCaptures(v20, scope1453, []any{k11}, x9, p.pos)
 		x8++
 		p.pushKid(v21)
 		if p.pos == x9 {
@@ -260354,8 +260626,8 @@ func (p *tparser) i212() (any, bool) {
 		return func() any {
 			b := len(c.p.kidStack)
 			c.pushList(func() any { c.p.stepWork(); return k1 }())
-			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1453 any) any {
-				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1453) }(), "$x") }()
+			c.pushMap(func() any { c.p.stepWork(); return k4 }(), func(l_1454 any) any {
+				return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1454) }(), "$x") }()
 			})
 			return c.endList(b)
 		}()
@@ -260476,7 +260748,7 @@ func (p *tparser) i213() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1454, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1455, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -260495,17 +260767,17 @@ func (p *tparser) i213() (any, bool) {
 		p.where = "horExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1455, l_1456 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1456, l_1457 any) any {
 				return func() any {
 
 					return func() any {
-						f_1457 := func() any { return (l_1455) }()
-						f_1458 := func() any {
+						f_1458 := func() any { return (l_1456) }()
+						f_1459 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1456) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1457) }(), "$o") }())
 						}()
-						f_1459 := func() any { return c.member(func() any { return (l_1456) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1457, f_1458, f_1459)
+						f_1460 := func() any { return c.member(func() any { return (l_1457) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1458, f_1459, f_1460)
 					}()
 				}()
 			})
@@ -260605,7 +260877,7 @@ func (p *tparser) i213() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1454, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1455, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -260624,17 +260896,17 @@ func (p *tparser) i213() (any, bool) {
 	p.where = "horExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1455, l_1456 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1456, l_1457 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1457 := func() any { c.p.stepWork(); return (l_1455) }()
-					f_1458 := func() any {
+					f_1458 := func() any { c.p.stepWork(); return (l_1456) }()
+					f_1459 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1456) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1457) }(), "$o") }())
 					}()
-					f_1459 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1456) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1457, f_1458, f_1459)
+					f_1460 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1457) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1458, f_1459, f_1460)
 				}()
 			}()
 		})
@@ -260761,7 +261033,7 @@ func (p *tparser) i214() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1460, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1461, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -260780,17 +261052,17 @@ func (p *tparser) i214() (any, bool) {
 		p.where = "handExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1461, l_1462 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1462, l_1463 any) any {
 				return func() any {
 
 					return func() any {
-						f_1463 := func() any { return (l_1461) }()
-						f_1464 := func() any {
+						f_1464 := func() any { return (l_1462) }()
+						f_1465 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1462) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1463) }(), "$o") }())
 						}()
-						f_1465 := func() any { return c.member(func() any { return (l_1462) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1463, f_1464, f_1465)
+						f_1466 := func() any { return c.member(func() any { return (l_1463) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1464, f_1465, f_1466)
 					}()
 				}()
 			})
@@ -260890,7 +261162,7 @@ func (p *tparser) i214() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1460, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1461, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -260909,17 +261181,17 @@ func (p *tparser) i214() (any, bool) {
 	p.where = "handExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1461, l_1462 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1462, l_1463 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1463 := func() any { c.p.stepWork(); return (l_1461) }()
-					f_1464 := func() any {
+					f_1464 := func() any { c.p.stepWork(); return (l_1462) }()
+					f_1465 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1462) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1463) }(), "$o") }())
 					}()
-					f_1465 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1462) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1463, f_1464, f_1465)
+					f_1466 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1463) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1464, f_1465, f_1466)
 				}()
 			}()
 		})
@@ -261046,7 +261318,7 @@ func (p *tparser) i215() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1466, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1467, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -261065,17 +261337,17 @@ func (p *tparser) i215() (any, bool) {
 		p.where = "hcmpExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1467, l_1468 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1468, l_1469 any) any {
 				return func() any {
 
 					return func() any {
-						f_1469 := func() any { return (l_1467) }()
-						f_1470 := func() any {
+						f_1470 := func() any { return (l_1468) }()
+						f_1471 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1468) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1469) }(), "$o") }())
 						}()
-						f_1471 := func() any { return c.member(func() any { return (l_1468) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1469, f_1470, f_1471)
+						f_1472 := func() any { return c.member(func() any { return (l_1469) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1470, f_1471, f_1472)
 					}()
 				}()
 			})
@@ -261175,7 +261447,7 @@ func (p *tparser) i215() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1466, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1467, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -261194,17 +261466,17 @@ func (p *tparser) i215() (any, bool) {
 	p.where = "hcmpExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1467, l_1468 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1468, l_1469 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1469 := func() any { c.p.stepWork(); return (l_1467) }()
-					f_1470 := func() any {
+					f_1470 := func() any { c.p.stepWork(); return (l_1468) }()
+					f_1471 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1468) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1469) }(), "$o") }())
 					}()
-					f_1471 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1468) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1469, f_1470, f_1471)
+					f_1472 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1469) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1470, f_1471, f_1472)
 				}()
 			}()
 		})
@@ -261331,7 +261603,7 @@ func (p *tparser) i216() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1472, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1473, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -261350,17 +261622,17 @@ func (p *tparser) i216() (any, bool) {
 		p.where = "haddExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1473, l_1474 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1474, l_1475 any) any {
 				return func() any {
 
 					return func() any {
-						f_1475 := func() any { return (l_1473) }()
-						f_1476 := func() any {
+						f_1476 := func() any { return (l_1474) }()
+						f_1477 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1474) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1475) }(), "$o") }())
 						}()
-						f_1477 := func() any { return c.member(func() any { return (l_1474) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1475, f_1476, f_1477)
+						f_1478 := func() any { return c.member(func() any { return (l_1475) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1476, f_1477, f_1478)
 					}()
 				}()
 			})
@@ -261460,7 +261732,7 @@ func (p *tparser) i216() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1472, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1473, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -261479,17 +261751,17 @@ func (p *tparser) i216() (any, bool) {
 	p.where = "haddExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1473, l_1474 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1474, l_1475 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1475 := func() any { c.p.stepWork(); return (l_1473) }()
-					f_1476 := func() any {
+					f_1476 := func() any { c.p.stepWork(); return (l_1474) }()
+					f_1477 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1474) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1475) }(), "$o") }())
 					}()
-					f_1477 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1474) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1475, f_1476, f_1477)
+					f_1478 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1475) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1476, f_1477, f_1478)
 				}()
 			}()
 		})
@@ -261616,7 +261888,7 @@ func (p *tparser) i217() (any, bool) {
 			x15 = append(x15, v19)
 			v20 = p.newNodeOrdinary("Seq", x14, p.pos, x15)
 			v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-			v22 = p.attachCaptures(v21, scope1478, []any{k11, k12}, x9, p.pos)
+			v22 = p.attachCaptures(v21, scope1479, []any{k11, k12}, x9, p.pos)
 			x8++
 			p.pushKid(v22)
 			if p.pos == x9 {
@@ -261635,17 +261907,17 @@ func (p *tparser) i217() (any, bool) {
 		p.where = "hmulExpr"
 		v = func() any {
 
-			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1479, l_1480 any) any {
+			return c.fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1480, l_1481 any) any {
 				return func() any {
 
 					return func() any {
-						f_1481 := func() any { return (l_1479) }()
-						f_1482 := func() any {
+						f_1482 := func() any { return (l_1480) }()
+						f_1483 := func() any {
 
-							return c.text(func() any { return c.member(func() any { return (l_1480) }(), "$o") }())
+							return c.text(func() any { return c.member(func() any { return (l_1481) }(), "$o") }())
 						}()
-						f_1483 := func() any { return c.member(func() any { return (l_1480) }(), "$r") }()
-						return tmk_BinaryExpr(c, false, f_1481, f_1482, f_1483)
+						f_1484 := func() any { return c.member(func() any { return (l_1481) }(), "$r") }()
+						return tmk_BinaryExpr(c, false, f_1482, f_1483, f_1484)
 					}()
 				}()
 			})
@@ -261745,7 +262017,7 @@ func (p *tparser) i217() (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.newNode("Seq", x14, p.pos, x15)
 		v21 = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v20, x9)
-		v22 = p.attachCaptures(v21, scope1478, []any{k11, k12}, x9, p.pos)
+		v22 = p.attachCaptures(v21, scope1479, []any{k11, k12}, x9, p.pos)
 		x8++
 		p.pushKid(v22)
 		if p.pos == x9 {
@@ -261764,17 +262036,17 @@ func (p *tparser) i217() (any, bool) {
 	p.where = "hmulExpr"
 	v = func() any {
 		c.p.stepWork()
-		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1479, l_1480 any) any {
+		return c.fold("foldl", false, func() any { c.p.stepWork(); return k1 }(), func() any { c.p.stepWork(); return k4 }(), func(l_1480, l_1481 any) any {
 			return func() any {
 				c.p.stepWork()
 				return func() any {
-					f_1481 := func() any { c.p.stepWork(); return (l_1479) }()
-					f_1482 := func() any {
+					f_1482 := func() any { c.p.stepWork(); return (l_1480) }()
+					f_1483 := func() any {
 						c.p.stepWork()
-						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1480) }(), "$o") }())
+						return c.text(func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1481) }(), "$o") }())
 					}()
-					f_1483 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1480) }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_1481, f_1482, f_1483)
+					f_1484 := func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_1481) }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_1482, f_1483, f_1484)
 				}()
 			}()
 		})
@@ -262247,9 +262519,9 @@ func (p *tparser) i219() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1484 := func() any { return any("<-") }()
-				f_1485 := func() any { return k7 }()
-				return tmk_UnaryExpr(c, true, f_1484, f_1485)
+				f_1485 := func() any { return any("<-") }()
+				f_1486 := func() any { return k7 }()
+				return tmk_UnaryExpr(c, true, f_1485, f_1486)
 			}()
 		}()
 		p.where = w
@@ -262353,9 +262625,9 @@ L3:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1484 := func() any { c.p.stepWork(); return any("<-") }()
-			f_1485 := func() any { c.p.stepWork(); return k7 }()
-			return tmk_UnaryExpr(c, true, f_1484, f_1485)
+			f_1485 := func() any { c.p.stepWork(); return any("<-") }()
+			f_1486 := func() any { c.p.stepWork(); return k7 }()
+			return tmk_UnaryExpr(c, true, f_1485, f_1486)
 		}()
 	}()
 	p.where = w
@@ -262434,9 +262706,9 @@ func (p *tparser) i220() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1486 := func() any { return c.text(func() any { return k1 }()) }()
-				f_1487 := func() any { return k4 }()
-				return tmk_UnaryExpr(c, true, f_1486, f_1487)
+				f_1487 := func() any { return c.text(func() any { return k1 }()) }()
+				f_1488 := func() any { return k4 }()
+				return tmk_UnaryExpr(c, true, f_1487, f_1488)
 			}()
 		}()
 		p.where = w
@@ -262493,9 +262765,9 @@ func (p *tparser) i220() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1486 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
-			f_1487 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_UnaryExpr(c, true, f_1486, f_1487)
+			f_1487 := func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }()
+			f_1488 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_UnaryExpr(c, true, f_1487, f_1488)
 		}()
 	}()
 	p.where = w
@@ -262588,7 +262860,7 @@ func (p *tparser) i221() (any, bool) {
 		p.where = "hstarExpr"
 		v = func() any {
 
-			return func() any { f_1488 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1488) }()
+			return func() any { f_1489 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_1489) }()
 		}()
 		p.where = w
 		p.depth--
@@ -262658,7 +262930,7 @@ L3:
 	p.where = "hstarExpr"
 	v = func() any {
 		c.p.stepWork()
-		return func() any { f_1488 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1488) }()
+		return func() any { f_1489 := func() any { c.p.stepWork(); return k4 }(); return tmk_StarExpr(c, true, f_1489) }()
 	}()
 	p.where = w
 	p.depth--
@@ -262892,7 +263164,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1570() (any, bool) {
+func (p *tparser) e1571() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -262923,7 +263195,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1573() (any, bool) {
+func (p *tparser) e1574() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -263053,7 +263325,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1575() (any, bool) {
+func (p *tparser) e1576() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -263193,7 +263465,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1582() (any, bool) {
+func (p *tparser) e1583() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -263426,7 +263698,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1586() (any, bool) {
+func (p *tparser) e1587() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -263722,7 +263994,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1591() (any, bool) {
+func (p *tparser) e1592() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -263810,7 +264082,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func (p *tparser) e1593() (any, bool) {
+func (p *tparser) e1594() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -264885,9 +265157,9 @@ func (p *tparser) i225() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_1489 := func() any { return k1 }()
-				f_1490 := func() any { return k18 }()
-				return tmk_CompositeLit(c, true, f_1489, f_1490)
+				f_1490 := func() any { return k1 }()
+				f_1491 := func() any { return k18 }()
+				return tmk_CompositeLit(c, true, f_1490, f_1491)
 			}()
 		}()
 		p.where = w
@@ -264999,9 +265271,9 @@ L6:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_1489 := func() any { c.p.stepWork(); return k1 }()
-			f_1490 := func() any { c.p.stepWork(); return k18 }()
-			return tmk_CompositeLit(c, true, f_1489, f_1490)
+			f_1490 := func() any { c.p.stepWork(); return k1 }()
+			f_1491 := func() any { c.p.stepWork(); return k18 }()
+			return tmk_CompositeLit(c, true, f_1490, f_1491)
 		}()
 	}()
 	p.where = w
@@ -271789,7 +272061,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L62_ordinary
 			L67_ordinary:
 				v90 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v66, x59)
-				v91 = p.attachCaptures(v90, scope1491, []any{k61}, x59, p.pos)
+				v91 = p.attachCaptures(v90, scope1492, []any{k61}, x59, p.pos)
 				x58++
 				p.pushKid(v91)
 				if p.pos == x59 {
@@ -272084,7 +272356,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L143_ordinary
 			L148_ordinary:
 				v182 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v147, x140)
-				v183 = p.attachCaptures(v182, scope1492, []any{k142}, x140, p.pos)
+				v183 = p.attachCaptures(v182, scope1493, []any{k142}, x140, p.pos)
 				x139++
 				p.pushKid(v183)
 				if p.pos == x140 {
@@ -272452,7 +272724,7 @@ func (p *tparser) s243() (any, bool) {
 				x201 = append(x201, v240)
 				v268 = p.newNodeOrdinary("Seq", x200, p.pos, x201)
 				v269 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v268, x196)
-				v270 = p.attachCaptures(v269, scope1493, []any{k198}, x196, p.pos)
+				v270 = p.attachCaptures(v269, scope1494, []any{k198}, x196, p.pos)
 				x195++
 				p.pushKid(v270)
 				if p.pos == x196 {
@@ -272928,7 +273200,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L335_ordinary
 			L340_ordinary:
 				v374 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v339, x332)
-				v375 = p.attachCaptures(v374, scope1494, []any{k334}, x332, p.pos)
+				v375 = p.attachCaptures(v374, scope1495, []any{k334}, x332, p.pos)
 				x331++
 				p.pushKid(v375)
 				if p.pos == x332 {
@@ -273261,7 +273533,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L408_ordinary
 			L413_ordinary:
 				v447 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v412, x405)
-				v448 = p.attachCaptures(v447, scope1495, []any{k407}, x405, p.pos)
+				v448 = p.attachCaptures(v447, scope1496, []any{k407}, x405, p.pos)
 				x404++
 				p.pushKid(v448)
 				if p.pos == x405 {
@@ -273614,7 +273886,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L484_ordinary
 			L489_ordinary:
 				v523 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v488, x481)
-				v524 = p.attachCaptures(v523, scope1496, []any{k483}, x481, p.pos)
+				v524 = p.attachCaptures(v523, scope1497, []any{k483}, x481, p.pos)
 				x480++
 				p.pushKid(v524)
 				if p.pos == x481 {
@@ -273675,7 +273947,7 @@ func (p *tparser) s243() (any, bool) {
 			x12 = append(x12, v22)
 			v532 = p.newNodeOrdinary("Seq", x11, p.pos, x12)
 			v533 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v532, x4)
-			v534 = p.attachCaptures(v533, scope1497, []any{k6, k7, k8, k9}, x4, p.pos)
+			v534 = p.attachCaptures(v533, scope1498, []any{k6, k7, k8, k9}, x4, p.pos)
 			x3++
 			p.pushKid(v534)
 			if p.pos == x4 {
@@ -274409,7 +274681,7 @@ func (p *tparser) s243() (any, bool) {
 			goto L62
 		L67:
 			v90 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v66, x59)
-			v91 = p.attachCaptures(v90, scope1491, []any{k61}, x59, p.pos)
+			v91 = p.attachCaptures(v90, scope1492, []any{k61}, x59, p.pos)
 			x58++
 			p.pushKid(v91)
 			if p.pos == x59 {
@@ -274706,7 +274978,7 @@ func (p *tparser) s243() (any, bool) {
 			goto L143
 		L148:
 			v182 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v147, x140)
-			v183 = p.attachCaptures(v182, scope1492, []any{k142}, x140, p.pos)
+			v183 = p.attachCaptures(v182, scope1493, []any{k142}, x140, p.pos)
 			x139++
 			p.pushKid(v183)
 			if p.pos == x140 {
@@ -275077,7 +275349,7 @@ func (p *tparser) s243() (any, bool) {
 			x201 = append(x201, v240)
 			v268 = p.newNode("Seq", x200, p.pos, x201)
 			v269 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v268, x196)
-			v270 = p.attachCaptures(v269, scope1493, []any{k198}, x196, p.pos)
+			v270 = p.attachCaptures(v269, scope1494, []any{k198}, x196, p.pos)
 			x195++
 			p.pushKid(v270)
 			if p.pos == x196 {
@@ -275556,7 +275828,7 @@ func (p *tparser) s243() (any, bool) {
 			goto L335
 		L340:
 			v374 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v339, x332)
-			v375 = p.attachCaptures(v374, scope1494, []any{k334}, x332, p.pos)
+			v375 = p.attachCaptures(v374, scope1495, []any{k334}, x332, p.pos)
 			x331++
 			p.pushKid(v375)
 			if p.pos == x332 {
@@ -275890,7 +276162,7 @@ func (p *tparser) s243() (any, bool) {
 			goto L408
 		L413:
 			v447 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v412, x405)
-			v448 = p.attachCaptures(v447, scope1495, []any{k407}, x405, p.pos)
+			v448 = p.attachCaptures(v447, scope1496, []any{k407}, x405, p.pos)
 			x404++
 			p.pushKid(v448)
 			if p.pos == x405 {
@@ -276244,7 +276516,7 @@ func (p *tparser) s243() (any, bool) {
 			goto L484
 		L489:
 			v523 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v488, x481)
-			v524 = p.attachCaptures(v523, scope1496, []any{k483}, x481, p.pos)
+			v524 = p.attachCaptures(v523, scope1497, []any{k483}, x481, p.pos)
 			x480++
 			p.pushKid(v524)
 			if p.pos == x481 {
@@ -276305,7 +276577,7 @@ func (p *tparser) s243() (any, bool) {
 		x12 = append(x12, v22)
 		v532 = p.newNode("Seq", x11, p.pos, x12)
 		v533 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v532, x4)
-		v534 = p.attachCaptures(v533, scope1497, []any{k6, k7, k8, k9}, x4, p.pos)
+		v534 = p.attachCaptures(v533, scope1498, []any{k6, k7, k8, k9}, x4, p.pos)
 		x3++
 		p.pushKid(v534)
 		if p.pos == x4 {
@@ -277476,7 +277748,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L80_ordinary
 			L85_ordinary:
 				v127 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v84, x77)
-				v128 = p.attachCaptures(v127, scope1498, []any{k79}, x77, p.pos)
+				v128 = p.attachCaptures(v127, scope1499, []any{k79}, x77, p.pos)
 				x76++
 				p.pushKid(v128)
 				if p.pos == x77 {
@@ -277955,7 +278227,7 @@ func (p *tparser) s244() (any, bool) {
 				x161 = append(x161, v231)
 				v248 = p.newNodeOrdinary("Seq", x160, p.pos, x161)
 				v249 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v248, x156)
-				v250 = p.attachCaptures(v249, scope1499, []any{k158}, x156, p.pos)
+				v250 = p.attachCaptures(v249, scope1500, []any{k158}, x156, p.pos)
 				x155++
 				p.pushKid(v250)
 				if p.pos == x156 {
@@ -278459,7 +278731,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L315_ordinary
 			L320_ordinary:
 				v362 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v319, x312)
-				v363 = p.attachCaptures(v362, scope1500, []any{k314}, x312, p.pos)
+				v363 = p.attachCaptures(v362, scope1501, []any{k314}, x312, p.pos)
 				x311++
 				p.pushKid(v363)
 				if p.pos == x312 {
@@ -278866,7 +279138,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L411_ordinary
 			L416_ordinary:
 				v458 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v415, x408)
-				v459 = p.attachCaptures(v458, scope1501, []any{k410}, x408, p.pos)
+				v459 = p.attachCaptures(v458, scope1502, []any{k410}, x408, p.pos)
 				x407++
 				p.pushKid(v459)
 				if p.pos == x408 {
@@ -279243,7 +279515,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L512_ordinary
 			L517_ordinary:
 				v540 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v516, x509)
-				v541 = p.attachCaptures(v540, scope1502, []any{k511}, x509, p.pos)
+				v541 = p.attachCaptures(v540, scope1503, []any{k511}, x509, p.pos)
 				x508++
 				p.pushKid(v541)
 				if p.pos == x509 {
@@ -279483,7 +279755,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L584_ordinary
 			L589_ordinary:
 				v623 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v588, x581)
-				v624 = p.attachCaptures(v623, scope1503, []any{k583}, x581, p.pos)
+				v624 = p.attachCaptures(v623, scope1504, []any{k583}, x581, p.pos)
 				x580++
 				p.pushKid(v624)
 				if p.pos == x581 {
@@ -279851,7 +280123,7 @@ func (p *tparser) s244() (any, bool) {
 				x642 = append(x642, v681)
 				v709 = p.newNodeOrdinary("Seq", x641, p.pos, x642)
 				v710 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v709, x637)
-				v711 = p.attachCaptures(v710, scope1504, []any{k639}, x637, p.pos)
+				v711 = p.attachCaptures(v710, scope1505, []any{k639}, x637, p.pos)
 				x636++
 				p.pushKid(v711)
 				if p.pos == x637 {
@@ -280327,7 +280599,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L776_ordinary
 			L781_ordinary:
 				v815 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v780, x773)
-				v816 = p.attachCaptures(v815, scope1505, []any{k775}, x773, p.pos)
+				v816 = p.attachCaptures(v815, scope1506, []any{k775}, x773, p.pos)
 				x772++
 				p.pushKid(v816)
 				if p.pos == x773 {
@@ -280660,7 +280932,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L849_ordinary
 			L854_ordinary:
 				v888 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v853, x846)
-				v889 = p.attachCaptures(v888, scope1506, []any{k848}, x846, p.pos)
+				v889 = p.attachCaptures(v888, scope1507, []any{k848}, x846, p.pos)
 				x845++
 				p.pushKid(v889)
 				if p.pos == x846 {
@@ -281013,7 +281285,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L925_ordinary
 			L930_ordinary:
 				v964 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v929, x922)
-				v965 = p.attachCaptures(v964, scope1507, []any{k924}, x922, p.pos)
+				v965 = p.attachCaptures(v964, scope1508, []any{k924}, x922, p.pos)
 				x921++
 				p.pushKid(v965)
 				if p.pos == x922 {
@@ -281083,7 +281355,7 @@ func (p *tparser) s244() (any, bool) {
 			x16 = append(x16, v30)
 			v973 = p.newNodeOrdinary("Seq", x15, p.pos, x16)
 			v974 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v973, x4)
-			v975 = p.attachCaptures(v974, scope1508, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.pos)
+			v975 = p.attachCaptures(v974, scope1509, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.pos)
 			x3++
 			p.pushKid(v975)
 			if p.pos == x4 {
@@ -282251,7 +282523,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L80
 		L85:
 			v127 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v84, x77)
-			v128 = p.attachCaptures(v127, scope1498, []any{k79}, x77, p.pos)
+			v128 = p.attachCaptures(v127, scope1499, []any{k79}, x77, p.pos)
 			x76++
 			p.pushKid(v128)
 			if p.pos == x77 {
@@ -282733,7 +283005,7 @@ func (p *tparser) s244() (any, bool) {
 			x161 = append(x161, v231)
 			v248 = p.newNode("Seq", x160, p.pos, x161)
 			v249 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v248, x156)
-			v250 = p.attachCaptures(v249, scope1499, []any{k158}, x156, p.pos)
+			v250 = p.attachCaptures(v249, scope1500, []any{k158}, x156, p.pos)
 			x155++
 			p.pushKid(v250)
 			if p.pos == x156 {
@@ -283240,7 +283512,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L315
 		L320:
 			v362 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v319, x312)
-			v363 = p.attachCaptures(v362, scope1500, []any{k314}, x312, p.pos)
+			v363 = p.attachCaptures(v362, scope1501, []any{k314}, x312, p.pos)
 			x311++
 			p.pushKid(v363)
 			if p.pos == x312 {
@@ -283648,7 +283920,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L411
 		L416:
 			v458 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v415, x408)
-			v459 = p.attachCaptures(v458, scope1501, []any{k410}, x408, p.pos)
+			v459 = p.attachCaptures(v458, scope1502, []any{k410}, x408, p.pos)
 			x407++
 			p.pushKid(v459)
 			if p.pos == x408 {
@@ -284027,7 +284299,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L512
 		L517:
 			v540 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v516, x509)
-			v541 = p.attachCaptures(v540, scope1502, []any{k511}, x509, p.pos)
+			v541 = p.attachCaptures(v540, scope1503, []any{k511}, x509, p.pos)
 			x508++
 			p.pushKid(v541)
 			if p.pos == x509 {
@@ -284267,7 +284539,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L584
 		L589:
 			v623 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v588, x581)
-			v624 = p.attachCaptures(v623, scope1503, []any{k583}, x581, p.pos)
+			v624 = p.attachCaptures(v623, scope1504, []any{k583}, x581, p.pos)
 			x580++
 			p.pushKid(v624)
 			if p.pos == x581 {
@@ -284638,7 +284910,7 @@ func (p *tparser) s244() (any, bool) {
 			x642 = append(x642, v681)
 			v709 = p.newNode("Seq", x641, p.pos, x642)
 			v710 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v709, x637)
-			v711 = p.attachCaptures(v710, scope1504, []any{k639}, x637, p.pos)
+			v711 = p.attachCaptures(v710, scope1505, []any{k639}, x637, p.pos)
 			x636++
 			p.pushKid(v711)
 			if p.pos == x637 {
@@ -285117,7 +285389,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L776
 		L781:
 			v815 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v780, x773)
-			v816 = p.attachCaptures(v815, scope1505, []any{k775}, x773, p.pos)
+			v816 = p.attachCaptures(v815, scope1506, []any{k775}, x773, p.pos)
 			x772++
 			p.pushKid(v816)
 			if p.pos == x773 {
@@ -285451,7 +285723,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L849
 		L854:
 			v888 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v853, x846)
-			v889 = p.attachCaptures(v888, scope1506, []any{k848}, x846, p.pos)
+			v889 = p.attachCaptures(v888, scope1507, []any{k848}, x846, p.pos)
 			x845++
 			p.pushKid(v889)
 			if p.pos == x846 {
@@ -285805,7 +286077,7 @@ func (p *tparser) s244() (any, bool) {
 			goto L925
 		L930:
 			v964 = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: true}, v929, x922)
-			v965 = p.attachCaptures(v964, scope1507, []any{k924}, x922, p.pos)
+			v965 = p.attachCaptures(v964, scope1508, []any{k924}, x922, p.pos)
 			x921++
 			p.pushKid(v965)
 			if p.pos == x922 {
@@ -285875,7 +286147,7 @@ func (p *tparser) s244() (any, bool) {
 		x16 = append(x16, v30)
 		v973 = p.newNode("Seq", x15, p.pos, x16)
 		v974 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v973, x4)
-		v975 = p.attachCaptures(v974, scope1508, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.pos)
+		v975 = p.attachCaptures(v974, scope1509, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.pos)
 		x3++
 		p.pushKid(v975)
 		if p.pos == x4 {
@@ -286899,7 +287171,7 @@ func (p *tparser) i247() (any, bool) {
 		}
 		v7 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v7, start)
-		v = p.attachCaptures(v, scope1509, []any{k3}, start, p.pos)
+		v = p.attachCaptures(v, scope1510, []any{k3}, start, p.pos)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
 		}
@@ -286955,7 +287227,7 @@ func (p *tparser) i247() (any, bool) {
 	}
 	v7 = p.newNode("Seq", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v7, start)
-	v = p.attachCaptures(v, scope1509, []any{k3}, start, p.pos)
+	v = p.attachCaptures(v, scope1510, []any{k3}, start, p.pos)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -288932,7 +289204,7 @@ func (p *tparser) i252() (any, bool) {
 		}
 		v17 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, start)
-		v = p.attachCaptures(v, scope1510, []any{k13}, start, p.pos)
+		v = p.attachCaptures(v, scope1511, []any{k13}, start, p.pos)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
 		}
@@ -289096,7 +289368,7 @@ func (p *tparser) i252() (any, bool) {
 	}
 	v17 = p.newNode("Seq", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v17, start)
-	v = p.attachCaptures(v, scope1510, []any{k13}, start, p.pos)
+	v = p.attachCaptures(v, scope1511, []any{k13}, start, p.pos)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -289284,7 +289556,7 @@ func (p *tparser) i253() (any, bool) {
 		}
 		v24 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v24, start)
-		v = p.attachCaptures(v, scope1511, []any{k16}, start, p.pos)
+		v = p.attachCaptures(v, scope1512, []any{k16}, start, p.pos)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
 		}
@@ -289449,7 +289721,7 @@ L22:
 	}
 	v24 = p.newNode("Seq", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v24, start)
-	v = p.attachCaptures(v, scope1511, []any{k16}, start, p.pos)
+	v = p.attachCaptures(v, scope1512, []any{k16}, start, p.pos)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -289539,6 +289811,7 @@ func (p *tparser) v254() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -289633,6 +289906,7 @@ func (p *tparser) i254() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -297681,6 +297955,7 @@ func (p *tparser) s285() (any, bool) {
 	_, _ = x26, x36
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -298085,6 +298360,7 @@ func (p *tparser) s286() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
 	if _, ok = p.u361(); !ok {
@@ -298282,6 +298558,7 @@ func (p *tparser) s287() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
@@ -302148,6 +302425,7 @@ func (p *tparser) s296() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 39) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit447, "'", 128, false); !ok {
@@ -302476,6 +302754,7 @@ func (p *tparser) v297() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x17
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -302882,6 +303161,7 @@ func (p *tparser) i297() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x17
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {

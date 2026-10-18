@@ -54,35 +54,35 @@ package typescript
 // ===================================================================
 
 // --- Terminals ---
-type Identifier terminal
-type PrivateIdentifier terminal
-type Token terminal           // a punctuation or keyword token (QuestionToken, PlusToken, ...)
-type Modifier terminal        // a modifier keyword (ExportKeyword, ...)
-type KeywordTypeNode terminal // any, number, void, ... (AnyKeyword, NumberKeyword, ...)
-type ThisTypeNode terminal    // this as a type (ThisType)
-type NumericLiteral terminal
-type BigIntLiteral terminal
-type StringLiteral terminal // with its quotes
-type RegularExpressionLiteral terminal
-type NoSubstitutionTemplateLiteral terminal // with its backquotes
-type TemplateHead terminal                  // from ` to ${
-type TemplateMiddle terminal                // from } to ${
-type TemplateTail terminal                  // from } to `
-type ThisExpression terminal                // ThisKeyword
-type SuperExpression terminal               // SuperKeyword
-type NullLiteral terminal                   // NullKeyword
-type BooleanLiteral terminal                // TrueKeyword or FalseKeyword
-type ImportExpression terminal              // ImportKeyword, the callee of import(...)
-type OmittedExpression terminal             // an empty slot of an array literal or pattern
-type JsxText terminal
-type JsxOpeningFragment terminal
-type JsxClosingFragment terminal
-type EmptyStatement terminal
-type DebuggerStatement terminal
-type SemicolonClassElement terminal
-type EndOfFileToken terminal
-type JSDocAllType terminal
-type JSDocUnknownType terminal
+type Identifier = { Text string }
+type PrivateIdentifier = { Text string }
+type Token = { Text string }           // a punctuation or keyword token (QuestionToken, PlusToken, ...)
+type Modifier = { Text string }        // a modifier keyword (ExportKeyword, ...)
+type KeywordTypeNode = { Text string } // any, number, void, ... (AnyKeyword, NumberKeyword, ...)
+type ThisTypeNode = { Text string }    // this as a type (ThisType)
+type NumericLiteral = { Text string }
+type BigIntLiteral = { Text string }
+type StringLiteral = { Text string } // with its quotes
+type RegularExpressionLiteral = { Text string }
+type NoSubstitutionTemplateLiteral = { Text string } // with its backquotes
+type TemplateHead = { Text string }                  // from ` to ${
+type TemplateMiddle = { Text string }                // from } to ${
+type TemplateTail = { Text string }                  // from } to `
+type ThisExpression = { Text string }                // ThisKeyword
+type SuperExpression = { Text string }               // SuperKeyword
+type NullLiteral = { Text string }                   // NullKeyword
+type BooleanLiteral = { Text string }                // TrueKeyword or FalseKeyword
+type ImportExpression = { Text string }              // ImportKeyword, the callee of import(...)
+type OmittedExpression = { Text string }             // an empty slot of an array literal or pattern
+type JsxText = { Text string }
+type JsxOpeningFragment = { Text string }
+type JsxClosingFragment = { Text string }
+type EmptyStatement = { Text string }
+type DebuggerStatement = { Text string }
+type SemicolonClassElement = { Text string }
+type EndOfFileToken = { Text string }
+type JSDocAllType = { Text string }
+type JSDocUnknownType = { Text string }
 
 // --- Names ---
 type QualifiedName = { Left EntityName; Right Identifier }
@@ -487,7 +487,7 @@ rule awaitFreeTopLevelStatement Statement = (
     {ctx / 2 % 2 == 1} &topLevelAwaitFreeStart {ctx := ctx - 2} s:statement
 ) => $s
 rule topLevelAwaitFreeStart = (modifierKeyword -ws)* ("import" !idPart !(-ws [(.]) / "export" !idPart -ws (("type" !idPart -ws)? [=*{] / ("default" / "as") !idPart) / ("enum" / "namespace" / "module" / "global") !idPart)
-rule endOfFile EndOfFileToken = $$
+rule endOfFile EndOfFileToken = t:($$) #atomic => EndOfFileToken{Text: text($t)}
 rule hashbang = "#!" [^\n\r\u{2028}\u{2029}]*
 
 // ===================================================================
@@ -527,7 +527,7 @@ rule declarationKeyword = (
 
 // "=" after a block is an error (parseBlock): {a} = b is not a destructuring assignment.
 rule block Block = "{" -ws ss:(s:statement -ws)* "}" !(-ws "=" ![=>]) => Block{Statements: map($ss, (x) => x.$s)}
-rule emptyStatement EmptyStatement = ";"
+rule emptyStatement EmptyStatement = t:(";") #atomic => EmptyStatement{Text: text($t)}
 
 // var, let x, using x and await using x without modifiers (isLetDeclaration, isUsingDeclaration, ...)
 rule variableStatement VariableStatement = (
@@ -572,7 +572,7 @@ rule forClassicStatement ForStatement = (
     "for" !idPart -ws "(" -ws i:forInitializer? -ws ";" -ws
     c:expressionAllowIn? -ws ";" -ws n:expressionAllowIn? -ws ")" -ws s:statement
 ) => ForStatement{Initializer: $i, Condition: $c, Incrementor: $n, Statement: $s}
-rule awaitToken Token = "await" !idPart
+rule awaitToken Token = t:("await" !idPart) #atomic => Token{Text: text($t)}
 // The initializer is parsed with `in` disallowed, so that for (x in y) is a for-in statement.
 rule forInitializer ForInitializer = {ctx := ctx - ctx / 4 % 2 * 4 + 4} i:(forDeclarationList / expression) => $i
 rule forDeclarationList VariableDeclarationList = (
@@ -595,8 +595,8 @@ rule throwStatement ThrowStatement = (
     "throw" !idPart (!nlAhead -ws &d:(expressionAllowIn #atomic) e:expressionAllowIn / &nlAhead &(-ws e:missingIdentifier))
     (eos / {text($d) == "declare"})
 ) => ThrowStatement{Expression: $e}
-rule missingIdentifier Identifier = _
-rule debuggerStatement DebuggerStatement = "debugger" !idPart eos
+rule missingIdentifier Identifier = t:(_) #atomic => Identifier{Text: text($t)}
+rule debuggerStatement DebuggerStatement = t:("debugger" !idPart eos) #atomic => DebuggerStatement{Text: text($t)}
 
 rule switchStatement SwitchStatement = (
     "switch" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws b:caseBlock
@@ -638,7 +638,7 @@ rule expressionStatement ExpressionStatement = e:expressionAllowIn eos => Expres
 rule declareStatement ExpressionStatement = (
     &x:(expressionAllowIn #atomic) {text($x) == "declare"} e:declareIdentifier
 ) => ExpressionStatement{Expression: $e}
-rule declareIdentifier Identifier = "declare" !idPart
+rule declareIdentifier Identifier = t:("declare" !idPart) #atomic => Identifier{Text: text($t)}
 
 // A statement terminator (parseSemicolon): ";", or nothing before a line break, "}" or the end of input.
 rule eos = -ws ";" / &canParseSemicolon
@@ -721,7 +721,7 @@ rule arrayBindingPattern ArrayBindingPattern = (
     es:arrayBindingElementList? -ws "]"
 ) => ArrayBindingPattern{Elements: concat($es)}
 rule arrayBindingElement ArrayBindingElement = omittedExpression / bindingElementShorthand
-rule omittedExpression OmittedExpression = &","
+rule omittedExpression OmittedExpression = t:(&",") #atomic => OmittedExpression{Text: text($t)}
 
 // --- Functions ---
 // The name may be left out only with the default modifier (export default function () {}). The
@@ -746,7 +746,7 @@ rule parameters = (
 ) => concat(list($first), map($rest, (r) => r.$p))
 rule parameter Parameter = thisParameter / regularParameter
 rule thisParameter Parameter = n:thisIdentifier t:typeAnnotation? => Parameter{Name: $n, Type: $t}
-rule thisIdentifier Identifier = "this" !idPart
+rule thisIdentifier Identifier = t:("this" !idPart) #atomic => Identifier{Text: text($t)}
 rule regularParameter Parameter = (
     m:modifiers (dt:dotDotDotToken -ws)? n:bindingName (-ws qt:questionToken)?
     t:typeAnnotation? i:initializer?
@@ -817,7 +817,7 @@ rule classMemberNotAccessor ClassElement = (
 ) => $m
 // get or set before a name: an accessor
 rule accessorKeyword = ("get" / "set") !idPart &(-ws canFollowGetOrSet)
-rule semicolonClassElement SemicolonClassElement = ";"
+rule semicolonClassElement SemicolonClassElement = t:(";") #atomic => SemicolonClassElement{Text: text($t)}
 rule classStaticBlock ClassStaticBlockDeclaration = (
     m:classModifiers "static" !idPart -ws &"{"
     {ctx := ctx - ctx % 32 + 2} b:block
@@ -867,7 +867,7 @@ rule typeAliasDeclaration TypeAliasDeclaration = (
     m:modifiers "type" !idPart !nlAhead -ws n:identifier
     (-ws t:typeParameters)? -ws "=" -ws ty:(intrinsicKeyword / typeNode) eos
 ) => TypeAliasDeclaration{Modifiers: $m, Name: $n, TypeParameters: concat($t), Type: $ty}
-rule intrinsicKeyword KeywordTypeNode = "intrinsic" !idPart !(-ws ".")
+rule intrinsicKeyword KeywordTypeNode = t:("intrinsic" !idPart !(-ws ".")) #atomic => KeywordTypeNode{Text: text($t)}
 rule enumDeclaration EnumDeclaration = (
     m:modifiers "enum" !idPart -ws n:identifier -ws "{" -ws
     {ctx := ctx - ctx % 4} ms:enumMemberList? -ws "}"
@@ -891,7 +891,7 @@ rule externalModuleDeclaration ModuleDeclaration = (
 rule globalDeclaration ModuleDeclaration = (
     m:modifiers n:globalIdentifier (-ws mb:moduleBlock / eos)
 ) => ModuleDeclaration{Modifiers: $m, Name: $n, Body: $mb}
-rule globalIdentifier Identifier = "global" !idPart
+rule globalIdentifier Identifier = t:("global" !idPart) #atomic => Identifier{Text: text($t)}
 rule moduleBlock ModuleBlock = "{" -ws ss:(s:statement -ws)* "}" => ModuleBlock{Statements: map($ss, (x) => x.$s)}
 
 // --- Imports ---
@@ -940,10 +940,10 @@ rule importSpecifierType ImportSpecifier = (
 rule importSpecifierPlain ImportSpecifier = (
     p:moduleExportName -ws "as" !idPart -ws n:importedName / n:importedName
 ) => ImportSpecifier{PropertyName: $p, Name: $n}
-rule typeIdentifier Identifier = "type" !idPart
-rule importedName Identifier = identifier / privateName
-rule privateName Identifier = "#" ([a-zA-Z$_] / idStartOther) identifierRest
-rule asIdentifier Identifier = "as" !idPart
+rule typeIdentifier Identifier = t:("type" !idPart) #atomic => Identifier{Text: text($t)}
+rule importedName Identifier = t:(identifier / privateName) #atomic => Identifier{Text: text($t)}
+rule privateName Identifier = t:("#" ([a-zA-Z$_] / idStartOther) identifierRest) #atomic => Identifier{Text: text($t)}
+rule asIdentifier Identifier = t:("as" !idPart) #atomic => Identifier{Text: text($t)}
 rule moduleExportName ModuleExportName = stringLiteral / identifierNameOrPrivate
 rule moduleExportNameStart = idStart / "#" / ["']
 rule moduleSpecifier Expression = stringLiteral / expression
@@ -1020,13 +1020,13 @@ rule modifierList = (
     {len($b) > 0 || len($s) > 0}
 ) => concat(map($b, (x) => x.$m), $s, map($a, (x) => x.$m))
 rule staticModifierList = &"s" m:staticModifier -ws => list($m)
-rule modifier Modifier = (
+rule modifier Modifier = t:(
     "export" !idPart &(-ws exportModifierFollows)
     / "default" !idPart &(-ws defaultModifierFollows)
     / "const" !idPart &(-ws "enum" !idPart)
     / ("abstract" / "accessor" / "async" / "declare" / "in" / "out" / "override" / "private" / "protected" / "public" / "readonly") !idPart &(sp canFollowModifier)
-)
-rule staticModifier Modifier = "static" !idPart &(-ws canFollowModifier)
+) #atomic => Modifier{Text: text($t)}
+rule staticModifier Modifier = t:("static" !idPart &(-ws canFollowModifier)) #atomic => Modifier{Text: text($t)}
 rule exportModifierFollows = (
     "default" !idPart -ws defaultModifierFollows
     / "type" !idPart -ws canFollowExportModifier
@@ -1049,8 +1049,8 @@ rule classModifierList = (
     a:(&[acdeiopr] m:classModifier -ws)* {len($b) > 0 || len($s) > 0}
 ) => concat(map($b, (x) => x.$m), $s, map($a, (x) => x.$m))
 rule classStaticModifierList = &"s" m:classStaticModifier -ws => list($m)
-rule classModifier Modifier = "const" !idPart &(sp canFollowModifier) / modifier
-rule classStaticModifier Modifier = "static" !idPart !(-ws "{") &(-ws canFollowModifier)
+rule classModifier Modifier = t:("const" !idPart &(sp canFollowModifier) / modifier) #atomic => Modifier{Text: text($t)}
+rule classStaticModifier Modifier = t:("static" !idPart !(-ws "{") &(-ws canFollowModifier)) #atomic => Modifier{Text: text($t)}
 
 // Type members take no decorators; type parameters take const, in and out.
 rule typeMemberModifiers = ms:modifierList? => concat($ms)
@@ -1095,10 +1095,10 @@ rule nlStart = [\n\r\u{2028}\u{2029}] / "/*"
 rule assignment BinaryExpression = (
     l:leftHandSideExpression -ws &[>*<&|?+\-/%\^=] o:assignmentOperator -ws r:assignmentExpressionInner
 ) => BinaryExpression{Left: $l, OperatorToken: $o, Right: $r}
-rule assignmentOperator Token = (
+rule assignmentOperator Token = t:(
     ">>>=" / "**=" / "<<=" / ">>=" / "&&=" / "||=" / "??=" / "+=" / "-=" / "*=" / "/="
     / "%=" / "&=" / "|=" / "^=" / "=" ![=>]
-)
+) #atomic => Token{Text: text($t)}
 
 // The true branch allows `in` and arrow functions without a return type (allowReturnTypeInArrowFunction
 // = false), and is outside the decorator context.
@@ -1108,7 +1108,7 @@ rule conditionalOrBinaryExpression Expression = (
 ) => foldl($c, $rest, (acc, r) => ConditionalExpression{Condition: acc, QuestionToken: r.$q, WhenTrue: r.$t, ColonToken: r.$k, WhenFalse: r.$f})
 rule conditionalWhenTrue Expression = {ctx := ctx - ctx / 4 % 8 * 4 + 16} e:assignmentExpressionInner => $e
 rule conditionalWhenFalse Expression = e:assignmentExpressionInner => $e
-rule conditionalQuestionToken Token = "?" !"?" !("." ![0-9])
+rule conditionalQuestionToken Token = t:("?" !"?" !("." ![0-9])) #atomic => Token{Text: text($t)}
 
 // --- Arrow functions (tryParseParenthesizedArrowFunctionExpression, isParenthesizedArrowFunctionExpression) ---
 // In a .tsx file, <T> starts JSX; a generic arrow function needs <T,>, <T = ...> or <T extends ...>.
@@ -1118,7 +1118,7 @@ rule arrowFunction ArrowFunction = (
     a:equalsGreaterThanToken -ws b:arrowBody ({ctx / 16 % 2 == 0} / {$rt == nil} / &(-ws ":"))
 ) => ArrowFunction{Modifiers: concat($ml), TypeParameters: concat($t), Parameters: $ps, Type: $rt, EqualsGreaterThanToken: $a, Body: $b}
 rule arrowAsyncModifier = m:asyncKeywordModifier -sp &[(<] => list($m)
-rule asyncKeywordModifier Modifier = "async" !idPart
+rule asyncKeywordModifier Modifier = t:("async" !idPart) #atomic => Modifier{Text: text($t)}
 rule arrowTypeParameters = (
     &("<" -ws ("const" !idPart / identifier)) ({ctx < 64} / &tsxArrowTypeParametersStart)
     tp:typeParameters
@@ -1190,21 +1190,21 @@ rule binaryExpression Expression = operators {
     }
 }
 // Operator tokens, each not the start of a longer token (maximal munch).
-rule coalesceOrToken Token = "??" !"=" / "||" !"="
-rule ampersandAmpersandToken Token = "&&" !"="
-rule barToken Token = "|" ![|=]
-rule caretToken Token = "^" !"="
-rule ampersandToken Token = "&" ![&=]
-rule equalityToken Token = "===" / "!==" / "==" / "!="
+rule coalesceOrToken Token = t:("??" !"=" / "||" !"=") #atomic => Token{Text: text($t)}
+rule ampersandAmpersandToken Token = t:("&&" !"=") #atomic => Token{Text: text($t)}
+rule barToken Token = t:("|" ![|=]) #atomic => Token{Text: text($t)}
+rule caretToken Token = t:("^" !"=") #atomic => Token{Text: text($t)}
+rule ampersandToken Token = t:("&" ![&=]) #atomic => Token{Text: text($t)}
+rule equalityToken Token = t:("===" / "!==" / "==" / "!=") #atomic => Token{Text: text($t)}
 // In a .tsx file, </ is the start of a closing tag.
-rule relationalToken Token = (
+rule relationalToken Token = t:(
     "<=" / ">=" / "<" ![<=] !({ctx >= 64} "/" !"*") / ">" ![>=]
     / "instanceof" !idPart / {ctx / 4 % 2 == 0} "in" !idPart
-)
-rule shiftToken Token = ">>>" !"=" / ">>" ![>=] / "<<" !"="
-rule additiveToken Token = "+" ![+=] / "-" ![\-=]
-rule multiplicativeToken Token = "*" ![*=] / "/" !"=" / "%" !"="
-rule asteriskAsteriskToken Token = "**" !"="
+) #atomic => Token{Text: text($t)}
+rule shiftToken Token = t:(">>>" !"=" / ">>" ![>=] / "<<" !"=") #atomic => Token{Text: text($t)}
+rule additiveToken Token = t:("+" ![+=] / "-" ![\-=]) #atomic => Token{Text: text($t)}
+rule multiplicativeToken Token = t:("*" ![*=] / "/" !"=" / "%" !"=") #atomic => Token{Text: text($t)}
+rule asteriskAsteriskToken Token = t:("**" !"=") #atomic => Token{Text: text($t)}
 // isBinaryOperator
 rule binaryOperatorStart = (
     coalesceOrToken / ampersandAmpersandToken / barToken / caretToken / ampersandToken
@@ -1314,7 +1314,7 @@ rule newTarget Expression = operators {
     }
 }
 rule memberName MemberName = privateIdentifier / identifierName
-rule questionDotToken Token = "?." ![0-9]
+rule questionDotToken Token = t:("?." ![0-9]) #atomic => Token{Text: text($t)}
 
 // parseTypeArgumentsInExpression: "<" types ">" not followed by ">" or "=", then what can follow type
 // arguments: "(" or a template; else not "<", ">", "+" or "-", and a line break, a binary operator or
@@ -1346,9 +1346,9 @@ rule argument Expression = spreadElement / assignmentExpressionInner
 rule spreadElement SpreadElement = "..." -ws e:assignmentExpression => SpreadElement{Expression: $e}
 
 // super must be followed by "(", "." or "["
-rule superExpression SuperExpression = "super" !idPart &(-ws [(.\[])
-rule superKeyword SuperExpression = "super" !idPart
-rule importCallee ImportExpression = "import" !idPart &(-ws [(<])
+rule superExpression SuperExpression = t:("super" !idPart &(-ws [(.\[])) #atomic => SuperExpression{Text: text($t)}
+rule superKeyword SuperExpression = t:("super" !idPart) #atomic => SuperExpression{Text: text($t)}
+rule importCallee ImportExpression = t:("import" !idPart &(-ws [(<])) #atomic => ImportExpression{Text: text($t)}
 rule importMetaProperty MetaProperty = (
     "import" !idPart -ws "." -ws n:identifierNameOrPrivate
 ) => MetaProperty{KeywordToken: "import", Name: $n}
@@ -1368,9 +1368,9 @@ rule symbolPrimary Expression = (
     / classExpressionPrimary / regularExpressionLiteral / privateIdentifier
 )
 rule numericOrBigIntLiteral Expression = &[0-9.] e:(numericLiteral / bigIntLiteral) => $e
-rule thisKeyword ThisExpression = "this" !idPart
-rule nullKeyword NullLiteral = "null" !idPart
-rule booleanKeyword BooleanLiteral = ("true" / "false") !idPart
+rule thisKeyword ThisExpression = t:("this" !idPart) #atomic => ThisExpression{Text: text($t)}
+rule nullKeyword NullLiteral = t:("null" !idPart) #atomic => NullLiteral{Text: text($t)}
+rule booleanKeyword BooleanLiteral = t:(("true" / "false") !idPart) #atomic => BooleanLiteral{Text: text($t)}
 rule parenthesizedExpression ParenthesizedExpression = (
     "(" -ws e:expressionAllowIn -ws ")"
 ) => ParenthesizedExpression{Expression: $e}
@@ -1479,8 +1479,8 @@ rule jsxClosingElement JsxClosingElement = "</" -ws n:jsxElementName -ws ">" => 
 rule jsxFragment JsxFragment = (
     o:jsxOpeningFragment cs:jsxChild* c:jsxClosingFragment
 ) => JsxFragment{OpeningFragment: $o, Children: $cs.Value, ClosingFragment: $c}
-rule jsxOpeningFragment JsxOpeningFragment = "<" -ws ">"
-rule jsxClosingFragment JsxClosingFragment = "</" -ws ">"
+rule jsxOpeningFragment JsxOpeningFragment = t:("<" -ws ">") #atomic => JsxOpeningFragment{Text: text($t)}
+rule jsxClosingFragment JsxClosingFragment = t:("</" -ws ">") #atomic => JsxClosingFragment{Text: text($t)}
 
 // A tag name: an identifier with dashes, a namespaced name, this, or a member access.
 rule jsxElementName JsxTagName = jsxNamespacedName / jsxMemberName
@@ -1488,8 +1488,8 @@ rule jsxMemberName JsxTagName = (
     first:jsxTagNameStart rest:(-ws "." -ws n:identifierName)*
 ) => foldl($first, $rest, (acc, r) => PropertyAccessExpression{Expression: acc, Name: r.$n})
 rule jsxTagNameStart JsxTagNameStart = jsxThis / jsxIdentifier
-rule jsxThis ThisExpression = "this" !(idPart / "-")
-rule jsxIdentifier Identifier = "#"? idStart (idPart / "-")*
+rule jsxThis ThisExpression = t:("this" !(idPart / "-")) #atomic => ThisExpression{Text: text($t)}
+rule jsxIdentifier Identifier = t:("#"? idStart (idPart / "-")*) #atomic => Identifier{Text: text($t)}
 rule jsxNamespacedName JsxNamespacedName = (
     s:jsxIdentifier -ws ":" -ws n:jsxIdentifier
 ) => JsxNamespacedName{Namespace: $s, Name: $n}
@@ -1504,7 +1504,7 @@ rule jsxAttribute JsxAttribute = (
 rule jsxAttributeName JsxAttributeName = jsxNamespacedName / jsxIdentifier
 rule jsxAttributeValue JsxAttributeValue = jsxAttributeString / jsxAttributeExpression / jsxElementOrFragmentValue
 rule jsxElementOrFragmentValue JsxAttributeValue = jsxSelfClosingElement / jsxElement / jsxFragment
-rule jsxAttributeString StringLiteral = "\"" [^"]* "\"" / "'" [^']* "'"
+rule jsxAttributeString StringLiteral = t:("\"" [^"]* "\"" / "'" [^']* "'") #atomic => StringLiteral{Text: text($t)}
 rule jsxAttributeExpression JsxExpression = "{" -ws e:expression? -ws "}" => JsxExpression{Expression: $e}
 rule jsxSpreadAttribute JsxSpreadAttribute = (
     "{" -ws "..." -ws e:expression -ws "}"
@@ -1512,7 +1512,7 @@ rule jsxSpreadAttribute JsxSpreadAttribute = (
 
 // Children: text (where ">" and "}" are errors), {expressions} and elements.
 rule jsxChild JsxChild = jsxText / jsxChildExpression / jsxChildElement
-rule jsxText JsxText = [^{}<>]+
+rule jsxText JsxText = t:([^{}<>]+) #atomic => JsxText{Text: text($t)}
 rule jsxChildExpression JsxExpression = (
     "{" -ws (dt:dotDotDotToken -ws)? e:expression? -ws "}"
 ) => JsxExpression{DotDotDotToken: $dt, Expression: $e}
@@ -1547,7 +1547,7 @@ rule constructorType ConstructorType = (
     ps:parameterList -ws "=>" -ws r:returnTypeOfType
 ) => ConstructorType{Modifiers: concat($am), TypeParameters: concat($t), Parameters: $ps, Type: $r}
 rule abstractModifier = m:abstractKeywordModifier => list($m)
-rule abstractKeywordModifier Modifier = "abstract" !idPart
+rule abstractKeywordModifier Modifier = t:("abstract" !idPart) #atomic => Modifier{Text: text($t)}
 rule returnTypeOfType TypeNode = {ctx := ctx - ctx / 32 % 2 * 32} t:typeOrTypePredicate => $t
 
 // A leading | or & makes a union or intersection of one type.
@@ -1625,15 +1625,15 @@ rule symbolType TypeNode = (
     / templateLiteralType / jsdocAllType / jsdocUnknownType / jsdocNullableType / jsdocNonNullableType / typeReference
 )
 // A keyword type, unless followed by "." (then it is a type reference)
-rule keywordType KeywordTypeNode = (
+rule keywordType KeywordTypeNode = t:(
     ("any" / "unknown" / "string" / "number" / "bigint" / "symbol" / "boolean" / "undefined" / "never" / "object") !idPart !(-ws ".")
     / "void" !idPart
-)
+) #atomic => KeywordTypeNode{Text: text($t)}
 rule literalType LiteralType = l:(stringLiteral / numericLiteral / bigIntLiteral / booleanKeyword / nullKeyword / noSubstitutionTemplateLiteral / negativeLiteral) => LiteralType{Literal: $l}
 rule negativeLiteral PrefixUnaryExpression = (
     "-" -ws l:(numericLiteral / bigIntLiteral)
 ) => PrefixUnaryExpression{Operator: "-", Operand: $l}
-rule thisType ThisTypeNode = "this" !idPart
+rule thisType ThisTypeNode = t:("this" !idPart) #atomic => ThisTypeNode{Text: text($t)}
 rule thisTypePredicate TypePredicate = (
     n:thisType -sp "is" !idPart -ws t:typeNode
 ) => TypePredicate{ParameterName: $n, Type: $t}
@@ -1642,7 +1642,7 @@ rule assertsTypePredicate TypePredicate = (
     a:assertsToken &(sp identifierOrKeywordStart) -sp
     n:(thisType / identifier) (-ws "is" !idPart -ws ty:typeNode)?
 ) => TypePredicate{AssertsModifier: $a, ParameterName: $n, Type: $ty}
-rule assertsToken Token = "asserts" !idPart
+rule assertsToken Token = t:("asserts" !idPart) #atomic => Token{Text: text($t)}
 rule identifierOrKeywordStart = idStart / "#"
 rule typeQuery TypeQuery = (
     "typeof" !idPart -ws n:entityNameAllowReserved (-sp t:typeArguments)?
@@ -1659,7 +1659,7 @@ rule typeReference TypeReference = (
     n:entityNameAllowReserved (-ws "." &(-sp "<"))? (-sp t:typeArguments / !(-sp "<"))
 ) => TypeReference{TypeName: $n, TypeArguments: concat($t)}
 rule functionTypeReference TypeReference = n:functionIdentifier !(-ws "(") => TypeReference{TypeName: $n}
-rule functionIdentifier Identifier = "function" !idPart
+rule functionIdentifier Identifier = t:("function" !idPart) #atomic => Identifier{Text: text($t)}
 rule parenthesizedType ParenthesizedType = (
     !unambiguousFunctionTypeStart "(" -ws t:typeNode -ws ")"
 ) => ParenthesizedType{Type: $t}
@@ -1679,8 +1679,8 @@ rule templateTypeSpanTail TemplateLiteralTypeSpan = (
 ) => TemplateLiteralTypeSpan{Type: $t, Literal: $l}
 
 // JSDoc types, which the parser accepts in .ts files (the checker reports them)
-rule jsdocAllType JSDocAllType = "*" !"*"
-rule jsdocUnknownType JSDocUnknownType = "?" &(-ws [,})>=|])
+rule jsdocAllType JSDocAllType = t:("*" !"*") #atomic => JSDocAllType{Text: text($t)}
+rule jsdocUnknownType JSDocUnknownType = t:("?" &(-ws [,})>=|])) #atomic => JSDocUnknownType{Text: text($t)}
 rule jsdocNullableType JSDocNullableType = "?" -ws t:typeNode => JSDocNullableType{Type: $t}
 rule jsdocNonNullableType JSDocNonNullableType = "!" -ws t:nonArrayType => JSDocNonNullableType{Type: $t}
 rule jsdocFunctionType JSDocFunctionType = (
@@ -1688,7 +1688,7 @@ rule jsdocFunctionType JSDocFunctionType = (
     -ws ")" rt:returnType?
 ) => JSDocFunctionType{Parameters: concat($ps), Type: $rt}
 rule jsdocParameter Parameter = (i:jsdocParameterName -ws ":" -ws)? t:typeNode => Parameter{Name: $i, Type: $t}
-rule jsdocParameterName Identifier = ("this" / "new") !idPart
+rule jsdocParameterName Identifier = t:(("this" / "new") !idPart) #atomic => Identifier{Text: text($t)}
 
 rule entityName EntityName = (
     first:identifier rest:(-ws "." -ws n:identifier)*
@@ -1754,8 +1754,8 @@ rule mappedReadonlyToken Token = t:(mappedPlusMinusReadonly / readonlyToken) => 
 rule mappedPlusMinusReadonly Token = t:plusMinusToken -ws "readonly" !idPart => $t
 rule mappedQuestionToken Token = t:(mappedPlusMinusQuestion / questionToken) => $t
 rule mappedPlusMinusQuestion Token = t:plusMinusToken -ws "?" => $t
-rule plusMinusToken Token = [+\-]
-rule readonlyToken Token = "readonly" !idPart
+rule plusMinusToken Token = t:([+\-]) #atomic => Token{Text: text($t)}
+rule readonlyToken Token = t:("readonly" !idPart) #atomic => Token{Text: text($t)}
 
 // parseTypeMember
 rule typeMember TypeElement = callSignature / constructSignature / typeAccessor / typeMemberNotAccessor
@@ -1820,14 +1820,14 @@ rule computedPropertyName ComputedPropertyName = (
 ) => ComputedPropertyName{Expression: $e}
 
 // --- Tokens ---
-rule questionToken Token = "?"
-rule exclamationToken Token = "!" !"="
-rule asteriskToken Token = "*"
-rule dotDotDotToken Token = "..."
-rule equalsGreaterThanToken Token = "=>"
-rule colonToken Token = ":"
-rule equalsToken Token = "=" ![=>]
-rule commaToken Token = ","
+rule questionToken Token = t:("?") #atomic => Token{Text: text($t)}
+rule exclamationToken Token = t:("!" !"=") #atomic => Token{Text: text($t)}
+rule asteriskToken Token = t:("*") #atomic => Token{Text: text($t)}
+rule dotDotDotToken Token = t:("...") #atomic => Token{Text: text($t)}
+rule equalsGreaterThanToken Token = t:("=>") #atomic => Token{Text: text($t)}
+rule colonToken Token = t:(":") #atomic => Token{Text: text($t)}
+rule equalsToken Token = t:("=" ![=>]) #atomic => Token{Text: text($t)}
+rule commaToken Token = t:(",") #atomic => Token{Text: text($t)}
 
 // --- Identifiers ---
 // An identifier is not a reserved word, nor yield in the yield context or await in the await context
@@ -1837,9 +1837,9 @@ rule identifier Identifier = (
     i:identifierName
 ) => $i
 rule bindingIdentifier Identifier = !(&[bcdefinrstvw] reservedWord) i:identifierName => $i
-rule identifierName Identifier = ([a-zA-Z$_] / idStartOther) identifierRest
-rule privateIdentifier PrivateIdentifier = "#" ([a-zA-Z$_] / idStartOther) identifierRest
-rule identifierNameOrPrivate Identifier = "#"? ([a-zA-Z$_] / idStartOther) identifierRest
+rule identifierName Identifier = t:(([a-zA-Z$_] / idStartOther) identifierRest) #atomic => Identifier{Text: text($t)}
+rule privateIdentifier PrivateIdentifier = t:("#" ([a-zA-Z$_] / idStartOther) identifierRest) #atomic => PrivateIdentifier{Text: text($t)}
+rule identifierNameOrPrivate Identifier = t:("#"? ([a-zA-Z$_] / idStartOther) identifierRest) #atomic => Identifier{Text: text($t)}
 // Every keyword, reserved or contextual
 rule anyKeyword = ("abstract" / "accessor" / "any" / "asserts" / "assert" / "async" / "as" / "await" / "bigint" / "boolean" / "break" / "case" / "catch" / "class" / "constructor" / "const" / "continue" / "debugger" / "declare" / "default" / "defer" / "delete" / "do" / "else" / "enum" / "export" / "extends" / "false" / "finally" / "for" / "from" / "function" / "get" / "global" / "if" / "implements" / "import" / "infer" / "instanceof" / "interface" / "intrinsic" / "in" / "is" / "keyof" / "let" / "module" / "namespace" / "never" / "new" / "null" / "number" / "object" / "of" / "out" / "override" / "package" / "private" / "protected" / "public" / "readonly" / "require" / "return" / "satisfies" / "set" / "static" / "string" / "super" / "switch" / "symbol" / "this" / "throw" / "true" / "try" / "typeof" / "type" / "undefined" / "unique" / "unknown" / "using" / "var" / "void" / "while" / "with" / "yield") !idPart
 // The first letter selects the words to try.
@@ -1873,8 +1873,8 @@ rule hex = [0-9a-fA-F]
 // --- Numbers (scanNumber) ---
 // A literal may not be followed by an identifier; 0 may not be followed by a digit (no legacy octal
 // literals, no decimals with leading zeros).
-rule numericLiteral NumericLiteral = (hexLiteral / binaryLiteral / octalLiteral / decimalLiteral) !idStart
-rule bigIntLiteral BigIntLiteral = (hexLiteral / binaryLiteral / octalLiteral / decimalInteger) "n" !idStart
+rule numericLiteral NumericLiteral = t:((hexLiteral / binaryLiteral / octalLiteral / decimalLiteral) !idStart) #atomic => NumericLiteral{Text: text($t)}
+rule bigIntLiteral BigIntLiteral = t:((hexLiteral / binaryLiteral / octalLiteral / decimalInteger) "n" !idStart) #atomic => BigIntLiteral{Text: text($t)}
 rule decimalLiteral = decimalInteger ("." decimalDigits?)? exponentPart? / "." decimalDigits exponentPart?
 rule decimalInteger = "0" ![0-9_] / [1-9] ("_"? [0-9])*
 rule decimalDigits = [0-9] ("_"? [0-9])*
@@ -1885,25 +1885,25 @@ rule octalLiteral = "0" [oO] [0-7] ("_"? [0-7])*
 
 // --- Strings (scanString, scanEscapeSequence) ---
 // Octal escapes, \8 and \9 are errors; \0 is allowed when no digit follows.
-rule stringLiteral StringLiteral = "\"" ([^"\\\n\r]+ / escapeSequence)* "\"" / "'" ([^'\\\n\r]+ / escapeSequence)* "'"
+rule stringLiteral StringLiteral = t:("\"" ([^"\\\n\r]+ / escapeSequence)* "\"" / "'" ([^'\\\n\r]+ / escapeSequence)* "'") #atomic => StringLiteral{Text: text($t)}
 rule escapeSequence = "\\" ([^0-9xu\n\r\u{2028}\u{2029}] / "0" ![0-9] / "x" hex hex / "u" unicodeEscape / "\r\n" / [\n\r\u{2028}\u{2029}])
 
 // --- Templates (scanTemplateAndSetTokenValue) ---
-rule noSubstitutionTemplateLiteral NoSubstitutionTemplateLiteral = "`" templateCharacters "`"
-rule templateHead TemplateHead = "`" templateCharacters "${"
-rule templateMiddle TemplateMiddle = "}" templateCharacters "${"
-rule templateTail TemplateTail = "}" templateCharacters "`"
+rule noSubstitutionTemplateLiteral NoSubstitutionTemplateLiteral = t:("`" templateCharacters "`") #atomic => NoSubstitutionTemplateLiteral{Text: text($t)}
+rule templateHead TemplateHead = t:("`" templateCharacters "${") #atomic => TemplateHead{Text: text($t)}
+rule templateMiddle TemplateMiddle = t:("}" templateCharacters "${") #atomic => TemplateMiddle{Text: text($t)}
+rule templateTail TemplateTail = t:("}" templateCharacters "`") #atomic => TemplateTail{Text: text($t)}
 rule templateCharacters = ([^`\\$]+ / "$" !"{" / escapeSequence)*
-rule rawNoSubstitutionTemplateLiteral NoSubstitutionTemplateLiteral = "`" rawTemplateCharacters "`"
-rule rawTemplateHead TemplateHead = "`" rawTemplateCharacters "${"
-rule rawTemplateMiddle TemplateMiddle = "}" rawTemplateCharacters "${"
-rule rawTemplateTail TemplateTail = "}" rawTemplateCharacters "`"
+rule rawNoSubstitutionTemplateLiteral NoSubstitutionTemplateLiteral = t:("`" rawTemplateCharacters "`") #atomic => NoSubstitutionTemplateLiteral{Text: text($t)}
+rule rawTemplateHead TemplateHead = t:("`" rawTemplateCharacters "${") #atomic => TemplateHead{Text: text($t)}
+rule rawTemplateMiddle TemplateMiddle = t:("}" rawTemplateCharacters "${") #atomic => TemplateMiddle{Text: text($t)}
+rule rawTemplateTail TemplateTail = t:("}" rawTemplateCharacters "`") #atomic => TemplateTail{Text: text($t)}
 rule rawTemplateCharacters = ([^`\\$]+ / "$" !"{" / "\\" .)*
 
 // --- Regular expressions (reScanSlashToken) ---
 // The body up to an unescaped "/" outside a class, on one line, and any identifier characters as flags;
 // the parser does not check the pattern or the flags.
-rule regularExpressionLiteral RegularExpressionLiteral = "/" ![*/] ([^/\\\[\n\r\u{2028}\u{2029}]+ / "\\" [^\n\r\u{2028}\u{2029}] / "[" ([^\]\\\n\r\u{2028}\u{2029}]+ / "\\" [^\n\r\u{2028}\u{2029}])* "]")+ "/" ([a-zA-Z0-9$_] / uniIdPart)*
+rule regularExpressionLiteral RegularExpressionLiteral = t:("/" ![*/] ([^/\\\[\n\r\u{2028}\u{2029}]+ / "\\" [^\n\r\u{2028}\u{2029}] / "[" ([^\]\\\n\r\u{2028}\u{2029}]+ / "\\" [^\n\r\u{2028}\u{2029}])* "]")+ "/" ([a-zA-Z0-9$_] / uniIdPart)*) #atomic => RegularExpressionLiteral{Text: text($t)}
 
 // --- Whitespace and comments ---
 // The whitespace characters of isWhiteSpaceSingleLine, and the line terminators of isLineBreak. Most calls find

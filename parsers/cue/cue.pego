@@ -23,9 +23,9 @@ package cue
 // --- Declarations ---
 type File = { Decls []Decl }
 type Package = { Name Ident }
-type ImportDecl = { Lparen *Match; Specs []ImportSpec }
+type ImportDecl = { Lparen *node[string]; Specs []ImportSpec }
 type ImportSpec = { Name *Ident; Path String }
-type Field = { Label Label; Alias *PostfixAlias; Constraint *Match; Value Expr; Attrs []Attribute }
+type Field = { Label Label; Alias *PostfixAlias; Constraint *node[string]; Value Expr; Attrs []Attribute }
 type PostfixAlias = { Label *Ident; Field Ident }
 type EmbedDecl = { Expr Expr; Alias *PostfixAlias } // Alias is read and dropped by cue/parser
 type LetClause = { Ident Ident; Expr Expr }
@@ -37,25 +37,25 @@ type TryClause = { Ident *Ident; Expr *Expr }
 type FallbackClause = { Body StructLit }
 
 // --- Expressions ---
-type Ident terminal // an identifier, or a keyword used as one
-type Int terminal
-type Float terminal
-type String terminal // a string or bytes literal, with its quotes, hashes and escapes
-type Bool terminal
-type Null terminal
-type Bottom terminal                      // _|_
-type Attribute terminal                   // @name(...)
+type Ident = { Text string } // an identifier, or a keyword used as one
+type Int = { Text string }
+type Float = { Text string }
+type String = { Text string } // a string or bytes literal, with its quotes, hashes and escapes
+type Bool = { Text string }
+type Null = { Text string }
+type Bottom = { Text string }                      // _|_
+type Attribute = { Text string }                   // @name(...)
 type Interpolation = { Elts []Expr } // String fragments and the expressions between them
 type StructLit = { Elts []Decl }
 type ListLit = { Elts []Expr }
 type ParenExpr = { X Expr }
 type SelectorExpr = { X Expr; Sel Selector }
-type IndexExpr = { X Expr; Index Expr; Rbrack Match }
+type IndexExpr = { X Expr; Index Expr; Rbrack node[string] }
 type SliceExpr = { X Expr; Low *Expr; High *Expr }
 type CallExpr = { Fun Expr; Args []Expr }
-type UnaryExpr = { Op Match; X Expr }
-type BinaryExpr = { X Expr; Op Match; Y Expr }
-type PostfixExpr = { X Expr; Op Match }
+type UnaryExpr = { Op node[string]; X Expr }
+type BinaryExpr = { X Expr; Op node[string]; Y Expr }
+type PostfixExpr = { X Expr; Op node[string] }
 type Alias = { Ident Ident; Expr Expr }
 
 type StrLit ~ String | Interpolation
@@ -84,7 +84,7 @@ rule file File = (
 
 rule package_clause Package = (
     "package" !idchar sp n:ident
-    {!(text($n) >= "#" && text($n) < "$") && !(text($n) >= "_#" && text($n) < "_$")}
+    {!($n.Text >= "#" && $n.Text < "$") && !($n.Text >= "_#" && $n.Text < "_$")}
 ) => Package{Name: $n}
 
 rule import_decl ImportDecl = import_paren / import_single
@@ -95,10 +95,10 @@ rule import_single ImportDecl = "import" !idchar sp s:import_spec => ImportDecl{
 rule import_spec ImportSpec = n:import_name? p:import_path => ImportSpec{Name: $n, Path: $p}
 rule import_name Ident = (
     i:ident sp
-    {!(text($i) >= "__" && text($i) < "_`") && !(text($i) >= "#" && text($i) < "$") && !(text($i) >= "_#" && text($i) < "_$")}
+    {!($i.Text >= "__" && $i.Text < "_`") && !($i.Text >= "#" && $i.Text < "$") && !($i.Text >= "_#" && $i.Text < "_$")}
 ) => $i
 // An import path is a string literal without interpolations; Check tests the path it denotes.
-rule import_path String = dq_plain / sq_plain / gstr_plain
+rule import_path String = t:(dq_plain / sq_plain / gstr_plain) #atomic => String{Text: text($t)}
 rule isep = comma / sp &(")" / "}")
 
 // ===================================================================
@@ -151,7 +151,7 @@ rule comp_decl Comprehension = &[fit] c:comprehension => $c
 rule ellipsis_decl Ellipsis = &"." "..." => Ellipsis{}
 
 rule let_decl LetClause = (
-    &"l" "let" !idchar sp i:ident {!(text($i) >= "__" && text($i) < "_`")} sp bind ws e:expr
+    &"l" "let" !idchar sp i:ident {!($i.Text >= "__" && $i.Text < "_`")} sp bind ws e:expr
 ) => LetClause{Ident: $i, Expr: $e}
 
 rule embed_decl EmbedDecl = embed_plain / embed_bare
@@ -160,9 +160,9 @@ rule embed_plain EmbedDecl = !kw4 !func_bare e:expr => EmbedDecl{Expr: $e}
 rule embed_bare EmbedDecl = k:(bare_for / bare_if / bare_let) => EmbedDecl{Expr: $k}
 rule kw4 = ("for" / "if" / "let" / "try") !idchar
 rule func_bare = "func" !idchar sp ("," / "\n" / "//" / $$ / "}")
-rule bare_for Ident = "for" !idchar &(sp ("," / "\n" / "//" / $$))
-rule bare_if Ident = "if" !idchar &(sp ("," / "\n" / "//" / $$))
-rule bare_let Ident = "let" !idchar !(sp ident) &(sp ("," / "\n" / "//" / $$ / "}"))
+rule bare_for Ident = t:("for" !idchar &(sp ("," / "\n" / "//" / $$))) #atomic => Ident{Text: text($t)}
+rule bare_if Ident = t:("if" !idchar &(sp ("," / "\n" / "//" / $$))) #atomic => Ident{Text: text($t)}
+rule bare_let Ident = t:("let" !idchar !(sp ident) &(sp ("," / "\n" / "//" / $$ / "}"))) #atomic => Ident{Text: text($t)}
 
 // --- Fields ---
 rule field Field = field_plain / field_alias
@@ -195,12 +195,12 @@ rule fv_choice Expr = nested / alias_value / let_skip / let_value / expr_nolet
 // parser reads the clause as the start of a declaration, and then the value).
 rule let_skip Expr = &"l" -let_decl -sep e:expr => $e
 // let at the start of a value is an identifier of its own: no operator follows it.
-rule let_value Ident = &"l" "let" !idchar !(sp ident)
+rule let_value Ident = t:(&"l" "let" !idchar !(sp ident)) #atomic => Ident{Text: text($t)}
 rule expr_nolet Expr = !("let" !idchar) e:expr => $e
 rule nested StructLit = f:nfield => StructLit{Elts: list($f)}
 rule alias_value Alias = (
     i:ident_any sp bind ws e:expr
-    {!(text($i) >= "__" && text($i) < "_`")}
+    {!($i.Text >= "__" && $i.Text < "_`")}
 ) => Alias{Ident: $i, Expr: $e}
 rule attrs []Attribute = as:(sp a:attribute)* => map($as, (x) => x.$a)
 
@@ -214,25 +214,25 @@ rule alias_simple PostfixAlias = "~" ws f:ident => PostfixAlias{Field: $f}
 // A label in brackets (a pattern constraint) is read as a list: Check tests that it has exactly one element. The list
 // is the same as the one read as a value, so the memo of the rule saves reading it twice.
 rule label_plain Label = ident_label / strlit / bool_lit / null_lit / paren_expr / list_lit
-rule ident_label Ident = ident / kw_label
-rule kw_label Ident = ("in" / "else" / "fallback" / "otherwise" / "func") !idchar / for_label / if_label / let_label
-rule for_label Ident = "for" !idchar &(sp (":" / "=" ![=~] / "?" / "!" ![=~] / "," / "\n" / "//" / $$))
-rule if_label Ident = "if" !idchar &(sp (":" / "=" ![=~] / "?" / "," / "\n" / "//" / $$ / "!" ws ":"))
-rule let_label Ident = "let" !idchar !(sp ident)
+rule ident_label Ident = t:(ident / kw_label) #atomic => Ident{Text: text($t)}
+rule kw_label Ident = t:(("in" / "else" / "fallback" / "otherwise" / "func") !idchar / for_label / if_label / let_label) #atomic => Ident{Text: text($t)}
+rule for_label Ident = t:("for" !idchar &(sp (":" / "=" ![=~] / "?" / "!" ![=~] / "," / "\n" / "//" / $$))) #atomic => Ident{Text: text($t)}
+rule if_label Ident = t:("if" !idchar &(sp (":" / "=" ![=~] / "?" / "," / "\n" / "//" / $$ / "!" ws ":"))) #atomic => Ident{Text: text($t)}
+rule let_label Ident = t:("let" !idchar !(sp ident)) #atomic => Ident{Text: text($t)}
 rule alias_label Alias = (
     i:ident_label sp bind ws r:alias_rhs
-    {!(text($i) >= "__" && text($i) < "_`")}
+    {!($i.Text >= "__" && $i.Text < "_`")}
 ) => Alias{Ident: $i, Expr: $r}
 // A label after the first of a chain a: b: c: for, if and try are identifiers there.
 rule nlabel_plain Label = nident_label / strlit / bool_lit / null_lit / paren_expr / list_lit
-rule nident_label Ident = ident / nkw_label
-rule nkw_label Ident = ("in" / "else" / "fallback" / "otherwise" / "func" / "for" / "if" / "try") !idchar / let_label
+rule nident_label Ident = t:(ident / nkw_label) #atomic => Ident{Text: text($t)}
+rule nkw_label Ident = t:(("in" / "else" / "fallback" / "otherwise" / "func" / "for" / "if" / "try") !idchar / let_label) #atomic => Ident{Text: text($t)}
 rule alias_nlabel Alias = (
     i:nident_label sp bind ws r:alias_rhs
-    {!(text($i) >= "__" && text($i) < "_`")}
+    {!($i.Text >= "__" && $i.Text < "_`")}
 ) => Alias{Ident: $i, Expr: $r}
 rule alias_rhs Expr = ident_any / strlit / number / bool_lit / null_lit / paren_expr / list_lit
-rule ident_any Ident = ident / kwident
+rule ident_any Ident = t:(ident / kwident) #atomic => Ident{Text: text($t)}
 // --- Comprehensions ---
 // A comprehension with a single if or try clause takes else; one with other clauses takes otherwise.
 rule comprehension Comprehension = comp_single / comp_multi
@@ -258,11 +258,11 @@ rule start_clause Clause = !gate_for_if c:(for_clause / if_clause / try_clause) 
 rule clause Clause = for_clause / if_clause / let_decl / try_clause
 rule for_clause ForClause = for_kv / for_v
 rule for_kv ForClause = (
-    "for" !idchar sp k:ident {!(text($k) >= "__" && text($k) < "_`")} comma
-    v:ident {!(text($v) >= "__" && text($v) < "_`")} sp "in" !idchar sp s:expr
+    "for" !idchar sp k:ident {!($k.Text >= "__" && $k.Text < "_`")} comma
+    v:ident {!($v.Text >= "__" && $v.Text < "_`")} sp "in" !idchar sp s:expr
 ) => ForClause{Key: $k, Value: $v, Source: $s}
 rule for_v ForClause = (
-    "for" !idchar sp v:ident {!(text($v) >= "__" && text($v) < "_`")} sp "in" !idchar sp s:expr
+    "for" !idchar sp v:ident {!($v.Text >= "__" && $v.Text < "_`")} sp "in" !idchar sp s:expr
 ) => ForClause{Value: $v, Source: $s}
 rule if_clause IfClause = "if" !idchar sp c:expr => IfClause{Condition: $c}
 rule try_clause TryClause = try_assign / try_plain
@@ -282,13 +282,13 @@ rule esep = comma / sp &"]"
 rule list_elem Expr = comp_decl / alias_elem / elem_expr / bare_for_if
 rule elem_expr Expr = !gate_kw3 e:expr => $e
 rule gate_kw3 = ("for" / "if" / "try") !idchar
-rule bare_for_if Ident = (
+rule bare_for_if Ident = t:(
     "for" !idchar &(sp (":" / "=" ![=~] / "?" / "!" ![=~] / "," / "\n" / "//" / $$))
     / "if" !idchar &(sp (":" / "=" ![=~] / "?" / "," / "\n" / "//" / $$ / "!" ws ":"))
-)
+) #atomic => Ident{Text: text($t)}
 rule alias_elem Alias = (
     i:(ident / kwident / bare_for_if) sp bind ws e:expr
-    {!(text($i) >= "__" && text($i) < "_`")}
+    {!($i.Text >= "__" && $i.Text < "_`")}
 ) => Alias{Ident: $i, Expr: $e}
 rule list_dots Ellipsis = "..." t:dots_type? => Ellipsis{Type: $t}
 rule dots_type Expr = sp x:expr => $x
@@ -334,8 +334,8 @@ rule full_expr Expr = operators {
 }
 rule asep = comma / sp &")"
 rule selector Selector = ident / kwident / bool_ident_sel / sel_string
-rule bool_ident_sel Ident = ("true" / "false" / "null") !idchar
-rule sel_string String = !"\"\"" "\"" dqbody "\""
+rule bool_ident_sel Ident = t:(("true" / "false" / "null") !idchar) #atomic => Ident{Text: text($t)}
+rule sel_string String = t:(!"\"\"" "\"" dqbody "\"") #atomic => String{Text: text($t)}
 // An expression inside the parentheses of an interpolation: it may be followed by an inserted comma.
 rule interp_expr Expr = ws e:expr (icomma / sp) &")" => $e
 
@@ -345,8 +345,8 @@ rule interp_expr Expr = ws e:expr (icomma / sp) &")" => $e
 
 // An attribute may have a line break before its parenthesis where no comma would be inserted (it starts a
 // declaration); after a field it may not.
-rule attribute Attribute = &"@" "@" idchars sp "(" attr_body ")"
-rule attribute_d Attribute = &"@" "@" idchars ws "(" attr_body ")"
+rule attribute Attribute = t:(&"@" "@" idchars sp "(" attr_body ")") #atomic => Attribute{Text: text($t)}
+rule attribute_d Attribute = t:(&"@" "@" idchars ws "(" attr_body ")") #atomic => Attribute{Text: text($t)}
 rule attr_body = ([ \t\r\n]+ / comment / attr_group / attr_tok)*
 rule attr_group = "(" attr_body ")" / "[" attr_body "]" / "{" attr_body "}"
 rule attr_tok = attr_str / attr_num / "_|_" / ident_text / attribute / "..." / "." !"." / [:;?~+\-*/<>=!&|,] / "#"+ !["']
@@ -372,13 +372,13 @@ rule digit_any = [0-9] / ![\u{0}-\u{7f}] udigit
 // before it; "#" followed by a digit is an identifier of its own.
 rule ident_text = "#" hashrest / "_" !"|_" ("#" hashrest / !"_#" idchars) / idstart idchars
 rule hashrest = &digit_any / idchar+ / !["'#]
-rule ident Ident = !(&[iefltno] kw) ident_text
+rule ident Ident = t:(!(&[iefltno] kw) ident_text) #atomic => Ident{Text: text($t)}
 rule kw = ("if" / "else" / "for" / "in" / "let" / "try" / "fallback" / "otherwise" / "func" / "true" / "false" / "null") !idchar
 // The keywords that are not values, used as identifiers.
-rule kwident Ident = ("if" / "else" / "for" / "in" / "let" / "try" / "fallback" / "otherwise" / "func") !idchar
-rule bool_lit Bool = ("true" / "false") !idchar
-rule null_lit Null = "null" !idchar
-rule bottom Bottom = &"_" "_|_"
+rule kwident Ident = t:(("if" / "else" / "for" / "in" / "let" / "try" / "fallback" / "otherwise" / "func") !idchar) #atomic => Ident{Text: text($t)}
+rule bool_lit Bool = t:(("true" / "false") !idchar) #atomic => Bool{Text: text($t)}
+rule null_lit Null = t:("null" !idchar) #atomic => Null{Text: text($t)}
+rule bottom Bottom = t:(&"_" "_|_") #atomic => Bottom{Text: text($t)}
 
 // ===================================================================
 // Numbers
@@ -387,14 +387,14 @@ rule bottom Bottom = &"_" "_|_"
 rule number Number = &[0-9.] n:number_any => $n
 rule number_any Number = based / float_lit / int_lit
 rule hexd = [0-9a-fA-F]
-rule based Int = "0" ([xX] "_"? hexd ("_"? hexd)* / "b" "_"? [01] ("_"? [01])* / "o" "_"? [0-7] ("_"? [0-7])*)
+rule based Int = t:("0" ([xX] "_"? hexd ("_"? hexd)* / "b" "_"? [01] ("_"? [01])* / "o" "_"? [0-7] ("_"? [0-7])*)) #atomic => Int{Text: text($t)}
 rule d10 = [0-9] ("_"? [0-9])*
 rule dec_ip = [1-9] ("_"? [0-9])*
 rule fracpart = "." !"." ("_"? [0-9] ("_"? [0-9])*)?
 rule exppart = [eE] [+\-]? "_"? [0-9] ("_"? [0-9])*
 rule mult = [KMGTP] "i"?
-rule float_lit Float = (dec_ip / "0" d10?) (fracpart (exppart / !mult) / exppart) / "." d10 (exppart / !mult)
-rule int_lit Int = (dec_ip / "0" d10?) fracpart mult / (dec_ip / "0") mult? / "." d10 mult
+rule float_lit Float = t:((dec_ip / "0" d10?) (fracpart (exppart / !mult) / exppart) / "." d10 (exppart / !mult)) #atomic => Float{Text: text($t)}
+rule int_lit Int = t:((dec_ip / "0" d10?) fracpart mult / (dec_ip / "0") mult? / "." d10 mult) #atomic => Int{Text: text($t)}
 
 // ===================================================================
 // Strings
@@ -409,10 +409,10 @@ rule esc_sq = [abfnrtv\\/'] / "u" hexd4 / "U" bigu / "x" hexd hexd / [0-3] [0-7]
 
 // "..." without hashes on a single line.
 rule dqbody = ([^"\\\n\u{0}\u{feff}]+ / "\\" esc_dq)*
-rule dq_plain String = !"\"\"\"" "\"" dqbody "\""
-rule dq_open String = !"\"\"\"" "\"" dqbody "\\("
-rule dq_mid String = ")" dqbody "\\("
-rule dq_end String = ")" dqbody "\""
+rule dq_plain String = t:(!"\"\"\"" "\"" dqbody "\"") #atomic => String{Text: text($t)}
+rule dq_open String = t:(!"\"\"\"" "\"" dqbody "\\(") #atomic => String{Text: text($t)}
+rule dq_mid String = t:(")" dqbody "\\(") #atomic => String{Text: text($t)}
+rule dq_end String = t:(")" dqbody "\"") #atomic => String{Text: text($t)}
 rule dq_interp Interpolation = f:dq_open t:dq_rest => Interpolation{Elts: concat(list($f), $t)}
 rule dq_rest []Expr = dq_more / dq_last
 rule dq_more []Expr = e:interp_expr m:dq_mid t:dq_rest => concat(list($e, $m), $t)
@@ -420,10 +420,10 @@ rule dq_last []Expr = e:interp_expr z:dq_end => list($e, $z)
 
 // '...' without hashes on a single line.
 rule sqbody = ([^'\\\n\u{0}\u{feff}]+ / "\\" esc_sq)*
-rule sq_plain String = !"'''" "'" sqbody "'"
-rule sq_open String = !"'''" "'" sqbody "\\("
-rule sq_mid String = ")" sqbody "\\("
-rule sq_end String = ")" sqbody "'"
+rule sq_plain String = t:(!"'''" "'" sqbody "'") #atomic => String{Text: text($t)}
+rule sq_open String = t:(!"'''" "'" sqbody "\\(") #atomic => String{Text: text($t)}
+rule sq_mid String = t:(")" sqbody "\\(") #atomic => String{Text: text($t)}
+rule sq_end String = t:(")" sqbody "'") #atomic => String{Text: text($t)}
 rule sq_interp Interpolation = f:sq_open t:sq_rest => Interpolation{Elts: concat(list($f), $t)}
 rule sq_rest []Expr = sq_more / sq_last
 rule sq_more []Expr = e:interp_expr m:sq_mid t:sq_rest => concat(list($e, $m), $t)
@@ -451,15 +451,15 @@ rule ml_open_tail = qc qc xh:"#"* #atomic {len($xh) == 0 || len($xh) < sv / 2} m
 rule ml_close_tail = qc qc qc hq
 
 // #"""#: a single quote between triple quotes and hashes.
-rule gtriple String = hs:"#"+ #atomic ("\"" {sv := len($hs) * 2} / "'" {sv := len($hs) * 2 + 1}) qc qc hq
+rule gtriple String = t:(hs:"#"+ #atomic ("\"" {sv := len($hs) * 2} / "'" {sv := len($hs) * 2 + 1}) qc qc hq) => String{Text: text($t)}
 
 // On a single line.
 rule gs_body = ([^\n\\\u{0}\u{feff}"']+ / gs_quote / gs_esc)*
 rule gs_quote = {sv % 2 == 0} ("\"" &(h:"#"* #atomic {len($h) < sv / 2}) / "'") / {sv % 2 == 1} ("'" &(h:"#"* #atomic {len($h) < sv / 2}) / "\"")
-rule gsl_plain String = hs:"#"* #atomic ("\"" {sv := len($hs) * 2} / "'" {sv := len($hs) * 2 + 1}) !(qc qc) gs_body qc hq
-rule gsl_open String = "#"* ["'] !(qc qc) gs_body g_interp_open
-rule gsl_mid String = ")" gs_body g_interp_open
-rule gsl_end String = ")" gs_body qc hq
+rule gsl_plain String = t:(hs:"#"* #atomic ("\"" {sv := len($hs) * 2} / "'" {sv := len($hs) * 2 + 1}) !(qc qc) gs_body qc hq) => String{Text: text($t)}
+rule gsl_open String = t:("#"* ["'] !(qc qc) gs_body g_interp_open) #atomic => String{Text: text($t)}
+rule gsl_mid String = t:(")" gs_body g_interp_open) #atomic => String{Text: text($t)}
+rule gsl_end String = t:(")" gs_body qc hq) #atomic => String{Text: text($t)}
 rule gsl_interp Interpolation = (
     &(hs:"#"* #atomic "\"") {sv := len($hs) * 2} f:gsl_open t:gsl_rest
 ) => Interpolation{Elts: concat(list($f), $t)}
@@ -473,18 +473,18 @@ rule gsl_last []Expr = e:interp_expr z:gsl_end => list($e, $z)
 // On several lines.
 rule ml_body = ([^\n\\\u{0}\u{feff}]+ / gs_esc)*
 rule ml_line = lead:[ \t]* #atomic !ml_close_tail body:ml_body #atomic "\n"
-rule ml_close Match = c:[ \t]* #atomic qc qc qc hq => $c
-rule gml_plain String = (
+rule ml_close node[string] = c:[ \t]* #atomic qc qc qc hq => $c
+rule gml_plain String = t:(
     hs:"#"* #atomic ("\"" {sv := len($hs) * 2} / "'" {sv := len($hs) * 2 + 1}) ml_open_tail ls:ml_line* cw:ml_close
     {foldl(true, $ls, (a, l) => a && (len(l.$lead) == 0 && len(l.$body) == 0 || text(l.$lead) >= text($cw) && text(l.$lead) < text($cw) + "\u{10ffff}"))}
-)
+) => String{Text: text($t)}
 // The indentation of the lines of a string with interpolations is tested by Check. A test here would read the
 // lines as values, and so make every rule that the lines call (all that read an expression) build values in the
 // recognizer.
 rule ml_frag = ([^\n\\\u{0}\u{feff}]+ / gs_esc / "\n" [ \t]* !ml_close_tail)*
-rule gml_open String = "#"* ["'] ml_open_tail [ \t]* !ml_close_tail ml_frag g_interp_open
-rule gml_mid String = ")" ml_frag g_interp_open
-rule gml_end String = ")" ml_frag "\n" [ \t]* ml_close_tail
+rule gml_open String = t:("#"* ["'] ml_open_tail [ \t]* !ml_close_tail ml_frag g_interp_open) #atomic => String{Text: text($t)}
+rule gml_mid String = t:(")" ml_frag g_interp_open) #atomic => String{Text: text($t)}
+rule gml_end String = t:(")" ml_frag "\n" [ \t]* ml_close_tail) #atomic => String{Text: text($t)}
 rule gml_interp Interpolation = (
     &(hs:"#"* #atomic "\"") {sv := len($hs) * 2} f:gml_open t:gml_rest
 ) => Interpolation{Elts: concat(list($f), $t)}
@@ -494,7 +494,7 @@ rule gml_interp_s Interpolation = (
 rule gml_rest []Expr = gml_more / gml_last
 rule gml_more []Expr = e:interp_expr m:gml_mid t:gml_rest => concat(list($e, $m), $t)
 rule gml_last []Expr = e:interp_expr z:gml_end => list($e, $z)
-rule gstr_plain String = gtriple / gml_plain / gsl_plain
+rule gstr_plain String = t:(gtriple / gml_plain / gsl_plain) #atomic => String{Text: text($t)}
 
 // ===================================================================
 // Unicode letters and digits above ASCII (see internal/unitab)

@@ -6894,7 +6894,7 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// Field is the terminal type Field.
+// Field is the struct type Field.
 type Field struct {
 	Span
 	Text string
@@ -6912,13 +6912,27 @@ type Record struct {
 	Fields []*Field
 }
 
-func (v *Field) tname() string             { return "Field" }
-func (v *Field) ttext() (string, bool)     { return v.Text, true }
-func (v *Field) tkids() []any              { return nil }
-func (v *Field) tfield(string) (any, bool) { return nil, true }
-func (v *Field) tstruct() bool             { return false }
-func (v *Field) tfresh() bool              { return false }
-func (v *Field) tsetFresh(bool)            {}
+func (v *Field) tname() string         { return "Field" }
+func (v *Field) ttext() (string, bool) { return "", false }
+func (v *Field) tkids() []any          { return nil }
+func (v *Field) tstruct() bool         { return true }
+func (v *Field) tfresh() bool          { return false }
+func (v *Field) tsetFresh(bool)        {}
+func (v *Field) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Field) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
 
 func (v *File) tname() string         { return "File" }
 func (v *File) ttext() (string, bool) { return "", false }
@@ -7105,6 +7119,23 @@ func tinit() {
 	}
 }
 
+// tmk_Field makes a Field in an action (newStruct in the typed runtime).
+func tmk_Field(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tField)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_File makes a File in an action (newStruct in the typed runtime).
 func tmk_File(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -7248,7 +7279,7 @@ func init() {
 	rules = []*rule{
 		{id: 0, name: "main", scope: []string{"rs"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 1, name: "record", scope: []string{"first", "rest"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 2, name: "field", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Field", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 2, name: "field", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Field", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 3, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 4, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
@@ -7281,6 +7312,8 @@ func init() {
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e9() }
 	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e12() }
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e13() }
+	structFields["Field"] = map[string]bool{"Text": true}
+	typeKinds["Field"] = kindOf("Field", "")
 	structFields["File"] = map[string]bool{"Records": true}
 	typeKinds["File"] = kindOf("File", "")
 	structFields["Record"] = map[string]bool{"Fields": true}
@@ -7812,6 +7845,7 @@ func (p *parser) e9() (*Node, bool) {
 		x14  int
 	)
 	_, _ = x7, x11
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -9061,6 +9095,7 @@ func (p *parser) e16() (*Node, bool) {
 	)
 	_, _ = x8, x13
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -9720,6 +9755,7 @@ func (p *parser) q2() (*Node, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -10744,6 +10780,7 @@ func (p *tparser) s2() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {

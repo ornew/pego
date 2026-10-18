@@ -41,6 +41,16 @@ func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
 	return child
 }
 
+// sourceText returns the text held by field name of n, a struct with a Text field.
+func sourceText(t *testing.T, n *pego.Node, name string) string {
+	t.Helper()
+	text, ok := sourceField(t, n, name).Field("Text").(string)
+	if !ok {
+		t.Fatalf("%s.%s has no text", n.Type(), name)
+	}
+	return text
+}
+
 // elems returns the elements of the tuple or list n.
 func elems(n *pego.Node) []*pego.Node {
 	var out []*pego.Node
@@ -262,13 +272,13 @@ func TestSourceGrammarTree(t *testing.T) {
 			}
 			ops := sourceField(t, defs[3], "Expr")
 			items := elems(sourceField(t, ops, "Items"))
-			if len(items) != 4 || items[2].Field("Name") != nil || sourceField(t, items[3], "Name").Text() != "named" {
+			if len(items) != 4 || items[2].Field("Name") != nil || sourceText(t, items[3], "Name") != "named" {
 				t.Fatal("optional level names lost")
 			}
 			if sourceField(t, defs[3], "Action").Type() != "Constructor" {
 				t.Fatal("whole Operators Rule action lost")
 			}
-			if sourceField(t, sourceField(t, defs[4], "Expr"), "Name").Text() != "_helper" {
+			if sourceText(t, sourceField(t, defs[4], "Expr"), "Name") != "_helper" {
 				t.Fatal("reserved source name lost")
 			}
 			trailing := elems(sourceField(t, n, "TrailingComments"))
@@ -314,10 +324,10 @@ func TestSourceGrammarRecovery(t *testing.T) {
 					t.Fatalf("%v: recovered definitions %d, want %d", backend, len(ds), tc.defs)
 				}
 				if tc.name == "broken multiline group" {
-					if ds[1].Type() != "RuleDef" || sourceField(t, ds[1], "Name").Text() != "after" {
+					if ds[1].Type() != "RuleDef" || sourceText(t, ds[1], "Name") != "after" {
 						t.Fatal("recovery lost following rule inside broken group")
 					}
-				} else if tc.defs > 1 && sourceField(t, ds[len(ds)-1], "Name").Text() != "after" {
+				} else if tc.defs > 1 && sourceText(t, ds[len(ds)-1], "Name") != "after" {
 					t.Fatal("recovery lost subsequent declaration")
 				}
 				b, _ := json.Marshal(n)
@@ -328,7 +338,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 				}
 				if tc.name == "field" {
 					fs := elems(sourceField(t, sourceField(t, ds[0], "Spec"), "Fields"))
-					if len(fs) != 2 || fs[0].Type() != "Error" || sourceField(t, fs[1], "Name").Text() != "Good" {
+					if len(fs) != 2 || fs[0].Type() != "Error" || sourceText(t, fs[1], "Name") != "Good" {
 						t.Fatalf("field recovery: %v", fs)
 					}
 				}
@@ -486,7 +496,7 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 				t.Fatal("package error lost")
 			}
 			ds := sourceDefs(t, n)
-			if len(ds) != 1 || sourceField(t, ds[0], "Name").Text() != "after" {
+			if len(ds) != 1 || sourceText(t, ds[0], "Name") != "after" {
 				t.Fatal("package recovery lost next declaration")
 			}
 		}

@@ -1,1 +1,1 @@
-Binary{Left: Unary{Op: "-", X: Binary{Left: Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}, Op: "^", Right: Binary{Left: "2", Op: "^", Right: "0.5"}}}, Op: "%", Right: "7"}
+Binary{Left: Unary{Op: "-", X: Binary{Left: Binary{Left: Binary{Left: Number{Text: "1"}, Op: "-", Right: Number{Text: "2"}}, Op: "-", Right: Number{Text: "3"}}, Op: "^", Right: Binary{Left: Number{Text: "2"}, Op: "^", Right: Number{Text: "0.5"}}}}, Op: "%", Right: Number{Text: "7"}}

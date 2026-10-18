@@ -6893,114 +6893,6 @@ func (c *tctx) asNode(fn string, v any) any {
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
-// AttValue is the terminal type AttValue.
-type AttValue struct {
-	Span
-	Text string
-}
-
-// CDSect is the terminal type CDSect.
-type CDSect struct {
-	Span
-	Text string
-}
-
-// CharData is the terminal type CharData.
-type CharData struct {
-	Span
-	Text string
-}
-
-// CharRef is the terminal type CharRef.
-type CharRef struct {
-	Span
-	Text string
-}
-
-// Comment is the terminal type Comment.
-type Comment struct {
-	Span
-	Text string
-}
-
-// EncName is the terminal type EncName.
-type EncName struct {
-	Span
-	Text string
-}
-
-// EntityRef is the terminal type EntityRef.
-type EntityRef struct {
-	Span
-	Text string
-}
-
-// EntityValue is the terminal type EntityValue.
-type EntityValue struct {
-	Span
-	Text string
-}
-
-// Keyword is the terminal type Keyword.
-type Keyword struct {
-	Span
-	Text string
-}
-
-// Name is the terminal type Name.
-type Name struct {
-	Span
-	Text string
-}
-
-// Nmtoken is the terminal type Nmtoken.
-type Nmtoken struct {
-	Span
-	Text string
-}
-
-// Occurrence is the terminal type Occurrence.
-type Occurrence struct {
-	Span
-	Text string
-}
-
-// PERef is the terminal type PERef.
-type PERef struct {
-	Span
-	Text string
-}
-
-// PIData is the terminal type PIData.
-type PIData struct {
-	Span
-	Text string
-}
-
-// PubidLiteral is the terminal type PubidLiteral.
-type PubidLiteral struct {
-	Span
-	Text string
-}
-
-// SystemLiteral is the terminal type SystemLiteral.
-type SystemLiteral struct {
-	Span
-	Text string
-}
-
-// Version is the terminal type Version.
-type Version struct {
-	Span
-	Text string
-}
-
-// YesNo is the terminal type YesNo.
-type YesNo struct {
-	Span
-	Text string
-}
-
 // AttDef is the struct type AttDef.
 type AttDef struct {
 	Span
@@ -7008,6 +6900,12 @@ type AttDef struct {
 	Type    AttType
 	Default *Keyword
 	Value   *AttValue
+}
+
+// AttValue is the struct type AttValue.
+type AttValue struct {
+	Span
+	Text string
 }
 
 // AttlistDecl is the struct type AttlistDecl.
@@ -7024,11 +6922,35 @@ type Attribute struct {
 	Value *AttValue
 }
 
+// CDSect is the struct type CDSect.
+type CDSect struct {
+	Span
+	Text string
+}
+
+// CharData is the struct type CharData.
+type CharData struct {
+	Span
+	Text string
+}
+
+// CharRef is the struct type CharRef.
+type CharRef struct {
+	Span
+	Text string
+}
+
 // Choice is the struct type Choice.
 type Choice struct {
 	Span
 	Items []Particle
 	Occur *Occurrence
+}
+
+// Comment is the struct type Comment.
+type Comment struct {
+	Span
+	Text string
 }
 
 // Doctype is the struct type Doctype.
@@ -7064,6 +6986,12 @@ type ElementDecl struct {
 	Content ContentSpec
 }
 
+// EncName is the struct type EncName.
+type EncName struct {
+	Span
+	Text string
+}
+
 // EntityDecl is the struct type EntityDecl.
 type EntityDecl struct {
 	Span
@@ -7072,6 +7000,18 @@ type EntityDecl struct {
 	Value      *EntityValue
 	ExternalID *ExternalID
 	NData      *Name
+}
+
+// EntityRef is the struct type EntityRef.
+type EntityRef struct {
+	Span
+	Text string
+}
+
+// EntityValue is the struct type EntityValue.
+type EntityValue struct {
+	Span
+	Text string
 }
 
 // Enumeration is the struct type Enumeration.
@@ -7087,10 +7027,22 @@ type ExternalID struct {
 	System *SystemLiteral
 }
 
+// Keyword is the struct type Keyword.
+type Keyword struct {
+	Span
+	Text string
+}
+
 // Mixed is the struct type Mixed.
 type Mixed struct {
 	Span
 	Names []*Name
+}
+
+// Name is the struct type Name.
+type Name struct {
+	Span
+	Text string
 }
 
 // NameParticle is the struct type NameParticle.
@@ -7098,6 +7050,12 @@ type NameParticle struct {
 	Span
 	Name  *Name
 	Occur *Occurrence
+}
+
+// Nmtoken is the struct type Nmtoken.
+type Nmtoken struct {
+	Span
+	Text string
 }
 
 // NotationDecl is the struct type NotationDecl.
@@ -7113,11 +7071,35 @@ type NotationType struct {
 	Names []*Name
 }
 
+// Occurrence is the struct type Occurrence.
+type Occurrence struct {
+	Span
+	Text string
+}
+
+// PERef is the struct type PERef.
+type PERef struct {
+	Span
+	Text string
+}
+
 // PI is the struct type PI.
 type PI struct {
 	Span
 	Target *Name
 	Data   *PIData
+}
+
+// PIData is the struct type PIData.
+type PIData struct {
+	Span
+	Text string
+}
+
+// PubidLiteral is the struct type PubidLiteral.
+type PubidLiteral struct {
+	Span
+	Text string
 }
 
 // Sequence is the struct type Sequence.
@@ -7127,12 +7109,30 @@ type Sequence struct {
 	Occur *Occurrence
 }
 
+// SystemLiteral is the struct type SystemLiteral.
+type SystemLiteral struct {
+	Span
+	Text string
+}
+
+// Version is the struct type Version.
+type Version struct {
+	Span
+	Text string
+}
+
 // XMLDecl is the struct type XMLDecl.
 type XMLDecl struct {
 	Span
 	Version    *Version
 	Encoding   *EncName
 	Standalone *YesNo
+}
+
+// YesNo is the struct type YesNo.
+type YesNo struct {
+	Span
+	Text string
 }
 
 // AttType is the union type AttType ~ Keyword | Enumeration | NotationType. Error (left by #recover) also implements it.
@@ -7186,150 +7186,6 @@ func (*PI) isMisc()               {}
 func (*Sequence) isContentSpec()  {}
 func (*Sequence) isParticle()     {}
 
-func (v *AttValue) tname() string             { return "AttValue" }
-func (v *AttValue) ttext() (string, bool)     { return v.Text, true }
-func (v *AttValue) tkids() []any              { return nil }
-func (v *AttValue) tfield(string) (any, bool) { return nil, true }
-func (v *AttValue) tstruct() bool             { return false }
-func (v *AttValue) tfresh() bool              { return false }
-func (v *AttValue) tsetFresh(bool)            {}
-
-func (v *CDSect) tname() string             { return "CDSect" }
-func (v *CDSect) ttext() (string, bool)     { return v.Text, true }
-func (v *CDSect) tkids() []any              { return nil }
-func (v *CDSect) tfield(string) (any, bool) { return nil, true }
-func (v *CDSect) tstruct() bool             { return false }
-func (v *CDSect) tfresh() bool              { return false }
-func (v *CDSect) tsetFresh(bool)            {}
-
-func (v *CharData) tname() string             { return "CharData" }
-func (v *CharData) ttext() (string, bool)     { return v.Text, true }
-func (v *CharData) tkids() []any              { return nil }
-func (v *CharData) tfield(string) (any, bool) { return nil, true }
-func (v *CharData) tstruct() bool             { return false }
-func (v *CharData) tfresh() bool              { return false }
-func (v *CharData) tsetFresh(bool)            {}
-
-func (v *CharRef) tname() string             { return "CharRef" }
-func (v *CharRef) ttext() (string, bool)     { return v.Text, true }
-func (v *CharRef) tkids() []any              { return nil }
-func (v *CharRef) tfield(string) (any, bool) { return nil, true }
-func (v *CharRef) tstruct() bool             { return false }
-func (v *CharRef) tfresh() bool              { return false }
-func (v *CharRef) tsetFresh(bool)            {}
-
-func (v *Comment) tname() string             { return "Comment" }
-func (v *Comment) ttext() (string, bool)     { return v.Text, true }
-func (v *Comment) tkids() []any              { return nil }
-func (v *Comment) tfield(string) (any, bool) { return nil, true }
-func (v *Comment) tstruct() bool             { return false }
-func (v *Comment) tfresh() bool              { return false }
-func (v *Comment) tsetFresh(bool)            {}
-
-func (v *EncName) tname() string             { return "EncName" }
-func (v *EncName) ttext() (string, bool)     { return v.Text, true }
-func (v *EncName) tkids() []any              { return nil }
-func (v *EncName) tfield(string) (any, bool) { return nil, true }
-func (v *EncName) tstruct() bool             { return false }
-func (v *EncName) tfresh() bool              { return false }
-func (v *EncName) tsetFresh(bool)            {}
-
-func (v *EntityRef) tname() string             { return "EntityRef" }
-func (v *EntityRef) ttext() (string, bool)     { return v.Text, true }
-func (v *EntityRef) tkids() []any              { return nil }
-func (v *EntityRef) tfield(string) (any, bool) { return nil, true }
-func (v *EntityRef) tstruct() bool             { return false }
-func (v *EntityRef) tfresh() bool              { return false }
-func (v *EntityRef) tsetFresh(bool)            {}
-
-func (v *EntityValue) tname() string             { return "EntityValue" }
-func (v *EntityValue) ttext() (string, bool)     { return v.Text, true }
-func (v *EntityValue) tkids() []any              { return nil }
-func (v *EntityValue) tfield(string) (any, bool) { return nil, true }
-func (v *EntityValue) tstruct() bool             { return false }
-func (v *EntityValue) tfresh() bool              { return false }
-func (v *EntityValue) tsetFresh(bool)            {}
-
-func (v *Keyword) tname() string             { return "Keyword" }
-func (v *Keyword) ttext() (string, bool)     { return v.Text, true }
-func (v *Keyword) tkids() []any              { return nil }
-func (v *Keyword) tfield(string) (any, bool) { return nil, true }
-func (v *Keyword) tstruct() bool             { return false }
-func (v *Keyword) tfresh() bool              { return false }
-func (v *Keyword) tsetFresh(bool)            {}
-
-func (v *Name) tname() string             { return "Name" }
-func (v *Name) ttext() (string, bool)     { return v.Text, true }
-func (v *Name) tkids() []any              { return nil }
-func (v *Name) tfield(string) (any, bool) { return nil, true }
-func (v *Name) tstruct() bool             { return false }
-func (v *Name) tfresh() bool              { return false }
-func (v *Name) tsetFresh(bool)            {}
-
-func (v *Nmtoken) tname() string             { return "Nmtoken" }
-func (v *Nmtoken) ttext() (string, bool)     { return v.Text, true }
-func (v *Nmtoken) tkids() []any              { return nil }
-func (v *Nmtoken) tfield(string) (any, bool) { return nil, true }
-func (v *Nmtoken) tstruct() bool             { return false }
-func (v *Nmtoken) tfresh() bool              { return false }
-func (v *Nmtoken) tsetFresh(bool)            {}
-
-func (v *Occurrence) tname() string             { return "Occurrence" }
-func (v *Occurrence) ttext() (string, bool)     { return v.Text, true }
-func (v *Occurrence) tkids() []any              { return nil }
-func (v *Occurrence) tfield(string) (any, bool) { return nil, true }
-func (v *Occurrence) tstruct() bool             { return false }
-func (v *Occurrence) tfresh() bool              { return false }
-func (v *Occurrence) tsetFresh(bool)            {}
-
-func (v *PERef) tname() string             { return "PERef" }
-func (v *PERef) ttext() (string, bool)     { return v.Text, true }
-func (v *PERef) tkids() []any              { return nil }
-func (v *PERef) tfield(string) (any, bool) { return nil, true }
-func (v *PERef) tstruct() bool             { return false }
-func (v *PERef) tfresh() bool              { return false }
-func (v *PERef) tsetFresh(bool)            {}
-
-func (v *PIData) tname() string             { return "PIData" }
-func (v *PIData) ttext() (string, bool)     { return v.Text, true }
-func (v *PIData) tkids() []any              { return nil }
-func (v *PIData) tfield(string) (any, bool) { return nil, true }
-func (v *PIData) tstruct() bool             { return false }
-func (v *PIData) tfresh() bool              { return false }
-func (v *PIData) tsetFresh(bool)            {}
-
-func (v *PubidLiteral) tname() string             { return "PubidLiteral" }
-func (v *PubidLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *PubidLiteral) tkids() []any              { return nil }
-func (v *PubidLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *PubidLiteral) tstruct() bool             { return false }
-func (v *PubidLiteral) tfresh() bool              { return false }
-func (v *PubidLiteral) tsetFresh(bool)            {}
-
-func (v *SystemLiteral) tname() string             { return "SystemLiteral" }
-func (v *SystemLiteral) ttext() (string, bool)     { return v.Text, true }
-func (v *SystemLiteral) tkids() []any              { return nil }
-func (v *SystemLiteral) tfield(string) (any, bool) { return nil, true }
-func (v *SystemLiteral) tstruct() bool             { return false }
-func (v *SystemLiteral) tfresh() bool              { return false }
-func (v *SystemLiteral) tsetFresh(bool)            {}
-
-func (v *Version) tname() string             { return "Version" }
-func (v *Version) ttext() (string, bool)     { return v.Text, true }
-func (v *Version) tkids() []any              { return nil }
-func (v *Version) tfield(string) (any, bool) { return nil, true }
-func (v *Version) tstruct() bool             { return false }
-func (v *Version) tfresh() bool              { return false }
-func (v *Version) tsetFresh(bool)            {}
-
-func (v *YesNo) tname() string             { return "YesNo" }
-func (v *YesNo) ttext() (string, bool)     { return v.Text, true }
-func (v *YesNo) tkids() []any              { return nil }
-func (v *YesNo) tfield(string) (any, bool) { return nil, true }
-func (v *YesNo) tstruct() bool             { return false }
-func (v *YesNo) tfresh() bool              { return false }
-func (v *YesNo) tsetFresh(bool)            {}
-
 func (v *AttDef) tname() string         { return "AttDef" }
 func (v *AttDef) ttext() (string, bool) { return "", false }
 func (v *AttDef) tkids() []any          { return nil }
@@ -7360,6 +7216,28 @@ func (v *AttDef) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Default), true
 	case "Value":
 		return tptr(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *AttValue) tname() string         { return "AttValue" }
+func (v *AttValue) ttext() (string, bool) { return "", false }
+func (v *AttValue) tkids() []any          { return nil }
+func (v *AttValue) tstruct() bool         { return true }
+func (v *AttValue) tfresh() bool          { return false }
+func (v *AttValue) tsetFresh(bool)        {}
+func (v *AttValue) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *AttValue) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7435,6 +7313,72 @@ func (v *Attribute) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CDSect) tname() string         { return "CDSect" }
+func (v *CDSect) ttext() (string, bool) { return "", false }
+func (v *CDSect) tkids() []any          { return nil }
+func (v *CDSect) tstruct() bool         { return true }
+func (v *CDSect) tfresh() bool          { return false }
+func (v *CDSect) tsetFresh(bool)        {}
+func (v *CDSect) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CDSect) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CharData) tname() string         { return "CharData" }
+func (v *CharData) ttext() (string, bool) { return "", false }
+func (v *CharData) tkids() []any          { return nil }
+func (v *CharData) tstruct() bool         { return true }
+func (v *CharData) tfresh() bool          { return false }
+func (v *CharData) tsetFresh(bool)        {}
+func (v *CharData) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CharData) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CharRef) tname() string         { return "CharRef" }
+func (v *CharRef) ttext() (string, bool) { return "", false }
+func (v *CharRef) tkids() []any          { return nil }
+func (v *CharRef) tstruct() bool         { return true }
+func (v *CharRef) tfresh() bool          { return false }
+func (v *CharRef) tsetFresh(bool)        {}
+func (v *CharRef) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *CharRef) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Choice) tname() string         { return "Choice" }
 func (v *Choice) ttext() (string, bool) { return "", false }
 func (v *Choice) tkids() []any          { return nil }
@@ -7476,6 +7420,28 @@ func (v *Choice) tfieldWork(p *tparser, name string) (any, bool) {
 		}(), true
 	case "Occur":
 		return tptr(v.Occur), true
+	}
+	return nil, false
+}
+
+func (v *Comment) tname() string         { return "Comment" }
+func (v *Comment) ttext() (string, bool) { return "", false }
+func (v *Comment) tkids() []any          { return nil }
+func (v *Comment) tstruct() bool         { return true }
+func (v *Comment) tfresh() bool          { return false }
+func (v *Comment) tsetFresh(bool)        {}
+func (v *Comment) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Comment) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7699,6 +7665,28 @@ func (v *ElementDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *EncName) tname() string         { return "EncName" }
+func (v *EncName) ttext() (string, bool) { return "", false }
+func (v *EncName) tkids() []any          { return nil }
+func (v *EncName) tstruct() bool         { return true }
+func (v *EncName) tfresh() bool          { return false }
+func (v *EncName) tsetFresh(bool)        {}
+func (v *EncName) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EncName) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *EntityDecl) tname() string         { return "EntityDecl" }
 func (v *EntityDecl) ttext() (string, bool) { return "", false }
 func (v *EntityDecl) tkids() []any          { return nil }
@@ -7733,6 +7721,50 @@ func (v *EntityDecl) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.ExternalID), true
 	case "NData":
 		return tptr(v.NData), true
+	}
+	return nil, false
+}
+
+func (v *EntityRef) tname() string         { return "EntityRef" }
+func (v *EntityRef) ttext() (string, bool) { return "", false }
+func (v *EntityRef) tkids() []any          { return nil }
+func (v *EntityRef) tstruct() bool         { return true }
+func (v *EntityRef) tfresh() bool          { return false }
+func (v *EntityRef) tsetFresh(bool)        {}
+func (v *EntityRef) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EntityRef) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EntityValue) tname() string         { return "EntityValue" }
+func (v *EntityValue) ttext() (string, bool) { return "", false }
+func (v *EntityValue) tkids() []any          { return nil }
+func (v *EntityValue) tstruct() bool         { return true }
+func (v *EntityValue) tfresh() bool          { return false }
+func (v *EntityValue) tsetFresh(bool)        {}
+func (v *EntityValue) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *EntityValue) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7804,6 +7836,28 @@ func (v *ExternalID) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Keyword) tname() string         { return "Keyword" }
+func (v *Keyword) ttext() (string, bool) { return "", false }
+func (v *Keyword) tkids() []any          { return nil }
+func (v *Keyword) tstruct() bool         { return true }
+func (v *Keyword) tfresh() bool          { return false }
+func (v *Keyword) tsetFresh(bool)        {}
+func (v *Keyword) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Keyword) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *Mixed) tname() string         { return "Mixed" }
 func (v *Mixed) ttext() (string, bool) { return "", false }
 func (v *Mixed) tkids() []any          { return nil }
@@ -7845,6 +7899,28 @@ func (v *Mixed) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Name) tname() string         { return "Name" }
+func (v *Name) ttext() (string, bool) { return "", false }
+func (v *Name) tkids() []any          { return nil }
+func (v *Name) tstruct() bool         { return true }
+func (v *Name) tfresh() bool          { return false }
+func (v *Name) tsetFresh(bool)        {}
+func (v *Name) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Name) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *NameParticle) tname() string         { return "NameParticle" }
 func (v *NameParticle) ttext() (string, bool) { return "", false }
 func (v *NameParticle) tkids() []any          { return nil }
@@ -7867,6 +7943,28 @@ func (v *NameParticle) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Name), true
 	case "Occur":
 		return tptr(v.Occur), true
+	}
+	return nil, false
+}
+
+func (v *Nmtoken) tname() string         { return "Nmtoken" }
+func (v *Nmtoken) ttext() (string, bool) { return "", false }
+func (v *Nmtoken) tkids() []any          { return nil }
+func (v *Nmtoken) tstruct() bool         { return true }
+func (v *Nmtoken) tfresh() bool          { return false }
+func (v *Nmtoken) tsetFresh(bool)        {}
+func (v *Nmtoken) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Nmtoken) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7938,6 +8036,50 @@ func (v *NotationType) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Occurrence) tname() string         { return "Occurrence" }
+func (v *Occurrence) ttext() (string, bool) { return "", false }
+func (v *Occurrence) tkids() []any          { return nil }
+func (v *Occurrence) tstruct() bool         { return true }
+func (v *Occurrence) tfresh() bool          { return false }
+func (v *Occurrence) tsetFresh(bool)        {}
+func (v *Occurrence) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Occurrence) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PERef) tname() string         { return "PERef" }
+func (v *PERef) ttext() (string, bool) { return "", false }
+func (v *PERef) tkids() []any          { return nil }
+func (v *PERef) tstruct() bool         { return true }
+func (v *PERef) tfresh() bool          { return false }
+func (v *PERef) tsetFresh(bool)        {}
+func (v *PERef) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PERef) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *PI) tname() string         { return "PI" }
 func (v *PI) ttext() (string, bool) { return "", false }
 func (v *PI) tkids() []any          { return nil }
@@ -7960,6 +8102,50 @@ func (v *PI) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Target), true
 	case "Data":
 		return tptr(v.Data), true
+	}
+	return nil, false
+}
+
+func (v *PIData) tname() string         { return "PIData" }
+func (v *PIData) ttext() (string, bool) { return "", false }
+func (v *PIData) tkids() []any          { return nil }
+func (v *PIData) tstruct() bool         { return true }
+func (v *PIData) tfresh() bool          { return false }
+func (v *PIData) tsetFresh(bool)        {}
+func (v *PIData) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PIData) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PubidLiteral) tname() string         { return "PubidLiteral" }
+func (v *PubidLiteral) ttext() (string, bool) { return "", false }
+func (v *PubidLiteral) tkids() []any          { return nil }
+func (v *PubidLiteral) tstruct() bool         { return true }
+func (v *PubidLiteral) tfresh() bool          { return false }
+func (v *PubidLiteral) tsetFresh(bool)        {}
+func (v *PubidLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *PubidLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8009,6 +8195,50 @@ func (v *Sequence) tfieldWork(p *tparser, name string) (any, bool) {
 	return nil, false
 }
 
+func (v *SystemLiteral) tname() string         { return "SystemLiteral" }
+func (v *SystemLiteral) ttext() (string, bool) { return "", false }
+func (v *SystemLiteral) tkids() []any          { return nil }
+func (v *SystemLiteral) tstruct() bool         { return true }
+func (v *SystemLiteral) tfresh() bool          { return false }
+func (v *SystemLiteral) tsetFresh(bool)        {}
+func (v *SystemLiteral) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *SystemLiteral) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Version) tname() string         { return "Version" }
+func (v *Version) ttext() (string, bool) { return "", false }
+func (v *Version) tkids() []any          { return nil }
+func (v *Version) tstruct() bool         { return true }
+func (v *Version) tfresh() bool          { return false }
+func (v *Version) tsetFresh(bool)        {}
+func (v *Version) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *Version) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
 func (v *XMLDecl) tname() string         { return "XMLDecl" }
 func (v *XMLDecl) ttext() (string, bool) { return "", false }
 func (v *XMLDecl) tkids() []any          { return nil }
@@ -8035,6 +8265,28 @@ func (v *XMLDecl) tfieldWork(p *tparser, name string) (any, bool) {
 		return tptr(v.Encoding), true
 	case "Standalone":
 		return tptr(v.Standalone), true
+	}
+	return nil, false
+}
+
+func (v *YesNo) tname() string         { return "YesNo" }
+func (v *YesNo) ttext() (string, bool) { return "", false }
+func (v *YesNo) tkids() []any          { return nil }
+func (v *YesNo) tstruct() bool         { return true }
+func (v *YesNo) tfresh() bool          { return false }
+func (v *YesNo) tsetFresh(bool)        {}
+func (v *YesNo) tfield(name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
+	}
+	return nil, false
+}
+
+func (v *YesNo) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Text":
+		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8321,6 +8573,23 @@ func tmk_AttDef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_AttValue makes a AttValue in an action (newStruct in the typed runtime).
+func tmk_AttValue(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tAttValue)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_AttlistDecl makes a AttlistDecl in an action (newStruct in the typed runtime).
 func tmk_AttlistDecl(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -8363,6 +8632,57 @@ func tmk_Attribute(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_CDSect makes a CDSect in an action (newStruct in the typed runtime).
+func tmk_CDSect(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tCDSect)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_CharData makes a CharData in an action (newStruct in the typed runtime).
+func tmk_CharData(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tCharData)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_CharRef makes a CharRef in an action (newStruct in the typed runtime).
+func tmk_CharRef(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tCharRef)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Choice makes a Choice in an action (newStruct in the typed runtime).
 func tmk_Choice(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -8381,6 +8701,23 @@ func tmk_Choice(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Comment makes a Comment in an action (newStruct in the typed runtime).
+func tmk_Comment(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tComment)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -8488,6 +8825,23 @@ func tmk_ElementDecl(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_EncName makes a EncName in an action (newStruct in the typed runtime).
+func tmk_EncName(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tEncName)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_EntityDecl makes a EntityDecl in an action (newStruct in the typed runtime).
 func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	c.p.stepWork()
@@ -8518,6 +8872,40 @@ func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 	spanOf(f3, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f4, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_EntityRef makes a EntityRef in an action (newStruct in the typed runtime).
+func tmk_EntityRef(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tEntityRef)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_EntityValue makes a EntityValue in an action (newStruct in the typed runtime).
+func tmk_EntityValue(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tEntityValue)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -8559,6 +8947,23 @@ func tmk_ExternalID(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Keyword makes a Keyword in an action (newStruct in the typed runtime).
+func tmk_Keyword(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tKeyword)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Mixed makes a Mixed in an action (newStruct in the typed runtime).
 func tmk_Mixed(c *tctx, final bool, f0 any) any {
 	c.p.stepWork()
@@ -8566,6 +8971,23 @@ func tmk_Mixed(c *tctx, final bool, f0 any) any {
 	v := astNew(&a.tMixed)
 	c.p.stepWork()
 	v.Names = tl7(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Name makes a Name in an action (newStruct in the typed runtime).
+func tmk_Name(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tName)
+	c.p.stepWork()
+	v.Text = astString(f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8594,6 +9016,23 @@ func tmk_NameParticle(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Nmtoken makes a Nmtoken in an action (newStruct in the typed runtime).
+func tmk_Nmtoken(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tNmtoken)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -8635,6 +9074,40 @@ func tmk_NotationType(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_Occurrence makes a Occurrence in an action (newStruct in the typed runtime).
+func tmk_Occurrence(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tOccurrence)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_PERef makes a PERef in an action (newStruct in the typed runtime).
+func tmk_PERef(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tPERef)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_PI makes a PI in an action (newStruct in the typed runtime).
 func tmk_PI(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -8656,6 +9129,40 @@ func tmk_PI(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+// tmk_PIData makes a PIData in an action (newStruct in the typed runtime).
+func tmk_PIData(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tPIData)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_PubidLiteral makes a PubidLiteral in an action (newStruct in the typed runtime).
+func tmk_PubidLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tPubidLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
 // tmk_Sequence makes a Sequence in an action (newStruct in the typed runtime).
 func tmk_Sequence(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -8674,6 +9181,40 @@ func tmk_Sequence(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_SystemLiteral makes a SystemLiteral in an action (newStruct in the typed runtime).
+func tmk_SystemLiteral(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tSystemLiteral)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Version makes a Version in an action (newStruct in the typed runtime).
+func tmk_Version(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tVersion)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -8699,6 +9240,23 @@ func tmk_XMLDecl(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_YesNo makes a YesNo in an action (newStruct in the typed runtime).
+func tmk_YesNo(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tYesNo)
+	c.p.stepWork()
+	v.Text = astString(f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	c.p.stepWork()
+	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9004,42 +9562,42 @@ func tl8(a *tslabs, v any) []*TNode[string] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control        *workControl
+	tAttDef        astChunk[AttDef]
 	tAttValue      astChunk[AttValue]
+	tAttlistDecl   astChunk[AttlistDecl]
+	tAttribute     astChunk[Attribute]
 	tCDSect        astChunk[CDSect]
 	tCharData      astChunk[CharData]
 	tCharRef       astChunk[CharRef]
-	tComment       astChunk[Comment]
-	tEncName       astChunk[EncName]
-	tEntityRef     astChunk[EntityRef]
-	tEntityValue   astChunk[EntityValue]
-	tKeyword       astChunk[Keyword]
-	tName          astChunk[Name]
-	tNmtoken       astChunk[Nmtoken]
-	tOccurrence    astChunk[Occurrence]
-	tPERef         astChunk[PERef]
-	tPIData        astChunk[PIData]
-	tPubidLiteral  astChunk[PubidLiteral]
-	tSystemLiteral astChunk[SystemLiteral]
-	tVersion       astChunk[Version]
-	tYesNo         astChunk[YesNo]
-	tAttDef        astChunk[AttDef]
-	tAttlistDecl   astChunk[AttlistDecl]
-	tAttribute     astChunk[Attribute]
 	tChoice        astChunk[Choice]
+	tComment       astChunk[Comment]
 	tDoctype       astChunk[Doctype]
 	tDocument      astChunk[Document]
 	tElement       astChunk[Element]
 	tElementDecl   astChunk[ElementDecl]
+	tEncName       astChunk[EncName]
 	tEntityDecl    astChunk[EntityDecl]
+	tEntityRef     astChunk[EntityRef]
+	tEntityValue   astChunk[EntityValue]
 	tEnumeration   astChunk[Enumeration]
 	tExternalID    astChunk[ExternalID]
+	tKeyword       astChunk[Keyword]
 	tMixed         astChunk[Mixed]
+	tName          astChunk[Name]
 	tNameParticle  astChunk[NameParticle]
+	tNmtoken       astChunk[Nmtoken]
 	tNotationDecl  astChunk[NotationDecl]
 	tNotationType  astChunk[NotationType]
+	tOccurrence    astChunk[Occurrence]
+	tPERef         astChunk[PERef]
 	tPI            astChunk[PI]
+	tPIData        astChunk[PIData]
+	tPubidLiteral  astChunk[PubidLiteral]
 	tSequence      astChunk[Sequence]
+	tSystemLiteral astChunk[SystemLiteral]
+	tVersion       astChunk[Version]
 	tXMLDecl       astChunk[XMLDecl]
+	tYesNo         astChunk[YesNo]
 	tl0Chunk       astChunk[Misc]
 	tl1Chunk       astChunk[Decl]
 	tl2Chunk       astChunk[*AttDef]
@@ -9387,6 +9945,241 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 	}
 }
 
+// --- Constructed field checks ---
+
+// fieldType is a declared struct field type that a constructor checks a dynamically typed value
+// against. Generated code declares one for each checked field.
+type fieldType struct {
+	kind byte // i int, s string, b bool, z nil, n node, t terminal, N named, l list, o optional, u union, _ top
+	name string
+	// terminal reports a named terminal type, whose values are string nodes.
+	terminal bool
+	elem     *fieldType
+	alts     []*fieldType
+	text     string
+}
+
+// checkField returns v if it fits t, the type of field field of struct typ, and raises an
+// evaluation error otherwise.
+func (c *actx) checkField(v any, t *fieldType, field, typ string) any {
+	if !c.p.fieldConforms(t, v) {
+		c.p.evalErrorf("cannot use %s as %s in field %s of %s", typeName(v), t.text, field, typ)
+	}
+	return v
+}
+
+// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
+func (c *actx) cast(v any, t *fieldType) any {
+	if !c.p.fieldConforms(t, v) {
+		c.p.evalErrorf("cannot cast %s to %s", typeName(v), t.text)
+	}
+	return v
+}
+
+// checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
+// type.
+func (p *parser) checkResult(v *Node, t *fieldType, rule string) {
+	if u := unboxNode(v); !p.fieldConforms(t, u) {
+		panic(fatal{resultError("cannot use " + typeName(u) + " as " + t.text + " in result of rule " + rule)})
+	}
+}
+
+// resultError is the error of a result that does not fit its declared type.
+type resultError string
+
+func (e resultError) Error() string { return string(e) }
+
+// fieldConforms reports whether v is a value of type t in the value model, charging a step for
+// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// and node every node, and Error error values; a list type takes a list value, not the node of a
+// repetition.
+func (p *parser) fieldConforms(t *fieldType, v any) bool {
+	n, isNode := v.(*Node)
+	if isNode && n == nil {
+		v, isNode = nil, false
+	}
+	if isNode && n.shape() == shapeBox {
+		return p.fieldConforms(t, n.box)
+	}
+	switch t.kind {
+	case '_':
+		return true
+	case 'i':
+		_, ok := v.(int)
+		return ok
+	case 's':
+		_, ok := v.(string)
+		return ok
+	case 'b':
+		_, ok := v.(bool)
+		return ok
+	case 'z':
+		return v == nil
+	case 'o':
+		return v == nil || p.fieldConforms(t.elem, v)
+	case 'u':
+		for _, a := range t.alts {
+			if p.fieldConforms(a, v) {
+				return true
+			}
+		}
+		return false
+	}
+	if !isNode {
+		return false
+	}
+	shape := n.shape()
+	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
+	switch t.kind {
+	case 'n':
+		return valueNode
+	case 't':
+		return shape == shapeString
+	case 'N':
+		switch t.name {
+		case "Match":
+			return shape == shapeString
+		case "Seq", "List", "Operator":
+			return valueNode
+		case "Error", "Missing":
+			return shape == shapeError
+		}
+		if t.terminal {
+			return shape == shapeString
+		}
+		return shape == shapeStruct && n.Type() == t.name
+	case 'l':
+		if shape != shapeListValue {
+			return false
+		}
+		if t.elem.kind == '_' {
+			return true
+		}
+		for _, c := range n.children {
+			p.stepWork()
+			if !p.fieldConforms(t.elem, c) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// checkField returns v if it fits t, the type of field field of struct typ, and raises an
+// evaluation error otherwise.
+func (c *tctx) checkField(v any, t *fieldType, field, typ string) any {
+	if !tfieldConforms(c.p.parser, t, v) {
+		c.p.evalErrorf("cannot use %s as %s in field %s of %s", ttypeName(v), t.text, field, typ)
+	}
+	return v
+}
+
+// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
+func (c *tctx) cast(v any, t *fieldType) any {
+	if !tfieldConforms(c.p.parser, t, v) {
+		c.p.evalErrorf("cannot cast %s to %s", ttypeName(v), t.text)
+	}
+	return v
+}
+
+// tcheckResult is checkResult for the values of the typed runtime.
+func (p *tparser) tcheckResult(v any, t *fieldType, rule string) {
+	if !tfieldConforms(p.parser, t, v) {
+		panic(fatal{resultError("cannot use " + ttypeName(v) + " as " + t.text + " in result of rule " + rule)})
+	}
+}
+
+// tshape is Node.shape for the values of the typed runtime that are tval.
+func tshape(n tval) nodeShape {
+	switch x := n.(type) {
+	case *terror:
+		return shapeError
+	case *tnode:
+		switch x.typ {
+		case "List":
+			return shapeList
+		case typeTupleValue:
+			return shapeTupleValue
+		case typeListValue:
+			return shapeListValue
+		}
+		return shapeTuple
+	}
+	if n.tstruct() {
+		return shapeStruct
+	}
+	return shapeString
+}
+
+// tfieldConforms is fieldConforms for the values of the typed runtime.
+func tfieldConforms(p *parser, t *fieldType, v any) bool {
+	switch t.kind {
+	case '_':
+		return true
+	case 'i':
+		_, ok := v.(int)
+		return ok
+	case 's':
+		_, ok := v.(string)
+		return ok
+	case 'b':
+		_, ok := v.(bool)
+		return ok
+	case 'z':
+		return v == nil
+	case 'o':
+		return v == nil || tfieldConforms(p, t.elem, v)
+	case 'u':
+		for _, a := range t.alts {
+			if tfieldConforms(p, a, v) {
+				return true
+			}
+		}
+		return false
+	}
+	n := asTval(v)
+	if n == nil {
+		return false
+	}
+	shape := tshape(n)
+	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
+	switch t.kind {
+	case 'n':
+		return valueNode
+	case 't':
+		return shape == shapeString
+	case 'N':
+		switch t.name {
+		case "Match":
+			return shape == shapeString
+		case "Seq", "List", "Operator":
+			return valueNode
+		case "Error", "Missing":
+			return shape == shapeError
+		}
+		if t.terminal {
+			return shape == shapeString
+		}
+		return shape == shapeStruct && n.tname() == t.name
+	case 'l':
+		if shape != shapeListValue {
+			return false
+		}
+		if t.elem.kind == '_' {
+			return true
+		}
+		for _, c := range n.tkids() {
+			p.stepWork()
+			if !tfieldConforms(p, t.elem, c) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
 var lit1 = []rune("\ufeff")
 var scope3 = []string{"m"}
 var lit6 = []rune("<?xml")
@@ -9459,6 +10252,7 @@ var lit124 = []rune("<")
 var scope125 = []string{"a"}
 var lit126 = []rune("/>")
 var lit127 = []rune("</")
+var fieldType1 = &fieldType{kind: 'N', text: "Name", name: "Name"}
 var workClass131 = []workRange{{61, 55295}, {39, 59}, {32, 33}, {35, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
 var workClass133 = []workRange{{61, 55295}, {40, 59}, {32, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
 var workClass138 = []workRange{{94, 55295}, {61, 92}, {39, 59}, {32, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
@@ -9484,73 +10278,73 @@ func init() {
 		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 3, name: "xml_decl", scope: []string{"v", "e", "sd"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 4, name: "version_info", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Version", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Version", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 6, name: "encoding_decl", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "EncName", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EncName", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 8, name: "sd_decl", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "YesNo", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "YesNo", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
 		{id: 11, name: "comment", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
-		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Comment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Comment", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 13, name: "pi", scope: []string{"t", "d"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
-		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PIData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PIData", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 15, name: "doctype", scope: []string{"n", "x", "ds"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 16, name: "int_subset", scope: []string{"ds"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "PERef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PERef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
 		{id: 20, name: "system_id", scope: []string{"l"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
 		{id: 21, name: "public_id", scope: []string{"p", "l"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 22, name: "system_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
-		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 25, name: "pubid_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
-		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 28, name: "element_decl", scope: []string{"n", "c"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 33, name: "choice", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
 		{id: 34, name: "sequence", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
 		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
 		{id: 36, name: "name_particle", scope: []string{"n", "o"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Occurrence", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Occurrence", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 38, name: "attlist_decl", scope: []string{"n", "ds"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 39, name: "att_def", scope: []string{"n", "t", "k", "v"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 44, name: "notation_type", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 45, name: "enumeration", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 47, name: "ge_decl", scope: []string{"n", "v", "x", "nd"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 48, name: "pe_decl", scope: []string{"n", "v", "x"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 49, name: "entity_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
-		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 52, name: "notation_decl", scope: []string{"n", "x"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 54, name: "public_notation", scope: []string{"p", "l"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 55, name: "element", scope: []string{"n", "as", "cs", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
 		{id: 56, name: "attribute", scope: []string{"n", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 57, name: "att_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
-		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 62, name: "markup", scope: []string{"c"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharData", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 64, name: "cdsect", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CDSect", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CDSect", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{}},
-		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "EntityRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharRef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityRef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Name", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
 		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Nmtoken", memo: true, leader: false, seen: 15, novalue: false, vars: []string{}},
+		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Nmtoken", memo: true, leader: false, textStruct: true, seen: 15, novalue: false, vars: []string{}},
 		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -9841,12 +10635,22 @@ func init() {
 	rules[78].body = func(p *parser, _ int) (*Node, bool) { return p.e162() }
 	structFields["AttDef"] = map[string]bool{"Name": true, "Type": true, "Default": true, "Value": true}
 	typeKinds["AttDef"] = kindOf("AttDef", "")
+	structFields["AttValue"] = map[string]bool{"Text": true}
+	typeKinds["AttValue"] = kindOf("AttValue", "")
 	structFields["AttlistDecl"] = map[string]bool{"Name": true, "Defs": true}
 	typeKinds["AttlistDecl"] = kindOf("AttlistDecl", "")
 	structFields["Attribute"] = map[string]bool{"Name": true, "Value": true}
 	typeKinds["Attribute"] = kindOf("Attribute", "")
+	structFields["CDSect"] = map[string]bool{"Text": true}
+	typeKinds["CDSect"] = kindOf("CDSect", "")
+	structFields["CharData"] = map[string]bool{"Text": true}
+	typeKinds["CharData"] = kindOf("CharData", "")
+	structFields["CharRef"] = map[string]bool{"Text": true}
+	typeKinds["CharRef"] = kindOf("CharRef", "")
 	structFields["Choice"] = map[string]bool{"Items": true, "Occur": true}
 	typeKinds["Choice"] = kindOf("Choice", "")
+	structFields["Comment"] = map[string]bool{"Text": true}
+	typeKinds["Comment"] = kindOf("Comment", "")
 	structFields["Doctype"] = map[string]bool{"Name": true, "ExternalID": true, "Subset": true}
 	typeKinds["Doctype"] = kindOf("Doctype", "")
 	structFields["Document"] = map[string]bool{"Decl": true, "Prolog": true, "Doctype": true, "Root": true, "Epilog": true}
@@ -9855,35 +10659,61 @@ func init() {
 	typeKinds["Element"] = kindOf("Element", "")
 	structFields["ElementDecl"] = map[string]bool{"Name": true, "Content": true}
 	typeKinds["ElementDecl"] = kindOf("ElementDecl", "")
+	structFields["EncName"] = map[string]bool{"Text": true}
+	typeKinds["EncName"] = kindOf("EncName", "")
 	structFields["EntityDecl"] = map[string]bool{"Parameter": true, "Name": true, "Value": true, "ExternalID": true, "NData": true}
 	typeKinds["EntityDecl"] = kindOf("EntityDecl", "")
+	structFields["EntityRef"] = map[string]bool{"Text": true}
+	typeKinds["EntityRef"] = kindOf("EntityRef", "")
+	structFields["EntityValue"] = map[string]bool{"Text": true}
+	typeKinds["EntityValue"] = kindOf("EntityValue", "")
 	structFields["Enumeration"] = map[string]bool{"Values": true}
 	typeKinds["Enumeration"] = kindOf("Enumeration", "")
 	structFields["ExternalID"] = map[string]bool{"Public": true, "System": true}
 	typeKinds["ExternalID"] = kindOf("ExternalID", "")
+	structFields["Keyword"] = map[string]bool{"Text": true}
+	typeKinds["Keyword"] = kindOf("Keyword", "")
 	structFields["Mixed"] = map[string]bool{"Names": true}
 	typeKinds["Mixed"] = kindOf("Mixed", "")
+	structFields["Name"] = map[string]bool{"Text": true}
+	typeKinds["Name"] = kindOf("Name", "")
 	structFields["NameParticle"] = map[string]bool{"Name": true, "Occur": true}
 	typeKinds["NameParticle"] = kindOf("NameParticle", "")
+	structFields["Nmtoken"] = map[string]bool{"Text": true}
+	typeKinds["Nmtoken"] = kindOf("Nmtoken", "")
 	structFields["NotationDecl"] = map[string]bool{"Name": true, "ExternalID": true}
 	typeKinds["NotationDecl"] = kindOf("NotationDecl", "")
 	structFields["NotationType"] = map[string]bool{"Names": true}
 	typeKinds["NotationType"] = kindOf("NotationType", "")
+	structFields["Occurrence"] = map[string]bool{"Text": true}
+	typeKinds["Occurrence"] = kindOf("Occurrence", "")
+	structFields["PERef"] = map[string]bool{"Text": true}
+	typeKinds["PERef"] = kindOf("PERef", "")
 	structFields["PI"] = map[string]bool{"Target": true, "Data": true}
 	typeKinds["PI"] = kindOf("PI", "")
+	structFields["PIData"] = map[string]bool{"Text": true}
+	typeKinds["PIData"] = kindOf("PIData", "")
+	structFields["PubidLiteral"] = map[string]bool{"Text": true}
+	typeKinds["PubidLiteral"] = kindOf("PubidLiteral", "")
 	structFields["Sequence"] = map[string]bool{"Items": true, "Occur": true}
 	typeKinds["Sequence"] = kindOf("Sequence", "")
+	structFields["SystemLiteral"] = map[string]bool{"Text": true}
+	typeKinds["SystemLiteral"] = kindOf("SystemLiteral", "")
+	structFields["Version"] = map[string]bool{"Text": true}
+	typeKinds["Version"] = kindOf("Version", "")
 	structFields["XMLDecl"] = map[string]bool{"Version": true, "Encoding": true, "Standalone": true}
 	typeKinds["XMLDecl"] = kindOf("XMLDecl", "")
+	structFields["YesNo"] = map[string]bool{"Text": true}
+	typeKinds["YesNo"] = kindOf("YesNo", "")
 	recRules = []*rule{
 		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 1, name: "misc_list", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
 		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 3, name: "xml_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 4, name: "version_info", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 6, name: "encoding_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 8, name: "sd_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
@@ -9894,7 +10724,7 @@ func init() {
 		{id: 15, name: "doctype", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 16, name: "int_subset", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
 		{id: 20, name: "system_id", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
 		{id: 21, name: "public_id", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -9944,8 +10774,8 @@ func init() {
 		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 14, novalue: true, vars: []string{}},
 		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 15, novalue: true, vars: []string{}},
 		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -11016,6 +11846,7 @@ func (p *parser) e14() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit13, "1.", 13, false); !ok {
@@ -11283,6 +12114,7 @@ func (p *parser) e18() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -11567,6 +12399,7 @@ func (p *parser) e23() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -11861,6 +12694,7 @@ func (p *parser) e31() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -11984,47 +12818,47 @@ func (p *parser) e33() (*Node, bool) {
 
 										return c.and(func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xml") }())
+											return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xmL") }())
+												return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xMl") }())
+											return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xML") }())
+										return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("Xml") }())
+									return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XmL") }())
+								return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XMl") }())
+							return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XML") }())
+						return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -12114,47 +12948,47 @@ func (p *parser) e33() (*Node, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xml") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
+											return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xML") }())
+									return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
+								return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
+							return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
+						return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XML") }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -12306,6 +13140,7 @@ func (p *parser) e37() (*Node, bool) {
 		x12  mark
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -12958,6 +13793,7 @@ func (p *parser) e47() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit45, "%", 35, false); !ok {
@@ -13425,6 +14261,7 @@ func (p *parser) e55() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -13473,6 +14310,7 @@ func (p *parser) e57() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -13690,6 +14528,7 @@ func (p *parser) e60() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -13738,6 +14577,7 @@ func (p *parser) e62() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -14069,6 +14909,7 @@ func (p *parser) e67() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
@@ -14099,6 +14940,7 @@ func (p *parser) e69() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
@@ -15122,6 +15964,7 @@ func (p *parser) e85() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
 		ch, size, ok = p.in[p.pos], 1, true
@@ -15537,6 +16380,7 @@ func (p *parser) e92() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -15595,6 +16439,7 @@ func (p *parser) e94() (*Node, bool) {
 	var (
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
@@ -15857,6 +16702,7 @@ func (p *parser) e104() (*Node, bool) {
 		x4 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
@@ -17083,6 +17929,7 @@ func (p *parser) e117() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -17205,6 +18052,7 @@ func (p *parser) e119() (*Node, bool) {
 		x7   int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -17700,7 +18548,13 @@ func (p *parser) e128() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return any(c.p.textEqual(c.textStr(func() any { return c.cap(3) }()), c.textStr(func() any { return c.cap(0) }())) == true)
+				return c.binary("==", func() any {
+
+					return c.member(func() any {
+
+						return c.cast(func() any { return c.cap(3) }(), fieldType1)
+					}(), "Text")
+				}(), func() any { return c.member(func() any { return c.cap(0) }(), "Text") }())
 			}()
 		}) {
 			goto L28_ordinary
@@ -17873,7 +18727,13 @@ L17:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return c.cap(3) }()), c.textStr(func() any { c.p.stepWork(); return c.cap(0) }())) == true)
+			return c.binary("==", func() any {
+				c.p.stepWork()
+				return c.member(func() any {
+					c.p.stepWork()
+					return c.cast(func() any { c.p.stepWork(); return c.cap(3) }(), fieldType1)
+				}(), "Text")
+			}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }())
 		}()
 	}) {
 		goto L28
@@ -18217,6 +19077,7 @@ func (p *parser) e132() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -18339,6 +19200,7 @@ func (p *parser) e134() (*Node, bool) {
 		x7   int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -18866,6 +19728,7 @@ func (p *parser) e140() (*Node, bool) {
 		x12  mark
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2 = p.mark()
@@ -19118,6 +19981,7 @@ func (p *parser) e145() (*Node, bool) {
 		x12  mark
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -19410,6 +20274,7 @@ func (p *parser) e149() (*Node, bool) {
 		x10  int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -19538,6 +20403,7 @@ func (p *parser) e151() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
@@ -19604,6 +20470,7 @@ func (p *parser) e153() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -19733,6 +20600,7 @@ func (p *parser) e155() (*Node, bool) {
 		x2 mark
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -22914,6 +23782,7 @@ func (p *parser) e170() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit13, "1.", 13, false); !ok {
@@ -23175,6 +24044,7 @@ func (p *parser) e172() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -23458,6 +24328,7 @@ func (p *parser) e174() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -23722,6 +24593,7 @@ func (p *parser) e177() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -23847,47 +24719,47 @@ func (p *parser) e178() (*Node, bool) {
 
 										return c.and(func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xml") }())
+											return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xmL") }())
+												return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xMl") }())
+											return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xML") }())
+										return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("Xml") }())
+									return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XmL") }())
+								return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XMl") }())
+							return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XML") }())
+						return c.binary("!=", func() any { return c.member(func() any { return c.cap(0) }(), "Text") }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -23972,47 +24844,47 @@ func (p *parser) e178() (*Node, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xml") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
+											return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xML") }())
+									return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
+								return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
+							return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
+						return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XML") }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -24176,6 +25048,7 @@ func (p *parser) e179() (*Node, bool) {
 		x15  int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -24780,6 +25653,7 @@ func (p *parser) e183() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit45, "%", 35, false); !ok {
@@ -25194,6 +26068,7 @@ func (p *parser) e188() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -25246,6 +26121,7 @@ func (p *parser) e189() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -25447,6 +26323,7 @@ func (p *parser) e191() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -25499,6 +26376,7 @@ func (p *parser) e192() (*Node, bool) {
 		size int
 		ok   bool
 	)
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -25812,6 +26690,7 @@ func (p *parser) e195() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
@@ -25846,6 +26725,7 @@ func (p *parser) e196() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
@@ -26741,6 +27621,7 @@ func (p *parser) e205() (*Node, bool) {
 		ok   bool
 	)
 	p.stepWork()
+	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
 		ch, size, ok = p.in[p.pos], 1, true
@@ -27093,6 +27974,7 @@ func (p *parser) e208() (*Node, bool) {
 		ok bool
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -27157,6 +28039,7 @@ func (p *parser) e209() (*Node, bool) {
 		v  *Node
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
@@ -27431,6 +28314,7 @@ func (p *parser) e211() (*Node, bool) {
 		x5 bool
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -28535,6 +29419,7 @@ func (p *parser) e218() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -28671,6 +29556,7 @@ func (p *parser) e219() (*Node, bool) {
 		x9   int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -29124,7 +30010,13 @@ func (p *parser) e224() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return any(c.p.textEqual(c.textStr(func() any { return c.cap(1) }()), c.textStr(func() any { return c.cap(0) }())) == true)
+				return c.binary("==", func() any {
+
+					return c.member(func() any {
+
+						return c.cast(func() any { return c.cap(1) }(), fieldType1)
+					}(), "Text")
+				}(), func() any { return c.member(func() any { return c.cap(0) }(), "Text") }())
 			}()
 		}) {
 			goto L21_ordinary
@@ -29282,7 +30174,13 @@ L12:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return c.cap(1) }()), c.textStr(func() any { c.p.stepWork(); return c.cap(0) }())) == true)
+			return c.binary("==", func() any {
+				c.p.stepWork()
+				return c.member(func() any {
+					c.p.stepWork()
+					return c.cast(func() any { c.p.stepWork(); return c.cap(1) }(), fieldType1)
+				}(), "Text")
+			}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return c.cap(0) }(), "Text") }())
 		}()
 	}) {
 		goto L21
@@ -29600,6 +30498,7 @@ func (p *parser) e227() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -29736,6 +30635,7 @@ func (p *parser) e228() (*Node, bool) {
 		x9   int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -30264,6 +31164,7 @@ func (p *parser) e232() (*Node, bool) {
 	)
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -30529,6 +31430,7 @@ func (p *parser) e234() (*Node, bool) {
 		x15  int
 	)
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -30824,6 +31726,7 @@ func (p *parser) e236() (*Node, bool) {
 		x11  int
 	)
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -30958,6 +31861,7 @@ func (p *parser) e237() (*Node, bool) {
 	)
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
@@ -31019,6 +31923,7 @@ func (p *parser) e238() (*Node, bool) {
 		x2 mark
 		ok bool
 	)
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -31766,6 +32671,7 @@ func (p *parser) q5() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit13, "1.", 13, false); !ok {
@@ -32071,6 +32977,7 @@ func (p *parser) q7() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -32398,6 +33305,7 @@ func (p *parser) q9() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -32569,6 +33477,7 @@ func (p *parser) q12() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -32780,6 +33689,7 @@ func (p *parser) q14() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -33469,6 +34379,7 @@ func (p *parser) q18() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit45, "%", 35, false); !ok {
@@ -33629,6 +34540,7 @@ func (p *parser) q23() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -33691,6 +34603,7 @@ func (p *parser) q24() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -33755,6 +34668,7 @@ func (p *parser) q26() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -33817,6 +34731,7 @@ func (p *parser) q27() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -34193,6 +35108,7 @@ func (p *parser) q30() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
@@ -34249,6 +35165,7 @@ func (p *parser) q31() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
@@ -34402,6 +35319,7 @@ func (p *parser) q37() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -34821,6 +35739,7 @@ func (p *parser) q40() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -34907,6 +35826,7 @@ func (p *parser) q41() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
@@ -35225,6 +36145,7 @@ func (p *parser) q43() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -36305,6 +37226,7 @@ func (p *parser) q50() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -36451,6 +37373,7 @@ func (p *parser) q51() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -37019,6 +37942,7 @@ func (p *parser) q58() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -37165,6 +38089,7 @@ func (p *parser) q59() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -37766,6 +38691,7 @@ func (p *parser) q63() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -38067,6 +38993,7 @@ func (p *parser) q65() (*Node, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -38295,6 +39222,7 @@ func (p *parser) q67() (*Node, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -38449,6 +39377,7 @@ func (p *parser) q68() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -40003,6 +40932,7 @@ func (p *tparser) s5() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit13, "1.", 13, false); !ok {
@@ -40373,6 +41303,7 @@ func (p *tparser) s7() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -40764,6 +41695,7 @@ func (p *tparser) s9() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -41305,6 +42237,7 @@ func (p *tparser) s12() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -41473,47 +42406,47 @@ func (p *tparser) i13() (any, bool) {
 
 										return c.and(func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xml") }())
+											return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xmL") }())
+												return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xMl") }())
+											return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xML") }())
+										return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("Xml") }())
+									return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XmL") }())
+								return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XMl") }())
+							return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XML") }())
+						return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -41635,47 +42568,47 @@ func (p *tparser) i13() (any, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xml") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
+											return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
+										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xML") }())
+									return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
+								return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
+							return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
+						return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XML") }())
+					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -41873,6 +42806,7 @@ func (p *tparser) s14() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -42757,6 +43691,7 @@ func (p *tparser) s18() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
@@ -43664,6 +44599,7 @@ func (p *tparser) s23() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -43730,6 +44666,7 @@ func (p *tparser) s24() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -44048,6 +44985,7 @@ func (p *tparser) s26() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -44114,6 +45052,7 @@ func (p *tparser) s27() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -44583,6 +45522,7 @@ func (p *tparser) s30() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
@@ -44639,6 +45579,7 @@ func (p *tparser) s31() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
@@ -46246,6 +47187,7 @@ func (p *tparser) s37() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
 		ch, size, ok = p.in[p.pos], 1, true
@@ -46887,6 +47829,7 @@ func (p *tparser) s40() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -46973,6 +47916,7 @@ func (p *tparser) s41() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
@@ -47311,6 +48255,7 @@ func (p *tparser) s43() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
@@ -49102,6 +50047,7 @@ func (p *tparser) s50() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -49252,6 +50198,7 @@ func (p *tparser) s51() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -49994,7 +50941,10 @@ func (p *tparser) i55() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return any(c.p.textEqual(c.textStr(func() any { return k19 }()), c.textStr(func() any { return k1 }())) == true)
+				return c.binary("==", func() any {
+
+					return c.member(func() any { return c.cast(func() any { return k19 }(), fieldType1) }(), "Text")
+				}(), func() any { return c.member(func() any { return k1 }(), "Text") }())
 			}()
 		}) {
 			goto L35_ordinary
@@ -50211,7 +51161,10 @@ L24:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return k19 }()), c.textStr(func() any { c.p.stepWork(); return k1 }())) == true)
+			return c.binary("==", func() any {
+				c.p.stepWork()
+				return c.member(func() any { c.p.stepWork(); return c.cast(func() any { c.p.stepWork(); return k19 }(), fieldType1) }(), "Text")
+			}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }())
 		}()
 	}) {
 		goto L35
@@ -50755,6 +51708,7 @@ func (p *tparser) s58() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -50905,6 +51859,7 @@ func (p *tparser) s59() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -51612,6 +52567,7 @@ func (p *tparser) s63() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -51958,6 +52914,7 @@ func (p *tparser) s65() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {
@@ -52462,6 +53419,7 @@ func (p *tparser) s67() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -52618,6 +53576,7 @@ func (p *tparser) s68() (any, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
+	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit150, "&", 80, false); !ok {
@@ -52710,6 +53669,7 @@ func (p *tparser) s69() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -52918,6 +53878,7 @@ func (p *tparser) v71() (any, bool) {
 	}
 	_ = x1
 	p.stepWork()
+	p.stepWork()
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -53010,6 +53971,7 @@ func (p *tparser) i71() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
+	p.stepWork()
 	p.stepWork()
 	x1 = 0
 	for {

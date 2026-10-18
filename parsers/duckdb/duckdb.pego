@@ -5,16 +5,16 @@ package duckdb
 // ===================================================================================================
 
 // An identifier, a keyword used as a name, or a string used as a name, as written (quotes included).
-type Ident terminal
+type Ident = { Text string }
 // A qualified name: a, a.b, a.b.c
 type Name = { Parts []Ident }
 
-type Number terminal    // an integer, decimal or real literal as written
-type StringLit terminal // a string literal as written: '...', E'...', $$...$$, U&'...'
-type BitLit terminal    // B'...' or X'...'
-type BoolLit terminal   // TRUE or FALSE
-type NullLit terminal   // NULL
-type Param terminal     // ?, ?1, $1 or $name
+type Number = { Text string }    // an integer, decimal or real literal as written
+type StringLit = { Text string } // a string literal as written: '...', E'...', $$...$$, U&'...'
+type BitLit = { Text string }    // B'...' or X'...'
+type BoolLit = { Text string }   // TRUE or FALSE
+type NullLit = { Text string }   // NULL
+type Param = { Text string }     // ?, ?1, $1 or $name
 
 // A type: its name as written ("int", "double precision", "a.b.t"), and its modifiers, fields and array dimensions.
 type Type = {
@@ -34,7 +34,7 @@ type ArrayDim = { Size *Number }
 
 type Paren = { X Expr }
 type ColumnRef = { Parts []Ident }
-type DefaultExpr terminal                  // DEFAULT
+type DefaultExpr = { Text string }                  // DEFAULT
 type PositionalRef = { Index Number } // #1
 
 // * and t.* with their modifiers, and COLUMNS(...) and UNPACK(...)
@@ -49,9 +49,9 @@ type RenameItem = { From Name; To Ident }
 type ColumnsExpr = { Arg Expr; Star bool } // COLUMNS(expr) and *COLUMNS(expr)
 type UnpackExpr = { Arg Expr }
 
-type Binary = { Left Expr; Op Match; Right Expr } // a + b, a AND b, a = b, a -> b, a ~~ b, ...
-type Unary = { Op Match; X Expr }                 // -a, +a, ~a
-type PostfixOp = { X Expr; Op Match }             // a !
+type Binary = { Left Expr; Op node[string]; Right Expr } // a + b, a AND b, a = b, a -> b, a ~~ b, ...
+type Unary = { Op node[string]; X Expr }                 // -a, +a, ~a
+type PostfixOp = { X Expr; Op node[string] }             // a !
 type Not = { X Expr }
 type IsExpr = { X Expr; Negated bool; Test string } // IS [NOT] NULL|TRUE|FALSE|UNKNOWN, ISNULL, NOTNULL, NOT NULL
 type DistinctFrom = { Left Expr; Right Expr; Negated bool }
@@ -83,7 +83,7 @@ type ArraySubquery = { Query ParenQuery }              // ARRAY(SELECT ...)
 type Grouping = { Name string; Args []Expr }           // GROUPING(a, b), GROUPING_ID(a, b)
 type TypedLit = { Type Type; Value StringLit }         // DATE '2020-01-01', DECIMAL(10, 2) '1.5'
 type IntervalLit = { Value Expr; Unit *IntervalUnit }  // INTERVAL '1' DAY, INTERVAL (x) HOUR, INTERVAL 5 DAY
-type IntervalUnit terminal                                  // DAY, YEAR TO MONTH, ...
+type IntervalUnit = { Text string }                                  // DAY, YEAR TO MONTH, ...
 type NamedArg = { Name Ident; Value Expr; Arrow bool } // name := value, name => value (Arrow)
 // A function call, with the clauses that follow it.
 type FuncCall = {
@@ -148,7 +148,7 @@ type ParenContent ~ Select | ParenQuery | ShowStmt
 type QueryBody ~ SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery
 
 type With = { Recursive bool; CTEs []CTE }
-type CTE = { Name Ident; Columns []Ident; UsingKey []Ident; Materialized *Match; Query Statement }
+type CTE = { Name Ident; Columns []Ident; UsingKey []Ident; Materialized *node[string]; Query Statement }
 
 // UNION, EXCEPT and INTERSECT
 type SetOp = { Left QueryBody; Op string; Quantifier string; ByName bool; Right QueryBody }
@@ -208,7 +208,7 @@ type ParenTable = { Prefix *Ident; Table TableRef; Alias *TableAlias }
 type Join = { Left TableRef; Kind string; Right TableRef; On *Expr; Using []Ident }
 type PivotRef = { Source TableRef; Aggregates []SelectItem; Values []PivotValue; GroupBy []Ident; Alias *TableAlias }
 type PivotValue = { Header []Expr; Items []SelectItem; Enum *Ident }
-type UnpivotRef = { Source TableRef; IncludeNulls *Match; Header []Ident; Values []UnpivotValue; Alias *TableAlias }
+type UnpivotRef = { Source TableRef; IncludeNulls *node[string]; Header []Ident; Values []UnpivotValue; Alias *TableAlias }
 type UnpivotValue = { Header []Ident; Items []SelectItem }
 type TableRef ~ BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef
 // ===================================================================================================
@@ -279,7 +279,7 @@ type CreateTableStmt = {
     OnCommit        string
 }
 // PARTITIONED BY (...) or SORTED BY (...)
-type PartitionSorted = { Kind Match; Exprs []Expr }
+type PartitionSorted = { Kind node[string]; Exprs []Expr }
 type TableElement ~ ColumnDef | TableConstraint | TableLike
 type ColumnDef = { Name Ident; Type *Type; Generated *GeneratedColumn; Constraints []ColumnConstraint }
 // GENERATED ALWAYS AS IDENTITY, GENERATED ALWAYS AS (expr) [VIRTUAL|STORED], AS (expr)
@@ -293,7 +293,7 @@ type ColumnConstraint = {
     Compression *Ident
     Options     []DefElem
 }
-type Reference = { Table Name; Columns []Ident; Match *Match; OnUpdate *Match; OnDelete *Match }
+type Reference = { Table Name; Columns []Ident; Match *node[string]; OnUpdate *node[string]; OnDelete *node[string] }
 type TableConstraint = {
     Name       *Ident
     Kind       string // CHECK, UNIQUE, PRIMARY KEY, FOREIGN KEY
@@ -302,13 +302,13 @@ type TableConstraint = {
     Reference  *Reference
     Index      *Ident // USING INDEX name
     Options    []DefElem
-    Attributes []Match // DEFERRABLE, NOT VALID, ...
+    Attributes []node[string] // DEFERRABLE, NOT VALID, ...
 }
-type TableLike = { Table Name; Options []Match }
+type TableLike = { Table Name; Options []node[string] }
 // name = value in WITH (...) options: the value is a type, a keyword, an operator, a number or a string.
 type DefElem = { Name Ident; Value string }
 // A storage option: name, name = expr, a.b = value
-type Reloption = { Name Name; Value *Expr; Arg *Match }
+type Reloption = { Name Name; Value *Expr; Arg *node[string] }
 type GenericOption = { Name Ident; Value *Expr }
 
 type CreateTableAsStmt = {
@@ -432,7 +432,7 @@ type PrepareStmt = { Name Ident; Types []Type; Stmt Statement }
 type ExecuteStmt = { Name Ident; Params []Expr }
 type DeallocateStmt = { Name *Ident; All bool }
 type TransactionStmt = { Kind string; Work string; Mode string }
-type VacuumStmt = { Full bool; Freeze bool; Verbose bool; Options []Match; Analyze *AnalyzeStmt; Table *Name; Columns []Ident }
+type VacuumStmt = { Full bool; Freeze bool; Verbose bool; Options []node[string]; Analyze *AnalyzeStmt; Table *Name; Columns []Ident }
 type AnalyzeStmt = { Verbose bool; Table *Name; Columns []Ident }
 type CheckpointStmt = { Force bool; Database *Ident }
 type CallStmt = { Func FuncCall }
@@ -468,16 +468,16 @@ rule uquoted_ident = [uU] "&" quoted_ident (ws [uU] [eE] [sS] [cC] [aA] [pP] [eE
 
 // The kinds of names of the grammar differ in the keywords they may not be (see keywords.py). A quoted
 // identifier is always a name.
-rule col_id Ident = quoted_ident / uquoted_ident / !kw_not_col_id word
-rule type_function_name Ident = quoted_ident / uquoted_ident / !kw_not_type_func word
-rule function_name_token Ident = quoted_ident / uquoted_ident / !kw_not_func_name word
-rule type_name_token Ident = quoted_ident / uquoted_ident / !kw_not_type_name word
+rule col_id Ident = t:(quoted_ident / uquoted_ident / !kw_not_col_id word) #atomic => Ident{Text: text($t)}
+rule type_function_name Ident = t:(quoted_ident / uquoted_ident / !kw_not_type_func word) #atomic => Ident{Text: text($t)}
+rule function_name_token Ident = t:(quoted_ident / uquoted_ident / !kw_not_func_name word) #atomic => Ident{Text: text($t)}
+rule type_name_token Ident = t:(quoted_ident / uquoted_ident / !kw_not_type_name word) #atomic => Ident{Text: text($t)}
 // IDENT: not a keyword at all
-rule ident_only Ident = quoted_ident / uquoted_ident / !kw_any word
+rule ident_only Ident = t:(quoted_ident / uquoted_ident / !kw_any word) #atomic => Ident{Text: text($t)}
 // ColLabel: any word
 // NOT before BETWEEN, IN, LIKE, ILIKE and SIMILAR is a token of its own (NOT_LA) that no name accepts
-rule col_label Ident = quoted_ident / uquoted_ident / !(NOT ws (BETWEEN / IN / LIKE / ILIKE / SIMILAR)) word
-rule non_reserved_word Ident = quoted_ident / uquoted_ident / !kw_reserved word
+rule col_label Ident = t:(quoted_ident / uquoted_ident / !(NOT ws (BETWEEN / IN / LIKE / ILIKE / SIMILAR)) word) #atomic => Ident{Text: text($t)}
+rule non_reserved_word Ident = t:(quoted_ident / uquoted_ident / !kw_reserved word) #atomic => Ident{Text: text($t)}
 
 // ---- Strings ----
 
@@ -495,18 +495,18 @@ rule dq_close = "$" u:dq_tag "$" {text($u) == tag}
 rule dq_tag = [a-zA-Z_\u{80}-\u{10ffff}] [a-zA-Z_0-9\u{80}-\u{10ffff}]* / _
 rule bit_string = [bBxX] "'" [^']* "'" (sq_cont [^']* "'")*
 
-rule sconst StringLit = e_string / sq_string / dollar_string / u_string
-rule bit_lit BitLit = bit_string
+rule sconst StringLit = t:(e_string / sq_string / dollar_string / u_string) #atomic => StringLit{Text: text($t)}
+rule bit_lit BitLit = t:(bit_string) #atomic => BitLit{Text: text($t)}
 
 // ---- Numbers ----
 
 rule digits = [0-9] ([0-9] / "_" [0-9])*
 // An integer, a decimal or a real, as one token; an integer outside the range of an int32 is a float constant for
 // the grammar (see iconst).
-rule number Number = (digits ("." !"." digits?)? / "." digits) exp?
+rule number Number = t:((digits ("." !"." digits?)? / "." digits) exp?) #atomic => Number{Text: text($t)}
 rule exp = [eE] [+\-]? digits
 // ICONST: an integer literal that fits in 32 bits
-rule iconst Number = i:int_lit {len(text($i)) < 10 || len(text($i)) == 10 && text($i) <= "2147483647"}
+rule iconst Number = t:(i:int_lit {len(text($i)) < 10 || len(text($i)) == 10 && text($i) <= "2147483647"}) => Number{Text: text($t)}
 rule int_lit = (digits !("." !".") ![eE]) #atomic
 
 // ---- Operators ----
@@ -538,7 +538,7 @@ rule op_idiv = ("//" !opc) #atomic
 rule op_arrow = ("->" !opc) #atomic
 rule op_darrow = ("->>" !opc) #atomic
 // Any other operator: one with a special character, or a longer or unknown one made of + - * / < > =.
-rule op_generic Match = &opc o:(op_special / op_plain) #atomic => $o
+rule op_generic node[string] = &opc o:(op_special / op_plain) #atomic => $o
 rule op_special = !(("^" / "%" / "!=") !rc) (!cut [+\-*/<>=])* [~!@\^&|`%] (!cut opc)*
 rule op_plain = &core_long !(("<=" / ">=" / "=>" / "<>") &pm_end) !(("**" / "//" / "->>" / "->") !opc) core
 rule core = ((!cut [+\-])* !cut [*/<>=])+
@@ -547,10 +547,10 @@ rule core_long = !([*/<>=] &pm_end) core
 // Names
 // ===================================================================================================
 
-rule col_id_or_string Ident = col_id / sconst
-rule name Ident = col_id_or_string
-rule attr_name Ident = col_label
-rule param_name Ident = type_function_name
+rule col_id_or_string Ident = t:(col_id / sconst) #atomic => Ident{Text: text($t)}
+rule name Ident = t:(col_id_or_string) #atomic => Ident{Text: text($t)}
+rule attr_name Ident = t:(col_label) #atomic => Ident{Text: text($t)}
+rule param_name Ident = t:(type_function_name) #atomic => Ident{Text: text($t)}
 
 // qualified_name: ColIdOrString | ColId indirection (the dots)
 rule qualified_name Name = qn_dotted / qn_string
@@ -681,17 +681,17 @@ rule b_expr Expr = operators {
 
 rule colon = ":" !(":" / "=")
 // The comparison operators do not associate: a < b < c is an error, also as the right side of AND and the like.
-rule cmp_op Match = (op_lt / op_gt / op_eq / op_le / op_ge / op_ne) #atomic
+rule cmp_op node[string] = (op_lt / op_gt / op_eq / op_le / op_ge / op_ne) #atomic
 // The operators of the level of BETWEEN, IN and LIKE do not associate either; IS DISTINCT FROM and IS OF do not
 // take IS after them.
 rule like_start = (NOT ws)? (LIKE / ILIKE / GLOB / SIMILAR / IN / BETWEEN)
 rule is_start = IS / ISNULL / NOTNULL
 
 // qual_Op, subquery_Op
-rule qual_op Match = op_generic / operator_call
-rule operator_call Match = (OPERATOR ws "(" ws any_operator ws ")") #atomic
+rule qual_op node[string] = op_generic / operator_call
+rule operator_call node[string] = (OPERATOR ws "(" ws any_operator ws ")") #atomic
 rule any_operator = (col_id ws "." ws)* all_op
-rule all_op Match = (
+rule all_op node[string] = (
     op_generic / op_plus / op_minus / op_star / op_slash / op_idiv / op_percent / op_caret / op_pow
     / op_lt / op_gt / op_eq / op_le / op_ge / op_ne
 )
@@ -757,7 +757,7 @@ rule plain_literal Expr = l:(number / bit_lit) !(ws ("." / "[")) => $l
 // a string may be followed by .name and [i], but a call needs an expression in parentheses
 rule string_literal Expr = l:sconst !(ws "." ws attr_name ws "(") => $l
 // ICONST in positions where the grammar does not allow a float
-rule param Param = "?" [0-9]* / "$" digits / "$" ws dollar_name
+rule param Param = t:("?" [0-9]* / "$" digits / "$" ws dollar_name) #atomic => Param{Text: text($t)}
 // the name of a parameter has no $ in it: $a$ begins a dollar-quoted string
 rule dollar_name = quoted_ident / uquoted_ident / ident_start [a-zA-Z0-9_\u{80}-\u{9f}¡-\u{1fff}\u{200c}-\u{202e}‰-⁞\u{2061}-⿿、-\u{fefe}\u{ff00}-\u{10ffff}]*
 rule positional_ref PositionalRef = "#" ws i:iconst => PositionalRef{Index: $i}
@@ -824,7 +824,7 @@ rule expr_list_opt_comma []Expr = l:expr_list (ws ",")? => $l
 // ---- Stars, COLUMNS, DEFAULT, lambdas ----
 
 rule star_primary Expr = star_columns / star_expr / qualified_star / columns_expr / unpack_expr / default_expr / lambda_expr
-rule default_expr DefaultExpr = DEFAULT
+rule default_expr DefaultExpr = t:(DEFAULT) #atomic => DefaultExpr{Text: text($t)}
 rule columns_expr ColumnsExpr = COLUMNS ws "(" ws a:expr ws ")" => ColumnsExpr{Arg: $a, Star: false}
 rule star_columns ColumnsExpr = op_star ws COLUMNS ws "(" ws a:expr ws ")" => ColumnsExpr{Arg: $a, Star: true}
 rule unpack_expr UnpackExpr = UNPACK ws "(" ws a:expr ws ")" => UnpackExpr{Arg: $a}
@@ -851,8 +851,8 @@ rule rename_single []RenameItem = RENAME ws i:rename_item => list($i)
 // ---- Keyword expressions and special functions ----
 
 rule keyword_primary Expr = k:(bool_lit / null_lit / exists_expr / interval_lit / grouping_expr) !(ws ("." / "[")) => $k
-rule bool_lit BoolLit = TRUE / FALSE
-rule null_lit NullLit = NULL
+rule bool_lit BoolLit = t:(TRUE / FALSE) #atomic => BoolLit{Text: text($t)}
+rule null_lit NullLit = t:(NULL) #atomic => NullLit{Text: text($t)}
 rule exists_expr Exists = EXISTS ws q:select_with_parens => Exists{Query: $q}
 rule grouping_expr Grouping = n:(GROUPING_ID / GROUPING) #atomic ws "(" ws xs:expr_list_opt_comma ws ")" => Grouping{Name: text($n), Args: $xs}
 rule cast_expr Cast = cast_plain / cast_try
@@ -862,7 +862,7 @@ rule cast_try Cast = TRY_CAST ws "(" ws x:expr ws AS ws t:typename ws ")" => Cas
 rule interval_lit IntervalLit = interval_paren / interval_const
 rule interval_paren IntervalLit = INTERVAL ws "(" ws v:expr ws ")" (ws u:interval_unit)? => IntervalLit{Value: $v, Unit: $u}
 rule interval_const IntervalLit = INTERVAL ws v:(iconst / sconst) (ws u:interval_unit)? => IntervalLit{Value: $v, Unit: $u}
-rule interval_unit IntervalUnit = interval_to / interval_field
+rule interval_unit IntervalUnit = t:(interval_to / interval_field) #atomic => IntervalUnit{Text: text($t)}
 rule interval_to = (
     (YEARS / YEAR) ws TO ws (MONTHS / MONTH)
     / (DAYS / DAY) ws TO ws (HOURS / HOUR / MINUTES / MINUTE / SECONDS / SECOND)
@@ -904,7 +904,7 @@ rule sc_trim_chars SpecialCall = (
 ) => SpecialCall{Name: text($n), Spec: text($s), Args: $l, Chars: $c}
 rule sc_trim SpecialCall = n:TRIM ws "(" ws (s:(BOTH / LEADING / TRAILING) ws)? a:(trim_from / expr_list_opt_comma) ws ")" => SpecialCall{Name: text($n), Spec: text($s), Args: $a}
 rule sc_collation SpecialCall = n:(COLLATION ws FOR) #atomic ws "(" ws x:expr ws ")" => SpecialCall{Name: text($n), Args: list($x)}
-rule extract_arg Match = (ident_only / year_kw / sconst) #atomic
+rule extract_arg node[string] = (ident_only / year_kw / sconst) #atomic
 rule year_kw = (
     YEARS / YEAR / MONTHS / MONTH / DAYS / DAY / HOURS / HOUR / MINUTES / MINUTE / SECONDS / SECOND
     / MILLISECONDS / MILLISECOND / MICROSECONDS / MICROSECOND / WEEKS / WEEK / QUARTERS / QUARTER / DECADES / DECADE
@@ -926,11 +926,11 @@ rule func_call FuncCall = (
 ) => FuncCall{Name: $n, Quantifier: text($q), Args: concat($a), Variadic: $v, OrderBy: $o, Nulls: text($nl), WithinGroup: $wg, Filter: $f, ExportState: len($ex) > 0, Over: $ov}
 // func_name '(' ... ')' Sconst: a literal of a type with arguments
 rule typed_literal_args TypedLit = t:func_name_type ws "(" ws a:func_arg_list ws ")" ws s:sconst => TypedLit{Type: Type{Name: text($t), Mods: $a}, Value: $s}
-rule func_name_type Match = (fn_dotted / function_name_token) #atomic
+rule func_name_type node[string] = (fn_dotted / function_name_token) #atomic
 rule func_arg_list []Expr = first:func_arg_expr rest:(-ws -"," -ws e:func_arg_expr)* => concat(list($first), map($rest, (r) => r.$e))
 rule func_arg_expr Expr = named_arg / expr
 rule named_arg NamedArg = n:param_name ws (":=" / op_eq_gt) ws v:expr => NamedArg{Name: $n, Value: $v}
-rule opt_ignore_nulls Match = ((IGNORE / RESPECT) ws NULLS) #atomic
+rule opt_ignore_nulls node[string] = ((IGNORE / RESPECT) ws NULLS) #atomic
 rule filter_clause Expr = FILTER ws "(" ws (WHERE ws)? e:expr ws ")" => $e
 rule over_clause WindowOver = OVER ws (s:window_specification / n:col_id) => WindowOver{Name: $n, Spec: $s}
 rule window_specification WindowSpec = (
@@ -958,7 +958,7 @@ rule frame_between Frame = (
 rule frame_bound FrameBound = frame_bound_kw / frame_bound_expr
 rule frame_bound_kw FrameBound = k:(UNBOUNDED ws (PRECEDING / FOLLOWING) / CURRENT ws ROW) #atomic => FrameBound{Kind: text($k)}
 rule frame_bound_expr FrameBound = e:expr ws k:(PRECEDING / FOLLOWING) => FrameBound{Kind: text($k), Expr: $e}
-rule window_exclusion Match = (EXCLUDE ws (CURRENT ws ROW / GROUP / TIES / NO ws OTHERS)) #atomic
+rule window_exclusion node[string] = (EXCLUDE ws (CURRENT ws ROW / GROUP / TIES / NO ws OTHERS)) #atomic
 // ===================================================================================================
 // Types
 // ===================================================================================================
@@ -990,9 +990,9 @@ rule type_interval Type = n:(INTERVAL (ws "(" ws iconst ws ")" / ws interval_uni
 rule type_datetime Type = (
     n:(TIMESTAMP / TIME) #atomic ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) (ws z:time_zone_spec)? ds:array_dims?
 ) => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Zone: text($z), Dims: concat($ds)}
-rule time_zone_spec Match = ((WITH / WITHOUT) ws TIME ws ZONE) #atomic
+rule time_zone_spec node[string] = ((WITH / WITHOUT) ws TIME ws ZONE) #atomic
 rule type_char Type = n:char_name ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) ds:array_dims? => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Dims: concat($ds)}
-rule char_name Match = (NATIONAL ws (CHARACTER / CHAR) (ws VARYING)? / NCHAR (ws VARYING)? / CHARACTER (ws VARYING)? / CHAR (ws VARYING)? / VARCHAR) #atomic
+rule char_name node[string] = (NATIONAL ws (CHARACTER / CHAR) (ws VARYING)? / NCHAR (ws VARYING)? / CHARACTER (ws VARYING)? / CHAR (ws VARYING)? / VARCHAR) #atomic
 rule type_bit Type = n:(BIT (ws VARYING)?) #atomic (ws "(" ws xs:expr_list_opt_comma ws ")")? ds:array_dims? => Type{Name: text($n), Mods: concat($xs), Dims: concat($ds)}
 rule type_numeric Type = type_double / type_numeric_mods / type_numeric_plain
 rule type_double Type = n:(DOUBLE ws PRECISION) #atomic ds:array_dims? => Type{Name: text($n), Dims: concat($ds)}
@@ -1046,7 +1046,7 @@ rule cte CTE = (
     n:name (ws "(" ws cs:name_list_opt_comma ws ")")? (ws USING ws KEY ws "(" ws k:col_id_list (ws ",")? ws ")")?
     ws AS (ws m:materialized)? ws "(" ws q:preparable ws ")"
 ) => CTE{Name: $n, Columns: concat($cs), UsingKey: concat($k), Materialized: $m, Query: $q}
-rule materialized Match = (MATERIALIZED / NOT ws MATERIALIZED) #atomic
+rule materialized node[string] = (MATERIALIZED / NOT ws MATERIALIZED) #atomic
 
 // ---- Set operations ----
 
@@ -1101,7 +1101,7 @@ rule target_list_opt_comma []SelectItem = first:select_item rest:(-ws -"," -ws i
 rule select_item SelectItem = item_prefixed / item_plain
 rule item_prefixed SelectItem = a:col_id ws colon ws e:expr => SelectItem{Expr: $e, Alias: $a, Prefix: true}
 rule item_plain SelectItem = e:expr (ws kw:AS ws al:col_label_or_string / ws al:ident_only)? => SelectItem{Expr: $e, Alias: $al, As: len($kw) > 0}
-rule col_label_or_string Ident = col_label / sconst
+rule col_label_or_string Ident = t:(col_label / sconst) #atomic => Ident{Text: text($t)}
 
 rule into_clause IntoClause = INTO ws t:opt_temp_table_name => $t
 rule opt_temp_table_name IntoClause = into_temp / into_table / into_plain
@@ -1156,8 +1156,8 @@ rule sortby SortItem = sortby_using / sortby_plain
 rule sortby_using SortItem = e:expr ws USING ws u:qual_all_op (ws n:nulls_order)? => SortItem{Expr: $e, Using: text($u), Nulls: text($n)}
 rule sortby_plain SortItem = e:expr (ws d:asc_desc)? (ws n:nulls_order)? => SortItem{Expr: $e, Direction: text($d), Nulls: text($n)}
 rule asc_desc = ASC / DESC
-rule nulls_order Match = (NULLS ws (FIRST / LAST)) #atomic
-rule qual_all_op Match = all_op / operator_call
+rule nulls_order node[string] = (NULLS ws (FIRST / LAST)) #atomic
+rule qual_all_op node[string] = all_op / operator_call
 
 rule limit_clause LimitClause = limit_comma / limit_all / limit_percent / limit_plain / limit_percent_sign / fetch_value_clause / fetch_clause
 rule limit_comma LimitClause = k:LIMIT ws v:expr ws "," ws o:expr => LimitClause{Keyword: text($k), Value: $v, Offset: $o}
@@ -1219,10 +1219,10 @@ rule table_ref TableRef = operators {
         postfix UNPIVOT (ws n:include_nulls)? ws "(" ws h:unpivot_header ws FOR ws vs:unpivot_value_list ws ")" (ws a:alias_clause)? => UnpivotRef{Source: $lhs, IncludeNulls: $n, Header: $h, Values: $vs, Alias: $a}
     }
 }
-rule join_type Match = (FULL (ws OUTER)? / LEFT (ws OUTER)? / RIGHT (ws OUTER)? / SEMI / ANTI / INNER) #atomic
+rule join_type node[string] = (FULL (ws OUTER)? / LEFT (ws OUTER)? / RIGHT (ws OUTER)? / SEMI / ANTI / INNER) #atomic
 rule join_qual_on Expr = ON ws e:expr => $e
 rule join_qual_using []Ident = USING ws "(" ws l:name_list_opt_comma ws ")" => $l
-rule include_nulls Match = ((INCLUDE / EXCLUDE) ws NULLS) #atomic
+rule include_nulls node[string] = ((INCLUDE / EXCLUDE) ws NULLS) #atomic
 rule unpivot_header []Ident = bracketed_names / unpivot_single
 rule unpivot_single []Ident = n:col_id_or_string => list($n)
 rule unpivot_value_list []UnpivotValue = first:unpivot_value rest:(-ws v:unpivot_value)* => concat(list($first), map($rest, (r) => r.$v))
@@ -1240,16 +1240,16 @@ rule table_primary TableRef = values_ref / subquery_ref / paren_table / rows_fro
 rule alias_prefix Ident = n:col_id_or_string ws colon => $n
 
 rule base_ref BaseTable = (
-    (pa:alias_prefix ws)? (n:qualified_name st:(ws op_star)? / o:ONLY ws "(" ws n:qualified_name ws ")" / o:ONLY ws n:qualified_name) (ws a:alias_clause {len($pa) == 0})? (ws at:at_clause)? (ws s:tablesample_clause)?
+    (pa:alias_prefix ws)? (n:qualified_name st:(ws op_star)? / o:ONLY ws "(" ws n:qualified_name ws ")" / o:ONLY ws n:qualified_name) (ws a:alias_clause {$pa == nil})? (ws at:at_clause)? (ws s:tablesample_clause)?
 ) => BaseTable{Prefix: $pa, Name: $n, Only: len($o) > 0, Star: len($st) > 0, Alias: $a, At: $at, Sample: $s}
 rule at_clause AtClause = AT ws "(" ws u:(TIMESTAMP / VERSION) #atomic ws op_eq_gt ws v:expr ws ")" => AtClause{Unit: text($u), Value: $v}
 
 rule subquery_ref SubqueryRef = (
-    (pa:alias_prefix ws)? (l:LATERAL ws)? q:select_with_parens (ws a:alias_clause {len($pa) == 0})? (ws s:tablesample_clause)?
+    (pa:alias_prefix ws)? (l:LATERAL ws)? q:select_with_parens (ws a:alias_clause {$pa == nil})? (ws s:tablesample_clause)?
 ) => SubqueryRef{Prefix: $pa, Query: $q, Lateral: len($l) > 0, Alias: $a, Sample: $s}
 // a table in parentheses must be a join
 rule paren_table ParenTable = (
-    (pa:alias_prefix ws)? "(" ws &(table_primary ws join_start) t:table_ref ws ")" (ws a:alias_clause {len($pa) == 0})?
+    (pa:alias_prefix ws)? "(" ws &(table_primary ws join_start) t:table_ref ws ")" (ws a:alias_clause {$pa == nil})?
 ) => ParenTable{Prefix: $pa, Table: $t, Alias: $a}
 rule join_start = CROSS / NATURAL / POSITIONAL / ASOF / FULL / LEFT / RIGHT / SEMI / ANTI / INNER / JOIN
 rule values_ref ValuesRef = (
@@ -1257,10 +1257,10 @@ rule values_ref ValuesRef = (
 ) => ValuesRef{Prefix: $pa, Values: $v, Alias: $a, Sample: $s}
 
 rule func_ref FuncTable = (
-    (pa:alias_prefix ws)? (l:LATERAL ws)? f:func_expr_windowless (ws WITH ws o:ORDINALITY)? (ws a:func_alias_clause {len($pa) == 0})? (ws s:tablesample_clause)?
+    (pa:alias_prefix ws)? (l:LATERAL ws)? f:func_expr_windowless (ws WITH ws o:ORDINALITY)? (ws a:func_alias_clause {$pa == nil})? (ws s:tablesample_clause)?
 ) => FuncTable{Prefix: $pa, Func: $f, Lateral: len($l) > 0, Ordinality: len($o) > 0, Alias: $a, Sample: $s}
 rule rows_from_ref FuncTable = (
-    (pa:alias_prefix ws)? ROWS ws FROM ws "(" ws first:rowsfrom_item rest:(-ws -"," -ws i:rowsfrom_item)* ws ")" (ws WITH ws o:ORDINALITY)? (ws a:func_alias_clause {len($pa) == 0})? (ws s:tablesample_clause)?
+    (pa:alias_prefix ws)? ROWS ws FROM ws "(" ws first:rowsfrom_item rest:(-ws -"," -ws i:rowsfrom_item)* ws ")" (ws WITH ws o:ORDINALITY)? (ws a:func_alias_clause {$pa == nil})? (ws s:tablesample_clause)?
 ) => FuncTable{Prefix: $pa, RowsFrom: concat(list($first), map($rest, (r) => r.$i)), Ordinality: len($o) > 0, Alias: $a, Sample: $s}
 rule rowsfrom_item RowsFromItem = f:func_expr_windowless (ws AS ws "(" ws cd:table_func_element_list ws ")")? => RowsFromItem{Func: $f, ColDefs: concat($cd)}
 rule func_expr_windowless Expr = cast_expr / special_call / func_call_bare
@@ -1298,7 +1298,7 @@ rule insert_stmt InsertStmt = (
 rule insert_columns []Name = "(" ws l:insert_column_list ws ")" => $l
 rule insert_column_list []Name = first:set_target rest:(-ws -"," -ws c:set_target)* => concat(list($first), map($rest, (r) => r.$c))
 rule set_target Name = any_name
-rule overriding Match = (OVERRIDING ws (USER / SYSTEM) ws VALUE) #atomic
+rule overriding node[string] = (OVERRIDING ws (USER / SYSTEM) ws VALUE) #atomic
 
 rule on_conflict OnConflict = (
     ON ws CONFLICT
@@ -1368,10 +1368,10 @@ rule ma_error MergeAction = k:ERROR (ws m:expr)? => MergeAction{Kind: text($k), 
 // create_function.y, create_secret.y)
 // ===================================================================================================
 
-rule opt_temp Match = (TEMPORARY / TEMP / LOCAL ws (TEMPORARY / TEMP) / GLOBAL ws (TEMPORARY / TEMP) / UNLOGGED) #atomic
-rule if_not_exists Match = (IF ws NOT ws EXISTS) #atomic
-rule if_exists Match = (IF ws EXISTS) #atomic
-rule or_replace Match = (OR ws REPLACE) #atomic
+rule opt_temp node[string] = (TEMPORARY / TEMP / LOCAL ws (TEMPORARY / TEMP) / GLOBAL ws (TEMPORARY / TEMP) / UNLOGGED) #atomic
+rule if_not_exists node[string] = (IF ws NOT ws EXISTS) #atomic
+rule if_exists node[string] = (IF ws EXISTS) #atomic
+rule or_replace node[string] = (OR ws REPLACE) #atomic
 
 // ---- CREATE TABLE ----
 
@@ -1387,7 +1387,7 @@ rule partition_sorted_option PartitionSorted = k:(PARTITIONED / SORTED) #atomic 
 rule opt_with_options []Reloption = with_reloptions / with_oids
 rule with_reloptions []Reloption = WITH ws "(" ws l:reloption_list ws ")" => $l
 rule with_oids []Reloption = WITH ws OIDS / WITHOUT ws OIDS => list()
-rule on_commit_option Match = (ON ws COMMIT ws (DROP / DELETE ws ROWS / PRESERVE ws ROWS)) #atomic
+rule on_commit_option node[string] = (ON ws COMMIT ws (DROP / DELETE ws ROWS / PRESERVE ws ROWS)) #atomic
 
 rule reloption_list []Reloption = first:reloption_elem rest:(-ws -"," -ws e:reloption_elem)* => concat(list($first), map($rest, (r) => r.$e))
 rule reloption_elem Reloption = reloption_def / reloption_expr
@@ -1395,8 +1395,8 @@ rule reloption_def Reloption = a:col_label ws "." ws b:col_label (ws op_eq ws v:
 rule reloption_expr Reloption = n:reloption_name (ws op_eq ws v:expr)? => Reloption{Name: $n, Value: $v}
 rule reloption_name Name = c:col_label_or_string => Name{Parts: list($c)}
 // def_arg: func_type | reserved_keyword | qual_all_Op | NumericOnly | Sconst | NONE
-rule def_arg Match = (typename / &kw_reserved word / qual_all_op / numeric_only / sconst / NONE) #atomic
-rule numeric_only Match = ((op_plus / op_minus)? ws number) #atomic
+rule def_arg node[string] = (typename / &kw_reserved word / qual_all_op / numeric_only / sconst / NONE) #atomic
+rule numeric_only node[string] = ((op_plus / op_minus)? ws number) #atomic
 rule def_list []DefElem = first:def_elem rest:(-ws -"," -ws e:def_elem)* => concat(list($first), map($rest, (r) => r.$e))
 rule def_elem DefElem = n:col_label (ws op_eq ws v:def_arg)? => DefElem{Name: $n, Value: text($v)}
 rule definition []DefElem = "(" ws l:def_list ws ")" => $l
@@ -1413,7 +1413,7 @@ rule generated_constraint GeneratedColumn = gen_identity / gen_expr / gen_as
 rule gen_identity GeneratedColumn = GENERATED ws w:generated_when ws AS ws IDENTITY (ws "(" ws so:seq_opt_list ws ")")? => GeneratedColumn{When: text($w), Identity: true, SeqOptions: concat($so)}
 rule gen_expr GeneratedColumn = GENERATED ws w:generated_when ws AS ws "(" ws e:expr ws ")" (ws st:generated_storage)? => GeneratedColumn{When: text($w), Expr: $e, Storage: text($st)}
 rule gen_as GeneratedColumn = AS ws "(" ws e:expr ws ")" (ws st:generated_storage)? => GeneratedColumn{Expr: $e, Storage: text($st)}
-rule generated_when Match = (ALWAYS / BY ws DEFAULT) #atomic
+rule generated_when node[string] = (ALWAYS / BY ws DEFAULT) #atomic
 rule generated_storage = VIRTUAL / STORED
 
 rule constraint_name Ident = CONSTRAINT ws n:name => $n
@@ -1428,7 +1428,7 @@ rule cc_default ColumnConstraint = (cn:constraint_name ws)? k:DEFAULT ws e:b_exp
 rule cc_references ColumnConstraint = (cn:constraint_name ws)? k:REFERENCES ws r:reference => ColumnConstraint{Name: $cn, Kind: text($k), Reference: $r}
 rule cc_attr ColumnConstraint = k:constraint_attr => ColumnConstraint{Kind: text($k)}
 rule cc_collate ColumnConstraint = k:COLLATE ws c:any_name => ColumnConstraint{Kind: text($k), Collation: $c}
-rule constraint_attr Match = (DEFERRABLE / NOT ws DEFERRABLE / INITIALLY ws (DEFERRED / IMMEDIATE)) #atomic
+rule constraint_attr node[string] = (DEFERRABLE / NOT ws DEFERRABLE / INITIALLY ws (DEFERRED / IMMEDIATE)) #atomic
 
 rule reference Reference = (
     t:qualified_name (ws "(" ws cs:column_list ws ")")? (ws m:key_match)?
@@ -1436,14 +1436,14 @@ rule reference Reference = (
 ) => Reference{Table: $t, Columns: concat($cs), Match: $m, OnUpdate: $ku, OnDelete: $kd}
 rule column_list []Ident = col_id_list
 rule column_list_opt_comma []Ident = l:col_id_list (ws ",")? => $l
-rule key_match Match = (MATCH ws (FULL / PARTIAL / SIMPLE)) #atomic
-rule key_update Match = (ON ws UPDATE ws key_action) #atomic
-rule key_delete Match = (ON ws DELETE ws key_action) #atomic
+rule key_match node[string] = (MATCH ws (FULL / PARTIAL / SIMPLE)) #atomic
+rule key_update node[string] = (ON ws UPDATE ws key_action) #atomic
+rule key_delete node[string] = (ON ws DELETE ws key_action) #atomic
 rule key_action = NO ws ACTION / RESTRICT / CASCADE / SET ws NULL / SET ws DEFAULT
 
 rule table_constraint TableConstraint = tc_check / tc_unique / tc_unique_index / tc_primary / tc_primary_index / tc_foreign
-rule constraint_attrs []Match = as:(-ws a:constraint_attribute)* => map($as, (x) => x.$a)
-rule constraint_attribute Match = (NOT ws DEFERRABLE / DEFERRABLE / INITIALLY ws IMMEDIATE / INITIALLY ws DEFERRED / NOT ws VALID / NO ws INHERIT) #atomic
+rule constraint_attrs []node[string] = as:(-ws a:constraint_attribute)* => map($as, (x) => x.$a)
+rule constraint_attribute node[string] = (NOT ws DEFERRABLE / DEFERRABLE / INITIALLY ws IMMEDIATE / INITIALLY ws DEFERRED / NOT ws VALID / NO ws INHERIT) #atomic
 rule tc_check TableConstraint = (cn:constraint_name ws)? k:CHECK ws "(" ws e:expr ws ")" at:constraint_attrs => TableConstraint{Name: $cn, Kind: text($k), Expr: $e, Attributes: $at}
 rule tc_unique TableConstraint = (
     (cn:constraint_name ws)? k:UNIQUE ws "(" ws cs:column_list_opt_comma ws ")" (ws o:opt_definition)? at:constraint_attrs
@@ -1458,7 +1458,7 @@ rule tc_foreign TableConstraint = (
 ) => TableConstraint{Name: $cn, Kind: text($k), Columns: $cs, Reference: $r, Attributes: $at}
 
 rule table_like TableLike = LIKE ws t:qualified_name os:(-ws o:table_like_option)* => TableLike{Table: $t, Options: map($os, (x) => x.$o)}
-rule table_like_option Match = ((INCLUDING / EXCLUDING) ws (COMMENTS / CONSTRAINTS / DEFAULTS / IDENTITY / INDEXES / STATISTICS / STORAGE / ALL)) #atomic
+rule table_like_option node[string] = ((INCLUDING / EXCLUDING) ws (COMMENTS / CONSTRAINTS / DEFAULTS / IDENTITY / INDEXES / STATISTICS / STORAGE / ALL)) #atomic
 
 // ---- CREATE TABLE AS ----
 
@@ -1468,7 +1468,7 @@ rule create_table_as_stmt CreateTableAsStmt = (
     ps:(-ws p:partition_sorted_option)* (ws wo:opt_with_options)? (ws oc:on_commit_option)?
     ws AS ws src:(select_stmt / execute_stmt) (ws wd:with_data)?
 ) => CreateTableAsStmt{OrReplace: len($orr) > 0, Temp: text($t), IfNotExists: len($ine) > 0, Name: $n, Columns: concat($cs), PartitionSorted: map($ps, (x) => x.$p), With: concat($wo), OnCommit: text($oc), Source: $src, WithData: text($wd)}
-rule with_data Match = (WITH ws (NO ws)? DATA) #atomic
+rule with_data node[string] = (WITH ws (NO ws)? DATA) #atomic
 
 // ---- CREATE VIEW ----
 
@@ -1476,7 +1476,7 @@ rule create_view_stmt CreateViewStmt = (
     CREATE (ws orr:or_replace)? (ws t:opt_temp)? (ws r:RECURSIVE)? ws VIEW (ws ine:if_not_exists {len($orr) == 0})? ws n:qualified_name
     (ws "(" ws cs:column_list ws ")")? (ws WITH ws "(" ws o:reloption_list ws ")")? ws AS ws q:select_stmt (ws co:check_option)?
 ) => CreateViewStmt{OrReplace: len($orr) > 0, Temp: text($t), Recursive: len($r) > 0, IfNotExists: len($ine) > 0, Name: $n, Columns: concat($cs), Options: concat($o), Query: $q, CheckOption: text($co)}
-rule check_option Match = (WITH ws (CASCADED ws / LOCAL ws)? CHECK ws OPTION) #atomic
+rule check_option node[string] = (WITH ws (CASCADED ws / LOCAL ws)? CHECK ws OPTION) #atomic
 
 // ---- CREATE INDEX ----
 
@@ -1572,7 +1572,7 @@ rule ac_alter_column AlterCmd = (
     ac_col_default / ac_col_drop_default / ac_col_not_null / ac_col_statistics / ac_col_set_options / ac_col_reset_options
     / ac_col_storage / ac_col_add_identity / ac_col_drop_identity / ac_col_identity / ac_col_type / ac_col_generic
 )
-rule alter_column_head Match = (ALTER (ws COLUMN)?) #atomic
+rule alter_column_head node[string] = (ALTER (ws COLUMN)?) #atomic
 rule ac_col_default AlterCmd = k:alter_column_head ws c:col_id ws SET ws DEFAULT ws e:expr => AlterCmd{Kind: text($k), Name: $c, Expr: $e}
 rule ac_col_drop_default AlterCmd = k:alter_column_head ws c:col_id ws DROP ws DEFAULT => AlterCmd{Kind: text($k), Name: $c}
 rule ac_col_not_null AlterCmd = k:alter_column_head ws c:col_id ws (DROP / SET) ws NOT ws NULL => AlterCmd{Kind: text($k), Name: $c}
@@ -1593,7 +1593,7 @@ rule ac_col_type AlterCmd = (
     k:alter_column_head ws c:col_id ws (SET ws DATA ws / SET ws)? TYPE (ws t:typename)? (ws COLLATE ws co:any_name)? (ws USING ws u:expr)?
 ) => AlterCmd{Kind: text($k), Name: $c, Type: $t, Collate: $co, Using: $u}
 rule ac_col_generic AlterCmd = k:alter_column_head ws c:col_id ws g:alter_generic_options => AlterCmd{Kind: text($k), Name: $c, Generic: $g}
-rule signed_iconst Match = ((op_plus / op_minus)? ws iconst) #atomic
+rule signed_iconst node[string] = ((op_plus / op_minus)? ws iconst) #atomic
 
 rule ac_drop_column AlterCmd = k:(DROP (ws COLUMN)?) #atomic (ws ie:if_exists)? ws q:qualified_column (ws b:drop_behavior)? => AlterCmd{Kind: text($k), IfExists: len($ie) > 0, Column: $q, Behavior: text($b)}
 rule ac_alter_constraint AlterCmd = k:(ALTER ws CONSTRAINT) #atomic ws n:name constraint_attrs => AlterCmd{Kind: text($k), Name: $n}
@@ -1644,8 +1644,8 @@ rule drop_name DropStmt = DROP ws k:drop_type_name (ws ie:if_exists)? ws ns:name
 rule drop_on DropStmt = (
     DROP ws k:(POLICY / RULE / TRIGGER) #atomic (ws ie:if_exists)? ws n:name ws ON ws o:any_name (ws b:drop_behavior)?
 ) => DropStmt{Type: text($k), IfExists: len($ie) > 0, Names: list(Name{Parts: list($n)}), On: $o, Behavior: text($b)}
-rule drop_type_any_name Match = (TABLE / SEQUENCE / FUNCTION / MACRO (ws TABLE)? / VIEW / MATERIALIZED ws VIEW / INDEX / FOREIGN ws TABLE / COLLATION / CONVERSION / SCHEMA / STATISTICS / TEXT ws SEARCH ws (PARSER / DICTIONARY / TEMPLATE / CONFIGURATION) / TYPE) #atomic
-rule drop_type_name Match = (ACCESS ws METHOD / EVENT ws TRIGGER / EXTENSION / FOREIGN ws DATA ws WRAPPER / PUBLICATION / SERVER) #atomic
+rule drop_type_any_name node[string] = (TABLE / SEQUENCE / FUNCTION / MACRO (ws TABLE)? / VIEW / MATERIALIZED ws VIEW / INDEX / FOREIGN ws TABLE / COLLATION / CONVERSION / SCHEMA / STATISTICS / TEXT ws SEARCH ws (PARSER / DICTIONARY / TEMPLATE / CONFIGURATION) / TYPE) #atomic
+rule drop_type_name node[string] = (ACCESS ws METHOD / EVENT ws TRIGGER / EXTENSION / FOREIGN ws DATA ws WRAPPER / PUBLICATION / SERVER) #atomic
 rule any_name_list []Name = first:any_name rest:(-ws -"," -ws n:any_name)* => concat(list($first), map($rest, (r) => r.$n))
 rule name_as_name_list []Name = first:name rest:(-ws -"," -ws n:name)* => concat(list(Name{Parts: list($first)}), map($rest, (r) => Name{Parts: list(r.$n)}))
 rule drop_secret_stmt DropSecretStmt = (
@@ -1669,7 +1669,7 @@ rule copy_query CopyStmt = (
     (ws g:generic_opt_list / ls:(-ws o:copy_opt_item)*)
 ) => CopyStmt{Query: $q, Direction: text($d), Program: len($pr) > 0, File: $f, Std: text($s), Legacy: map($ls, (x) => x.$o), Options: concat($g)}
 rule copy_database CopyDatabaseStmt = COPY ws FROM ws DATABASE ws f:col_id ws TO ws t:col_id (ws fl:copy_database_flag)? => CopyDatabaseStmt{From: $f, To: $t, Flag: text($fl)}
-rule copy_database_flag Match = ("(" ws (SCHEMA / DATA) ws ")") #atomic
+rule copy_database_flag node[string] = ("(" ws (SCHEMA / DATA) ws ")") #atomic
 // Sconst | IDENT '.' ColId | IDENT | '(' a_expr ')' | param_expr
 rule copy_file Expr = sconst / copy_ident_file / paren_expr / param
 rule copy_ident_file ColumnRef = a:ident_only bs:(-ws -"." -ws c:col_id) #repeat(0, 1) => ColumnRef{Parts: concat(list($a), map($bs, (x) => x.$c))}
@@ -1721,7 +1721,7 @@ rule set_unscoped SetStmt = (
     SET ws
     (n:var_name ws (TO / op_eq) ws v:expr_list / n:var_name ws fc:(FROM ws CURRENT) #atomic / TIME ws ZONE ws z:zone_value / SCHEMA ws s:sconst)
 ) => SetStmt{Name: $n, Values: concat($v), TimeZone: text($z), FromCurrent: len($fc) > 0, Schema: $s}
-rule zone_value Match = (sconst / ident_only / INTERVAL ws sconst (ws interval_unit)? / INTERVAL ws "(" ws iconst ws ")" ws sconst / numeric_only / DEFAULT / LOCAL) #atomic
+rule zone_value node[string] = (sconst / ident_only / INTERVAL ws sconst (ws interval_unit)? / INTERVAL ws "(" ws iconst ws ")" ws sconst / numeric_only / DEFAULT / LOCAL) #atomic
 
 rule reset_stmt ResetStmt = reset_scoped / reset_unscoped
 rule reset_scoped ResetStmt = (
@@ -1777,8 +1777,8 @@ rule tx_end TransactionStmt = k:(ABORT / COMMIT / END / ROLLBACK) (ws w:(WORK / 
 
 rule vacuum_stmt VacuumStmt = vacuum_options / vacuum_plain
 rule vacuum_options VacuumStmt = VACUUM ws "(" ws os:vacuum_option_list ws ")" (ws t:qualified_name (ws "(" ws cs:name_list_opt_comma ws ")")?)? => VacuumStmt{Options: $os, Table: $t, Columns: concat($cs)}
-rule vacuum_option_list []Match = first:vacuum_option rest:(-ws -"," -ws o:vacuum_option)* => concat(list($first), map($rest, (r) => r.$o))
-rule vacuum_option Match = (ANALYZE / ANALYSE / VERBOSE / FREEZE / FULL / ident_only) #atomic
+rule vacuum_option_list []node[string] = first:vacuum_option rest:(-ws -"," -ws o:vacuum_option)* => concat(list($first), map($rest, (r) => r.$o))
+rule vacuum_option node[string] = (ANALYZE / ANALYSE / VERBOSE / FREEZE / FULL / ident_only) #atomic
 rule vacuum_plain VacuumStmt = (
     VACUUM (ws f:FULL)? (ws fr:FREEZE)? (ws v:VERBOSE)? (ws (a:analyze_stmt / t:qualified_name (ws "(" ws cs:name_list_opt_comma ws ")")?))?
 ) => VacuumStmt{Full: len($f) > 0, Freeze: len($fr) > 0, Verbose: len($v) > 0, Analyze: $a, Table: $t, Columns: concat($cs)}
@@ -1790,8 +1790,8 @@ rule comment_column CommentStmt = k:(COMMENT ws ON ws COLUMN) #atomic ws c:c_exp
 rule comment_object CommentStmt = (
     COMMENT ws ON ws k:(TABLE / SEQUENCE / FUNCTION / MACRO (ws TABLE)? / VIEW / DATABASE / INDEX / SCHEMA / TYPE) #atomic ws n:qualified_name ws IS ws v:comment_value
 ) => CommentStmt{Object: text($k), Name: $n, Comment: $v}
-rule comment_value StringLit = sconst / null_text
-rule null_text StringLit = NULL
+rule comment_value StringLit = t:(sconst / null_text) #atomic => StringLit{Text: text($t)}
+rule null_text StringLit = t:(NULL) #atomic => StringLit{Text: text($t)}
 rule update_extensions_stmt UpdateExtensionsStmt = (w:with_clause ws)? UPDATE ws EXTENSIONS (ws "(" ws ns:column_list ws ")")? => UpdateExtensionsStmt{With: $w, Names: concat($ns)}
 
 // ===================================================================================================

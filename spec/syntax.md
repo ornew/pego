@@ -165,14 +165,14 @@ rule level_call = (
     ident -ws
     -")"
 )
-rule top = "_" !ident_char
-rule bottom = "_|_"
-rule begin_input = "^^"
-rule begin_line = "^"
-rule end_input = "$$"
-rule end_line = "$" !(ident_start / digit)
-rule any = "."
-rule cut = "#cut" !ident_char !"("
+rule top = ("_" !ident_char) #atomic
+rule bottom = "_|_" #atomic
+rule begin_input = "^^" #atomic
+rule begin_line = "^" #atomic
+rule end_input = "$$" #atomic
+rule end_line = ("$" !(ident_start / digit)) #atomic
+rule any = "." #atomic
+rule cut = ("#cut" !ident_char !"(") #atomic
 rule predicate = action_block
 rule repeat_args = (
     "(" {ml := true} -ws (repeat_range / repeat_count) -ws
@@ -203,7 +203,7 @@ rule attr_named_tail = -ws "," -ws attr_named_args
 rule attr_slot = !(ident -ws "=") attr_value?
 rule attr_named = ident -ws "=" -ws attr_value
 rule attr_value = true / false / nil / signed_int / string / rule_expr
-rule signed_int = ("-" -ws)? digit+ #atomic
+rule signed_int = (("-" -ws)? digit+ #atomic) #atomic
 
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
@@ -246,7 +246,7 @@ rule ops_infix = (
 // Predicate Actions and Value Actions share statement syntax. The source AST
 // retains unsupported blocks and inline actions for later compilation checks.
 rule action = default_action / action_block / action_expr
-rule default_action = "..."
+rule default_action = "..." #atomic
 rule action_block = (
     "{" {ml := false} action_block_stmt* comments
     -"}"
@@ -308,12 +308,12 @@ rule init_field = (
     action_expr
 )
 rule int = digit+ #atomic
-rule true = "true" !ident_char
-rule false = "false" !ident_char
-rule nil = "nil" !ident_char
-rule capture_ref = "$" ident #atomic
-rule var_name = ident
-rule var_ref = ident !"("
+rule true = ("true" !ident_char) #atomic
+rule false = ("false" !ident_char) #atomic
+rule nil = ("nil" !ident_char) #atomic
+rule capture_ref = ("$" ident #atomic) #atomic
+rule var_name = ident #atomic
+rule var_ref = (ident !"(") #atomic
 
 // Trivia. Space is discarded before and after each retained comment, keeping
 // the resulting list homogeneous without introducing nil whitespace elements.
@@ -346,7 +346,7 @@ rule ident = (ident_start ident_char*) #atomic
 rule ident_start = [a-zA-Z_]
 rule ident_char = [a-zA-Z0-9_]
 rule digit = [0-9]
-rule string = "\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic
+rule string = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic) #atomic
 rule char_class = (
     "[" "^"? (char_class_rng / char_class_chr)+
     -"]"

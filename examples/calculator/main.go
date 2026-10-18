@@ -43,7 +43,7 @@ func eval(p *pego.Parser, src string) (float64, error) {
 func evalNode(n *pego.Node) (float64, error) {
 	switch n.Type() {
 	case "Number":
-		return strconv.ParseFloat(n.Text(), 64)
+		return strconv.ParseFloat(n.Field("Text").(string), 64)
 	case "Unary":
 		x, err := evalNode(n.Field("X").(*pego.Node))
 		if err != nil {
