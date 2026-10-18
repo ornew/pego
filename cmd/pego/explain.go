@@ -20,7 +20,10 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	// Parse once to find the errors, then again with a trace that keeps only the calls that
-	// recorded expectations at their positions.
+	// recorded expectations at their positions. A single traced parse would have to keep every
+	// failing call, since the error positions are known only at its end: a 2.3 MB JSON input with
+	// an error at the end has 2.3 million of them, while the untraced parse takes about a quarter
+	// of the command's time.
 	_, perr := p.Parse(src, opts...)
 	var errs []*pego.SyntaxError
 	var se *pego.SyntaxError
