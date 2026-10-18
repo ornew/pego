@@ -195,7 +195,7 @@ func TestSampleOperatorsRulePrefixBoundsAndDeterminism(t *testing.T) {
 	for range 40 {
 		x, err := a.Next()
 		y, other := b.Next()
-		if x != y || !errors.Is(err, other) || !reflect.DeepEqual(a.Coverage(), b.Coverage()) || a.Stats() != b.Stats() {
+		if x != y || fmt.Sprint(err) != fmt.Sprint(other) || !reflect.DeepEqual(a.Coverage(), b.Coverage()) || a.Stats() != b.Stats() {
 			t.Fatalf("same seed diverged: %q/%v versus %q/%v", x, err, y, other)
 		}
 		if err != nil {
@@ -373,7 +373,7 @@ func TestSampleOperatorsRuleNoneStopsDeterminism(t *testing.T) {
 	for range 30 {
 		x, err := a.Next()
 		y, other := b.Next()
-		if x != y || !errors.Is(err, other) || a.Stats() != b.Stats() || !reflect.DeepEqual(a.Coverage(), b.Coverage()) {
+		if x != y || fmt.Sprint(err) != fmt.Sprint(other) || a.Stats() != b.Stats() || !reflect.DeepEqual(a.Coverage(), b.Coverage()) {
 			t.Fatalf("same seed diverged: %q/%v versus %q/%v", x, err, y, other)
 		}
 		if err != nil {

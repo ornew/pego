@@ -134,6 +134,13 @@ rule number = [0-9]+ #atomic`)
 		c.MissedAlternatives[0].Expr != `"true"` || c.MissedAlternatives[1].Expr != `"false"` {
 		t.Errorf("got %s", out)
 	}
+	// The candidates are the accepted inputs, duplicates included, and the rejected ones.
+	if st := doc.Stats; st.Candidates < 10 || st.Candidates != 10+st.Duplicates+st.Rejected {
+		t.Errorf("stats: %+v", st)
+	}
+	if !strings.Contains(out, `"checkCuts"`) {
+		t.Errorf("no checkCuts in %s", out)
+	}
 }
 
 func TestSampleCoverageWithoutInputs(t *testing.T) {

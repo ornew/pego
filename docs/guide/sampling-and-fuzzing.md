@@ -64,9 +64,20 @@ $ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
   "inputs": [
     "null",
     "{\"\":-0e941\t\t,\"\"\n\r : []\t \n}"
-  ]
+  ],
+  "stats": {
+    "candidates": 2,
+    "rejected": 0,
+    "failed": 0,
+    "exhausted": 0,
+    "duplicates": 0,
+    "checkCuts": 2,
+    "predicateCuts": 0
+  }
 }
 ```
+
+`stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)).
 
 `-s` selects the start rule (`main` by default, or the one saved in a `.pegoc`). A grammar compiled with
 `pego compile -no-ast` cannot be sampled: generation needs the grammar AST.
@@ -74,7 +85,16 @@ $ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `pego sample` prints
 what it found and says so on standard error (`pego sample: found only 3 distinct inputs`). If it finds none at all, it
 fails: the grammar may accept nothing (`rule main = "a"* "a"`: the repetition takes every `a`), or every input may fail
-an action at run time.
+an action at run time. The error tells what became of the attempts:
+
+```text
+pego: sample: no input found that the parser accepts in 100 attempts: 0 candidates rejected by the parser, 0 searches out of budget, 100 searches without a way to finish (2900 ways cut by checks, 0 by predicates)
+```
+
+Here no search found a way to finish, and checks cut thousands of ways: the generator saw that the parser would not
+match what it was writing. Candidates rejected by the parser point at what the generator cannot check, such as
+actions; searches out of budget at inputs too long for `-budget`; many cuts by predicates at predicates that the
+search rarely satisfies.
 
 ## Controlling Size and Shape
 
@@ -273,7 +293,9 @@ missed value: choice 3: "false"
 ```
 
 `Coverage` returns the numbers and lists as a struct (`Rules`, `RulesCovered`, `MissedAlternatives`, ...), and
-`Stats` counts candidates, rejected candidates and failed searches. A `Generator` is not safe for concurrent use; create
+`Stats` counts candidates, rejected candidates, failed searches and those of them that ran out of budget,
+duplicates, and the ways the search abandoned because a check (a lookahead, the order of a choice, `$$`) or a predicate
+showed that the parser would not match them. A `Generator` is not safe for concurrent use; create
 one per goroutine, with different seeds.
 
 `Invalid` and `GenerateInvalid` return near-miss invalid inputs as `sample.Invalid` values:
@@ -453,9 +475,10 @@ fields, and lookaheads into Operators Rules or left-recursive rules. Those const
 and checking, which costs attempts; a grammar where most choices depend on them yields fewer inputs per second and
 lower coverage. In practice:
 
-- **No input found** (`sample.ErrNoInput`, or `pego sample` fails): check that some input parses at all. The grammar
-  may accept nothing, or every input may fail an action at run time. If the inputs it needs are long, raise the
-  budget (`WithBudget`) or, for long repetitions, `WithMaxRepeat`; if they are merely rare, raise `WithAttempts`.
+- **No input found** (`sample.ErrNoInput`, or `pego sample` fails): the error counts what became of the attempts.
+  Check that some input parses at all: the grammar may accept nothing, or every input may fail an action at run time
+  (candidates rejected by the parser). If the inputs it needs are long (searches out of budget), raise the budget
+  (`WithBudget`) or, for long repetitions, `WithMaxRepeat`; if they are merely rare, raise `WithAttempts`.
 - **Few distinct inputs**: the language may be small (`"a" / "b"` has two inputs). `Generate` stops after
   `WithAttempts` (100) inputs in a row that it already returned.
 - **Missed alternatives** that should be reachable: an earlier alternative of the choice may match their text (as with

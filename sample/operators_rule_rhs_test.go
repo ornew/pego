@@ -2,6 +2,7 @@ package sample_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strconv"
@@ -121,7 +122,7 @@ func TestSampleOperatorsRuleIncompleteRHS(t *testing.T) {
 					}
 					x, err := a.Generate(1)
 					y, other := b.Generate(1)
-					if !reflect.DeepEqual(x, y) || !errors.Is(err, other) || a.Stats() != b.Stats() || !reflect.DeepEqual(a.Coverage(), b.Coverage()) {
+					if !reflect.DeepEqual(x, y) || fmt.Sprint(err) != fmt.Sprint(other) || a.Stats() != b.Stats() || !reflect.DeepEqual(a.Coverage(), b.Coverage()) {
 						t.Fatalf("seed diverged: %q/%v %q/%v", x, err, y, other)
 					}
 					if c.valid {

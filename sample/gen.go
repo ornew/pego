@@ -100,6 +100,10 @@ type gen struct {
 	m         matcher
 	matchWork int // steps of the matcher in the current attempt
 
+	// checkCuts and predicateCuts count the ways that checks and predicates ruled out, over all
+	// attempts.
+	checkCuts, predicateCuts int
+
 	scratch     []byte
 	result      string
 	resultTrail []int
@@ -257,8 +261,15 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	g.matchWork += g.m.steps
 	switch st {
 	case matched:
-		return c.neg && (!c.progress || end > c.pos), false
+		violated = c.neg && (!c.progress || end > c.pos)
+		if violated {
+			g.checkCuts++
+		}
+		return violated, false
 	case failed:
+		if !c.neg {
+			g.checkCuts++
+		}
 		return !c.neg, false
 	case more:
 		return false, true
@@ -286,6 +297,7 @@ func (g *gen) addCheck(e grammar.Expr, neg, progress bool) bool {
 	if neg && !progress && g.in.alwaysMatches(e) {
 		// It matches whatever follows: the matcher would only find out once the text after it is
 		// written.
+		g.checkCuts++
 		return false
 	}
 	c := &check{pos: len(g.out), e: e, neg: neg, progress: progress}
@@ -401,6 +413,7 @@ func (g *gen) gen(e grammar.Expr, k cont) bool {
 	case *grammar.Predicate:
 		ok, def := g.predicate(e)
 		if !ok {
+			g.predicateCuts++
 			return false
 		}
 		if def == nil {

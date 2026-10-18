@@ -49,6 +49,7 @@ func (g *Generator) GenerateInvalid(n int) ([]Invalid, error) {
 		}
 		if seen[inv.Input] {
 			dups++
+			g.stats.Duplicates++
 			continue
 		}
 		seen[inv.Input] = true

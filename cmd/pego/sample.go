@@ -22,6 +22,7 @@ type sampleOutput struct {
 	Inputs   []string         `json:"inputs,omitempty"`
 	Invalid  []invalidOutput  `json:"invalid,omitempty"`
 	Coverage *sample.Coverage `json:"coverage,omitempty"`
+	Stats    statsOutput      `json:"stats"`
 }
 
 type invalidOutput struct {
@@ -29,6 +30,17 @@ type invalidOutput struct {
 	Base     string `json:"base"`
 	Mutation string `json:"mutation"`
 	Error    string `json:"error"`
+}
+
+// statsOutput is sample.Stats in the JSON document.
+type statsOutput struct {
+	Candidates    int `json:"candidates"`
+	Rejected      int `json:"rejected"`
+	Failed        int `json:"failed"`
+	Exhausted     int `json:"exhausted"`
+	Duplicates    int `json:"duplicates"`
+	CheckCuts     int `json:"checkCuts"`
+	PredicateCuts int `json:"predicateCuts"`
 }
 
 func sampleCmd(args []string, stdout io.Writer) error {
@@ -99,6 +111,8 @@ func sampleCmd(args []string, stdout io.Writer) error {
 		out.Coverage = &c
 	}
 	if *format == "json" {
+		st := g.Stats()
+		out.Stats = statsOutput{st.Candidates, st.Rejected, st.Failed, st.Exhausted, st.Duplicates, st.CheckCuts, st.PredicateCuts}
 		if genErr != nil && !*coverage {
 			return genErr
 		}

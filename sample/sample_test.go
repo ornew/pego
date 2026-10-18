@@ -685,3 +685,51 @@ func TestSeed(t *testing.T) {
 		t.Errorf("expected a failure, got %+v", f)
 	}
 }
+
+// TestFailureStats checks that the stats and the error tell why no input was found.
+func TestFailureStats(t *testing.T) {
+	for _, c := range []struct {
+		name, src string
+		opts      []sample.Option
+		want      func(sample.Stats) bool
+		msg       string
+	}{
+		{"budget", `rule main = "a" #repeat(25000) $$`, []sample.Option{sample.WithAttempts(2)},
+			func(s sample.Stats) bool { return s.Failed == 2 && s.Exhausted == 2 && s.Candidates == 0 },
+			"in 2 attempts: 0 candidates rejected by the parser, 2 searches out of budget, 0 searches without a way to finish"},
+		{"predicate", `rule main = {d := 0} e $$
+rule e = {d >= 15} "x" / "(" {d := d + 1} e ")"`, []sample.Option{sample.WithAttempts(3)},
+			func(s sample.Stats) bool { return s.Failed == 3 && s.Exhausted < 3 && s.PredicateCuts > 0 },
+			"by predicates)"},
+		{"check", `rule main = !"a" [a] $$`, []sample.Option{sample.WithAttempts(1)},
+			func(s sample.Stats) bool {
+				return s.Failed == 1 && s.Exhausted == 0 && s.CheckCuts > 0 && s.PredicateCuts == 0
+			},
+			"in 1 attempt: 0 candidates rejected by the parser, 0 searches out of budget, 1 search without a way to finish"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			g, err := sample.New(compile(t, c.src), c.opts...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = g.Generate(1)
+			if !errors.Is(err, sample.ErrNoInput) || !strings.Contains(err.Error(), c.msg) {
+				t.Errorf("error %v, want one with %q", err, c.msg)
+			}
+			if s := g.Stats(); !c.want(s) {
+				t.Errorf("stats %+v", s)
+			}
+		})
+	}
+	// Duplicates: the grammar accepts one input.
+	g, err := sample.New(compile(t, `rule main = "a" $$`), sample.WithAttempts(4))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ins, err := g.Generate(3); err != nil || len(ins) != 1 {
+		t.Fatalf("got %q, %v", ins, err)
+	}
+	if s := g.Stats(); s.Duplicates != 4 || s.Failed != 0 {
+		t.Errorf("stats %+v", s)
+	}
+}

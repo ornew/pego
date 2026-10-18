@@ -97,7 +97,8 @@ func WithAttempts(n int) Option { return func(c *config) { c.attempts = max(n, 1
 // and operators that no accepted input has exercised yet.
 func WithCoverage() Option { return func(c *config) { c.coverage = true } }
 
-// ErrNoInput is returned when the generator finds no input within its attempts.
+// ErrNoInput is returned when the generator finds no input within its attempts. The error returned
+// wraps it with what became of the attempts (see Stats); test for it with errors.Is.
 var ErrNoInput = errors.New("sample: no input found that the parser accepts")
 
 // ErrNoInvalid is returned when the generator finds valid inputs but no mutation of them that the
@@ -117,7 +118,18 @@ type Generator struct {
 type Stats struct {
 	Candidates int // candidates passed to the parser
 	Rejected   int // candidates that the parser rejected
-	Failed     int // searches that ended without a candidate (budget exhausted or no way found)
+	Failed     int // searches that ended without a candidate
+	// Exhausted counts the failed searches that used up their budget (WithBudget). The others gave up
+	// on every way to finish the input that they tried: the grammar may accept nothing within the
+	// bounds, or the checks below may rule out the ways the search takes.
+	Exhausted int
+	// Duplicates counts the inputs that Generate and GenerateInvalid found again and skipped.
+	Duplicates int
+	// CheckCuts counts the ways that the search abandoned because a lookahead, the order of a choice
+	// or $$ showed that the parser would not match them; PredicateCuts those abandoned because a
+	// predicate would certainly fail. Many cuts in a failing search point at the checks that block it.
+	CheckCuts     int
+	PredicateCuts int
 }
 
 // New returns a generator of inputs for p, starting at p's start rule. The parser must have its grammar
@@ -153,10 +165,14 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 // Next returns an input that the parser accepts. Inputs may repeat. It returns ErrNoInput if no
 // candidate was accepted within the attempts.
 func (g *Generator) Next() (string, error) {
+	before := g.Stats()
 	for range g.cfg.attempts {
 		s, trail, ok := g.g.attempt()
 		if !ok {
 			g.stats.Failed++
+			if g.g.exhausted() {
+				g.stats.Exhausted++
+			}
 			g.g.failed()
 			continue
 		}
@@ -169,7 +185,24 @@ func (g *Generator) Next() (string, error) {
 		g.g.accepted(trail)
 		return s, nil
 	}
-	return "", ErrNoInput
+	return "", noInput(g.cfg.attempts, before, g.Stats())
+}
+
+// noInput returns ErrNoInput with what became of the attempts between the stats before and after.
+func noInput(attempts int, before, after Stats) error {
+	failed, exhausted := after.Failed-before.Failed, after.Exhausted-before.Exhausted
+	return fmt.Errorf("%w in %s: %s rejected by the parser, %s out of budget, %s without a way to finish (%s cut by checks, %d by predicates)",
+		ErrNoInput, count(attempts, "attempt", "attempts"),
+		count(after.Rejected-before.Rejected, "candidate", "candidates"),
+		count(exhausted, "search", "searches"), count(failed-exhausted, "search", "searches"),
+		count(after.CheckCuts-before.CheckCuts, "way", "ways"), after.PredicateCuts-before.PredicateCuts)
+}
+
+func count(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
 }
 
 // Generate returns up to n distinct inputs that the parser accepts. It returns fewer if it cannot find
@@ -178,13 +211,15 @@ func (g *Generator) Next() (string, error) {
 func (g *Generator) Generate(n int) ([]string, error) {
 	var out []string
 	seen := map[string]bool{}
+	var err error
 	for dups := 0; len(out) < n && dups < g.cfg.attempts; {
-		s, err := g.Next()
-		if err != nil {
+		var s string
+		if s, err = g.Next(); err != nil {
 			break
 		}
 		if seen[s] {
 			dups++
+			g.stats.Duplicates++
 			continue
 		}
 		seen[s] = true
@@ -192,13 +227,17 @@ func (g *Generator) Generate(n int) ([]string, error) {
 		out = append(out, s)
 	}
 	if len(out) == 0 && n > 0 {
-		return nil, ErrNoInput
+		return nil, err
 	}
 	return out, nil
 }
 
 // Stats returns the counts of the work done so far.
-func (g *Generator) Stats() Stats { return g.stats }
+func (g *Generator) Stats() Stats {
+	s := g.stats
+	s.CheckCuts, s.PredicateCuts = g.g.checkCuts, g.g.predicateCuts
+	return s
+}
 
 // Generate returns up to n distinct inputs that p accepts (see Generator.Generate).
 func Generate(p *pego.Parser, n int, opts ...Option) ([]string, error) {
