@@ -273,6 +273,18 @@ and every guide. Saved bytecode and schema formats need new versions.
   number of rounds become unknown, as the value of a predicate variable is.
 - **Valueless bodies produce the unit node.** `rule stub = _`, and an
   action-free rule whose sequence has no valued element, produce `node[()]`.
+- **Output formats follow the value.** In JSON a node is
+  `{"start": S, "end": E, "value": V}`, where `V` is a string, an array for a
+  tuple or a list, `null` for an optional that did not match, or the value of
+  an action: an object for a struct, a number or a boolean. A tuple and a list
+  are told apart by the schema. The S-expression output writes the value's
+  shape without positions: `( )` for a tuple, `[ ]` for a list, quoted
+  strings and `nil`. Each captured subtree appears once. Rule names and
+  capture names are written only when the grammar is compiled with source
+  information, as `"rule"` and `"captures"` members in JSON and as `@rule`
+  and a `name:` label before the element in S-expressions, for example
+  `(k:["a"]@key ":" v:["1"]@num)@main`. `pego parse` does not request source
+  information unless asked to.
 - **Typos in the source.** `a?` has type `*A`, not `[]A`, and the tuple example
   is `(T, U) != (U, T)`.
 
