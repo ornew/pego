@@ -378,7 +378,7 @@ Loading rejects recovery regions that enclose a streaming commitment, including 
 Element-local recovery remains supported with or without the AST; the file format and instruction set are unchanged.
 
 Loading checks the magic number, the versions, a CRC-32 checksum, the structure (every index is in range, every jump
-goes forward, no trailing bytes) and the nesting depth. It does **not** type-check the grammar again, and it does not
+goes forward except the one that closes a repetition and jumps back, no trailing bytes) and the nesting depth. It does **not** type-check the grammar again, and it does not
 verify that the bytecode uses the VM's stacks correctly. A file made to contain type errors can make actions fail while
 parsing, and made-up bytecode is not guaranteed to terminate.
 

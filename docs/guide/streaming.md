@@ -258,8 +258,10 @@ next chunk shows it is not followed by another letter, and `ef` until the end of
 | Lookbehind | After an element, the input before it is dropped except for the one character before it, so `^` (beginning of line) still works at the start of the next element. Nothing in the language looks further back. |
 | Concurrency | A `Parser` can run many `ParseStream` calls at once. Each call has its own state. |
 
-The compile errors are, in order: `#stream must be attached to a repetition (*, +, or #repeat(...))`, `#stream is only allowed
-at the top level of a rule body`, `a rule body can have only one #stream` and `#stream takes no arguments`.
+The compile errors are `#stream is only allowed at the top level of a rule body`, `a rule body can have only one
+#stream`, `#recover cannot wrap a #stream repetition; recover inside each element instead`, `#stream must be attached to
+a repetition (*, +, or #repeat(...))` and `#stream takes no arguments` (which only a grammar AST or JSON can produce). A
+grammar can report more than one, in no specified order.
 
 ## Positions and Text
 
