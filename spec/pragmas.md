@@ -46,6 +46,39 @@ listing the diagnostics. If parsing later fails, only the final syntax error
 is returned. A no-value expression, including lookahead or a predicate,
 remains no-value after recovery, though its error is recorded.
 
+Recovery proceeds in these steps.
+
+1. The annotated expression is tried. If it matches, nothing else happens.
+2. If it fails, the syntax error that would have ended the parse is recorded.
+3. The parser returns to the position where the annotated expression started and
+   matches the skip expression there. The skip expression is matched from that
+   starting position, not from the position of the failure, so the error position
+   is usually inside the skipped range.
+4. If the skip expression matches and consumes input, the value of the annotated
+   expression is an `Error` node and parsing continues after the skipped input.
+   If it fails or consumes nothing, there is no recovery and the annotated
+   expression fails as usual. A `#recover` in a repetition therefore cannot loop on
+   empty skips.
+
+The `Error` node has the type `Error`, the skipped input as its range and text, and
+the string field `message`, which holds the recorded error with its position
+(`1:5: expected a name`).
+
+Recovery applies to every failure inside the annotated expression, however deeply
+nested; the nearest enclosing `#recover` handles it. Attributes and pragmas apply
+from the innermost outward in the order written, so `@error(...) #recover(...)`
+labels the expression before recovery and the recorded error carries the label,
+whereas in `#recover(...) @error(...)` the label wraps an expression that almost
+never fails.
+
+A recovery on a path that the parser then abandons is discarded with the path; a
+memoized result carries its recovered errors, so a reused result still reports
+them. If the parse fails in the end, only the final syntax error is returned and the
+errors recovered earlier are not. When recovery is impossible, the ordinary syntax
+error is returned, and its expected items include the first items of the skip
+expression. The Go and command-line results are defined in
+[Parsing](parsing.md#syntax-errors).
+
 ## `#stream`
 
 `#stream` annotates a repetition at the top level of the start rule used by a
@@ -68,7 +101,8 @@ Therefore a rule body contains at most one `#stream`, on the complete body, a
 top-level sequence element, or the expression captured by such an element.
 `#recover` cannot wrap the same repetition in either order. In an ordinary
 parse, `#stream` has no effect. A stream parse with no `#stream` on its start
-rule is an error.
+rule is an error. The entry points, placement rules, errors and options of stream
+parsing are defined in [Streaming](streaming.md).
 
 A stream parse reads only as much input as needed and may discard each handed
 element with preceding input and memoization data. Decoding a complete

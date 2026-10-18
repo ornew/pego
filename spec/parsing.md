@@ -110,67 +110,63 @@ rule `rule main = -"a"` or `rule main = "a"?` on empty input succeeds with `nil`
 
 ### Nodes
 
-A **node** has the following properties.
+The value of a rule that builds a tree is a node. The properties of a node, the
+Go type `pego.Node`, traversal, and the text and JSON renderings are defined in
+[Nodes and Values](nodes.md).
 
-| Property | Meaning |
+## Prefix Parsing
+
+`Parser.ParsePrefix(name, input, opts...)` selects the rule `name` for one call
+and returns its successful endpoint without requiring the rule to consume the
+whole input. It does not change the start rule that the parser was configured
+with. The rule MUST be defined; an undefined name is an error. The input is
+decoded as for a whole-input parse.
+
+The result is a `PrefixResult`:
+
+| Field | Meaning |
 |:--|:--|
-| Type | The type name: a [reserved node type](types.md#reserved-node-types) (`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) for the nodes of the concrete syntax tree, or the name of a type defined in the grammar |
-| Rule | The name of the rule that produced the node, if it is a node that a rule without an action created in its own body (see [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree)); otherwise empty |
-| Range | `[start, end)` in the position unit |
-| Text | For a terminal, the matched text |
-| Children | For a `Seq`, `List` or `Operator`, the child nodes; a child is `nil` where an optional expression did not match |
-| Fields | The captures of a `Seq` or of a node that a rule produced, and the fields of a struct node. Each value is a node, an integer, a string, a boolean or `nil` |
+| `Node` | The value of the selected rule, as for a whole-input parse (a node or `nil`) |
+| `Consumed` | The successful cursor in the parser's position unit (code points by default) |
+| `ConsumedBytes` | The endpoint in bytes of the original UTF-8 input |
 
-The Go type `pego.Node` and its JSON form are described in
-[The Node type](../docs/guide/runtime.md#the-node-type).
+Each malformed UTF-8 byte counts as one replacement code point in `Consumed`,
+while `ConsumedBytes` still refers to the original bytes. Positions inside `Node`
+are local to `input`; a caller that passes a slice of a larger source adds the
+slice's starting byte offset to `ConsumedBytes` to find the endpoint in the
+source. A zero-width success returns zero consumption, and a nil `Node` does not
+imply failure.
+
+Outcomes:
+
+| Outcome | Result |
+|:--|:--|
+| The rule matches | The `PrefixResult` and a nil error |
+| The rule matches after `#recover` | The `PrefixResult` and `SyntaxErrors`, as a whole-input parse returns a node with recovered errors |
+| Syntax failure, including a failure after an earlier recovery, or a fatal error | The zero `PrefixResult` and the error. No speculative endpoint is exposed |
+
+A zero result alone cannot distinguish failure from a successful zero-width rule
+that returns nil; the error does.
+
+`ParsePrefix` accepts position units, backends, recognition, tracing, nesting
+limits, context and work limits. Stream diagnostic options are rejected, as for
+`Parse`. A grammar that contains `#missing` is rejected, even if insertion is not
+enabled; a positive `WithMissingTokens` limit is rejected for every grammar. Zero
+keeps strict prefix matching. Options resolve in order. An explicit `$$` sees the
+actual end of the entire supplied string, so a fragment is confined by slicing
+both its beginning and its end. Cuts and left recursion keep their ordinary
+meaning. Prefix parsing shares no memo entries with a `Document`, does not
+shift positions to absolute coordinates and does not map escaped or noncontiguous
+fragments. It can run concurrently on one parser. Compiled grammars support it
+through the bytecode backends; recognition keeps the recognition requirements of
+the compiled grammar.
 
 ## Incremental Documents
 
-A `Document` owns mutable text and parser reuse state and is not safe for concurrent use. Its position unit is fixed at construction; `Document.Unit` reports that unit. `Document.Version` returns a comparable opaque token identifying the current text revision. A new document starts at sequence 1. Parsing does not advance the version, and the token does not retain the document, text, or parse caches.
-
-`Document.EditBatch(base, edits...)` applies replacements simultaneously to the text identified by `base`. Every range uses coordinates in the original base text and the document's position unit. Starts must be strictly increasing and ranges must not overlap; a repeated start, including multiple insertions at one position, is rejected. A token from another document or an older revision is rejected even for an empty batch. An empty valid batch changes neither text nor version. A successful nonempty batch advances the version once and does not parse. A successful `Document.Edit` also advances it once, including a no-op edit. Sequence overflow is rejected before mutation.
-
-The implementation validates and prepares a complete batch before publishing it. A rejected batch leaves text, version, statistics, reusable state, and previously returned Nodes unchanged. In `Bytes` mode, endpoints are checked against character boundaries in the original base text; applying replacements may create or remove UTF-8 sequences at edit seams, which are decoded by the next parse. In `CodePoints` mode, invalid UTF-8 in replacement text is normalized one replacement character per invalid byte. After a successful batch, the next parse must match a fresh parse of the resulting text. Batch commit itself does not parse and conservatively clears reusable parse caches; it does not promise incremental reuse.
-
-`Document.Parse` publishes recovered parser-produced syntax diagnostics as caller-owned values: it copies each `SyntaxError` and its `Expected` and `Messages` slices, so caller mutation cannot change memoized errors or a later parse. Ordinary parse failures are newly constructed; caller-supplied errors such as `Context.Err` retain their identity. This does not detach the mutable `Node` graph, which may share nodes with the `Document`. Parsing and diagnostic publication use the same invocation controls. If publication is interrupted, no parse result is returned and reusable execution state is cleared for retry.
-
-### Document Snapshots
-
-`Document.Snapshot(opts...)` captures the current text revision, parse outcome,
-and value graph in one immutable `Snapshot`. It resolves invocation overrides
-once over construction defaults; context, work limits, maximum depth, and tracing
-may vary per call, while the Document's unit, backend, start rule, and
-non-recognition mode do not. Parsing and freezing use the same cancellation
-context and cumulative input-work and execution-step counters. Copying the text,
-freezing nodes and fields, and copying diagnostics are part of that invocation.
-
-A normally returned parse outcome produces a Snapshot even when the outcome is
-an ordinary syntax error or recovered error. For an ordinary syntax failure the
-Snapshot retains the current text and version, has a zero root as `Document.Parse`
-does, and exposes a defensive `SyntaxError`. A recovered outcome retains its
-root and `SyntaxErrors`. Cancellation or exhausted work limits during parsing or
-freezing return a nil Snapshot and a fatal interruption error; grammar choice,
-predicates, and recovery cannot absorb the interruption. No partial graph,
-text, or diagnostics are published. If execution began, reusable execution
-state is cleared before retry; fully completed input tables may remain, but
-partial tables are discarded. Pre-entry errors preserve existing caches and
-statistics. Cleanup is uncharged. A trace callback panic propagates unchanged
-after cleanup. Snapshot accessors and `Materialize` run after capture and do not
-inherit its context or work limits.
-
-Snapshot freezing preserves shared node identities, cycles, nil child slots, and
-nil versus allocated-empty collections. It accepts field values with dynamic
-types `nil`, `int`, `string`, `bool`, and `*Node`, including a typed nil
-`*Node`. Any other dynamic field type returns no Snapshot and a
-`SnapshotCaptureError` containing the deterministic path and `reflect.Type`,
-without retaining the unsupported value. The error also carries a defensive
-copy of the ordinary parse error, if one existed. Error copies preserve
-`errors.Is` and `errors.As` behavior. A present nil node field is represented by
-a zero `SnapshotNode`; `Field`'s boolean distinguishes it from an absent field,
-and an untyped nil remains untyped nil. Snapshot handles are immutable and safe
-for concurrent reads while the Document has one editing/parsing owner.
-`Materialize` returns an independent mutable `Node` graph and preserves shared
-identities and cycles.
+A `Document` owns mutable text and the reuse state of earlier parses. A parse of
+a document returns what a parse of the current text from scratch returns. The
+document API, versions, snapshots, interruption and change notifications are
+defined in [Incremental Documents](documents.md).
 
 ## Syntax Errors
 
@@ -197,6 +193,19 @@ anchors (`beginning of input`, `end of input`, `beginning of line`,
 - A [`@error`](attributes.md#error) attribute replaces the expected items inside
   an expression with a message. If a message applies at the farthest position,
   the message is reported instead of the expected items.
+
+### Errors in Go and on the command line
+
+In the Go API, a failed parse returns a `*pego.SyntaxError` with the fields `Pos`
+(the position in the position unit), `Line`, `Col`, `Expected` (the sorted expected
+items) and `Messages` (the messages of `@error` attributes), and the methods
+`Error()`, which returns the text above with its position, and `Message()`, which
+returns it without the position. A parse that recovered errors returns the node and
+an error of type `pego.SyntaxErrors`, a list of `*SyntaxError`; `errors.As` tells it
+apart from a fatal `*SyntaxError`, and the node is valid. The command `pego parse`
+prints the tree and then each error on its own line, and exits with status 1 in
+both cases. Run-time errors of actions, nesting-limit errors and interruptions are
+other error values, not `SyntaxError`.
 
 ## Memoization
 
@@ -268,230 +277,16 @@ Fully completed input tables may be retained, but incomplete tables are never
 published and are discarded. A retry with fresh invocation controls must produce
 the same result as parsing the current text from scratch.
 
-The API and callback details are described in the
-[Go runtime guide](../docs/guide/runtime.md), [incremental parsing guide](../docs/guide/incremental.md),
-and [streaming guide](../docs/guide/streaming.md). The design record specifies
-counter units, fatal cleanup and portability limits.
-
-## Generated Go Batch Tracing
-
-Standalone generated Go Node parsers may be generated with tracing enabled by
-`pego.WithGeneratedObservability()` or `pego gen -observability`. This mode
-supports batch `Parse` and `ParseRule`; it also supports `Recognize` when that
-entry point is generated. With generated types, it additionally supports
-`ParseAST` and `ParseRuleAST`, for both direct typed execution and Node-conversion
-fallback. Typed events describe rule calls made by the selected route;
-conversion itself is not a rule event, so Node and typed event streams may
-differ. Typed methods use the same event fields, filter, depth, interruption
-and callback-panic behavior as Node batch methods. Generated Go Node and typed
-batch parsers also provide profiling through `WithProfile`; TypeScript batch
-parsers provide profiling through `Profile` in per-call options.
-
-The generated package defines its own `TraceEvent` and trace options. Events
-observe actual generated execution, not an event-for-event replay of engine
-parser calls. `TraceEnter` begins a rule call before its memo lookup or body
-dispatch; `TraceExit` reports the call's result and end position. The start
-rule has depth 1. An exit describes the rule call only: whole-input acceptance
-can still fail because input remains after the rule returns. `TraceSkipped` is
-unpaired and is emitted only for identifiable first-character dispatch skips.
-A call aborted by a runtime error or callback panic may have no exit event.
-
-Event positions use the selected position unit. `Memo=true` means the call
-reused an existing memo result without evaluating its body, so `Evals` is zero.
-Calls that evaluate left-recursion growth attempts have `Memo=false`; their
-`Evals` counts their own body attempts, including growth attempts. Recursive
-calls that reuse the growing seed have `Memo=true` and `Evals=0`. Generated
-batch parses report `ExaminedKnown` as false; consumers MUST NOT treat
-`Examined` as a complete examined-input range when it is false. Generated Go
-Document parses report a known examined frontier, described below.
-
-Trace callbacks receive copied scalar and string event fields synchronously.
-Events do not expose parser state or input text. Callback panics propagate with
-their original value after cleanup. `WithTraceFilter` limits callback delivery
-to named rules and their descendants; an unknown name matches no rule, and an
-empty filter selects every rule. `WithTraceMaxDepth` limits delivered events;
-the start rule counts as depth 1, and zero or a negative value means no limit.
-Filtering and depth limits do not change parsing. Trace state is local to one
-invocation.
-
-### Generated Go Batch Profiling
-
-Generated Go Node and typed batch packages generated with
-`WithGeneratedObservability()` MUST expose `Profile`, `ProfileSnapshot`,
-`RuleProfile`, `ProfileLocation`, `SkipReasonCount` and `WithProfile`. The zero
-value of `Profile` MUST be ready to use; passing a nil profile disables
-collection. A profile sink is not safe for concurrent use. Reentrant parses on
-one goroutine MUST keep separate per-invocation accounting. `Snapshot()` MUST
-return an owned copy with rules sorted by name and each rule's skip reasons
-sorted by reason; callers may marshal the snapshot for deterministic JSON.
-
-`Parses` counts root invocations and `Entered` counts rule calls that began,
-including calls interrupted before exit. `Calls`, `Evals`, `MemoHits`, match and
-failure counts, consumed positions, and timing include only completed calls.
-`Evals` counts body attempts, including left-recursive growth. `Repeats` and
-`MaxEvals` count completed non-memo calls with `Evals > 0` at the same
-`(rule, position, level)` within an invocation; tied maximum locations retain
-the first observed location. `Skipped` and per-rule skip reasons count
-identifiable generated dispatch skips independently of trace filters; skips
-are not entered calls. Position counts use each invocation's configured unit
-and MUST NOT be treated as normalized when a sink accumulates multiple units.
-
-`Examined` and `Wasted` are unavailable for generated batch parses, so a rule
-with a completed call outside a Document parse MUST report `ExaminedKnown` and
-`WastedKnown` as false, and a rule with no completed call MUST also report them
-as false; implementations MUST NOT infer these values from matched ranges.
-Generated Go Document profiling defines them below. Root `Time` sums completed root rule calls
-and excludes input setup, whole-input end checks and typed-result conversion.
-Per-rule `Time` counts recursive calls of the same rule once within each
-invocation, while `SelfTime` excludes child time. Both include instrumentation
-and synchronous enter/exit callback time. A completed-exit update is published
-after the exit callback returns or panics; a snapshot taken inside that
-callback may omit its exit until it unwinds. Callback panics MUST propagate
-unchanged after cleanup. A panic in an exit callback MUST still count that
-completed call; a panic in an enter callback does not synthesize an exit. The measured
-opt-in profile path is documented in design 043; these measurements do not
-isolate the cost of individual counters or clock reads.
-
-## Generated Go Document Tracing and Profiling
-
-When generated Go observability and Document support are both enabled,
-`NewDocument` MUST accept `WithTrace` and `WithProfile` as retained defaults.
-Construction MUST NOT emit parser events or profile counts. `Document.Parse`
-and, with generated types, `Document.ParseAST` MUST accept invocation-local
-overrides; an override applies only to that call and MUST NOT replace the
-constructor default for later calls. `Edit` does not parse and MUST NOT emit
-rule events.
-
-Events MUST report actual rule calls in the current invocation, including Node,
-direct typed and Node-conversion fallback calls. Conversion itself MUST NOT
-emit a rule event. A memoized whole-call reuse MUST report that call with
-`Memo=true` and `Evals=0`; nested events from earlier parses MUST NOT be
-replayed. Generated Documents do not resume repetition bodies and MUST NOT
-report a `ReusedElements` count.
-
-Every exit event of a Document parse MUST report `ExaminedKnown=true`.
-`Examined` is then the exclusive end of the input the Document treats the call
-as having examined: the frontier against which a later edit decides whether
-the call's memo result is reused. A call that records a memo result MUST report
-the frontier stored with that result. A memo hit reports the stored frontier of
-the result it reuses, but at least one position past its start. The frontier is conservative: it is at least one position
-past the call's start and its end where the call records or reuses a memo
-result, so it can exceed the input actually read and the engine's examined
-range, and can be one position past the end of the input. It never includes
-input examined by the caller before the call. A call that reuses a growing
-left-recursive seed sees the frontier stored with an earlier seed, so a call
-that completes in such a provisional context reports at least its end; these
-results are never reused after an edit.
-
-A rule's profile `Examined` sums, over completed calls, `Examined - Pos`;
-`Wasted` sums the same over completed failed calls with `Memo=false`. Both, and
-their `Known` flags, are known only when every completed call of the rule in the
-profile reported a known frontier; a profile that also accumulates batch parses
-of the rule reports them as unknown.
-
-After a completed parse, the invocation's increases in profile `Evals` and
-`MemoHits` MUST equal `Document.Stats().Evaluated` and `.Reused`, respectively.
-`Stats` has no call counter. An
-interrupted parse MAY leave statistics for calls that began but did not
-complete. Temporary observer and profile state MUST be released after return
-or panic; retained constructor defaults remain available for later calls.
-While a Document generated with observability parses, its `Parse`,
-`ParseAST` and `Edit` MUST return the generated `ErrDocumentBusy`, before
-validating options and without changing the Document; this rejects calls a
-callback makes on the same Document. The outer parse continues unaffected.
-Callers SHOULD schedule later work or use another Document; parses of other
-Documents and batch `Parse` calls remain allowed from callbacks.
-
-## Generated TypeScript Batch Tracing
-
-TypeScript batch tracing MUST be enabled at generation with
-`pego.WithGeneratedObservability()` or `pego gen -lang ts -observability`.
-It applies to generated `parseWithOptions`, `parseRuleWithOptions` and, when
-generated, `recognizeWithOptions`. With `-types`, the configured-start
-`parseASTWithOptions` also accepts trace options; the legacy positional-unit
-APIs do not. TypeScript does not expose a named typed-rule entry point.
-
-The tracing fields added to `ParseOptions` are:
-
-```ts
-trace?: (event: TraceEvent) => void;
-traceRules?: readonly string[];
-traceMaxDepth?: number;
-```
-
-`trace` is a synchronous callback receiving a copied `TraceEvent`;
-`traceRules` selects named rules and their descendants, and `traceMaxDepth`
-limits delivered events. Omitted or empty `traceRules` selects all rules;
-unknown names select none. `traceMaxDepth` MUST be a safe integer. The start
-rule has depth one; a nonpositive value means unlimited depth.
-Callback mutation MUST NOT affect parser state or later events. If a callback
-throws, the original thrown value MUST propagate after runtime cleanup, even
-when it is not an `Error`; an aborted parse may omit exits for active calls.
-Filtered events do not change matching. Typed-result conversion MUST NOT emit
-a separate event; observed calls correspond to the selected parser path.
-
-TypeScript events use camel-case fields. `kind` is `"enter"`, `"exit"` or
-`"skipped"`; events also contain `rule`, `level`, `depth`, `pos`, `matched`,
-`end`, `memo`, `evals`, `examined`, `examinedKnown` and `skipReason`. Positions
-use the selected unit. `matched`, `end`, `memo` and `evals` describe exits;
-`memo` indicates reuse without body evaluation, while `evals` counts body
-evaluations. A skipped event is unpaired and is currently emitted only for
-identifiable first-character dispatch skips. `examinedKnown` is always false
-and `examined` MUST NOT be treated as a complete examined-input range. This
-TypeScript batch API does not provide Document event tracing.
-
-### Generated TypeScript Batch Profiling
-
-TypeScript batch profiling MUST be emitted only when observability is enabled
-with `pego.WithGeneratedObservability()` or `pego gen -lang ts
--observability`. The generated module MUST export `Profile` and
-`ProfileSnapshot`, and add `profile?: Profile | null` to `ParseOptions`.
-`parseWithOptions`, `parseRuleWithOptions`, and `recognizeWithOptions` MUST
-accept this option; with `-types`, `parseASTWithOptions` MUST accept it too.
-Legacy positional-unit APIs MUST NOT accept profiling options, and TypeScript
-MUST NOT add a named typed-rule API for this feature.
-Omitting the option or passing `null` MUST disable collection.
-
-`Profile` MUST aggregate completed calls across invocations without retaining
-input, callbacks, parser history or per-invocation frames. Each invocation MUST
-keep independent accounting. A profile sink MUST NOT be shared by concurrent
-calls. `snapshot()` MUST return independent rows and nested collections sorted
-by rule name and skip reason, so JSON serialization is deterministic and
-caller mutation cannot change the sink. Counters MUST use camel-case field
-names corresponding to the generated Go profile. Entered-call counts MUST
-include calls that began; completed-call counts and timings MUST exclude calls
-without an exit. Profile collection MUST be independent of `traceRules` and
-`traceMaxDepth`; skip counts MUST be independent of trace filters.
-The snapshot's total fields are `parses`, `entered`, `calls`, `evals`,
-`memoHits`, `skipped`, `time` and `rules`. Each rule row MUST expose `rule`,
-`entered`, `calls`, `evals`, `memoHits`, `matched`, `failed`, `consumed`,
-`skipped`, `skipReasons`, `repeats`, `maxEvals`, `maxEvalsAt`, `examined`,
-`examinedKnown`, `wasted`, `wastedKnown`, `time` and `selfTime`.
-Each `skipReasons` item MUST contain `reason` and `count`; `maxEvalsAt` MUST
-contain `pos` and `level`. `repeats` MUST count additional completed non-memo
-calls with `evals > 0` at the same `(rule, pos, level)` within an invocation.
-`maxEvals` MUST be the largest such call count at a location, and ties MUST
-retain the first observed location.
-
-`examinedKnown` and `wastedKnown` MUST be false because examined and wasted
-ranges are unavailable; implementations MUST NOT infer them. `time` and
-`selfTime` MUST be milliseconds from the host's monotonic `performance.now()`
-clock. Root time MUST exclude input setup, whole-input end checks and
-typed-result conversion. Per-rule time MUST count recursive calls of the same
-rule once per invocation; `selfTime` MUST exclude child time. Both MUST include
-synchronous trace-callback work. When the exit-time clock read succeeds, a
-completed call MUST be published after its exit callback returns or throws.
-A snapshot inside that callback MAY omit the current exit until it unwinds.
-An enter callback throw MUST NOT synthesize an exit.
-
-Profiling MUST require `performance.now()` and MUST NOT fall back to
-`Date.now()`. If the clock is unavailable, the profiled invocation MUST return
-an `Error`. Valid clock readings MAY have coarse resolution and produce zero
-durations. A thrown clock getter/call MUST preserve its original thrown value;
-non-finite and backward readings MUST fail explicitly and MAY leave a partial
-profile. If both a trace callback and a later clock read fail, the callback's
-original thrown value MUST take precedence, and collection MAY omit that
-exit. The implementation MUST NOT require DOM type declarations.
+In the Go API, `WithContext(ctx)` supplies the context and
+`WithWorkLimits(WorkLimits{MaxInputWork, MaxSteps})` the limits. Input work
+counts inspected elements of the input representation; steps count backend
+execution work. Charges are not rolled back by backtracking, and their values
+depend on the backend, the position unit and the generated artifact. A cancelled
+context returns the error of the context (`errors.Is(err, context.Canceled)` or
+`context.DeadlineExceeded`); an exhausted limit returns an error that matches
+`pego.ErrWorkLimit`, and `errors.As` with `*pego.WorkLimitError` gives the
+details. Stream parses and documents are specified in [Streaming](streaming.md)
+and [Incremental Documents](documents.md).
 
 ## Modes
 
@@ -500,11 +295,8 @@ gives the results that an ordinary parse gives.
 
 | Mode | Difference from an ordinary parse |
 |:--|:--|
-| Backends | The reference implementation has three backends (closure, recursive bytecode and iterative bytecode). They give identical values, errors and positions, and differ in speed and in the limit of nesting depth. Generated Go and TypeScript parsers implement the same semantics; their differences, such as the nesting limit, are described in the guides |
+| Backends | The reference implementation has three backends (closure, recursive bytecode and iterative bytecode). They give identical values, errors and positions, and differ in speed and in the limit of nesting depth. Generated Go and TypeScript parsers implement the same matching semantics; the entry points, features and limits that differ are defined in [Generated Parsers](generated-parsers.md) |
 | Recognition | The parse only tells whether the input matches. It gives the same success or failure and the same syntax errors, builds no tree, and skips actions whose values are not needed by predicates. Actions needed by predicates still run and can report run-time errors. The captures that [predicates](predicates.md) read are still built |
-| Stream | A parse that reads its input incrementally and hands each element of the [`#stream`](pragmas.md#stream) repetition of the start rule to the caller as it matches. The elements are not part of the value |
-| Incremental | A document that is edited and reparsed reuses results of the previous parse. The result of a parse is the same as that of a parse of the whole new text |
-
-The guides describe these modes from the user's side: see
-[Running parsers](../docs/guide/runtime.md), [Streaming](../docs/guide/streaming.md) and
-[Incremental parsing](../docs/guide/incremental.md).
+| Stream | A parse that reads its input incrementally and hands each element of the [`#stream`](pragmas.md#stream) repetition of the start rule to the caller as it matches. The elements are not part of the value. See [Streaming](streaming.md). Generated TypeScript parsers have no stream mode |
+| Incremental | A document that is edited and reparsed reuses results of the previous parse. The result of a parse is the same as that of a parse of the whole new text. See [Incremental Documents](documents.md). Generated TypeScript parsers have no document, and generated Go parsers support a subset |
+| Prefix | A named rule is parsed at the beginning of the input without requiring the whole input to be consumed. See [Prefix Parsing](#prefix-parsing) |
