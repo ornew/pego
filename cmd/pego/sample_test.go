@@ -141,6 +141,14 @@ rule number = [0-9]+ #atomic`)
 	if !strings.Contains(out, `"checkCuts"`) {
 		t.Errorf("no checkCuts in %s", out)
 	}
+	// The ordered choice of item cuts the ways that write "true" or "false" through a later alternative.
+	checks := 0
+	for _, r := range doc.Stats.RuleCuts {
+		checks += r.Checks
+	}
+	if doc.Stats.CheckCuts == 0 || checks != doc.Stats.CheckCuts {
+		t.Errorf("rule cuts %+v, check cuts %d", doc.Stats.RuleCuts, doc.Stats.CheckCuts)
+	}
 }
 
 func TestSampleCoverageWithoutInputs(t *testing.T) {

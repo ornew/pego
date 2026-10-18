@@ -72,12 +72,20 @@ $ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
     "exhausted": 0,
     "duplicates": 0,
     "checkCuts": 2,
-    "predicateCuts": 0
+    "predicateCuts": 0,
+    "ruleCuts": [
+      {
+        "rule": "ws",
+        "checks": 2,
+        "predicates": 0
+      }
+    ]
   }
 }
 ```
 
-`stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)).
+`stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)). `ruleCuts` splits the cuts by the rule
+whose body holds the check or predicate, the rules with the most cuts first, as `Generator.Cuts` does.
 
 `-s` selects the start rule (`main` by default, or the one saved in a `.pegoc`). A grammar compiled with
 `pego compile -no-ast` cannot be sampled: generation needs the grammar AST.
@@ -88,11 +96,13 @@ fails: the grammar may accept nothing (`rule main = "a"* "a"`: the repetition ta
 an action at run time. The error tells what became of the attempts:
 
 ```text
-pego: sample: no input found that the parser accepts in 100 attempts: 0 candidates rejected by the parser, 0 searches out of budget, 100 searches without a way to finish (2900 ways cut by checks, 0 by predicates)
+pego: sample: no input found that the parser accepts in 100 attempts: 0 candidates rejected by the parser, 0 searches out of budget, 100 searches without a way to finish (2900 ways cut by checks, 0 by predicates; most cuts in main (2900 by checks, 0 by predicates))
 ```
 
 Here no search found a way to finish, and checks cut thousands of ways: the generator saw that the parser would not
-match what it was writing. Candidates rejected by the parser point at what the generator cannot check, such as
+match what it was writing, all of them in `main`. The error names up to three rules with the most cuts; a check
+belongs to the rule whose body holds the lookahead, ordered choice, optional, repetition or `$$` behind it, even when
+the text that decides it comes from another rule. Candidates rejected by the parser point at what the generator cannot check, such as
 actions; searches out of budget at inputs too long for `-budget`; many cuts by predicates at predicates that the
 search rarely satisfies.
 
@@ -295,7 +305,8 @@ missed value: choice 3: "false"
 `Coverage` returns the numbers and lists as a struct (`Rules`, `RulesCovered`, `MissedAlternatives`, ...), and
 `Stats` counts candidates, rejected candidates, failed searches and those of them that ran out of budget,
 duplicates, and the ways the search abandoned because a check (a lookahead, the order of a choice, `$$`) or a predicate
-showed that the parser would not match them. A `Generator` is not safe for concurrent use; create
+showed that the parser would not match them. `Cuts` splits those cuts by rule as `[]sample.RuleCuts`, the rules
+with the most cuts first. A `Generator` is not safe for concurrent use; create
 one per goroutine, with different seeds.
 
 `Invalid` and `GenerateInvalid` return near-miss invalid inputs as `sample.Invalid` values:

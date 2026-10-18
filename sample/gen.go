@@ -59,6 +59,7 @@ type check struct {
 	operatorsRule *operatorsRuleCheck
 	neg           bool // e must not match (otherwise it must match)
 	progress      bool // with neg, only a match that consumes input violates the check
+	rule          int  // index of the rule whose body installed the check
 	next          *check
 }
 
@@ -90,6 +91,7 @@ type gen struct {
 	vars    *variable
 	sib     *sibling
 	active  []int // number of active calls of each rule
+	rule    int   // index of the rule whose body is being generated, or -1
 	depth   int   // calls of rules that were already active: the recursion depth
 	steps   int
 	tent    bitset // targets exercised by the current attempt
@@ -101,8 +103,10 @@ type gen struct {
 	matchWork int // steps of the matcher in the current attempt
 
 	// checkCuts and predicateCuts count the ways that checks and predicates ruled out, over all
-	// attempts.
+	// attempts. cuts splits them by the rule whose body holds the check or predicate, and recent
+	// counts the same since resetRecent.
 	checkCuts, predicateCuts int
+	cuts, recent             []ruleCuts
 
 	scratch     []byte
 	result      string
@@ -121,6 +125,8 @@ func newGen(in *info, cfg *config) *gen {
 		triedB:   newBitset(len(in.targets)),
 		settled:  newBitset(len(in.targets)),
 		active:   make([]int, len(in.order)),
+		cuts:     make([]ruleCuts, len(in.order)),
+		recent:   make([]ruleCuts, len(in.order)),
 	}
 }
 
@@ -130,6 +136,7 @@ func (g *gen) attempt() (string, []int, bool) {
 	g.out, g.forced, g.endAt, g.pending = g.out[:0], "", -1, nil
 	g.caps, g.vars, g.sib = nil, nil, nil
 	clear(g.active)
+	g.rule = -1
 	g.depth, g.steps, g.matchWork = 0, 0, 0
 	for _, t := range g.trail {
 		g.tent.clear(t)
@@ -263,12 +270,12 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	case matched:
 		violated = c.neg && (!c.progress || end > c.pos)
 		if violated {
-			g.checkCuts++
+			g.cutCheck(c.rule)
 		}
 		return violated, false
 	case failed:
 		if !c.neg {
-			g.checkCuts++
+			g.cutCheck(c.rule)
 		}
 		return !c.neg, false
 	case more:
@@ -277,9 +284,30 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	return false, false // unknown: the parser decides
 }
 
+// ruleCuts counts the cuts of checks and predicates in one rule's body.
+type ruleCuts struct{ checks, predicates int }
+
+// cutCheck counts a way that a check of the given rule ruled out.
+func (g *gen) cutCheck(rule int) {
+	g.checkCuts++
+	if rule >= 0 {
+		g.cuts[rule].checks++
+		g.recent[rule].checks++
+	}
+}
+
+// cutPredicate counts a way that a predicate of the current rule ruled out.
+func (g *gen) cutPredicate() {
+	g.predicateCuts++
+	if g.rule >= 0 {
+		g.cuts[g.rule].predicates++
+		g.recent[g.rule].predicates++
+	}
+}
+
 // addOperatorsRuleCheck installs a longest-selection check with its own immutable scope snapshot.
 func (g *gen) addOperatorsRuleCheck(p *operatorsRuleCheck) bool {
-	c := &check{pos: len(g.out), operatorsRule: p, neg: true, progress: true}
+	c := &check{pos: len(g.out), operatorsRule: p, neg: true, progress: true, rule: g.rule}
 	violated, keep := g.evalCheck(c, false)
 	if violated {
 		return false
@@ -297,10 +325,10 @@ func (g *gen) addCheck(e grammar.Expr, neg, progress bool) bool {
 	if neg && !progress && g.in.alwaysMatches(e) {
 		// It matches whatever follows: the matcher would only find out once the text after it is
 		// written.
-		g.checkCuts++
+		g.cutCheck(g.rule)
 		return false
 	}
-	c := &check{pos: len(g.out), e: e, neg: neg, progress: progress}
+	c := &check{pos: len(g.out), e: e, neg: neg, progress: progress, rule: g.rule}
 	violated, keep := g.evalCheck(c, false)
 	if violated {
 		return false
@@ -322,7 +350,7 @@ func (g *gen) recheck() bool {
 			return false
 		}
 		if keep {
-			kept = &check{pos: c.pos, e: c.e, operatorsRule: c.operatorsRule, neg: c.neg, progress: c.progress, next: kept}
+			kept = &check{pos: c.pos, e: c.e, operatorsRule: c.operatorsRule, neg: c.neg, progress: c.progress, rule: c.rule, next: kept}
 		} else {
 			changed = true
 		}
@@ -413,7 +441,7 @@ func (g *gen) gen(e grammar.Expr, k cont) bool {
 	case *grammar.Predicate:
 		ok, def := g.predicate(e)
 		if !ok {
-			g.predicateCuts++
+			g.cutPredicate()
 			return false
 		}
 		if def == nil {
@@ -830,8 +858,9 @@ func (g *gen) callRule(ri *ruleInfo, level, key string, k cont) bool {
 		g.depth++
 	}
 	g.active[ri.index]++
-	caps, vars, sib := g.caps, g.vars, g.sib
+	caps, vars, sib, caller := g.caps, g.vars, g.sib, g.rule
 	g.caps, g.sib = nil, nil // a rule body is a capture scope; it reads the caller's variables
+	g.rule = ri.index
 	m := g.mark(ri.index)
 	start := len(g.out)
 	ret := func(v val) bool {
@@ -842,7 +871,7 @@ func (g *gen) callRule(ri *ruleInfo, level, key string, k cont) bool {
 		if recursive {
 			g.depth--
 		}
-		g.caps, g.vars = caps, vars
+		g.caps, g.vars, g.rule = caps, vars, caller
 		if key != "" {
 			g.sib = &sibling{key: key, text: string(g.out[start:]), next: sib}
 		} else {
@@ -853,7 +882,7 @@ func (g *gen) callRule(ri *ruleInfo, level, key string, k cont) bool {
 		if recursive {
 			g.depth++
 		}
-		g.caps, g.vars, g.sib = innerCaps, innerVars, innerSib
+		g.caps, g.vars, g.sib, g.rule = innerCaps, innerVars, innerSib, ri.index
 		return ok
 	}
 	var ok bool
@@ -871,7 +900,7 @@ func (g *gen) callRule(ri *ruleInfo, level, key string, k cont) bool {
 	if recursive {
 		g.depth--
 	}
-	g.caps, g.vars, g.sib = caps, vars, sib
+	g.caps, g.vars, g.sib, g.rule = caps, vars, sib, caller
 	return ok
 }
 

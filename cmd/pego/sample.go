@@ -41,6 +41,14 @@ type statsOutput struct {
 	Duplicates    int `json:"duplicates"`
 	CheckCuts     int `json:"checkCuts"`
 	PredicateCuts int `json:"predicateCuts"`
+	// RuleCuts is Generator.Cuts: the cuts split by rule, the rules with the most first.
+	RuleCuts []ruleCutsOutput `json:"ruleCuts,omitempty"`
+}
+
+type ruleCutsOutput struct {
+	Rule       string `json:"rule"`
+	Checks     int    `json:"checks"`
+	Predicates int    `json:"predicates"`
 }
 
 func sampleCmd(args []string, stdout io.Writer) error {
@@ -112,7 +120,11 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	}
 	if *format == "json" {
 		st := g.Stats()
-		out.Stats = statsOutput{st.Candidates, st.Rejected, st.Failed, st.Exhausted, st.Duplicates, st.CheckCuts, st.PredicateCuts}
+		out.Stats = statsOutput{Candidates: st.Candidates, Rejected: st.Rejected, Failed: st.Failed, Exhausted: st.Exhausted,
+			Duplicates: st.Duplicates, CheckCuts: st.CheckCuts, PredicateCuts: st.PredicateCuts}
+		for _, c := range g.Cuts() {
+			out.Stats.RuleCuts = append(out.Stats.RuleCuts, ruleCutsOutput{c.Rule, c.Checks, c.Predicates})
+		}
 		if genErr != nil && !*coverage {
 			return genErr
 		}

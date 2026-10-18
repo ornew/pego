@@ -27,8 +27,10 @@
 package sample
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego"
@@ -132,6 +134,15 @@ type Stats struct {
 	PredicateCuts int
 }
 
+// RuleCuts counts the cuts of the checks and predicates in one rule's body (see Stats.CheckCuts and
+// Generator.Cuts). A check belongs to the rule whose body holds the lookahead, choice, optional,
+// repetition or $$ that installed it.
+type RuleCuts struct {
+	Rule       string
+	Checks     int
+	Predicates int
+}
+
 // New returns a generator of inputs for p, starting at p's start rule. The parser must have its grammar
 // AST (a parser loaded from a .pegoc saved without it cannot be sampled).
 func New(p *pego.Parser, opts ...Option) (*Generator, error) {
@@ -166,6 +177,7 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 // candidate was accepted within the attempts.
 func (g *Generator) Next() (string, error) {
 	before := g.Stats()
+	clear(g.g.recent)
 	for range g.cfg.attempts {
 		s, trail, ok := g.g.attempt()
 		if !ok {
@@ -185,17 +197,47 @@ func (g *Generator) Next() (string, error) {
 		g.g.accepted(trail)
 		return s, nil
 	}
-	return "", noInput(g.cfg.attempts, before, g.Stats())
+	return "", noInput(g.cfg.attempts, before, g.Stats(), g.ruleCuts(g.g.recent))
 }
 
 // noInput returns ErrNoInput with what became of the attempts between the stats before and after.
-func noInput(attempts int, before, after Stats) error {
+// cuts lists the rules with the most cuts first.
+func noInput(attempts int, before, after Stats, cuts []RuleCuts) error {
 	failed, exhausted := after.Failed-before.Failed, after.Exhausted-before.Exhausted
-	return fmt.Errorf("%w in %s: %s rejected by the parser, %s out of budget, %s without a way to finish (%s cut by checks, %d by predicates)",
+	var most strings.Builder
+	for i, c := range cuts[:min(len(cuts), 3)] {
+		if i == 0 {
+			most.WriteString("; most cuts in ")
+		} else {
+			most.WriteString(", ")
+		}
+		fmt.Fprintf(&most, "%s (%d by checks, %d by predicates)", c.Rule, c.Checks, c.Predicates)
+	}
+	return fmt.Errorf("%w in %s: %s rejected by the parser, %s out of budget, %s without a way to finish (%s cut by checks, %d by predicates%s)",
 		ErrNoInput, count(attempts, "attempt", "attempts"),
 		count(after.Rejected-before.Rejected, "candidate", "candidates"),
 		count(exhausted, "search", "searches"), count(failed-exhausted, "search", "searches"),
-		count(after.CheckCuts-before.CheckCuts, "way", "ways"), after.PredicateCuts-before.PredicateCuts)
+		count(after.CheckCuts-before.CheckCuts, "way", "ways"), after.PredicateCuts-before.PredicateCuts, most.String())
+}
+
+// Cuts returns the cuts of each rule so far, for the rules with any, the rules with the most cuts
+// first (ties in rule name order).
+func (g *Generator) Cuts() []RuleCuts { return g.ruleCuts(g.g.cuts) }
+
+func (g *Generator) ruleCuts(counts []ruleCuts) []RuleCuts {
+	var out []RuleCuts
+	for i, c := range counts {
+		if c.checks+c.predicates > 0 {
+			out = append(out, RuleCuts{Rule: g.in.order[i].def.Name, Checks: c.checks, Predicates: c.predicates})
+		}
+	}
+	slices.SortFunc(out, func(a, b RuleCuts) int {
+		if n := cmp.Compare(b.Checks+b.Predicates, a.Checks+a.Predicates); n != 0 {
+			return n
+		}
+		return strings.Compare(a.Rule, b.Rule)
+	})
+	return out
 }
 
 func count(n int, one, many string) string {

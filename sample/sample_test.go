@@ -3,8 +3,10 @@ package sample_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -687,6 +689,51 @@ func TestSeed(t *testing.T) {
 }
 
 // TestFailureStats checks that the stats and the error tell why no input was found.
+func TestRuleCuts(t *testing.T) {
+	for _, c := range []struct {
+		name, src string
+		want      []sample.RuleCuts
+	}{
+		// The check of x is decided only when y writes "b", but it belongs to x.
+		{"deferred", `rule main = x y $$
+rule x = !"ab" "a"
+rule y = "b"`, []sample.RuleCuts{{Rule: "x", Checks: 2}}},
+		{"split", `rule main = x y $$
+rule x = !"a" [a] / "b"
+rule y = {d := 0} {d > 0} "c"`, // Equal counts are listed in rule name order.
+			[]sample.RuleCuts{{Rule: "x", Checks: 2}, {Rule: "y", Predicates: 2}}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			g, err := sample.New(compile(t, c.src), sample.WithAttempts(2))
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = g.Next()
+			if !errors.Is(err, sample.ErrNoInput) || !strings.Contains(err.Error(), "; most cuts in "+c.want[0].Rule+" (") {
+				t.Errorf("error %v", err)
+			}
+			got := g.Cuts()
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("cuts %+v, want %+v", got, c.want)
+			}
+			s, checks, preds := g.Stats(), 0, 0
+			for _, r := range got {
+				checks, preds = checks+r.Checks, preds+r.Predicates
+			}
+			if checks != s.CheckCuts || preds != s.PredicateCuts {
+				t.Errorf("cuts %+v do not add up to stats %+v", got, s)
+			}
+			// A later call reports its own cuts in the error, while Cuts keeps counting.
+			if _, err := g.Next(); !strings.Contains(err.Error(), fmt.Sprintf("%s (%d by checks, %d by predicates)", c.want[0].Rule, c.want[0].Checks, c.want[0].Predicates)) {
+				t.Errorf("second error %v", err)
+			}
+			if again := g.Cuts(); again[0].Checks+again[0].Predicates != 2*(c.want[0].Checks+c.want[0].Predicates) {
+				t.Errorf("cuts after two calls %+v", again)
+			}
+		})
+	}
+}
+
 func TestFailureStats(t *testing.T) {
 	for _, c := range []struct {
 		name, src string
