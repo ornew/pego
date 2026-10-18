@@ -4,7 +4,7 @@ How much an edit costs depends on the grammar and on where the edit is. This gui
 a one-character edit, and the limits of the engine `Document`. It assumes the `Document` API of [Incremental
 Parsing](incremental.md).
 
-## Performance and Limits
+## Reparsing After One Edit
 
 Measured with this program (Apple silicon, Go 1.27.1, averages over repeated runs; it edits one digit in the middle of
 the text and checks that the incremental tree equals a fresh parse):
@@ -144,7 +144,7 @@ func main() {
 
 </details>
 
-```
+```text
 settings, one rule per line
     1000 lines: Parse 230µs    NewDocument+Parse 580µs    Edit 0s       reparse 20µs     (evaluated 3, reused 1001) equal=true
    10000 lines: Parse 2.47ms   NewDocument+Parse 5.21ms   Edit 30µs     reparse 70µs     (evaluated 3, reused 10001) equal=true
@@ -160,7 +160,7 @@ settings, everything in one rule
   100000 lines: Parse 19.91ms  NewDocument+Parse 25.23ms  Edit 360µs    reparse 620µs    (evaluated 1, reused 99999) equal=true
 ```
 
-Reading the table:
+## What the Numbers Mean
 
 - **Neither step grows much with the document.** The program replaces one digit, so nothing after the edit moves:
   the reparse takes the lines before and after the edit from the resumed `line*` and parses one line, about 0.6 ms at
@@ -179,6 +179,8 @@ Reading the table:
   table next to the string.
 - **Bursts of edits are fine.** An `Edit` costs little on its own, and entries that several edits affect are brought
   up to date once, when they are looked up. Merging adjacent changes into one `Edit` still saves copying the text.
+
+## A Real Grammar
 
 A real grammar, [parsers/json](../../parsers/json/json.pego), on an array of 5,000 objects (283 KB). Run it from the
 root of the repository:
@@ -257,8 +259,11 @@ func main() {
 
 </details>
 
+```bash
+go run ./jsondoc parsers/json/json.pego
 ```
-$ go run ./jsondoc parsers/json/json.pego
+
+```text
 282783 bytes
 Parse:                16ms
 first Document.Parse: 31ms {235006 10001}
@@ -268,7 +273,9 @@ reparse:              1.2ms {11 15016}
 
 The full parse evaluates 235,006 rule bodies; after the edit 11 run and 15,016 results are reused.
 
-Limits to keep in mind:
+## Limits
+
+Keep these in mind:
 
 - Positions are in code points (default) or bytes, never UTF-16 units. An editor protocol that counts UTF-16 units needs
   a conversion, or a `Document` in `Bytes` mode with its own mapping.
