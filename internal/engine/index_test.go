@@ -23,7 +23,7 @@ rule item = [a-z]`, []string{"abc", "a", "", "1"}},
 rule item = [a-z]`, []string{"abc", "ab", ""}},
 		{"negative", `rule main = xs:item* $$ => $xs[0 - 1]
 rule item = [a-z]`, []string{"a", ""}},
-		{"nil list", `rule main = xs:(item+)? $$ => $xs[0]
+		{"nil list", `rule main = xs:(item+)? $$ => list($xs)[0]
 rule item = [a-z]`, []string{"a", ""}},
 		{"nested", `rule main = xs:item+ $$ => list($xs, list($xs[0]))[1][0]
 rule item = [a-z]`, []string{"ab", ""}},

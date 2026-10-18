@@ -9,7 +9,7 @@ import (
 
 // One shared grammar keeps the same scope/selection cases in the engine and generated Go/TS corpus.
 const prefixPartCuts = `type Atom terminal
-type Prefix = { Op Match; X Expr; Tag int }
+type Prefix = { Op node; X Expr; Tag int }
 type Expr ~ Atom | Prefix | Error
 rule main Expr = value:entry $$ => $value
 rule entry Expr = case0 / case1 / case2 / case3 / case4 / case5 / case6 / case7 / case8 / case9 / case10 / case11 / case12 / case13 / case14 / case15 / case16 / case17 / case18 / case19 / case20
@@ -134,7 +134,7 @@ rule nestedOrdinary Expr = operators {
 rule recovered Expr = committed #recover(skip=.*)
 rule operatorsRulePartLocal Expr = operators {
     operand atom
-    level { prefix committed => Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix committed #atomic => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 `
 

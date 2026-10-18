@@ -18,7 +18,7 @@ type Alias ~ T
 type Mixed ~ S | Seq
 type Number ~ int
 type Values = { N Number; Text string; Flag bool }
-type Recovery = { T T }
+type Recovery = { T T | error }
 type Items ~ []S
 type ParseRuleAST = { T T }
 type ParseRuleAST_ ~ ParseRuleAST
@@ -37,12 +37,12 @@ rule arbitrary any = "a" => S{}
 rule abstract terminal = "t"
 rule recursive S = "(" s:recursive ")" / s:structure => $s
 rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
-rule recoverStruct S = structure #recover(skip="?")
+rule recoverStruct S | error = structure #recover(skip="?")
 rule recoverTerminal = t:term #recover(skip="?") => Recovery{T: $t}
-rule recoverUnion U = union #recover(skip="?")
+rule recoverUnion U | error = union #recover(skip="?")
 rule nonemptyItems Items = xs:(s:structure)+ => map($xs, (x) => x.$s)
-rule recoverList Items = nonemptyItems #recover(skip="?")
-rule recoveryElements Items = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
+rule recoverList Items | error = nonemptyItems #recover(skip="?")
+rule recoveryElements [](S | error) = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
 `
 
 func TestGeneratedNamedAST(t *testing.T) {

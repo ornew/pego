@@ -47,8 +47,56 @@ func (v *valueInference) errorf(pos grammar.Pos, format string, args ...any) {
 
 // resolve maps a type expression of the grammar to the value model.
 func (v *valueInference) resolve(t grammar.TypeExpr) ty {
+	return fromLegacy(v.legacy(t))
+}
+
+// legacy resolves a type expression of the grammar as run-time checks write it.
+func (v *valueInference) legacy(t grammar.TypeExpr) ty {
 	k := &checker{prog: v.prog, resolving: map[string]bool{}}
-	return fromLegacy(k.resolve(t))
+	return k.resolve(t)
+}
+
+// uncertain reports whether a value of type t may be one the value types do not know yet (tyAny),
+// so that a typed location checks it at run time.
+func (v *valueInference) uncertain(t ty) bool {
+	return v.uncertainAt(t, 0)
+}
+
+func (v *valueInference) uncertainAt(t ty, depth int) bool {
+	if depth > 32 {
+		return true
+	}
+	switch t := v.expand(t).(type) {
+	case basicTy:
+		return t == tyAny
+	case listTy:
+		return v.uncertainAt(t.elem, depth+1)
+	case optTy:
+		return v.uncertainAt(t.elem, depth+1)
+	case nodeTy:
+		return v.uncertainAt(t.value, depth+1)
+	case unionTy:
+		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.uncertainAt(a, depth+1) })
+	case tupleTy:
+		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.uncertainAt(a, depth+1) })
+	}
+	return false
+}
+
+// checkResult records that the value of type t that a rule or Operators Rule line (key) of rule
+// rd produces needs a run-time check against the rule's declared type.
+func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
+	if v.checks == nil || v.quiet || rd.Type == nil || !v.uncertain(t) {
+		return
+	}
+	legacy := v.legacy(rd.Type)
+	if n, ok := legacy.(namedTy); ok && n.kind == 't' && rd.Action == nil {
+		// A rule of a terminal type without an action converts its value.
+		return
+	}
+	if newFieldType(legacy) != nil {
+		v.checks.results[key] = legacy
+	}
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
@@ -67,6 +115,9 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if !v.assignable(t, d) {
 		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, t, d)
 		return d
+	}
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
+		v.checkResult(rd, rd, t)
 	}
 	if anyNode(d) {
 		return t
@@ -231,8 +282,14 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 				continue
 			}
 			if f := fieldOf(st, fi.Name); f != nil {
-				if ft := v.resolve(f.Type); !v.assignable(vt, ft) {
+				if ft := v.resolve(f.Type); ft == tyBottom {
+					// A field without values is reported where it is declared.
+				} else if !v.assignable(vt, ft) {
 					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
+				} else if v.checks != nil && !v.quiet && v.uncertain(vt) {
+					if legacy := v.legacy(f.Type); newFieldType(legacy) != nil {
+						v.checks.fields[fi] = legacy
+					}
 				}
 			}
 		}
@@ -249,10 +306,13 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 		}
 		return listTy{elem}
 	case *grammar.TerminalConstructor:
+		// Terminal types and their constructors remain until the value model retires them; a
+		// terminal value is a string node.
 		for _, arg := range t.Args {
-			v.term(arg, env)
+			if a := v.term(arg, env); !v.assignable(a, tyString) {
+				v.errorf(termPos(arg, t.Diagnostic()), "terminal constructor requires a string, got %s", a)
+			}
 		}
-		v.errorf(t.Diagnostic(), "%s{...} constructs a node, which actions cannot construct", t.Type)
 		return tyStringNode
 	case *grammar.Call:
 		return v.call(t, env)

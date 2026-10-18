@@ -357,8 +357,8 @@ iteration of a repetition (`*`, `+`, `#repeat(...)`).
 
 - A capture inside a choice or an optional expression belongs to the enclosing
   scope. If it did not match, its value is `nil`.
-- A capture inside the element of a repetition becomes a field of the value of
-  that iteration. If the value of the element is a `Seq` node, the fields are
+- A capture inside the element of a repetition, also inside a positive
+  lookahead `&`, becomes a field of the value of that iteration. If the value of the element is a `Seq` node, the fields are
   added to it; otherwise the value is wrapped in a `Seq` node that carries the
   fields.
 

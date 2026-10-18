@@ -76,12 +76,12 @@ type Node ~ Op | Number
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule num Number = [0-9]+`,
 		// The accumulator type is widened by inference
-		`type Op = { L node; R Match }
+		`type Op = { L Match | Op; R Match }
 rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.$r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
 		`type P = { X *Match; Y []Match; Z Seq }
-rule main = x:"a"? y:item* z:pair => P{X: $x, Y: $y, Z: $z}
+rule main = x:"a"? y:item* z:pair => P{X: $x, Y: $y.Value, Z: $z}
 rule item = [a-z] #atomic
 rule pair = "(" ")"`,
 		// Optional values as results of rules, actions and map functions
@@ -100,11 +100,11 @@ rule main = l:list => $l`,
 		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat(acc, list(x))))
 rule item = "a" #atomic`,
 		`type S = { X Match }
-rule main = xs:stmts => concat($xs)
+rule main = xs:stmts => $xs
 rule stmts = stmt* #recover(skip=[^;]+ ";")
 rule stmt S = x:"x" #atomic ";" => S{X: $x}`,
 		// Field access and built-in fields
-		`type P = { S int; K []*node }
+		`type P = { S int; K _ }
 rule main = w:word => P{S: $w.Start + $w.End, K: $w.Value}
 rule word = k:"a" v:"b"`,
 	} {
@@ -119,7 +119,7 @@ func TestInferenceOfGrowingTypes(t *testing.T) {
 rule r0 = ";"
 rule r1 = "a"
 rule r2 = r3 "é" / "a"
-rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1.Value), (i) => concat(list(i), map($c1.Value, (j) => list(i, j))))`
+rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1), (i) => concat(list(i), map($c1, (j) => list(i, j))))`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

@@ -23,7 +23,7 @@ func topBottomCases() []genCase {
 		{"meet field", "type T = { A (Num | int) & node }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
 		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "1a"}},
 		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "a"}},
-		{"meet list", "type T = { A []Num & []node }\nrule main = xs:n+ $$ => T{A: $xs}\n" + topBottomRules, []string{"1", ""}},
+		{"meet list", "type T = { A []Num & []node }\nrule main = xs:n+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"1", ""}},
 	}
 }
 
@@ -76,10 +76,10 @@ func TestTopBottomTypes(t *testing.T) {
 		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A.(Match | Seq)",
 		"type B ~ _|_\nrule main = \"a\"", // an alias is not a location
 		// Meets look inside lists: []Seq is assignable to both.
-		"type T = { A [](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x}",
+		"type T = { A [](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
 		"type T = { A *Match & *Seq }\nrule main = \"a\" => T{A: nil}",
-		"type T = { A *[](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x}",
-		"type T = { A ([]Match | int) & []node }\nrule main = x:\"a\"* => T{A: $x}",
+		"type T = { A *[](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
+		"type T = { A ([]Match | int) & []node }\nrule main = x:\"a\"* => T{A: $x.Value}",
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {
@@ -91,14 +91,14 @@ func TestTopBottomTypes(t *testing.T) {
 	}
 }
 
-// A list of _ or any is checked as a List: its elements are always nodes or nil.
+// A list of _ or any only has to be a list value, whatever its elements.
 func TestTopBottomListCheck(t *testing.T) {
 	for _, tc := range []struct{ field, want string }{
-		{"[]_", "List"},
-		{"[]any", "List"},
-		{"*[]_ | int", "*(List | int)"},
+		{"[]_", "[]_"},
+		{"[]any", "[]any"},
+		{"*[]_ | int", "*([]_ | int)"},
 	} {
-		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F}\nrule ok = x:\"a\"* => T{A: U{F: $x}.F}\nrule rule []_ = x:\"a\"* => U{F: $x}.F\nrule bad []_ = x:\"a\" => U{F: $x}.F"
+		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F\nrule bad []_ = x:\"a\" => U{F: $x}.F"
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			program := compile(t, src, opts)
 			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
@@ -122,7 +122,7 @@ func TestTopBottomListCheck(t *testing.T) {
 							t.Fatalf("%s %s %s: %v", tc.field, start, backend, err)
 						}
 					}
-					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use Match as List in result of rule bad") {
+					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use Match as []_ in result of rule bad") {
 						t.Fatalf("%s bad %s: %v", tc.field, backend, err)
 					}
 				}

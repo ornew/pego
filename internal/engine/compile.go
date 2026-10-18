@@ -689,7 +689,8 @@ func visible(e grammar.Expr) bool {
 	return true
 }
 
-// hasCaptures reports whether the expression contains captures (excluding nested repetitions).
+// hasCaptures reports whether the expression contains captures (excluding nested repetitions),
+// also inside positive lookaheads.
 // elementScoped reports whether the repetition element e gets a capture scope of its own per
 // iteration: when it contains captures (hasCaptures), or its predicates read captures, which can
 // then only be its own (made inside &) or, an error, those of the enclosing scope. Every backend
@@ -738,6 +739,11 @@ func hasCapturesControlled(e grammar.Expr, control *compileControl) bool {
 	case *grammar.Optional:
 		return hasCapturesControlled(e.Expr, control)
 	case *grammar.Attributed:
+		return hasCapturesControlled(e.Expr, control)
+	case *grammar.Group:
+		return hasCapturesControlled(e.Expr, control)
+	case *grammar.And:
+		// The captures of a positive lookahead are kept beside the element's value.
 		return hasCapturesControlled(e.Expr, control)
 	}
 	return false

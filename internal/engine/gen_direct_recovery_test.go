@@ -51,7 +51,7 @@ rule main Doc = {n := 0} _ #recover(skip="x" {n := 7}) $$ => Doc{N: n}
 `, []string{"", "x", "é"}},
 	{"typed/recovery_list_errors", `type Atom terminal
 type Group = { Item Atom }
-type Expr ~ Atom | Group
+type Expr ~ Atom | Group | Error
 rule main []Expr = items:item* $$ => map($items, (x) => x)
 rule item Expr = (atom / group) #recover(skip=[^;]+ ";")
 rule group Group = "(" a:atom ")" => Group{Item: $a}
@@ -62,7 +62,7 @@ rule atom Atom = [a-z]+ ";"
 		`rule grp = "[" n:num "]" ";"`, `rule grp Group = "[" n:num "]" ";" => Group{Item: $n}`,
 	).Replace(typedGrammar), []string{"abc;", "1x;", "abc;1x;def;", "foo(1,bar)!;", "[1];", "", "("}},
 	{"typed/recovery_operatorsRule", `type Atom terminal
-type Post = { X Expr; Text Match }
+type Post = { X Expr; Text node | error }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

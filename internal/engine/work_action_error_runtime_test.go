@@ -46,7 +46,7 @@ rule fallback = "a"`,
 			name:  "recognition evaluates captured action needed by predicate",
 			start: "main",
 			grammar: `type A = { N int }
-rule main = x:` + longRule + ` {text($x) == "a"} $$
+rule main = x:` + longRule + ` {$x.N == 1} $$
 rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 			input:         "a",
 			wantError:     "action in " + longRule + ": division by zero",

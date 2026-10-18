@@ -61,26 +61,29 @@ rule num Num = [0-9]+ #atomic`)
 	}
 }
 
-// On capture nodes x.$y and x.y read the same capture, and both project a repetition.
+// x.$y reads capture y of node x and projects a repetition. The earlier x.y, which still reaches
+// the engine from JSON grammars, reads a field: on a node it is rejected with a pointer to .$y.
 func TestCaptureAccessMatchesField(t *testing.T) {
 	access := compile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
-	// x.y is earlier syntax, which still reaches the engine from JSON grammars.
+	if a := ruleProjections(access, access.rules[0]); a["xs"] != "y" {
+		t.Fatalf("projection: %v", a)
+	}
 	g, err := syntax.ParseLegacy(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	field, err := Compile(g, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if a, f := ruleProjections(access, access.rules[0]), ruleProjections(field, field.rules[0]); a["xs"] != "y" || f["xs"] != "y" {
-		t.Fatalf("projection: %v / %v", a, f)
+	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "read the capture with .$y") {
+		t.Fatalf("field access on a node: %v", err)
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, input := range []string{",a,b", "", ",a,"} {
-			options := ParseOptions{Backend: backend}
-			if got, want := resultJSON(access.ParseWith("main", input, options)), resultJSON(field.ParseWith("main", input, options)); got != want {
-				t.Fatalf("%s %q: %s / %s", backend, input, got, want)
+		for input, want := range map[string]string{",a,b": `["a" "b"]`, "": `[]`, ",a,": "error"} {
+			n, err := access.ParseWith("main", input, ParseOptions{Backend: backend})
+			got := "error"
+			if err == nil {
+				got = n.String()
+			}
+			if got != want {
+				t.Fatalf("%s %q: %s, want %s", backend, input, got, want)
 			}
 		}
 	}

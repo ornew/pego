@@ -257,7 +257,7 @@ func TestValueActionErrors(t *testing.T) {
 		{"type Foo = { Name string }\nrule a = x:\"x\" => Foo{Name: $x}", "cannot use node[string] as string in field Name of Foo"},
 		{"type Foo = { Name Match }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
 		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
-		{"type Word terminal\nrule a = _ => Word{\"w\"}", `Word{...} constructs a node, which actions cannot construct`},
+		{"type Word terminal\nrule a = _ => Word{1}", `terminal constructor requires a string, got int`},
 		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
 		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},
 		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "[]node[string] | []any has no field Value"},

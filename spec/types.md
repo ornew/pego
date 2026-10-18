@@ -201,9 +201,10 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is `node` and `V` is a node type.
 - `T` is `terminal` and `V` is `Match`, a terminal type or `terminal`.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
-- `T` is `Seq` and `V` is a `Seq` with fields; `T` is `List` and `V` is a list
-  type.
-- `V` is `Error` (the node produced by error recovery) and `T` is a node type.
+- `T` is `Seq`, `List` or `Operator` and `V` is a node type.
+
+An error value from [error recovery](pragmas.md#recover) is assignable only to a
+type that admits `error`, such as `T | error`.
 
 A value of type `*T` is not assignable to a location of type `T`, and accessing
 a field of a value that may be `nil` is an error. A value of type `_` is

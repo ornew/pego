@@ -1,1 +1,1 @@
-rule main []Match = [x]+ #recover(skip=[a-z]+)
+rule main node | error = [x]+ #recover(skip=[a-z]+)

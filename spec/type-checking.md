@@ -82,6 +82,14 @@ than `any`, except the terminal a rule with a terminal Type and no action
 produces, the lines of such a rule when it is an Operators Rule, and the
 `Operator` value of an operator line without an action.
 
+A run-time check tests a value as the value types describe it. `Match`,
+`terminal` and a terminal Type take a string node; `node`, `Seq`, `List` and
+`Operator` take every node; a list Type takes a list value, such as one an
+action builds, and not the node of a repetition, whose list is its `Value`;
+`[]_` and `[]any` take every list value; and an error value from recovery fits
+only a Type that admits `error`. Predicates are checked like actions, and a
+value that fails its check makes the predicate fail.
+
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and
 `Error` (from [error recovery](pragmas.md#recover)) counts as an empty list.

@@ -32,13 +32,13 @@ func TestGenerateDirectTypedDocument(t *testing.T) {
 		inputs  []string
 	}{
 		{`type Token terminal
-rule main []Token = token*
+rule main []Token = xs:token* => $xs.Value
 rule token Token = [aé😀]`, []string{"", "aaé😀", "b", "a\xff"}},
 		{`type Token terminal
 rule main Token = t:token [bc]? => $t
 rule token Token = "a" &"b" / "a"`, []string{"ab", "ac", "a", "ad"}},
 		{`type Token terminal
-rule main Token = t:(token #recover(skip=[^;]+ ";")) => $t
+rule main Token | error = t:(token #recover(skip=[^;]+ ";")) => $t
 rule token Token = "a;" @error(message="expected token")`, []string{"a;", "?;", "??;", "?"}},
 		{`type Token terminal
 rule main Token = "a" !.`, []string{"a", "ab", ""}},

@@ -402,7 +402,7 @@ func TestMissingTokensModuleGuard(t *testing.T) {
 }
 
 func TestMissingTokensPredicateRecognitionAndMemoDependencies(t *testing.T) {
-	prog := compile(t, `rule main = x:token {len($x) == 0} $$
+	prog := compile(t, `rule main = x:(token #atomic) {len($x) == 0} $$
 rule token = ";" #missing`)
 	for _, recognize := range []bool{false, true} {
 		requireInsertions(t, prog, "", ParseOptions{MissingTokens: 4, Recognize: recognize}, 1)

@@ -592,8 +592,8 @@ rule returnStatement ReturnStatement = (
     "return" !idPart (!canParseSemicolon -ws e:expressionAllowIn)? eos
 ) => ReturnStatement{Expression: $e}
 rule throwStatement ThrowStatement = (
-    "throw" !idPart (!nlAhead -ws e:expressionAllowIn / &nlAhead &(-ws e:missingIdentifier))
-    (eos / {text($e) == "declare"})
+    "throw" !idPart (!nlAhead -ws &d:(expressionAllowIn #atomic) e:expressionAllowIn / &nlAhead &(-ws e:missingIdentifier))
+    (eos / {text($d) == "declare"})
 ) => ThrowStatement{Expression: $e}
 rule missingIdentifier Identifier = _
 rule debuggerStatement DebuggerStatement = "debugger" !idPart eos
@@ -636,7 +636,7 @@ rule expressionStatement ExpressionStatement = e:expressionAllowIn eos => Expres
 // The identifier declare needs no terminator: the parser reports no missing ";" after it
 // (parseErrorForMissingSemicolonAfter), and goes on with the next statement on the same line.
 rule declareStatement ExpressionStatement = (
-    &x:expressionAllowIn {text($x) == "declare"} e:declareIdentifier
+    &x:(expressionAllowIn #atomic) {text($x) == "declare"} e:declareIdentifier
 ) => ExpressionStatement{Expression: $e}
 rule declareIdentifier Identifier = "declare" !idPart
 
@@ -1468,8 +1468,8 @@ rule jsxSelfClosingElement JsxSelfClosingElement = (
 ) => JsxSelfClosingElement{TagName: $n, TypeArguments: concat($t), Attributes: $a}
 // The closing tag must name the opening tag.
 rule jsxElement JsxElement = (
-    &("<" -ws on:jsxElementName) o:jsxOpeningElement cs:jsxChild*
-    &("</" -ws cn:jsxElementName) c:jsxClosingElement {text($on) == text($cn)}
+    &("<" -ws on:(jsxElementName #atomic)) o:jsxOpeningElement cs:jsxChild*
+    &("</" -ws cn:(jsxElementName #atomic)) c:jsxClosingElement {text($on) == text($cn)}
 ) => JsxElement{OpeningElement: $o, Children: $cs.Value, ClosingElement: $c}
 rule jsxOpeningElement JsxOpeningElement = (
     "<" -ws n:jsxElementName (-ws t:typeArguments)? -ws a:jsxAttributes

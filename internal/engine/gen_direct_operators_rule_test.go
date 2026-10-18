@@ -57,7 +57,7 @@ rule expr Expr = operators {
 rule atom Atom = "a"
 `, []string{"a", "a[b,]", "a[b,c,][d,]", "a[]", "a[b,", "a[b,c,d,e,]", "a[é,]", ""}},
 	{"typed/OperatorsRule_positional_actions", `type Atom terminal
-type Doc = { Text Match; Items []Match }
+type Doc = { Text Match; Items []node }
 type Expr ~ Atom | Doc
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -101,14 +101,14 @@ rule expr Expr = operators {
 }
 rule atom Atom = "a"?
 `, []string{"", "a", "aa", "b"}},
-	{"typed/OperatorsRule_framed_cuts", `type Doc = { Text Match }
+	{"typed/OperatorsRule_framed_cuts", `type Doc = { Text node }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = operators {
     operand x:"a" #atomic #cut => Doc{Text: $x}
     level { prefix "-" #cut "z" => Doc{Text: $op} }
 }
 `, []string{"a", "-za", "-a", "-z", "a?", "", "-x"}},
-	{"typed/OperatorsRule_recovery", `type Doc = { Text Match }
+	{"typed/OperatorsRule_recovery", `type Doc = { Text Match | error }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = operators {
     operand x:"a" #recover(skip=";") #atomic => Doc{Text: $x}

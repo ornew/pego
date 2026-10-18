@@ -4,14 +4,14 @@
 // first-character tests of alternatives after one that read further characters; a plain rule that
 // assigns a variable (bump) restores the environment when it returns.
 type Name terminal
-type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P *Name; Last *Name; Mode int; Sign *Match }
+type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P []Name; Last *Name; Mode int; Sign *Match }
 type L = { Items []A }
 rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => e.$a)}
 rule alt A = (
     (x:name "+" y:name "!" / x:name "+" z:name)
     ("(" q:name ")")? ("(" w:name ".")?
-    ("[" (&p:name name ",")* last:name "]")?
+    ("[" ps:(&p:name name ",")* last:name "]")?
     ({m := 1} "<" / ">")? bump? s:("-" [0-9] "!" / "-" [0-9] "?" / "+")? #atomic
-) => A{X: $x, Y: $y, Z: $z, Q: $q, W: $w, P: $p, Last: $last, Mode: m, Sign: $s}
+) => A{X: $x, Y: $y, Z: $z, Q: $q, W: $w, P: map($ps, (e) => e.$p), Last: $last, Mode: m, Sign: $s}
 rule name Name = [a-z]+
 rule bump = {m := 7} "~"

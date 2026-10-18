@@ -23,24 +23,27 @@ var fieldCheckValues = map[string]string{
 }
 
 // fieldCheckFields maps the declared types of fieldCheckGrammar's field F to the values they
-// accept.
+// accept. Matches and terminal values are both string nodes, lists built by actions are list
+// values, which are not nodes, and an error value fits only a type that admits error.
 var fieldCheckFields = map[string]string{
-	"Alias":         "t?",
-	"*Int":          "t?z",
-	"[]Int":         "l?n",
-	"[]*Int":        "l?nep",
-	"Int | string":  "t?s",
-	"int":           "i",
-	"string":        "s",
-	"bool":          "b",
-	"any":           "mtlkenq?wpzisb",
-	"node":          "mtlkenq?wp",
-	"terminal":      "mt?",
-	"[][]Int":       "w?n",
-	"*(Box | bool)": "q?zb",
-	"Match":         "m?",
-	"List":          "lkenwp?",
-	"*[]*Int":       "l?nepz",
+	"Alias":             "mt",
+	"*Int":              "mtz",
+	"[]Int":             "lkn",
+	"[]*Int":            "lknep",
+	"Int | string":      "mts",
+	"int":               "i",
+	"string":            "s",
+	"bool":              "b",
+	"any":               "mtlkenq?wpzisb",
+	"node":              "mt",
+	"terminal":          "mt",
+	"[][]Int":           "wn",
+	"*(Box | bool)":     "qzb",
+	"Match":             "mt",
+	"List":              "mt",
+	"*[]*Int":           "lknepz",
+	"Int | error":       "mt?",
+	"[](Match | error)": "lkn",
 }
 
 // fieldCheckGrammar gives S a field F of type typ. Constructing S succeeds with an accepted value
@@ -180,9 +183,9 @@ func TestConstructedFieldChecks(t *testing.T) {
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
 	src := `type Int terminal
 type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
-rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l)}
+rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}
 rule item Int = "i" => Int{"i"}
-rule val any = "v"
+rule val any = "v" => list()
 `
 	prog := compile(t, src)
 	var checked []string
@@ -208,8 +211,8 @@ rule item Int = "i" => Int{"i"}
 	if v := plain.Module().instructionSetVersion(); v != isaVersion {
 		t.Fatalf("unchecked module instruction set %d", v)
 	}
-	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use Match as Int in field Dynamic of S") {
-		t.Fatalf("dynamic Match: %s", got)
+	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use "+typeListValue+" as Int in field Dynamic of S") {
+		t.Fatalf("dynamic list: %s", got)
 	}
 	// The recognizer, built without type checking, checks the same fields as its program.
 	pred := compile(t, `type Int terminal

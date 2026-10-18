@@ -128,9 +128,24 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 		k.ruleType(rd)
 	}
 
-	// Keep the types for code generation (typedGo).
+	// Check values in the value model, which decides the run-time checks.
 	k.report = false
-	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams, checks: k.checks}
+	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}
+	values, valueErrs := valueTypesChecked(prog, control, checks)
+	// A location the current model already reports is reported once.
+	reported := map[grammar.Pos]bool{}
+	for _, e := range *errs {
+		reported[e.Pos] = true
+	}
+	for _, e := range valueErrs {
+		if !reported[e.Pos] {
+			*errs = append(*errs, e)
+		}
+	}
+
+	// Keep the types for code generation (typedGo).
+	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams, checks: checks, values: values, valueErrs: valueErrs}
+	info.valuesOnce.Do(func() {})
 	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {

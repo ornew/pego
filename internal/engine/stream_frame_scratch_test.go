@@ -108,7 +108,7 @@ func TestStreamFrameScratchRetainedResults(t *testing.T) {
 		checkStreamFrameScratchRetainedResults(t, `type Value = { N Match }
 type Row = { Key Match; Values []Value }
 rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
-rule record Row = k:[a-z / "é" / "😀"]+ #atomic "=" vs:value+ "\n" => Row{Key: $k, Values: $vs}
+rule record Row = k:[a-z / "é" / "😀"]+ #atomic "=" vs:value+ "\n" => Row{Key: $k, Values: $vs.Value}
 rule value Value = v:[0-9]+ #atomic "," => Value{N: $v}`)
 	})
 }

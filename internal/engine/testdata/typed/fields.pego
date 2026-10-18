@@ -1,9 +1,9 @@
 type Item = { Name Match }
-type Box = { Items []Item; N int; S string; B bool; F Item }
+type Box = { Items node; N int; S string; B bool; F Item | error; FT string }
 type Out = { Box Box; Start int; End int; Text string; Same bool; NNil bool; SNil bool; BNil bool; FNil bool; FText string }
-rule main Out = b:box => Out{Box: $b, Start: $b.Items.Start, End: $b.Items.End, Text: text($b.Items), Same: $b.Items == $b.Items, NNil: $b.N == nil, SNil: $b.S == nil, BNil: $b.B == nil, FNil: $b.F == nil, FText: text($b.F)}
-rule box Box = "(" xs:item* ")" f:fitem => Box{Items: $xs, F: $f}
+rule main Out = b:box => Out{Box: $b, Start: $b.Items.Start, End: $b.Items.End, Text: text($b.Items), Same: $b.Items == $b.Items, NNil: $b.N == nil, SNil: $b.S == nil, BNil: $b.B == nil, FNil: $b.F == nil, FText: $b.FT}
+rule box Box = "(" xs:item* ")" fw:(f:fitem "") => Box{Items: $xs, F: $f, FT: text($fw)}
 rule item Item = " "* i:item2 => $i
 rule item2 Item = n:"x" #atomic => Item{Name: $n}
-rule fitem Item = yitem #recover(skip=[a-z]+)
+rule fitem Item | error = yitem #recover(skip=[a-z]+)
 rule yitem Item = n:"y" #atomic => Item{Name: $n}

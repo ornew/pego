@@ -195,6 +195,9 @@ func TestRuleResultChecks(t *testing.T) {
 				rec := resultWith(checked, in, ParseOptions{Recognize: true})
 				valueErr := strings.Contains(want, "in result of rule") || strings.Contains(want, "error: action in")
 				switch {
+				case in[0] == '?' && valueErr && strings.Contains(rec, "syntax error"):
+					// The recognizer skips the recovered value, and with it the check; the error
+					// of the recovery remains.
 				case in[1] == '!' || in[1] == '~' || !valueErr:
 					if strings.HasPrefix(rec, "error: ") != strings.HasPrefix(want, "error: ") {
 						t.Errorf("%q recognized: %s\nparsed: %s", in, rec, want)

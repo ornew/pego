@@ -111,7 +111,7 @@ rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
 		{"fold and lists", `type Op = { Left Node; Op Match; Right Node }
 type Node ~ Op | Match
 type Args = { Items []Match; N int; S string; B bool }
-rule main = e:expr ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
+rule main = e:(expr #atomic) ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
@@ -405,7 +405,7 @@ func mutants(inputs []string, n int, seed uint64) []string {
 // left by #recover.
 const typedGrammar = `type Name terminal
 type Num terminal
-type Node ~ Call | Name | Num | Seq
+type Node ~ Call | Name | Num | Seq | Error
 type Call = { Fn Name; Args []Node; Span Match; N int; Opt *Match; Rows [][]Num; Ok bool }
 rule main []Node = xs:item* $$ => concat(map($xs, (x) => x))
 rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")

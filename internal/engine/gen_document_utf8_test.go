@@ -19,7 +19,7 @@ func TestGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
 	const nodeGrammar = "rule main = (euro / other)* $$\nrule euro = [€😀]\nrule other = .\n"
 	const typedGrammar = `type Char terminal
 type Result = { Wide []Char; Other []Char }
-rule main Result = w:wide* o:other* $$ => Result{Wide: $w, Other: $o}
+rule main Result = w:wide* o:other* $$ => Result{Wide: $w.Value, Other: $o.Value}
 rule wide Char = [€😀]
 rule other Char = .
 `
