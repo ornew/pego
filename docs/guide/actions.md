@@ -140,8 +140,8 @@ The function arguments are **lambdas**. They can only be written as arguments of
 inside them the parameters are variables, referred to by name without `$`: `acc`, `x`. A lambda can also read the captures
 of the enclosing rule with `$`. The function passed to `map` must produce a node (or `nil`); `filter`'s predicate must produce a
 Boolean. `filter` visits elements from left to right, keeps the original nodes in order, and gives its result the input
-list's static element type. A `nil` input produces an empty list. If its predicate errors, a surrounding predicate action
-fails and a surrounding value action aborts the parse.
+list's static element type. A `nil` input produces an empty list. If its predicate errors, a surrounding Predicate Action
+fails and a surrounding Value Action aborts the parse.
 
 ```pego
 // builtins.pego
@@ -388,7 +388,7 @@ pego: args-optional.pego:4:67: cannot use *[]Ident as []Ident in field Args of C
 
 ### Keeping Only the AST You Need
 
-The parse tree of a realistic language is full of trivia: whitespace, comments, separators and keywords. The AST should
+The concrete syntax tree of a realistic language is full of trivia: whitespace, comments, separators and keywords. The AST should
 contain the data. Four habits get you there:
 
 1. **Name what you need, discard the rest.** Capture the values the action uses and put `-` in front of everything
