@@ -11,7 +11,7 @@ import (
 // cases improve in both position units.
 const documentPieceMinSize = 4 << 10
 
-func useDocumentPieces(text string, unit Unit) bool {
+func useDocumentPieces(text string, unit PositionUnit) bool {
 	if !documentPieceInput {
 		return false
 	}

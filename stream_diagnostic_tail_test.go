@@ -17,7 +17,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 	}
 	const input = "abX!abY?abZ#abW!ab"
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				base := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
 				allErr := p.ParseStream(strings.NewReader(input), nil, base...)

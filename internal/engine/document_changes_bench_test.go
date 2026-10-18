@@ -24,7 +24,7 @@ rule item = [a-z]`), Options{})
 		middle := size / 2
 		textB := textA[:middle] + "b" + textA[middle+1:]
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, enabled := range []bool{false, true} {
 					mode := "disabled"
 					if enabled {

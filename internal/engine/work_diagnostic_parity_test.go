@@ -140,7 +140,7 @@ rule atom Atom = "a"`,
 		t.Run(tc.name, func(t *testing.T) {
 			prog := compile(t, tc.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{Bytes, CodePoints} {
+				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					for _, recognize := range []bool{false, true} {
 						t.Run(fmt.Sprintf("%v/%v/recognize=%t", backend, unit, recognize), func(t *testing.T) {
 							memoObserved, recoveredObserved := false, false

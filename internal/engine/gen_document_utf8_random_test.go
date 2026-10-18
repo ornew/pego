@@ -90,7 +90,7 @@ func decodedBoundaries(s string) []int {
 
 func TestInvalidUTF8EditEquivalence(t *testing.T) {
 	pieces := []string{"", "a", "\n", "é", "日", "😀", "€", "\x80", "\xa9", "\xc3", "\xe6\xbc", "\xe2\x82", "\xac", "\xf0\x9f\x98", "\xff", "\xed\xa0\x80"}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		d, err := NewDocument("\x80\xc3", WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)

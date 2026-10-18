@@ -138,7 +138,7 @@ func checkUnits(t *testing.T, prog *Program, start, input string, b Backend) {
 // checkBackends checks that every backend produces the same result (value, positions, errors).
 func checkBackends(t *testing.T, prog *Program, start, input string) {
 	t.Helper()
-	for _, u := range []Unit{CodePoints, Bytes} {
+	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: u})
 		want := resultJSON(n1, err1)
 		checkRecognize(t, prog, start, input, u, err1)
@@ -155,7 +155,7 @@ func checkBackends(t *testing.T, prog *Program, start, input string) {
 // error as an ordinary parse (or succeeds if it does). Results are not compared when the
 // ordinary parse fails with a runtime error in an action (recognition does not evaluate
 // actions).
-func checkRecognize(t *testing.T, prog *Program, start, input string, u Unit, want error) {
+func checkRecognize(t *testing.T, prog *Program, start, input string, u PositionUnit, want error) {
 	t.Helper()
 	switch want.(type) {
 	case nil, *SyntaxError, SyntaxErrors:

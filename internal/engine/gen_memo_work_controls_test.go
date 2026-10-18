@@ -205,7 +205,7 @@ func TestSparseFirstCallInterruptionAndRetry(t *testing.T){
 }
 
 func TestPublicEnvironmentParity(t *testing.T){
- for _,unit:=range []Unit{Bytes,CodePoints}{for _,input:=range []string{"a","b","aa","bb","?",""}{
+ for _,unit:=range []PositionUnit{Bytes,CodePoints}{for _,input:=range []string{"a","b","aa","bb","?",""}{
   base,baseErr:=Parse(input,WithUnit(unit));before:="";if base!=nil{before=base.String()}
   if reference{continue}
   got,err:=Parse(input,WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:100000}))

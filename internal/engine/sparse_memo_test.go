@@ -104,7 +104,7 @@ func TestSparseMemoParseControls(t *testing.T) {
 		t.Fatal("control no longer exercises sparse rule count")
 	}
 	for i, input := range []string{"const 日本語 = \"😀\";\nconst v = [1, 2].map(x => x + 1);\n", "function f( { return 1;", strings.Repeat("const 日本語 = 1 + 2;\n", 100), strings.Repeat("const a = 1;\n", 100) + "function f( { return 1;"} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, recognize := range []bool{false, true} {
 				checkTrace(t, prog, "main", input, ParseOptions{Unit: unit, Recognize: recognize})
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -136,7 +136,7 @@ func TestSparseMemoInputSelection(t *testing.T) {
 		"/*" + strings.Repeat("a", 1020) + "*/",
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				p := newParser(prog, text, unit, true)
 				p.deferMemo = true
 				if _, err := prog.run(p, backend, "main"); err != nil {

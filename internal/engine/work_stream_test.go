@@ -16,7 +16,7 @@ import (
 func workStreamVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 	t.Helper()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{Bytes, CodePoints} {
+		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(fmt.Sprintf("%s/%s", b, u), func(t *testing.T) { run(t, ParseOptions{Backend: b, Unit: u}) })
 		}
 	}
@@ -467,7 +467,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 }
 
 func TestWorkStreamDiscardAndStackClear(t *testing.T) {
-	for _, u := range []Unit{Bytes, CodePoints} {
+	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(u.String(), func(t *testing.T) {
 			in := input{unit: u, eof: true, baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, WorkLimits{MaxSteps: 128})}
 			if u == Bytes {

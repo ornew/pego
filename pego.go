@@ -63,9 +63,9 @@ func CompileSource(src, start string) (*Parser, error) {
 	return Compile(g, start)
 }
 
-// Unit is the unit of input positions: node Start and End, startPos and endPos in actions, syntax error
+// PositionUnit is the unit of input positions: node Start and End, startPos and endPos in actions, syntax error
 // positions and columns, and the len builtin.
-type Unit = engine.Unit
+type PositionUnit = engine.PositionUnit
 
 const (
 	// CodePoints counts Unicode code points. It is the default.
@@ -115,7 +115,7 @@ func WithMissingTokens(limit int) ParseOption {
 }
 
 // WithUnit selects the position unit. Matching always proceeds by code point, whatever the unit.
-func WithUnit(u Unit) ParseOption {
+func WithUnit(u PositionUnit) ParseOption {
 	return func(o *engine.ParseOptions) { o.Unit = u }
 }
 
@@ -294,7 +294,7 @@ type TextEdit = engine.TextEdit
 func (d *Document) Version() DocumentVersion { return d.doc.Version() }
 
 // Unit returns the position unit selected when the document was constructed.
-func (d *Document) Unit() Unit { return d.doc.Unit() }
+func (d *Document) Unit() PositionUnit { return d.doc.Unit() }
 
 // EditBatch atomically applies ordered, nonoverlapping edits in base coordinates.
 // It rejects stale or foreign tokens, repeated starts, invalid ranges and byte

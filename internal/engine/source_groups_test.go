@@ -42,7 +42,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, source := range []string{"123", "0", "", "x"} {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					if got, want := resultJSON(p.ParseWith("main", source, opts)), resultJSON(ref.ParseWith("main", source, opts)); got != want {

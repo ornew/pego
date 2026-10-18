@@ -118,7 +118,7 @@ func TestDiagnosticSortingAndSnapshots(t *testing.T){
  if err:=catchFatal(t,func(){p.copyErrors(nil,errorsList)});!errors.Is(err,ErrWorkLimit){t.Fatal("recovered error copies unbounded",err)}
 }
 func TestRecoveredPublicDiagnostics(t *testing.T){
- for _,unit:=range []Unit{Bytes,CodePoints}{
+ for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   retained,err:=Parse("!",WithUnit(unit));var recovered SyntaxErrors
   if !errors.As(err,&recovered)||len(recovered)!=1{t.Fatal("baseline recovery",retained,err)}
   expected:=[]string{"\"a\"","\"z\"","\"é\""}
@@ -183,7 +183,7 @@ const generatedGoRecoveryTextConsumer = `package PACKAGE
 import("errors";"reflect";"testing")
 func TestLongRecoveredMessage(t *testing.T){
  message:=LONG_MESSAGE
- for _,unit:=range []Unit{Bytes,CodePoints}{
+ for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   retained,err:=Parse("!",WithUnit(unit));var recovered SyntaxErrors
   if !errors.As(err,&recovered)||len(recovered)!=1 || len(recovered[0].Messages)!=1 || recovered[0].Messages[0]!=message{t.Fatal("recovery label changed",err)}
   want:=recovered[0].Error();captured,ok:=retained.Field("Text").(*Node);if !ok || captured.Field("message")!=want{t.Fatalf("recovered message changed: %v",retained)}

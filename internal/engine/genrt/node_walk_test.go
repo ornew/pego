@@ -99,7 +99,7 @@ func TestWalkDeep(t *testing.T) {
 }
 
 func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		a, b, z := &Node{Start: 1, End: 3}, &Node{Start: 3, End: 4}, &Node{Start: 3, End: 3}
 		root := &Node{Start: 20, End: 21, Children: []*Node{a, b, z, a}}
 		c := Cursor{Root: root, Unit: unit}
@@ -129,7 +129,7 @@ func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
 			t.Fatal("negative position accepted")
 		}
 	}
-	if err := (Cursor{Unit: Unit(99)}).At(0, func(WalkVisit) (WalkAction, error) { return WalkContinue, nil }); err == nil {
+	if err := (Cursor{Unit: PositionUnit(99)}).At(0, func(WalkVisit) (WalkAction, error) { return WalkContinue, nil }); err == nil {
 		t.Fatal("invalid unit accepted")
 	}
 }

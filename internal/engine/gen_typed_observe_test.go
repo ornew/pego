@@ -150,7 +150,7 @@ func checkTypedTrace(t *testing.T, events []TraceEvent){
  if len(stack)!=0 {t.Fatal("open stack",stack)}
 }
 func TestTypedTraceParity(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{for _,controlled:=range []bool{false,true}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{for _,controlled:=range []bool{false,true}{
   opts:=[]ParseOption{WithUnit(unit)};refUnit:=reference.CodePoints;if unit==Bytes{refUnit=reference.Bytes};refOpts:=[]reference.ParseOption{reference.WithUnit(refUnit)}
   if controlled{opts=append(opts,WithWorkLimits(WorkLimits{MaxSteps:100000}));refOpts=append(refOpts,reference.WithWorkLimits(reference.WorkLimits{MaxSteps:100000}))}
   for _,input:=range []string{INPUT,"",INPUT+"?"}{

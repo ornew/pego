@@ -112,7 +112,7 @@ import (
 
 const largeRunes = 1 << 20 // two MiB of UTF-8 input
 
-func unitStart(unit Unit) int {
+func unitStart(unit PositionUnit) int {
 	if unit == Bytes {
 		return 2 * largeRunes
 	}
@@ -139,7 +139,7 @@ func ruleForKind(kind string) string {
 // parseAndClone returns only the caller-owned result. Cloning every Text field
 // reachable from that result excludes ordinary input-substring retention; any
 // large input still live afterwards must be reachable through an owned slab.
-func parseAndClone(kind string, unit Unit, runes int) any {
+func parseAndClone(kind string, unit PositionUnit, runes int) any {
 	input := sampleInput(kind, runes)
 	value, err := ParseRuleAST(ruleForKind(kind), input, WithUnit(unit))
 	if err != nil {
@@ -152,7 +152,7 @@ func parseAndClone(kind string, unit Unit, runes int) any {
 
 // warmTypedOutput uses an identical parser/result path before heap snapshots.
 // Its frame returns before the baseline GC, leaving no result or input alive.
-func warmTypedOutput(kind string, unit Unit, control bool) {
+func warmTypedOutput(kind string, unit PositionUnit, control bool) {
 	_ = parseAndClone(kind, unit, largeRunes)
 	if control {
 		_ = controlResult(kind, unitStart(unit))
@@ -211,7 +211,7 @@ func controlResult(kind string, start int) any {
 }
 
 func TestTypedOutputOwnership(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			t.Run(fmt.Sprintf("%s/%v", kind, unit), func(t *testing.T) {
 				value := parseAndClone(kind, unit, largeRunes)
@@ -283,7 +283,7 @@ func TestTypedOutputOwnership(t *testing.T) {
 // capture control and the large-retention input. Keep the returned value live
 // through each iteration so it has the same escape contract as ParseAST users.
 func BenchmarkTypedOutputParse(b *testing.B) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, runes := range []int{8, largeRunes} {
 			for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 				name := fmt.Sprintf("%s/%v/%d-runes", kind, unit, runes)
@@ -311,7 +311,7 @@ func BenchmarkTypedOutputParse(b *testing.B) {
 // delta for the last escaped result. The timed loop is ordinary parsing; the
 // final collection and heap snapshot happen after the timer stops.
 func BenchmarkTypedOutputRetainedHeap(b *testing.B) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			for _, control := range []bool{false, true} {
 				name := fmt.Sprintf("%s/%v/control=%t", kind, unit, control)

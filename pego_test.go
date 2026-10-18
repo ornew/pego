@@ -151,7 +151,7 @@ func TestUnits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for unit, want := range map[pego.Unit]int32{pego.CodePoints: 1, pego.Bytes: 2} {
+	for unit, want := range map[pego.PositionUnit]int32{pego.CodePoints: 1, pego.Bytes: 2} {
 		n, err := p.Parse("éa", pego.WithUnit(unit))
 		if err != nil || n.Field("x").(*pego.Node).Start != want {
 			t.Errorf("%v: %v %v", unit, n, err)

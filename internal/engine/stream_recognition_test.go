@@ -43,7 +43,7 @@ func TestStreamCaptureRecognition(t *testing.T) {
 				}
 				for _, program := range []*Program{p, saved} {
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-						for _, unit := range []Unit{CodePoints, Bytes} {
+						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							opts := ParseOptions{Backend: backend, Unit: unit}
 							for _, recognize := range []bool{false, true} {
 								opts.Recognize = recognize

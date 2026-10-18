@@ -30,7 +30,7 @@ func TestDuckDBKeywordNames(t *testing.T) {
 		{"SELECT 1 iNtentionally", true},
 	} {
 		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 				_, err := p.Parse(tc.sql, pego.WithBackend(backend), pego.WithUnit(unit))
 				if (err == nil) != tc.ok {
 					t.Errorf("Parse(%q, backend=%v, unit=%v): %v", tc.sql, backend, unit, err)
@@ -65,7 +65,7 @@ func TestDuckDBSetofTypes(t *testing.T) {
 		for _, template := range []string{"SELECT CAST(NULL AS %s)", "SELECT NULL::%s", "CREATE TABLE t (x %s)"} {
 			sql := fmt.Sprintf(template, tc.typ)
 			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 					_, err := p.Parse(sql, pego.WithBackend(backend), pego.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)
@@ -127,7 +127,7 @@ func TestDuckDBFrameBounds(t *testing.T) {
 		for _, frameUnit := range []string{"ROWS", "RANGE", "GROUPS"} {
 			sql := fmt.Sprintf(`SELECT sum("é") OVER (ORDER BY i %s %s)`, frameUnit, tc.bound)
 			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 					_, err := p.Parse(sql, pego.WithBackend(backend), pego.WithUnit(unit))
 					if (err == nil) != tc.ok {
 						t.Errorf("Parse(%q, backend=%v, unit=%v): %v", sql, backend, unit, err)

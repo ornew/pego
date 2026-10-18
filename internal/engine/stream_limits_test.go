@@ -47,7 +47,7 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				var expected []string
 				refErr := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(n *Node) error {
 					expected = append(expected, resultJSON(n, nil))
@@ -89,7 +89,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 		t.Run(src, func(t *testing.T) {
 			prog := compile(t, src)
 			checkBackends(t, prog, "main", "ab")
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				want, err := prog.ParseWith("main", "ab", ParseOptions{Unit: unit})
 				if err != nil {
 					t.Fatal(err)
@@ -115,7 +115,7 @@ func TestFiniteStreamConsumerError(t *testing.T) {
 	prog := compile(t, `rule main = "a" #repeat(1, 2) #stream $$`)
 	stop := errors.New("consumer stopped")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			count := 0
 			err := prog.ParseStreamWith("main", strings.NewReader("aaa"), func(*Node) error {
 				count++

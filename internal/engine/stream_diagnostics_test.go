@@ -24,7 +24,7 @@ func TestStreamDiagnosticCallbackSkipsSpeculativeRecovery(t *testing.T) {
 	p := compile(t, `rule main = item+ #stream $$
 rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				calls, elements := 0, 0
 				err := p.ParseStreamWith("main", strings.NewReader("X!a"), func(*Node) error {
@@ -156,7 +156,7 @@ rule item = "ab" #recover(skip=[^a]+)`)
 	const count = 1000
 	input := strings.Repeat("abX!", count)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			o := ParseOptions{Backend: backend, Unit: unit, DiagnosticLimit: 3}
 			callbacks, elements := 0, 0
 			maxWorking := 0

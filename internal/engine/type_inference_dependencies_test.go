@@ -202,7 +202,7 @@ func TestInferenceChainSavedValues(t *testing.T) {
 			if marshal.OmitAST && backend == Closure {
 				continue
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := q.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 				if err != nil || n.String() != "P{}" {
 					t.Errorf("saved %s/%s result: %v, %v", backend, unit, n, err)

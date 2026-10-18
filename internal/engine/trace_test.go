@@ -184,7 +184,7 @@ func TestTraceKeepsResults(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {
-			for _, u := range []Unit{CodePoints, Bytes} {
+			for _, u := range []PositionUnit{CodePoints, Bytes} {
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u})
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u, Recognize: true})
 			}
@@ -541,7 +541,7 @@ func TestTracesAgreeAcrossBackends(t *testing.T) {
 
 // firstCharEnd returns the position after the character at pos in the unit u: what a call that
 // looks at that character only has examined, which is pos+1 at the end of the input.
-func firstCharEnd(input string, pos int, u Unit) int {
+func firstCharEnd(input string, pos int, u PositionUnit) int {
 	if u == Bytes && pos < len(input) {
 		_, size := utf8.DecodeRuneInString(input[pos:])
 		return pos + size

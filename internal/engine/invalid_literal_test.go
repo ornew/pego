@@ -32,7 +32,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 	}
 	for _, tc := range cases {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%q/%x/%s/%s", tc.literal, tc.input, backend, unit), func(t *testing.T) {
 					p := compile(t, "rule main = "+fmt.Sprintf("%q", tc.literal)+" $$")
 					opts := ParseOptions{Backend: backend, Unit: unit}
@@ -71,7 +71,7 @@ func TestReplacementLiteralTextPredicate(t *testing.T) {
 	prog := compile(t, `rule main = c:"�" {text($c) == "�"} $$`)
 	for _, input := range []string{"\xff", "\x80", "\xc3", "�"} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{Bytes, CodePoints} {
+			for _, unit := range []PositionUnit{Bytes, CodePoints} {
 				for _, recognize := range []bool{false, true} {
 					_, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize})
 					want := unit == CodePoints || utf8.ValidString(input)
@@ -86,7 +86,7 @@ func TestReplacementLiteralTextPredicate(t *testing.T) {
 
 func TestInvalidUTF8LiteralStream(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, expr := range []string{`"�"`, `[�]`, `"x" / "�"`, `"a�"`} {
 				t.Run(fmt.Sprintf("%s/%s/%s", backend, unit, expr), func(t *testing.T) {
 					p := compile(t, "rule main = item* #stream $$\nrule item = "+expr+` "\n"`)
@@ -174,10 +174,10 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 			write(pkg+"/parser.go", code)
 			fmt.Fprintf(&imports, "%s %q\n", pkg, "literaltest/"+pkg)
 			for _, input := range tc.inputs {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 					want.WriteString(resultJSON(n, err) + "\n")
-					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
+					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
 					if mode != "untyped" {
 						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=int(child.Start) || ast.T.End!=int(child.End) || ast.T.Text!=child.Text {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
 					}
@@ -199,7 +199,7 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 
 // literalTextUnits computes JS text units from the documented byte-preserving
 // surrogate convention, independently of the TypeScript matcher.
-func literalTextUnits(input string, unit Unit) []rune {
+func literalTextUnits(input string, unit PositionUnit) []rune {
 	var units []rune
 	for i := 0; i < len(input); {
 		r, size := utf8.DecodeRuneInString(input[i:])
@@ -232,7 +232,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 			script.WriteString(`import {parse,recognize,marshal,Node,CodePoints,Bytes} from "./parser.ts";` + "\n")
 			for _, input := range tc.inputs {
 				fmt.Fprintf(&script, `for (const unit of [CodePoints,Bytes]){const input=new Uint8Array(Buffer.from(%q,"base64"));const r=parse(input,unit);const rec=recognize(input,unit);if((rec?.message??null)!==(r.error?.message??null))throw new Error("recognition differs");const child=r.node?.field("T");const expected=unit===Bytes?String.fromCharCode(...%s):String.fromCharCode(...%s);if(!r.error && (!(child instanceof Node)||child.text!==expected))throw new Error("matched bytes differ");const out:Record<string,unknown>={};if(r.error)out["err"]=r.error.message;out["node"]=JSON.parse(marshal(r.node));console.log(JSON.stringify(out));}`+"\n", base64.StdEncoding.EncodeToString([]byte(input)), tsInts(literalTextUnits(input, Bytes)), tsInts(literalTextUnits(input, CodePoints)))
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 					want.WriteString(resultJSON(n, err) + "\n")
 				}
@@ -268,7 +268,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 
 func TestOpenPipeInvalidUTF8Literal(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range []string{"\xff\n", "\x80\n", "\xc3\n", "�\n"} {
 				t.Run(fmt.Sprintf("%s/%s/%x", backend, unit, input), func(t *testing.T) {
 					prog := compile(t, `rule main = item* #stream $$
@@ -341,7 +341,7 @@ func BenchmarkByteLiteralMatching(b *testing.B) {
 				if _, err := prog.rule(backend, "main"); err != nil {
 					b.Fatal(err)
 				}
-				for _, unit := range []Unit{Bytes, CodePoints} {
+				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					for _, recognize := range []bool{true, false} {
 						b.Run(fmt.Sprintf("%x/%t/%s/%s/Recognize%t", literal, match, backend, unit, recognize), func(b *testing.B) {
 							opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}

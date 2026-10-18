@@ -85,7 +85,7 @@ rule token Token = "a;" @error(message="want token")`)
 const documentErrorOwnershipTest = `package PACKAGE
 import("reflect";"testing")
 func TestRecoveredDiagnosticsAreOwned(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,parse:=range []func(*Document)error{METHODS}{
    d,err:=NewDocument("?é;",WithUnit(unit));if err!=nil{t.Fatal(err)}
    _,want:=Parse(d.Text(),WithUnit(unit))
@@ -108,7 +108,7 @@ func TestRecoveredDiagnosticsAreOwned(t *testing.T){
  }
 }
 func TestOrdinaryFailureIsOwned(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,parse:=range []func(*Document)error{METHODS}{
    d,err:=NewDocument("??",WithUnit(unit));if err!=nil{t.Fatal(err)}
    _,want:=Parse(d.Text(),WithUnit(unit))
@@ -127,7 +127,7 @@ import("testing";"strings";"strconv")
 var diagnosticBenchmarkError error
 func BenchmarkDocumentRecovered(b *testing.B){
  for _,count:=range []int{1,128}{
-  for _,unit:=range []struct{name string; unit Unit}{{"CodePoints",CodePoints},{"Bytes",Bytes}}{
+  for _,unit:=range []struct{name string; unit PositionUnit}{{"CodePoints",CodePoints},{"Bytes",Bytes}}{
    b.Run(strconv.Itoa(count)+"/"+unit.name,func(b *testing.B){
     input:=strings.Repeat("?;",count)
     d,err:=NewDocument(input,WithUnit(unit.unit));if err!=nil{b.Fatal(err)}

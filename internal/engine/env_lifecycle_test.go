@@ -41,7 +41,7 @@ func TestEnvironmentRollback(t *testing.T) {
 func TestAssignedStreamMemoryIsBounded(t *testing.T) {
 	prog := compile(t, assignedStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				p := newStreamParser(prog, &lineReader{line: "a", n: 60000}, unit)
 				count := 0

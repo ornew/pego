@@ -25,7 +25,7 @@ const (
 type DocumentChange struct {
 	Kind        DocumentChangeKind
 	From, To    DocumentVersion
-	Unit        Unit
+	Unit        PositionUnit
 	Edits       []TextEdit
 	FullRefresh bool
 	// Invalidated is conservative: an accepted edit may affect the whole output.

@@ -111,7 +111,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 								if marshal.OmitAST && prog == loaded && b == Closure {
 									continue
 								}
-								for _, unit := range []Unit{CodePoints, Bytes} {
+								for _, unit := range []PositionUnit{CodePoints, Bytes} {
 									for _, recognize := range []bool{false, true} {
 										if marshal.OmitAST && prog == loaded && recognize {
 											continue // Recognition without the AST remains a separate capability.
@@ -244,7 +244,7 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 					t.Fatal(err)
 				}
 				for _, b := range []Backend{Bytecode, BytecodeIterative} {
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						ref := ParseOptions{Unit: unit}
 						want, we := p.ParseWith("main", "éé", ref)
 						ref.Backend = b
@@ -283,7 +283,7 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 					if marshal.OmitAST && prog == loaded && b == Closure {
 						continue
 					}
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						opts := ParseOptions{Backend: b, Unit: unit}
 						var got []string
 						err := prog.ParseStreamWith("main", strings.NewReader("ééé"), func(n *Node) error {
@@ -344,7 +344,7 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 	}
 	var expected []string
 	for _, input := range []string{"", "é", "ééé", "x", "éx"} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			n, err := p.ParseWith("main", input, ParseOptions{Unit: unit})
 			expected = append(expected, resultJSON(n, err))
 		}
@@ -364,7 +364,7 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 import ("encoding/json";"fmt")
 func main() {
  for _, input := range []string{"","é","ééé","x","éx"} {
-  for _, unit := range []Unit{CodePoints,Bytes} {
+  for _, unit := range []PositionUnit{CodePoints,Bytes} {
    n, err := Parse(input,WithUnit(unit))
    ` + astCheck + `
    out := map[string]any{"node":n}

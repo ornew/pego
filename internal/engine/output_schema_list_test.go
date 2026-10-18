@@ -68,7 +68,7 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{"one"}}}}`, "x", holde
 				t.Fatal(err)
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 						n, err := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 						if err != nil {

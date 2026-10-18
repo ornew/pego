@@ -25,7 +25,7 @@ func BenchmarkDocumentInputEdit(b *testing.B) {
 			name string
 			at   int
 		}{{"start", 0}, {"middle", size.n / 2}, {"end", size.n - 1}} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, mode := range []string{"insert-delete", "replace"} {
 					b.Run(fmt.Sprintf("%s/%s/%s/%s", size.name, pos.name, unit, mode), func(b *testing.B) {
 						doc, err := program.NewDocumentWith("main", strings.Repeat("a", size.n), ParseOptions{Unit: unit})

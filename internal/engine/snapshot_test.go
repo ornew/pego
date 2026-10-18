@@ -14,7 +14,7 @@ import (
 func snapshotVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 	t.Helper()
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) { run(t, ParseOptions{Backend: backend, Unit: unit}) })
 		}
 	}

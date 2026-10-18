@@ -19,7 +19,7 @@ type documentPiece struct {
 	largeOffs []int
 }
 
-func newDocumentPiece(text string, unit Unit) documentPiece {
+func newDocumentPiece(text string, unit PositionUnit) documentPiece {
 	if unit == Bytes {
 		return documentPiece{text: text}
 	}
@@ -50,14 +50,14 @@ func (p documentPiece) byteOffset(i int) int {
 	return int(p.offs[i] - p.offs[0])
 }
 
-func (p documentPiece) length(unit Unit) int {
+func (p documentPiece) length(unit PositionUnit) int {
 	if unit == Bytes {
 		return len(p.text)
 	}
 	return len(p.runes)
 }
 
-func (p documentPiece) sub(from, to int, unit Unit) documentPiece {
+func (p documentPiece) sub(from, to int, unit PositionUnit) documentPiece {
 	if unit == Bytes {
 		return documentPiece{text: p.text[from:to]}
 	}
@@ -71,7 +71,7 @@ func (p documentPiece) sub(from, to int, unit Unit) documentPiece {
 	return sub
 }
 
-func (p documentPiece) substring(from, to int, unit Unit) string {
+func (p documentPiece) substring(from, to int, unit PositionUnit) string {
 	if unit == Bytes {
 		return p.text[from:to]
 	}
@@ -82,14 +82,14 @@ func (p documentPiece) substring(from, to int, unit Unit) string {
 // documentPieces keeps the editable text separate from the contiguous batch
 // and stream input paths. Each edit copies descriptors, not unchanged text.
 type documentPieces struct {
-	unit   Unit
+	unit   PositionUnit
 	parts  []documentPiece
 	n      int
 	full   string
 	fullOK bool
 }
 
-func newDocumentPieces(text string, unit Unit) *documentPieces {
+func newDocumentPieces(text string, unit PositionUnit) *documentPieces {
 	p := newDocumentPiece(text, unit)
 	d := &documentPieces{unit: unit, n: p.length(unit)}
 	if d.n != 0 {

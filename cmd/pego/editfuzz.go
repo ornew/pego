@@ -80,7 +80,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 		}
 		bs = append(bs, b)
 	}
-	var us []pego.Unit
+	var us []pego.PositionUnit
 	for _, name := range strings.Split(*units, ",") {
 		u, err := editfuzz.ParseUnit(name)
 		if err != nil {

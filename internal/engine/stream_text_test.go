@@ -11,7 +11,7 @@ import (
 
 func TestStreamTextSnapshots(t *testing.T) {
 	text := strings.Repeat("aé😀\xff\xc0z\n", 700)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		t.Run(unit.String(), func(t *testing.T) {
 			in := input{unit: unit, reader: bufio.NewReader(strings.NewReader(text)), baseLine: 1, baseCol: 1}
 			in.fill(1 << 20)
@@ -55,7 +55,7 @@ func TestStreamTextSnapshots(t *testing.T) {
 }
 
 func TestStreamTextSnapshotNearMaximumPosition(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		in := input{unit: unit, base: int(^uint(0)>>1) - 128, reader: bufio.NewReader(strings.NewReader(strings.Repeat("x", 100)))}
 		in.fill(in.base + 100)
 		if got := in.text(in.base, in.base+10); got != "xxxxxxxxxx" {
@@ -68,7 +68,7 @@ func TestStreamTextSnapshotNearMaximumPosition(t *testing.T) {
 }
 
 func TestStreamTextSnapshotBoundaries(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, size := range []int{63, 64, 1024, 1025, 3000} {
 			t.Run(fmt.Sprintf("%s/%d", unit, size), func(t *testing.T) {
 				var data strings.Builder
@@ -94,7 +94,7 @@ func TestStreamTextSnapshotBoundaries(t *testing.T) {
 
 // Text extraction must never trigger a reader call just to fill a snapshot.
 func TestStreamTextSnapshotDoesNotReadAhead(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		reader := &snapshotOneByteReader{source: strings.Repeat("x", 200)}
 		in := input{unit: unit, reader: bufio.NewReader(reader)}
 		in.fill(1)
@@ -128,7 +128,7 @@ func TestStreamTextSnapshotRetainedMalformedResults(t *testing.T) {
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat("é😀a\xff\xc0z\n", 700)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				whole, err := prog.ParseWith("main", text, opts)
@@ -158,7 +158,7 @@ func TestStreamTextSnapshotSplitUTF8(t *testing.T) {
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat(strings.Repeat("é😀\xff\xc0a", 40)+"\n", 30)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				whole, err := prog.ParseWith("main", text, opts)

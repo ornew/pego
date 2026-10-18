@@ -28,7 +28,7 @@ type Options struct {
 	Backend pego.Backend
 	// Unit is the position unit of the Documents, the fresh parses and the edits. The zero value is
 	// CodePoints.
-	Unit pego.Unit
+	Unit pego.PositionUnit
 	// Seed selects the generated sequences. The same seed, options and package version generate the same
 	// sequences with the same Go release, but a saved Sequence, not a seed, is the reproducer.
 	Seed uint64

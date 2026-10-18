@@ -63,7 +63,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		fmt.Fprintf(&script, "{ const m = await import('./g%d.ts'); const rows = [\n", i)
 		for _, name := range []string{"main", prog.rules[len(prog.rules)-1].name} {
 			for _, input := range c.inputs {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {
 						_, err := prog.ParseWith(name, input, ParseOptions{Unit: unit, MaxDepth: limit})
 						want := ""

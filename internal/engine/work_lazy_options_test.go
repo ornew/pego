@@ -17,7 +17,7 @@ rule item = [a-z]+`)
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				o := ParseOptions{Unit: unit}
 				plain, plainErr := p.ParseWith("main", "abc,def", o)
 				o.WorkLimits = WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}

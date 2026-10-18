@@ -33,7 +33,7 @@ rule blank = "\n"`
 	}
 	inputs = append(inputs, "ka = \xff\xfe\n", "ka = é\n")
 	var opts []ParseOptions
-	for _, u := range []Unit{CodePoints, Bytes} {
+	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		for _, be := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			opts = append(opts, ParseOptions{Unit: u, Backend: be}, ParseOptions{Unit: u, Backend: be, Recognize: true})
 		}

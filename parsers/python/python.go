@@ -341,7 +341,7 @@ func inspect(v reflect.Value, f func(any) bool) {
 }
 
 // unitOptions preserves the first-unit policy of the handwritten convenience API.
-func unitOptions(units []Unit) []ParseOption {
+func unitOptions(units []PositionUnit) []ParseOption {
 	if len(units) == 0 {
 		return nil
 	}

@@ -28,7 +28,7 @@ func TestYAMLDirectiveBackends(t *testing.T) {
 	} {
 		t.Run(tc.directive, func(t *testing.T) {
 			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 					for _, recognize := range []bool{false, true} {
 						opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
 						if recognize {

@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func fallbackTextInput(unit Unit, base int, bytes []byte, runes []rune, control *workControl) input {
+func fallbackTextInput(unit PositionUnit, base int, bytes []byte, runes []rune, control *workControl) input {
 	return input{unit: unit, base: base, bs: bytes, in: runes, control: control}
 }
 
@@ -161,7 +161,7 @@ func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
 func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
 	prog := compile(t, `rule main = .* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			raw := strings.Repeat("z", 9000)
 			if unit == CodePoints {
 				raw = strings.Repeat("\xff", 9000)

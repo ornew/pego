@@ -32,12 +32,12 @@ func TestInvalidUTF8Positions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, mode := range []struct {
 				name string
-				unit []Unit
+				unit []PositionUnit
 				pos  int
 			}{
 				{"default", nil, tc.codepoints},
-				{"CodePoints", []Unit{CodePoints}, tc.codepoints},
-				{"Bytes", []Unit{Bytes}, tc.bytes},
+				{"CodePoints", []PositionUnit{CodePoints}, tc.codepoints},
+				{"Bytes", []PositionUnit{Bytes}, tc.bytes},
 			} {
 				t.Run(mode.name, func(t *testing.T) {
 					f, err := ParseFile(tc.input, mode.unit...)
@@ -56,7 +56,7 @@ func TestInvalidUTF8Positions(t *testing.T) {
 
 func TestSemanticErrorColumnsWithUnicode(t *testing.T) {
 	for _, tc := range []struct {
-		unit Unit
+		unit PositionUnit
 		pos  int
 	}{{CodePoints, 15}, {Bytes, 16}} {
 		_, err := ParseFile("{é: 1, X=a: 2, X=b: 3}\n", tc.unit)
@@ -69,7 +69,7 @@ func TestSemanticErrorColumnsWithUnicode(t *testing.T) {
 		}
 	}
 	for _, input := range []string{"x: \"�\"", "// �\nx: 1"} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			if _, err := ParseFile(input, unit); err != nil {
 				t.Errorf("valid replacement rune in %q: %v", input, err)
 			}
@@ -85,7 +85,7 @@ func BenchmarkInvalidUTF8Position(b *testing.B) {
 		{"ASCII tail", "// " + strings.Repeat("a", 64<<10) + "\xff"},
 		{"Unicode tail", "// " + strings.Repeat("é😀", (64<<10)/6) + "\xff"},
 	} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			name := "CodePoints"
 			if unit == Bytes {
 				name = "Bytes"

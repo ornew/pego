@@ -37,7 +37,7 @@ import (
  "testing"
 )
 func TestTypedDocumentResultAndOwnership(t *testing.T) {
- for _, unit := range []Unit{CodePoints, Bytes} {
+ for _, unit := range []PositionUnit{CodePoints, Bytes} {
   calls := 0
   d, err := NewDocument("é", func(o *parseOptions) { calls++; o.unit = unit })
   if err != nil || calls != 1 { t.Fatalf("construction: %v, calls %d", err, calls) }
@@ -57,7 +57,7 @@ func TestTypedDocumentResultAndOwnership(t *testing.T) {
   invocationCalls := 0
   _, err = d.ParseAST(func(o *parseOptions) { invocationCalls++; o.unit = unit })
   if err != nil || invocationCalls != 1 { t.Fatalf("invocation option: %v, calls %d", err, invocationCalls) }
-  if _, err := d.ParseAST(WithUnit(Unit(1-int(unit)))); err == nil { t.Fatal("unit change accepted") }
+  if _, err := d.ParseAST(WithUnit(PositionUnit(1-int(unit)))); err == nil { t.Fatal("unit change accepted") }
   if _, err := d.ParseAST(WithMaxDepth(-1)); err == nil { t.Fatal("negative depth accepted") }
   cancelled, cancel := context.WithCancel(context.Background()); cancel()
   if v, err := d.ParseAST(WithContext(cancelled)); v != nil || !errors.Is(err, context.Canceled) { t.Fatalf("cancellation: %v %v", v, err) }
@@ -123,7 +123,7 @@ import (
 )
 func isRecoveryError(v any) bool { _, ok := v.(*recovery.Error); return ok }
 func TestNilAndRecovery(t *testing.T) {
- for _, unit := range []optional.Unit{optional.CodePoints, optional.Bytes} {
+ for _, unit := range []optional.PositionUnit{optional.CodePoints, optional.Bytes} {
   d, err := optional.NewDocument("", optional.WithUnit(unit))
   if err != nil { t.Fatal(err) }
   if value, err := d.ParseAST(); value != nil || err != nil { t.Fatalf("nil success: %v %v", value, err) }
@@ -132,7 +132,7 @@ func TestNilAndRecovery(t *testing.T) {
   want, wantErr := optional.ParseAST("é", optional.WithUnit(unit))
   if gotErr != nil || wantErr != nil || !reflect.DeepEqual(got, want) { t.Fatalf("edited optional: %v / %v", gotErr, wantErr) }
  }
- for _, unit := range []recovery.Unit{recovery.CodePoints, recovery.Bytes} {
+ for _, unit := range []recovery.PositionUnit{recovery.CodePoints, recovery.Bytes} {
   d, err := recovery.NewDocument("?", recovery.WithUnit(unit))
   if err != nil { t.Fatal(err) }
   got, gotErr := d.ParseAST()

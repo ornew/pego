@@ -131,7 +131,7 @@ func TestConstructedFieldChecks(t *testing.T) {
 				value := fieldCheckValues[in[:1]]
 				accepted := strings.Contains(fieldCheckFields[typ], in[:1])
 				var want string
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range []struct {
 						name string
 						prog *Program

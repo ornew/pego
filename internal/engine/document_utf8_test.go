@@ -72,7 +72,7 @@ func TestDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 	for gi, grammar := range grammars {
 		p := compile(t, grammar)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{Bytes, CodePoints} {
+			for _, unit := range []PositionUnit{Bytes, CodePoints} {
 				t.Run(fmt.Sprintf("%d/%s/%s", gi, backend, unit), func(t *testing.T) {
 					d, err := p.NewDocumentWith("main", "\x80\xc3", ParseOptions{Backend: backend, Unit: unit})
 					if err != nil {

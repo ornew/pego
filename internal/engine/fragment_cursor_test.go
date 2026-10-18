@@ -45,7 +45,7 @@ func TestFragmentCursorMalformedPrefixParity(t *testing.T) {
 	prog := compile(t, `rule main = . .`)
 	source := "😀\xffunconsumed"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, recognize := range []bool{false, true} {
 				options := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}
 				prefix, err := prog.ParsePrefixWith("main", source, options)

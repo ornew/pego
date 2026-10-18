@@ -31,7 +31,7 @@ func (r *traceLifecycleReader) Read(b []byte) (int, error) {
 }
 
 //go:noinline
-func traceLifecycleDocument(t *testing.T, p *Program, b Backend, u Unit) (TraceEvent, weak.Pointer[byte], weak.Pointer[traceLifecycleSentinel]) {
+func traceLifecycleDocument(t *testing.T, p *Program, b Backend, u PositionUnit) (TraceEvent, weak.Pointer[byte], weak.Pointer[traceLifecycleSentinel]) {
 	s := &traceLifecycleSentinel{}
 	s.value[0] = 42
 	text := strings.Repeat("a", 4096)
@@ -63,7 +63,7 @@ func traceLifecycleDocument(t *testing.T, p *Program, b Backend, u Unit) (TraceE
 }
 
 //go:noinline
-func traceLifecycleStream(t *testing.T, p *Program, b Backend, u Unit) (TraceEvent, weak.Pointer[traceLifecycleReader], weak.Pointer[traceLifecycleSentinel], *Node) {
+func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (TraceEvent, weak.Pointer[traceLifecycleReader], weak.Pointer[traceLifecycleSentinel], *Node) {
 	s := &traceLifecycleSentinel{}
 	s.value[0] = 42
 	r := &traceLifecycleReader{text: "#records\na=1\nbc=22\n"}
@@ -99,7 +99,7 @@ func TestTraceLifecycleReleasesOwnersAfterGC(t *testing.T) {
 	doc := compile(t, `rule main = "a"* $$`)
 	stream := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("document/%s/%s", b, u), func(t *testing.T) {
 				e, ir, sr := traceLifecycleDocument(t, doc, b, u)
 				for range 4 {

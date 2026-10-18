@@ -76,7 +76,7 @@ func Valid(input string) bool {
 }
 
 // locate sets the line and column of a SemanticError, whose position is in the unit of the parse.
-func locate(input string, err error, unit []Unit) error {
+func locate(input string, err error, unit []PositionUnit) error {
 	e, ok := err.(*SemanticError)
 	if !ok {
 		return err
@@ -99,7 +99,7 @@ func locate(input string, err error, unit []Unit) error {
 }
 
 // unitOptions preserves the first-unit policy of the handwritten convenience API.
-func unitOptions(units []Unit) []ParseOption {
+func unitOptions(units []PositionUnit) []ParseOption {
 	if len(units) == 0 {
 		return nil
 	}

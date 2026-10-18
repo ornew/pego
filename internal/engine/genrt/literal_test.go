@@ -18,7 +18,7 @@ func BenchmarkLiteralMatcher(b *testing.B) {
 				chars[len(chars)-1] = '!'
 				input = string(chars)
 			}
-			for _, unit := range []Unit{Bytes, CodePoints} {
+			for _, unit := range []PositionUnit{Bytes, CodePoints} {
 				b.Run(fmt.Sprintf("%x/%t/%d", text, match, unit), func(b *testing.B) {
 					p := parser{unit: unit, bs: input, n: len(input), in: []rune(input), silent: 1}
 					if unit == CodePoints {

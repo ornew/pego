@@ -13,7 +13,7 @@ func TestTraversalPublicFacade(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 		node, err := parser.Parse("é", pego.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)

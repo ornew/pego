@@ -113,7 +113,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 				if omit && backend == Closure {
 					continue
 				}
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					count := 0
 					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
 					var recovered SyntaxErrors

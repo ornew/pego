@@ -15,7 +15,7 @@ rule item = "a;" @error(message="original") #recover(skip="?;")`), Options{})
 		b.Fatal(err)
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, count := range []int{0, 1, 128} {
 				b.Run(fmt.Sprintf("%s/%s/%d", backend, unit, count), func(b *testing.B) {
 					text := strings.Repeat("?;", count)

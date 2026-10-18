@@ -134,7 +134,7 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []Unit{Bytes, CodePoints} {
+			for _, unit := range []PositionUnit{Bytes, CodePoints} {
 				for _, recognize := range []bool{false, true} {
 					for _, active := range []bool{false, true} {
 						for _, s := range []string{"a", "β", "z", "?", "", "aβ1"} {

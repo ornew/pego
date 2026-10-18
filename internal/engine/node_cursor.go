@@ -7,7 +7,7 @@ import "fmt"
 // Parent spans do not prune traversal. Scalar and list values have no spans.
 type Cursor struct {
 	Root *Node
-	Unit Unit
+	Unit PositionUnit
 }
 
 func (c Cursor) validate(start, end int32) error {

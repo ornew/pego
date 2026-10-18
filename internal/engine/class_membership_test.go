@@ -35,7 +35,7 @@ func TestClassMembershipBoundaries(t *testing.T) {
 		for _, negated := range []bool{false, true} {
 			p := classMembershipProgram(t, &grammar.CharClass{Ranges: tc.ranges, Negated: negated})
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, c := range []struct {
 						runes []rune
 						want  bool

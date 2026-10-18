@@ -7,7 +7,7 @@ import (
 
 // Controlled construction selects pieces after the charged decoding pass,
 // avoiding an uninterruptible rune-count scan merely to choose storage.
-func newControlledDocumentInput(text string, unit Unit, c *workControl) input {
+func newControlledDocumentInput(text string, unit PositionUnit, c *workControl) input {
 	if !workControlsEnabled || c == nil {
 		if useDocumentPieces(text, unit) {
 			return input{unit: unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, unit)}

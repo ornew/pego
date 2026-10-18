@@ -15,7 +15,7 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 		t.Fatal(err)
 	}
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 			d, err := p.NewDocument("aa", pego.WithBackend(backend), pego.WithUnit(unit))
 			if err != nil {
 				t.Fatal(err)

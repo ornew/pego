@@ -121,7 +121,7 @@ import (
 func lrInput(n int) string { return "a,b,c," + strings.Repeat(";d,e,f,", n) }
 
 func TestLRWorkload(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(lrInput(1), WithUnit(unit))
 		if err != nil || saved.N != 3 || len(saved.Items) != 3 || saved.Items[0].Value != "d" {
 			t.Fatalf("typed capture result: %v %v", saved, err)
@@ -156,7 +156,7 @@ var lrResult *Doc
 func BenchmarkTypedLR(b *testing.B) {
 	for _, n := range []int{1, 128} {
 		input := lrInput(n)
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
 				if _, err := ParseAST(input, WithUnit(unit)); err != nil { b.Fatal(err) }
 				b.ReportAllocs()
@@ -183,7 +183,7 @@ import (
 func lrInput(n int) string { return "1" + strings.Repeat("+2*3", n) }
 
 func TestLRWorkload(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST("1+2*3", WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
@@ -219,7 +219,7 @@ var lrResult Expr
 func BenchmarkTypedLR(b *testing.B) {
 	for _, n := range []int{1, 128} {
 		input := lrInput(n)
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
 				if _, err := ParseAST(input, WithUnit(unit)); err != nil {
 					b.Fatal(err)
@@ -238,7 +238,7 @@ func BenchmarkTypedLR(b *testing.B) {
 // Unchanged public routes are controls for the typed-only selection.
 func BenchmarkLRPublic(b *testing.B) {
 	input := lrInput(128)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		b.Run(fmt.Sprintf("Node/%v", unit), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() { if _, err := Parse(input, WithUnit(unit)); err != nil { b.Fatal(err) } }

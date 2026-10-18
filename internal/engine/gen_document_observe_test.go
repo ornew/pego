@@ -138,8 +138,8 @@ func TestDocumentCalls(t *testing.T){
  routes:=[]func(*Document,...ParseOption)(any,error){func(d *Document,opts ...ParseOption)(any,error){return d.Parse(opts...)}}
  referenceRoutes:=[]func(*reference.Document)(any,error){func(d *reference.Document)(any,error){return d.Parse()}}
  TYPED
- for i,parse:=range routes{for _,unit:=range []Unit{CodePoints,Bytes}{
-  source:=testInput();d,err:=NewDocument(source,WithUnit(unit));if err!=nil{t.Fatal(err)};ref,err:=reference.NewDocument(source,reference.WithUnit(reference.Unit(unit)));if err!=nil{t.Fatal(err)}
+ for i,parse:=range routes{for _,unit:=range []PositionUnit{CodePoints,Bytes}{
+  source:=testInput();d,err:=NewDocument(source,WithUnit(unit));if err!=nil{t.Fatal(err)};ref,err:=reference.NewDocument(source,reference.WithUnit(reference.PositionUnit(unit)));if err!=nil{t.Fatal(err)}
   run:=func(warm bool){t.Helper();var profile Profile;var events []TraceEvent;var kept []keptFrontier;frontierHook=func(rule string,pos,level,examined int,hit bool){kept=append(kept,keptFrontier{len(events),TraceEvent{Rule:rule,Pos:pos,Level:level,Examined:examined,Memo:hit}})};v,gotErr:=parse(d,WithProfile(&profile),WithTrace(func(e TraceEvent){events=append(events,e)}));frontierHook=nil;checkFrontiers(t,events,kept);if LOOKAHEAD{for _,e:=range events{if e.Kind==TraceExit&&e.Rule=="part"&&!e.Memo&&e.Examined>e.Pos+2{t.Fatal("call frontier includes its caller's lookahead",e)}}};want,wantErr:=referenceRoutes[i](ref);documentEqual(t,v,want);documentEqual(t,gotErr,wantErr);eventStats(t,d,&profile,events);for _,e:=range events{if e.Kind==TraceExit&&!e.ExaminedKnown{t.Fatal("Document exit without examined frontier",e)}};if warm&&(len(events)!=2||events[1].Kind!=TraceExit||!events[1].Memo||events[1].Evals!=0||profile.Snapshot().Calls!=1){t.Fatal("warm parse replayed old calls",events,profile.Snapshot())};released(t)}
   run(false);run(true)
   _,size:=utf8.DecodeLastRuneInString(source);start,end:=utf8.RuneCountInString(source)-1,utf8.RuneCountInString(source);if unit==Bytes{start,end=len(source)-size,len(source)}
@@ -169,7 +169,7 @@ func TestDocumentObservationKeepsReuse(t *testing.T){
  referenceRoutes:=[]func(*reference.Document)(any,error){func(d *reference.Document)(any,error){return d.Parse()}}
  TYPED
  _=referenceRoutes
- for _,parse:=range routes{for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,parse:=range routes{for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   source:=testInput();observed,err:=NewDocument(source,WithUnit(unit));if err!=nil{t.Fatal(err)};plain,err:=NewDocument(source,WithUnit(unit));if err!=nil{t.Fatal(err)}
   step:=func(){t.Helper();var profile Profile;a,errA:=parse(observed,WithProfile(&profile),WithTrace(func(TraceEvent){}));b,errB:=parse(plain);documentEqual(t,a,b);documentEqual(t,errA,errB);if observed.Stats()!=plain.Stats(){t.Fatal("observation changed reuse",observed.Stats(),plain.Stats())}}
   step()

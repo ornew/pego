@@ -11,7 +11,7 @@ func TestDocumentVMValueStorage(t *testing.T) {
 	prog := compile(t, `rule main = line* $$
 rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				doc, err := prog.NewDocumentWith("main", strings.Repeat("abé😀\n", 5000), opts)
@@ -149,7 +149,7 @@ func TestDocumentVMValueStorageForEmptyInput(t *testing.T) {
 	// dropping an old large document's storage before a smaller parse.
 	prog := compile(t, "rule main = "+strings.Repeat("item ", 2048)+"$$\nrule item = \"\" #atomic")
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				doc, err := prog.NewDocumentWith("main", "", opts)

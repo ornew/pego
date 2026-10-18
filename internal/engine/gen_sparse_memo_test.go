@@ -246,7 +246,7 @@ func TestSparseGeneratedResults(t *testing.T) {
         strings.Repeat("const 日本語 = 1 + 2;\n", 1200),
         "function f( { return 1;", "",
     }
-    for _, unit := range []Unit{CodePoints, Bytes} {
+    for _, unit := range []PositionUnit{CodePoints, Bytes} {
         for i, input := range inputs {
             for pass := 0; pass < 3; pass++ {
                 node, err := Parse(input, WithUnit(unit))
@@ -268,7 +268,7 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
         "/*" + strings.Repeat("é", 512) + "*/",
         "/*" + strings.Repeat("a", 1020) + "*/",
     } {
-        for _, unit := range []Unit{CodePoints, Bytes} {
+        for _, unit := range []PositionUnit{CodePoints, Bytes} {
             _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
             if err != nil { t.Fatal(err) }
             want := len([]rune(input)) > 1024
@@ -285,7 +285,7 @@ func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
     path := os.Getenv("PEGO_SPARSE_MEMO_INPUT")
     if path == "" { t.Skip("PEGO_SPARSE_MEMO_INPUT not set") }
     data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }
-    for _, unit := range []Unit{CodePoints, Bytes} {
+    for _, unit := range []PositionUnit{CodePoints, Bytes} {
         p := &tparser{parser: &parser{}}
         for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
             _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
@@ -312,7 +312,7 @@ func BenchmarkSparseMemoGenerated(b *testing.B) {
         inputs = append(inputs, struct{name, text string}{"compiler", string(data)})
     }
     for _, input := range inputs {
-        for _, unit := range []Unit{CodePoints, Bytes} {
+        for _, unit := range []PositionUnit{CodePoints, Bytes} {
             for _, api := range []string{"Node", "AST", "Recognize"} {
                 b.Run(fmt.Sprintf("%s/%s/%d", input.name, api, unit), func(b *testing.B) {
                     run := func() error {

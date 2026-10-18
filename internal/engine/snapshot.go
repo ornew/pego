@@ -16,7 +16,7 @@ import (
 // may use it concurrently with later edits of its single-owner Document.
 type Snapshot struct {
 	version    DocumentVersion
-	unit       Unit
+	unit       PositionUnit
 	text       string
 	graph      snapshotGraph
 	parseError error
@@ -138,7 +138,7 @@ func (e *SnapshotCaptureError) Unwrap() error { return e.ParseError }
 func (s *Snapshot) Version() DocumentVersion { return s.version }
 
 // Unit returns the position unit of the captured graph.
-func (s *Snapshot) Unit() Unit { return s.unit }
+func (s *Snapshot) Unit() PositionUnit { return s.unit }
 
 // Text returns the captured text.
 func (s *Snapshot) Text() string { return s.text }

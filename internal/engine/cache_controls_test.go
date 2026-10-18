@@ -9,7 +9,7 @@ import (
 
 func TestCacheControlsResetPreservesDocument(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				prog := compile(t, `rule main = item* $$
 rule item = [a-z]+ "\n"`)
@@ -124,7 +124,7 @@ func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 
 func TestCacheControlsReuseCounters(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			prog := compile(t, `rule main = line* $$
 rule line = [a-z]+ #atomic "\n"`)
 			d, err := prog.NewDocumentWith("main", strings.Repeat("ab\n", 20), ParseOptions{Backend: backend, Unit: unit})
@@ -157,7 +157,7 @@ func TestCacheControlsResetAfterLargeEditAndResumption(t *testing.T) {
 	prog := compile(t, `rule main = line* $$
 rule line = [a-z]+ #atomic "\n"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				options := ParseOptions{Backend: backend, Unit: unit}
 				d, err := prog.NewDocumentWith("main", strings.Repeat("ab\n", 2000), options)
@@ -208,7 +208,7 @@ rule item = "ab" #recover(skip=[^a]+)`, "abXab", true},
 		t.Run(tc.name, func(t *testing.T) {
 			prog := compile(t, tc.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					options := ParseOptions{Backend: backend, Unit: unit}
 					d, err := prog.NewDocumentWith("main", tc.input, options)
 					if err != nil {

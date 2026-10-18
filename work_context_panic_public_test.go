@@ -48,7 +48,7 @@ func TestContextErrRuntimePanicIdentityThroughPublicOptions(t *testing.T) {
 	}
 
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.Unit{pego.Bytes, pego.CodePoints} {
+		for _, unit := range []pego.PositionUnit{pego.Bytes, pego.CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(backend.String()+"/"+unit.String()+"/recognize="+strconv.FormatBool(recognize), func(t *testing.T) {
 					retained, err := p.Parse(literal, pego.WithBackend(backend), pego.WithUnit(unit))

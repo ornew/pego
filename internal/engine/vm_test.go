@@ -22,7 +22,7 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 			// Projected repetitions (project.go) give what the repetitions as written give.
 			prog, plain := compile(t, c.src), compile(t, c.src, Options{noProjections: true})
 			for _, in := range c.inputs {
-				for _, u := range []Unit{CodePoints, Bytes} {
+				for _, u := range []PositionUnit{CodePoints, Bytes} {
 					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
 					n2, err2 := plain.ParseWith("main", in, ParseOptions{Unit: u})
 					if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
@@ -39,7 +39,7 @@ func TestBackendsMatchOnStream(t *testing.T) {
 	prog := compile(t, records)
 	inputs := []string{"#records\na=1\nbc=22\n", "#records\na=1\nb\n", "#rec"}
 	for _, in := range inputs {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			var out [3]string
 			for i, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				var got []string
@@ -137,7 +137,7 @@ rule e = operators {
 			{strings.Repeat("-;x^;-x;", 128), 4, true}, // failed child frames must also release depth
 		} {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, recognize := range []bool{false, true} {
 						opts := ParseOptions{Backend: backend, Unit: unit, MaxDepth: tc.depth, Recognize: recognize}
 						n, err := prog.ParseWith("main", tc.input, opts)
@@ -162,7 +162,7 @@ rule e = operators {
     level { prefix "-" }
 }`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, tc := range []struct {
 				input string
 				count int

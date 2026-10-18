@@ -175,7 +175,7 @@ var backends = []struct {
 
 var units = []struct {
 	name string
-	u    pego.Unit
+	u    pego.PositionUnit
 }{
 	{"codepoints", pego.CodePoints},
 	{"bytes", pego.Bytes},

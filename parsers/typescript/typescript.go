@@ -169,7 +169,7 @@ const (
 )
 
 // parseWith parses the input after the markers, and moves the positions back past them.
-func parseWith(markers, input string, unit []Unit) (*SourceFile, error) {
+func parseWith(markers, input string, unit []PositionUnit) (*SourceFile, error) {
 	if markers == "" {
 		return ParseAST(input, unitOptions(unit)...)
 	}
@@ -215,7 +215,7 @@ func shiftError(err error, d int) error {
 }
 
 // unitOptions preserves the first-unit policy of the handwritten convenience API.
-func unitOptions(units []Unit) []ParseOption {
+func unitOptions(units []PositionUnit) []ParseOption {
 	if len(units) == 0 {
 		return nil
 	}

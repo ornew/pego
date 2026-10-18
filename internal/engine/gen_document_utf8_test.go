@@ -41,7 +41,7 @@ var utf8Cases = []struct{ text string; edits []documentEdit }{
 	}{
 		{"node", nodeGrammar, "Parse", `
 func TestCompletedPrefix(t *testing.T) {
- for _, unit := range []Unit{CodePoints, Bytes} {
+ for _, unit := range []PositionUnit{CodePoints, Bytes} {
   for _, c := range utf8Cases {
    d, err := NewDocument(c.text, WithUnit(unit))
    if err != nil { t.Fatal(err) }
@@ -69,7 +69,7 @@ func TestCompletedPrefix(t *testing.T) {
 `, GenOptions{Package: "fixture", Start: "main", Document: true}},
 		{"typed", typedGrammar, "ParseAST", `
 func TestCompletedPrefix(t *testing.T) {
- for _, unit := range []Unit{CodePoints, Bytes} {
+ for _, unit := range []PositionUnit{CodePoints, Bytes} {
   for _, c := range utf8Cases {
    d, err := NewDocument(c.text, WithUnit(unit))
    if err != nil { t.Fatal(err) }

@@ -19,7 +19,7 @@ func (p *parser) stepWork() {
 // Controlled decoding reserves up to four bytes before each UTF-8 decoder call;
 // preparation counts both the sizing pass and the storage pass. Allocations
 // themselves remain nonpreemptible, as do runtime buffer growth and GC.
-func newControlledTextInput(s string, unit Unit, offsets bool, sc *scratch, c *workControl) input {
+func newControlledTextInput(s string, unit PositionUnit, offsets bool, sc *scratch, c *workControl) input {
 	if !workControlsEnabled || c == nil {
 		return newTextInputIn(s, unit, offsets, sc)
 	}

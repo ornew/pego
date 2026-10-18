@@ -50,7 +50,7 @@ func TestAliasNodeIdentity(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}, {NoTypeCheck: true}} {
 				prog := compile(t, c.src, options)
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", "éé", ParseOptions{Unit: unit})
 					if err != nil {
 						t.Fatal(err)
@@ -89,7 +89,7 @@ func TestAliasNodeIdentity(t *testing.T) {
 						if marshal.OmitAST && backend == Closure {
 							continue
 						}
-						for _, unit := range []Unit{CodePoints, Bytes} {
+						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range c.inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 								got, gotErr := loaded.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})

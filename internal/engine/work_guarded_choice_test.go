@@ -68,7 +68,7 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 	c := &compiler{prog: prog}
 	m := c.exprMatcher(choice, newScope(), true)
 
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String()+"/budget", func(t *testing.T) {
 			p := newParser(prog, "z", unit, false)
 			p.control = newWorkControl(nil, WorkLimits{MaxSteps: workGuardedChoiceAlternatives})
@@ -99,7 +99,7 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 	prog, choice := workGuardedChoiceProgram(t)
 	c := &compiler{prog: prog}
 	m := c.exprMatcher(choice, newScope(), false)
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		for _, text := range []string{"z", ""} {
 			for _, silent := range []bool{true, false} {
 				t.Run(unit.String()+"/input="+strconv.Quote(text)+"/silent="+strconv.FormatBool(silent), func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 
 func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 	prog, _ := workGuardedChoiceProgram(t)
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		for _, skip := range []bool{false, true} {
 			t.Run(unit.String()+"/skip="+strconv.FormatBool(skip), func(t *testing.T) {
 				alts := []grammar.Expr{&grammar.Literal{Value: "z"}}
@@ -157,7 +157,7 @@ func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 func TestWorkGuardedChoicePublicParityAndFatalRetry(t *testing.T) {
 	prog, _ := workGuardedChoiceProgram(t)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(backend.String()+"/"+unit.String()+"/recognize="+strconv.FormatBool(recognize), func(t *testing.T) {
 					base := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}
@@ -186,7 +186,7 @@ func TestWorkGuardedChoicePublicParityAndFatalRetry(t *testing.T) {
 	}
 }
 
-func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend, unit Unit, recognize, cancel bool) {
+func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend, unit PositionUnit, recognize, cancel bool) {
 	t.Helper()
 	name := "budget"
 	if cancel {

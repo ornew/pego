@@ -38,7 +38,7 @@ func TestTypedNodeConstructors(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			var want string
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				n, err := p.ParseWith("main", "😀", ParseOptions{Backend: backend, Unit: unit})
@@ -200,7 +200,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				if got, want := resultJSON(loaded.ParseWith("main", "😀", opts)), resultJSON(p.ParseWith("main", "😀", opts)); got != want {
 					t.Fatalf("loaded constructors: %s / %s", got, want)

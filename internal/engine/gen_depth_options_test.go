@@ -120,11 +120,11 @@ rule n Word = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((
 			var rows strings.Builder
 			for _, name := range []string{"main", prog.rules[len(prog.rules)-1].name} {
 				for _, in := range c.inputs {
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {
 							_, err := prog.ParseWith(name, in, ParseOptions{Unit: unit, MaxDepth: limit})
 							_, recErr := prog.ParseWith(name, in, ParseOptions{Unit: unit, MaxDepth: limit, Recognize: true})
-							fmt.Fprintf(&rows, "{%q,%q,%s,%d,%q,%q},\n", name, in, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], limit, fmt.Sprint(err), fmt.Sprint(recErr))
+							fmt.Fprintf(&rows, "{%q,%q,%s,%d,%q,%q},\n", name, in, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], limit, fmt.Sprint(err), fmt.Sprint(recErr))
 						}
 					}
 				}
@@ -132,7 +132,7 @@ rule n Word = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((
 			harness := `package ` + pkg + `
 import("fmt";"strings";"sync";"testing")
 func TestLimitsAndReuse(t *testing.T) {
- rows:=[]struct{name,input string;unit Unit;limit int;want,recWant string}{` + rows.String() + `}
+ rows:=[]struct{name,input string;unit PositionUnit;limit int;want,recWant string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ {for _,c:=range rows {
   opts:=[]ParseOption{WithUnit(c.unit),WithMaxDepth(c.limit)}
   _,err:=ParseRule(c.name,c.input,opts...)
@@ -144,7 +144,7 @@ func TestLimitsAndReuse(t *testing.T) {
   }
  }}
  for _,c:=range rows {if c.name=="main" && c.limit==20 && c.want=="<nil>" {
-  for _,unit:=range []Unit{CodePoints,Bytes,Unit(99)} {
+  for _,unit:=range []PositionUnit{CodePoints,Bytes,PositionUnit(99)} {
    opts:=[]ParseOption{WithUnit(Bytes),WithUnit(unit),WithMaxDepth(20)}
    n,err:=Parse(c.input,opts...);wantEnd:=len([]rune(c.input));if unit==Bytes {wantEnd=len(c.input)}
    if err!=nil || int(n.End)!=wantEnd {t.Fatalf("last unit option: %v",err)}

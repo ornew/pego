@@ -15,7 +15,7 @@ func BenchmarkDocumentOwnerCreation(b *testing.B) {
 		b.Fatal(err)
 	}
 	for _, size := range []int{1 << 10, 4 << 10} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%s", size, unit), func(b *testing.B) {
 				text := strings.Repeat("x", size)
 				b.ReportAllocs()
@@ -42,7 +42,7 @@ rule line = [a-z]+ #atomic -"\n"`), Options{})
 	}
 	for _, size := range []int{4 << 10, 64 << 10} {
 		for _, back := range []Backend{Closure, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, mode := range []string{"batch", "sequential"} {
 					b.Run(fmt.Sprintf("%d/%s/%s/%s", size, back, unit, mode), func(b *testing.B) {
 						d, err := p.NewDocumentWith("main", strings.Repeat("abc\n", size/4), ParseOptions{Backend: back, Unit: unit})

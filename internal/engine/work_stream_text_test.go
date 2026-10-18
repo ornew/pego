@@ -13,7 +13,7 @@ import (
 	"unicode/utf8"
 )
 
-func workStreamTextInput(u Unit, text string) input {
+func workStreamTextInput(u PositionUnit, text string) input {
 	in := input{unit: u, baseLine: 1, baseCol: 1, reader: bufio.NewReader(strings.NewReader(""))}
 	if u == Bytes {
 		in.bs = []byte(text)
@@ -62,7 +62,7 @@ func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
 }
 
 func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
-	for _, u := range []Unit{Bytes, CodePoints} {
+	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		for _, size := range []int{1, 63, 1025, 4097} {
 			t.Run(fmt.Sprintf("%s/%d", u, size), func(t *testing.T) {
 				r := &snapshotOneByteReader{source: strings.Repeat("x", size+100)}
@@ -136,7 +136,7 @@ func TestWorkStreamTextMalformedAndRetainedCache(t *testing.T) {
 	if !streamTextSnapshots {
 		t.Skip("snapshot path disabled")
 	}
-	for _, u := range []Unit{Bytes, CodePoints} {
+	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := workStreamTextInput(u, strings.Repeat("aé😀\xff\xc0z", 500))
 		in.base = int(^uint(0)>>1) - in.loaded() - 10
 		in.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1 << 30})

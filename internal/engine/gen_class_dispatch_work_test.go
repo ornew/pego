@@ -81,7 +81,7 @@ func TestClassDispatch(t *testing.T){
  {"optional","z",true},{"optional",last+"z",true},{"optional","",false},
  {"fallback","z",true},{"fallback",last,true},{"fallback","",false},
  }
- for _,u:=range []Unit{CodePoints,Bytes}{for _,tc:=range cases{
+ for _,u:=range []PositionUnit{CodePoints,Bytes}{for _,tc:=range cases{
   routes:=[]struct{name string;call func(...ParseOption)(any,error)}{
    {"Node",func(o ...ParseOption)(any,error){return ParseRule(tc.name,tc.input,o...)}},
    {"typed",func(o ...ParseOption)(any,error){return ParseRuleAST(tc.name,tc.input,o...)}},
@@ -101,7 +101,7 @@ func TestClassDispatch(t *testing.T){
    retry,re:=r.call(WithUnit(u));if tc.valid&&zero(retry){t.Fatal("valid retry output is zero")};if jsonValue(t,retry)!=want||jsonValue(t,re)!=diag{t.Fatal("retry differs")}
   })}
  }}
- for _,u:=range []Unit{CodePoints,Bytes}{
+ for _,u:=range []PositionUnit{CodePoints,Bytes}{
   c:=&classContext{Context:context.Background(),done:make(chan struct{})}
   n,e:=Parse(last,WithUnit(u),WithContext(c));if n!=nil||!errors.Is(e,context.Canceled)||!c.inside{t.Fatalf("membership cancellation: %v inside=%v",e,c.inside)}
   if n,e:=Parse(last,WithUnit(u));e!=nil||n==nil{t.Fatal("cancellation retry")}

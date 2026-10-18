@@ -109,7 +109,7 @@ import (
 func TestUntypedPoolRetention(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		unit Unit
+		unit PositionUnit
 		prefix string
 		start int32
 		retry string
@@ -200,7 +200,7 @@ func checkTrail(t *testing.T, p *tparser) {
 }
 
 func TestTypedPoolRules(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
 		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
@@ -288,7 +288,7 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
-func retainedTypedParser(unit Unit, n int) *tparser {
+func retainedTypedParser(unit PositionUnit, n int) *tparser {
 	p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
 	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
@@ -302,7 +302,7 @@ func TestTypedPoolHeap(t *testing.T) {
 	if !testing.Verbose() {
 		t.Skip("diagnostic retained-heap measurement")
 	}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		runtime.GC()
 		var before, after runtime.MemStats
 		runtime.ReadMemStats(&before)
@@ -317,7 +317,7 @@ func TestTypedPoolHeap(t *testing.T) {
 func BenchmarkTypedCapturePool(b *testing.B) {
 	for _, n := range []int{64, 4096} {
 		input := strings.Repeat("a", n) + "b"
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
 				if _, err := ParseAST(input, WithUnit(unit)); err != nil {
 					b.Fatal(err)

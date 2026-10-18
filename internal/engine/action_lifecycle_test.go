@@ -73,7 +73,7 @@ func TestActionResultReleasesTracking(t *testing.T) {
 func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 	prog := compile(t, nilActionStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				p := newStreamParser(prog, &lineReader{line: "a", n: 60000}, unit)
 				var at [2]uint64

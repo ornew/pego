@@ -16,7 +16,7 @@ var observationFUNCTIONResult VALUE
 func BenchmarkObservationFUNCTION(b *testing.B){
  modes:=strings.Split(os.Getenv("PEGO_DOCUMENT_OBSERVE_MODES"),",")
  if len(modes)==1&&modes[0]=="" {modes=strings.Split(DEFAULTMODES,",")}
- for _,records:=range []int{256,4096}{for _,unit:=range []struct{name string;unit p.Unit}{{"CodePoints",p.CodePoints},{"Bytes",p.Bytes}}{for _,mode:=range modes{for _,operation:=range []string{"Batch","Cold","Warm","Edit"}{
+ for _,records:=range []int{256,4096}{for _,unit:=range []struct{name string;unit p.PositionUnit}{{"CodePoints",p.CodePoints},{"Bytes",p.Bytes}}{for _,mode:=range modes{for _,operation:=range []string{"Batch","Cold","Warm","Edit"}{
   b.Run(strconv.Itoa(records)+"/"+unit.name+"/"+mode+"/"+operation,func(b *testing.B){
    input:=INPUT
    opts:=[]p.ParseOption{p.WithUnit(unit.unit)}

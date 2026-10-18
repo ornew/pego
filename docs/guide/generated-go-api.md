@@ -25,12 +25,12 @@ func Parse(input string, opts ...ParseOption) (*Node, error)
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 
 type ParseOption func(*parseOptions) // parseOptions is internal to the generated package
-func WithUnit(unit Unit) ParseOption
+func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
 
-type Unit int
+type PositionUnit int
 const (
-	CodePoints Unit = iota // the default
+	CodePoints PositionUnit = iota // the default
 	Bytes
 )
 

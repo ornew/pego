@@ -68,7 +68,7 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 	text := strings.Repeat("a", 1024)
 	prog := compile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				ctx := &workContextAccessorContext{Context: context.Background(), done: make(chan struct{})}
 				var observed *parser
@@ -111,7 +111,7 @@ func TestWorkContextNestedAccessorPanicIdentity(t *testing.T) {
 	text := strings.Repeat("a", 1024)
 	prog := compile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				token := &struct{ label string }{"nested context panic"}
 				ctx := &workContextAccessorContext{Context: context.Background(), done: make(chan struct{})}

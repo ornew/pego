@@ -158,7 +158,7 @@ func TestFuzzErrors(t *testing.T) {
 		{testGrammars[0], Options{Start: "nope"}, "nope"},
 		{"rule main =", Options{Start: "main"}, ""},
 		{testGrammars[0], Options{Start: "main", Backend: pego.Backend(9)}, "unknown backend"},
-		{testGrammars[0], Options{Start: "main", Unit: pego.Unit(7)}, "unknown unit"},
+		{testGrammars[0], Options{Start: "main", Unit: pego.PositionUnit(7)}, "unknown unit"},
 	} {
 		if err := Fuzz([]byte(tc.src), tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%+v: got %v", tc.opts, err)

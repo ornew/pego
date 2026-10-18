@@ -31,7 +31,7 @@ func BenchmarkStreamFrameScratch(b *testing.B) {
 			if _, err := prog.rule(backend, "main"); err != nil {
 				b.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				b.Run(fmt.Sprintf("%d/%s/%s", size, backend, unit), func(b *testing.B) {
 					b.SetBytes(int64(len(input)))
 					b.ReportAllocs()
@@ -67,7 +67,7 @@ rule item = x:"x" #atomic / e:"" #atomic`, strings.Repeat("x", 300), 301, false,
 	} {
 		prog := compile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%s/%s/%s", tc.name, backend, unit), func(t *testing.T) {
 					var retained []*Node
 					var snapshots [][]byte
@@ -131,7 +131,7 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 		input.WriteByte('\n')
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				whole, err := prog.ParseWith("main", input.String(), opts)

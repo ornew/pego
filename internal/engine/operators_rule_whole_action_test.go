@@ -100,7 +100,7 @@ func TestOperatorsRuleExplicitDefaultAction(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, input := range []string{"α", "α+α", ""} {
 					parseOpts := ParseOptions{Backend: backend, Unit: unit}
 					n, err := explicit.ParseWith("main", input, parseOpts)

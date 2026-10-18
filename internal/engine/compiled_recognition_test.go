@@ -117,7 +117,7 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 				}
 				for _, entry := range moduleEntries(p.Module()) {
 					for _, input := range append(append([]string{}, c.inputs...), "\xff", "", "trailing") {
-						for _, unit := range []Unit{CodePoints, Bytes} {
+						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							want, werr := p.ParseWith(entry.name, input, ParseOptions{Recognize: true, Unit: unit})
 							for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 								got, gerr := loaded.ParseWith(entry.name, input, ParseOptions{Recognize: true, Unit: unit, Backend: backend})
@@ -195,7 +195,7 @@ rule second = "é"`)
 		input string
 		match bool
 	}{{"a", true}, {"é", true}, {"", false}, {"a?", false}} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 				got, gotErr := v3.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
 				if got != nil || (gotErr == nil) != tc.match {

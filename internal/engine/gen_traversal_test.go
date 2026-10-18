@@ -67,13 +67,13 @@ func TestTreeRuntimeParity(t *testing.T) {
 	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("walk parity: %v != %v", a, b)
 	}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, span := range [][2]int32{{0, 0}, {1, 2}, {3, 4}} {
 			a, b = nil, nil
 			if err := (Cursor{Root: root, Unit: unit}).Range(span[0], span[1], ca); err != nil {
 				t.Fatal(err)
 			}
-			if err := (genrt.Cursor{Root: gRoot, Unit: genrt.Unit(unit)}).Range(span[0], span[1], cb); err != nil {
+			if err := (genrt.Cursor{Root: gRoot, Unit: genrt.PositionUnit(unit)}).Range(span[0], span[1], cb); err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(a, b) {

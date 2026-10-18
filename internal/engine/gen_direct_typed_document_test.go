@@ -118,17 +118,17 @@ import (
 var inputs=INPUTS
 func jsonValue(t *testing.T,v any)string {t.Helper();b,err:=json.Marshal(v);if err!=nil{t.Fatal(err)};return string(b)}
 func errorValue(err error)string {if err==nil{return ""};return err.Error()}
-func assertDirect(t *testing.T,d *Document,unit Unit){
+func assertDirect(t *testing.T,d *Document,unit PositionUnit){
  t.Helper()
  got,gotErr:=d.ParseAST()
  want,wantErr:=ParseAST(d.Text(),WithUnit(unit))
  if !reflect.DeepEqual(got,want)||!reflect.DeepEqual(gotErr,wantErr){t.Fatalf("unit %v input %q: Document %#v / %#v; batch %#v / %#v",unit,d.Text(),got,gotErr,want,wantErr)}
- ref,refErr:=reference.ParseAST(d.Text(),reference.WithUnit(reference.Unit(unit)))
+ ref,refErr:=reference.ParseAST(d.Text(),reference.WithUnit(reference.PositionUnit(unit)))
  if jsonValue(t,got)!=jsonValue(t,ref)||errorValue(gotErr)!=errorValue(refErr){t.Fatalf("unit %v input %q differs from conversion: %s / %s; %v / %v",unit,d.Text(),jsonValue(t,got),jsonValue(t,ref),gotErr,refErr)}
  if _,ok:=d.typedMemo.(*typedDocumentState);!ok{t.Fatal("direct typed cache not retained")}
 }
 func TestEditsAndReuse(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,input:=range inputs{
    d,err:=NewDocument(input,WithUnit(unit));if err!=nil{t.Fatal(err)}
    assertDirect(t,d,unit)
@@ -154,7 +154,7 @@ type admissionPanicContext struct {context.Context; token any; donePanic bool; d
 func(c *admissionPanicContext)Done()<-chan struct{}{if c.donePanic{panic(c.token)};return c.done}
 func(c *admissionPanicContext)Err()error{panic(c.token)}
 func TestControlsAndInvalidOptions(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   d,err:=NewDocument(inputs[0],WithUnit(unit));if err!=nil{t.Fatal(err)}
   assertDirect(t,d,unit)
   assertDirect(t,d,unit)
@@ -163,7 +163,7 @@ func TestControlsAndInvalidOptions(t *testing.T){
   unchanged:=func(){t.Helper();if d.typedMemo!=old||d.Stats()!=before{t.Fatal("pre-admission failure changed cache or stats",d.Stats())}}
   reused:=func(){t.Helper();assertDirect(t,d,unit);if d.Stats()!=before{t.Fatal("valid cache was not reused after pre-admission failure",d.Stats())}}
   if _,err:=d.ParseAST(WithMaxDepth(-1));err==nil{t.Fatal("invalid depth accepted")};unchanged();reused()
-  if _,err:=d.ParseAST(WithUnit(Unit(1-int(unit))));err==nil{t.Fatal("unit change accepted")};unchanged();reused()
+  if _,err:=d.ParseAST(WithUnit(PositionUnit(1-int(unit))));err==nil{t.Fatal("unit change accepted")};unchanged();reused()
   if err:=d.Edit(-1,0,"");err==nil{t.Fatal("invalid edit accepted")};unchanged();reused()
   ctx,cancel:=context.WithCancel(context.Background());cancel()
   if _,err:=d.ParseAST(WithContext(ctx));!errors.Is(err,context.Canceled){t.Fatalf("pre-admission cancellation: %v",err)};unchanged();reused()

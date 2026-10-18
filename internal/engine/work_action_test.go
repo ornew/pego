@@ -21,7 +21,7 @@ func (f workActionFunc) apply(x, y any) (any, error) {
 	return f.fn(x, y)
 }
 
-func actionWorkParser(ctx context.Context, limits WorkLimits, unit Unit) *parser {
+func actionWorkParser(ctx context.Context, limits WorkLimits, unit PositionUnit) *parser {
 	return &parser{input: input{unit: unit, control: newWorkControl(ctx, limits)}}
 }
 
@@ -38,7 +38,7 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 	left := strings.Repeat("prefix-", 2048) + "a" + string([]byte{0xff})
 	right := strings.Repeat("prefix-", 2048) + "b" + string([]byte{0x00})
 
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		p := actionWorkParser(nil, WorkLimits{MaxInputWork: 1}, unit)
 		wantLen := len(malformed)
 		if unit == CodePoints {
@@ -159,7 +159,7 @@ func TestWorkActionBatchRoutesAndPoolRetry(t *testing.T) {
 rule items = [a-z] #atomic*`)
 			input := strings.Repeat("a", 1024)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{Bytes, CodePoints} {
+				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					t.Run(fmt.Sprintf("%v/%v", backend, unit), func(t *testing.T) {
 						armed := false
 						n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
@@ -188,7 +188,7 @@ func TestWorkActionBatchCancellationStopsPublication(t *testing.T) {
 rule items = [a-z] #atomic*`)
 	input := strings.Repeat("a", 1024)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(fmt.Sprintf("%v/%v", backend, unit), func(t *testing.T) {
 				armed := false
 				var attempt *workControl
@@ -221,7 +221,7 @@ rule items = [a-z]* #atomic`)
 	input := strings.Repeat("a", 1024) + "!"
 
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(fmt.Sprintf("%v/%v", backend, unit), func(t *testing.T) {
 				armContext := func(e TraceEvent, armed *bool) {
 					if !*armed && e.Kind == TraceExit && e.Rule == "items" {

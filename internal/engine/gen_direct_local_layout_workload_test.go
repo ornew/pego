@@ -101,7 +101,7 @@ func localInput(n int, rejected bool) string {
     return input
 }
 
-func checkLocal(v *Doc, err error, n int, rejected bool, unit Unit) bool {
+func checkLocal(v *Doc, err error, n int, rejected bool, unit PositionUnit) bool {
     if rejected { return v == nil && err != nil }
     if err != nil || v == nil || v.N != n || len(v.Items) != n || v.Missing != nil { return false }
     width := 1
@@ -113,7 +113,7 @@ func checkLocal(v *Doc, err error, n int, rejected bool, unit Unit) bool {
 }
 
 func TestLocalLayoutWorkload(t *testing.T) {
-    for _, unit := range []Unit{CodePoints,Bytes} {
+    for _, unit := range []PositionUnit{CodePoints,Bytes} {
         saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }
         before, _ := json.Marshal(saved)
@@ -150,7 +150,7 @@ func BenchmarkTypedLocalLayout(b *testing.B) {
     for _, n := range []int{1,128} {
         for _, rejected := range []bool{false,true} {
             input := localInput(n,rejected)
-            for _, unit := range []Unit{CodePoints,Bytes} {
+            for _, unit := range []PositionUnit{CodePoints,Bytes} {
                 b.Run(fmt.Sprintf("%d/rejected=%v/%v",n,rejected,unit),func(b *testing.B) {
                     v, err := ParseAST(input,WithUnit(unit))
                     if !checkLocal(v,err,n,rejected,unit) { b.Fatalf("%v %v",v,err) }

@@ -31,7 +31,7 @@ func TestWorkParsePreCancelledAndValidation(t *testing.T) {
 func TestWorkParseBudgetAndPoolRetry(t *testing.T) {
 	prog := compile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{Bytes, CodePoints} {
+		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			for _, limits := range []WorkLimits{{MaxInputWork: 1}, {MaxSteps: 1}} {
 				n, err := prog.ParseWith("main", strings.Repeat("a", 10000), ParseOptions{Backend: b, Unit: u, WorkLimits: limits})
 				if n != nil || !errors.Is(err, ErrWorkLimit) {
@@ -190,7 +190,7 @@ func TestWorkParseControlledUnicodeParity(t *testing.T) {
 	for _, src := range []string{`rule main = .* $$`, `rule main = "é💡" "x" $$`} {
 		prog := compile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, u := range []Unit{Bytes, CodePoints} {
+			for _, u := range []PositionUnit{Bytes, CodePoints} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range inputs {
 						opts := ParseOptions{Backend: b, Unit: u, Recognize: recognize}

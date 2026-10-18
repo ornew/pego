@@ -56,10 +56,10 @@ rule main Tok = ("é" / "�")* $$`, `func frameInputs() (string,string,string) 
 			var rows strings.Builder
 			if c.name != "typescript" {
 				for _, input := range []string{"", "é", "éé", "�", "é�", "é!", "\xff", "é\xff", "\xe2\x82"} {
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 						_, rerr := prog.ParseWith("main", input, ParseOptions{Unit: unit, Recognize: true})
-						fmt.Fprintf(&rows, "{%q,%s,%q,%q},\n", input, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], resultJSON(n, err), fmt.Sprint(rerr))
+						fmt.Fprintf(&rows, "{%q,%s,%q,%q},\n", input, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], resultJSON(n, err), fmt.Sprint(rerr))
 					}
 				}
 			}
@@ -129,7 +129,7 @@ func frameCleared(t *testing.T,p *parser) {
 func TestFrameResults(t *testing.T) {
  small,large,invalid:=frameInputs()
  var saved []*Node;var snapshots []string;var savedErrors []error;var errorSnapshots []string
- for _,unit:=range []Unit{CodePoints,Bytes} {
+ for _,unit:=range []PositionUnit{CodePoints,Bytes} {
   for i,input:=range []string{small,large,invalid,""} {
    for pass:=0;pass<3;pass++ {
     n,err:=frameNode(input,unit);a,aerr:=frameAST(input,unit);rerr:=frameRecognize(input,unit)
@@ -149,7 +149,7 @@ func TestFrameResults(t *testing.T) {
    }
   }
  }
- for _,c:=range []struct{input string;unit Unit;node,rec string}{RAW_ROWS} {
+ for _,c:=range []struct{input string;unit PositionUnit;node,rec string}{RAW_ROWS} {
   n,err:=frameNode(c.input,c.unit)
   if got:=frameJSON(n,err);got!=c.node {t.Fatalf("raw UTF8 input %q: %s want %s",c.input,got,c.node)}
   if got:=fmt.Sprint(frameRecognize(c.input,c.unit));got!=c.rec {t.Fatalf("raw UTF8 recognize %q: %s want %s",c.input,got,c.rec)}
@@ -187,16 +187,16 @@ func TestFrameConcurrentReuse(t *testing.T) {
 const frameScratchWorkload = `package framefixture
 import("fmt";"strings";"testing")
 INPUTS
-func frameNode(input string,unit Unit)(*Node,error) {if unit==CodePoints {return Parse(input)};return Parse(input, unit)}
-func frameAST(input string,unit Unit)(any,error) {if unit==CodePoints {return ParseAST(input)};return ParseAST(input, unit)}
-func frameRecognize(input string,unit Unit)error {if unit==CodePoints {return Recognize(input)};return Recognize(input, unit)}
-func frameRule(name,input string,unit Unit)(*Node,error) {if unit==CodePoints {return ParseRule(name,input)};return ParseRule(name,input, unit)}
+func frameNode(input string,unit PositionUnit)(*Node,error) {if unit==CodePoints {return Parse(input)};return Parse(input, unit)}
+func frameAST(input string,unit PositionUnit)(any,error) {if unit==CodePoints {return ParseAST(input)};return ParseAST(input, unit)}
+func frameRecognize(input string,unit PositionUnit)error {if unit==CodePoints {return Recognize(input)};return Recognize(input, unit)}
+func frameRule(name,input string,unit PositionUnit)(*Node,error) {if unit==CodePoints {return ParseRule(name,input)};return ParseRule(name,input, unit)}
 var frameNodeSink *Node
 var frameASTSink any
 var frameErrorSink error
 func BenchmarkNodeFrameScratch(b *testing.B) {
  small,large,_:=frameInputs()
- for _,input:=range []struct{name,text string}{{"Small",small},{"Large",large}} {for _,unit:=range []Unit{CodePoints,Bytes} {for _,api:=range []string{"Node","Recognize","AST"} {
+ for _,input:=range []struct{name,text string}{{"Small",small},{"Large",large}} {for _,unit:=range []PositionUnit{CodePoints,Bytes} {for _,api:=range []string{"Node","Recognize","AST"} {
   b.Run(fmt.Sprintf("%s/%s/%d",input.name,api,unit),func(b *testing.B){run:=func(){switch api {case "Node":frameNodeSink,frameErrorSink=frameNode(input.text,unit);case "AST":frameASTSink,frameErrorSink=frameAST(input.text,unit);default:frameErrorSink=frameRecognize(input.text,unit)};if frameErrorSink!=nil {b.Fatal(frameErrorSink)}}
    run();b.SetBytes(int64(len(input.text)));b.ReportAllocs();for b.Loop(){run()}
   })

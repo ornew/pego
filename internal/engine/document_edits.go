@@ -30,7 +30,7 @@ type TextEdit struct {
 func (d *Document) Version() DocumentVersion { return DocumentVersion{d.identity, d.sequence} }
 
 // Unit returns the position unit selected at document construction.
-func (d *Document) Unit() Unit { return d.in.unit }
+func (d *Document) Unit() PositionUnit { return d.in.unit }
 
 func (d *Document) nextVersion() error {
 	if d.sequence == ^uint64(0) {
@@ -148,7 +148,7 @@ func checkedDocumentLength(length, added int) (int, error) {
 	return length + added, nil
 }
 
-func newDocumentInput(text string, unit Unit) input {
+func newDocumentInput(text string, unit PositionUnit) input {
 	if useDocumentPieces(text, unit) {
 		return input{unit: unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, unit)}
 	}

@@ -94,7 +94,7 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 	}
 	for _, source := range sources {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					name := "Parse"
 					if recognize {

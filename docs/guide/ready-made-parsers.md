@@ -47,7 +47,7 @@ All ten have the API of a parser generated with `pego gen -types -recognize`
 | `Parse(input, opts...)` | The document as a tree of `*Node`, as the engine returns it |
 | `Recognize(input, opts...)` | Only checks the input; returns the error, builds nothing |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
-| `Span`, `Unit`, `Bytes`, `CodePoints` | Positions: the start and end of a node, and the unit they are counted in |
+| `Span`, `PositionUnit`, `Bytes`, `CodePoints` | Positions: the start and end of a node, and the unit they are counted in |
 
 On top of that each parser has functions written for its language: the decoded values, the checks the language
 reference does after parsing, helpers to walk the tree. The entry points you normally call:
@@ -364,7 +364,7 @@ func main() {
 	const src = `["あい", 1, x]`
 	for _, u := range []struct {
 		name string
-		unit json.Unit
+		unit json.PositionUnit
 	}{{"code points", json.CodePoints}, {"bytes", json.Bytes}} {
 		unit := u.unit
 		_, err := json.ParseAST(src, json.WithUnit(unit))

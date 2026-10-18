@@ -72,7 +72,7 @@ rule expr = operators {
 }`, strings.TrimSuffix(strings.Repeat("a+", 80), "+")},
 	}
 	for _, fixture := range cases {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			prog := compile(t, fixture.source)
 			d, err := prog.NewDocumentWith("main", fixture.text, ParseOptions{Unit: unit})
 			if err != nil {

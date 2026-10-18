@@ -101,7 +101,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 						if prog.Grammar == nil && backend == Closure {
 							continue
 						}
-						for _, unit := range []Unit{CodePoints, Bytes} {
+						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range []string{raw, string([]rune(raw)), raw + "x", string([]rune(raw)) + "x", raw + raw, string([]rune(raw)) + string([]rune(raw)), "é", "éx", "other", "", "\xffx", "\x80x"} {
 								opts := ParseOptions{Backend: backend, Unit: unit}
 								n, err := prog.ParseWith("main", input, opts)

@@ -14,7 +14,7 @@ import (
 func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 	t.Helper()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", b, u), func(t *testing.T) { run(t, ParseOptions{Backend: b, Unit: u}) })
 		}
 	}
@@ -310,7 +310,7 @@ func TestWorkDocumentInactiveContext(t *testing.T) {
 
 func TestWorkDocumentPreservesVMFaultAttribution(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			prog := compile(t, `rule main = "a" $$`)
 			d, err := prog.NewDocumentWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
@@ -329,7 +329,7 @@ func TestWorkDocumentPreservesVMFaultAttribution(t *testing.T) {
 
 func TestWorkDocumentPreRunPreservesOversizedValues(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			prog := compile(t, `rule main = "a" $$`)
 			d, err := prog.NewDocumentWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {

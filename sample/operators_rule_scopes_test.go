@@ -103,7 +103,7 @@ rule inner = e`, "a<a=(a=a=a)", false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
-			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					_, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend))
 					if (err == nil) != c.valid {

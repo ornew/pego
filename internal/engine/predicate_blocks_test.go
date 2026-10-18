@@ -43,7 +43,7 @@ rule n = {x == 1} {true} "é"`, []string{"é!", "é?", "é", "a"}},
 func TestPredicateBlockAssignmentComparison(t *testing.T) {
 	program := compile(t, `rule a = {x:=1; x<10}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			if _, err := program.ParseWith("a", "", ParseOptions{Backend: backend, Unit: unit}); err != nil {
 				t.Fatalf("%s/%s: %v", backend, unit, err)
 			}
@@ -57,7 +57,7 @@ func TestPredicateBlocksAdjacentParity(t *testing.T) {
 			block := compile(t, fixture.block)
 			adjacent := compile(t, fixture.adjacent)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, recognize := range []bool{false, true} {
 						options := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}
 						for _, input := range fixture.inputs {
@@ -107,7 +107,7 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 				if options.OmitAST && backend == Closure {
 					continue
 				}
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, input := range []string{"é", "", "a", "éé"} {
 						parseOptions := ParseOptions{Backend: backend, Unit: unit}
 						got := resultJSON(loaded.ParseWith("main", input, parseOptions))

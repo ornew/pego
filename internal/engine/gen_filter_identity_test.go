@@ -69,7 +69,7 @@ func TestGeneratedTypedFilterIdentity(t *testing.T) {
 			fmt.Fprintf(&imports, "\t%s \"filteridentity/%s\"\n", pkg, pkg)
 			body := `
 func TestPACKAGEIdentity(t *testing.T) {
- for _, unit := range []PACKAGE.Unit{PACKAGE.CodePoints, PACKAGE.Bytes} {
+ for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("é", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("parse: %v", err) }
   first := result.First
@@ -93,7 +93,7 @@ func TestPACKAGEIdentity(t *testing.T) {
 			if start == "empty" {
 				body = `
 func TestPACKAGEEmpty(t *testing.T) {
- for _, unit := range []PACKAGE.Unit{PACKAGE.CodePoints, PACKAGE.Bytes} {
+ for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("empty parse: %v", err) }
   if result.First != nil || result.Items == nil || len(result.Items) != 0 || result.Empty == nil || len(result.Empty) != 0 || result.NilInput == nil || len(result.NilInput) != 0 {

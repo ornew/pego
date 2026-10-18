@@ -14,7 +14,7 @@ var snapshotBenchmarkPosition int64
 
 type snapshotLegacyResult struct {
 	version DocumentVersion
-	unit    Unit
+	unit    PositionUnit
 	text    string
 	root    *Node
 	err     error
@@ -35,7 +35,7 @@ rule item = [a-z]`)
 		b.Fatal(err)
 	}
 	for _, size := range []int{4 << 10, 64 << 10} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				base := ParseOptions{Unit: unit, Backend: back}
 				d, err := prog.NewDocumentWith("main", strings.Repeat("a", size), base)

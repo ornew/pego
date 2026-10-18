@@ -118,7 +118,7 @@ func sharingInputs() (string,string,string) {
 func TestSharingResults(t *testing.T) {
  small,large,invalid:=sharingInputs()
  var saved []*Node;var snapshots []string
- for _,unit:=range []Unit{CodePoints,Bytes} {
+ for _,unit:=range []PositionUnit{CodePoints,Bytes} {
   for i,input:=range []string{small,large,invalid,""} {
    for pass:=0;pass<3;pass++ {
     n,err:=Parse(input,WithUnit(unit));ast,aerr:=ParseAST(input,WithUnit(unit));rec:=Recognize(input,WithUnit(unit))
@@ -135,7 +135,7 @@ func TestSharingResults(t *testing.T) {
 func BenchmarkSharingParse(b *testing.B) {
  small,large,_:=sharingInputs()
  for _,item:=range []struct{name,input string}{{"small",small},{"large",large}} {
-  for _,unit:=range []Unit{CodePoints,Bytes} {
+  for _,unit:=range []PositionUnit{CodePoints,Bytes} {
    for _,api:=range []string{"Node","AST","Recognize"} {
     b.Run(fmt.Sprintf("%s/%s/%d",item.name,api,unit),func(b *testing.B) {
      run:=func()error {switch api {case "Node":_,err:=Parse(item.input,WithUnit(unit));return err;case "AST":_,err:=ParseAST(item.input,WithUnit(unit));return err;default:return Recognize(item.input,WithUnit(unit))}}

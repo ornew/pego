@@ -52,7 +52,7 @@ func TestMemoActionVariables(t *testing.T) {
 					t.Errorf("r variable dependencies: %v", vars)
 				}
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						opts := ParseOptions{Backend: backend, Unit: unit}
 						input := c.inputs[0]
 						n, err := prog.ParseWith("main", input, opts)
@@ -81,7 +81,7 @@ func TestDocumentActionVariableEdit(t *testing.T) {
 rule main = text:[a-z]+ #atomic {n := len($text)} r
 rule r = "!" => V{N: n}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			doc, err := prog.NewDocumentWith("main", "a!", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
 				t.Fatal(err)

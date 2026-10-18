@@ -275,7 +275,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		// The generated code projects (project.go), and records source information as asked.
 		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
 		for _, in := range c.inputs {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})
 				out := resultJSON(n, err)
 				_, err = prog.ParseWith("main", in, ParseOptions{Unit: unit, Recognize: true})
@@ -333,7 +333,7 @@ func main() {
 	k := 0
 	for _, c := range cases {
 		for _, in := range c.inputs {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				if got[k] != want[k] {
 					t.Errorf("%s (%v): input %q\n generated %s\n engine    %s", c.name, unit, in, got[k], want[k])
 				}

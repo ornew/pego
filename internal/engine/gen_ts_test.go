@@ -167,7 +167,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
 		for _, s := range c.inputs {
 			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", s, ParseOptions{Unit: unit})
 				w := want{out: deepResultJSON(t, n, err)}
 				if n != nil {
@@ -213,7 +213,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 	k, w := 0, 0
 	for _, c := range cases {
 		for _, s := range c.inputs {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				forms := []string{"bytes"}
 				if utf8.ValidString(s) {
 					forms = append(forms, "string")

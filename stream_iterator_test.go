@@ -29,7 +29,7 @@ func TestPublicStreamIteratorLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 			r := &publicIteratorReader{Reader: strings.NewReader("éa")}
 			it, err := p.Iterate(r, pego.WithBackend(backend), pego.WithUnit(unit))
 			if err != nil || r.reads != 0 {

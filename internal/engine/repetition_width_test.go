@@ -141,7 +141,7 @@ func TestWideRepetitionBounds(t *testing.T) {
 						if marshal.OmitAST && backend == Closure {
 							continue
 						}
-						for _, unit := range []Unit{CodePoints, Bytes} {
+						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range c.inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 								got, gotErr := loaded.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})
@@ -174,7 +174,7 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 		}
 		for _, p := range []*Program{prog, saved} {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					count := 0
 					err := p.ParseStreamWith("main", strings.NewReader("éé"), func(n *Node) error {

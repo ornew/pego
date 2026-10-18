@@ -54,7 +54,7 @@ rule n Word = "(" n ")" / "é"`)
 		}
 		goSizes[pkg] = len(code)
 		write(pkg+"/parser.go", code)
-		adapter := `func depthParsers(unit Unit, limit *int) depthRoutes {
+		adapter := `func depthParsers(unit PositionUnit, limit *int) depthRoutes {
  if limit != nil { panic("baseline has no invocation override") }
  if unit == Bytes { return depthRoutes{
   node:func(s string)(*Node,error){return Parse(s,Bytes)},
@@ -70,7 +70,7 @@ rule n Word = "(" n ")" / "é"`)
 		controls := ""
 		hasOptions := strings.Contains(string(code), "type ParseOption ")
 		if hasOptions {
-			adapter = `func depthParsers(unit Unit, limit *int) depthRoutes {
+			adapter = `func depthParsers(unit PositionUnit, limit *int) depthRoutes {
  if limit==nil {
   if unit==Bytes {return depthRoutes{
    node:func(s string)(*Node,error){return Parse(s,WithUnit(Bytes))},
@@ -112,7 +112,7 @@ func depthCases() []depthCase {
  return cases
 }
 func TestWorkloads(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{for _,c:=range depthCases(){
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{for _,c:=range depthCases(){
   routes:=depthParsers(unit,c.limit)
   if _,err:=routes.node(c.input);err!=nil{t.Fatal(err)}
   if _,err:=routes.ast(c.input);err!=nil{t.Fatal(err)}
@@ -120,7 +120,7 @@ func TestWorkloads(t *testing.T){
  }}
 }
 func BenchmarkDepthOptions(b *testing.B){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   unitName:="CodePoints";if unit==Bytes{unitName="Bytes"}
   for _,route:=range []string{"Node","Recognize","AST"}{for _,c:=range depthCases(){
    routes:=depthParsers(unit,c.limit)
@@ -138,7 +138,7 @@ func BenchmarkDepthOptions(b *testing.B){
 `
 		// Direct entry-point controls avoid indirect-call adapter specialization.
 		directBench := `func BenchmarkDepthDirect(b *testing.B){
-for _,unit:=range []Unit{CodePoints,Bytes}{unitName:="CodePoints";if unit==Bytes{unitName="Bytes"}
+for _,unit:=range []PositionUnit{CodePoints,Bytes}{unitName:="CodePoints";if unit==Bytes{unitName="Bytes"}
 for _,route:=range []string{"Node","Recognize","AST"}{for _,c:=range depthCases(){if c.limit!=nil{continue};b.Run(unitName+"/"+route+"/"+c.name,func(b *testing.B){b.ReportAllocs();b.SetBytes(int64(len(c.input)))
 if unit==CodePoints{for b.Loop(){switch route{case "Node":depthNode,depthError=Parse(c.input);case "Recognize":depthError=Recognize(c.input);case "AST":depthValue,depthError=ParseAST(c.input)};if depthError!=nil{b.Fatal(depthError)}}}else{for b.Loop(){switch route{case "Node":depthNode,depthError=Parse(c.input,WithUnit(Bytes));case "Recognize":depthError=Recognize(c.input,WithUnit(Bytes));case "AST":depthValue,depthError=ParseAST(c.input,WithUnit(Bytes))};if depthError!=nil{b.Fatal(depthError)}}}
 })}}}

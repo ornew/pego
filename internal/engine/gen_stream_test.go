@@ -635,7 +635,7 @@ func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
 		batch: `+batch+`,
 	},
 `, i)
-		write(fmt.Sprintf("unit%d.go", i), fmt.Sprintf("package main\n\nimport g%[1]d \"typedstream/g%[1]d\"\n\nfunc unit%[1]d(b bool) g%[1]d.Unit {\n\tif b {\n\t\treturn g%[1]d.Bytes\n\t}\n\treturn g%[1]d.CodePoints\n}\n", i))
+		write(fmt.Sprintf("unit%d.go", i), fmt.Sprintf("package main\n\nimport g%[1]d \"typedstream/g%[1]d\"\n\nfunc unit%[1]d(b bool) g%[1]d.PositionUnit {\n\tif b {\n\t\treturn g%[1]d.Bytes\n\t}\n\treturn g%[1]d.CodePoints\n}\n", i))
 		for _, in := range c.inputs {
 			for _, bytes := range []bool{false, true} {
 				variants := []streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}
@@ -1023,7 +1023,7 @@ func (r *lineReader) Read(b []byte) (int, error) {
 
 // Retaining every recovered error would take tens of megabytes.
 func TestDiagnosticLimitBoundsMemory(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		const n = 100000
 		var at [2]uint64
 		count, diags := 0, 0
@@ -1331,7 +1331,7 @@ func (r *lineReader) Read(b []byte) (int, error) {
 
 // Retaining elements, input or memo entries would take tens of megabytes.
 func TestMemoryIsBounded(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		const n = 60000
 		var at [2]uint64
 		count := 0
@@ -1391,7 +1391,7 @@ func (r *listReader) Read(b []byte) (int, error) {
 // bookkeeping, would take hundreds of megabytes.
 func TestMemoryIsBounded(t *testing.T) {
 	for _, profiled := range []bool{false, true} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			const n = 60000
 			var at [2]uint64
 			count := 0
@@ -1451,7 +1451,7 @@ func (r *lineReader) Read(b []byte) (int, error) {
 // megabytes.
 func TestMemoryIsBounded(t *testing.T) {
 	for _, profiled := range []bool{false, true} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			const n = 60000
 			var at [2]uint64
 			count := 0

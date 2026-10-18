@@ -69,7 +69,7 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					n, err := parsers[tc.rule].Parse(tc.input, pego.WithUnit(unit), pego.WithBackend(backend))
 					if err != nil {

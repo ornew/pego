@@ -38,7 +38,7 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 			main := fmt.Sprintf(`package main
 import "fmt"
 func main() {
-    for _, unit := range []Unit{CodePoints, Bytes} {
+    for _, unit := range []PositionUnit{CodePoints, Bytes} {
         p := &parser{maxDepth: defaultMaxDepth}
         if unit == Bytes { p.unit, p.bs, p.n = Bytes, %[1]q, len(%[1]q) } else { p.setSource(%[1]q) }
         p.memo.stride = nseen
@@ -145,7 +145,7 @@ func TestGeneratedEnvironmentBindings(t *testing.T) {
 	main := `package main
 import "strings"
 func main() {
- for _, unit := range []Unit{CodePoints, Bytes} {
+ for _, unit := range []PositionUnit{CodePoints, Bytes} {
   input := strings.Repeat("a", 10000)
   p := &parser{maxDepth: defaultMaxDepth}
   if unit == Bytes { p.unit, p.bs, p.n = Bytes, input, len(input) } else { p.setSource(input) }

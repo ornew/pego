@@ -70,7 +70,7 @@ import("context";"encoding/json";"fmt";"reflect";"sync";"testing";"time")
 func TestProfile(t *testing.T){
  operations:=[]func(...ParseOption)(any,error){func(opts ...ParseOption)(any,error){return Parse(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRule("main",INPUT,opts...)},func(opts ...ParseOption)(any,error){return nil,Recognize(INPUT,opts...)}}
  TYPED
- for _,unit:=range []Unit{CodePoints,Bytes}{for op,parse:=range operations{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{for op,parse:=range operations{
   var pr Profile;var events []TraceEvent
   got,err:=parse(WithUnit(unit),WithProfile(&pr),WithTrace(func(e TraceEvent){events=append(events,e)}));expected,base:=parse(WithUnit(unit));if !reflect.DeepEqual(got,expected){t.Fatal("profile changed value")}
   if fmt.Sprint(err)!=fmt.Sprint(base){t.Fatal("error changed",err,base)}

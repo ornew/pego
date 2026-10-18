@@ -334,7 +334,7 @@ func TestWorkSetupRecognizerPhaseChecks(t *testing.T) {
 // Input preparation can fail before a parser is published to tracing. Exercise
 // its charged work directly; API fixtures above verify the outer panic boundary.
 func TestWorkSetupInputPreparationPanicIdentity(t *testing.T) {
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String(), func(t *testing.T) {
 			token := &workContextPanicToken{phase: "input materialization"}
 			ctx := newWorkContextErrPanic(token, 1)
@@ -421,7 +421,7 @@ func TestWorkSetupConcurrentColdCalls(t *testing.T) {
 			if aborted {
 				cancel()
 			}
-			o := ParseOptions{Backend: []Backend{Closure, Bytecode, BytecodeIterative}[i%3], Unit: []Unit{Bytes, CodePoints}[i%2], Recognize: i%5 == 0, Context: ctx}
+			o := ParseOptions{Backend: []Backend{Closure, Bytecode, BytecodeIterative}[i%3], Unit: []PositionUnit{Bytes, CodePoints}[i%2], Recognize: i%5 == 0, Context: ctx}
 			n, err := prog.ParseWith("main", "abc", o)
 			if aborted {
 				if n != nil || !errors.Is(err, context.Canceled) {

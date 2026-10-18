@@ -19,7 +19,7 @@ func TestCompiledCorpusWorkParity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+			for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 				var want string
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					for _, active := range []bool{false, true} {

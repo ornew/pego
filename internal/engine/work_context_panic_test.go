@@ -85,7 +85,7 @@ func workContextNodeJSON(t *testing.T, n *Node) []byte {
 func workContextVariants() []ParseOptions {
 	var variants []ParseOptions
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				variants = append(variants, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize})
 			}
@@ -247,7 +247,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 	literal := strings.Repeat("a", 1024)
 	prog := compile(t, `rule main = "`+literal+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(backend.String()+"/"+unit.String()+"/recognize="+strconv.FormatBool(recognize), func(t *testing.T) {
 					var retained *Node
@@ -315,7 +315,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 	}
 
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				retained, err := prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit})
 				if err != nil || retained == nil {

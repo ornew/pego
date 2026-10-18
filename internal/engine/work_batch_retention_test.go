@@ -43,7 +43,7 @@ rule main = "!" entry "?" $$
 rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key), Value: $value, Count: len(text($value))}`)
 
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				for _, active := range []bool{false, true} {
 					name := backend.String() + "/" + unit.String() + "/recognize=" + map[bool]string{false: "false", true: "true"}[recognize] + "/controls=" + map[bool]string{false: "inactive", true: "active"}[active]
@@ -133,7 +133,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 	text := strings.Repeat("a", 512)
 	prog := compile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				token := &struct{ marker string }{"trace panic"}
 				var observed *parser
@@ -162,7 +162,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 	prog := compile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				for _, cause := range []string{"cancel", "steps", "context-panic", "publication-panic"} {
 					t.Run(fmt.Sprintf("%s/%s/recognize=%t/%s", backend, unit, recognize, cause), func(t *testing.T) {
@@ -258,7 +258,7 @@ func (c *batchRetentionContext) Done() <-chan struct{} { return c.done }
 func (c *batchRetentionContext) Err() error            { return nil }
 
 //go:noinline
-func batchRetentionCaptureEvent(prog *Program, text string, backend Backend, unit Unit, active bool) (TraceEvent, weak.Pointer[batchRetentionContext], error) {
+func batchRetentionCaptureEvent(prog *Program, text string, backend Backend, unit PositionUnit, active bool) (TraceEvent, weak.Pointer[batchRetentionContext], error) {
 	ctx := &batchRetentionContext{Context: context.Background(), done: make(chan struct{})}
 	for i := range ctx.payload {
 		ctx.payload[i] = byte(i)
@@ -300,7 +300,7 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 	text := strings.Repeat("a", 32*1024)
 	prog := compile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, active := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/active=%t", backend, unit, active), func(t *testing.T) {
 					event, ref, err := batchRetentionCaptureEvent(prog, text, backend, unit, active)

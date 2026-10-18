@@ -15,7 +15,7 @@ import (
 
 type legacyResult struct {
 	version pego.DocumentVersion
-	unit    pego.Unit
+	unit    pego.PositionUnit
 	text    string
 	root    *pego.Node
 	err     error
@@ -65,7 +65,7 @@ func run() error {
 	default:
 		return fmt.Errorf("invalid backend %q", *backendName)
 	}
-	var unit pego.Unit
+	var unit pego.PositionUnit
 	switch *unitName {
 	case "codepoints":
 		unit = pego.CodePoints

@@ -48,7 +48,7 @@ func catchStreamPanic(f func()) (value any)  { defer func() { value = recover() 
 func TestStreamCallerPanicIdentity(t *testing.T) {
 	prog := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
 				for _, buffered := range []bool{false, true} {
 					for _, phase := range []string{"reader", "emit"} {
@@ -124,7 +124,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 	prog := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
 				for _, phase := range []string{"reader", "emit"} {
 					t.Run(fmt.Sprintf("%s/%s/trace=%t/%s", b, u, traced, phase), func(t *testing.T) {
@@ -161,7 +161,7 @@ func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 	prog := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(b.String()+"/"+u.String(), func(t *testing.T) {
 				token := &streamRuntimePanicToken{"nested reader"}
 				r := &streamCallbackReader{panicValue: token}
@@ -183,7 +183,7 @@ func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 
 func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 	for _, b := range []Backend{Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, phase := range []string{"reader", "emit"} {
 				t.Run(fmt.Sprintf("%s/%s/%s", b, u, phase), func(t *testing.T) {
 					prog := compile(t, "rule main = item* #stream $$\nrule item = \"a\"")
@@ -223,7 +223,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 
 func TestStreamKeepsCallerBufferedReader(t *testing.T) {
 	prog := compile(t, records)
-	for _, u := range []Unit{CodePoints, Bytes} {
+	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))
 		if p := newStreamParser(prog, reader, u); p.reader != reader {
 			t.Fatal("stream parser replaced caller's buffered reader")

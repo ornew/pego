@@ -97,7 +97,7 @@ func Test%s(t *testing.T) {
  var node_ P.Node__ = other
  var span P.Span = 1
  _ = []any{single,maybeUnion,anything,cst,boxAlias,node,node_,span}
- for _,unit := range []P.Unit{P.CodePoints,P.Bytes} {
+ for _,unit := range []P.PositionUnit{P.CodePoints,P.Bytes} {
   var result P.Alias
   var err error
   result,err=P.ParseAST("a",P.WithUnit(unit))

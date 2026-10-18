@@ -33,7 +33,7 @@ rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => ite
 func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 	program := compile(t, filterIdentitySource)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			node, err := program.ParseWith("main", "ab", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
 				t.Fatalf("%s/%s: %v", backend, unit, err)
@@ -55,7 +55,7 @@ func TestFilterAcrossBackends(t *testing.T) {
 	for _, fixture := range filterCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := compile(t, fixture.src)
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
@@ -96,7 +96,7 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 	} {
 		program := compile(t, source, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				_, err := program.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 				if err == nil || !strings.Contains(err.Error(), "filter: predicate must produce a bool") {
 					t.Fatalf("%s/%s: %v", backend, unit, err)
@@ -118,7 +118,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				options := ParseOptions{Backend: backend, Unit: unit}
 				if got, want := resultJSON(loaded.ParseWith("main", "ab", options)), resultJSON(program.ParseWith("main", "ab", options)); got != want {
 					t.Fatalf("loaded filter: %s / %s", got, want)

@@ -11,7 +11,7 @@ import (
 )
 
 //go:noinline
-func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit Unit, active bool) (weak.Pointer[byte], TraceEvent) {
+func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit PositionUnit, active bool) (weak.Pointer[byte], TraceEvent) {
 	t.Helper()
 	text := strings.Repeat("a", 256<<10)
 	// Observe the original immutable string's backing allocation, rather than
@@ -43,7 +43,7 @@ func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit
 func TestWorkBatchTraceEventReleasesOriginalInputAfterGC(t *testing.T) {
 	prog := compile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, active := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/active=%t", backend, unit, active), func(t *testing.T) {
 					if active && !workControlsEnabled {

@@ -23,7 +23,7 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 		t.Fatal(err)
 	}
 	for _, b := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 			for _, recognize := range []bool{false, true} {
 				opts := []pego.ParseOption{pego.WithBackend(b), pego.WithUnit(unit)}
 				if recognize {

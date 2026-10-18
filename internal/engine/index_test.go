@@ -42,7 +42,7 @@ func TestIndexAcrossBackends(t *testing.T) {
 	for _, fixture := range indexCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := compile(t, fixture.src)
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))

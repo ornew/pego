@@ -130,7 +130,7 @@ func checkRecovery(v *Doc, err error, mode string, n int) bool {
 }
 
 func TestRecoveryWorkload(t *testing.T) {
-    for _, unit := range []Unit{CodePoints, Bytes} {
+    for _, unit := range []PositionUnit{CodePoints, Bytes} {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
         before, _ := json.Marshal(struct { Value any; Error any }{saved, savedErr})
@@ -167,7 +167,7 @@ func BenchmarkTypedRecovery(b *testing.B) {
     for _, n := range []int{1,128} {
         for _, mode := range []string{"accepted","recovered","rejected"} {
             input := recoveryInput(mode,n)
-            for _, unit := range []Unit{CodePoints,Bytes} {
+            for _, unit := range []PositionUnit{CodePoints,Bytes} {
                 b.Run(fmt.Sprintf("%d/%s/%v",n,mode,unit),func(b *testing.B) {
                     v, err := ParseAST(input,WithUnit(unit))
                     if !checkRecovery(v,err,mode,n) { b.Fatalf("%v %v",v,err) }

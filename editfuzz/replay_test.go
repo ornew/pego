@@ -10,7 +10,7 @@ import (
 )
 
 var backends = []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative}
-var units = []pego.Unit{pego.CodePoints, pego.Bytes}
+var units = []pego.PositionUnit{pego.CodePoints, pego.Bytes}
 
 // Grammars exercising success and failure, recovered errors, left recursion, lookahead and long
 // repetitions.
@@ -36,7 +36,7 @@ var (
 	checkpoint = Operation{Kind: Checkpoint}
 )
 
-func sequence(src string, b pego.Backend, u pego.Unit, initial string, ops ...Operation) *Sequence {
+func sequence(src string, b pego.Backend, u pego.PositionUnit, initial string, ops ...Operation) *Sequence {
 	return &Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "main", Backend: b, Unit: u, Initial: []byte(initial), Operations: ops}
 }
 
@@ -120,7 +120,7 @@ func TestSequenceJSONErrors(t *testing.T) {
 			t.Errorf("wrote %s", data)
 		}
 	}
-	if _, err := json.Marshal(sequence("g", pego.Closure, pego.Unit(7), "")); err == nil {
+	if _, err := json.Marshal(sequence("g", pego.Closure, pego.PositionUnit(7), "")); err == nil {
 		t.Error("a sequence with an unknown unit was written")
 	}
 	if _, err := json.Marshal(sequence("g", pego.Closure, pego.Bytes, "", Operation{Kind: "bogus"})); err == nil {
@@ -176,7 +176,7 @@ func TestUndoRestoresText(t *testing.T) {
 	}
 	const r = "\uFFFD"
 	for _, tc := range []struct {
-		unit  pego.Unit
+		unit  pego.PositionUnit
 		steps []Operation
 		want  []string
 	}{
@@ -217,7 +217,7 @@ func TestUndoRestoresText(t *testing.T) {
 func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
 		cur, target string
-		unit        pego.Unit
+		unit        pego.PositionUnit
 		start, end  int
 		text        string
 	}{

@@ -100,7 +100,7 @@ func TestDocumentVersionTransitions(t *testing.T) {
 func TestDocumentBatchValidationPreservesState(t *testing.T) {
 	p := compile(t, `rule main = ("é" / .)* $$`)
 	for _, large := range []bool{false, true} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				text := "éab"
 				if large {
@@ -148,7 +148,7 @@ func TestDocumentBatchValidationPreservesState(t *testing.T) {
 	}
 }
 
-func batchOracle(text string, unit Unit, edits []TextEdit) string {
+func batchOracle(text string, unit PositionUnit, edits []TextEdit) string {
 	if unit == Bytes {
 		var out strings.Builder
 		pos := 0
@@ -192,7 +192,7 @@ rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(
 				if pi == 1 && back == Closure {
 					continue
 				}
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, large := range []bool{false, true} {
 						t.Run(fmt.Sprintf("%d/%d/%s/%s/%v", gi, pi, back, unit, large), func(t *testing.T) {
 							initial := "é\xc3x\xa9\n"
@@ -283,7 +283,7 @@ func TestDocumentBatchPreservesPiecePromotion(t *testing.T) {
 		t.Skip("piece input disabled by reference build")
 	}
 	p := compile(t, `rule main = .* $$`)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, promoted := range []bool{false, true} {
 			text := strings.Repeat("x", documentPieceMinSize)
 			if promoted {

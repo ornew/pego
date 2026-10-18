@@ -62,16 +62,16 @@ rule left = left "+" "é" / "é"
 	// replace them before generated parsers receive the input.
 	for _, name := range []string{"main", "one", "two", "three", "four", "five", "cap", "assign", "cut", "recovering", "expression", "left"} {
 		for _, input := range []string{"é", "?", "é!", "-é", "é+é", "", "\xff", "\xffé", "\xe2\x82", "�é", "😀"} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				_, err := prog.ParseWith(name, input, ParseOptions{Unit: unit, MaxDepth: 5, Recognize: true})
-				fmt.Fprintf(&rows, "{%q,%q,%s,%s},\n", name, input, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], strconv.Quote(fmt.Sprint(err)))
+				fmt.Fprintf(&rows, "{%q,%q,%s,%s},\n", name, input, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], strconv.Quote(fmt.Sprint(err)))
 			}
 		}
 	}
 	tests := `package depth
 import("fmt";"testing")
 func TestRoutesAndReuse(t *testing.T) {
- cases:=[]struct{name,input string; unit Unit; want string}{` + rows.String() + `}
+ cases:=[]struct{name,input string; unit PositionUnit; want string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ { for _,c:=range cases {
   var selected *rule
   for _,r:=range recRules {if r.name==c.name {selected=r;break}}

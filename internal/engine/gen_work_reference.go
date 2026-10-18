@@ -250,7 +250,7 @@ func checkGeneratedWorkAnchors(file *goast.File) error {
 			return fmt.Errorf("generated layout reference: missing or changed %s.control field", name)
 		}
 		if name == "parseOptions" {
-			expected := map[string]string{"unit": "Unit", "maxDepth": "int", "context": "context.Context", "limits": "WorkLimits", "control": "*workControl", "prepared": "bool"}
+			expected := map[string]string{"unit": "PositionUnit", "maxDepth": "int", "context": "context.Context", "limits": "WorkLimits", "control": "*workControl", "prepared": "bool"}
 			if !reflect.DeepEqual(fields, expected) {
 				return fmt.Errorf("generated layout reference: option layout changed")
 			}

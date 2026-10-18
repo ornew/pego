@@ -158,7 +158,7 @@ func TestGraphPublicLimitsAndRetainedResults(t *testing.T){
  baseline,err:=ParseAST(input);if err!=nil || baseline==nil || len(baseline.Items)!=150 || len(baseline.Nested)!=2{t.Fatal("typed baseline",err)}
  before:=fmt.Sprintf("%#v",baseline.Items[0]);tree,err:=Parse(input);if err!=nil{t.Fatal(err)};treeBefore:=tree.String()
  if reference{return}
- for _,unit:=range []Unit{Bytes,CodePoints}{
+ for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   for _,ast:=range []bool{false,true}{
    call:=func(n uint64)(any,error){opts:=[]ParseOption{WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:n})};if ast{return ParseAST(input,opts...)};return Parse(input,opts...)}
    lo,hi:=uint64(1),uint64(1000000)

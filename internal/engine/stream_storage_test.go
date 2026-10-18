@@ -125,7 +125,7 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 				if omitAST && backend == Closure {
 					continue
 				}
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					t.Run(fmt.Sprintf("%s/omitAST=%t/%s/%s", bound, omitAST, backend, unit), func(t *testing.T) {
 						var retained []*Node
 						err := saved.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { retained = append(retained, n); return nil }, ParseOptions{Backend: backend, Unit: unit})
@@ -148,7 +148,7 @@ func TestStreamPrefixMemoReuse(t *testing.T) {
 	prog := compile(t, `rule main = &header h:header (x:"x" #atomic)* #stream $$ {text($h) == "#head\n"}
 rule header = "#head\n" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				input := "#head\n" + strings.Repeat("x", 1300)
@@ -174,7 +174,7 @@ rule header = "#head\n" #atomic`)
 func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
 	prog := compile(t, `rule main = h:(main "a" / "a" #atomic) "x"* #stream {text($h) != ""}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				count := 0
 				err := prog.ParseStreamWith("main", strings.NewReader("aa"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
@@ -190,7 +190,7 @@ func TestStreamPrefixLeftRecursiveCaptureSurvivesCommit(t *testing.T) {
 	prog := compile(t, `rule main = h:head #atomic "x"* #stream {text($h) == "aa"} $$
 rule head = head "a" / "a" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				count := 0
 				err := prog.ParseStreamWith("main", strings.NewReader("aaxx"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
@@ -272,7 +272,7 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				text := "#head\n" + "x" + strings.Repeat("abcdefghij,", 5000) + "\n" + strings.Repeat("xa,\n", 300)
 				b.Run(fmt.Sprintf("root=%t/%s/%s", liveRoot, backend, unit), func(b *testing.B) {
 					var total int64
@@ -321,7 +321,7 @@ func BenchmarkStreamRetentionWorkload(b *testing.B) {
 		if _, err := prog.rule(backend, "main"); err != nil {
 			b.Fatal(err)
 		}
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, pattern := range []string{"small", "mixed", "wide"} {
 				row := "x" + strings.Repeat("abcdefghij,", 5000) + "\n"
 				body, count := strings.Repeat("xa,\n", 3000), 3000

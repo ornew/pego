@@ -58,7 +58,7 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 		t.Run(probe.name, func(t *testing.T) {
 			prog := compile(t, probe.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{Bytes, CodePoints} {
+				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					recognizeModes := []bool{false}
 					if probe.captureAction {
 						recognizeModes = []bool{false, true}

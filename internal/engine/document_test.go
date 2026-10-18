@@ -222,7 +222,7 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 func TestDocumentEditText(t *testing.T) {
 	prog := compile(t, `rule main = .*`)
 	pieces := []string{"a", "é", "日本", "\n", "\xff", "z\xe3\x81", ""}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		doc, err := prog.NewDocumentWith("main", "héllo, 世界\n", ParseOptions{Unit: unit})
 		if err != nil {
 			t.Fatal(err)

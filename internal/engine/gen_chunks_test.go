@@ -74,7 +74,7 @@ import (
 )
 
 func TestChunkValues(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		empty, err := ParseAST("", WithUnit(unit))
 		if err != nil || empty == nil || empty.Groups == nil || len(empty.Groups) != 0 { t.Fatal("empty root list") }
 		for _, count := range []int{0, 1, 7, 8, 9, 23, 24, 25, 55, 56, 57, 63, 64, 65, 119, 120, 121, 255, 256, 257, 511, 512, 513, 1025} {

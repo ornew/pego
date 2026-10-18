@@ -33,7 +33,7 @@ func workClassNode(t *testing.T, p *Program, input string, opts ParseOptions) *N
 	return n
 }
 
-func workClassBudgetOptions(backend Backend, unit Unit, allowance uint64, observed **parser) ParseOptions {
+func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64, observed **parser) ParseOptions {
 	return ParseOptions{
 		Backend:    backend,
 		Unit:       unit,
@@ -49,7 +49,7 @@ func workClassBudgetOptions(backend Backend, unit Unit, allowance uint64, observ
 	}
 }
 
-func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backend, unit Unit) *parser {
+func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backend, unit PositionUnit) *parser {
 	t.Helper()
 	var observed *parser
 	n, err := p.ParseWith("main", input, workClassBudgetOptions(backend, unit, 32, &observed))
@@ -74,7 +74,7 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 	negative := classMembershipProgram(t, &grammar.CharClass{Ranges: ranges, Negated: true})
 
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				if n := workClassNode(t, positive, late, ParseOptions{Backend: backend, Unit: unit}); n.Text != late {
 					t.Fatalf("late class hit text=%q, want %q", n.Text, late)
@@ -102,7 +102,7 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 	p := classMembershipProgram(t, &grammar.CharClass{Ranges: ranges})
 
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				var observed *parser
 				var control *workControl
@@ -188,7 +188,7 @@ func TestWorkClassFastPathParity(t *testing.T) {
 	for _, tc := range cases {
 		p := classMembershipProgram(t, tc.class)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(tc.name+"/"+backend.String()+"/"+unit.String(), func(t *testing.T) {
 					base, baseErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 					controlled, controlledErr := p.ParseWith("main", tc.input, ParseOptions{
@@ -256,7 +256,7 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, program := range []*Program{p, loaded} {
 						if program == loaded && backend == Closure {
 							continue

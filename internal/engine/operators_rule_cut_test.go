@@ -171,7 +171,7 @@ func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 		for _, c := range prefixPartCutInputs {
 			t.Run(fmt.Sprintf("%s/memo=%t", c.input, !disableMemo), func(t *testing.T) {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						n, err := prog.ParseWith("main", c.input, ParseOptions{Backend: backend, Unit: unit})
 						if c.kind == "" {
 							if n != nil || err == nil || !strings.Contains(err.Error(), "syntax error") {
@@ -232,7 +232,7 @@ func BenchmarkOperatorsRulePrefixPartCut(b *testing.B) {
 		{"operand", "ca"}, {"matched-cut", "c-za"}, {"competing-uncut-fallback", "f-x"},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				b.Run(fmt.Sprintf("%s/%s/unit=%d", c.name, backend, unit), func(b *testing.B) {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					b.ReportAllocs()

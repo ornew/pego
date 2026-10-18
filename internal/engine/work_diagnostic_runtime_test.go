@@ -177,7 +177,7 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 	prog := compile(t, source)
 	accessorProg := compile(t, strings.Replace(source, "rule main = bad $$\n", `rule main = (bad #recover(skip=.* #atomic) "!" / fallback) $$`+"\n", 1)+"\nrule fallback = .* #atomic\n")
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{Bytes, CodePoints} {
+		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				for _, accessor := range []bool{false, true} {
 					active := prog
@@ -255,7 +255,7 @@ rule fallback = .* #atomic
 rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 	prog := compile(t, src)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{Bytes, CodePoints} {
+		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			retained, retainedErr := prog.ParseWith("main", "x!", ParseOptions{Backend: b, Unit: u})
 			if retained == nil || retainedErr == nil {
 				t.Fatal("recovery setup did not produce node and errors")

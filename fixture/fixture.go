@@ -600,7 +600,7 @@ func setGoldens(exp *Expectation, actual Actual) {
 	copy(exp.Errors, actual.Errors)
 }
 
-func runCase(p *pego.Parser, backend string, unit pego.Unit, input string, ctx context.Context, limits pego.WorkLimits) (Actual, error) {
+func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input string, ctx context.Context, limits pego.WorkLimits) (Actual, error) {
 	var b pego.Backend
 	switch backend {
 	case "default":

@@ -33,7 +33,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				input := strings.Repeat(tc.text, 3)
 				n, err := shared.ParseWith("main", input, ParseOptions{Unit: unit})
 				if err != nil {

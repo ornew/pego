@@ -53,7 +53,7 @@ func TestByteDecodeDoesNotReadPastCompleteRune(t *testing.T) {
 
 func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, s := range []string{"a", "é", "漢", "😀", string([]byte{0xff})} {
 				for split := 0; split < len(s); split++ {
 					t.Run(fmt.Sprintf("%s/%s/%x/split%d", b, unit, s, split), func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
 func TestStreamIncompletePrefixPropagatesReaderError(t *testing.T) {
 	p := compile(t, "rule main = item* #stream $$\nrule item = . \"\\n\"")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				stop := errors.New("reader stopped")
 				r := io.MultiReader(strings.NewReader("\xc3"), &failOnRead{err: stop})
@@ -165,7 +165,7 @@ func BenchmarkRuneInputDelivery(b *testing.B) {
 			if _, err := prog.rule(backend, "main"); err != nil {
 				b.Fatal(err)
 			}
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, stream := range []bool{true, false} {
 					mode := "Batch"
 					if stream {

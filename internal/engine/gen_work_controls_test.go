@@ -74,7 +74,7 @@ func TestControls(t *testing.T){
  ctx,cancel:=context.WithCancel(context.Background());cancel()
  expired,stop:=context.WithDeadline(context.Background(),time.Unix(0,0));defer stop()
  input:=strings.Repeat("a",300)+"é"
- for _,r:=range routes(){for _,unit:=range []Unit{CodePoints,Bytes}{t.Run(r.name+string(rune('0'+unit)),func(t *testing.T){
+ for _,r:=range routes(){for _,unit:=range []PositionUnit{CodePoints,Bytes}{t.Run(r.name+string(rune('0'+unit)),func(t *testing.T){
   calls:=0;option:=func(o *parseOptions){calls++;o.unit=unit}
   v,err:=r.call(input,option)
   if err!=nil || calls!=1 {t.Fatalf("baseline callbacks=%d err=%v",calls,err)}
@@ -185,7 +185,7 @@ func TestFailureDiagnosticsBounded(t *testing.T){
  }}
 }
 func TestLineDiagnosticReservations(t *testing.T){
- for _,unit:=range []Unit{Bytes,CodePoints}{
+ for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   input:=strings.Repeat("é\n",300)
   makeParser:=func(limit uint64)*parser{
    p:=&parser{unit:unit,bs:input,in:[]rune(input)};p.n=len(p.in);if unit==Bytes{p.n=len(input)}
@@ -193,7 +193,7 @@ func TestLineDiagnosticReservations(t *testing.T){
    return p
   }
   p:=makeParser(100000);e:=p.makeError(p.n-1,nil)
-  if e.Line!=300 || e.Col!=map[Unit]int{Bytes:3,CodePoints:2}[unit]{t.Fatal("line coordinate changed",e)}
+  if e.Line!=300 || e.Col!=map[PositionUnit]int{Bytes:3,CodePoints:2}[unit]{t.Fatal("line coordinate changed",e)}
   if reference{if p.control.inputUsed!=0{t.Fatal("reference diagnostic accounted")};continue}
   if p.control.inputUsed!=uint64(p.n){t.Errorf("diagnostic input uncharged: %d for %d",p.control.inputUsed,p.n)}
   p=makeParser(uint64(p.n))
@@ -563,7 +563,7 @@ rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 const generatedGoOrdinaryNilErrorConsumer = `package ordinarynil
 import("context";"reflect";"testing")
 func TestOrdinaryNilMapping(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,extra:=range [][]ParseOption{nil,{WithContext(context.Background())},{WithWorkLimits(WorkLimits{MaxSteps:1000000,MaxInputWork:1000000})}}{
    opts:=append([]ParseOption{WithUnit(unit),OPTION},extra...)
    got,err:=ParseAST(INPUT,opts...)

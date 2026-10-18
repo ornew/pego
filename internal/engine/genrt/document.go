@@ -194,7 +194,7 @@ func cloneDocumentValue(v any, state *documentCloneState) any {
 }
 
 // newDocumentState parses only the configured start rule.
-func newDocumentState(root *rule, text string, unit Unit) *documentState {
+func newDocumentState(root *rule, text string, unit PositionUnit) *documentState {
 	return &documentState{root: root, text: text, unit: unit}
 }
 

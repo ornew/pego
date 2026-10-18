@@ -34,7 +34,7 @@ func documentTestRules() (*rule, *rule) {
 
 func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 	main, _ := documentTestRules()
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		d := newDocumentState(main, "aa", unit)
 		o := parseOptions{unit: unit, maxDepth: defaultMaxDepth}
 		first, err := d.parse(o)

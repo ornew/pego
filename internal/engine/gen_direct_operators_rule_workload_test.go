@@ -62,7 +62,7 @@ import (
 func operatorsRuleInput(n int) string { return "a" + strings.Repeat(" [b,c,d,]", n) }
 
 func TestOperatorsRuleWorkload(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(operatorsRuleInput(2), WithUnit(unit))
 		post, ok := saved.(*Post)
 		if err != nil || !ok || post.N != 3 || len(post.Items) != 3 || post.Items[0].Value != "b" {
@@ -101,7 +101,7 @@ var operatorsRuleResult Expr
 func BenchmarkTypedOperatorsRule(b *testing.B) {
 	for _, n := range []int{1, 128} {
 		input := operatorsRuleInput(n)
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
 				if _, err := ParseAST(input, WithUnit(unit)); err != nil { b.Fatal(err) }
 				b.ReportAllocs()

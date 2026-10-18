@@ -12,7 +12,7 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 		d, err := p.NewDocument("éabcd", pego.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
@@ -49,7 +49,7 @@ func TestDocumentEditBatchPublicContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 		doc, err := parser.NewDocument("éabcd", pego.WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)

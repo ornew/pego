@@ -80,7 +80,7 @@ func Records(input string) ([][]string, error) {
 // positions make ParseAST about 15% slower), unless input is not valid UTF-8: with code points, Text
 // would hold U+FFFD for each byte that is not, so such input is parsed with byte positions, which keep
 // the bytes.
-func parseFile(input string) (*File, Unit, error) {
+func parseFile(input string) (*File, PositionUnit, error) {
 	unit := CodePoints
 	if !utf8.ValidString(input) {
 		unit = Bytes

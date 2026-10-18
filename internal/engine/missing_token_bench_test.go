@@ -31,7 +31,7 @@ func BenchmarkMissingLiteral(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			b.Run(tc.name+"/"+unit.String(), func(b *testing.B) {
 				o := ParseOptions{Unit: unit, MissingTokens: tc.limit}
 				b.ReportAllocs()

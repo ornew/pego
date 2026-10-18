@@ -46,7 +46,7 @@ func requireInsertions(t *testing.T, prog *Program, input string, o ParseOptions
 }
 
 func TestMissingTokensLiteralAndUnits(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, controlled := range []bool{false, true} {
 			if controlled && !workControlsEnabled {
 				continue
@@ -97,7 +97,7 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 		t.Fatal("partial prefix was consumed", m)
 	}
 	invalid := compile(t, `rule main = . ";" #missing $$`)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		n, errs := requireInsertions(t, invalid, "\xff", ParseOptions{Unit: unit, MissingTokens: 2}, 1)
 		if missingNodes(t, n)[0].Start != 1 || errs[0].Pos != 1 {
 			t.Fatal("invalid UTF-8 position")

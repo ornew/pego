@@ -19,7 +19,7 @@ import (
 // its text is not the edited text; or an operation or a parse panicked.
 type Mismatch struct {
 	Backend pego.Backend
-	Unit    pego.Unit
+	Unit    pego.PositionUnit
 	// Event is the index of the operation, or -1 for the initial text.
 	Event int
 	// Text is the Document's text at a checkpoint, or its text before the operation that changed it
@@ -314,7 +314,7 @@ func boundaries(s string) []int {
 
 // diff returns the edit, in unit, that changes cur to target: the range of cur between their common
 // prefix and suffix of whole characters, and the replacement from target.
-func diff(cur, target string, unit pego.Unit) (start, end int, text string) {
+func diff(cur, target string, unit pego.PositionUnit) (start, end int, text string) {
 	bc, bt := boundaries(cur), boundaries(target)
 	nc, nt := len(bc)-1, len(bt)-1
 	char := func(s string, b []int, i int) string { return s[b[i]:b[i+1]] }

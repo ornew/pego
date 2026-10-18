@@ -123,7 +123,7 @@ type Sequence struct {
 	GrammarSHA256 string
 	Start         string
 	Backend       pego.Backend
-	Unit          pego.Unit
+	Unit          pego.PositionUnit
 	// Seed is the seed that generated the sequence, kept only as provenance: replay does not use it.
 	Seed       uint64
 	Initial    []byte
@@ -252,8 +252,8 @@ func ParseBackend(name string) (pego.Backend, error) {
 }
 
 // ParseUnit returns the unit named codepoints or bytes.
-func ParseUnit(name string) (pego.Unit, error) {
-	for _, u := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+func ParseUnit(name string) (pego.PositionUnit, error) {
+	for _, u := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 		if u.String() == name {
 			return u, nil
 		}
@@ -278,7 +278,7 @@ func checkHash(h string) error {
 	return nil
 }
 
-func unitName(u pego.Unit) (string, error) {
+func unitName(u pego.PositionUnit) (string, error) {
 	if u != pego.CodePoints && u != pego.Bytes {
 		return "", fmt.Errorf("unknown unit %d", u)
 	}

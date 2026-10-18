@@ -591,12 +591,12 @@ func ruleByName(name string) *rule {
 	return nil
 }
 
-// Unit is the unit of input positions.
-type Unit int
+// PositionUnit is the unit of input positions.
+type PositionUnit int
 
 const (
 	// CodePoints counts Unicode code points. It is the default.
-	CodePoints Unit = iota
+	CodePoints PositionUnit = iota
 	// Bytes counts UTF-8 bytes.
 	Bytes
 )
@@ -608,7 +608,7 @@ const defaultMaxDepth = 100_000
 type ParseOption func(*parseOptions)
 
 type parseOptions struct {
-	unit     Unit
+	unit     PositionUnit
 	maxDepth int
 	context  context.Context
 	limits   WorkLimits
@@ -625,7 +625,7 @@ type parseOptions struct {
 }
 
 // WithUnit selects the unit of input positions (CodePoints by default).
-func WithUnit(unit Unit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
+func WithUnit(unit PositionUnit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
 
 // WithMaxDepth limits nested rule calls. Zero selects the generated default;
 // a negative effective limit returns an error before parsing.
@@ -817,7 +817,7 @@ type parser struct {
 	document       *documentState
 	docHigh        int  // exclusive upper bound examined by the active rule call
 	docProvisional bool // active call observed an unresolved LR result
-	unit           Unit
+	unit           PositionUnit
 	in             []rune // code points (CodePoints)
 	bs             string // the input (Bytes)
 	n              int    // input length in units
@@ -876,7 +876,7 @@ type parser struct {
 type documentState struct {
 	root  *rule
 	text  string
-	unit  Unit
+	unit  PositionUnit
 	memo  memoTable
 	stats documentStats
 }
@@ -3628,7 +3628,7 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 // Parent spans do not prune traversal. Scalar and list values have no spans.
 type Cursor struct {
 	Root *Node
-	Unit Unit
+	Unit PositionUnit
 }
 
 func (c Cursor) validate(start, end int32) error {

@@ -12,7 +12,7 @@ import (
 )
 
 func TestWorkTextFallbackBudgetCore(t *testing.T) {
-	for _, u := range []Unit{Bytes, CodePoints} {
+	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := input{unit: u, bs: make([]byte, 8192), in: make([]rune, 256), control: newWorkControl(nil, WorkLimits{MaxInputWork: 1})}
 		end := len(in.bs)
 		if u == CodePoints {
@@ -49,7 +49,7 @@ rule piece = .*`
 		}
 		prog := compile(t, grammar)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, u := range []Unit{Bytes, CodePoints} {
+			for _, u := range []PositionUnit{Bytes, CodePoints} {
 				retained, err := prog.ParseWith("main", strings.Repeat("oldλ\xff", 90), ParseOptions{Backend: b, Unit: u, WorkLimits: WorkLimits{MaxInputWork: 1 << 50}})
 				if err != nil || retained == nil {
 					t.Fatalf("retained parse %v/%v: %v", b, u, err)
@@ -112,7 +112,7 @@ rule piece = .*`
 }
 
 func TestWorkTextStepBudgetAndLazyOffsets(t *testing.T) {
-	for _, u := range []Unit{Bytes, CodePoints} {
+	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := input{unit: u, bs: make([]byte, 4097), in: make([]rune, 129), control: newWorkControl(nil, WorkLimits{MaxSteps: 128})}
 		end := len(in.in)
 		if u == Bytes {
@@ -145,7 +145,7 @@ rule main Token = .* $$`, `rule main = item $$
 rule item = "!" #recover(skip=.*)`} {
 		prog := compile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, u := range []Unit{Bytes, CodePoints} {
+			for _, u := range []PositionUnit{Bytes, CodePoints} {
 				for _, recognize := range []bool{false, true} {
 					opts := ParseOptions{Backend: b, Unit: u, Recognize: recognize}
 					want, wantErr := prog.ParseWith("main", input, opts)

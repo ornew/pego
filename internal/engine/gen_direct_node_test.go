@@ -66,12 +66,12 @@ func TestGeneratedNodeDirectRetention(t *testing.T) {
 	}
 	p := compile(t, c.src)
 	var rows strings.Builder
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, rule := range []string{"main", "pair"} {
 			for _, input := range []string{"a-123456?", "b-7!", "c-1", "d-x?", ""} {
 				n, err := p.ParseWith(rule, input, ParseOptions{Unit: unit})
 				fmt.Fprintf(&rows, "{%q,%q,%s,%q},\n", rule, input,
-					map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], resultJSON(n, err))
+					map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], resultJSON(n, err))
 			}
 		}
 	}
@@ -82,7 +82,7 @@ func encoded(n *Node, err error) string {
  b,_:=json.Marshal(out);return string(b)
 }
 func TestRetainedTrees(t *testing.T) {
- cases:=[]struct{rule,input string;unit Unit;want string}{` + rows.String() + `}
+ cases:=[]struct{rule,input string;unit PositionUnit;want string}{` + rows.String() + `}
  var saved []*Node;var snapshots []string
  for repeat:=0;repeat<3;repeat++ {for _,c:=range cases {
   n,err:=ParseRule(c.rule,c.input,WithUnit(c.unit))

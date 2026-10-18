@@ -200,7 +200,7 @@ func TestSourceGrammarTree(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	src := sourceTreeFixture
 	var want string
-	for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+	for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 			n, err := p.Parse(src, pego.WithUnit(unit), pego.WithBackend(backend))
 			if err != nil {

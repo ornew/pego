@@ -89,7 +89,7 @@ const input=INPUT
 var nodeSink *Node
 var errorSink error
 var valueSink any
-func benchOperation(b *testing.B,op func(...ParseOption)error, extra ...ParseOption){for _,unit:=range []Unit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=append([]ParseOption{WithUnit(unit)},extra...);if err:=op(opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){errorSink=op(opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
+func benchOperation(b *testing.B,op func(...ParseOption)error, extra ...ParseOption){for _,unit:=range []PositionUnit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=append([]ParseOption{WithUnit(unit)},extra...);if err:=op(opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){errorSink=op(opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
 func benchmarkParseOp(opts ...ParseOption)error{var err error;nodeSink,err=Parse(input,opts...);return err}
 func benchmarkRecognizeOp(opts ...ParseOption)error{return Recognize(input,opts...)}
 func BenchmarkParse(b *testing.B){benchOperation(b,benchmarkParseOp)}

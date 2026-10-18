@@ -150,7 +150,7 @@ import (
  "testing"
 )
 func TestSweepPublic(t *testing.T) {
- for _, unit := range []Unit{CodePoints, Bytes} {
+ for _, unit := range []PositionUnit{CodePoints, Bytes} {
   input := strings.Repeat("é", 300)+"b"
   v,e := ParseAST(input, WithUnit(unit)); if e!=nil || v==nil {t.Fatal(e)}
   if len(v.Items)!=1 || len(v.Nested)!=1 || len(v.Nested[0])!=1 || v.Items[0].Left.Text!="b" || v.Items[0].Right.Text!="b" {t.Fatal("nested fields")}
@@ -308,7 +308,7 @@ import (
  "testing"
 )
 func TestSweepOpenValues(t *testing.T) {
- for _,unit:=range []Unit{CodePoints,Bytes} {
+ for _,unit:=range []PositionUnit{CodePoints,Bytes} {
   v,e:=ParseAST("b??",WithUnit(unit)); if e!=nil || v==nil || v.Raw==nil || v.O==nil || *v.O!="b" {t.Fatal("open root",e)}
   if v.A.(*TNode[string]).Value!="b" || v.Items[0].(*TNode[string]).Value!="b" || v.M.(*TNode[string]).Value!="b" {t.Fatal("open conversion")}
   named,e:=ParseRuleAST("main","b??",WithUnit(unit)); if e!=nil || !reflect.DeepEqual(v,named) {t.Fatal("named conversion")}
@@ -342,7 +342,7 @@ import (
  "testing"
 )
 func TestSweepNamesAndAliases(t *testing.T) {
- for _,unit:=range []Unit{CodePoints,Bytes} {
+ for _,unit:=range []PositionUnit{CodePoints,Bytes} {
   v,e:=ParseAST("b",WithUnit(unit)); if e!=nil || v==nil || len(v.Items)!=1 || len(v.Nested)!=1 || len(v.Nested[0])!=1 {t.Fatal("alias lists",e)}
   if v.Items[0].Text!="b" || v.Nested[0][0].Text!="b" {t.Fatal("alias contents")}
   if !forceConversion && v.Items[0]!=v.Nested[0][0] {t.Fatal("alias identity")}

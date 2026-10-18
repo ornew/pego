@@ -90,7 +90,7 @@ const (
 import "testing"
 
 func interruptible(d *Document, opts ...ParseOption) error { _, err := d.Parse(opts...); return err }
-func matchesTyped(*testing.T, *Document, Unit) {}
+func matchesTyped(*testing.T, *Document, PositionUnit) {}
 `
 	generatedDocumentTypedRoute = `
 import (
@@ -101,7 +101,7 @@ import (
 
 func interruptible(d *Document, opts ...ParseOption) error { _, err := d.ParseAST(opts...); return err }
 
-func matchesTyped(t *testing.T, d *Document, unit Unit) {
+func matchesTyped(t *testing.T, d *Document, unit PositionUnit) {
 	t.Helper()
 	v, err := d.ParseAST()
 	want, wantErr := ParseAST(d.Text(), WithUnit(unit))
@@ -123,7 +123,7 @@ import (
 	"testing"
 )
 
-func matchesBatch(t *testing.T, d *Document, unit Unit) {
+func matchesBatch(t *testing.T, d *Document, unit PositionUnit) {
 	t.Helper()
 	node, err := d.Parse()
 	fresh, freshErr := Parse(d.Text(), WithUnit(unit))
@@ -137,7 +137,7 @@ func matchesBatch(t *testing.T, d *Document, unit Unit) {
 
 // interrupt parses an edited Document with opts, which must interrupt the
 // parse, and checks later parses and edits against batch parses.
-func interrupt(t *testing.T, unit Unit, opts func(context.CancelFunc) []ParseOption) (completed bool, err error) {
+func interrupt(t *testing.T, unit PositionUnit, opts func(context.CancelFunc) []ParseOption) (completed bool, err error) {
 	d, err := NewDocument(INPUT, WithUnit(unit))
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +179,7 @@ func interrupt(t *testing.T, unit Unit, opts func(context.CancelFunc) []ParseOpt
 }
 
 func TestInterruptedGrowth(t *testing.T) {
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, cause := range []string{"cancel", "panic"} {
 			grown := 0
 			_, err := interrupt(t, unit, func(cancel context.CancelFunc) []ParseOption {

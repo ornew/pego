@@ -10,7 +10,7 @@ import (
 
 func TestDocumentPiecesMatchFlatEdits(t *testing.T) {
 	insertions := []string{"", "a", "é", "日", "😀", "\n", "\xc3", "\xa9", "\xff", "\xe6\xbc"}
-	for _, unit := range []Unit{Bytes, CodePoints} {
+	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String(), func(t *testing.T) {
 			const initial = "first\né日\xff\nlast"
 			d := newDocumentPieces(initial, unit)
@@ -171,7 +171,7 @@ func TestDocumentPieceLargeByteOffsets(t *testing.T) {
 
 func TestDocumentPiecesSmallDocumentPromotion(t *testing.T) {
 	program := compile(t, `rule main = [a-z]+ $$`)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			t.Run(unit.String()+"/"+backend.String(), func(t *testing.T) {
 				initial := strings.Repeat("a", documentPieceMinSize-1)
@@ -237,7 +237,7 @@ func TestDocumentPiecesCompactionPreservesEarlierNodeText(t *testing.T) {
 	program := compile(t, `rule main Word = [a-z]+ $$
 type Word terminal`)
 	initial := strings.Repeat("a", documentPieceMinSize)
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		t.Run(unit.String(), func(t *testing.T) {
 			doc, err := program.NewDocumentWith("main", initial, ParseOptions{Unit: unit})
 			if err != nil {

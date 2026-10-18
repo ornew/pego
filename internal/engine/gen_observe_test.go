@@ -117,7 +117,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 const generatedNodeTraceConsumer = `package PACKAGE
 import("context";"encoding/json";"errors";"fmt";"reflect";"sync";"testing";reference "tracefixture/reference_PACKAGE")
 func TestTrace(t *testing.T){
- for _,unit:=range []Unit{CodePoints,Bytes}{
+ for _,unit:=range []PositionUnit{CodePoints,Bytes}{
   for _,controlled:=range []bool{false,true}{
    opts:=[]ParseOption{WithUnit(unit)};if controlled {opts=append(opts,WithWorkLimits(WorkLimits{MaxSteps:100000}))}
    refUnit:=reference.CodePoints;if unit==Bytes{refUnit=reference.Bytes}
@@ -154,7 +154,7 @@ func TestTrace(t *testing.T){
 }
 func TestRejectionAndDepthParity(t *testing.T){
  for _,input:=range []string{"", INPUT+"?"}{
-  for _,unit:=range []Unit{CodePoints,Bytes}{
+  for _,unit:=range []PositionUnit{CodePoints,Bytes}{
    for _,depth:=range []int{1,100}{
     opts:=[]ParseOption{WithUnit(unit),WithMaxDepth(depth)}
     refUnit:=reference.CodePoints;if unit==Bytes{refUnit=reference.Bytes}

@@ -150,7 +150,7 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 	prog := compile(t, workMemoVariableGrammar())
 	input := "a"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			opts := ParseOptions{Backend: backend, Unit: unit}
 			retained, err := prog.ParseWith("main", input, opts)
 			if err != nil || retained == nil {
@@ -348,7 +348,7 @@ rule expr = expr atom / atom
 
 rule atom = "a"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{Bytes, CodePoints} {
+		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				for _, cancel := range []bool{false, true} {
 					retained := &Node{Text: "retained", Children: []*Node{{Text: "child"}}}

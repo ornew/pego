@@ -30,7 +30,7 @@ rule expr = operators {
 		if strings.Contains(source, "operators {") {
 			text = strings.TrimSuffix(strings.Repeat("a+", 40), "+")
 		}
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			d, err := prog.NewDocumentWith("main", text, ParseOptions{Unit: unit})
 			if err != nil {
 				t.Fatal(err)
@@ -66,7 +66,7 @@ rule expr = operators {
 // dispatch charge on the controlled graph.
 func TestWorkClosureDispatchMetersZeroWidthExpressions(t *testing.T) {
 	prog := compile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		opts := ParseOptions{Unit: unit, Recognize: true, WorkLimits: WorkLimits{MaxSteps: 16}}
 		n, err := prog.ParseWith("main", "", opts)
 		if n != nil || !errors.Is(err, ErrWorkLimit) {

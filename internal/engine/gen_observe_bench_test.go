@@ -74,12 +74,12 @@ import("testing")
 var nodeSink *Node
 var errorSink error
 const input=INPUT
-func BenchmarkParse(b *testing.B){for _,unit:=range []Unit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit)};if _,err:=Parse(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){nodeSink,errorSink=Parse(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
-func BenchmarkRecognize(b *testing.B){for _,unit:=range []Unit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit)};if err:=Recognize(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){errorSink=Recognize(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
+func BenchmarkParse(b *testing.B){for _,unit:=range []PositionUnit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit)};if _,err:=Parse(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){nodeSink,errorSink=Parse(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
+func BenchmarkRecognize(b *testing.B){for _,unit:=range []PositionUnit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit)};if err:=Recognize(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){errorSink=Recognize(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}}
 `
 const generatedTraceEnabledBenchmark = `
 var eventSink TraceEvent
-func BenchmarkTrace(b *testing.B){for _,mode:=range []string{"full","root","unknown"}{b.Run(mode,func(b *testing.B){for _,unit:=range []Unit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit),WithTrace(func(e TraceEvent){eventSink=e})};if mode=="root"{opts=append(opts,WithTraceMaxDepth(1))};if mode=="unknown"{opts=append(opts,WithTraceFilter("not-defined"))};if _,err:=Parse(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){nodeSink,errorSink=Parse(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}})}}
+func BenchmarkTrace(b *testing.B){for _,mode:=range []string{"full","root","unknown"}{b.Run(mode,func(b *testing.B){for _,unit:=range []PositionUnit{CodePoints,Bytes}{name:="CodePoints";if unit==Bytes{name="Bytes"};b.Run(name,func(b *testing.B){opts:=[]ParseOption{WithUnit(unit),WithTrace(func(e TraceEvent){eventSink=e})};if mode=="root"{opts=append(opts,WithTraceMaxDepth(1))};if mode=="unknown"{opts=append(opts,WithTraceFilter("not-defined"))};if _,err:=Parse(input,opts...);err!=nil{b.Fatal(err)};b.ReportAllocs();b.SetBytes(int64(len(input)));for b.Loop(){nodeSink,errorSink=Parse(input,opts...);if errorSink!=nil{b.Fatal(errorSink)}}})}})}}
 `
 
 var generatedTraceBenchmarkSource []byte

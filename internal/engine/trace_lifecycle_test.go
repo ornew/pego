@@ -46,7 +46,7 @@ func traceLifecycleRecover(f func()) (got any) { defer func() { got = recover() 
 func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 	prog := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, outcome := range []string{"success", "syntax", "trace-panic"} {
 				t.Run(fmt.Sprintf("%s/%s/%s", b, u, outcome), func(t *testing.T) {
 					text := "#records\na=1\nbc=22\n"
@@ -141,7 +141,7 @@ func (r *traceLifecycleClosingReader) Close() error { r.closed = true; return ni
 func TestTraceLifecycleStreamDetachment(t *testing.T) {
 	prog := compile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, u := range []Unit{CodePoints, Bytes} {
+		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, outcome := range []string{"success", "syntax", "reader-error", "emit-error", "trace-panic", "emit-panic"} {
 				t.Run(fmt.Sprintf("%s/%s/%s", b, u, outcome), func(t *testing.T) {
 					stop := errors.New("stream stopped")

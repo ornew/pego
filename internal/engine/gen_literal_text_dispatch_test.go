@@ -184,7 +184,7 @@ process.stdout.write(JSON.stringify(out));
 	}
 	var got []struct {
 		Key  string `json:"key"`
-		Unit Unit   `json:"unit"`
+		Unit PositionUnit   `json:"unit"`
 		OK   bool   `json:"ok"`
 	}
 	if err := json.Unmarshal(out, &got); err != nil {
@@ -230,7 +230,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 		for i := range workload.inputs {
 			input := &workload.inputs[i]
 			for _, unit := range []struct {
-				unit Unit
+				unit PositionUnit
 				key  string
 			}{{CodePoints, "codePoints"}, {Bytes, "bytes"}} {
 				_, parseErr := prog.ParseWith("main", input.Value, ParseOptions{Unit: unit.unit})
@@ -360,7 +360,7 @@ func literalDispatchGoAdapter(typed bool, unitAPI string) string {
 	parseCall := "Parse(input, " + unitExpr + ")"
 	recognizeCall := "Recognize(input, " + unitExpr + ")"
 	var b strings.Builder
-	b.WriteString("package dispatch\n\nfunc fixtureUnit(n int) Unit { if n == 1 { return Bytes }; return CodePoints }\n")
+	b.WriteString("package dispatch\n\nfunc fixtureUnit(n int) PositionUnit { if n == 1 { return Bytes }; return CodePoints }\n")
 	b.WriteString("func FixtureParse(input string, unit int) bool { u := fixtureUnit(unit); _, err := " + parseCall + "; return err == nil }\n")
 	b.WriteString("func FixtureRecognize(input string, unit int) bool { u := fixtureUnit(unit); return " + recognizeCall + " == nil }\n")
 	if typed {

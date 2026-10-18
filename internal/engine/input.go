@@ -9,17 +9,17 @@ import (
 	"unicode/utf8"
 )
 
-// Unit is the unit of positions in the input.
-type Unit int
+// PositionUnit is the unit of positions in the input.
+type PositionUnit int
 
 const (
 	// CodePoints counts positions in Unicode code points (the default).
-	CodePoints Unit = iota
+	CodePoints PositionUnit = iota
 	// Bytes counts positions in UTF-8 bytes.
 	Bytes
 )
 
-func (u Unit) String() string {
+func (u PositionUnit) String() string {
 	if u == Bytes {
 		return "bytes"
 	}
@@ -36,7 +36,7 @@ type ParseOptions struct {
 	// WorkLimits optionally bound cumulative input inspections and execution work.
 	WorkLimits WorkLimits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
-	Unit Unit
+	Unit PositionUnit
 	// Backend is the backend that runs the parse.
 	Backend Backend
 	// Recognize checks only whether the input conforms to the grammar and reports syntax errors,
@@ -82,7 +82,7 @@ func (o ParseOptions) maxDepth(b Backend) int {
 // discarded.
 type input struct {
 	control  *workControl // invocation-local; never retained by results
-	unit     Unit
+	unit     PositionUnit
 	in       []rune // for CodePoints
 	bs       []byte // for Bytes
 	base     int
@@ -170,16 +170,16 @@ func (in *input) replace(start, end int, text string) (delta int) {
 	return delta
 }
 
-func newInput(s string, unit Unit) input { return newTextInput(s, unit, false) }
+func newInput(s string, unit PositionUnit) input { return newTextInput(s, unit, false) }
 
 // newTextInput returns the input s. If offsets is set (the parse will need token text), the
 // offset table is built in the same pass as the decoding; otherwise it is built on demand.
-func newTextInput(s string, unit Unit, offsets bool) input {
+func newTextInput(s string, unit PositionUnit, offsets bool) input {
 	return newTextInputIn(s, unit, offsets, nil)
 }
 
 // newTextInputIn is newTextInput with the buffers of sc, if not nil.
-func newTextInputIn(s string, unit Unit, offsets bool, sc *scratch) input {
+func newTextInputIn(s string, unit PositionUnit, offsets bool, sc *scratch) input {
 	in := input{unit: unit, eof: true, baseLine: 1, baseCol: 1}
 	if unit == Bytes {
 		if sc != nil {
@@ -229,7 +229,7 @@ func newTextInputIn(s string, unit Unit, offsets bool, sc *scratch) input {
 }
 
 // newParser returns a parser of the input s; offsets is as for newTextInput.
-func newParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+func newParser(prog *Program, s string, unit PositionUnit, offsets bool) *parser {
 	return &parser{prog: prog, input: newTextInput(s, unit, offsets), memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 }
 
@@ -249,7 +249,7 @@ const maxScratch = 1 << 22
 
 // newPooledParser is newParser with buffers left by earlier parses of prog. The caller passes the
 // parser to releaseScratch when the parse has returned.
-func newPooledParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+func newPooledParser(prog *Program, s string, unit PositionUnit, offsets bool) *parser {
 	p := acquirePooledParser(prog)
 	p.input = newTextInputIn(s, unit, offsets, p.scratch)
 	return p
@@ -322,11 +322,11 @@ func grow[T any](buf []T, n int) []T {
 	return make([]T, n)
 }
 
-func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
+func newStreamParser(prog *Program, r io.Reader, unit PositionUnit) *parser {
 	return newControlledStreamParser(prog, r, unit, nil)
 }
 
-func newControlledStreamParser(prog *Program, r io.Reader, unit Unit, control *workControl) *parser {
+func newControlledStreamParser(prog *Program, r io.Reader, unit PositionUnit, control *workControl) *parser {
 	p := &parser{prog: prog, input: input{unit: unit, control: control, baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 	if workControlsEnabled && control != nil {
 		r = &streamReaderObserver{reader: r, result: &p.readerResult, control: control}
@@ -788,7 +788,7 @@ func (p *parser) atInputStart() bool {
 }
 
 // textLen returns the length of the string in Unit.
-func (u Unit) textLen(s string) int {
+func (u PositionUnit) textLen(s string) int {
 	if u == Bytes {
 		return len(s)
 	}
@@ -796,7 +796,7 @@ func (u Unit) textLen(s string) int {
 }
 
 // validBoundary checks, when the unit is Bytes, that the position lies on a character boundary.
-func validBoundary(text string, unit Unit, pos int) error {
+func validBoundary(text string, unit PositionUnit, pos int) error {
 	if unit == Bytes && pos < len(text) && !utf8.RuneStart(text[pos]) {
 		// A continuation byte is interior only when a valid rune covers
 		// it. Invalid bytes are separate one-byte replacement characters.

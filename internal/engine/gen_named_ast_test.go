@@ -136,7 +136,7 @@ const namedASTConsumer = `package named_test
 import("encoding/json";"fmt";"reflect";"strings";"sync";"testing";p "namedfixture/named")
 func jsonValue(v any)string {b,err:=json.Marshal(v);if err!=nil {panic(err)};return string(b)}
 func TestNamedMappings(t *testing.T) {
- for _,unit:=range []p.Unit{p.CodePoints,p.Bytes} {
+ for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   end:=1;if unit==p.Bytes {end=2}
   if FIELD_READ {v,err:=p.ParseRuleAST("fieldRead","é",p.WithUnit(unit));if err!=nil||v.(*p.T).End!=end {t.Fatal(v,err)}}
   for _,c:=range []struct{name,input string;kind reflect.Kind}{
@@ -247,7 +247,7 @@ func normalized(v any,offset int)string {
  var shift func(any);shift=func(x any){switch x:=x.(type){case []any:for _,v:=range x {shift(v)};case map[string]any:if start,ok:=x["Start"].(float64);ok {x["Start"]=start-float64(offset);x["End"]=x["End"].(float64)-float64(offset)};for _,v:=range x {shift(v)}}};shift(x);data,_=json.Marshal(x);return string(data)
 }
 func TestXMLFragments(t *testing.T) {
- for _,unit:=range []p.Unit{p.CodePoints,p.Bytes} {
+ for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,c:=range []struct{name,fragment,prefix,suffix string;bad bool}{
    {"content","é<子>日本&amp;語</子><!--注-->","<r>","</r>",false},
    {"content","", "<r>","</r>",false},
@@ -319,7 +319,7 @@ rule nilUnion MaybeU = t:term? => $t
 const namedNilConsumer = `package named_test
 import("testing";p "namedfixture/named")
 func TestSuccessfulNil(t *testing.T) {
- for _,unit:=range []p.Unit{p.CodePoints,p.Bytes} {
+ for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,name:=range []string{"nilAny","nilNode","nilUnion"} {
    n,err:=p.ParseRule(name,"",p.WithUnit(unit));if err!=nil||n!=nil {t.Fatalf("%s generic nil success: %v %v",name,n,err)}
    v,err:=p.ParseRuleAST(name,"",p.WithUnit(unit));if err!=nil||v!=nil {t.Fatalf("%s typed nil success: %T %v %v",name,v,v,err)}

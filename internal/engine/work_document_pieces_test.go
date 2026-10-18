@@ -13,7 +13,7 @@ func TestWorkDocumentPieceConstruction(t *testing.T) {
 	if !documentPieceInput {
 		t.Skip("piece input is disabled")
 	}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, text := range []string{strings.Repeat("é😀x", 2048), strings.Repeat("x\xff", 4096)} {
 			c := newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
 			in := newControlledDocumentInput(text, unit, c)
@@ -40,7 +40,7 @@ func TestWorkDocumentPieceTextPublication(t *testing.T) {
 	if !documentPieceInput {
 		t.Skip("piece input is disabled")
 	}
-	for _, unit := range []Unit{CodePoints, Bytes} {
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		pieces := newDocumentPieces(strings.Repeat("x", 8192), unit)
 		pieces.replace(4096, 4097, "é")
 		in := input{unit: unit, eof: true, pieces: pieces, control: newWorkControl(nil, WorkLimits{MaxInputWork: 4096})}

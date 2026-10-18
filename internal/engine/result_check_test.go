@@ -165,7 +165,7 @@ func TestRuleResultChecks(t *testing.T) {
 					{"unchecked bytecode", unchecked, ParseOptions{Backend: Bytecode}},
 				}...)
 				var want string
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range runs {
 						o := run.o
 						o.Unit = unit

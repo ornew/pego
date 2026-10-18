@@ -14,7 +14,7 @@ rule line = [a-zé]+ #atomic "\n"`
 // skipped by repetition resumption into synthetic calls or memo hits.
 func TestTraceDocumentReusedElements(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, failedRoot := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/failed-root=%t", backend, unit, failedRoot), func(t *testing.T) {
 					src := traceResumeGrammar
@@ -130,7 +130,7 @@ func TestTraceDocumentReusedElements(t *testing.T) {
 
 func TestTraceDocumentReusedElementsPanicRetry(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				prog := compile(t, traceResumeGrammar)
 				opts := ParseOptions{Backend: backend, Unit: unit}

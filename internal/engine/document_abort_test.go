@@ -24,7 +24,7 @@ rule e = operators {
 }`, "---x", "x", "nesting too deep", 4},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%s/%s/%s", c.name, backend, unit), func(t *testing.T) {
 					prog := compile(t, c.src)
 					opts := ParseOptions{Backend: backend, Unit: unit, MaxDepth: c.depth}
@@ -60,7 +60,7 @@ func TestDocumentTracePanicRetry(t *testing.T) {
 	prog := compile(t, `rule main = x $$
 rule x = x "a" / "a"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		for _, unit := range []Unit{CodePoints, Bytes} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				opts.Trace = func(e TraceEvent) {

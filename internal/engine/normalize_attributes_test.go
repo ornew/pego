@@ -60,7 +60,7 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 				return
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				for _, unit := range []Unit{CodePoints, Bytes} {
+				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, input := range []string{"", "b", "ab", "aaab", "a;", "x;", "123", "1 + 2 * 3", "é"} {
 						opts := ParseOptions{Backend: backend, Unit: unit}
 						if actual, expected := resultJSON(optimized.ParseWith("main", input, opts)), resultJSON(eager.ParseWith("main", input, opts)); actual != expected {
