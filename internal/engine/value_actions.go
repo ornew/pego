@@ -174,7 +174,7 @@ func anyNode(t ty) bool {
 
 func sameCaps(a, b []capIndex) bool {
 	return slices.EqualFunc(a, b, func(x, y capIndex) bool {
-		return x.name == y.name && slices.EqualFunc(x.paths, y.paths, func(p, q []int) bool { return slices.Equal(p, q) })
+		return x.name == y.name && x.side == y.side && slices.EqualFunc(x.paths, y.paths, func(p, q []int) bool { return slices.Equal(p, q) })
 	})
 }
 
@@ -201,8 +201,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 				return c.t
 			}
 		}
-		// Undefined captures were reported when names were resolved; this one has no element.
-		v.errorf(t.Diagnostic(), "$%s has no element in the value of its scope: captures in lookaheads and discards have no value", t.Name)
+		// Undefined captures were reported when names were resolved; this one has no value.
+		v.errorf(t.Diagnostic(), "$%s has no value in its scope", t.Name)
 		return tyAny
 	case *grammar.Member:
 		return v.member(v.term(t.X, env), t)

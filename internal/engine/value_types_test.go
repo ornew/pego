@@ -48,6 +48,15 @@ func TestValueTypes(t *testing.T) {
 		{"rule a = b (c d) #recover(skip=[^;]*) \";\"\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(b, node[(c, d)] | error, node[string])]`},
 		// A capture in alternatives at the same position has that position.
 		{"rule a = (y:b / y:d) e\nrule b = \"b\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(b | d, e), {"y": 0}]`},
+		// A capture in alternatives of different shapes has a path for each.
+		{"rule a = (y:b c / y:d) e\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(node[(b, c), {"y": 0}] | d, e), {"y": 0.0 | 0}]`},
+		// A capture in a lookahead in one alternative is kept beside the tuple when that one matched.
+		{"rule a = (x:b / &(-c x:d)) e\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(*b, e), {"x": 0 | -}]`},
+		// A capture in a positive lookahead has no position; its value is kept beside the tuple.
+		{"rule a = &(y:b) c\nrule b = \"b\"\nrule c = \"c\"", "a", `node[(c,), {"y": -}]`},
+		{"rule a = &(y:b c) d\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(d,), {"y": -}]`},
+		{"rule a = x:(&(y:b) c) d\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(node[(c,), {"y": -}], d), {"x": 0, "y": -}]`},
+		{"rule a = (&(y:b) / c) d\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(*c, d), {"y": -}]`},
 		// T <= *T, and a valueless alternative makes the choice optional.
 		{`rule a = ("a"? / "b") "c"`, "a", `node[(*node[string], node[string])]`},
 		{`rule a = ("a" / -"b" -"c") "d"`, "a", `node[(*node[string], node[string])]`},
@@ -202,6 +211,9 @@ func TestValueActionTypes(t *testing.T) {
 		{`rule a = _ => list(nil)`, "a", `[]nil`},
 		{`rule a = x:"x" => list($x, nil, $x)`, "a", `[]*node[string]`},
 		{`rule a = x:"x" {n := 1} => list($x, n)`, "a", `[]any`},
+		// An action reads a capture in a positive lookahead.
+		{`rule a = &(y:"y") x:"x" => $y`, "a", `node[string]`},
+		{"rule a = (x:b / &(-c x:d)) => $x\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `b | d`},
 		// The rules of a cycle through actions are the least fixed point of their values.
 		{"rule a = x:\"x\" y:b? => concat(list($x), $y)\nrule b = z:a => $z", "a", `[]node[string]`},
 		// A rule type is not expanded unless an action reads into it.
@@ -216,19 +228,6 @@ func TestValueActionTypes(t *testing.T) {
 		if got := types[tc.rule].String(); got != tc.want {
 			t.Errorf("%q: rule %s\ngot  %s\nwant %s", tc.src, tc.rule, got, tc.want)
 		}
-	}
-}
-
-// A capture in alternatives at different positions is an error; it keeps the position of the
-// first alternative.
-func TestValueCaptureAtDifferentPositions(t *testing.T) {
-	src := "rule a = (y:b c / y:d) e\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"\nrule e = \"e\""
-	types, errs := valueTypesOf(t, src)
-	if len(errs) != 1 || errs[0].Msg != "capture y is at different positions in the alternatives of a choice" {
-		t.Errorf("errors %v", errs)
-	}
-	if got, want := types["a"].String(), `node[(node[(b, c), {"y": 0}] | d, e), {"y": 0.0}]`; got != want {
-		t.Errorf("got  %s\nwant %s", got, want)
 	}
 }
 
@@ -254,7 +253,6 @@ func TestValueActionErrors(t *testing.T) {
 		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
 		{"type Word terminal\nrule a = _ => Word{\"w\"}", `Word{...} constructs a node, which actions cannot construct`},
 		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
-		{`rule a = &(y:"y") x:"x" => $y`, "$y has no element in the value of its scope: captures in lookaheads and discards have no value"},
 		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},
 		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "[]node[string] | []any has no field Value"},
 	} {

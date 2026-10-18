@@ -231,10 +231,21 @@ and every guide. Saved bytecode and schema formats need new versions.
   choice occupies one tuple element and both `x` and `y` index it. A capture
   whose alternative did not match is `nil`, so `$x` has type `*A` and `$y` type
   `*B`; the runtime records which alternative matched.
-- **A capture has one position.** Alternatives that capture the same name must
-  capture it at the same position of the tuple: `(y:b / y:d) e` is allowed,
-  while `(y:b c / y:d) e` is an error, since `y` is the first element of a
-  nested tuple in one alternative and the whole element in the other.
+- **A capture has a location per alternative.** Alternatives may capture the
+  same name at different positions: in `(y:b c / y:d) e`, `y` is the first
+  element of a nested tuple in one alternative and the whole element in the
+  other, and `C` maps `y` to both. The runtime selects the location from the
+  alternative that matched, which it records anyway, so only reads of such a
+  capture pay for a branch. The repository grammars use this in dozens of
+  places, for example `ws n:NOT? ws t:(NULL / TRUE) / t:ISNULL`, and a choice
+  of a one-element sequence and a bare element, `&[0-9] v:int / v:paren`.
+- **Captures in positive lookaheads are kept beside the tuple.** A capture in
+  `&a` has no element, since the lookahead consumes nothing, but its value
+  remains in effect after the lookahead, so actions, predicates and
+  assignments read it. `C` records that its value is beside the tuple, and an
+  alternative may capture a name in a lookahead while another captures it at a
+  position, as in `!nl -ws e:expr / &nl &(-ws e:missing)`, which places a
+  zero-width node after the whitespace that the statement does not consume.
 - **Casts are written `x.(T)`.** The postfix form chains with field access and
   fails at run time with an action error when the value is not a `T`.
 - **Migration replaces the old syntax at once.** No compatibility mode is
@@ -279,11 +290,15 @@ and every guide. Saved bytecode and schema formats need new versions.
   captured subtrees.
 - **Keep positional captures alongside names.** This keeps the fragility the
   change removes.
-- **Give a capture a position per alternative.** `C` would map a name to the
-  positions of several alternatives, and the runtime would select one from the
-  alternative that matched, so every read of such a capture pays for the
-  selection. No grammar in the repository captures a name at different
-  positions, and distinct names, or a capture of the whole choice, express it.
+- **Give a capture one position.** Rejecting a name captured at different
+  positions keeps `C` a map from a name to one index, but the repository
+  grammars capture names at different positions in dozens of choices, and
+  rewriting them needs distinct names and a way to choose between them in the
+  action.
+- **Reject reading captures in lookaheads from actions.** Actions would need
+  the captured value through a predicate variable, which holds only `int`,
+  `string` and `bool`, and the zero-width node placed after whitespace could
+  not be expressed.
 
 ## Testing and Performance Plan
 

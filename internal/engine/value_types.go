@@ -39,11 +39,13 @@ func (t tupleTy) String() string {
 
 // capIndex locates a capture in the value of a node. In a path, the first index is an element of
 // the node's tuple, and each further index an element of the tuple in the node at the previous
-// one. A capture in choice alternatives of different shapes has a path for each shape; the
-// alternative that matched selects one at run time.
+// one. A capture in a positive lookahead has no element: its value is kept beside the tuple, which
+// side records. A capture in choice alternatives of different shapes has a location for each
+// shape; the alternative that matched selects one at run time.
 type capIndex struct {
 	name  string
 	paths [][]int
+	side  bool
 	t     ty
 }
 
@@ -69,6 +71,9 @@ func (t nodeTy) String() string {
 				idx[k] = strconv.Itoa(p)
 			}
 			paths[j] = strings.Join(idx, ".")
+		}
+		if c.side {
+			paths = append(paths, "-")
 		}
 		parts[i] = strconv.Quote(c.name) + ": " + strings.Join(paths, " | ")
 	}
@@ -366,19 +371,24 @@ func (v *valueInference) scopeValue(e grammar.Expr) ty {
 	return tupleNode(elems)
 }
 
-// tupleNode is the node of the tuple of elems, with their captures.
+// tupleNode is the node of the tuple of elems, with their captures. An element without a type
+// holds only captures kept beside the tuple.
 func tupleNode(elems []valueElem) nodeTy {
 	n := nodeTy{value: tupleTy{elems: []ty{}}}
 	var ts []ty
-	for i, el := range elems {
-		ts = append(ts, el.t)
-		for _, c := range el.caps {
-			paths := make([][]int, len(c.paths))
-			for j, path := range c.paths {
-				paths[j] = append([]int{i}, path...)
-			}
-			n.caps = append(n.caps, capIndex{c.name, paths, c.t})
+	for _, el := range elems {
+		if el.t == nil {
+			n.caps = append(n.caps, el.caps...)
+			continue
 		}
+		for _, c := range el.caps {
+			var paths [][]int
+			for _, path := range c.paths {
+				paths = append(paths, append([]int{len(ts)}, path...))
+			}
+			n.caps = append(n.caps, capIndex{c.name, paths, c.side, c.t})
+		}
+		ts = append(ts, el.t)
 	}
 	if len(ts) > 0 {
 		n.value = tupleTy{ts}
@@ -388,19 +398,31 @@ func tupleNode(elems []valueElem) nodeTy {
 }
 
 // single is the value of e where it takes one element: an alternative, the operand of ? or a
-// capture. Several elements become the node of their tuple. ok is false when e has no value.
-// The captures of the result may be changed without changing its type.
+// capture. Several elements become the node of their tuple. ok is false when e has no value;
+// the result then holds the captures kept beside the tuple in e. The captures of the result may be
+// changed without changing its type.
 func (v *valueInference) single(e grammar.Expr) (valueElem, bool) {
 	return oneElem(v.elems(e), ungroupExpr(e))
 }
 
 func oneElem(elems []valueElem, e grammar.Expr) (valueElem, bool) {
 	_, seq := e.(*grammar.Seq)
+	var vals []valueElem
+	var side []capIndex
+	for _, el := range elems {
+		if el.t == nil {
+			side = append(side, el.caps...)
+		} else {
+			vals = append(vals, el)
+		}
+	}
 	switch {
-	case len(elems) == 0:
-		return valueElem{}, false
-	case len(elems) == 1 && !seq:
-		return elems[0], true
+	case len(vals) == 0:
+		return valueElem{caps: side}, false
+	case len(vals) == 1 && !seq:
+		el := vals[0]
+		el.caps = append(slices.Clone(el.caps), side...)
+		return el, true
 	}
 	n := tupleNode(elems)
 	return valueElem{t: n, caps: slices.Clone(n.caps)}, true
@@ -434,53 +456,53 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			}
 			alts++
 			el, ok := v.single(alt)
-			if !ok {
+			if ok {
+				ts = append(ts, el.t)
+			} else {
 				valueless = true
-				continue
 			}
-			ts = append(ts, el.t)
 			for _, c := range el.caps {
 				count[c.name]++
 				all = append(all, c)
 			}
 		}
-		if len(ts) == 0 {
+		var t ty // no element when no alternative has a value
+		if len(ts) > 0 {
+			t = vunion(ts...)
+			if valueless {
+				t = vopt(t)
+			}
+		} else if len(all) == 0 {
 			return nil
 		}
-		t := vunion(ts...)
-		if valueless {
-			t = vopt(t)
-		}
-		// A name captured in only some alternatives is nil when another matched. A name has one
-		// position in the tuple of its scope, so the alternatives that capture it must agree on it.
+		// A name captured in only some alternatives is nil when another matched.
 		var caps []capIndex
 		for _, c := range all {
 			if count[c.name] < alts {
 				c.t = vopt(c.t)
 			}
-			var ok bool
-			if caps, ok = mergeCap(caps, c); !ok {
-				v.errorf(e.Diagnostic(), "capture %s is at different positions in the alternatives of a choice", c.name)
-			}
+			caps = mergeCap(caps, c)
 		}
 		return []valueElem{{t: t, caps: caps}}
 	case *grammar.Optional:
 		el, ok := v.single(e.Expr)
-		if !ok {
+		if !ok && len(el.caps) == 0 {
 			return nil
 		}
 		el.caps = slices.Clone(el.caps)
 		for i := range el.caps {
 			el.caps[i].t = vopt(el.caps[i].t)
 		}
-		el.t = vopt(el.t)
+		if ok {
+			el.t = vopt(el.t)
+		}
 		return []valueElem{el}
 	case *grammar.Repeat:
 		return []valueElem{{t: nodeTy{value: listTy{v.scopeValue(e.Expr)}}}}
 	case *grammar.Capture:
 		el, ok := v.single(e.Expr)
 		if !ok {
-			el = valueElem{t: nodeTy{value: tupleTy{elems: []ty{}}}}
+			el.t = nodeTy{value: tupleTy{elems: []ty{}}}
 		}
 		el.caps = append([]capIndex{{name: e.Name, paths: [][]int{{}}, t: el.t}}, el.caps...)
 		return []valueElem{el}
@@ -496,17 +518,28 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			case neverMatches(e.Expr):
 				el = valueElem{t: tyBottom} // only the error
 			case !ok:
-				el = valueElem{t: nodeTy{value: tupleTy{elems: []ty{}}}}
+				el.t = nodeTy{value: tupleTy{elems: []ty{}}}
 			}
 			el.t = vunion(el.t, tyErr)
 			elems = []valueElem{el}
 		}
 		return elems
+	case *grammar.And:
+		// The captures of a positive lookahead have no element; their values are kept beside the
+		// tuple.
+		var caps []capIndex
+		for _, c := range tupleNode(v.elems(e.Expr)).caps {
+			caps = append(caps, capIndex{name: c.name, side: true, t: c.t})
+		}
+		if len(caps) == 0 {
+			return nil
+		}
+		return []valueElem{{caps: caps}}
 	case *grammar.InlineAction:
 		// Inline actions are not implemented; their values are not known yet.
 		return []valueElem{{t: tyAny}}
 	}
-	// Top, bottom, anchors, lookaheads, discards, the cut and predicates have no value.
+	// Top, bottom, anchors, negative lookaheads, discards, the cut and predicates have no value.
 	return nil
 }
 
@@ -526,17 +559,24 @@ func neverMatches(e grammar.Expr) bool {
 	return false
 }
 
-// mergeCap adds c to caps, joining the types of captures of the same name. ok is false when they
-// are at different positions; the position of the first is kept.
-func mergeCap(caps []capIndex, c capIndex) (_ []capIndex, ok bool) {
+// mergeCap adds c to caps, joining the types and locations of captures of the same name.
+func mergeCap(caps []capIndex, c capIndex) []capIndex {
 	for i, o := range caps {
 		if o.name != c.name {
 			continue
 		}
 		caps[i].t = vunion(o.t, c.t)
-		return caps, slices.EqualFunc(o.paths, c.paths, func(p, q []int) bool { return slices.Equal(p, q) })
+		paths := slices.Clone(o.paths)
+		for _, p := range c.paths {
+			if !slices.ContainsFunc(paths, func(q []int) bool { return slices.Equal(p, q) }) {
+				paths = append(paths, p)
+			}
+		}
+		caps[i].paths = paths
+		caps[i].side = o.side || c.side
+		return caps
 	}
-	return append(caps, c), true
+	return append(caps, c)
 }
 
 // operatorsRule is the union of the operand values and of the values of the operator lines: an
