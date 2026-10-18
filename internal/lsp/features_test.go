@@ -479,11 +479,13 @@ func TestCompletion(t *testing.T) {
 		"rule l = xs:num* => foldl($xs, $xs, (acc, e) => $", // 18: captures only, not parameters
 		"rule m = xs:num* => list(map($xs, (e) => e), ",     // 19: after a lambda's body
 		"rule n = x:(a b) => ",                              // 20: a rule action, not a lambda
+		"rule o = xs:(v:num)* => map($xs, (i) => i.",        // 21: a member, with the captures read as .$y
+		"rule p = xs:(v:num)* => map($xs, (i) => i.$",       // 22: a capture read after .$
 	}
 	src := strings.Join(lines, "\n")
 	c.open(uri, src)
 	end := func(line int) int { return len([]rune(lines[line])) }
-	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num"}
+	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num", "o", "p"}
 	builtinTypeNames := []string{"Error", "List", "Match", "Missing", "Operator", "Seq", "_", "_|_", "bool", "int", "node", "string", "terminal"}
 	sorted := func(xs ...[]string) []string {
 		var out []string
@@ -519,6 +521,8 @@ func TestCompletion(t *testing.T) {
 		{18, -1, []string{"xs"}},
 		{19, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{20, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
+		{21, -1, sorted([]string{"$v", "A", "B", "children", "endPos", "startPos"})},
+		{22, -1, []string{"v", "xs"}},
 	} {
 		char := tc.char
 		if char < 0 {
@@ -552,6 +556,35 @@ func TestCompletion(t *testing.T) {
 		t.Errorf("item %+v", num)
 	}
 	c.exit()
+}
+
+// TestCaptureMemberCompletion checks that completion after "." offers the captures of the
+// receiver, written as x.$y reads them.
+func TestCaptureMemberCompletion(t *testing.T) {
+	c := newInitialized(t)
+	defer c.exit()
+	uri := "file:///capture-members.pego"
+	lines := []string{
+		`rule item = key:name "=" value:name`,
+		`rule name = [a-z]+`,
+		`rule pair = k:item "," xs:item* "," g:(v:name) => $k.`,                // 2: a rule a capture labels
+		`rule list = k:item "," xs:item* "," g:(v:name) => map($xs, (i) => i.`, // 3: a lambda element
+		`rule plain = k:name => $k.`,                                           // 4: a rule without captures
+	}
+	c.open(uri, strings.Join(lines, "\n"))
+	builtins := []string{"children", "endPos", "startPos"}
+	for _, tc := range []struct {
+		line int
+		want []string
+	}{
+		{2, append([]string{"$key", "$value"}, builtins...)},
+		{3, append([]string{"$key", "$v", "$value"}, builtins...)},
+		{4, builtins},
+	} {
+		if got := completionLabels(c, uri, tc.line, len([]rune(lines[tc.line]))); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("line %d (%q):\ngot  %q\nwant %q", tc.line, lines[tc.line], got, tc.want)
+		}
+	}
 }
 
 func TestFilterBuiltinHoverAndCompletion(t *testing.T) {

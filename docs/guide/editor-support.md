@@ -41,7 +41,7 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
 | Hover | For a rule, `rule <name> [<Type Expression>] = <Rule Expression>` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types, functions (`len`, `foldl`, ...), node fields (`startPos`, ...) and attributes (`@error`, ...), a description |
 | Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused |
-| Completion | Rule names in rule bodies, types where a type is expected, type names and a `FieldName Type` snippet at field-name positions in struct declarations, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, built-in functions, and struct types in constructors; and keywords |
+| Completion | Rule names in rule bodies, types where a type is expected, type names and a `FieldName Type` snippet at field-name positions in struct declarations, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, fields and the captures read as `x.$y` after `.`, built-in functions, and struct types in constructors; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
 White space may separate Definition Statement keywords from names; comments
@@ -181,6 +181,9 @@ keyword, so one broken definition does not hide later Definition Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
   lists the labels of the whole definition, whether or not they are in scope; lambda parameters, which are written
   without `$`, are offered with the other names inside the lambda's body.
+- After `.`, completion offers `$y` for the captures of the rule a capture `$x` labels; after another receiver, such
+  as a lambda parameter, it offers the captures inside the labelled groups of the definition and those of the rules
+  repeated directly after a label, which is a guess at the elements the lambda reads.
 - Completion looks at the tokens before the cursor, not at a parse of the definition being written, so in unusual
   layouts it can offer a name that does not fit.
 

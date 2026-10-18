@@ -180,7 +180,7 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 			return a.ruleItemsControlled(control)
 		}
 		if adjacent == "." {
-			return a.memberItemsControlled(control)
+			return append(a.memberItemsControlled(control), a.captureMemberItemsControlled(prev, control)...)
 		}
 		return a.valueItemsControlled(control)
 	}
@@ -225,7 +225,7 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 	if value {
 		switch pt.Text {
 		case ".":
-			return a.memberItemsControlled(control)
+			return append(a.memberItemsControlled(control), a.captureMemberItemsControlled(prev, control)...)
 		}
 		items = append(items, builtinFuncItems()...)
 		items = append(items, a.typeItemsControlled(true, control)...)
@@ -424,13 +424,97 @@ func (a *analysis) captureItemsControlled(i int, control *renderControl) []Compl
 	}
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
 		control.poll()
-		t := a.toks[j]
-		if t.Kind == syntax.TokenIdent && a.isPunct(j+1, ":") && a.toks[j+1].start == t.end &&
-			!(a.isPunct(j-1, "{") && a.inValueControlled(j-1, control)) && !a.isPunct(j-1, ",") {
-			add(t.Text, "capture") // label:expr (not a constructor field T{...})
+		if a.isLabelControlled(j, control) {
+			add(a.toks[j].Text, "capture")
 		}
 	}
 	return items
+}
+
+// captureMemberItems returns the captures that the receiver before the "." at token dot may
+// have, for completion as the capture reads x.$y. A capture $x has the captures of the rule it
+// labels; another receiver, such as a lambda parameter over a repetition, those inside the
+// labelled groups of the definition and those of the rules repeated directly after a label. Typing a name after
+// the "." still finds them.
+func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl) []CompletionItem {
+	control.poll()
+	items := []CompletionItem{}
+	first := dot
+	for first >= 0 && !a.isDefKeyword(first) {
+		control.poll()
+		first--
+	}
+	if first < 0 || !a.isIdent(first, "rule") {
+		return items
+	}
+	seen := map[string]bool{}
+	add := func(found []CompletionItem) {
+		for _, it := range found {
+			control.poll()
+			if !seen[it.Label] {
+				seen[it.Label] = true
+				it.InsertText = "$" + it.Label
+				it.Label = it.InsertText
+				items = append(items, it)
+			}
+		}
+	}
+	ruleCaptures := func(i int) {
+		if a.isPunct(a.significantTokenControlled(i+1, control), "(") {
+			return // a call of a parameterized rule, whose arguments may hold captures
+		}
+		if d := a.rules[a.toks[i].Text]; d != nil {
+			if kw, ok := a.tokAt[d.kwStart]; ok {
+				add(a.captureItemsControlled(kw, control))
+			}
+		}
+	}
+	recv := a.previousSignificantTokenControlled(dot-1, control)
+	capture := recv >= 0 && a.toks[recv].Kind == syntax.TokenCapture
+	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
+		control.poll()
+		if !a.isLabelControlled(j, control) {
+			continue
+		}
+		target := a.significantTokenControlled(j+2, control)
+		if target >= len(a.toks) {
+			break
+		}
+		switch {
+		case a.toks[target].Kind == syntax.TokenIdent:
+			if capture && strings.TrimPrefix(a.toks[recv].Text, "$") == a.toks[j].Text || !capture && a.repeatedControlled(target, control) {
+				ruleCaptures(target)
+			}
+		case !capture && a.isPunct(target, "("):
+			for k, depth := target+1, 1; k < len(a.toks) && depth > 0 && !a.isDefKeyword(k); k++ {
+				control.poll()
+				switch {
+				case a.isPunct(k, "("):
+					depth++
+				case a.isPunct(k, ")"):
+					depth--
+				case a.isLabelControlled(k, control):
+					add([]CompletionItem{{Label: a.toks[k].Text, Kind: completionKindVariable, Detail: "capture"}})
+				}
+			}
+		}
+	}
+	return items
+}
+
+// repeated reports whether the rule called at token i is repeated, as the elements a lambda
+// over the capture of the repetition reads.
+func (a *analysis) repeatedControlled(i int, control *renderControl) bool {
+	next := a.significantTokenControlled(i+1, control)
+	return a.isPunct(next, "*") || a.isPunct(next, "+") || a.isPunct(next, "#") && a.isIdent(next+1, "repeat")
+}
+
+// isLabel reports whether token i is the label of a capture, label:expr, and not a field of a
+// constructor T{...} or a later one after ",".
+func (a *analysis) isLabelControlled(i int, control *renderControl) bool {
+	t := a.toks[i]
+	return t.Kind == syntax.TokenIdent && a.isPunct(i+1, ":") && a.toks[i+1].start == t.end &&
+		!(a.isPunct(i-1, "{") && a.inValueControlled(i-1, control)) && !a.isPunct(i-1, ",")
 }
 
 // paramItems returns the parameters of the lambdas, (a, b) =>, whose bodies token i is in: a body
