@@ -113,6 +113,7 @@ const (
 	kTypeDef
 	kRuleDef
 	kIntersection
+	kTypeApp
 )
 
 type encoder struct {
@@ -344,6 +345,19 @@ func (w *encoder) typeExpr(t grammar.TypeExpr) {
 		for _, x := range t.Types {
 			w.typeExpr(x)
 		}
+	case *grammar.TypeApp:
+		w.byte(kTypeApp)
+		w.str(t.Name)
+		w.uint(len(t.Args))
+		for _, x := range t.Args {
+			w.typeExpr(x)
+		}
+	case *grammar.TypeGroup:
+		// Parentheses only keep source layout, which compiled grammars do not.
+		w.typeExpr(t.Type)
+	default:
+		// Compilation rejects the other forms (tuple and unnamed struct types) for now.
+		panic(fmt.Sprintf("compiled grammar: unsupported type expression %T", t))
 	}
 }
 
@@ -887,6 +901,13 @@ func (r *decoder) typeExpr() grammar.TypeExpr {
 			m.Types = append(m.Types, r.typeExpr())
 		}
 		return m
+	case kTypeApp:
+		a := &grammar.TypeApp{Name: r.str()}
+		n := r.count()
+		for i := 0; i < n && r.err == nil; i++ {
+			a.Args = append(a.Args, r.typeExpr())
+		}
+		return a
 	default:
 		r.fail("invalid type %d", k)
 		return &grammar.TypeRef{}

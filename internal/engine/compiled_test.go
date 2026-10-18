@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -290,4 +291,63 @@ func BenchmarkLoad(b *testing.B) {
 			LoadProgram(data, Options{})
 		}
 	})
+}
+
+// TestCompiledTypeExpressions checks that every form of type expression survives a compiled
+// grammar: a load that read only some of them would misread the rest of the file.
+func TestCompiledTypeExpressions(t *testing.T) {
+	src := `type P = { A node[string]; B *(int); C []node[string] }
+type Q ~ P | node[string] & node
+rule main P = a:[a-z] => P{A: $a, B: 1}
+rule pair node[(string)] = [a-z]`
+	prog := compile(t, src)
+	data, err := prog.MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again, err := loaded.MarshalBinary("main"); err != nil || !bytes.Equal(data, again) {
+		t.Errorf("re-marshaled data differs (%v)", err)
+	}
+	for _, rule := range []string{"main", "pair"} {
+		for _, in := range []string{"a", "ab", ""} {
+			n1, err1 := prog.Parse(rule, in)
+			n2, err2 := loaded.Parse(rule, in)
+			if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+				t.Errorf("%s %q\n original %s\n loaded   %s", rule, in, a, b)
+			}
+		}
+	}
+	if a, b := grammarTypes(prog), grammarTypes(loaded); a != b {
+		t.Errorf("types differ\n original %s\n loaded   %s", a, b)
+	}
+}
+
+// grammarTypes renders the type definitions and rule types of a program's grammar, ignoring
+// layout, which compiled grammars do not keep.
+func grammarTypes(prog *Program) string {
+	var b strings.Builder
+	for _, s := range prog.Grammar.Statements {
+		switch s := s.(type) {
+		case *grammar.TypeDef:
+			fmt.Fprintf(&b, "type %s", s.Name)
+			switch spec := s.Spec.(type) {
+			case *grammar.StructSpec:
+				for _, f := range spec.Fields {
+					fmt.Fprintf(&b, " %s %s;", f.Name, grammar.FormatType(f.Type))
+				}
+			case *grammar.AliasSpec:
+				b.WriteString(" ~ " + grammar.FormatType(spec.Type))
+			}
+			b.WriteString("\n")
+		case *grammar.RuleDef:
+			if s.Type != nil {
+				fmt.Fprintf(&b, "rule %s %s\n", s.Name, grammar.FormatType(s.Type))
+			}
+		}
+	}
+	return b.String()
 }
