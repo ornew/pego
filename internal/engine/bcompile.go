@@ -142,9 +142,9 @@ func (c *bcompiler) compile() {
 			ri.Entry = int(c.here())
 			c.proj = ruleProjections(c.prog, r)
 			if r.lean {
-				c.match(r.def.Expr, s, false)
+				c.match(r.bodyExpr(), s, false)
 			} else {
-				c.scope(r.def.Expr, s)
+				c.scope(r.bodyExpr(), s)
 			}
 			c.proj = nil
 			c.emit(OpReturn, 0, 0, 0)

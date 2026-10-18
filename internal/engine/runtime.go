@@ -777,6 +777,9 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return v
 	}
 	if r.terminalType != "" {
+		if r.textStruct {
+			return p.textStruct(r, start)
+		}
 		kind := r.kinds.termValue
 		if p.prog.sourceInfo {
 			kind = r.kinds.term
@@ -797,6 +800,13 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		p.checkResult(r.resultCheck, v, r.name)
 	}
 	return v
+}
+
+// textStruct makes the value of a rule of textStructRule: the struct its action makes, whose
+// field Text is the matched text, with the rule's range.
+func (p *parser) textStruct(r *rule, start int) *Node {
+	fs := append(p.fields(1), NodeField{"Text", p.text(start, p.pos)})
+	return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), fields: fs})
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are

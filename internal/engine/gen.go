@@ -664,7 +664,7 @@ func (g *generator) rules() {
 				continue
 			}
 			g.cur, g.proj = r, g.projections(r)
-			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
+			bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
 			g.proj = nil
 		}
 	}
@@ -684,16 +684,20 @@ func (g *generator) rules() {
 	} else {
 		fmt.Fprintf(init, "\t%s = []*rule{\n", g.table)
 		for _, r := range all {
-			docMemo := ""
+			extra := ""
 			if g.document && (r.leader || r.memo) {
-				docMemo = "docMemo: true, "
+				extra = "docMemo: true, "
 			}
-			value := shaperLit(r.def.Expr)
+			value := shaperLit(r.bodyExpr())
 			if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 				value = "shaper{}" // the lines build the rule's value
 			}
+			if r.textStruct && g.table != "trules" {
+				// The typed runtime makes the struct with trules[i].term.
+				extra += "textStruct: true, "
+			}
 			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, terminalType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
-				r.id, r.name, goStrings(scopes[r].names), value, r.terminalType, r.memo && !r.transient, r.leader, docMemo, r.seen, r.novalue, goStrings(r.vars))
+				r.id, r.name, goStrings(scopes[r].names), value, r.terminalType, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
 		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.terminalType)\n\t}\n", g.table)
@@ -740,7 +744,7 @@ func (g *generator) rules() {
 		// as without streams. Its captures have a layout of their own.
 		g.cur, g.proj, g.streamBody = r, g.projections(r), true
 		s := newScope()
-		body := g.expr(r.def.Expr, s, !r.lean)
+		body := g.expr(r.bodyExpr(), s, !r.lean)
 		g.proj, g.streamBody = nil, false
 		if strings.Join(s.names, "\x00") != strings.Join(scopes[r].names, "\x00") {
 			// The copied action addresses captures by the batch body's slots.

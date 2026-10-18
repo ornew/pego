@@ -75,7 +75,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Scope | The capture names of the body, in slot order |
 | Action | Start of the action in the expression code, or -1 if there is none |
 | Body is a sequence | Whether the body's value is a tuple; used to interpret `$n` |
-| Terminal type | Name of the terminal type, or -1 if there is none |
+| Terminal type | Name of the terminal type, or of the struct type of a text struct rule (see Rule Completion), or -1 if there is none |
 | Memoize, left-recursion leader, position-dependent | Results of static analysis |
 | Operators Rule | Index into the Operators Rule table, or -1 if there is none |
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
@@ -225,6 +225,7 @@ The value of the rule is built from the body value v and the start position:
 
 - **With an action:** evaluate the action with the `$n` items set to the children of v if the body is a sequence, and to [v] otherwise. If the result is a node newly created by the action, its range becomes the range of the rule. The result must be a node or nil.
 - **With a terminal type:** create a terminal of that type whose text is the text of the rule's range, and give it the rule name.
+- **With a struct type in the terminal type entry:** create a struct of that type whose only field, `Text`, is the text of the rule's range, with the rule's range. A compiler writes such a rule, a text struct rule, for `rule r T = t:(e) #atomic => T{Text: text($t)}` where `T`'s field `Text` is a `string`: its body is `e #atomic` and it has no action or scope, since the struct is what the action would make.
 - **Otherwise:** if the scope has captures, attach them. If v is fresh, give it the rule name if it has none, and clear its fresh mark.
 
 **Attaching captures:** if no capture is non-nil, do nothing. If v is nil, is not fresh, or is itself one of the captures, wrap v in a `Seq` whose only child is v, whose range runs from the start position to the current position, and which is fresh. Then add each non-nil capture as a field under its name.

@@ -131,6 +131,10 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			vm.checkType(int(in.A))
 		}
 	}
+	terminal := map[int]bool{}
+	for _, t := range m.Types {
+		terminal[t.Name] = t.Terminal
+	}
 	for i := range m.Rules {
 		ri := &m.Rules[i]
 		r := &rule{
@@ -139,6 +143,8 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		}
 		if ri.TerminalType >= 0 {
 			r.terminalType = m.Strings[ri.TerminalType]
+			// A struct type stands for the rules of textStructRule.
+			r.textStruct = !terminal[ri.TerminalType]
 		}
 		r.kinds = newRuleKinds(r.name, r.terminalType)
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope

@@ -796,6 +796,9 @@ interface Rule {
   action: Action | null;
   value: Shaper; // makes the value of a body without an action (see scopeValue)
   terminalType: string;
+  // textStruct means the rule's value is a struct of type terminalType whose field Text is the
+  // matched text: the struct the rule's action makes, made without it.
+  textStruct: boolean;
   // memo means the rule's results are memoized. It is false for transient rules, whose entries
   // could never be reused.
   memo: boolean;
@@ -849,6 +852,7 @@ function mkRule(
   seen: number,
   novalue: boolean,
   vars: string[],
+  textStruct = false,
 ): Rule {
   return {
     id,
@@ -858,6 +862,7 @@ function mkRule(
     action: null,
     value,
     terminalType,
+    textStruct,
     memo,
     leader,
     seen,
@@ -2129,6 +2134,9 @@ class Parser {
       return c.result(r.action, r.name);
     }
     if (r.terminalType !== "") {
+      if (r.textStruct) {
+        return new Node(r.terminalType, "", start, this.pos, "", noNodes, [{ name: "Text", value: this.text(start, this.pos) }], false, false);
+      }
       return new Node(r.terminalType, sourceInfo ? r.name : "", start, this.pos, this.text(start, this.pos), noNodes, noFields, false, true);
     }
     v = this.scopeValue(r.value, v, start);

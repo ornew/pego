@@ -555,19 +555,23 @@ func (g *tsGen) rules() {
 		scopes[r] = s
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			g.cur, g.proj = r, g.projections(r)
-			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
+			bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
 			g.proj = nil
 		}
 	}
 	// Each rule is a constant, which the generated code refers to.
 	var vars []string
 	for _, r := range all {
-		value := tsShaper(r.def.Expr)
+		value := tsShaper(r.bodyExpr())
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			value = 0 // the lines build the rule's value
 		}
-		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
-			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.terminalType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
+		textStruct := ""
+		if r.textStruct {
+			textStruct = ", true"
+		}
+		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s%s);\n", g.ruleVar(r),
+			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.terminalType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars), textStruct)
 		vars = append(vars, g.ruleVar(r))
 	}
 	if g.table == "rules" {

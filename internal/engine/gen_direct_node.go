@@ -184,10 +184,10 @@ func (g *generator) directTypedFrameBody(r *rule, scope *scope) string {
 			return ""
 		}
 		comment = "typed LR body inlined"
-	} else if !directHasRecovery(r.def.Expr) {
+	} else if !directHasRecovery(r.bodyExpr()) {
 		return ""
 	}
-	if !directFrameExprOK(r.def.Expr, !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies) {
+	if !directFrameExprOK(r.bodyExpr(), !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies) {
 		return ""
 	}
 	return g.directFrameBody(r, scope, comment)
@@ -206,8 +206,8 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 		}
 	}
 	defer func() { g.proj = nil }()
-	d.frameCuts(r.def.Expr)
-	v := d.expr(r.def.Expr, s, !r.lean, "fail")
+	d.frameCuts(r.bodyExpr())
+	v := d.expr(r.bodyExpr(), s, !r.lean, "fail")
 	if r.action != nil && !frameRefsKnown(r.action, d.frameScope(s)) {
 		d.bad = true
 	}

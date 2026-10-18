@@ -697,6 +697,9 @@ type rule struct {
 	action       func(c *actx) any
 	value        shaper // makes the rule's value from the value of its body, without an action
 	terminalType string
+	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
+	// is the matched text: the struct the rule's action makes, made without it.
+	textStruct bool
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
@@ -2056,6 +2059,10 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		return c.result(r.action, r.name)
 	}
 	if r.terminalType != "" {
+		if r.textStruct {
+			fs := append(p.fields(1), NodeField{"Text", p.text(start, p.pos)})
+			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), fields: fs})
+		}
 		kind := r.kinds.termValue
 		if sourceInfo {
 			kind = r.kinds.term

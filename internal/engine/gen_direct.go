@@ -56,7 +56,7 @@ func directEligible(r *rule, cuts bool) bool {
 // Unfinished left-recursion bodies can use the structural expression emitter
 // while retaining the runtime's seed, frame and finalization ownership.
 func directExprEligible(r *rule, cuts bool) bool {
-	return directExprOK(r.def.Expr, cuts)
+	return directExprOK(r.bodyExpr(), cuts)
 }
 
 func directExprOK(expr grammar.Expr, cuts bool) bool {
@@ -92,7 +92,7 @@ func directLeanOK(r *rule) bool {
 		return false
 	}
 	ok := true
-	walkExpr(r.def.Expr, func(e grammar.Expr) {
+	walkExpr(r.bodyExpr(), func(e grammar.Expr) {
 		if _, predicate := e.(*grammar.Predicate); predicate {
 			ok = false
 		}
@@ -1187,7 +1187,7 @@ func (g *generator) directRule(r *rule) *direct {
 		return nil
 	}
 	snap := g.snapshot()
-	d := &dgen{g: g, localCuts: g.table == "trules" && directCuts(r.def.Expr), reads: map[string]bool{}, used: map[string]bool{}}
+	d := &dgen{g: g, localCuts: g.table == "trules" && directCuts(r.bodyExpr()), reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
 	if g.table == "trules" && !g.disableTypedLocalLayouts {
@@ -1195,8 +1195,8 @@ func (g *generator) directRule(r *rule) *direct {
 	}
 	defer func() { g.proj = nil }()
 	const fail = "fail"
-	body := d.expr(r.def.Expr, s, !r.lean, fail)
-	out := &direct{fail: d.used[fail], succeed: !d.dead, assigns: assigns(r.def.Expr)}
+	body := d.expr(r.bodyExpr(), s, !r.lean, fail)
+	out := &direct{fail: d.used[fail], succeed: !d.dead, assigns: assigns(r.bodyExpr())}
 	if out.succeed && !d.bad {
 		out.start, out.ctx = d.finish(r, s, body)
 	}
@@ -1278,7 +1278,7 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.line("v = trules[%d].term(p, start, p.pos, p.text(start, p.pos))", r.id)
 		return true, false
 	default:
-		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.def.Expr), d.rd(body))
+		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))
 		start = true
 		if len(s.names) > 0 {
 			d.line("v = p.attachCaptures(v, %s, %s, start, p.pos)", d.scopeVar(s), d.vals(s))

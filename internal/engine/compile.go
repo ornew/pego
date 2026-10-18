@@ -83,6 +83,8 @@ type Options struct {
 	// noProjections compiles repetitions as written (project.go), for tests: with projections in
 	// every backend, only a program without them can check what they produce.
 	noProjections bool
+	// noTextStructs compiles the actions that textStructRule recognizes as written, for tests.
+	noTextStructs bool
 	// eagerAttributeCopies disables copy-on-change normalization for measurements.
 	// It affects compilation only; parser execution has no corresponding branch.
 	eagerAttributeCopies bool
@@ -107,6 +109,11 @@ type rule struct {
 	action       grammar.Term
 	bodyIsSeq    bool
 	terminalType string
+	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
+	// is the matched text, made without the rule's action (textStructRule); textBody is then the
+	// body that is matched instead of def.Expr.
+	textStruct bool
+	textBody   grammar.Expr
 	// resultCheck is the declared type the rule's value is checked against at run time (nil if
 	// none; see Program.resultCheckType).
 	resultCheck   *fieldType
@@ -430,6 +437,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 				r.terminalType = name
 			}
 		}
+		if typ, body, ok := prog.textStructRule(r.def); ok && r.terminalType == "" && !opts.noTextStructs {
+			r.terminalType, r.textStruct, r.textBody, r.action = typ, true, body, nil
+		}
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 			twin = r.action == nil && r.terminalType == "" && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
@@ -443,7 +453,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		for _, r := range prog.rules {
 			control.poll()
 			if !needed[r.name] {
-				r.novalue, r.action, r.terminalType, r.twinOK = true, nil, "", false
+				r.novalue, r.action, r.terminalType, r.textStruct, r.twinOK = true, nil, "", false, false
 				r.predCaps = predicateCapturesControlled(r.def.Expr, control)
 			}
 		}
@@ -521,12 +531,13 @@ func (c *compiler) compileRule(r *rule) {
 		c.compileOperatorsRule(r, p)
 		return
 	}
-	_, r.bodyIsSeq = r.def.Expr.(*grammar.Seq)
-	r.stream = c.checkStream(r.def.Expr)
+	body := r.bodyExpr()
+	_, r.bodyIsSeq = body.(*grammar.Seq)
+	r.stream = c.checkStream(body)
 	r.lean = r.novalue || leanBody(r)
 	c.proj = ruleProjectionsControlled(c.prog, r, control)
-	m := c.expr(r.def.Expr, r.scope, !r.lean)
-	r.value = scopeValueOf(r.def.Expr)
+	m := c.expr(body, r.scope, !r.lean)
+	r.value = scopeValueOf(body)
 	if c.proj != nil {
 		if c.prog.projected == nil {
 			c.prog.projected = map[*grammar.Call]bool{}
@@ -539,6 +550,59 @@ func (c *compiler) compileRule(r *rule) {
 		c.checkTerm(r.action, r.scope, nil)
 		r.act = termEvaluator(r.action)
 	}
+}
+
+// textStructRule recognizes a rule that makes a struct from the text it matches,
+//
+//	rule r T = t:(e) #atomic => T{Text: text($t)}
+//
+// where T is a struct whose field Text is a string, and returns T and the body e #atomic. The
+// rule's value is the struct its action makes, a T whose Text is the matched text with the
+// rule's range, so it can be made directly, as a terminal conversion is, without the capture and
+// the action.
+func (prog *Program) textStructRule(rd *grammar.RuleDef) (string, grammar.Expr, bool) {
+	n, ok := rd.Action.(*grammar.New)
+	if !ok || len(n.Fields) != 1 || n.Fields[0].Name != "Text" {
+		return "", nil, false
+	}
+	st, ok := prog.types[n.Type].(*grammar.StructSpec)
+	if !ok {
+		return "", nil, false
+	}
+	if f := fieldOf(st, "Text"); f == nil {
+		return "", nil, false
+	} else if ref, ok := f.Type.(*grammar.TypeRef); !ok || ref.Name != "string" {
+		return "", nil, false
+	}
+	call, ok := ungroupTerm(n.Fields[0].Value).(*grammar.Call)
+	if !ok || call.Func != "text" || len(call.Args) != 1 {
+		return "", nil, false
+	}
+	ref, ok := ungroupTerm(call.Args[0]).(*grammar.CaptureRef)
+	if !ok || ref.Param {
+		return "", nil, false
+	}
+	capture, ok := ungroupExpr(rd.Expr).(*grammar.Capture)
+	if !ok || capture.Name != ref.Name {
+		return "", nil, false
+	}
+	if _, ok := ungroupExpr(capture.Expr).(*grammar.Atomic); !ok {
+		return "", nil, false
+	}
+	if rd.Type != nil {
+		if name, _ := prog.concreteType(rd.Type); name != n.Type {
+			return "", nil, false
+		}
+	}
+	return n.Type, capture.Expr, true
+}
+
+// bodyExpr returns the expression the rule's body matches.
+func (r *rule) bodyExpr() grammar.Expr {
+	if r.textBody != nil {
+		return r.textBody
+	}
+	return r.def.Expr
 }
 
 // leanBody reports whether the value of the rule body is unused. It is unused when there is an
