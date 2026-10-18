@@ -150,7 +150,7 @@ func (c *canon) expr(e cel.Expr) {
 		inner := e.X
 		for {
 			u, ok := inner.(*cel.Unary)
-			if !ok || u.Op.Text != e.Op.Text {
+			if !ok || u.Op.Value != e.Op.Value {
 				break
 			}
 			n++
@@ -161,22 +161,22 @@ func (c *canon) expr(e cel.Expr) {
 			return
 		}
 		fn := "!_"
-		if e.Op.Text == "-" {
+		if e.Op.Value == "-" {
 			fn = "-_"
 		}
 		c.call(e.Op.Start, fn, inner)
 	case *cel.Binary:
-		fn := "_" + e.Op.Text + "_"
-		if e.Op.Text == "in" {
+		fn := "_" + e.Op.Value + "_"
+		if e.Op.Value == "in" {
 			fn = "@in"
 		}
-		if e.Op.Text == "&&" || e.Op.Text == "||" {
+		if e.Op.Value == "&&" || e.Op.Value == "||" {
 			// The terms of a chain: the left operand while it is a Binary of the same operator.
 			terms := []cel.Expr{e.Right}
 			first := e
 			for {
 				l, ok := first.Left.(*cel.Binary)
-				if !ok || l.Op.Text != e.Op.Text {
+				if !ok || l.Op.Value != e.Op.Value {
 					break
 				}
 				terms = append(terms, l.Right)

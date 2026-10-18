@@ -16,7 +16,7 @@ type LineIndex struct {
 }
 
 // NewLineIndex indexes src, whose positions are in unit (code points by default).
-func NewLineIndex(src string, unit ...Unit) *LineIndex {
+func NewLineIndex(src string, unit ...PositionUnit) *LineIndex {
 	x := &LineIndex{src: src, lineStarts: []int{0}}
 	for i := 0; i < len(src); i++ {
 		switch src[i] {

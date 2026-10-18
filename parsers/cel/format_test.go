@@ -39,7 +39,7 @@ func TestFormat(t *testing.T) {
 // TestFormatBuilt checks the parentheses that Format adds to trees built without Paren nodes.
 func TestFormatBuilt(t *testing.T) {
 	id := func(s string) *cel.Ident { return &cel.Ident{Text: s} }
-	op := func(s string) *cel.Match { return &cel.Match{Text: s} }
+	op := func(s string) *cel.TNode[string] { return &cel.TNode[string]{Value: s} }
 	for _, tc := range []struct {
 		e    cel.Expr
 		want string

@@ -59,7 +59,7 @@ func TestFrameBoundaries(t *testing.T) {
 	} {
 		for _, frameUnit := range []string{"ROWS", "RANGE", "GROUPS"} {
 			sql := fmt.Sprintf("SELECT sum(v) OVER (ORDER BY i %s %s)", frameUnit, tc.bound)
-			for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
+			for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
 				if err := duckdb.Recognize(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 					t.Errorf("Recognize(%q, %v): %v", sql, unit, err)
 				}
@@ -87,7 +87,7 @@ func TestFrameAST(t *testing.T) {
 	} {
 		for _, frameUnit := range []string{"ROWS", "RANGE", "GROUPS"} {
 			sql := fmt.Sprintf(`SELECT sum("é") OVER (ORDER BY i %s %s EXCLUDE TIES)`, frameUnit, tc.bound)
-			for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
+			for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
 				script, err := duckdb.ParseAST(sql, duckdb.WithUnit(unit))
 				if err != nil {
 					t.Fatal(err)
@@ -133,7 +133,7 @@ func TestFrameAST(t *testing.T) {
 					t.Fatalf("%q: expected a single bound, got %#v", sql, f.End)
 				}
 				b, ok := f.Start.Expr.(*duckdb.Binary)
-				if !ok || !strings.EqualFold(b.Op.Text, "AND") {
+				if !ok || !strings.EqualFold(b.Op.Value, "AND") {
 					t.Fatalf("%q: unexpected offset %#v", sql, f.Start.Expr)
 				}
 				column := func(e duckdb.Expr, names ...string) {
@@ -160,7 +160,7 @@ func TestFrameAST(t *testing.T) {
 					column(i.Source, "PRECEDING")
 				case "and":
 					left, ok := b.Left.(*duckdb.Binary)
-					if !ok || !strings.EqualFold(left.Op.Text, "AND") {
+					if !ok || !strings.EqualFold(left.Op.Value, "AND") {
 						t.Fatalf("%q: unexpected AND offset %#v", sql, b.Left)
 					}
 					column(left.Left, "BETWEEN")

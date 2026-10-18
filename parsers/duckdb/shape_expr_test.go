@@ -125,7 +125,7 @@ func (m *mapper) columns(e *duckdb.ColumnsExpr) any {
 
 func isArrow(e duckdb.Expr) bool {
 	b, ok := e.(*duckdb.Binary)
-	return ok && b.Op.Text == "->"
+	return ok && b.Op.Value == "->"
 }
 
 // emptyList is the constant that DuckDB puts where a bound of a slice is left out.

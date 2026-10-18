@@ -47,7 +47,7 @@ func cookedLiteralCases() []cookedLiteralCase {
 	return cases
 }
 
-func cookedValue(t *testing.T, src string, unit typescript.Unit) string {
+func cookedValue(t *testing.T, src string, unit typescript.PositionUnit) string {
 	t.Helper()
 	f, err := typescript.ParseAST(src, typescript.WithUnit(unit))
 	if err != nil {
@@ -67,7 +67,7 @@ func cookedValue(t *testing.T, src string, unit typescript.Unit) string {
 func TestCookedLiteralValues(t *testing.T) {
 	for _, c := range cookedLiteralCases() {
 		t.Run(c.name, func(t *testing.T) {
-			for _, unit := range []typescript.Unit{typescript.CodePoints, typescript.Bytes} {
+			for _, unit := range []typescript.PositionUnit{typescript.CodePoints, typescript.Bytes} {
 				if got := cookedValue(t, c.src, unit); got != c.want {
 					t.Errorf("Value(%q, %v) = %q; want %q", c.src, unit, got, c.want)
 				}

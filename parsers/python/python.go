@@ -65,7 +65,7 @@ import (
 
 // ParseModule parses a module (a file of Python source) like ParseAST and then makes the checks
 // that CPython's ast.parse makes outside its grammar (see Check).
-func ParseModule(src string, unit ...Unit) (*Module, error) {
+func ParseModule(src string, unit ...PositionUnit) (*Module, error) {
 	m, err := ParseAST(src, unitOptions(unit)...)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func ParseModule(src string, unit ...Unit) (*Module, error) {
 //     must name features that exist ("braces" is "not a chance");
 //   - the inequality operator is '!=', or '<>' after `from __future__ import barry_as_FLUFL` (the
 //     grammar accepts both).
-func Check(m *Module, src string, unit ...Unit) error {
+func Check(m *Module, src string, unit ...PositionUnit) error {
 	pos := func(off int) *SyntaxError {
 		line, col := 1, 1
 		i := 0

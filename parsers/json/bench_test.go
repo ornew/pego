@@ -40,7 +40,7 @@ func BenchmarkParseAST(b *testing.B) {
 
 func BenchmarkSmallParseAST(b *testing.B) {
 	const input = `{"id":1,"name":"a","ok":true}`
-	for _, unit := range []json.Unit{json.CodePoints, json.Bytes} {
+	for _, unit := range []json.PositionUnit{json.CodePoints, json.Bytes} {
 		b.Run(fmt.Sprint(unit), func(b *testing.B) {
 			b.SetBytes(int64(len(input)))
 			b.ReportAllocs()

@@ -31,7 +31,7 @@ func Dump(node any) string {
 //
 // The spans of this package's AST differ from CPython's positions in a few places (see the
 // package documentation); DumpWithPositions prints CPython's.
-func DumpWithPositions(node any, src string, unit ...Unit) string {
+func DumpWithPositions(node any, src string, unit ...PositionUnit) string {
 	var b strings.Builder
 	d := &dumper{lines: NewLineIndex(src, unit...), src: src, bytes: len(unit) > 0 && unit[0] == Bytes, spans: map[any]Span{}}
 	writeVal(&b, d.conv(node))

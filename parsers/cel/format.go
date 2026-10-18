@@ -30,7 +30,7 @@ func precedence(e Expr) int {
 	case *Conditional:
 		return precCond
 	case *Binary:
-		switch e.Op.Text {
+		switch e.Op.Value {
 		case "||":
 			return precOr
 		case "&&":
@@ -95,8 +95,8 @@ func (f *formatter) expr(e Expr, min int) {
 		f.ident(e.Func)
 		f.args(e.Args)
 	case *Unary:
-		f.s(e.Op.Text)
-		if u, ok := e.X.(*Unary); ok && u.Op.Text == e.Op.Text { // a run of the same operator, as written
+		f.s(e.Op.Value)
+		if u, ok := e.X.(*Unary); ok && u.Op.Value == e.Op.Value { // a run of the same operator, as written
 			f.expr(u, precUnary)
 			return
 		}
@@ -104,7 +104,7 @@ func (f *formatter) expr(e Expr, min int) {
 		// are two negations of a positive literal.
 		var operand strings.Builder
 		(&formatter{&operand}).expr(e.X, precMember)
-		if e.Op.Text == "-" && strings.HasPrefix(operand.String(), "-") {
+		if e.Op.Value == "-" && strings.HasPrefix(operand.String(), "-") {
 			f.s("(" + operand.String() + ")")
 		} else {
 			f.s(operand.String())
@@ -112,7 +112,7 @@ func (f *formatter) expr(e Expr, min int) {
 	case *Binary:
 		p := precedence(e)
 		f.expr(e.Left, p)
-		f.s(" " + e.Op.Text + " ")
+		f.s(" " + e.Op.Value + " ")
 		f.expr(e.Right, p+1)
 	case *Conditional:
 		f.expr(e.Cond, precOr)

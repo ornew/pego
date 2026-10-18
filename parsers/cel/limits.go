@@ -87,7 +87,7 @@ func (d *depth) terms(x Expr, isOp func(string) bool) []Expr {
 }
 
 func (d *depth) collect(x Expr, isOp func(string) bool) {
-	if b, ok := x.(*Binary); ok && isOp(b.Op.Text) {
+	if b, ok := x.(*Binary); ok && isOp(b.Op.Value) {
 		d.collect(b.Left, isOp)
 		d.stack = append(d.stack, b.Right)
 		return
@@ -302,7 +302,7 @@ func visitDepth(e Expr) int {
 		case *Conditional, *Select, *Index:
 			n++
 		case *Binary:
-			if e.Op.Text != "&&" && e.Op.Text != "||" {
+			if e.Op.Value != "&&" && e.Op.Value != "||" {
 				n++
 			}
 		case *Call:

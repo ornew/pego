@@ -10,7 +10,7 @@ import (
 func TestUnicodeScalarContent(t *testing.T) {
 	for _, r := range []rune{0xd7ff, 0xe000, 0xfdd0, 0xfffd, 0x10000, 0x10ffff} {
 		input := "key: " + string(r) + "\n"
-		for _, unit := range []yaml.Unit{yaml.CodePoints, yaml.Bytes} {
+		for _, unit := range []yaml.PositionUnit{yaml.CodePoints, yaml.Bytes} {
 			if _, err := yaml.Parse(input, yaml.WithUnit(unit)); err != nil {
 				t.Fatalf("Parse %U unit %v: %v", r, unit, err)
 			}
@@ -34,7 +34,7 @@ func TestUnicodeScalarContent(t *testing.T) {
 func BenchmarkUnicodeClasses(b *testing.B) {
 	for _, tc := range []struct{ name, text string }{{"ASCII", "value"}, {"Unicode", "日本語😀"}} {
 		input := strings.Repeat("- name: "+tc.text+" # comment\n  text: "+tc.text+"\n", 500)
-		for _, unit := range []yaml.Unit{yaml.CodePoints, yaml.Bytes} {
+		for _, unit := range []yaml.PositionUnit{yaml.CodePoints, yaml.Bytes} {
 			uname := "CodePoints"
 			if unit == yaml.Bytes {
 				uname = "Bytes"

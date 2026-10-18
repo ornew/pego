@@ -55,13 +55,13 @@ import (
 
 // ParseTSX parses a .tsx file: TypeScript with JSX, where <T>x is not a type assertion. Like ParseAST, it
 // returns the source file as typed values with positions in the unit (code points by default).
-func ParseTSX(input string, unit ...Unit) (*SourceFile, error) {
+func ParseTSX(input string, unit ...PositionUnit) (*SourceFile, error) {
 	return parseWith(tsxMarker, input, unit)
 }
 
 // RecognizeTSX checks that input is a valid .tsx file without building anything, and returns the syntax
 // errors ParseTSX would return.
-func RecognizeTSX(input string, unit ...Unit) error {
+func RecognizeTSX(input string, unit ...PositionUnit) error {
 	return shiftError(Recognize(tsxMarker+input, unitOptions(unit)...), len(tsxMarker))
 }
 
@@ -70,7 +70,7 @@ func RecognizeTSX(input string, unit ...Unit) error {
 // module, a file with import or export declarations or import.meta, the top level is parsed in the await
 // context (await (x) is an await expression, not a call), as the compiler reparses it; not in a declaration
 // file (.d.ts).
-func ParseFile(name, input string, unit ...Unit) (*SourceFile, error) {
+func ParseFile(name, input string, unit ...PositionUnit) (*SourceFile, error) {
 	marker := ""
 	if IsTSX(name) {
 		marker = tsxMarker

@@ -53,7 +53,7 @@ func ExampleParseAST() {
 		sp := cue.SpanOf(x)
 		return src[sp.Start:sp.End]
 	}
-	fmt.Println(e.Op.Text, "|", text(e.X), "|", text(e.Y))
+	fmt.Println(e.Op.Value, "|", text(e.X), "|", text(e.Y))
 	// Output:
 	// + | b | 1 * c.d
 }

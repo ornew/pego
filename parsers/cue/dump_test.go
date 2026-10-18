@@ -114,7 +114,7 @@ func (d *dumper) decl(x Decl) {
 		case x.Constraint == nil:
 			d.w(" -")
 		default:
-			d.w(" %s", x.Constraint.Text)
+			d.w(" %s", x.Constraint.Value)
 		}
 		d.w(" ")
 		d.expr(x.Label)
@@ -291,19 +291,19 @@ func (d *dumper) expr(x any) {
 		d.w(")")
 	case *UnaryExpr:
 		d.open("unary", x)
-		d.w(" %s ", strconv.Quote(x.Op.Text))
+		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(")")
 	case *BinaryExpr:
 		d.open("binary", x)
-		d.w(" %s ", strconv.Quote(x.Op.Text))
+		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(" ")
 		d.expr(x.Y)
 		d.w(")")
 	case *PostfixExpr:
 		d.open("postfix", x)
-		d.w(" %s ", strconv.Quote(x.Op.Text))
+		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(")")
 	case *Alias:

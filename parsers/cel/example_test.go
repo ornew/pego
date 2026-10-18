@@ -14,7 +14,7 @@ func ExampleParseExpr() {
 		panic(err)
 	}
 	b := e.(*cel.Binary) // the && of the two relations
-	fmt.Printf("%T %s %T\n", b.Left, b.Op.Text, b.Right)
+	fmt.Printf("%T %s %T\n", b.Left, b.Op.Value, b.Right)
 	// Output: *cel.Binary && *cel.Binary
 }
 

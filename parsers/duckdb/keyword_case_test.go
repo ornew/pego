@@ -29,7 +29,7 @@ func TestKeywordCaseInvariance(t *testing.T) {
 			want := duckdb.Recognize(canonical) == nil
 			for _, spelling := range []string{alternatingCase(word, true), alternatingCase(word, false)} {
 				sql := fmt.Sprintf(template, spelling)
-				for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
+				for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
 					if err := duckdb.Recognize(sql, duckdb.WithUnit(unit)); (err == nil) != want {
 						t.Errorf("Recognize(%q, %v) case differs from %q: %v", sql, unit, canonical, err)
 					}
@@ -55,7 +55,7 @@ func TestMixedCaseKeywordNames(t *testing.T) {
 		{"SELECT 1 iN", false}, {"SELECT 1 iNt", false},
 		{"SELECT 1 iNtentionally", true},
 	} {
-		for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
+		for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
 			if err := duckdb.Recognize(tc.sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 				t.Errorf("Recognize(%q): %v", tc.sql, err)
 			}

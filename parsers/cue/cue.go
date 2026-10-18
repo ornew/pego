@@ -43,7 +43,7 @@ import (
 
 // ParseFile parses a CUE file as cuelang.org/go/cue/parser.ParseFile does, and returns the first error, if
 // any: ParseAST, then Check, and an error for input that is not UTF-8 (which the parser reads as U+FFFD).
-func ParseFile(input string, unit ...Unit) (*File, error) {
+func ParseFile(input string, unit ...PositionUnit) (*File, error) {
 	if !utf8.ValidString(input) {
 		pos := 0
 		for j, r := range input {

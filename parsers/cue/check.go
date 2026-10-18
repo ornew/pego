@@ -695,7 +695,7 @@ func (c *checker) experiments(f *File) {
 		inspect(d, func(n any) {
 			switch x := n.(type) {
 			case *PostfixExpr:
-				if x.Op.Text == "..." && !explicitOpen {
+				if x.Op.Value == "..." && !explicitOpen {
 					c.errf(x, "postfix ... operator requires @experiment(explicitopen)")
 				}
 			case *Field:

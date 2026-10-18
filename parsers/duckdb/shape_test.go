@@ -280,14 +280,14 @@ func (m *mapper) expr(e duckdb.Expr) any {
 	case *duckdb.Binary:
 		return m.binary(e)
 	case *duckdb.Unary:
-		if e.Op.Text == "-" {
+		if e.Op.Value == "-" {
 			if n, ok := e.X.(*duckdb.Number); ok {
 				return m.number(n, true)
 			}
 		}
-		return opFn(e.Op.Text, m.expr(e.X))
+		return opFn(e.Op.Value, m.expr(e.X))
 	case *duckdb.PostfixOp:
-		return opFn(e.Op.Text+"__postfix", m.expr(e.X))
+		return opFn(e.Op.Value+"__postfix", m.expr(e.X))
 	case *duckdb.Not:
 		return negate(m.expr(e.X))
 	case *duckdb.IsExpr:
@@ -479,7 +479,7 @@ func (m *mapper) subquery(kind string, q *duckdb.ParenQuery) shape {
 }
 
 func (m *mapper) binary(e *duckdb.Binary) any {
-	op := e.Op.Text
+	op := e.Op.Value
 	switch lower(op) {
 	case "and", "or":
 		typ := "CONJUNCTION_" + strings.ToUpper(op)
@@ -1127,11 +1127,11 @@ func (m *mapper) join(j *duckdb.Join) shape {
 	return s
 }
 
-func matText(m *duckdb.Match) string {
+func matText(m *duckdb.TNode[string]) string {
 	if m == nil {
 		return ""
 	}
-	return strings.Join(strings.Fields(m.Text), " ")
+	return strings.Join(strings.Fields(m.Value), " ")
 }
 
 // mapStatement returns the AST DuckDB gives a SELECT statement, or false with the reason the mapping gives up.
