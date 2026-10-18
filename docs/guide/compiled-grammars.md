@@ -359,7 +359,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 1–6 and 8–12 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 diagnostic-label mode, version 9 run-time checks of dynamically typed struct field values and rule results, version 10 the indexing operator `[]`, version 11 member names that start with `$` (capture access) and version 12 casts. A version 3 recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own. |
+| Instruction-set version | 1–6 and 8–12 (7 is reserved) | The instructions a module may use; each version adds instructions for newer language features, such as wide repetition bounds, the `filter` built-in, the indexing operator and casts. A runtime loads supported module versions that do not exceed its own. The [specification](../../spec/compiled-grammars.md#versions-and-compatibility) lists what each version adds. |
 
 The consequences:
 
