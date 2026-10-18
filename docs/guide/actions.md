@@ -138,10 +138,9 @@ pego parse -g derived.pego -f sexpr -i '  hello '
 
 The function arguments are **lambdas**. They can only be written as arguments of `map`, `filter`, `foldl` and `foldr`, and
 inside them the parameters are variables, referred to by name without `$`: `acc`, `x`. A lambda can also read the captures
-of the enclosing rule with `$`. The function passed to `map` must produce a node (or `nil`); `filter`'s predicate must produce a
-Boolean. `filter` visits elements from left to right, keeps the original nodes in order, and gives its result the input
-list's static element type. A `nil` input produces an empty list. If its predicate errors, a surrounding Predicate Action
-fails and a surrounding Value Action aborts the parse.
+of the enclosing rule with `$`. The function passed to `map` must produce a node (or `nil`) and `filter`'s predicate a
+Boolean. The [specification](../../spec/actions.md#built-in-functions) defines each function exactly: element types, `nil`
+and `Error` arguments, evaluation order and what happens when a callback fails.
 
 ```pego
 // builtins.pego

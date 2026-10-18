@@ -484,22 +484,13 @@ The parity tests parse in a worker with a 1 GB stack, so that they also check th
 
 ## What Is Supported
 
-Everything `pego gen` supports for Go, except typed values:
-
-| Feature | Generated TypeScript |
-|:--|:--|
-| All Rule Expressions, captures, atomic and discarded expressions | Yes |
-| Operators Rule Definition Statements, left recursion (direct and indirect) | Yes |
-| Predicates and variables, lookahead, cut | Yes |
-| Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes |
-| `@error` and `#recover`, `SyntaxErrors` | Yes |
-| Position units (code points, bytes) | `unit` argument |
-| Another start rule | `parseRule` |
-| Recognition without a tree | `recognize`, with `-recognize` |
-| Typed values (`-types`) | Interfaces, aliases and configured-start `parseAST`/`parseASTWithOptions`; `parse` still returns Nodes |
-| `#stream` and `ParseStream`, `Document` | **No** (`#stream` is an ordinary repetition, as in Go) |
-| Cancellation and work limits | `signal`, `maxInputWork`, `maxSteps` in the options-aware entry points |
-| Per-call depth | `maxDepth` in the options-aware entry points; generated default is configurable, and the host stack still bounds nesting |
+Generated TypeScript supports every feature of the grammar language: Rule Expressions, Operators Rules, left recursion, Predicates and variables, actions, built-in functions, `@error` and
+`#recover`. It adds `parseRule` for another start rule, a `unit` argument for the position unit, `recognize` (with
+`-recognize`) for matching without a tree, and `signal`, `maxInputWork`, `maxSteps` and `maxDepth` in the options-aware
+entry points. It has no `#stream` and `ParseStream`, and no `Document`: `#stream` is an ordinary repetition, as in Go.
+Typed values (`-types`) give interfaces and aliases and `parseAST`/`parseASTWithOptions` for the configured start rule,
+while `parse` still returns Nodes. The [specification](../../spec/generated-parsers.md#compatibility-and-support) has
+the complete table of what each target supports.
 
 ## Keeping Generated Code Up to Date
 
