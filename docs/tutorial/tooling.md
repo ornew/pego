@@ -132,8 +132,9 @@ pego sample -g config.pego -n 3 -seed 1 -invalid
 "\t]"
 ```
 
-The first four lines are valid inputs and the last three are not; the invalid ones are a key without
-`=` and a value, or no entry at all.
+The first four lines are valid inputs and the last three are not. Each of them is a near miss made of stray characters: a
+lone backslash, a key and a comment (`y_#ᵾp`) without the `=` and the value that an entry needs, and a tab followed by
+a `]`, which no entry starts with.
 
 ## In the Editor and the Browser
 
