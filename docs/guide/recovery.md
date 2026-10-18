@@ -77,7 +77,7 @@ problems in a file needs the parser to continue. `#recover(skip=e)` turns a fail
 If `e` fails, or matches nothing, there is no recovery and the expression fails as usual (so a `#recover` in a
 repetition cannot loop forever on empty skips).
 
-Let us recover at the statement level: when a statement does not parse, skip to the end of its line or to the next
+Recover at the statement level: when a statement does not parse, skip to the end of its line or to the next
 `;`, whichever comes first, but never past a brace.
 
 ```pego
