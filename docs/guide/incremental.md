@@ -250,7 +250,7 @@ func main() {
 }
 ```
 
-```
+```text
 first parse                  {Evaluated:5 Reused:0}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["c" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
 parse again                  {Evaluated:0 Reused:1}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["c" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
 edit inside line 2           {Evaluated:2 Reused:3}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
@@ -312,7 +312,7 @@ rule line =  [a-z]+ "\n" `, "main")
 }
 ```
 
-```
+```text
 line 50 shared: true now starts at 155
 earlier tree unchanged: false
 snapshot unchanged: true

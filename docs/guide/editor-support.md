@@ -17,7 +17,7 @@ This guide explains what the server does, how to set up an editor, and its limit
 
 The server is part of the `pego` command:
 
-```sh
+```bash
 go install github.com/ornew/pego/cmd/pego@latest
 pego lsp     # speaks LSP on standard input and output; editors start it for you
 ```
@@ -96,7 +96,7 @@ The repository has an extension in [`editors/vscode`](../../editors/vscode/READM
 `pego lsp` for `.pego` files. It is not published to the Marketplace; build and install it from a checkout with
 Node.js 20 or later:
 
-```sh
+```bash
 cd editors/vscode
 npm install
 npm run package                        # builds pego-0.1.0.vsix

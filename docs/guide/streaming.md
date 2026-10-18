@@ -61,7 +61,10 @@ From the command line, `pego parse -stream` prints one line per element (JSON by
 S-expressions). Elements that matched before an error are printed, then the error is reported:
 
 ```bash
-$ printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
+printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
+```
+
+```text
 {"type":"Pair","start":0,"end":4,"fields":{"Key":{"type":"Key","rule":"key","start":0,"end":1,"text":"a"},"Value":{"type":"Value","rule":"value","start":2,"end":3,"text":"1"}}}
 {"type":"Pair","start":4,"end":10,"fields":{"Key":{"type":"Key","rule":"key","start":4,"end":6,"text":"bb"},"Value":{"type":"Value","rule":"value","start":7,"end":9,"text":"22"}}}
 pego: 3:5: syntax error: expected [0-9]
@@ -111,7 +114,10 @@ func main() {
 ```
 
 ```bash
-$ printf 'a=1\nbb=22\nccc=x\n' | go run .
+printf 'a=1\nbb=22\nccc=x\n' | go run .
+```
+
+```text
 [0,4) a = 1
 [4,10) bb = 22
 error: 3:5: syntax error: expected [0-9]
@@ -220,7 +226,7 @@ rule word =  [a-z]+ #atomic " "? `, "ab ", "cd", " ef")
 }
 ```
 
-```
+```text
 elements that end with a literal:
    0ms  write "ab\nc"
    0ms  element [0,3)
@@ -363,7 +369,7 @@ rule num =  [0-9]+ #atomic `)
 }
 ```
 
-```
+```text
 syntax error:
   element [0,3)
   element [3,6)
@@ -546,13 +552,22 @@ func main() {
 }
 ```
 
+```bash
+go run ./mem cst
 ```
-$ go run ./mem cst
+
+```text
 cst:  100000 records,    0 MiB live
 cst:  200000 records,    0 MiB live
 cst:  300000 records,    0 MiB live
 cst:  400000 records,    0 MiB live
-$ go run ./mem action
+```
+
+```bash
+go run ./mem action
+```
+
+```text
 action:  100000 records,    0 MiB live
 action:  200000 records,    0 MiB live
 action:  300000 records,    0 MiB live

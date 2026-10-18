@@ -48,7 +48,7 @@ rule ws = [ \t\r\n]*
 
 ## Syntax
 
-```
+```text
 rule <name> [<Type Expression>] = operators {
     skip <Rule Expression>
     operand <Rule Expression> [=> <action>]
@@ -262,6 +262,6 @@ rule e = operators {
 With this rule, `1+2*3` produces the following tree (in the S-expression
 format of `pego parse -f sexpr`, where `@e` is the rule name):
 
-```
+```text
 (Operator "1"@e "+" (Operator "2"@e "*" "3"@e operator=1)@e operator=0)@e
 ```

@@ -48,7 +48,7 @@ rule ws = [ \t\n]*
 The tests live in a Go module next to it. Each file below is part of the package `pairs_test`, and the grammar is
 embedded and compiled once, because a `*pego.Parser` is safe for concurrent use:
 
-```
+```text
 example.com/pairs
 ├── go.mod
 ├── pairs.pego
@@ -154,7 +154,7 @@ Some advice on choosing the cases:
 
 When one of these fails, the output names the input:
 
-```
+```text
 --- FAIL: TestAccepts (0.00s)
     pairs_test.go:32: "abc=12; あい=3": unexpected error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
 ```
@@ -218,15 +218,18 @@ func TestGolden(t *testing.T) {
 ```
 
 ```bash
-$ go test -run TestGolden -update .   # create or rewrite the golden files
-$ cat testdata/basic.golden testdata/error.golden
+go test -run TestGolden -update .   # create or rewrite the golden files
+cat testdata/basic.golden testdata/error.golden
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 error: 2:3: syntax error: expected [0-9]
 ```
 
 A change that matters shows up as a failure, here after narrowing the `key` rule to `[a-z]+ #atomic`:
 
-```
+```text
 --- FAIL: TestGolden (0.00s)
     --- FAIL: TestGolden/basic (0.00s)
         golden_test.go:43: testdata/basic.txt differs from testdata/basic.golden (go test -update rewrites it; review the diff)
@@ -272,7 +275,7 @@ rule main = "a" #recover(skip=[^;]+ ";"?)
 
 Run the suite with:
 
-```sh
+```bash
 pego test -f suite.json
 ```
 
@@ -288,7 +291,7 @@ may additionally include node JSON, root `start`/`end` positions, and ordered sy
 
 To refresh observed node and location goldens for one backend, select it explicitly:
 
-```sh
+```bash
 pego test -f suite.json -backend closure -update
 ```
 
@@ -458,12 +461,21 @@ test is deterministic, and try other seeds from time to time.
 On the command line:
 
 ```bash
-$ pego sample -g pairs.pego -n 3 -seed 1 -coverage
+pego sample -g pairs.pego -n 3 -seed 1 -coverage
+```
+
+```text
 "e=7qi=8542"
 "びv=1500;\t\t"
 "fsm=1"
 rules 5/5 (100%), alternatives 0/0 (100%)
-$ pego sample -g pairs.pego -n 2 -seed 1 -invalid
+```
+
+```bash
+pego sample -g pairs.pego -n 2 -seed 1 -invalid
+```
+
+```text
 "h;"
 "=208;\n\t"
 ```
@@ -489,7 +501,10 @@ func FuzzParse(f *testing.F) {
 `go test` runs the fuzz target on its seeds only, as an ordinary test. To fuzz, name it:
 
 ```bash
-$ go test -run '^$' -fuzz=FuzzParse -fuzztime=3s -parallel=1 .
+go test -run '^$' -fuzz=FuzzParse -fuzztime=3s -parallel=1 .
+```
+
+```text
 fuzz: elapsed: 0s, gathering baseline coverage: 0/22 completed
 fuzz: elapsed: 0s, gathering baseline coverage: 22/22 completed, now fuzzing with 1 workers
 fuzz: elapsed: 3s, execs: 27275 (9089/sec), new interesting: 28 (total: 50)

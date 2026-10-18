@@ -36,7 +36,10 @@ own line, so that inputs containing line breaks stay on one line. With the JSON 
 [parsers/json](../../parsers/json/json.pego):
 
 ```bash
-$ pego sample -g parsers/json/json.pego -n 8
+pego sample -g parsers/json/json.pego -n 8
+```
+
+```text
 " [  \n]"
 "\tfalse"
 "\"\\r\"\t "
@@ -57,7 +60,10 @@ test case. Across versions of PEGO they may differ, as the generator's algorithm
 inputs themselves (as test files, or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
 
 ```bash
-$ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
+pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
+```
+
+```text
 {
   "start": "main",
   "seed": 5,
@@ -121,7 +127,10 @@ A repetition takes each further iteration with probability 1/2, so short lists a
 calculator expressions:
 
 ```bash
-$ pego sample -g examples/calculator/calc.pego -n 5 -seed 7 -max-len 30 -max-repeat 1
+pego sample -g examples/calculator/calc.pego -n 5 -seed 7 -max-len 30 -max-repeat 1
+```
+
+```text
 "\n(12\r-38.3 ) +11.04 "
 " 46.8"
 "\n(\r(-\t(\r((2) --\t36.89) ) )+1 )"
@@ -164,7 +173,10 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-$ pego sample -g items.pego -n 5 -coverage
+pego sample -g items.pego -n 5 -coverage
+```
+
+```text
 "3,rs,51,6"
 "3,57"
 "v,hc,a,0"
@@ -191,7 +203,10 @@ operator parts declared in Operators Rules. It lists separately, and does not co
 For the XML grammar of [parsers/xml](../../parsers/xml/xml.pego), 50 inputs cover all of it:
 
 ```bash
-$ pego sample -g parsers/xml/xml.pego -n 50 -seed 1 -coverage > /dev/null
+pego sample -g parsers/xml/xml.pego -n 50 -seed 1 -coverage > /dev/null
+```
+
+```text
 rules 74/74 (100%), alternatives 89/89 (100%)
 ```
 
@@ -200,7 +215,10 @@ indentation of the current block packed in a variable and compares it in predica
 which the generator rarely satisfies by chance, so it misses the rules that need them:
 
 ```bash
-$ pego sample -g parsers/python/python.pego -n 50 -seed 1 -coverage > /dev/null
+pego sample -g parsers/python/python.pego -n 50 -seed 1 -coverage > /dev/null
+```
+
+```text
 rules 93/336 (28%), alternatives 86/471 (18%)
 missed rule: stmt_sep
 missed rule: block
@@ -224,7 +242,10 @@ format, each comes with the input it was made from, the mutation (positions are 
 error:
 
 ```bash
-$ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
+pego sample -g parsers/json/json.pego -n 3 -invalid -f json
+```
+
+```text
 {
   "start": "main",
   "seed": 0,
@@ -278,7 +299,7 @@ for _, in := range inputs {
 }
 ```
 
-```
+```text
 "h=\"\""
 "in=true, i=true"
 "utc=false"
@@ -296,7 +317,7 @@ inputs, err := g.Generate(1)                  // distinct inputs (["in=true, i=t
 fmt.Print(g.Coverage().Report())              // what the two inputs exercised
 ```
 
-```
+```text
 rules 4/4 (100%), alternatives 2/4 (50%)
 missed value: choice 0: [0-9]+ #atomic
 missed value: choice 3: "false"
@@ -319,7 +340,7 @@ for _, inv := range invalid {
 }
 ```
 
-```
+```text
 "h=\"\" " (insert " " at 4): 1:5: syntax error: expected ",", end of input
 "n" (truncate at 1): 1:2: syntax error: expected "=", [a-z]
 "u=truee" (duplicate "e" at 5): 1:7: syntax error: expected ",", end of input
@@ -422,7 +443,10 @@ The test is [sample/example_test.go](../../sample/example_test.go). `go test` ru
 which makes it an ordinary test of the generated inputs; `-fuzz` starts fuzzing:
 
 ```bash
-$ go test ./sample -run '^$' -fuzz=FuzzCalculator -fuzztime=3s -parallel=1
+go test ./sample -run '^$' -fuzz=FuzzCalculator -fuzztime=3s -parallel=1
+```
+
+```text
 fuzz: elapsed: 0s, gathering baseline coverage: 30/30 completed, now fuzzing with 1 workers
 fuzz: elapsed: 3s, execs: 42159 (14049/sec), new interesting: 49 (total: 79)
 PASS

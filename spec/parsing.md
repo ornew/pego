@@ -181,7 +181,7 @@ that position: literals, character classes, `any character` (for `.`) and
 anchors (`beginning of input`, `end of input`, `beginning of line`,
 `end of line`).
 
-```
+```text
 1:5: syntax error: expected "(", "-", [0-9]
 ```
 

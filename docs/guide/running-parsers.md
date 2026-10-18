@@ -29,7 +29,7 @@ From a checkout of the repository, `go run ./cmd/pego ...` is equivalent to `peg
 
 ## The Pipeline
 
-```
+```text
  PEGO source (.pego) ──ParseGrammar──▶ grammar AST ──Compile──▶ *pego.Parser ──Parse──▶ *pego.Node
  grammar JSON (.json) ──UnmarshalJSON─▶     ▲                        │  ▲
  grammar package (Go values) ───────────────┘             MarshalBinary  LoadParser
@@ -79,7 +79,7 @@ func main() {
 }
 ```
 
-```
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 ```
 
@@ -145,7 +145,7 @@ n, err := p.Parse("hello")
 fmt.Println(n, err)
 ```
 
-```
+```text
 rule main =  word $$
 
 rule word =  [a-z]+ #atomic
@@ -228,7 +228,7 @@ if errors.As(err, &se) {
 }
 ```
 
-```
+```text
 4 1 5 [[0-9]] []
 1:5: syntax error: expected [0-9]
 ```

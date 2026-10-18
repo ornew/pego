@@ -36,7 +36,10 @@ rule number = [0-9]+ #atomic
 ```
 
 ```bash
-$ pego lint -g items.pego
+pego lint -g items.pego
+```
+
+```text
 items.pego:2:28: error: alternative 3 (`"true"`) can never match: alternative 1 (`word` at 2:12) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
 items.pego:2:37: error: alternative 4 (`"false"`) can never match: alternative 1 (`word` at 2:12) matches first wherever it could [shadowed-alternative]
@@ -58,7 +61,10 @@ like the other commands do.
 With `-f json`, the findings are printed as one JSON document:
 
 ```bash
-$ pego lint -g items.pego -f json
+pego lint -g items.pego -f json
+```
+
+```text
 {
   "grammar": "items.pego",
   "start": "main",

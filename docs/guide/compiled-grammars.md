@@ -35,8 +35,11 @@ rule ws = [ \t\n]*
 On the command line, `pego compile` writes the file, and every command that takes a grammar (`-g`) accepts it:
 
 ```bash
-$ pego compile -g pairs.pego -o pairs.pegoc
-$ pego parse -g pairs.pegoc -f sexpr -i 'abc=12; あい=3'
+pego compile -g pairs.pego -o pairs.pegoc
+pego parse -g pairs.pegoc -f sexpr -i 'abc=12; あい=3'
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 ```
 
@@ -44,10 +47,19 @@ The start rule is saved with the grammar (`-s` chooses a rule other than `main`)
 `pego gen` use it when you give no `-s` of your own:
 
 ```bash
-$ pego compile -g pairs.pego -s pair -o pair.pegoc
-$ pego parse -g pair.pegoc -f sexpr -i 'abc=12'
+pego compile -g pairs.pego -s pair -o pair.pegoc
+pego parse -g pair.pegoc -f sexpr -i 'abc=12'
+```
+
+```text
 (Pair Key="abc"@key Value="12"@value)
-$ pego parse -g pair.pegoc -s main -f sexpr -i 'abc=12; x=1'
+```
+
+```bash
+pego parse -g pair.pegoc -s main -f sexpr -i 'abc=12; x=1'
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="x"@key Value="1"@value)]
 ```
 
@@ -221,7 +233,7 @@ large grammar in every process pays it every time.
 The usual pattern is to compile when the grammar changes, commit the `.pegoc` next to the source, and embed it. The
 layout of a module:
 
-```
+```text
 example.com/pairs
 ├── go.mod
 ├── pairs.pego
@@ -276,8 +288,11 @@ func main() {
 ```
 
 ```bash
-$ go generate ./...
-$ go run .
+go generate ./...
+go run .
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 ```
 
@@ -322,7 +337,7 @@ func TestCompiledIsUpToDate(t *testing.T) {
 
 After changing `pairs.pego` (here: `rule value =  [0-9a-f]+ #atomic `) without running `go generate`, the test fails:
 
-```
+```text
 --- FAIL: TestCompiledIsUpToDate (0.00s)
     compiled_test.go:26: pairs.pegoc is out of date; run go generate ./...
 FAIL
@@ -433,7 +448,7 @@ in a profile, and to generated code when parsing speed does.
 
 The errors of a damaged file, as `LoadParser` reports them (from a program that changes a copy of `pairs.pegoc`):
 
-```
+```text
 intact                 <nil>
 format version 4       unsupported compiled grammar version 4 (want 3)
 one byte changed       invalid compiled grammar: checksum mismatch

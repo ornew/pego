@@ -97,9 +97,10 @@ the title without a trailing qualifier.
 Every example is run, and its output is pasted from that run. An example that a reader copies must work as printed.
 
 - Tag every fence. Grammars are `pego`, Go is `go`, TypeScript is `ts`, JSON is `json`, shell commands are `bash`
-  (not `sh`), and the output of a program or a command is `text`. An untagged fence is a mistake.
+  (not `sh` or `console`), and the output of a program or a command is `text`. An untagged fence is a mistake.
+  `TestCodeFenceLanguages` enforces this.
 - Put a command and its output in separate blocks, the command first, with no `$` prompt, so a reader can copy the
-  command.
+  command. `TestNoCommandPrompts` enforces this.
 - Write a complete `package main` program when the program is the point, and statement fragments otherwise, never half a
   function. Handle errors: `log.Fatal(err)` in programs, `return err` in fragments. Do not use `panic` and do not
   ignore errors.

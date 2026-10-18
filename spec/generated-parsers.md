@@ -22,7 +22,7 @@ runtime, which is the same for every grammar of one generator release.
 
 ### The Generator
 
-```
+```text
 pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
          [-types] [-document] [-stream] [-recognize] [-observability]
          [-nodoc] [-max-depth <n>]

@@ -63,7 +63,7 @@ for _, m := range v.(*jsonparser.Object).Members {
 }
 ```
 
-```
+```text
 name string pego
 tags array of 2
 stars number 42 at 49

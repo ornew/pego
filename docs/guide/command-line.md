@@ -55,15 +55,42 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
 
 ```bash
-$ pego parse -g pairs.pego -f sexpr -i 'abc=12; あい=3'
+pego parse -g pairs.pego -f sexpr -i 'abc=12; あい=3'
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
-$ printf 'abc=12; def=3\n' | pego parse -g pairs.pego -f sexpr
+```
+
+```bash
+printf 'abc=12; def=3\n' | pego parse -g pairs.pego -f sexpr
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="def"@key Value="3"@value)]
-$ pego parse -g pairs.pego -s key -f sexpr -i 'abc'
+```
+
+```bash
+pego parse -g pairs.pego -s key -f sexpr -i 'abc'
+```
+
+```text
 "abc"@key
-$ pego parse -g pairs.pego -check -i 'abc=12'
+```
+
+```bash
+pego parse -g pairs.pego -check -i 'abc=12'
+```
+
+```text
 ok
-$ pego parse -g pairs.pego -check -i 'abc=x'; echo "exit $?"
+```
+
+```bash
+pego parse -g pairs.pego -check -i 'abc=x'; echo "exit $?"
+```
+
+```text
 pego: 1:5: syntax error: expected [0-9]
 exit 1
 ```
@@ -111,18 +138,36 @@ Symlinks keep pointing to the same path and that target is replaced; formatting 
 names with their original content. Files whose formatting is unchanged are left in place.
 
 ```bash
-$ cat messy.pego
+cat messy.pego
+```
+
+```text
 // A messy grammar.
 rule main =    ws   "x"+   ws   $$    // trailing comment
 rule ws =  [ \t\n]*
-$ pego fmt -l messy.pego
+```
+
+```bash
+pego fmt -l messy.pego
+```
+
+```text
 messy.pego
-$ pego fmt -w messy.pego && cat messy.pego
+```
+
+```bash
+pego fmt -w messy.pego && cat messy.pego
+```
+
+```text
 // A messy grammar.
 rule main =  ws "x"+ ws $$  // trailing comment
 rule ws =  [ \t\n]*
-$ pego fmt -l messy.pego     # nothing listed: already formatted
-$ pego fmt -check messy.pego # exit status 0
+```
+
+```bash
+pego fmt -l messy.pego     # nothing listed: already formatted
+pego fmt -check messy.pego # exit status 0
 ```
 
 ## `fix`
@@ -154,9 +199,18 @@ fix syntax errors first. A capture read on a union of node types was optional wh
 and `x.$y` requires every one to have it, so the rewritten grammar can report a type error that the old one did not.
 
 ```bash
-$ echo 'rule a = "a" -- "b" / "c"' | pego fix
+echo 'rule a = "a" -- "b" / "c"' | pego fix
+```
+
+```text
 rule a = "a" #cut "b" / "c"
-$ echo 'rule pair = key ":" key => list($1, $3)' | pego fix
+```
+
+```bash
+echo 'rule pair = key ":" key => list($1, $3)' | pego fix
+```
+
+```text
 rule pair = key:key ":" v3:key => list($key, $v3)
 ```
 

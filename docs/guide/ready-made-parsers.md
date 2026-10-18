@@ -91,7 +91,7 @@ func main() {
 }
 ```
 
-```
+```text
 [id name] [[1 alice] [2 bob, jr]] <nil>
 map[name:pego stars:42 tags:[peg operators-rule]] <nil>
 true csv: line 2: record has 1 fields, the header has 2
@@ -211,7 +211,7 @@ func main() {
 }
 ```
 
-```
+```text
 3:14: "port" must be a number
 4:33: "port" must be a number
 error: 4:1: syntax error: expected "\"", [ \t\r\n]
@@ -283,7 +283,7 @@ func main() {
 }
 ```
 
-```
+```text
 shapes.go:6:1: Area
 shapes.go:10:1: Perimeter
 Area 69 124
@@ -334,7 +334,7 @@ func main() {
 }
 ```
 
-```
+```text
 CREATE bytes   0- 83  reads [sales]
 SELECT bytes  84-167  reads [regions totals]
 INSERT bytes 168-203  reads []
@@ -379,7 +379,7 @@ func main() {
 }
 ```
 
-```
+```text
 code points error at pos 10, line 1, col 11
 code points the number 1 is at 7-8
 bytes       error at pos 14, line 1, col 15
@@ -461,8 +461,11 @@ and give it to `pego parse`, or read it in Go and compile it with `pego.CompileS
 records with `#stream`, so a file larger than memory can be read one record at a time:
 
 ```bash
-$ csv=$(go list -m -f '{{.Dir}}' github.com/ornew/pego/parsers/csv)/csv.pego
-$ printf 'id,name\n1,alice\n2,"bob, jr"\n' | pego parse -g "$csv" -stream -f sexpr
+csv=$(go list -m -f '{{.Dir}}' github.com/ornew/pego/parsers/csv)/csv.pego
+printf 'id,name\n1,alice\n2,"bob, jr"\n' | pego parse -g "$csv" -stream -f sexpr
+```
+
+```text
 (Record Fields=[Field"id"@field Field"name"@field])
 (Record Fields=[Field"1"@field Field"alice"@field])
 (Record Fields=[Field"2"@field Field"\"bob, jr\""@field])

@@ -35,7 +35,7 @@ This document describes the repository layout and architecture, how to run tests
 
 ## Architecture
 
-```
+```text
 .pego ──syntax.Parse──▶ grammar.Grammar ──engine.Compile──▶ engine.Program ──Parse──▶ Node
                          ▲      │                              │      ▲
               JSON ──────┘      └── grammar.Format ──▶ .pego   │      └── LoadProgram ── .pegoc

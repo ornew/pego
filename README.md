@@ -36,11 +36,19 @@ rule main Expr = operators {
 rule num Num = [0-9]+
 ```
 
-```console
-$ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
-(Bin Left=Num"1"@num Op="+" Right=(Bin Left=Num"2"@num Op="*" Right=(Bin Left=Num"3"@num Op="^" Right=Num"2"@num)))
+```bash
+pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
+```
 
-$ pego parse -g calc.pego -i '1 + * 2'
+```text
+(Bin Left=Num"1"@num Op="+" Right=(Bin Left=Num"2"@num Op="*" Right=(Bin Left=Num"3"@num Op="^" Right=Num"2"@num)))
+```
+
+```bash
+pego parse -g calc.pego -i '1 + * 2'
+```
+
+```text
 pego: 1:5: syntax error: expected "(", [0-9]
 ```
 

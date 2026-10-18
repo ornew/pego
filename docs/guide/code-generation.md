@@ -57,7 +57,7 @@ rule ws = [ \t\n]*
 The layout is a module with the grammar next to the code that generates from it, and the generated parser in its own
 package (see [why its own package](#one-grammar-one-package)):
 
-```
+```text
 example.com/pairs
 ├── go.mod
 ├── pairs.pego
@@ -144,7 +144,7 @@ func main() {
 }
 ```
 
-```
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 Pair "abc" at 0-3
 Pair "あい" at 8-10
@@ -186,13 +186,34 @@ Details:
 - Grammar errors are reported with positions, before any file is written:
 
   ```bash
-  $ pego gen -g broken.pego -pkg pairs
+  pego gen -g broken.pego -pkg pairs
+  ```
+
+  ```text
   pego: broken.pego:2:1: expected an expression, found end of file
-  $ pego gen -g typeerr.pego -pkg pairs -o /dev/null
+  ```
+
+  ```bash
+  pego gen -g typeerr.pego -pkg pairs -o /dev/null
+  ```
+
+  ```text
   pego: typeerr.pego:2:34: undefined capture $y
-  $ pego gen -g pairs.pego -pkg pairs -s nope -o /dev/null
+  ```
+
+  ```bash
+  pego gen -g pairs.pego -pkg pairs -s nope -o /dev/null
+  ```
+
+  ```text
   pego: pairs.pego: start rule nope is not defined
-  $ pego gen -g pairs.pego -pkg foo-bar -o /dev/null
+  ```
+
+  ```bash
+  pego gen -g pairs.pego -pkg foo-bar -o /dev/null
+  ```
+
+  ```text
   pego: pairs.pego: invalid package name "foo-bar"
   ```
 
@@ -317,7 +338,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 
 If you change `pairs.pego` (here: `rule value =  [0-9a-f]+ #atomic `) and skip regeneration, the test fails. Among the output:
 
-```
+```text
 --- FAIL: TestGeneratedIsUpToDate (0.00s)
     generated_test.go:49: pairsparser/parser.go is out of date; run go generate ./...
 FAIL
@@ -380,7 +401,7 @@ and inputs that exercise each feature of your grammar.
 Each generated file defines `Node`, `SyntaxError`, `Parse` and the rest at package level, so two generated files in the
 same package collide:
 
-```
+```text
 both/b.go:17:6: Node redeclared in this block
 	both/a.go:17:6: other declaration of Node
 ```

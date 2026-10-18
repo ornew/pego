@@ -26,7 +26,7 @@ go get -tool github.com/ornew/pego/cmd/pego
 
 The script runs the checks on every grammar and reports all failures, not only the first:
 
-```sh
+```bash
 #!/bin/sh
 # grammars/check.sh
 status=0

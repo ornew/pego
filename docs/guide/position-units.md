@@ -29,9 +29,18 @@ fmt.Println(n.Children[0].Field("Key").(*pego.Node).End) // 6
 Syntax errors follow the unit, too (the same `あい=x` input, with the error at the `x`):
 
 ```bash
-$ pego parse -g pairs.pego -i 'あい=x'
+pego parse -g pairs.pego -i 'あい=x'
+```
+
+```text
 pego: 1:4: syntax error: expected [0-9]
-$ pego parse -g pairs.pego -unit bytes -i 'あい=x'
+```
+
+```bash
+pego parse -g pairs.pego -unit bytes -i 'あい=x'
+```
+
+```text
 pego: 1:8: syntax error: expected [0-9]
 ```
 

@@ -230,7 +230,7 @@ rule main = "b"
 
 Parsing with it (`pego parse -g bad.pego -i a`) reports:
 
-```
+```text
 pego: bad.pego:4:1: rule main is already defined
 bad.pego:2:22: undefined capture $v
 bad.pego:3:14: undefined rule unknown

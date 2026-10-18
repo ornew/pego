@@ -82,7 +82,7 @@ Compared with the engine's API:
   }
   ```
 
-  ```
+  ```text
   (Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected [a-z]`} (Seq "let" " " "b"@name ";")])@main
   1 11 syntax error: expected [a-z]
   ```

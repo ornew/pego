@@ -165,7 +165,7 @@ func main() {
 
 </details>
 
-```
+```text
 grammar                      first parse          after editing line 500
 one rule per line            evaluated 3003     evaluated 3     reused 1001
 line start anchor ^          evaluated 3003     evaluated 3     reused 1001

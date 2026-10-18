@@ -448,7 +448,7 @@ rule a = a "x" / "y"
 
 For the input `yxx`, `pego parse -f sexpr` prints the left-associative tree
 
-```
+```text
 (Seq (Seq (Seq "y"@a "x")@a "x")@a)@main
 ```
 

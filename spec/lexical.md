@@ -136,7 +136,7 @@ other character is the end-of-line anchor; `$$` is the end-of-input anchor.
 
 Punctuation tokens include:
 
-```
+```text
 _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 :  =  /  (  )  {  }  [  ]  ,  ;  .  *  +  ?  &  !  @  -  ^  $  #  |  <  >  %  //  /*  */
 ```

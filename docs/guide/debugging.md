@@ -37,11 +37,20 @@ rule ws = [ \t\n]*
 
 Two inputs, the second with a missing comma:
 
+```bash
+cat small.txt
 ```
-$ cat small.txt
+
+```text
 server.port = 8080;
 log.rotate(7, size);
-$ cat bad.txt
+```
+
+```bash
+cat bad.txt
+```
+
+```text
 server.port = 8080;
 log.rotate(7 size);
 ```
@@ -53,8 +62,11 @@ farthest position any alternative reached (see [error messages](error-messages.m
 When the list is long or surprising, `pego explain` tells you which rule calls contributed each item, and from where
 they were called:
 
+```bash
+pego explain -g config.pego < bad.txt
 ```
-$ pego explain -g config.pego < bad.txt
+
+```text
 2:14: syntax error: expected ")", ",", [ \t\n]
 
 Calls that recorded what was expected at 2:14 (innermost first):
@@ -105,8 +117,11 @@ Some things to know:
 `pego trace` prints every rule call of a parse as an indented tree. A call whose nested calls are shown takes two
 lines, its start (`rule line:col`) and its end (`rule -> result`); a call without shown nested calls takes one:
 
+```bash
+pego trace -g config.pego < small.txt
 ```
-$ pego trace -g config.pego < small.txt
+
+```text
 main 1:1
   ws 1:1 -> matched 1:1-1:1 ""
   stmt 1:1
@@ -146,8 +161,11 @@ Other marks on a result:
 - `[3 evaluations]`: a left-recursive rule evaluated its body three times while growing its match. The recursive calls
   inside it show as memo hits that return the match so far:
 
+  ```bash
+  pego trace -g lr.pego -i '1+2'      # rule sum =  sum "+" n / n
   ```
-  $ pego trace -g lr.pego -i '1+2'      # rule sum =  sum "+" n / n
+
+  ```text
   main 1:1
     sum 1:1
       sum 1:1 -> failed [memo]
@@ -167,8 +185,11 @@ Traces grow quickly, so narrow them down:
 
 - `-max-depth n` hides calls nested deeper than `n`:
 
+  ```bash
+  pego trace -g config.pego -max-depth 2 < small.txt
   ```
-  $ pego trace -g config.pego -max-depth 2 < small.txt
+
+  ```text
   main 1:1
     ws 1:1 -> matched 1:1-1:1 ""
     stmt 1:1 -> matched 1:1-1:20 "server.port = 8080;"
@@ -182,8 +203,11 @@ Traces grow quickly, so narrow them down:
 - `-rule name` shows only the calls of that rule and the calls nested in them; repeat it or separate names with
   commas. With `-rule`, `-max-depth` counts from the rule's calls:
 
+  ```bash
+  pego trace -g config.pego -rule stmt -max-depth 2 -i 'a.b.c(1);'
   ```
-  $ pego trace -g config.pego -rule stmt -max-depth 2 -i 'a.b.c(1);'
+
+  ```text
   stmt 1:1
     assign 1:1 -> failed
     update 1:1 -> failed
@@ -198,8 +222,11 @@ Traces grow quickly, so narrow them down:
 
 - `-failures` adds, to each failed call, the farthest position it reached and what it expected there:
 
+  ```bash
+  pego trace -g config.pego -rule args -failures < bad.txt
   ```
-  $ pego trace -g config.pego -rule args -failures < bad.txt
+
+  ```text
   args 2:12
     value 2:12 -> matched 2:12-2:13 "7"
     ws 2:13 -> matched 2:13-2:14 " "
@@ -214,8 +241,11 @@ For tools, `-f json` prints one JSON object per event and line. Enter events hav
 `matched`, `end`, `endLine`, `endCol`, `memo`, `evals` (body evaluations), `examined` (the end of the input the call
 looked at), `reusedElements` when nonzero, and, with `-failures`, `failure`:
 
+```bash
+pego trace -g config.pego -f json -rule call -max-depth 1 -failures < bad.txt
 ```
-$ pego trace -g config.pego -f json -rule call -max-depth 1 -failures < bad.txt
+
+```text
 {"event":"enter","rule":"call","depth":3,"pos":20,"line":2,"col":1}
 {"event":"exit","rule":"call","depth":3,"pos":20,"line":2,"col":1,"matched":false,"end":20,"endLine":2,"endCol":1,"evals":1,"examined":34,"failure":{"pos":33,"line":2,"col":14,"expected":["\")\"","\",\"","[ \\t\\n]"]}}
 pego: 2:14: syntax error: expected ")", ",", [ \t\n]
@@ -234,8 +264,11 @@ on each backend, and results never differ.
 
 `pego profile` parses the input once with tracing and prints the cost of each rule. On 900 statements (35 KB):
 
+```bash
+pego profile -g config.pego -n 5 < config.txt
 ```
-$ pego profile -g config.pego -n 5 < config.txt
+
+```text
 result: ok
 examined 35291 positions in 3.87ms (profiling included)
 12009 calls, 12009 body evaluations, 0 memo hits (0% of calls)
@@ -269,8 +302,11 @@ rule update = "+=" ws value ";"
 rule call = "(" ws args? ws ")" ";"
 ```
 
+```bash
+pego profile -g config_fast.pego -n 5 < config.txt
 ```
-$ pego profile -g config_fast.pego -n 5 < config.txt
+
+```text
 result: ok
 examined 35291 positions in 3.16ms (profiling included)
 9304 calls, 9304 body evaluations, 0 memo hits (0% of calls)
@@ -361,7 +397,7 @@ _, err = p.Parse("a=1;b=x", pego.WithTrace(func(e pego.TraceEvent) {
 For the grammar `main = pair (";" pair)* $$`, `pair = key "=" value` this prints (the full program is
 `ExampleWithTrace` in `example_debug_test.go`):
 
-```
+```text
 main at 1:1
   pair at 1:1
     key at 1:1

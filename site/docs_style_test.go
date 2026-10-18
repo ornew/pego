@@ -157,3 +157,63 @@ func TestHeadingTitleCase(t *testing.T) {
 		}
 	}
 }
+
+var (
+	fenceLineRe  = regexp.MustCompile("^\\s*```(.*)$")
+	fenceCloseRe = regexp.MustCompile("^\\s*```\\s*$")
+	promptRe     = regexp.MustCompile(`^\s*\$ `)
+)
+
+// forEachFence calls f with the language tag, the line number of the opening fence and
+// the lines of every fenced code block of the styled documents.
+func forEachFence(t *testing.T, f func(file, lang string, line int, body []string)) {
+	t.Helper()
+	for _, p := range styledDocs(t) {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel, _ := filepath.Rel("..", p)
+		lines := strings.Split(string(data), "\n")
+		for i := 0; i < len(lines); i++ {
+			m := fenceLineRe.FindStringSubmatch(lines[i])
+			if m == nil {
+				continue
+			}
+			j := i + 1
+			for j < len(lines) && !fenceCloseRe.MatchString(lines[j]) {
+				j++
+			}
+			f(filepath.ToSlash(rel), strings.TrimSpace(m[1]), i+1, lines[i+1:min(j, len(lines))])
+			i = j
+		}
+	}
+}
+
+// TestCodeFenceLanguages checks that every fenced code block names its language, and
+// that shell commands are tagged bash (not sh, shell or console).
+func TestCodeFenceLanguages(t *testing.T) {
+	forEachFence(t, func(file, lang string, line int, _ []string) {
+		switch lang {
+		case "":
+			t.Errorf("%s:%d: code block without a language; use pego, go, ts, json, bash or text", file, line)
+		case "sh", "shell", "zsh", "console", "terminal":
+			t.Errorf("%s:%d: code block tagged %q; use bash for commands and text for output", file, line, lang)
+		}
+	})
+}
+
+// TestNoCommandPrompts checks that command blocks hold commands only, without a "$ "
+// prompt: the commands are a bash block and their output a separate text block.
+func TestNoCommandPrompts(t *testing.T) {
+	forEachFence(t, func(file, lang string, line int, body []string) {
+		if lang != "bash" && lang != "text" {
+			return
+		}
+		for n, l := range body {
+			if promptRe.MatchString(l) {
+				t.Errorf("%s:%d: %q starts with a shell prompt; show the command in a bash block and its output in a text block", file, line+1+n, l)
+			}
+		}
+	})
+}

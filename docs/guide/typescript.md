@@ -95,7 +95,10 @@ console.log(JSON.stringify(k.node));
 ```
 
 ```bash
-$ node main.ts   # Node.js 22.18 or later runs TypeScript directly
+node main.ts   # Node.js 22.18 or later runs TypeScript directly
+```
+
+```text
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 Pair "abc" at 0-3
 Pair "あい" at 8-10
@@ -402,7 +405,7 @@ console.log(recognize("let a;let 1;let b;")?.message);
 console.log(recognize("let a;"));
 ```
 
-```
+```text
 (Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected [a-z]`} (Seq "let" " " "b"@name ";")])@main
 1 11 syntax error: expected [a-z]
 1:11: syntax error: expected [a-z]
@@ -447,7 +450,7 @@ hundreds to a few thousand nested rule calls, depending on the grammar and on ho
 Node.js 24: `rule n = "(" n ")" / "x"` parses about 1,100 levels of parentheses, and the JSON grammar about 390 levels of
 nested arrays (each level is several rule calls). Beyond that, the parse returns an error instead of crashing:
 
-```
+```text
 nesting too deep: the JavaScript stack overflowed at 2292 rule calls
 ```
 

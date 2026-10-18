@@ -9,7 +9,7 @@ A commit message MUST be written in English.
 A commit message MUST be readable, concise, and unambiguous, and MUST use the
 format Git expects: a single-line summary, a blank line, and then the body.
 
-```
+```text
 Summarize changes in around 50 characters or less
 
 More detailed explanatory text, wrapped to about 72 characters. The blank
