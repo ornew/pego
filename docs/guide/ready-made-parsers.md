@@ -482,8 +482,7 @@ input than you will write tests for. Write your own grammar when the language is
 a subset, a dialect, an extra construct, a tree shaped for your program. The ready-made grammars are also the best
 examples of large PEGO grammars: [parsers/json/json.pego](../../parsers/json/json.pego) is 41 lines,
 [parsers/csv/csv.pego](../../parsers/csv/csv.pego) 28, and you can copy one and change it (each module carries its own
-licence file). The [getting-started tutorial](../tutorial/getting-started.md) writes a first grammar, and
-[code generation](code-generation.md) turns it into a package like these.
+licence file). [Code generation](code-generation.md) turns a grammar of your own into a package like these.
 
 ## See Also
 

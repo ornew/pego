@@ -1,8 +1,7 @@
 # PEGO Guides
 
 Task-oriented guides to the PEGO grammar language and runtime. They explain how and why to use each feature, with
-complete, runnable examples. New to PEGO? Start with the [getting-started tutorial](../tutorial/getting-started.md).
-The normative definition of the language is the [specification](../../spec/README.md).
+complete, runnable examples. The normative definition of the language is the [specification](../../spec/README.md).
 
 | Guide | Contents |
 |:--|:--|

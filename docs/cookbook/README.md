@@ -4,7 +4,7 @@ Short recipes for concrete problems. Each one is a complete solution: the proble
 the Go program, the output they print, and a few lines on how it works and what to change. They differ from the other
 documents in how they are organized:
 
-- The [tutorial](../tutorial/getting-started.md) teaches the language from the first rule on.
+- The tutorial teaches the language from the first rule on.
 - The [guides](../guide/README.md) explain one feature at a time, in depth.
 - The cookbook starts from a task (read a configuration file, report three errors at once, reparse on every keystroke)
   and combines the features that the task needs.
@@ -69,7 +69,6 @@ times differ from machine to machine.
 
 | To learn about | Read |
 |:--|:--|
-| The grammar language, from the beginning | [Getting started](../tutorial/getting-started.md) |
 | One feature in depth | [Guides](../guide/README.md) |
 | The exact rules of a construct | [Language specification](../../spec/README.md) |
 | Complete grammars with tests | [examples/](../../examples/README.md) and [parsers/](../../parsers/README.md) |

@@ -163,8 +163,8 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
   by type: `Int`, `Str`, `Bool` and `Array` are different node types, so Go can switch on `v.Type()`. Actions have no
   function that turns text into a number, so `strconv` does that in the `as...` helpers.
 - **The tree is what the grammar declares.** `main` returns a `Config` node whose `Entries` field is a list of `Entry`
-  nodes. `Field("Entries")` and `Children` walk it, as in the [getting-started
-  tutorial](../tutorial/getting-started.md#5-typed-trees).
+  nodes. `Field("Entries")` and `Children` walk it, as described in
+  [Trees and actions](../guide/trees-and-actions.md).
 - **`pego.WithUnit(pego.Bytes)`** makes `Start` and `End` offsets into the Go string, so `src[:e.Start]` is the text
   before an entry, and counting its line feeds gives the line. By default positions count code points, which are not
   string indexes when the text has non-ASCII characters.
