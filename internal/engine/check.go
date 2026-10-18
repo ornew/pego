@@ -130,6 +130,7 @@ type typeInfo struct {
 	rules map[string]ty // the type of each rule
 	// values holds the type of each rule's value in the value model (Program.valueTypes).
 	values     map[string]ty
+	valueErrs  ErrorList // the errors of actions in the value model
 	valuesOnce sync.Once
 	fields     map[string][]typedField // the fields of each struct type, in declaration order
 	aliases    map[string]ty           // the type each alias stands for

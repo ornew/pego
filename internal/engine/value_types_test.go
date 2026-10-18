@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
@@ -53,9 +55,8 @@ func TestValueTypes(t *testing.T) {
 		// Operator lines produce tuple nodes.
 		{"rule e = operators {\n    operand n\n    level { infix left \"+\" }\n    level { prefix \"-\" }\n}\nrule n = [0-9]+", "e",
 			`n | node[(e, node[string], e), {"lhs": 0, "op": 1, "rhs": 2}] | node[(node[string], e), {"op": 0, "rhs": 1}]`},
-		// Interim: rule actions keep the current checker's types until actions are checked in the
-		// value model, where $x here is node[[]node[string]].
-		{`rule a = x:"1"* => $x`, "a", `[]node[string]`},
+		// A rule with an action has the action's type, in which a capture has the type of its value.
+		{`rule a = x:"1"* => $x`, "a", `node[[]node[string]]`},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {
@@ -97,6 +98,7 @@ func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
+		p.valueErrors() // checks every action without failing
 		for _, rd := range g.Rules() {
 			if v, ok := p.valueTypes()[rd.Name]; !ok || v == nil || v == tyBottom {
 				t.Errorf("%s: rule %s has value type %v", path, rd.Name, v)
@@ -122,5 +124,187 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 	inner := outer.value.(tupleTy).elems[0].(optTy).elem.(nodeTy)
 	if len(inner.caps) != 1 || inner.caps[0].t.String() != "b" {
 		t.Fatalf("inner captures %+v", inner.caps)
+	}
+}
+
+// valueTypesOf compiles src without the current model's type check, whose rules for actions
+// differ, and returns the value types of its rules and the errors of its actions.
+func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
+	t.Helper()
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatalf("%q: %v", src, err)
+	}
+	p, err := Compile(g, Options{NoTypeCheck: true})
+	if err != nil {
+		t.Fatalf("%q: %v", src, err)
+	}
+	return valueTypes(p, nil)
+}
+
+// Actions are typed in the value model: captures have the types of their values, and nodes expose
+// .Start, .End, .Value and their captures.
+func TestValueActionTypes(t *testing.T) {
+	for _, tc := range []struct{ src, rule, want string }{
+		{`rule a = x:"x" => $x.Value`, "a", `string`},
+		{`rule a = x:"x" => $x.Start`, "a", `int`},
+		{`rule a = x:"x" => $x.End - $x.Start`, "a", `int`},
+		{`rule a = _ => 100`, "a", `int`},
+		{`rule a = x:"x"* => $x.Value`, "a", `[]node[string]`},
+		{`rule a = x:"x"* => len($x)`, "a", `int`},
+		{`rule a = x:"x"* => len($x.Value)`, "a", `int`},
+		// The example of the record: map over the node of a repetition reads its elements.
+		{`rule a = x:(y:.)* => map($x, (i) => i.$y)`, "a", `[]node[string]`},
+		{`rule a = x:(y:.)* => map($x.Value, (i) => i.Value[0])`, "a", `[]node[string]`},
+		// Captures of rules have the rules' value types.
+		{"rule a = x:b => $x.Value\nrule b = \"b\"", "a", `string`},
+		{"rule a = x:b => $x.$y\nrule b = y:\"b\" \"c\"", "a", `node[string]`},
+		{"type Foo = { Name string }\nrule a = x:b => $x.Name\nrule b = y:\"b\" => Foo{Name: $y.Value}", "a", `string`},
+		// A capture that may not match is optional; one in every alternative is not.
+		{`rule a = (x:"a" / "b") => $x`, "a", `*node[string]`},
+		{`rule a = (x:"a" / x:"b") => $x.Value`, "a", `string`},
+		{`rule a = x:"a"? => $x`, "a", `*node[string]`},
+		// .$y on a union needs every argument to capture y, and joins their capture types.
+		{"rule a = x:(b / c) => $x.$y\nrule b = y:\"b\" \"1\"\nrule c = y:d \"2\"\nrule d = \"d\"", "a", `node[string] | d`},
+		// A member that only some arguments of a union have is optional.
+		{`rule a = x:"a" #missing => $x.Value`, "a", `*string`},
+		{`rule a = x:"a" #missing => $x.Start`, "a", `int`},
+		// Indexing a tuple with a constant reads that element.
+		{"rule a = x:(b c) => $x.Value[1]\nrule b = \"b\"\nrule c = \"c\"", "a", `c`},
+		{"rule a = x:(b c) => $x.Value[0]\nrule b = \"b\"\nrule c = \"c\"", "a", `b`},
+		// List functions.
+		{`rule a = x:"x"* => filter($x, (i) => len(i) > 0)`, "a", `[]node[string]`},
+		{`rule a = x:"x"* => foldl(0, $x, (n, i) => n + len(i))`, "a", `int`},
+		{`rule a = x:"x" y:"y"* => concat(list($x), $y)`, "a", `[]node[string]`},
+		{`rule a = x:"x" y:"1" => list($x.Value, $y.Start)`, "a", `[](string | int)`},
+		{`rule a = x:"x" => list($x, nil)`, "a", `[]*node[string]`},
+		// Struct fields and constructors use the declared types, with Match a string node.
+		{"type Foo = { Name Match }\nrule a = x:\"x\" => Foo{Name: $x}", "a", `Foo`},
+		{"type Foo = { Items []Match }\nrule a = x:\"x\"* => Foo{Items: $x.Value}", "a", `Foo`},
+		// Operators Rule actions see $lhs, $op and $rhs.
+		{"rule e = operators {\n    operand n:[0-9]+ => $n.Value\n    level { infix left \"+\" => $op }\n}", "e", `[]node[string] | node[string]`},
+		// A declared type is the rule's type; a declared node keeps the inferred arguments.
+		{"type Foo = {}\nrule a Foo = _ => Foo{}", "a", `Foo`},
+		{`rule a node = x:"x" => $x`, "a", `node[string]`},
+		{"type Word terminal\nrule a Word = [a-z]+", "a", `node[string]`},
+		// A rule whose action depends on its own value sees it as not known.
+		{"rule a = \"(\" x:b \")\" => $x.Value\nrule b = a / \"y\"", "a", `any`},
+		// _|_ | T is T, so a _|_ alternative does not make a choice optional.
+		{`rule a = x:("a" / _|_) => $x.Value`, "a", `string`},
+		{`rule a = x:("a" / _|_ @error(message="m")) => $x.Value`, "a", `string`},
+		{`rule a = x:("a" / _|_ #recover(skip="x")) => $x`, "a", `node[string] | error`},
+		{`rule a = ("a" / _|_) "b"`, "a", `node[(node[string], node[string])]`},
+		// nil joins as an optional type, and a value not known yet absorbs a union.
+		{`rule a = _ => list(nil)`, "a", `[]nil`},
+		{`rule a = x:"x" => list($x, nil, $x)`, "a", `[]*node[string]`},
+		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "a", `[]any`},
+		// Rule references stay symbolic, so a recursive rule needs no expansion.
+		{`rule a = x:("(" a ")")? => $x`, "a", `*node[(node[string], a, node[string])]`},
+	} {
+		types, errs := valueTypesOf(t, tc.src)
+		if len(errs) > 0 {
+			t.Errorf("%q: %v", tc.src, errs)
+		}
+		if got := types[tc.rule].String(); got != tc.want {
+			t.Errorf("%q: rule %s\ngot  %s\nwant %s", tc.src, tc.rule, got, tc.want)
+		}
+	}
+}
+
+// Actions written for the current model, and actions with type errors, are reported in the value
+// model.
+func TestValueActionErrors(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{`rule a = x:"x" => $x.Source`, "the source information of a node is not accessible from actions"},
+		{`rule a = x:"x" => text($x)`, "text is removed: read the string of a node with .Value"},
+		{`rule a = x:"x" => $x.startPos`, ".startPos is removed: use .Start or .End"},
+		{`rule a = x:"x" => $x.children`, ".children is removed: use .Value"},
+		{`rule a = x:(y:"y" "z") => $x.y`, `node[(node[string], node[string]), {"y": 0}] has no field y: read the capture with .$y`},
+		{`rule a = x:"x" => $x.$y`, "node[string] has no capture y"},
+		{"rule a = x:(b / c) => $x.$y\nrule b = y:\"b\" \"1\"\nrule c = \"c\"", "node[string] has no capture y"},
+		{`rule a = x:"x"? => $x.Value`, "cannot access .Value of *node[string]: the value may be nil"},
+		{`rule a = x:"x" => $x.Value + 1`, "invalid operands string and int for +"},
+		{`rule a = x:"x" => $x[0]`, "cannot index node[string]: index its .Value"},
+		{"rule a = x:(b c) => $x.Value[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
+		{`rule a = x:"x" => map($x, (i) => i)`, "map: expected a list, got node[string]"},
+		{"type Foo = { Name string }\nrule a = x:\"x\" => Foo{Name: $x}", "cannot use node[string] as string in field Name of Foo"},
+		{"type Foo = { Name Match }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
+		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
+		{"type Word terminal\nrule a = _ => Word{\"w\"}", `Word{...} constructs a node, which actions cannot construct`},
+		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
+		{`rule a = &(y:"y") x:"x" => $y`, "$y has no element in the value of its scope: captures in lookaheads and discards have no value"},
+		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},
+	} {
+		_, errs := valueTypesOf(t, tc.src)
+		found := false
+		for _, e := range errs {
+			found = found || e.Msg == tc.want
+		}
+		if !found {
+			t.Errorf("%q: want error %q, got %v", tc.src, tc.want, errs)
+		}
+	}
+}
+
+// The rules of a cycle of four rules through actions have the same types in every order.
+func TestValueActionCycleOrder(t *testing.T) {
+	rules := []string{
+		"rule r = x:a y:c \"q\" => len($x) + len($y)",
+		"rule a = x:b z:r \"q\" => len($x) + len($z)",
+		"rule b = x:a \"q\" => $x + 1",
+		"rule c = x:b \"q\" => $x + 1",
+	}
+	var want string
+	var permute func(k int)
+	permute = func(k int) {
+		if k == len(rules) {
+			types, _ := valueTypesOf(t, strings.Join(rules, "\n"))
+			got := fmt.Sprintf("r=%s a=%s b=%s c=%s", types["r"], types["a"], types["b"], types["c"])
+			if want == "" {
+				want = got
+			} else if got != want {
+				t.Errorf("order %q:\ngot  %s\nwant %s", rules, got, want)
+			}
+			return
+		}
+		for i := k; i < len(rules); i++ {
+			rules[k], rules[i] = rules[i], rules[k]
+			permute(k + 1)
+			rules[k], rules[i] = rules[i], rules[k]
+		}
+	}
+	permute(0)
+}
+
+// Errors in rules computed on demand are kept, also from a lambda typed more than once, and the
+// rules of a cycle through actions have the same types and errors in either order.
+func TestValueActionsOnDemand(t *testing.T) {
+	for _, src := range []string{
+		"rule a = x:\"x\"* y:b => foldl(0, $x, (n, i) => n + len($y.Value))\nrule b = z:\"z\" => $z.Source",
+		"rule b = z:\"z\" => $z.Source\nrule a = x:\"x\"* y:b => foldl(0, $x, (n, i) => n + len($y.Value))",
+	} {
+		if _, errs := valueTypesOf(t, src); len(errs) != 1 {
+			t.Errorf("%q: errors %v", src, errs)
+		}
+	}
+	var want string
+	for _, src := range []string{
+		"rule a = x:b => len($x)\nrule b = y:a => $y + \"s\"",
+		"rule b = y:a => $y + \"s\"\nrule a = x:b => len($x)",
+	} {
+		types, errs := valueTypesOf(t, src)
+		var msgs []string
+		for _, e := range errs {
+			msgs = append(msgs, e.Msg)
+		}
+		got := fmt.Sprintf("a=%s b=%s %v", types["a"], types["b"], msgs)
+		if want == "" {
+			want = got
+		} else if got != want {
+			t.Errorf("order changes the result:\n%s\n%s", want, got)
+		}
+		if !strings.Contains(got, "invalid operands int and string for +") {
+			t.Errorf("%q: %s", src, got)
+		}
 	}
 }

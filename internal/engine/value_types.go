@@ -80,12 +80,13 @@ type ruleTy struct{ name string }
 func (t ruleTy) String() string { return t.name }
 
 // vunion is the join of types in the value model: nested unions are flattened, duplicates and
-// _|_ removed, and a union with _ is _. Since T <= *T, a union with an optional argument is the
-// optional of the union of the arguments without their *.
+// _|_ removed, and a union with _ is _. Since T <= *T and nil <= *T, a union with an optional
+// argument or nil is the optional of the union of the other arguments without their *. A union
+// with a value not known yet (tyAny) is not known either.
 func vunion(ts ...ty) ty {
 	var alts []ty
 	seen := map[string]bool{}
-	optional := false
+	optional, null := false, false
 	var add func(t ty)
 	add = func(t ty) {
 		switch u := t.(type) {
@@ -98,6 +99,11 @@ func vunion(ts ...ty) ty {
 			optional = true
 			add(u.elem)
 			return
+		case basicTy:
+			if u == tyNil {
+				optional, null = true, true
+				return
+			}
 		}
 		// Rule and type names are separate namespaces, so the key includes the kind of type.
 		key := fmt.Sprintf("%T %s", t, t)
@@ -110,12 +116,16 @@ func vunion(ts ...ty) ty {
 	for _, t := range ts {
 		add(t)
 	}
-	for _, a := range alts {
-		if a == tyTop {
-			return tyTop
-		}
+	if slices.Contains(alts, ty(tyAny)) {
+		return tyAny
+	}
+	if slices.Contains(alts, ty(tyTop)) {
+		return tyTop
 	}
 	if optional {
+		if len(alts) == 0 && null {
+			return tyNil
+		}
 		if len(alts) == 0 {
 			return tyBottom
 		}
@@ -146,11 +156,26 @@ type valueElem struct {
 	caps []capIndex // the captures in this element, with paths relative to it
 }
 
-// valueInference computes value types. legacy holds the rule types of the current model, used for
-// actions until actions are checked in the value model.
+// valueInference computes value types. Rules are computed on demand, so that the type of a rule
+// referred to from an action is known when the action is checked.
 type valueInference struct {
-	legacy  map[string]ty
+	prog    *Program
 	control *compileControl
+	rules   map[string]*grammar.RuleDef
+	out     map[string]ty
+	// computing holds the depth of each rule being computed, and low the least depth of such a
+	// rule that the value of the rule being computed depends on.
+	computing map[string]int
+	low       int
+	// provisional holds the values of rules that depend on a rule being computed, which sees
+	// itself as not known; they hold until that rule is computed.
+	provisional map[string]provisionalValue
+	// errs holds the errors of actions in the value model. They are not reported yet: the
+	// grammars are written for the current model, which the backends still implement. errs holds
+	// the errors of the rule being computed, and final those of computed rules.
+	errs, final ErrorList
+	quiet       bool // while a lambda body is typed again with a wider parameter type
+	rule        *grammar.RuleDef
 }
 
 // valueTypes returns the value type of each rule of a type-checked program. It is computed on
@@ -160,30 +185,97 @@ func (p *Program) valueTypes() map[string]ty {
 		return nil
 	}
 	p.typed.valuesOnce.Do(func() {
-		p.typed.values = valueTypes(p.Grammar.Rules(), p.typed.rules, nil)
+		p.typed.values, p.typed.valueErrs = valueTypes(p, nil)
 	})
 	return p.typed.values
 }
 
-// valueTypes returns the value type of each rule.
-func valueTypes(rules []*grammar.RuleDef, legacy map[string]ty, control *compileControl) map[string]ty {
-	v := &valueInference{legacy: legacy, control: control}
-	out := map[string]ty{}
-	for _, rd := range rules {
-		control.poll()
-		out[rd.Name] = v.rule(rd)
+// valueErrors returns the errors of actions in the value model of a type-checked program.
+func (p *Program) valueErrors() ErrorList {
+	if p.valueTypes() == nil {
+		return nil
 	}
-	return out
+	return p.typed.valueErrs
 }
 
-func (v *valueInference) rule(rd *grammar.RuleDef) ty {
-	if rd.Action != nil {
-		return fromLegacy(v.legacy[rd.Name])
+// valueTypes returns the value type of each rule, and the errors of the actions.
+func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) {
+	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, computing: map[string]int{}, provisional: map[string]provisionalValue{}}
+	rules := p.Grammar.Rules()
+	for _, rd := range rules {
+		v.rules[rd.Name] = rd
 	}
+	for _, rd := range rules {
+		control.poll()
+		v.ruleValue(rd.Name)
+	}
+	return v.out, v.final
+}
+
+type provisionalValue struct {
+	t   ty
+	low int
+}
+
+// ruleValue returns the value type of the rule name. A rule whose action depends on its own value,
+// directly or through other rules, sees that value as not known. The values of the other rules of
+// such a cycle are computed again for each rule of the cycle, so that the result does not depend
+// on the order of the rules; their errors are reported only where they are computed for good.
+func (v *valueInference) ruleValue(name string) ty {
+	if t, ok := v.out[name]; ok {
+		return t
+	}
+	if d, ok := v.computing[name]; ok {
+		v.low = min(v.low, d)
+		return tyAny
+	}
+	if p, ok := v.provisional[name]; ok {
+		v.low = min(v.low, p.low)
+		return p.t
+	}
+	rd := v.rules[name]
+	if rd == nil {
+		return tyAny
+	}
+	d := len(v.computing)
+	v.computing[name] = d
+	low, rule, quiet, errs := v.low, v.rule, v.quiet, v.errs
+	v.low, v.rule, v.quiet, v.errs = d, rd, false, nil
+	t := v.ruleDef(rd)
+	mine, depends := v.errs, v.low
+	v.low, v.rule, v.quiet, v.errs = min(low, depends), rule, quiet, errs
+	delete(v.computing, name)
+	if depends < d {
+		// The value depends on a rule being computed: hold it until that rule is computed. The
+		// values held that depend on this rule now depend on that one, since this rule's depth
+		// is reused by the next rule computed.
+		for n, p := range v.provisional {
+			if p.low >= d {
+				v.provisional[n] = provisionalValue{p.t, depends}
+			}
+		}
+		v.provisional[name] = provisionalValue{t, depends}
+		return t
+	}
+	for n, p := range v.provisional {
+		if p.low >= d {
+			delete(v.provisional, n)
+		}
+	}
+	v.final = append(v.final, mine...)
+	v.out[name] = t
+	return t
+}
+
+func (v *valueInference) ruleDef(rd *grammar.RuleDef) ty {
 	if pr, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 		return v.operatorsRule(rd, pr)
 	}
-	return v.scopeValue(rd.Expr)
+	if rd.Action == nil {
+		return v.declared(rd, v.scopeValue(rd.Expr))
+	}
+	t := v.term(rd.Action, &valueEnv{caps: tupleNode(v.elems(rd.Expr)).caps})
+	return v.declared(rd, t)
 }
 
 // scopeValue is the value of e as the body of a scope: a rule body, an operand or a repetition
@@ -259,7 +351,12 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		valueless := false
 		count := map[string]int{}
 		var all []capIndex
+		alts := 0
 		for _, alt := range e.Alts {
+			if neverMatches(alt) {
+				continue // _|_ | T is T
+			}
+			alts++
 			el, ok := v.single(alt)
 			if !ok {
 				valueless = true
@@ -281,7 +378,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		// A name captured in only some alternatives is nil when another matched.
 		var caps []capIndex
 		for _, c := range all {
-			if count[c.name] < len(e.Alts) {
+			if count[c.name] < alts {
 				c.t = vopt(c.t)
 			}
 			caps = mergeCap(caps, c)
@@ -315,7 +412,10 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			}
 			// What recovers is one element: its value or an error.
 			el, ok := oneElem(elems, ungroupExpr(e.Expr))
-			if !ok {
+			switch {
+			case neverMatches(e.Expr):
+				el = valueElem{t: tyBottom} // only the error
+			case !ok:
 				el = valueElem{t: nodeTy{value: tupleTy{elems: []ty{}}}}
 			}
 			el.t = vunion(el.t, tyErr)
@@ -324,10 +424,26 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		return elems
 	case *grammar.InlineAction:
 		// Inline actions are not implemented; their values are not known yet.
-		return []valueElem{{t: tyTop}}
+		return []valueElem{{t: tyAny}}
 	}
 	// Top, bottom, anchors, lookaheads, discards, the cut and predicates have no value.
 	return nil
+}
+
+// neverMatches reports whether e is _|_, which has no value since it never matches.
+func neverMatches(e grammar.Expr) bool {
+	switch e := ungroupExpr(e).(type) {
+	case *grammar.Bottom:
+		return true
+	case *grammar.Attributed:
+		for _, a := range e.Attrs {
+			if a.Name == "recover" || a.Name == "missing" {
+				return false // recovery produces an error value
+			}
+		}
+		return neverMatches(e.Expr)
+	}
+	return false
 }
 
 // mergeCap adds c to caps, joining the types and paths of captures of the same name.
@@ -357,7 +473,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 	var ts []ty
 	for _, o := range pr.Operands {
 		if o.Action != nil {
-			ts = append(ts, tyTop)
+			ts = append(ts, v.term(o.Action, &valueEnv{caps: tupleNode(v.elems(o.Expr)).caps}))
 			continue
 		}
 		ts = append(ts, v.scopeValue(o.Expr))
@@ -365,13 +481,20 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 	for _, l := range pr.Levels {
 		for _, o := range l.Operators {
 			v.control.poll()
-			if o.Action != nil {
-				ts = append(ts, tyTop)
-				continue
-			}
 			op, ok := v.single(o.Expr)
 			if !ok {
 				op = valueElem{t: nodeTy{value: tupleTy{elems: []ty{}}}}
+			}
+			if o.Action != nil {
+				locals := map[string]ty{"op": op.t}
+				if o.Kind != grammar.Prefix {
+					locals["lhs"] = self
+				}
+				if o.Kind != grammar.Postfix {
+					locals["rhs"] = self
+				}
+				ts = append(ts, v.term(o.Action, &valueEnv{caps: op.caps, locals: locals}))
+				continue
 			}
 			var elems []valueElem
 			switch o.Kind {
@@ -385,7 +508,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			ts = append(ts, tupleNode(elems))
 		}
 	}
-	return vunion(ts...)
+	return v.declared(rd, vunion(ts...))
 }
 
 // fromLegacy maps a type of the current model to the value model: reserved node kinds become
