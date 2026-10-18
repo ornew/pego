@@ -155,11 +155,11 @@ func TestConstructedFieldChecks(t *testing.T) {
 				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
 				switch {
 				case in[1] == '!' && accepted:
-					if !strings.Contains(want, `"text":"yes"`) {
+					if !strings.Contains(want, `"value":"yes"`) {
 						t.Errorf("predicate %q (%s) rejected: %s", in, value, want)
 					}
 				case in[1] == '!':
-					if !strings.Contains(want, `"text":"no"`) {
+					if !strings.Contains(want, `"value":"no"`) {
 						t.Errorf("predicate %q (%s) accepted: %s", in, value, want)
 					}
 				case accepted:

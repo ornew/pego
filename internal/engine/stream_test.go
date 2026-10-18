@@ -26,8 +26,8 @@ func TestParseStream(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{
-		`(Seq "a" "=" "1" "\n" k="a" v="1")@record [9,13)`,
-		`(Seq "bc" "=" "22" "\n" k="bc" v="22")@record [13,19)`,
+		`(k:"a" "=" v:"1" "\n")@record [9,13)`,
+		`(k:"bc" "=" v:"22" "\n")@record [13,19)`,
 	}
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Errorf("got\n%s", strings.Join(got, "\n"))
@@ -37,7 +37,7 @@ func TestParseStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := n.String(); !strings.Contains(s, `[(Seq "a" "=" "1" "\n" k="a" v="1")@record (Seq "bc"`) {
+	if s := n.String(); !strings.Contains(s, `[(k:"a" "=" v:"1" "\n")@record (k:"bc"`) {
 		t.Errorf("got %s", s)
 	}
 }

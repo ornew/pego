@@ -29,7 +29,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 			}
 			rules := g.Rules()
 			rules[1].Expr = rules[0].Expr
-			shared, err := Compile(g, Options{})
+			shared, err := Compile(g, Options{SourceInfo: true})
 			if err != nil {
 				t.Fatal(err)
 			}

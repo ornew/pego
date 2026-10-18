@@ -204,7 +204,7 @@ func TestInferenceChainSavedValues(t *testing.T) {
 			}
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				n, err := q.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
-				if err != nil || n.String() != "(P)" {
+				if err != nil || n.String() != "P{}" {
 					t.Errorf("saved %s/%s result: %v, %v", backend, unit, n, err)
 				}
 			}

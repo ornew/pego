@@ -133,7 +133,7 @@ func TestRuleResultChecks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			untyped := compile(t, resultCheckGrammar(typ, "any"))
+			untyped := compileBare(t, resultCheckGrammar(typ, "any"))
 			limits := WorkLimits{MaxSteps: 1 << 30}
 			declared := checked.typed.fields["S"][0].t.String()
 			for _, in := range resultCheckInputs() {
@@ -211,10 +211,6 @@ func TestRuleResultChecks(t *testing.T) {
 					name = "List"
 				}
 				msg := fmt.Sprintf("cannot use %s as %s in result of rule %s", name, declared, rule)
-				if in[1] == '=' {
-					// An action result must be a node before its type matters.
-					msg = "action in rE: result must be a node, got " + value
-				}
 				switch {
 				case !resultChecked(checked, in[1]):
 					if strings.Contains(want, "in result of rule") {
@@ -443,7 +439,7 @@ rule e Num = operators {
 				t.Errorf("%q unchecked %s: %s\nwant %s", in, b, got, want)
 			}
 		}
-		if got := resultWith(plain, "1+2", o); !strings.Contains(got, `Num"1+2"`) {
+		if got := resultWith(plain, "1+2", o); !strings.Contains(got, `"1+2"@e`) {
 			t.Errorf("%s: %s", b, got)
 		}
 	}

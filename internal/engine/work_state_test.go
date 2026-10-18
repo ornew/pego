@@ -12,7 +12,7 @@ import (
 )
 
 func stateWorkParser(limits WorkLimits) *parser {
-	return &parser{input: input{control: newWorkControl(nil, limits)}}
+	return &parser{prog: &Program{}, input: input{control: newWorkControl(nil, limits)}}
 }
 
 func undoFixture(p *parser) (*frame, []*Node) {

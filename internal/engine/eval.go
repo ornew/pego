@@ -287,6 +287,10 @@ func (c *evalCtx) evalList(items []grammar.Term) (any, error) {
 	return value, err
 }
 
+// nodeMembers are the members of a node, and the removed ones that the checker reports: they are
+// not captures, which are read with x.$name.
+var nodeMembers = map[string]bool{"Start": true, "End": true, "Value": true, "startPos": true, "endPos": true, "children": true}
+
 func (c *evalCtx) member(x any, name string) (any, error) {
 	n, ok := x.(*Node)
 	if !ok || n == nil {

@@ -27,12 +27,12 @@ rule main = {x := 1} {y := 2} !({x := 3} {y := 4} "b") {x == 1} {y == 2} "a" $$ 
 
 func TestEnvironmentRollback(t *testing.T) {
 	for i, c := range envBindingCases {
-		want := `(V X=1 Y=2)`
+		want := `V{X: 1, Y: 2}`
 		if i == 2 {
-			want = `(V X=3 Y=4)`
+			want = `V{X: 3, Y: 4}`
 		}
 		if i == 3 {
-			want = `(V X=1)`
+			want = `V{X: 1}`
 		}
 		check(t, c.src, ok(c.inputs[0], want))
 	}

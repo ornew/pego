@@ -11,8 +11,21 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// compile compiles PEGO source.
+// compile compiles PEGO source with source information, so that results show rule names and
+// capture labels.
 func compile(t *testing.T, src string, opts ...Options) *Program {
+	t.Helper()
+	var o Options
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	o.SourceInfo = true
+	return compileBare(t, src, o)
+}
+
+// compileBare compiles PEGO source with the options as given: without source information unless
+// they request it.
+func compileBare(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()
 	g, err := syntax.Parse(src)
 	if err != nil {
@@ -22,8 +35,6 @@ func compile(t *testing.T, src string, opts ...Options) *Program {
 	if len(opts) > 0 {
 		o = opts[0]
 	}
-	// Tests read rule names and capture labels in the results.
-	o.SourceInfo = true
 	prog, err := Compile(g, o)
 	if err != nil {
 		t.Fatalf("compile error: %v\n%s", err, src)

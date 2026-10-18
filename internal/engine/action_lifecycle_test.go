@@ -33,7 +33,8 @@ func TestActionResultReleasesTracking(t *testing.T) {
 		{"typed nil", (*Node)(nil), nil},
 		{"node", &Node{Start: 90, End: 91, fresh: true}, nil},
 		{"error", nil, errors.New("action failed")},
-		{"invalid result", 1, nil},
+		{"boxed value", 1, nil},
+		{"invalid result", workActionFunc{params: 1}, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			prefix := &Node{Text: "keep"}

@@ -240,7 +240,7 @@ func projField(t grammar.Term) (string, bool) {
 		return "", false
 	}
 	x, ok := m.X.(*grammar.CaptureRef)
-	if !ok || x.Name != l.Params[0] || m.Name == "startPos" || m.Name == "endPos" || m.Name == "children" {
+	if !ok || x.Name != l.Params[0] || !strings.HasPrefix(m.Name, "$") && nodeMembers[m.Name] {
 		return "", false
 	}
 	// e.$f and e.f read the same capture of an element.

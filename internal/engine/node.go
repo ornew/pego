@@ -338,6 +338,8 @@ const (
 
 func (n *Node) shape() nodeShape {
 	switch n.kind.typeName() {
+	case TypeMatch:
+		return shapeString
 	case TypeSeq, TypeOperator:
 		return shapeTuple
 	case TypeList:

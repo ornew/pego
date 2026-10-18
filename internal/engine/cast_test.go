@@ -52,12 +52,12 @@ func TestCastAcrossBackends(t *testing.T) {
 
 func TestCastValues(t *testing.T) {
 	for _, tc := range []struct{ src, input, want string }{
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num"`},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"value":"12","rule":"n"`},
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast List to Num"},
 		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast List to []Num"},
 		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
-		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num"`},
-		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"text":"?"`},
+		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"value":"1","rule":"n"`},
+		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
 	} {
 		program := compile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -117,7 +117,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("formatted grammar does not parse: %v", err)
 	}
 	member := g.Rules()[0].Action.(*grammar.Member)
-	if cast, ok := member.X.(*grammar.Cast); !ok || member.Name != "startPos" {
+	if cast, ok := member.X.(*grammar.Cast); !ok || member.Name != "Start" {
 		t.Fatalf("cast %#v", member)
 	} else if _, ok := cast.Type.(*grammar.UnionType); !ok {
 		t.Fatalf("cast type %#v", cast.Type)

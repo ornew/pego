@@ -519,7 +519,7 @@ func (p *parser) fieldTypeError(v any, t *fieldType, field, typ string) error {
 // checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
 // type.
 func (p *parser) checkResult(t *fieldType, v *Node, rule string) {
-	if !p.fieldConforms(t, v) {
-		p.fail("cannot use %s as %s in result of rule %s", typeName(nodeOrNil(v)), t.text, rule)
+	if u := unboxNode(v); !p.fieldConforms(t, u) {
+		p.fail("cannot use %s as %s in result of rule %s", typeName(u), t.text, rule)
 	}
 }

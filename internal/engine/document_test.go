@@ -308,7 +308,7 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 	} else if doc.in.offs == nil {
 		t.Fatal("flat offsets missing after edit")
 	}
-	if n, err := doc.Parse(); err != nil || n.String() != `(Seq [(Seq "ab" "\n") (Seq "cd" "\n") (Seq "ef" "\n")])@main` {
+	if n, err := doc.Parse(); err != nil || n.String() != `([("ab" "\n") ("cd" "\n") ("ef" "\n")])@main` {
 		t.Fatalf("got %v, %v", n, err)
 	}
 }

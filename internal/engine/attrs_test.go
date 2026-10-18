@@ -32,7 +32,7 @@ rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 	if n == nil {
 		t.Fatalf("no tree: %v", err)
 	}
-	want := "(Seq [(Seq \"ab\" \";\")@stmt Error\"1x;\"{message=`1:4: syntax error: expected [a-z]`}@stmt (Seq \"cd\" \";\")@stmt Error\"9;\"{message=`1:10: syntax error: expected [a-z]`}@stmt])@main"
+	want := `([("ab" ";")@stmt error("1:4: syntax error: expected [a-z]") ("cd" ";")@stmt error("1:10: syntax error: expected [a-z]")])@main`
 	if got := n.String(); got != want {
 		t.Errorf("got  %s\nwant %s", got, want)
 	}

@@ -26,6 +26,12 @@ rule word = [a-z]+ #atomic`,
 			ok("a=1;b=2;", `(items:[(k:"a" "=" v:"1" ";") (k:"b" "=" v:"2" ";")])@main`),
 		)
 	})
+	t.Run("capture of an expression without a value", func(t *testing.T) {
+		// The capture's value is the unit tuple of the range matched.
+		check(t, `type T = { S string; N int }
+rule main = x:-"a" "b" => T{S: text($x), N: len($x.Value)}`, ok("ab", `T{N: 0, S: "a"}`))
+		check(t, `rule main = x:-"a"`, ok("a", `(x:())@main`))
+	})
 	t.Run("backtracking resets captures", func(t *testing.T) {
 		check(t, `rule main = x:"a" "b" / "a" "c" => R{X: $x}
 type R = { X *Match }`,
@@ -58,7 +64,7 @@ rule a = r
 rule b = r
 rule r = c:"q" e => $c
 rule e = _`
-	want := `[(Seq "q" "y") (Seq "q" "x") (Seq "q" "y")]@main`
+	want := `[("q" "y") ("q" "x") ("q" "y")]@main`
 	check(t, src, ok("qyqxqy", want), ok("qy", `[("q" "y")]@main`))
 	doc, err := compile(t, src).NewDocument("main", "qyqxqy")
 	if err != nil {
@@ -217,7 +223,6 @@ rule main = v1:"a" => A{X: $v1, X: $v1}`, `duplicate field X`},
 		{`rule main = "a" => nope(1)`, `unknown function nope`},
 		{`rule main = "a" => len(1, 2)`, `len takes 1 arguments, got 2`},
 		{`rule main = (x:"a") #atomic`, `capture x inside #atomic, -, or ! has no effect`},
-		{`rule main = x:-"a"`, `capture x of an expression without a value`},
 		{`rule main = "a" @nope`, `unknown attribute @nope`},
 		// A repetition element sees only its own captures, whether it has any or not.
 		{`rule main = n:"a" ({$n != nil} "x")* "y"`, `1:21: capture $n is not visible in a repetition element`},
@@ -257,7 +262,7 @@ rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", `T{S: "!"}`))
 func TestLargeIntegers(t *testing.T) {
 	prog := compile(t, `type T = { A int; B int; C int; D int; E int }
 rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D: 0 - 9223372036854775807 - 1, E: 4294967296}`)
-	want := `(T A=3000000000 B=-3000000000 C=9223372036854775807 D=-9223372036854775808 E=4294967296)`
+	want := `T{A: 3000000000, B: -3000000000, C: 9223372036854775807, D: -9223372036854775808, E: 4294967296}`
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		if n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b}); err != nil || n.String() != want {
 			t.Errorf("%v: got %v, %v, want %s", b, n, err, want)
@@ -286,7 +291,7 @@ func TestIntegerWrapAround(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, n := range []int64{1, 2} {
 			maxInt, minInt := int64(math.MaxInt64), int64(math.MinInt64)
-			want := fmt.Sprintf("(I Add=%d Big=%d Mul=%d Neg=%d Quo=%d Rem=%d Sub=%d)",
+			want := fmt.Sprintf("I{Add: %d, Big: %d, Mul: %d, Neg: %d, Quo: %d, Rem: %d, Sub: %d}",
 				maxInt+n, maxInt-n, maxInt*(n+1), -(-maxInt - n), minInt/-n, minInt%-n, minInt-n)
 			if got, err := prog.ParseWith("main", strings.Repeat("a", int(n)), ParseOptions{Backend: b}); err != nil || got.String() != want {
 				t.Errorf("%v, %d: got %v, %v, want %s", b, n, got, err, want)
@@ -327,21 +332,21 @@ func TestActionEnvironments(t *testing.T) {
 		for _, tc := range []struct{ input, want string }{
 			// The values peek defined do not reach main's calls, and its
 			// definitions are visible to its own calls.
-			{"a", "(Out Count=1 Items=[(Item Depth=0 Name=\"a\"@name Note=nil Size=1 Tag=`top`)] Sum=1 Tag=`top`)"},
-			{"a%b", "(Out Count=1 Items=[(Item Depth=0 Name=\"b\"@name Note=nil Size=1 Tag=`top`)] Sum=1 Tag=`top`)"},
+			{"a", `Out{Count: 1, Items: [Item{Depth: 0, Name: "a"@name, Note: nil, Size: 1, Tag: "top"}], Sum: 1, Tag: "top"}`},
+			{"a%b", `Out{Count: 1, Items: [Item{Depth: 0, Name: "b"@name, Note: nil, Size: 1, Tag: "top"}], Sum: 1, Tag: "top"}`},
 			// Callers' variables reach nested calls.
-			{"(((a)))", "(Out Count=1 Items=[(Item Depth=3 Name=\"a\"@name Note=nil Size=4 Tag=`top`)] Sum=34 Tag=`top`)"},
+			{"(((a)))", `Out{Count: 1, Items: [Item{Depth: 3, Name: "a"@name, Note: nil, Size: 4, Tag: "top"}], Sum: 34, Tag: "top"}`},
 			// A shadowing definition is visible only below its invocation.
-			{"a(#t:b)c?", "(Out Count=3 Items=[(Item Depth=0 Name=\"a\"@name Note=nil Size=1 Tag=`top`) (Item Depth=1 Name=\"b\"@name Note=nil Size=2 Tag=`top/t`) (Item Depth=0 Name=\"c\"@name Note=\"?\" Size=1 Tag=`top`)] Sum=14 Tag=`top`)"},
+			{"a(#t:b)c?", `Out{Count: 3, Items: [Item{Depth: 0, Name: "a"@name, Note: nil, Size: 1, Tag: "top"} Item{Depth: 1, Name: "b"@name, Note: nil, Size: 2, Tag: "top/t"} Item{Depth: 0, Name: "c"@name, Note: "?", Size: 1, Tag: "top"}], Sum: 14, Tag: "top"}`},
 			// The undefined variable fails deep's predicate unless the
 			// left operand of || short-circuits it.
-			{"((b))", "(Out Count=1 Items=[(Item Depth=2 Name=\"b\"@name Note=nil Size=3 Tag=`top`)] Sum=23 Tag=`top`)"},
-			{"#x:((b))", "(Out Count=1 Items=[(Item Depth=2 Name=\"b\"@name Size=100 Tag=`top/x`)] Sum=120 Tag=`top`)"},
+			{"((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Note: nil, Size: 3, Tag: "top"}], Sum: 23, Tag: "top"}`},
+			{"#x:((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Size: 100, Tag: "top/x"}], Sum: 120, Tag: "top"}`},
 			// shout's definition is rolled back when it fails.
-			{"a!!", "(Out Count=1 Items=[(Item Depth=0 Name=\"a\"@name Note=\"!\" Size=-1 Tag=`shadow`)] Sum=-1 Tag=`top`)"},
-			{"ab?", "(Out Count=1 Items=[(Item Depth=0 Name=\"ab\"@name Note=\"?\" Size=2 Tag=`top`)] Sum=2 Tag=`top`)"},
+			{"a!!", `Out{Count: 1, Items: [Item{Depth: 0, Name: "a"@name, Note: "!", Size: -1, Tag: "shadow"}], Sum: -1, Tag: "top"}`},
+			{"ab?", `Out{Count: 1, Items: [Item{Depth: 0, Name: "ab"@name, Note: "?", Size: 2, Tag: "top"}], Sum: 2, Tag: "top"}`},
 			// The last repetition element's definition remains.
-			{"[a,bc]", "(Out Count=1 Items=[(Item Depth=0 Name=\"]\" Size=2 Tag=`bc`)] Sum=2 Tag=`top`)"},
+			{"[a,bc]", `Out{Count: 1, Items: [Item{Depth: 0, Name: "]", Size: 2, Tag: "bc"}], Sum: 2, Tag: "top"}`},
 		} {
 			if got, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: b}); err != nil || got.String() != tc.want {
 				t.Errorf("%v %q: got %v, %v\nwant %s", b, tc.input, got, err, tc.want)
@@ -368,8 +373,8 @@ rule main = x:"a" => T{N: len("日本"), M: len(text($x) + "é")}`)
 			o    ParseOptions
 			want string
 		}{
-			{ParseOptions{Backend: b}, `(T M=2 N=2)`},
-			{ParseOptions{Backend: b, Unit: Bytes}, `(T M=3 N=6)`},
+			{ParseOptions{Backend: b}, `T{M: 2, N: 2}`},
+			{ParseOptions{Backend: b, Unit: Bytes}, `T{M: 3, N: 6}`},
 		} {
 			if n, err := prog.ParseWith("main", "a", tc.o); err != nil || n.String() != tc.want {
 				t.Errorf("%v %v: got %v, %v, want %s", b, tc.o.Unit, n, err, tc.want)

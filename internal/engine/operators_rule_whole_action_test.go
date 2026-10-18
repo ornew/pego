@@ -79,7 +79,7 @@ func TestOperatorsRuleExplicitDefaultAction(t *testing.T) {
     level { infix left "+" }
 }`
 	plain := compile(t, source)
-	for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+	for _, opts := range []Options{{SourceInfo: true}, {NoTypeCheck: true, SourceInfo: true}} {
 		g, err := syntax.Parse(source + " => ...")
 		if err != nil {
 			t.Fatal(err)

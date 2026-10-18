@@ -168,7 +168,7 @@ func TestAnchors(t *testing.T) {
 		ok("a", `("a")@main`),
 	)
 	check(t, `rule main = (^ [a-z]+ #atomic $ "\n"?)*`,
-		ok("ab\ncd\n", `[(Seq "ab" "\n") (Seq "cd" "\n")]`+"@main"),
+		ok("ab\ncd\n", `[("ab" "\n") ("cd" "\n")]@main`),
 	)
 	check(t, `rule main = "a" ^ "b"`,
 		fails("ab", `1:2: syntax error: expected beginning of line`),

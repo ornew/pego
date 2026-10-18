@@ -108,7 +108,7 @@ func TestCaptureAccessSyntax(t *testing.T) {
 		t.Fatalf("formatted:\n%s", got)
 	}
 	body := g.Rules()[0].Action.(*grammar.Call).Args[1].(*grammar.Lambda).Body.(*grammar.Member)
-	if inner, ok := body.X.(*grammar.Member); !ok || inner.Name != "$y" || body.Name != "startPos" {
+	if inner, ok := body.X.(*grammar.Member); !ok || inner.Name != "$y" || body.Name != "Start" {
 		t.Fatalf("access %#v", body)
 	}
 	program := compile(t, `rule main = xs:(y:"a" "b")* $$ => $xs[0].$y`)

@@ -207,7 +207,7 @@ func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 								wantOp = "a"
 							}
 							op, ok := n.Field("Op").(*Node)
-							if !ok || op.Text != wantOp {
+							if !ok || leafText(op) != wantOp {
 								t.Fatalf("%v/%v: wrong operator capture: %v; want %q", backend, unit, op, wantOp)
 							}
 						}
@@ -245,4 +245,20 @@ func BenchmarkOperatorsRulePrefixPartCut(b *testing.B) {
 			}
 		}
 	}
+}
+
+// leafText returns the text of the strings in the value of n, in order: the text an operator
+// matched when its line is a sequence.
+func leafText(n *Node) string {
+	if n == nil {
+		return ""
+	}
+	if n.shape() == shapeString {
+		return n.Text
+	}
+	var b strings.Builder
+	for _, c := range n.Children {
+		b.WriteString(leafText(c))
+	}
+	return b.String()
 }

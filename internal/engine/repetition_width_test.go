@@ -132,7 +132,7 @@ func TestWideRepetitionBounds(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					loaded, _, err := LoadProgram(data, Options{})
+					loaded, _, err := LoadProgram(data, Options{SourceInfo: true})
 					if err != nil {
 						t.Errorf("load: %v", err)
 						continue

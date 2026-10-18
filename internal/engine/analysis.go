@@ -640,8 +640,8 @@ func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *
 	}, control)
 }
 
-// ruleUsesPositions reports whether the rule's actions or predicates refer to startPos or
-// endPos.
+// ruleUsesPositions reports whether the rule's actions or predicates read a position: a member
+// Start or End, which may also be a struct field of that name.
 func ruleUsesPositions(r *grammar.RuleDef) bool {
 	return ruleUsesPositionsControlled(r, nil)
 }
@@ -650,7 +650,7 @@ func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bo
 	found := false
 	walkRuleTermsControlled(r, func(x grammar.Term) {
 		control.poll()
-		if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") {
+		if m, ok := x.(*grammar.Member); ok && (m.Name == "Start" || m.Name == "End") {
 			found = true
 		}
 	}, control)
