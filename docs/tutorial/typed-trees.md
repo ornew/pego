@@ -81,8 +81,8 @@ pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... Entry{Key: $v, Value: $k}
 ```
 
 ```text
-pego: bad-type.pego:20:64: cannot use Number | String | Bool as Key in field Key of Entry
-bad-type.pego:20:73: cannot use Key as Number | String | Bool in field Value of Entry
+pego: bad-type.pego:20:60: cannot use Number | String | Bool as Key in field Key of Entry
+bad-type.pego:20:69: cannot use Key as Number | String | Bool in field Value of Entry
 ```
 
 and misspelling a field name:
@@ -92,7 +92,7 @@ pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
 ```
 
 ```text
-pego: bad-field.pego:20:73: Entry has no field Valu
+pego: bad-field.pego:20:69: Entry has no field Valu
 ```
 
 ### Using the Tree from Go

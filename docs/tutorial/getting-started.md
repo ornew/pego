@@ -22,7 +22,7 @@ command-line tool is the quickest way to experiment, so install it first.
 go install github.com/ornew/pego/cmd/pego@latest    # command-line tool
 ```
 
-Running `pego` without arguments lists its commands (`parse`, `fmt`, `convert`, `gen`, `compile`). To use the library
+Running `pego` without arguments lists its commands, among them `parse`, `test`, `fmt`, `lint`, `gen` and `compile`. To use the library
 from your own program, add it to your module:
 
 ```bash

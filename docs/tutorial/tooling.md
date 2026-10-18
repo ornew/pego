@@ -62,7 +62,7 @@ Every item of the expected list comes from one of these calls, so you can see wh
 ## What Does the Parser Do?
 
 `pego trace` prints the whole call tree of a parse: every rule call with its start position and whether it matched.
-This is the start of the trace for `a = 1`; the rest shows the failed attempt at a second entry:
+This is the trace for `a = 1`, including the failed attempt at a second entry at the end:
 
 ```bash
 pego trace -g config.pego -i 'a = 1'
@@ -132,8 +132,8 @@ pego sample -g config.pego -n 3 -seed 1 -invalid
 "\t]"
 ```
 
-The first four lines are valid inputs and the last three are not; the grammar happily accepts a key with no value
-only where the language allows it.
+The first four lines are valid inputs and the last three are not; the invalid ones are a key without
+`=` and a value, or no entry at all.
 
 ## In the Editor and the Browser
 

@@ -9,7 +9,7 @@ A fixture suite for the configuration grammar, a lint run that finds a real mist
 
 ## Before You Start
 
-Complete [Building Typed Trees](typed-trees.md): you need `config.pego`.
+Complete [Building Typed Trees](typed-trees.md) and [Reporting Errors](errors.md): you need `config.pego` and `robust.pego`.
 
 ## A Fixture Suite
 

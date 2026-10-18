@@ -59,9 +59,12 @@ jobs:
 
 ## Expected Output
 
-For a clean grammar the script prints only what `pego test` prints, and the exit status is 0:
+For a clean grammar the script prints only what `pego test` prints, and the exit status is 0. `pego test` prints one
+`PASS` line for each case on each backend, one for each backend equivalence check, and a summary. For a suite of one case
+on the `closure` backend:
 
 ```text
+PASS empty file [closure]
 all fixtures passed
 ```
 

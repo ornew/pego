@@ -39,7 +39,7 @@ pego: 1:13: syntax error: expected "\"", [^"]
 Two things to remember about these messages:
 
 - The position is the farthest point *any* alternative reached, which is usually where the real mistake is, but not
-  always: a failed literal is reported at the place where the literal began. For the second line `debug = tru`, the
+  always: a failed literal is reported at the place where the literal began. For the input `host = "localhost"` followed by the line `debug = tru`, the
   error is at 2:9, the `t` of `tru`, not at the end of the line.
 - The list is mechanical (it is built from the literals and classes that failed there). To give users something
   friendlier, attach `@error(message="...")` to an expression. Replacing `value` in `config.pego` with
@@ -173,7 +173,7 @@ Mistakes in the *grammar* are reported before any input is parsed, also with a p
 containing `rule main = item` has an undefined rule:
 
 ```text
-pego: bad.pego:1:12: undefined rule item
+pego: bad.pego:1:13: undefined rule item
 ```
 
 Asking for a start rule that does not exist with `pego parse -g config.pego -s nosuch -i a` fails the same way:
