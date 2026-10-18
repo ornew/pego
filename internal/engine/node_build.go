@@ -34,10 +34,16 @@ func NewNode(k Kind, start, end int, text string, elems []*Node, typ string, fie
 func SetNodeElems(n *Node, elems []*Node) { n.children = elems }
 
 // SetNodeText replaces the string of the KindString node n.
-func SetNodeText(n *Node, text string) { n.text = text }
+func SetNodeText(n *Node, text string) {
+	n.materialize()
+	n.text = text
+}
 
 // SetNodeStart replaces the start of the range of n.
 func SetNodeStart(n *Node, start int) { n.start = int32(start) }
 
 // SetNodeField sets the field name of n to v, adding it if absent.
-func SetNodeField(n *Node, name string, v any) { n.fields.set(name, v) }
+func SetNodeField(n *Node, name string, v any) {
+	n.materialize()
+	n.fields.set(name, v)
+}

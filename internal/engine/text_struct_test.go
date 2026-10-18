@@ -1,9 +1,12 @@
 package engine
 
 import (
+	"encoding/json"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -90,4 +93,93 @@ func TestGeneratedTextStructs(t *testing.T) {
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
 	}
+}
+
+// TestTextStructNodeViews checks that a text struct, which keeps its Text field unboxed, reads
+// like the struct its action makes through every view of a tree: printing, JSON, fields, Walk,
+// clones, snapshots, structural queries and Documents.
+func TestTextStructNodeViews(t *testing.T) {
+	ref := compileBare(t, textStructGrammar, Options{NoTypeCheck: true, noTextStructs: true})
+	prog := compileBare(t, textStructGrammar, Options{NoTypeCheck: true})
+	query, err := (*QuerySchema)(nil).CompileStructuralQuery(QueryPattern{Type: "Name", Fields: []QueryFieldPattern{{Name: "Text", Pattern: QueryPattern{Capture: "t"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	views := func(p *Program, input string) string {
+		var b strings.Builder
+		root, err := p.Parse("main", input)
+		fmt.Fprintf(&b, "%s %v\n", root, err)
+		if root == nil {
+			return b.String()
+		}
+		js, _ := json.Marshal(root)
+		fmt.Fprintf(&b, "json %s\nclone %s\n", js, root.Clone())
+		Walk(root, func(v WalkVisit) (WalkAction, error) {
+			fmt.Fprintf(&b, "walk %d %v %s\n", v.Depth, v.Edge, viewValue(v.Value))
+			if n := v.Node; n != nil && n.Kind() == KindStruct {
+				fmt.Fprintf(&b, "  Text=%s N=%s", viewValue(n.Field("Text")), viewValue(n.Field("N")))
+				for name, value := range n.Fields() {
+					fmt.Fprintf(&b, " %s:%s", name, viewValue(value))
+				}
+				b.WriteString("\n")
+			}
+			return WalkContinue, nil
+		})
+		matches, err := query.Matches(root, QueryOptions{})
+		fmt.Fprintf(&b, "query %v", err)
+		for _, m := range matches {
+			for _, c := range m.Captures {
+				fmt.Fprintf(&b, " %s=%s", c.Name, viewValue(c.Value))
+			}
+		}
+		b.WriteString("\n")
+		d, err := p.NewChangeDocumentWith("main", input, ParseOptions{}, 16)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s, err := d.Snapshot()
+		if err == nil {
+			var walk func(n SnapshotNode, depth int)
+			walk = func(n SnapshotNode, depth int) {
+				fmt.Fprintf(&b, "snapshot %d %s %q", depth, n.Type(), n.Text())
+				for _, f := range n.Fields() {
+					if c, ok := f.Value.(SnapshotNode); ok {
+						fmt.Fprintf(&b, " %s:", f.Name)
+						walk(c, depth+1)
+					} else {
+						fmt.Fprintf(&b, " %s:%#v", f.Name, f.Value)
+					}
+				}
+				for i := 0; i < n.ChildCount(); i++ {
+					walk(n.Child(i), depth+1)
+				}
+				b.WriteString("\n")
+			}
+			walk(s.Root(), 0)
+		}
+		fmt.Fprintf(&b, "snapshot error %v\n", err)
+		// An edit that reuses the unchanged items.
+		if err := d.Edit(0, 0, "zz "); err == nil {
+			again, err := d.Parse()
+			fmt.Fprintf(&b, "edited %s %v\n", again, err)
+			s2, err := d.Snapshot()
+			if err == nil {
+				fmt.Fprintf(&b, "changes %v\n", equalChangeSnapshots(s, s2))
+			}
+		}
+		return b.String()
+	}
+	for _, input := range []string{"ab", "ab 12 3.5", "<x> ! #a # @b @", "[ab]ab", "[ab]cd 1", "ab ?"} {
+		if got, want := views(prog, input), views(ref, input); got != want {
+			t.Errorf("%q:\n got %s\nwant %s", input, got, want)
+		}
+	}
+}
+
+// viewValue prints a value of a tree, a node by its value.
+func viewValue(v any) string {
+	if n, ok := v.(*Node); ok {
+		return fmt.Sprintf("%s[%d,%d)", n, n.Start(), n.End())
+	}
+	return fmt.Sprintf("%#v", v)
 }

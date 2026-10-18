@@ -66,7 +66,7 @@ func TestAliasNodeIdentity(t *testing.T) {
 						t.Errorf("%s: got type %s, want %s", unit, n.Type(), wantType)
 					}
 					terminal := n
-					if v, ok := n.fields.Get("Value"); ok {
+					if v, ok := n.field("Value"); ok {
 						terminal, _ = v.(*Node)
 					}
 					if terminal == nil || terminal.Type() != "Num" || terminal.text != "éé" {

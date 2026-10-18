@@ -176,7 +176,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.fields.sorted()
+					frame.fields = value.fieldList().sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}

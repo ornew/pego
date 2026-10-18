@@ -803,10 +803,10 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 }
 
 // textStruct makes the value of a rule of textStructRule: the struct its action makes, whose
-// field Text is the matched text, with the rule's range.
+// field Text is the matched text, with the rule's range. The node keeps the text unboxed
+// (textField).
 func (p *parser) textStruct(r *rule, start int) *Node {
-	fs := append(p.fields(1), NodeField{"Text", p.text(start, p.pos)})
-	return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), fields: fs})
+	return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are
@@ -830,6 +830,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
+	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(s.names))
 	}

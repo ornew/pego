@@ -28,14 +28,15 @@ type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
 	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
 	end      int32
-	text     string  // the text of a string node
+	text     string  // the text of a string node, and the Text field of a text struct
 	children []*Node // the elements of a tuple or list
 	fields   Fields  // struct fields and captures
 
-	fresh    bool
-	terminal bool
-	labeled  bool // the captures in Fields are output (source information)
-	box      any  // the value carried by a box
+	fresh     bool
+	terminal  bool
+	labeled   bool // the captures in Fields are output (source information)
+	textField bool // a struct whose one field, Text, is text, kept unboxed (see fieldList)
+	box       any  // the value carried by a box
 }
 
 // Type returns the node's type name: Match, Seq, List, Operator or Error for the kinds of nodes,
@@ -382,8 +383,29 @@ func (n *Node) field(name string) any {
 	if n == nil {
 		return nil
 	}
+	if n.textField {
+		if name == "Text" {
+			return n.text
+		}
+		return nil
+	}
 	v, _ := n.fields.Get(name)
 	return v
+}
+
+// fieldList returns the fields of n, making the field list of a text struct.
+func (n *Node) fieldList() Fields {
+	if n.textField {
+		return Fields{{Name: "Text", Value: n.text}}
+	}
+	return n.fields
+}
+
+// materialize gives a text struct its field list, before the list is changed.
+func (n *Node) materialize() {
+	if n.textField {
+		n.fields, n.text, n.textField = n.fieldList(), "", false
+	}
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
@@ -399,7 +421,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fields {
+		for _, f := range n.fieldList() {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -581,7 +603,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.fields.sorted()
+			fields := n.fieldList().sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -2060,8 +2082,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 	}
 	if r.terminalType != "" {
 		if r.textStruct {
-			fs := append(p.fields(1), NodeField{"Text", p.text(start, p.pos)})
-			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), fields: fs})
+			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 		}
 		kind := r.kinds.termValue
 		if sourceInfo {
@@ -2105,6 +2126,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
+	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(names))
 	}
@@ -2647,7 +2669,10 @@ func (c *actx) member(x any, name string) any {
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	v, _ := c.p.valueField(n.fields, name)
+	if n.textField && (!workControlsEnabled || c.p.control == nil) {
+		return n.field(name)
+	}
+	v, _ := c.p.valueField(n.fieldList(), name)
 	return v
 }
 
@@ -3472,7 +3497,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.fields.sorted()
+					frame.fields = value.fieldList().sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
@@ -3768,7 +3793,7 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			fields := x.fields.sorted()
+			fields := x.fieldList().sorted()
 			for i := len(fields) - 1; i >= 0; i-- {
 				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}

@@ -318,7 +318,11 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
-	v, _ := c.p.valueField(n.fields, name)
+	if n.textField && (!workControlsEnabled || c.p.control == nil) {
+		v, _ := n.field(name)
+		return v, nil
+	}
+	v, _ := c.p.valueField(n.fieldList(), name)
 	return v, nil
 }
 

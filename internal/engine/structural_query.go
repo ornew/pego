@@ -306,12 +306,12 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			if category != "struct" && category != "error" {
 				return nil, false, nil
 			}
-			if err := b.charge(uint64(len(p.Fields) + len(n.fields))); err != nil {
+			if err := b.charge(uint64(len(p.Fields) + n.fieldCount())); err != nil {
 				return nil, false, err
 			}
 			for i := len(p.Fields) - 1; i >= 0; i-- {
 				f := &p.Fields[i]
-				value, ok := n.fields.Get(f.Name)
+				value, ok := n.field(f.Name)
 				if !ok {
 					return nil, false, nil
 				}

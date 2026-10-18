@@ -117,7 +117,7 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			fields := x.fields.sorted()
+			fields := x.fieldList().sorted()
 			for i := len(fields) - 1; i >= 0; i-- {
 				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}

@@ -243,6 +243,106 @@ rule x = operators {
 	t.Run("source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
 }
 
+// nodeViews renders a parse result through the Node API other than JSON: the fields, length and
+// text of every node Walk visits, and the String of the result. nodeViewsSource is the same
+// function for a generated package, whose name replaces PKG.
+func nodeViews(n *Node) string {
+	if n == nil {
+		return "nil"
+	}
+	// scalar prints a scalar value and only the presence of any other: printing a node or a list
+	// of nodes inside every visit would print its subtree again.
+	scalar := func(x any) string {
+		switch x.(type) {
+		case nil, string, int, bool:
+			return fmt.Sprint(x)
+		}
+		return "value"
+	}
+	// A node shared by several edges, such as an operand that is also a capture of its
+	// operator, is printed once: walking it again on every edge can take exponential time.
+	seen := map[*Node]bool{}
+	var b strings.Builder
+	err := Walk(n, func(v WalkVisit) (WalkAction, error) {
+		fmt.Fprintf(&b, "%d %d %d %s %d ", v.Depth, v.Edge.Kind, v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex)
+		if v.Node == nil {
+			fmt.Fprintf(&b, "%s;", scalar(v.Value))
+			return WalkContinue, nil
+		}
+		if seen[v.Node] {
+			b.WriteString("seen;")
+			return WalkSkip, nil
+		}
+		seen[v.Node] = true
+		for name, x := range v.Node.Fields() {
+			fmt.Fprintf(&b, "%s=%s=%t,", name, scalar(x), v.Node.Field(name) != nil)
+		}
+		if v.Node.Len() == 0 {
+			// The text of a node whose operands are fields spans its subtree: print the
+			// length of a long one, or a deep tree prints its input once per level.
+			if s := v.Node.Text(); len(s) <= 64 {
+				b.WriteString(s)
+			} else {
+				fmt.Fprintf(&b, "text(%d)", len(s))
+			}
+		}
+		b.WriteString(";")
+		return WalkContinue, nil
+	})
+	if err != nil {
+		b.WriteString(err.Error())
+	}
+	return b.String() + n.String()
+}
+
+const nodeViewsSource = `func() string {
+	n, _ := n.(*PKG.Node)
+	if n == nil {
+		return "nil"
+	}
+	// scalar prints a scalar value and only the presence of any other: printing a node or a list
+	// of nodes inside every visit would print its subtree again.
+	scalar := func(x any) string {
+		switch x.(type) {
+		case nil, string, int, bool:
+			return fmt.Sprint(x)
+		}
+		return "value"
+	}
+	seen := map[*PKG.Node]bool{}
+	var b strings.Builder
+	err := PKG.WalkTree(n, func(v PKG.WalkVisit) (PKG.WalkAction, error) {
+		fmt.Fprintf(&b, "%d %d %d %s %d ", v.Depth, v.Edge.Kind, v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex)
+		if v.Node == nil {
+			fmt.Fprintf(&b, "%s;", scalar(v.Value))
+			return PKG.WalkContinue, nil
+		}
+		if seen[v.Node] {
+			b.WriteString("seen;")
+			return PKG.WalkSkip, nil
+		}
+		seen[v.Node] = true
+		for name, x := range v.Node.Fields() {
+			fmt.Fprintf(&b, "%s=%s=%t,", name, scalar(x), v.Node.Field(name) != nil)
+		}
+		if v.Node.Len() == 0 {
+			// The text of a node whose operands are fields spans its subtree: print the
+			// length of a long one, or a deep tree prints its input once per level.
+			if s := v.Node.Text(); len(s) <= 64 {
+				b.WriteString(s)
+			} else {
+				fmt.Fprintf(&b, "text(%d)", len(s))
+			}
+		}
+		b.WriteString(";")
+		return PKG.WalkContinue, nil
+	})
+	if err != nil {
+		b.WriteString(err.Error())
+	}
+	return b.String() + n.String()
+}()`
+
 func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opts GenOptions) {
 	t.Helper()
 	dir := t.TempDir()
@@ -254,7 +354,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		}
 	}
 	write("go.mod", "module gentest\n\ngo 1.24\n")
-	var imports, parsers, recognizers strings.Builder
+	var imports, parsers, recognizers, viewers strings.Builder
 	var inputs [][]string
 	var want []string
 	for i, c := range cases {
@@ -271,13 +371,14 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n", i, i)
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, g%[3]d.WithUnit(u)); return n, err },\n", i, i, i)
 		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
+		fmt.Fprintf(&viewers, "\tfunc(n any) string { return %s },\n", strings.ReplaceAll(nodeViewsSource, "PKG", fmt.Sprintf("g%d", i)))
 		inputs = append(inputs, c.inputs)
 		// The generated code projects (project.go), and records source information as asked.
 		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
 		for _, in := range c.inputs {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})
-				out := resultJSON(n, err)
+				out := resultJSON(n, err) + " views: " + strconv.Quote(nodeViews(n))
 				_, err = prog.ParseWith("main", in, ParseOptions{Unit: unit, Recognize: true})
 				want = append(want, out+" recognize: "+strconv.Quote(fmt.Sprint(err)))
 			}
@@ -290,6 +391,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 `+imports.String()+`)
 
 var parsers = []func(string, bool) (any, error){
@@ -297,6 +399,9 @@ var parsers = []func(string, bool) (any, error){
 
 var recognizers = []func(string, bool) error{
 `+recognizers.String()+`}
+
+var viewers = []func(any) string{
+`+viewers.String()+`}
 
 func main() {
 	var inputs [][]string
@@ -311,7 +416,7 @@ func main() {
 					out["err"] = err.Error()
 				}
 				b, _ := json.Marshal(out)
-				fmt.Println(string(b) + " recognize: " + strconv.Quote(fmt.Sprint(recognizers[i](s, bytes))))
+				fmt.Println(string(b) + " views: " + strconv.Quote(viewers[i](n)) + " recognize: " + strconv.Quote(fmt.Sprint(recognizers[i](s, bytes))))
 			}
 		}
 	}

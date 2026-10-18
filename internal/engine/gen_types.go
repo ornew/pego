@@ -732,7 +732,7 @@ func (a *astConv) stepWork() {
 func (a *astConv) field(n *Node, name string) any {
  if !workControlsEnabled || a.control == nil { return n.field(name) }
  if n == nil { return nil }
- for _, f := range n.fields {
+ for _, f := range n.fieldList() {
   a.stepWork()
   if f.Name == name { return f.Value }
  }
