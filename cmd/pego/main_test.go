@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,6 +89,59 @@ func TestFmt(t *testing.T) {
 	}
 	if out, err := runCLI(t, "", "fmt", "-l", g); err != nil || out != "" {
 		t.Errorf("-l after -w: got %q, %v", out, err)
+	}
+}
+
+// TestFmtCheck checks the exit status of fmt -check: 0 when every file is formatted, 1 when some
+// differ (listing them, as -l does), and 2 when one cannot be formatted.
+func TestFmtCheck(t *testing.T) {
+	status := func(err error) int {
+		var c exitCoder
+		switch {
+		case err == nil:
+			return 0
+		case errors.As(err, &c):
+			return c.ExitCode()
+		}
+		return 1
+	}
+	clean := writeFile(t, "clean.pego", tidy)
+	dirty := writeFile(t, "dirty.pego", messy)
+	broken := writeFile(t, "broken.pego", "rule main = (")
+	for _, tc := range []struct {
+		name   string
+		stdin  string
+		args   []string
+		out    string
+		status int
+	}{
+		{"clean", "", []string{clean}, "", 0},
+		{"dirty", "", []string{clean, dirty}, dirty + "\n", 1},
+		{"broken", "", []string{dirty, broken}, dirty + "\n", 2},
+		{"missing", "", []string{clean, broken + ".missing.pego"}, "", 2},
+		{"clean stdin", tidy, nil, "", 0},
+		{"dirty stdin", messy, nil, "<standard input>\n", 1},
+		{"with -l", "", []string{"-l", dirty}, dirty + "\n", 1},
+	} {
+		out, err := runCLI(t, tc.stdin, append([]string{"fmt", "-check"}, tc.args...)...)
+		if out != tc.out || status(err) != tc.status {
+			t.Errorf("%s: got %q, status %d (%v), want %q, status %d", tc.name, out, status(err), err, tc.out, tc.status)
+		}
+	}
+	if data, err := os.ReadFile(dirty); err != nil || string(data) != messy {
+		t.Errorf("-check rewrote a file: %q, %v", data, err)
+	}
+	for _, args := range [][]string{{"-check", "-w", dirty}, {"-check", "-syntax", dirty}} {
+		if _, err := runCLI(t, "", append([]string{"fmt"}, args...)...); err == nil || status(err) != 1 {
+			t.Errorf("%v: got %v, want a usage error", args, err)
+		}
+	}
+	// The plain modes keep exit status 1 for every error, and -l status 0 for a listing.
+	if _, err := runCLI(t, "", "fmt", "-l", dirty); err != nil {
+		t.Errorf("-l: %v", err)
+	}
+	if _, err := runCLI(t, "", "fmt", "-l", broken); status(err) != 1 {
+		t.Errorf("-l with a broken file: status %d", status(err))
 	}
 }
 

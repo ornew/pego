@@ -633,12 +633,9 @@ Check the grammar as a file, too:
 
 - **`pego lint`** finds alternatives that can never match, contradictory anchors, nullable repetitions and unused rules
   ([linting grammars](linting.md)). `pego.Lint` makes it a test: see the example in that guide.
-- **`pego fmt -l`** lists the files whose formatting differs from the canonical one. It exits with status 0 even when it
-  lists files, so a CI step has to test the output:
-
-  ```bash
-  test -z "$(pego fmt -l *.pego)" || { echo "run pego fmt -w"; exit 1; }
-  ```
+- **`pego fmt -check`** lists the files whose formatting differs from the canonical one and exits with status 1 when
+  there are any (2 when a file cannot be parsed), so it can be a CI step as it is. `pego fmt -l` lists the same files
+  but exits with status 0.
 
 - **Generated files** (`pego gen`, `pego compile`) are checked for staleness by a test that regenerates in memory and
   compares: [code generation](code-generation.md#keeping-generated-code-up-to-date) and
@@ -651,7 +648,7 @@ go vet ./...
 go test ./...                                             # examples, golden files, properties, generated inputs
 go test -run '^$' -fuzz=FuzzParse -fuzztime=30s .         # a short fuzz run; the corpus of failures is kept in testdata/fuzz
 pego lint -g pairs.pego                                   # exits with status 1 on an error finding (-strict: also on warnings)
-test -z "$(pego fmt -l *.pego)"
+pego fmt -check *.pego                                    # exits with status 1 if a file is not formatted
 ```
 
 Fuzz for longer on a schedule rather than on every commit.

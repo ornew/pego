@@ -649,12 +649,13 @@ printed first and then the errors, with exit status 1, so you can still inspect 
 ### `fmt`
 
 ```bash
-pego fmt [-w] [-l] [<file.pego> ...]
+pego fmt [-w] [-l] [-check] [<file.pego> ...]
 ```
 
 Formats PEGO source and **keeps comments**. Without `-w` it prints the result; `-w` rewrites the files in place;
-`-l` lists the files whose formatting differs (use it as a CI check). Without file arguments it formats standard input
-(`-w` is then an error). It accepts only `.pego` files; for JSON and compiled grammars it points you to `convert`.
+`-l` lists the files whose formatting differs. `-check` lists them too, without changing them, and exits with status 1
+when there are any and 2 when a file cannot be read or parsed, so a CI job can run `pego fmt -check *.pego`; `-l` alone
+exits with status 0 whatever it lists. Without file arguments it formats standard input (`-w` is then an error). It accepts only `.pego` files; for JSON and compiled grammars it points you to `convert`.
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
 The whitespace keeps either expression from becoming `--`, a reserved token that is an error.
 
@@ -675,6 +676,7 @@ $ pego fmt -w messy.pego && cat messy.pego
 rule main =  ws "x"+ ws $$  // trailing comment
 rule ws =  [ \t\n]*
 $ pego fmt -l messy.pego     # nothing listed: already formatted
+$ pego fmt -check messy.pego # exit status 0
 ```
 
 ### `fix`

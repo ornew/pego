@@ -4,7 +4,7 @@
 //
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
-//	pego fmt [-w] [-l] [-syntax] [grammar.pego ...]
+//	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth n]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
@@ -52,11 +52,13 @@ Commands:
       recovered, and rejected parses; selected backend equivalence is reported
       separately. -update refreshes node and location goldens for one backend.
 
-  fmt [-w] [-l] [-syntax] [<file.pego> ...]
+  fmt [-w] [-l] [-check] [-syntax] [<file.pego> ...]
       Format PEGO source files, keeping comments. Without files, standard
       input is formatted. -w rewrites the files in place; -l lists the
-      files whose formatting differs. -syntax prints a simplified syntax view
-      and cannot be combined with -w or -l.
+      files whose formatting differs. -check lists them too and exits with
+      status 1 if there are any, or 2 if a file cannot be formatted.
+      -syntax prints a simplified syntax view and cannot be combined with
+      -w, -l or -check.
 
   fix [-w] [-l] [<file.pego> ...]
       Rewrite PEGO source written in earlier syntax to the current syntax,
@@ -148,9 +150,29 @@ Run "pego <command> -h" for the flags of a command.`
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, "pego:", err)
+		var c exitCoder
+		if errors.As(err, &c) {
+			os.Exit(c.ExitCode())
+		}
 		os.Exit(1)
 	}
 }
+
+// exitCoder is an error that selects the exit status of the command.
+type exitCoder interface {
+	error
+	ExitCode() int
+}
+
+// exitError is an error with an exit status other than 1.
+type exitError struct {
+	err  error
+	code int
+}
+
+func (e *exitError) Error() string { return e.err.Error() }
+func (e *exitError) Unwrap() error { return e.err }
+func (e *exitError) ExitCode() int { return e.code }
 
 func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if len(args) == 0 {
@@ -210,31 +232,64 @@ func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("fmt", flag.ContinueOnError)
 	write := fs.Bool("w", false, "write the result to the file instead of standard output")
 	list := fs.Bool("l", false, "list the files whose formatting differs")
-	syntaxOnly := fs.Bool("syntax", false, "print a simplified grammar syntax view (cannot combine with -w or -l)")
+	check := fs.Bool("check", false, "list the files whose formatting differs and exit with status 1 if there are any, or 2 if a file cannot be formatted")
+	syntaxOnly := fs.Bool("syntax", false, "print a simplified grammar syntax view (cannot combine with -w, -l or -check)")
 	files, err := parseFlags(fs, args)
 	if err != nil {
 		return err
 	}
-	if *syntaxOnly && (*write || *list) {
-		return errors.New("fmt: -syntax cannot be combined with -w or -l")
+	if *syntaxOnly && (*write || *list || *check) {
+		return errors.New("fmt: -syntax cannot be combined with -w, -l or -check")
 	}
+	if *check && *write {
+		return errors.New("fmt: -check cannot be combined with -w")
+	}
+	// A check lists the files that differ, counting them.
+	var out io.Writer = stdout
+	differ := 0
+	if *check {
+		*list = true
+		out = &countingWriter{w: stdout, lines: &differ}
+	}
+	var errs []error
 	if len(files) == 0 {
 		if *write {
 			return errors.New("fmt: cannot use -w with standard input")
 		}
 		src, err := io.ReadAll(stdin)
-		if err != nil {
-			return err
+		if err == nil {
+			err = formatSourceMode("<standard input>", src, false, *list, *syntaxOnly, out)
 		}
-		return formatSourceMode("<standard input>", src, false, *list, *syntaxOnly, stdout)
-	}
-	var errs []error
-	for _, path := range files {
-		if err := formatFileMode(path, *write, *list, *syntaxOnly, stdout); err != nil {
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}
-	return errors.Join(errs...)
+	for _, path := range files {
+		if err := formatFileMode(path, *write, *list, *syntaxOnly, out); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	err = errors.Join(errs...)
+	switch {
+	case !*check:
+		return err
+	case err != nil:
+		return &exitError{err, 2}
+	case differ > 0:
+		return fmt.Errorf("fmt: %s not formatted; run pego fmt -w", plural(differ, "file"))
+	}
+	return nil
+}
+
+// countingWriter counts the lines written through it.
+type countingWriter struct {
+	w     io.Writer
+	lines *int
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	*c.lines += bytes.Count(p, []byte("\n"))
+	return c.w.Write(p)
 }
 
 func fixCmd(args []string, stdin io.Reader, stdout io.Writer) error {
