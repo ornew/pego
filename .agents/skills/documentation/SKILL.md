@@ -14,6 +14,9 @@ description: Maintain PEGO user documentation, contracts, design records and dev
 - Development: `docs/development.md` and `docs/site.md` cover contribution and
   site workflows. `docs/performance.md` and `docs/optimizations/` hold method,
   applicability and evidence. `docs/benchmarks.md` is generated.
+- Style: follow `docs/documentation-style.md` for page kinds, link directions,
+  titles and headings, voice and terms, openings, and examples. The site tests
+  enforce link directions and heading capitalization.
 - Keep `AGENTS.md` concise. Follow existing indexes and templates, remove
   authoring prompts from finished pages, verify examples and links, and keep
   published docs independent of chats and Issue #1 IDs.

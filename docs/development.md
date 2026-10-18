@@ -29,6 +29,7 @@ This document describes the repository layout and architecture, how to run tests
 | `docs/tutorial/` | The ordered tutorial series ([index](tutorial/README.md)) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
+| `docs/documentation-style.md` | How the documentation is organized and written: page kinds, link directions, titles, voice and examples |
 | `docs/design/` | Design records; [template](design/000-template.md) for new proposals |
 | `docs/optimizations/` | Numbered optimization history, measured evidence and backend applicability ([catalog](optimizations/README.md)); measurement method and latest analysis remain in [performance.md](performance.md) |
 
