@@ -767,40 +767,47 @@ func (t *typedGen) nodeMember(m *grammar.Member) bool {
 // readsFields reports whether an action or predicate may read a field of a struct: a member
 // access whose name is a field of some struct type. A typed value keeps its fields converted to
 // their Go types (a list as a slice, an Error where a struct is expected as nil, an omitted int as
-// 0), so reading them back would not give what the node's fields hold.
+// 0), so reading them back would not give what the node's fields hold. A string field reads the
+// same where every constructor of every struct with a field of that name sets it to a string.
 func (t *typedGen) readsFields() bool {
 	fields := map[string]bool{}
+	// owners maps a field name to the structs with a field of that name, and stringField reports
+	// whether every one of them declares it string.
+	owners := map[string][]string{}
+	stringField := map[string]bool{}
 	for _, name := range t.structs {
 		for _, f := range t.info.fields[name] {
+			if !fields[f.name] {
+				stringField[f.name] = true
+			}
 			fields[f.name] = true
+			owners[f.name] = append(owners[f.name], name)
+			stringField[f.name] = stringField[f.name] && f.t == tyString
 		}
 	}
-	found := false
-	term := func(x grammar.Term) {
-		walkTerm(x, func(y grammar.Term) {
-			if m, ok := y.(*grammar.Member); ok && fields[m.Name] && !t.nodeMember(m) {
-				found = true
-			}
-		})
-	}
+	var terms []grammar.Term
 	var expr func(e grammar.Expr)
 	expr = func(e grammar.Expr) {
 		walkExpr(e, func(x grammar.Expr) {
 			switch x := x.(type) {
 			case *grammar.Predicate:
-				term(x.Term)
+				terms = append(terms, x.Term)
+			case *grammar.InlineAction:
+				if x.Action != nil {
+					terms = append(terms, x.Action)
+				}
 			case *grammar.OperatorsRule:
 				for _, o := range x.Operands {
 					expr(o.Expr)
 					if o.Action != nil {
-						term(o.Action)
+						terms = append(terms, o.Action)
 					}
 				}
 				for _, l := range x.Levels {
 					for _, op := range l.Operators {
 						expr(op.Expr)
 						if op.Action != nil {
-							term(op.Action)
+							terms = append(terms, op.Action)
 						}
 					}
 				}
@@ -810,8 +817,54 @@ func (t *typedGen) readsFields() bool {
 	for _, r := range t.g.prog.rules {
 		expr(r.def.Expr)
 		if r.def.Action != nil {
-			term(r.def.Action)
+			terms = append(terms, r.def.Action)
 		}
+	}
+	// set[s][f] reports whether every constructor of struct s sets field f; a struct built under
+	// another name, an alias, sets nothing it can vouch for.
+	set := map[string]map[string]bool{}
+	aliased := false
+	for _, x := range terms {
+		walkTerm(x, func(y grammar.Term) {
+			n, ok := y.(*grammar.New)
+			if !ok {
+				return
+			}
+			if _, ok := t.info.fields[n.Type]; !ok {
+				aliased = true
+				return
+			}
+			given := map[string]bool{}
+			for _, f := range n.Fields {
+				given[f.Name] = true
+			}
+			if set[n.Type] == nil {
+				set[n.Type] = given
+				return
+			}
+			for f := range set[n.Type] {
+				set[n.Type][f] = set[n.Type][f] && given[f]
+			}
+		})
+	}
+	faithful := func(field string) bool {
+		if aliased || !stringField[field] {
+			return false
+		}
+		for _, s := range owners[field] {
+			if !set[s][field] {
+				return false
+			}
+		}
+		return true
+	}
+	found := false
+	for _, x := range terms {
+		walkTerm(x, func(y grammar.Term) {
+			if m, ok := y.(*grammar.Member); ok && fields[m.Name] && !t.nodeMember(m) && !faithful(m.Name) {
+				found = true
+			}
+		})
 	}
 	return found
 }
