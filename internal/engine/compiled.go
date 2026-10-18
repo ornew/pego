@@ -31,17 +31,20 @@ import (
 const (
 	compiledMagic   = "PEGOC\x00"
 	compiledVersion = 3
-	// isaVersion is the latest supported instruction set. Files of earlier versions load:
-	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
-	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
-	// version 5 ETERMINAL for terminals with supplied text, version 6
-	// the filter builtin appended to the ECALL table, version 8
-	// diagnostic-label mode for LABEL, version 9 ECHECK, and version 10 the EBIN operator []
-	// (indexing), version 11 EMEMBER names starting with $ (capture access), and version 12
-	// ECAST. Version 7 is reserved.
-	isaVersion = 12
+	// isaVersion is the instruction set of the value model, the only one supported. Earlier
+	// versions built the previous syntax trees, so their files are not loaded and need to be
+	// compiled again.
+	isaVersion = 13
 	maxDepth   = 10000
 )
+
+// unsupportedISA is the error for a module of instruction set isa.
+func unsupportedISA(isa int) error {
+	if isa < isaVersion {
+		return fmt.Errorf("unsupported instruction set version %d: the file was compiled for earlier syntax trees; compile the grammar again", isa)
+	}
+	return fmt.Errorf("unsupported instruction set version %d", isa)
+}
 
 // ErrNotCompiled reports that the data is not a compiled grammar.
 var ErrNotCompiled = errors.New("not a compiled PEGO grammar")
@@ -214,7 +217,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.bool(withAST)
 	if withAST {
-		w.statements(prog, compiledVersion, m.instructionSetVersion() >= 9)
+		w.statements(prog, compiledVersion, true)
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
@@ -675,16 +678,16 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	r := &decoder{data: body, pos: len(compiledMagic) + 1}
 	if v == 1 {
-		return r.loadV1(opts)
+		return r.loadV1(opts) // the AST only, compiled again
 	}
 	isa := r.uint()
-	if r.err == nil && (isa < 1 || isa == 7 || isa > isaVersion) {
-		return nil, "", fmt.Errorf("unsupported instruction set version %d", isa)
+	if r.err == nil && isa != isaVersion {
+		return nil, "", unsupportedISA(isa)
 	}
 	r.strings()
 	start := r.str()
 	pkg := r.str()
-	m := r.module(isa)
+	m := r.module()
 	if r.err != nil {
 		return nil, "", r.err
 	}
@@ -704,10 +707,11 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	var prog *Program
 	if r.bool() {
-		g, flags, checks := r.statements(pkg, 2, isa >= 9)
+		g, flags, checks := r.statements(pkg, 2, true)
 		if r.err == nil {
 			o := opts
 			o.checks = checks
+			o.SourceInfo = o.SourceInfo || m.SourceInfo
 			p, err := build(g, o, flags)
 			if err != nil {
 				return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
@@ -721,33 +725,10 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if r.err != nil {
 		return nil, "", r.err
 	}
-	if isa < 8 && m.hasDiagnosticLabels() {
-		return nil, "", errors.New("invalid compiled grammar: diagnostic labels require instruction set version 8")
-	}
-	if isa < 4 && m.instructionSetVersion() == 4 {
-		return nil, "", errors.New("invalid compiled grammar: wide repetition bounds require instruction set version 4")
-	}
-	if isa < 5 && m.instructionSetVersion() == 5 {
-		return nil, "", errors.New("invalid compiled grammar: terminal construction requires instruction set version 5")
-	}
-	if isa < 6 && m.instructionSetVersion() == 6 {
-		return nil, "", errors.New("invalid compiled grammar: filtering requires instruction set version 6")
-	}
-	if isa < 9 && m.hasTypeChecks() {
-		return nil, "", errors.New("invalid compiled grammar: type checks require instruction set version 9")
-	}
-	if isa < 10 && m.hasIndexing() {
-		return nil, "", errors.New("invalid compiled grammar: indexing requires instruction set version 10")
-	}
-	if isa < 11 && m.hasCaptureAccess() {
-		return nil, "", errors.New("invalid compiled grammar: capture access requires instruction set version 11")
-	}
-	if isa < 12 && m.hasCasts() {
-		return nil, "", errors.New("invalid compiled grammar: casts require instruction set version 12")
-	}
 	if prog == nil {
 		prog = moduleProgram(m)
 		prog.pkg = pkg
+		prog.sourceInfo = prog.sourceInfo || opts.SourceInfo
 	} else {
 		if n := len(prog.rules) + len(prog.twins); n != len(m.Rules) {
 			return nil, "", fmt.Errorf("invalid compiled grammar: %d rules in the module for %d rules", len(m.Rules), n)

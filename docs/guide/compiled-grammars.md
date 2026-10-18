@@ -359,18 +359,17 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 1–6 and 8–12 (7 is reserved) | The instructions a module may use; each version adds instructions for newer language features, such as wide repetition bounds, the `filter` built-in, the indexing operator and casts. A runtime loads supported module versions that do not exceed its own. The [specification](../../spec/compiled-grammars.md#versions-and-compatibility) lists what each version adds. |
+| Instruction-set version | 13 | The bytecode of the value model. Every module and recognition bundle declares it. |
 
 The consequences:
 
-- **A newer PEGO loads the files of an older one.** It does not make them faster than they were: a file built by an old
-  release has the bytecode that release produced.
+- **Files from releases before the value model must be compiled again.** Their bytecode builds the earlier syntax
+  trees, so PEGO refuses them with `unsupported instruction set version N: the file was compiled for earlier syntax
+  trees; compile the grammar again`. A version 1 file holds only the AST and is compiled again as it loads.
 - **An older PEGO refuses files requiring a newer format or instruction set.**
   It reports `unsupported instruction set version` or `unsupported compiled grammar version`.
-  A grammar with bounds above 2³¹−1 requires instruction set 4; ordinary modules
-  retain version 3. A runtime with a narrower implementation `int` rejects
-  bounds outside its range. Recompile older files containing large bounds:
-  their already-truncated bytecode cannot recover the original values.
+  A runtime with a narrower implementation `int` rejects repetition bounds outside its range.
+- **A file keeps its source information.** A grammar compiled with source information loads with it.
 - **The same grammar can produce different bytes in a new release**, when the compiler improves. Rebuild the file when
   you upgrade PEGO, as you would regenerate [generated code](code-generation.md#keeping-generated-code-up-to-date).
   The up-to-date test above fails after such an upgrade until you do.

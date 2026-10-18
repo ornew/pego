@@ -94,13 +94,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						if err != nil {
 							t.Fatal(err)
 						}
-						// Without projections, the element's capture is read with x.$v,
-						// which needs instruction set 11.
-						want := byte(3)
-						if p.Module().hasCaptureAccess() {
-							want = 11
-						}
-						if data[len(compiledMagic)+1] != want {
+						if want := byte(isaVersion); data[len(compiledMagic)+1] != want {
 							t.Fatalf("negative maxima alone must not require wide instructions: instruction set %d, want %d", data[len(compiledMagic)+1], want)
 						}
 						loaded, _, err := LoadProgram(data, Options{})

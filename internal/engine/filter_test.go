@@ -110,7 +110,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	program := compile(t, filterIdentitySource)
 	for _, omit := range []bool{false, true} {
 		data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-		if err != nil || data[len(compiledMagic)+1] != 6 {
+		if err != nil || data[len(compiledMagic)+1] != isaVersion {
 			t.Fatalf("filter ISA: %v", err)
 		}
 		loaded, _, err := LoadProgram(data, Options{})
@@ -125,14 +125,14 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 				}
 			}
 		}
-		data[len(compiledMagic)+1] = 5
+		data[len(compiledMagic)+1] = isaVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "instruction set version 6") {
+		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("under-declared filter ISA accepted: %v", err)
 		}
 	}
 	ordinary := compile(t, `rule main = "a"`)
-	if ordinary.Module().instructionSetVersion() != 3 {
+	if ordinary.Module().instructionSetVersion() != isaVersion {
 		t.Fatal("filter support changed the ordinary instruction set")
 	}
 	module := compile(t, filterIdentitySource).Module()

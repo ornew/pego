@@ -67,11 +67,11 @@ func encodeRecognition(prog *Program) []byte {
 func decodeRecognition(data []byte, main *Module) (*Module, []recognitionEntry, error) {
 	r := &decoder{data: data}
 	isa := r.uint()
-	if r.err == nil && (isa < 1 || isa == 7 || isa > isaVersion) {
+	if r.err == nil && isa != isaVersion {
 		r.fail("unsupported recognition instruction set version %d", isa)
 	}
 	r.strings()
-	m := r.module(isa)
+	m := r.module()
 	n := r.count()
 	entries := make([]recognitionEntry, 0, n)
 	for i := 0; i < n && r.err == nil; i++ {
@@ -85,9 +85,6 @@ func decodeRecognition(data []byte, main *Module) (*Module, []recognitionEntry, 
 	}
 	if err := validateModule(m); err != nil {
 		return nil, nil, fmt.Errorf("invalid compiled grammar recognition bundle: %w", err)
-	}
-	if isa < m.instructionSetVersion() {
-		return nil, nil, fmt.Errorf("invalid compiled grammar: recognition instructions require ISA %d", m.instructionSetVersion())
 	}
 	want, available := moduleEntries(main), moduleEntries(m)
 	if len(entries) != len(want) || len(entries) != len(available) {

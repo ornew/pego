@@ -71,17 +71,17 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Item | Description |
 |:--|:--|
 | Name | Rule name |
-| Body | Start of the body in the match code. The body pushes one value (or none, if the body is value-free) and ends with `RETURN`. |
+| Body | Start of the body in the match code. The body pushes the value of its scope (or none, if the body is value-free) and ends with `RETURN`: the single value of the body, or a `Seq` of its values when the scope is a tuple. |
 | Scope | The capture names of the body, in slot order |
 | Action | Start of the action in the expression code, or -1 if there is none |
-| Body is a sequence | Used to interpret `$n` |
+| Body is a sequence | Whether the body's value is a tuple; used to interpret `$n` |
 | Terminal type | Name of the terminal type, or -1 if there is none |
 | Memoize, left-recursion leader, position-dependent | Results of static analysis |
 | Operators Rule | Index into the Operators Rule table, or -1 if there is none |
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
 | Transient | The rule is not memoized in normal parses ([Rule calls](#rule-calls)) |
 | Variables | Names (string table indices, sorted) of the variables read by predicates in the rule or the rules it calls; memo entries are keyed by their values |
-| Check | The type the rule's value is checked against when the rule produces it, as a string-table index of the type text (written like the type of `ECHECK`), or -1 if the value is not checked (see [Types and Errors](actions.md#types-and-errors)). Present only in instruction set 9. A mismatch fails the parse with `cannot use <value type> as <type> in result of rule <name>`. |
+| Check | The type the rule's value is checked against when the rule produces it, as a string-table index of the type text (written like the type of `ECHECK`), or -1 if the value is not checked (see [Types and Errors](actions.md#types-and-errors)). A mismatch fails the parse with `cannot use <value type> as <type> in result of rule <name>`. |
 
 **Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`#atomic`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
 
@@ -95,7 +95,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | operand | A list of lines |
 | Prefix operators / infix and postfix operators | Lists of operators (index, kind, associativity, level, line) |
 
-A *line* has the start of its code in the match code (the code pushes one value and ends with `END`), a scope, an action (start in the expression code, or -1), whether its body is a sequence, and, in instruction set 9, the type its value is checked against when the line produces it (as the rule table's check, with the rule's name in the error), or -1.
+A *line* has the start of its code in the match code (the code pushes one value and ends with `END`), a scope, an action (start in the expression code, or -1), whether its body is a sequence, and the type its value is checked against when the line produces it (as the rule table's check, with the rule's name in the error), or -1. An operand line pushes the value of its scope, as a rule body does. An operator line pushes the operator's value: when its body is a sequence, that value is the `Seq` of the operator's values, and the line's captures are attached to it.
 
 Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity is encoded as 0 = left, 1 = right, 2 = none.
 
@@ -161,10 +161,10 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 14 | `ATOMIC` | A b | Pop a position and, if b, push a `Match` of the text from that position to the current position. |
 | 15 | `CAPTURE` | A slot, B pop | Write the top value into slot A of the current frame and record the write in the capture trail. If B is 1, also pop the value (a capture in a value-free context). |
 | 16 | `REPEAT` | A min, B max, C scope | Push a repetition state (count 0, value-stack base at the current height). B = -1 means no maximum. C is a scope-table index, or -1 if elements have no scope. When the repetition builds a value, a `PUSHPOS` immediately before it pushes the start position. |
-| 35 | `REPEATW` | A min constant, B max constant, C scope | Like `REPEAT`, with the bounds read from the `EINT` instructions at expression-code indices A and B. The scope, iteration, streaming and resumption semantics are unchanged. Requires instruction set 4. |
-| 36 | `SCANW` | A class, B min constant, C max constant | Like `SCAN`, with the bounds read from the `EINT` instructions at expression-code indices B and C. Requires instruction set 4. |
+| 35 | `REPEATW` | A min constant, B max constant, C scope | Like `REPEAT`, with the bounds read from the `EINT` instructions at expression-code indices A and B. The scope, iteration, streaming and resumption semantics are unchanged. |
+| 36 | `SCANW` | A class, B min constant, C max constant | Like `SCAN`, with the bounds read from the `EINT` instructions at expression-code indices B and C. |
 | 17 | `ITER` | A exit | If the repetition has a finite maximum and its count has reached it, jump to A without executing the element. Otherwise save the state and push an iteration entry whose target is A (the exit of the loop). If the repetition has a scope, switch to a new frame. |
-| 18 | `NEXT` | A loop, B mode, C slot | One iteration succeeded. Remove the iteration entry and restore the frame. If the repetition has a scope and the mode is 1 or 2, attach the captures to the element value (with mode 0 the scope exists only for predicates inside the element). Increment the count. Mode 0 keeps no value (a value-free repetition), 1 keeps the value, 2 passes the value to the stream consumer, and 3 (instruction set 3) pushes the value of slot C of the element's frame as the element value: a projected repetition, whose elements are matched without values (`map($x, (e) => e.$f)` reads only that capture; see `internal/engine/project.go`). Then, if the iteration consumed no input, or the count has reached the maximum, jump to the exit recorded by `ITER`; otherwise jump to A. |
+| 18 | `NEXT` | A loop, B mode, C slot | One iteration succeeded. Remove the iteration entry and restore the frame. If the repetition has a scope and the mode is 1 or 2, attach the captures to the element value (with mode 0 the scope exists only for predicates inside the element). Increment the count. Mode 0 keeps no value (a value-free repetition), 1 keeps the value, 2 passes the value to the stream consumer, and 3 pushes the value of slot C of the element's frame as the element value: a projected repetition, whose elements are matched without values (`map($x, (e) => e.$f)` reads only that capture; see `internal/engine/project.go`). Then, if the iteration consumed no input, or the count has reached the maximum, jump to the exit recorded by `ITER`; otherwise jump to A. |
 | 19 | `ENDREPEAT` | A b | Pop the repetition state. Fail if the count is below the minimum. If b, pop the values above the value-stack base and the start position below them, and push a `List` (fresh). |
 | 20 | `LOOK` | A target, B neg | Save the state, push a lookahead entry and increment `silent`. A is used only by a negative lookahead (B = 1). |
 | 21 | `ENDLOOK` | A neg | The inner expression succeeded. Positive: remove the entry, restore `silent`, restore only `pos` and the value-stack height, and continue. Negative: restore `silent`, restore the state, and fail. |
@@ -264,24 +264,24 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 105 | `EITEM` | A n | Push `$n`. For n = 0, push a `List` of all items. An out-of-range n is an error. |
 | 106 | `ELOCAL` | A index | Push a local (a lambda parameter, or `$lhs`, `$rhs`, `$op`). |
 | 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
-| 108 | `EMEMBER` | A name | Pop a value and push its field. `startPos`, `endPos` and `children` are built in. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil *(instruction set 11)*. |
+| 108 | `EMEMBER` | A name | Pop a value and push its field. `startPos`, `endPos` and `children` are built in. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
-| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top *(instruction set 10)*. |
+| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. |
 | 111 | `EUNARY` | A operator | Pop a value and push the result of the operation. |
 | 112, 113 | `EAND` / `EOR` | A target | It is an error if the top value is not a boolean. `EAND` on false, and `EOR` on true, leave the value and jump to A. Otherwise pop the value and continue. |
 | 114 | `EBOOLCHK` | A operator | It is an error if the top value is not a boolean. |
 | 115 | `EFUNC` | A start, B parameter count | Push a function that captures the current locals. |
 | 116 | `ECALL` | A built-in, B argument count | Pop the arguments, call the built-in function, and push the result. |
 | 117 | `ERET` | | Return the top value as the value of the expression. |
-| 118 | `ETEXTCHK` | | It is an error (the same as `text`'s) if `text` of the top value is not defined. The value stays. *(Instruction set 2.)* |
-| 119 | `ETEXTEQ` | A neg | Pop two values and push whether their texts (as `text` gives them; both were checked with `ETEXTCHK`) are equal, or unequal if neg is 1. *(Instruction set 2.)* |
-| 120 | `ELISTBEGIN` | | Start gathering the elements of a list. Gatherings nest. *(Instruction set 2.)* |
-| 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. *(Instruction set 2.)* |
-| 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. *(Instruction set 2.)* |
-| 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. *(Instruction set 2.)* |
-| 124 | `ETERMINAL` | A type | Pop a string and construct a terminal of the declared type with that text and the enclosing action range. A non-string raises an evaluation error. The type is a string-table index naming a terminal in the type table. *(Instruction set 5.)* |
-| 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the type as written in the source after alias resolution (`*Ident`, `[]*(Ident \| Number)`, `int \| string`); B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. *(Instruction set 9.)* |
-| 126 | `ECAST` | A type | Check that the value on top of the stack, which stays there, fits type A, as `ECHECK` does, for a cast `x.(T)` (see [Casts](actions.md#casts)); a mismatch raises the evaluation error `cannot cast <value type> to <A>`. A is written like the type of `ECHECK`. The compiler omits it when every value fits the type, such as `any` or a type containing `any`. *(Instruction set 12.)* |
+| 118 | `ETEXTCHK` | | It is an error (the same as `text`'s) if `text` of the top value is not defined. The value stays. |
+| 119 | `ETEXTEQ` | A neg | Pop two values and push whether their texts (as `text` gives them; both were checked with `ETEXTCHK`) are equal, or unequal if neg is 1. |
+| 120 | `ELISTBEGIN` | | Start gathering the elements of a list. Gatherings nest. |
+| 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. |
+| 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. |
+| 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. |
+| 124 | `ETERMINAL` | A type | Pop a string and construct a terminal of the declared type with that text and the enclosing action range. A non-string raises an evaluation error. The type is a string-table index naming a terminal in the type table. |
+| 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the type as written in the source after alias resolution (`*Ident`, `[]*(Ident \| Number)`, `int \| string`); B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. |
+| 126 | `ECAST` | A type | Check that the value on top of the stack, which stays there, fits type A, as `ECHECK` does, for a cast `x.(T)` (see [Casts](actions.md#casts)); a mismatch raises the evaluation error `cannot cast <value type> to <A>`. A is written like the type of `ECHECK`. The compiler omits it when every value fits the type, such as `any` or a type containing `any`. |
 
 Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`, `ETERMINAL`) are string-table indices.
 
@@ -309,24 +309,25 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, 8 when diagnostic labels are used, 9 when values are checked at run time, 10 when lists are indexed, 11 when captures are read with `.$`, and 12 when values are cast). The optional recognition bundle carries its own instruction-set version. A runtime loads each module only when its instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, version 8 diagnostic-label mode for `LABEL`, version 9 `ECHECK` (125) and the checks of the rule table and Operators Rule lines, version 10 the `EBIN` operator `[]`, version 11 `EMEMBER` names starting with `$`, and version 12 `ECAST` (126). Version 7 is reserved and rejected. |
+| Instruction-set version | Unsigned integer for this module: 13. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model; a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
 | Module | See below |
 | Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices match the main module. |
-| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin and, in instruction set 9, which of its constructed fields and values are checked at run time). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
+| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin and which of its constructed fields and values are checked at run time). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
 The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.
 
 1. The number of module strings, unsigned (this many strings from the start of the string table form the module's string table).
-2. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
-3. Type table: a list of (name, terminal, list of field names).
-4. Field-list table, then scope table: each a list of lists of string indices.
-5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, and in instruction set 9 check).
-6. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, and in instruction set 9 check); an operator is (index, kind, associativity, level, line).
-7. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
+2. Source information, a boolean: whether the values a parse returns carry the rule names and capture names of the grammar. A loaded program keeps it, and the load options can also request it.
+3. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
+4. Type table: a list of (name, terminal, list of field names).
+5. Field-list table, then scope table: each a list of lists of string indices.
+6. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
+7. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
+8. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
 ### Load-Time Validation
 
@@ -335,11 +336,9 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
 - Every opcode is known, and every flag operand is within its range.
-- Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
-- `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility. The cast term is appended the same way, so older AST decoders cannot load a cast even when, being a cast to `any`, it needs no `ECAST`. Type expressions with `&` are an appended AST type kind as well; the type texts of `ECHECK`, `ECAST` and the result checks are resolved types, which contain no `&`, `_` or `_|_`, so modules without the AST keep their instruction-set version.
-- The `filter` built-in occupies appended slot 7 and requires instruction-set version 6. A module that uses it with a lower declared version is rejected; modules that do not use it retain their ordinary version selection.
-- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil`, `node` or `terminal`. The checks of rules and lines name type texts that parse the same way. They require instruction-set version 9; a module that uses them with a lower declared version is rejected.
-- `EBIN` with the operator `[]` requires instruction-set version 10, `EMEMBER` with a name starting with `$` version 11, and `ECAST` version 12; a module that uses them with a lower declared version is rejected. The type text of `ECAST` parses as the type of `ECHECK` does.
+- Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum.
+- `ETERMINAL` references a declared terminal type.
+- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil`, `node` or `terminal`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&`, `_` or `_|_`.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

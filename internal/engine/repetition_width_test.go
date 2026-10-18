@@ -91,8 +91,8 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != 3 {
-		t.Fatal("ordinary modules must retain instruction-set-3 compatibility")
+	if data[len(compiledMagic)+1] != isaVersion {
+		t.Fatalf("ordinary module instruction set %d", data[len(compiledMagic)+1])
 	}
 	if strconv.IntSize < 64 {
 		return
@@ -102,16 +102,16 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != 4 {
-		t.Fatal("wide modules must require instruction set 4")
+	if data[len(compiledMagic)+1] != isaVersion {
+		t.Fatalf("wide module instruction set %d", data[len(compiledMagic)+1])
 	}
 	if !strings.Contains(wide.Module().Disassemble(), "max=4294967296") {
 		t.Fatal("disassembly must display the complete bound")
 	}
 	// A valid checksum does not make a false instruction-set declaration valid.
-	data[len(compiledMagic)+1] = 3
+	data[len(compiledMagic)+1] = isaVersion - 1
 	data = binary.LittleEndian.AppendUint32(data[:len(data)-4], crc32.ChecksumIEEE(data[:len(data)-4]))
-	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "require instruction set version 4") {
+	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("wide instruction in old ISA: %v", err)
 	}
 }

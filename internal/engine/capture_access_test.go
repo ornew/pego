@@ -113,13 +113,13 @@ func TestCaptureAccessSyntax(t *testing.T) {
 	}
 	program := compile(t, `rule main = xs:(y:"a" "b")* $$ => $xs[0].$y`)
 	data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil || data[len(compiledMagic)+1] != 11 {
+	if err != nil || data[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("capture access ISA: %v", err)
 	}
-	// A runtime that knows only indexing must not load capture access.
-	data[len(compiledMagic)+1] = 10
+	// A runtime that knows only an earlier instruction set must not load it.
+	data[len(compiledMagic)+1] = isaVersion - 1
 	binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "instruction set version 11") {
+	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared capture access ISA accepted: %v", err)
 	}
 }

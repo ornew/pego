@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"hash/crc32"
 	"slices"
 	"strings"
@@ -72,7 +73,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if ordinary[len(compiledMagic)] != 2 {
 		t.Fatalf("ordinary module version: %d", ordinary[len(compiledMagic)])
 	}
-	if ordinary[len(compiledMagic)+1] >= 8 {
+	if ordinary[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("ordinary module ISA: %d", ordinary[len(compiledMagic)+1])
 	}
 	prog := compile(t, `rule main = "a" @diagnostic(name="letter")`)
@@ -88,7 +89,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		if data[len(compiledMagic)] != wantVersion {
 			t.Fatalf("diagnostic module version: %d, want %d", data[len(compiledMagic)], wantVersion)
 		}
-		if data[len(compiledMagic)+1] != 8 {
+		if data[len(compiledMagic)+1] != isaVersion {
 			t.Fatalf("diagnostic module ISA: %d", data[len(compiledMagic)+1])
 		}
 		loaded, _, err := LoadProgram(data, Options{})
@@ -101,14 +102,14 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		oldISA := append([]byte(nil), data...)
 		oldISA[len(compiledMagic)+1] = 6
 		binary.LittleEndian.PutUint32(oldISA[len(oldISA)-4:], crc32.ChecksumIEEE(oldISA[:len(oldISA)-4]))
-		if _, _, err := LoadProgram(oldISA, Options{}); err == nil || !strings.Contains(err.Error(), "diagnostic labels require instruction set version 8") {
+		if _, _, err := LoadProgram(oldISA, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Errorf("old ISA accepted diagnostic module: %v", err)
 		}
 	}
 	reserved := append([]byte(nil), ordinary...)
-	reserved[len(compiledMagic)+1] = 7
+	reserved[len(compiledMagic)+1] = isaVersion + 1
 	binary.LittleEndian.PutUint32(reserved[len(reserved)-4:], crc32.ChecksumIEEE(reserved[:len(reserved)-4]))
-	if _, _, err := LoadProgram(reserved, Options{}); err == nil || !strings.Contains(err.Error(), "unsupported instruction set version 7") {
+	if _, _, err := LoadProgram(reserved, Options{}); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unsupported instruction set version %d", isaVersion+1)) {
 		t.Errorf("reserved ISA accepted: %v", err)
 	}
 	combined := compile(t, `rule main = v1:"a" @diagnostic(name="letter") $$ => filter(list($v1), (item) => true)`)
@@ -116,8 +117,8 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != 8 {
-		t.Fatalf("filter and diagnostic ISA: %d, want 8", data[len(compiledMagic)+1])
+	if data[len(compiledMagic)+1] != isaVersion {
+		t.Fatalf("filter and diagnostic ISA: %d, want %d", data[len(compiledMagic)+1], isaVersion)
 	}
 	loaded, _, err := LoadProgram(data, Options{})
 	if err != nil {

@@ -13,7 +13,7 @@ func (prog *Program) Module() *Module {
 		panic(missingUnsupported("bytecode module construction"))
 	}
 	prog.moduleOnce.Do(func() {
-		c := &bcompiler{prog: prog, m: &Module{}, strs: map[string]int{}}
+		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo}, strs: map[string]int{}}
 		c.compile()
 		prog.module = c.m
 	})
@@ -141,7 +141,11 @@ func (c *bcompiler) compile() {
 		} else {
 			ri.Entry = int(c.here())
 			c.proj = ruleProjections(c.prog, r)
-			c.value(r.def.Expr, s, !r.lean)
+			if r.lean {
+				c.match(r.def.Expr, s, false)
+			} else {
+				c.scope(r.def.Expr, s)
+			}
 			c.proj = nil
 			c.emit(OpReturn, 0, 0, 0)
 		}
@@ -155,12 +159,45 @@ func (c *bcompiler) compile() {
 	}
 }
 
-// value emits code that pushes one value (nil if the expression has no value).
-func (c *bcompiler) value(e grammar.Expr, s *scope, build bool) {
-	c.match(e, s, build)
-	if build && !visible(e) {
+// The value shapes of value_shape.go: each pushes values as the closure backend builds them.
+
+// tuple emits code that pushes the tuple node of the elements of e.
+func (c *bcompiler) tuple(e grammar.Expr, s *scope) {
+	c.emit(OpPushPos, 0, 0, 0)
+	c.elems(e, s)
+	c.emit(OpSeq, int32(valuedCount(e)), 0, 0)
+}
+
+// single emits code that pushes the value of e where it takes one element: nil without a value.
+func (c *bcompiler) single(e grammar.Expr, s *scope) {
+	switch singleModeOf(e) {
+	case singleNone:
+		c.elems(e, s)
 		c.emit(OpPushNil, 0, 0, 0)
+	case singlePass:
+		c.elems(e, s)
+	default:
+		c.tuple(e, s)
 	}
+}
+
+// captured emits code that pushes the value of e where it is captured or recovered: the unit
+// node of its range without a value.
+func (c *bcompiler) captured(e grammar.Expr, s *scope) {
+	if singleModeOf(e) == singlePass {
+		c.elems(e, s)
+		return
+	}
+	c.tuple(e, s)
+}
+
+// scope emits code that pushes the value of a scope with the body e.
+func (c *bcompiler) scope(e grammar.Expr, s *scope) {
+	if scopeTuple(e) {
+		c.tuple(e, s)
+		return
+	}
+	c.elems(e, s)
 }
 
 // class adds the character class to the character class table and returns its index.
@@ -191,9 +228,80 @@ func (c *bcompiler) class(e *grammar.CharClass) int32 {
 	return int32(len(c.m.Classes) - 1)
 }
 
-// match emits code for the expression. If build is true, an expression with a value pushes one
-// value.
+// match emits code for the expression. If build is true, it pushes the elements of the expression
+// (elems); otherwise it pushes nothing.
 func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
+	if build {
+		c.elems(e, s)
+		return
+	}
+	c.void(e, s)
+}
+
+// elems emits code that pushes the valuedCount(e) elements of e, flattened through sequences.
+func (c *bcompiler) elems(e grammar.Expr, s *scope) {
+	switch e := e.(type) {
+	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Ref, *grammar.Atomic:
+		c.leaf(e, s, true)
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			c.elems(it, s)
+		}
+	case *grammar.Choice:
+		valued := valuedCount(e) == 1
+		var ends []int
+		for i, alt := range e.Alts {
+			emit := func() {
+				if valued {
+					c.single(alt, s)
+				} else {
+					c.elems(alt, s)
+				}
+			}
+			if i == len(e.Alts)-1 {
+				emit()
+				break
+			}
+			guard := c.guard(alt)
+			ch := c.emit(OpChoice, 0, 0, 0)
+			emit()
+			ends = append(ends, c.emit(OpCommit, 0, 0, 0))
+			c.m.Code[ch].A = c.here()
+			if guard >= 0 {
+				c.m.Code[guard].C = c.here()
+			}
+		}
+		for _, j := range ends {
+			c.m.Code[j].A = c.here()
+		}
+	case *grammar.Repeat:
+		c.repeat(e, s, true, false)
+	case *grammar.Optional:
+		valued := valuedCount(e) == 1
+		ch := c.emit(OpChoice, 0, 0, 0)
+		if valued {
+			c.single(e.Expr, s)
+		} else {
+			c.elems(e.Expr, s)
+		}
+		end := c.emit(OpCommit, 0, 0, 0)
+		c.m.Code[ch].A = c.here()
+		if valued {
+			c.emit(OpPushNil, 0, 0, 0)
+		}
+		c.m.Code[end].A = c.here()
+	case *grammar.Capture:
+		c.capture(e, s, true)
+	case *grammar.Attributed:
+		c.attrElems(e, len(e.Attrs)-1, s)
+	default:
+		// The other expressions have no value: lookaheads keep only their captures.
+		c.void(e, s)
+	}
+}
+
+// leaf emits a literal, a character class, ., a rule call or #atomic, pushing its value if build.
+func (c *bcompiler) leaf(e grammar.Expr, s *scope, build bool) {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		c.emit(OpStr, c.str(e.Value), c.str(quote(e.Value)), b2i(build))
@@ -215,30 +323,36 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 			r = r.twin
 		}
 		c.emit(OpCall, int32(r.id), int32(min), b2i(build))
-	case *grammar.Seq:
+	case *grammar.Atomic:
 		if build {
 			c.emit(OpPushPos, 0, 0, 0)
 		}
-		n := 0
-		for _, it := range e.Items {
-			c.match(it, s, build)
-			if build && visible(it) {
-				n++
-			}
-		}
+		c.void(e.Expr, s)
 		if build {
-			c.emit(OpSeq, int32(n), 0, 0)
+			c.emit(OpAtomic, 1, 0, 0)
+		}
+	}
+}
+
+// void emits code for the expression without its value.
+func (c *bcompiler) void(e grammar.Expr, s *scope) {
+	switch e := e.(type) {
+	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Ref, *grammar.Atomic:
+		c.leaf(e, s, false)
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			c.void(it, s)
 		}
 	case *grammar.Choice:
 		var ends []int
 		for i, alt := range e.Alts {
 			if i == len(e.Alts)-1 {
-				c.value(alt, s, build)
+				c.void(alt, s)
 				break
 			}
 			guard := c.guard(alt)
 			ch := c.emit(OpChoice, 0, 0, 0)
-			c.value(alt, s, build)
+			c.void(alt, s)
 			ends = append(ends, c.emit(OpCommit, 0, 0, 0))
 			c.m.Code[ch].A = c.here()
 			if guard >= 0 {
@@ -249,51 +363,31 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 			c.m.Code[j].A = c.here()
 		}
 	case *grammar.Repeat:
-		c.repeat(e, s, build, false)
+		c.repeat(e, s, false, false)
 	case *grammar.Optional:
 		ch := c.emit(OpChoice, 0, 0, 0)
-		c.value(e.Expr, s, build)
+		c.void(e.Expr, s)
 		end := c.emit(OpCommit, 0, 0, 0)
 		c.m.Code[ch].A = c.here()
-		if build {
-			c.emit(OpPushNil, 0, 0, 0)
-		}
 		c.m.Code[end].A = c.here()
 	case *grammar.And:
+		// The values inside are dropped by ENDLOOK; the captures are kept.
 		c.emit(OpLook, 0, 0, 0)
-		c.match(e.Expr, s, build && hasCaptures(e.Expr))
+		c.void(e.Expr, s)
 		c.emit(OpEndLook, 0, 0, 0)
 	case *grammar.Not:
 		look := c.emit(OpLook, 0, 1, 0)
-		c.match(e.Expr, s, false)
+		c.void(e.Expr, s)
 		c.emit(OpEndLook, 1, 0, 0)
 		c.m.Code[look].A = c.here()
-	case *grammar.Atomic:
-		if build {
-			c.emit(OpPushPos, 0, 0, 0)
-		}
-		c.match(e.Expr, s, false)
-		if build {
-			c.emit(OpAtomic, 1, 0, 0)
-		}
 	case *grammar.Discard:
-		c.match(e.Expr, s, false)
+		c.void(e.Expr, s)
 	case *grammar.Capture:
-		if !build && c.cur.predCaps != nil && !c.cur.predCaps[e.Name] {
-			c.match(e.Expr, s, false) // a capture not referenced by the predicate, in a program that builds no tree
-			return
-		}
-		slot := s.slot(e.Name)
-		if field := c.proj[e.Name]; field != "" {
-			c.projectRepeat(e.Expr.(*grammar.Repeat), field)
-		} else {
-			c.match(e.Expr, s, true)
-		}
-		c.emit(OpCapture, int32(slot), b2i(!build), 0)
+		c.capture(e, s, false)
 	case *grammar.Cut:
 		c.emit(OpCut, 0, 0, 0)
 	case *grammar.Top:
-		c.emit(OpTop, b2i(build), 0, 0)
+		c.emit(OpTop, 0, 0, 0)
 	case *grammar.Bottom:
 		c.emit(OpFail, 0, 0, 0)
 	case *grammar.BeginInput:
@@ -311,8 +405,23 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 			c.emit(OpPred, int32(c.expr(e.Term, s, nil, false)), 0, 0)
 		}
 	case *grammar.Attributed:
-		c.attributed(e, len(e.Attrs)-1, s, build)
+		c.attributed(e, len(e.Attrs)-1, s)
 	}
+}
+
+// capture emits a capture, leaving its value pushed if keep.
+func (c *bcompiler) capture(e *grammar.Capture, s *scope, keep bool) {
+	if !keep && c.cur.predCaps != nil && !c.cur.predCaps[e.Name] {
+		c.void(e.Expr, s) // a capture not referenced by the predicate, in a program that builds no tree
+		return
+	}
+	slot := s.slot(e.Name)
+	if field := c.proj[e.Name]; field != "" {
+		c.projectRepeat(e.Expr.(*grammar.Repeat), field)
+	} else {
+		c.captured(e.Expr, s)
+	}
+	c.emit(OpCapture, int32(slot), b2i(!keep), 0)
 }
 
 func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
@@ -340,9 +449,9 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	loop := c.here()
 	iter := c.emit(OpIter, 0, 0, 0)
 	if build {
-		c.value(e.Expr, elemScope, true)
+		c.scope(e.Expr, elemScope)
 	} else {
-		c.match(e.Expr, elemScope, false)
+		c.void(e.Expr, elemScope)
 	}
 	flag := b2i(build)
 	if stream && build {
@@ -356,40 +465,99 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	}
 }
 
-// attributed emits code for the expression with attributes up to i applied (inner attributes
-// are applied first).
-func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope, build bool) {
+// attrElems emits code that pushes the elements of the expression with attributes up to i applied
+// (inner attributes are applied first). What recovers is one element: its value or the error.
+func (c *bcompiler) attrElems(e *grammar.Attributed, i int, s *scope) {
 	if i < 0 {
 		if rep, ok := e.Expr.(*grammar.Repeat); ok && isStream(e) {
-			c.repeat(rep, s, build, true)
+			c.repeat(rep, s, true, true)
 		} else {
-			c.match(e.Expr, s, build)
+			c.elems(e.Expr, s)
 		}
 		return
 	}
 	a := e.Attrs[i]
 	switch a.Name {
-	case "error":
-		msg := attributeMessage(a)
-		c.emit(OpLabel, c.str(msg), 0, 0)
-		c.attributed(e, i-1, s, build)
-		c.emit(OpEndLabel, 0, 0, 0)
-	case "diagnostic":
-		name := attributeDiagnosticName(a)
-		c.emit(OpLabel, c.str(name), 1, 0)
-		c.attributed(e, i-1, s, build)
+	case "error", "diagnostic":
+		c.label(a)
+		c.attrElems(e, i-1, s)
 		c.emit(OpEndLabel, 0, 0, 0)
 	case "recover":
 		skip, _ := a.Arg("skip")
 		rec := c.emit(OpRecover, 0, 0, 0)
-		c.attributed(e, i-1, s, build)
+		// The value of the inner expression where it is captured (captured), as in captureMatcher.
+		mode := singleModeOf(e.Expr)
+		if hasRecover(e.Attrs[:i]) {
+			mode = singlePass // an inner recovery is one element already
+		}
+		if mode != singlePass {
+			c.emit(OpPushPos, 0, 0, 0)
+		}
+		c.attrElems(e, i-1, s)
+		if mode != singlePass {
+			n := 0
+			if mode == singleTuple {
+				n = valuedCount(e.Expr)
+			}
+			c.emit(OpSeq, int32(n), 0, 0)
+		}
 		end := c.emit(OpEndRecover, 0, 0, 0)
 		c.m.Code[rec].A = c.here()
-		c.match(skip, s, false)
-		c.emit(OpEndSkip, b2i(build && visible(e.Expr)), 0, 0) // as in compiler.attributed
+		c.void(skip, s)
+		c.emit(OpEndSkip, 1, 0, 0)
 		c.m.Code[end].A = c.here()
 	default: // #stream is handled by the repetition
-		c.attributed(e, i-1, s, build)
+		c.attrElems(e, i-1, s)
+	}
+}
+
+// hasRecover reports whether attrs has #recover.
+func hasRecover(attrs []*grammar.Attribute) bool {
+	for _, a := range attrs {
+		if a.Name == "recover" {
+			return true
+		}
+	}
+	return false
+}
+
+// label emits the LABEL of @error or @diagnostic.
+func (c *bcompiler) label(a *grammar.Attribute) {
+	if a.Name == "error" {
+		c.emit(OpLabel, c.str(attributeMessage(a)), 0, 0)
+	} else {
+		c.emit(OpLabel, c.str(attributeDiagnosticName(a)), 1, 0)
+	}
+}
+
+// attributed emits code for the expression with attributes up to i applied (inner attributes
+// are applied first), without its value.
+func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope) {
+	if i < 0 {
+		if rep, ok := e.Expr.(*grammar.Repeat); ok && isStream(e) {
+			c.repeat(rep, s, false, true)
+		} else {
+			c.void(e.Expr, s)
+		}
+		return
+	}
+	a := e.Attrs[i]
+	switch a.Name {
+	case "error", "diagnostic":
+		c.label(a)
+		c.attributed(e, i-1, s)
+		c.emit(OpEndLabel, 0, 0, 0)
+	case "recover":
+		skip, _ := a.Arg("skip")
+		rec := c.emit(OpRecover, 0, 0, 0)
+		c.attributed(e, i-1, s)
+		end := c.emit(OpEndRecover, 0, 0, 0)
+		c.m.Code[rec].A = c.here()
+		c.void(skip, s)
+		c.emit(OpEndSkip, 0, 0, 0)
+		c.m.Code[end].A = c.here()
+	default: // #stream is handled by the repetition
+		c.attributed(e, i-1, s)
 	}
 }
 
@@ -440,8 +608,15 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, key any) LineInfo {
 	s := newScope()
 	li := LineInfo{Entry: int(c.here()), Action: -1, Check: -1}
-	_, li.IsSeq = e.(*grammar.Seq)
-	c.value(e, s, !c.cur.novalue && !leanLine(action, locals))
+	switch build := !c.cur.novalue && !leanLine(action, locals); {
+	case !build:
+		c.void(e, s)
+	case locals == nil: // an operand line: the value of its scope
+		c.scope(e, s)
+	default: // an operator line: the operator's value, the node of its tuple if IsSeq
+		li.IsSeq = singleModeOf(e) == singleTuple
+		c.captured(e, s)
+	}
 	c.emit(OpEnd, 0, 0, 0)
 	li.Scope = c.strs2(s.names)
 	if action != nil && !c.cur.novalue {

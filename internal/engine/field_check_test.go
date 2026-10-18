@@ -193,7 +193,7 @@ rule val any = "v"
 		t.Fatalf("checked fields: %s", got)
 	}
 	m := prog.Module()
-	if v := m.instructionSetVersion(); v != 9 {
+	if v := m.instructionSetVersion(); v != isaVersion {
 		t.Fatalf("instruction set %d", v)
 	}
 	if d := m.Disassemble(); strings.Count(d, "ECHECK") != 2 || !strings.Contains(d, `"Int" field=Dynamic of=S`) {
@@ -204,7 +204,7 @@ type S = { Static Int }
 rule main = a:item => S{Static: $a}
 rule item Int = "i" => Int{"i"}
 `)
-	if v := plain.Module().instructionSetVersion(); v >= 9 {
+	if v := plain.Module().instructionSetVersion(); v != isaVersion {
 		t.Fatalf("unchecked module instruction set %d", v)
 	}
 	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use Match as Int in field Dynamic of S") {
@@ -237,23 +237,23 @@ rule val any = "v"
 	}
 }
 
-// TestCompiledFieldChecksValidation checks that loading rejects field checks in files of an
-// earlier instruction set and type texts that do not name a known type.
+// TestCompiledFieldChecksValidation checks that loading rejects files of an earlier
+// instruction set and field-check type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
 	prog := compile(t, fieldCheckGrammar("[]*(Int | Match)"))
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != 9 {
+	if data[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("instruction set %d", data[len(compiledMagic)+1])
 	}
 	d := append([]byte(nil), data[:len(data)-4]...)
-	d[len(compiledMagic)+1] = 8
+	d[len(compiledMagic)+1] = isaVersion - 1
 	d = binary.LittleEndian.AppendUint32(d, crc32.ChecksumIEEE(d))
-	// A file of an earlier instruction set has no check records, so the statements do not parse.
-	if _, _, err := LoadProgram(d, Options{}); err == nil || !strings.Contains(err.Error(), "invalid compiled grammar") {
-		t.Fatalf("instruction set 8: %v", err)
+	// A file of an earlier instruction set is rejected before its records are read.
+	if _, _, err := LoadProgram(d, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+		t.Fatalf("earlier instruction set: %v", err)
 	}
 	m := *prog.Module()
 	if err := validateModule(&m); err != nil {

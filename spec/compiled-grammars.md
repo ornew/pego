@@ -81,17 +81,18 @@ A file carries two version numbers after its magic number.
 | Number | Current values | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file: version 2 for a save with the AST, version 3 for a save without the AST that has a recognition bundle. A runtime loads versions 1, 2 and 3 |
-| Instruction-set version | 1 to 6 and 8 to 12 (7 is reserved) | The instructions a module may use. Version 4 adds full-width repetition bounds, version 5 terminal construction, version 6 the `filter` built-in, version 8 the diagnostic-label mode, version 9 run-time checks of dynamically typed struct field values and rule results, version 10 the indexing operator `[]`, version 11 member names that start with `$` (capture access) and version 12 casts. A recognition bundle has its own instruction-set version. A runtime loads supported module versions that do not exceed its own |
+| Instruction-set version | 13 | The bytecode of the value model. Every module and recognition bundle declares it |
 
-- A newer runtime loads the files of an older one. The file keeps the bytecode that
-  the older compiler produced.
+- A runtime refuses a module of an earlier instruction set: its bytecode builds the
+  syntax trees that preceded the value model. The error asks for the grammar to be
+  compiled again. A version 1 file holds only the AST, so it is compiled again as it
+  loads.
 - A runtime refuses a file that requires a newer format or instruction set, with
   `unsupported compiled grammar version` or `unsupported instruction set version`.
-- A grammar with repetition bounds above 2^31-1 requires instruction set 4;
-  ordinary modules retain version 3. A runtime with a narrower implementation
-  `int` rejects bounds outside its range. A file written before bounds were
-  stored at full width holds truncated bounds that cannot be recovered; such files
-  MUST be recompiled.
+- A file records whether the program was compiled with source information, and the
+  loaded program keeps it.
+- A runtime with a narrower implementation `int` rejects repetition bounds outside
+  its range.
 - The same grammar MAY produce different bytes in a different release of the
   compiler. Equality of bytes is guaranteed only for one release.
 - A saved file retains the left-recursion classification chosen by the compiler
@@ -119,7 +120,8 @@ is up to the program.
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number |
 | `unsupported compiled grammar version N (want 3)` | The format version is not supported |
-| `unsupported instruction set version N` | The file requires an unsupported or newer instruction set |
+| `unsupported instruction set version N: the file was compiled for earlier syntax trees; compile the grammar again` | The file was compiled for an earlier instruction set |
+| `unsupported instruction set version N` | The file requires a newer instruction set |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed |
 | `invalid compiled grammar: ...` | The structure is wrong although the checksum matches |
 | `the closure backend needs the grammar, which the compiled grammar omits` | `Closure` was requested for a file without the AST |

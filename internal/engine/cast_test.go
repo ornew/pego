@@ -142,18 +142,18 @@ func TestCastSyntax(t *testing.T) {
 		}
 	}
 	data, err = program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil || data[len(compiledMagic)+1] != 12 {
+	if err != nil || data[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("cast ISA: %v", err)
 	}
-	// A runtime that knows only capture access must not load casts.
-	data[len(compiledMagic)+1] = 11
+	// A runtime that knows only an earlier instruction set must not load it.
+	data[len(compiledMagic)+1] = isaVersion - 1
 	binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "instruction set version 12") {
+	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared cast ISA accepted: %v", err)
 	}
-	// A cast to any checks nothing, so it needs no new instruction.
+	// A cast to any checks nothing; it uses the same instruction set.
 	data, err = compile(t, "rule main = x:(n / w) $$ => $x.(any)\n"+castRules).MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil || data[len(compiledMagic)+1] != 3 {
+	if err != nil || data[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[len(compiledMagic)+1])
 	}
 }

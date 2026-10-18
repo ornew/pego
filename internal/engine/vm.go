@@ -141,7 +141,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			r.terminalType = m.Strings[ri.TerminalType]
 		}
 		r.kinds = newRuleKinds(r.name, r.terminalType)
-		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the bytecode shapes values (B5)
+		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
 		}
@@ -220,9 +220,13 @@ func (vm *vmProgram) block(entry int) matcher {
 }
 
 func (vm *vmProgram) line(l *LineInfo, operator bool) *operatorsRuleLine {
-	// The bytecode builds the value model's line values itself (B5); the line passes them on.
+	// The code pushes the line's value already: the value of an operand line's scope, or the
+	// operator's value, which is the node of its tuple if IsSeq (its captures are attached to it).
 	pl := &operatorsRuleLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), entry: l.Entry, single: singlePass,
 		value: func(_ *parser, v *Node, _ int) *Node { return v }}
+	if operator && l.IsSeq {
+		pl.single, pl.shape = singleTuple, shaper{elems: true}
+	}
 	if l.Action >= 0 {
 		pl.act = vm.evaluator(l.Action, operator)
 	}

@@ -26,21 +26,18 @@ func (w *encoder) code(code []Instr) {
 	}
 }
 
-func (w *encoder) line(l *LineInfo, checks bool) {
+func (w *encoder) line(l *LineInfo) {
 	w.int(l.Entry)
 	w.ints(l.Scope)
 	w.int(l.Action)
 	w.bool(l.IsSeq)
-	if checks {
-		w.int(l.Check)
-	}
+	w.int(l.Check)
 }
 
-// module writes m. The result checks of its rules and lines are written in modules of
-// instruction set 9.
+// module writes m.
 func (w *encoder) module(m *Module) {
-	checks := m.instructionSetVersion() >= 9
 	w.uint(len(m.Strings))
+	w.bool(m.SourceInfo)
 	w.uint(len(m.Classes))
 	for _, c := range m.Classes {
 		w.bool(c.Negated)
@@ -77,16 +74,14 @@ func (w *encoder) module(m *Module) {
 		w.bool(r.NoValue)
 		w.bool(r.Transient)
 		w.ints(r.Vars)
-		if checks {
-			w.int(r.Check)
-		}
+		w.int(r.Check)
 	}
 	w.uint(len(m.OperatorsRules))
 	for _, p := range m.OperatorsRules {
 		w.int(p.Skip)
 		w.uint(len(p.Operands))
 		for i := range p.Operands {
-			w.line(&p.Operands[i], checks)
+			w.line(&p.Operands[i])
 		}
 		for _, ops := range [][]OpInfo{p.Prefix, p.Led} {
 			w.uint(len(ops))
@@ -96,7 +91,7 @@ func (w *encoder) module(m *Module) {
 				w.int(o.Kind)
 				w.int(o.Assoc)
 				w.int(o.Level)
-				w.line(&o.Line, checks)
+				w.line(&o.Line)
 			}
 		}
 	}
@@ -140,17 +135,12 @@ func (r *decoder) code() []Instr {
 	return code
 }
 
-func (r *decoder) line(checks bool) LineInfo {
-	l := LineInfo{Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()), IsSeq: r.bool(), Check: -1}
-	if checks {
-		l.Check = int(r.int32())
-	}
-	return l
+func (r *decoder) line() LineInfo {
+	return LineInfo{Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()), IsSeq: r.bool(), Check: int(r.int32())}
 }
 
-// module reads a module of instruction set isa.
-func (r *decoder) module(isa int) *Module {
-	checks := isa >= 9
+// module reads a module.
+func (r *decoder) module() *Module {
 	m := &Module{}
 	n := r.uint()
 	if r.err == nil && n > len(r.strs) {
@@ -160,6 +150,7 @@ func (r *decoder) module(isa int) *Module {
 		return m
 	}
 	m.Strings = r.strs[:n]
+	m.SourceInfo = r.bool()
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		c := Class{Negated: r.bool(), Desc: int(r.int32())}
@@ -185,10 +176,7 @@ func (r *decoder) module(isa int) *Module {
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
 			BodyIsSeq: r.bool(), TerminalType: int(r.int32()),
 			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Vars: r.ints(),
-			Check: -1,
-		}
-		if checks {
-			ri.Check = int(r.int32())
+			Check: int(r.int32()),
 		}
 		m.Rules = append(m.Rules, ri)
 	}
@@ -197,13 +185,13 @@ func (r *decoder) module(isa int) *Module {
 		p := OperatorsRuleInfo{Skip: int(r.int32())}
 		k := r.count()
 		for j := 0; j < k && r.err == nil; j++ {
-			p.Operands = append(p.Operands, r.line(checks))
+			p.Operands = append(p.Operands, r.line())
 		}
 		for _, ops := range []*[]OpInfo{&p.Prefix, &p.Led} {
 			k = r.count()
 			for j := 0; j < k && r.err == nil; j++ {
 				o := OpInfo{ID: int(r.int32()), Kind: int(r.int32()), Assoc: int(r.int32()), Level: int(r.int32())}
-				o.Line = r.line(checks)
+				o.Line = r.line()
 				*ops = append(*ops, o)
 			}
 		}
@@ -512,7 +500,7 @@ func validateStreamRecovery(code []Instr) error {
 
 // moduleProgram builds a program without an AST (it can only be run by the bytecode backend).
 func moduleProgram(m *Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{}}
+	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{}, sourceInfo: m.SourceInfo}
 	for _, t := range m.Types {
 		if t.Terminal {
 			prog.types[m.Strings[t.Name]] = &grammar.TerminalSpec{}

@@ -64,8 +64,9 @@ func TestCompiledRoundTrip(t *testing.T) {
 			if again, err := bareProg.MarshalBinary("main"); err != nil || !bytes.Equal(bare, again) {
 				t.Errorf("re-marshaled bare data differs (%v)", err)
 			}
-			// Version 1 files can also be loaded.
-			v1, _, err := LoadProgram(marshalV1(prog, "main"), Options{})
+			// Version 1 files can also be loaded. They predate source information,
+			// so the loader takes it from the options.
+			v1, _, err := LoadProgram(marshalV1(prog, "main"), Options{SourceInfo: prog.sourceInfo})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -168,9 +169,9 @@ func TestCompiledErrors(t *testing.T) {
 	}
 }
 
-// TestCompiledEarlierInstructionSet checks that a file of instruction set 1 (which versions up to
-// 8 only extend) still loads and runs, and that a file of a later version does not load. Version 9
-// adds check records to the AST, so a file of an earlier version is not one of version 9.
+// TestCompiledEarlierInstructionSet checks that a file of an earlier instruction set, which built
+// the previous syntax trees, does not load and asks for the grammar to be compiled again, that a
+// file of a later version does not load either, and that one of the current version does.
 func TestCompiledEarlierInstructionSet(t *testing.T) {
 	src := `rule main = n:[0-9]+ #atomic => $n`
 	data, err := compile(t, src).MarshalBinary("main")
@@ -181,11 +182,17 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 		b = append([]byte(nil), b[:len(b)-4]...)
 		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	}
-	for _, isa := range []byte{1, 8, isaVersion + 1} {
+	for _, isa := range []byte{1, 8, 12, isaVersion, isaVersion + 1} {
 		d := append([]byte(nil), data...)
 		d[len(compiledMagic)+1] = isa
 		prog, _, err := LoadProgram(resum(d), Options{})
-		if isa > isaVersion {
+		switch {
+		case isa < isaVersion:
+			if err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+				t.Errorf("isa %d: got %v", isa, err)
+			}
+			continue
+		case isa > isaVersion:
 			if err == nil || !strings.Contains(err.Error(), "unsupported instruction set version") {
 				t.Errorf("isa %d: got %v", isa, err)
 			}

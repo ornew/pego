@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"strings"
 )
 
 // Module is a grammar compiled to bytecode. It is the only thing the VM runs.
@@ -17,107 +16,12 @@ type Module struct {
 	OperatorsRules []OperatorsRuleInfo
 	Code           []Instr // matching code
 	Exprs          []Instr // expression code (actions and predicates)
+	// SourceInfo reports that the values record source information (Options.SourceInfo).
+	SourceInfo bool
 }
 
-// hasDiagnosticLabels distinguishes modules requiring instruction set version 8.
-func (m *Module) hasDiagnosticLabels() bool {
-	for _, in := range m.Code {
-		if in.Op == OpLabel && in.B == 1 {
-			return true
-		}
-	}
-	return false
-}
-
-// hasIndexing reports whether the module indexes lists (EBIN with the operator []), which needs
-// instruction set version 10.
-func (m *Module) hasIndexing() bool { return m.hasExpr(EBin, func(s string) bool { return s == "[]" }) }
-
-// hasCaptureAccess reports whether the module reads captures with x.$y (EMEMBER with a name
-// starting with $), which needs instruction set version 11.
-func (m *Module) hasCaptureAccess() bool {
-	return m.hasExpr(EMember, func(s string) bool { return strings.HasPrefix(s, "$") })
-}
-
-// hasCasts reports whether the module casts values with x.(T) (ECAST), which needs instruction set
-// version 12.
-func (m *Module) hasCasts() bool { return m.hasExpr(ECast, func(string) bool { return true }) }
-
-// hasExpr reports whether the module has an expression instruction op whose string operand A
-// satisfies is.
-func (m *Module) hasExpr(op Op, is func(string) bool) bool {
-	for _, in := range m.Exprs {
-		if in.Op == op && in.A >= 0 && int(in.A) < len(m.Strings) && is(m.Strings[in.A]) {
-			return true
-		}
-	}
-	return false
-}
-
-// hasTypeChecks reports whether the module checks values against declared types at run time,
-// which needs instruction set version 9.
-func (m *Module) hasTypeChecks() bool {
-	for _, in := range m.Exprs {
-		if in.Op == ECheck {
-			return true
-		}
-	}
-	for _, r := range m.Rules {
-		if r.Check >= 0 {
-			return true
-		}
-	}
-	for _, p := range m.OperatorsRules {
-		for _, l := range p.Operands {
-			if l.Check >= 0 {
-				return true
-			}
-		}
-		for _, ops := range [][]OpInfo{p.Prefix, p.Led} {
-			for _, o := range ops {
-				if o.Line.Check >= 0 {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
-func (m *Module) instructionSetVersion() int {
-	if m.hasCasts() {
-		return 12
-	}
-	if m.hasCaptureAccess() {
-		return 11
-	}
-	if m.hasIndexing() {
-		return 10
-	}
-	if m.hasTypeChecks() {
-		return 9
-	}
-	if m.hasDiagnosticLabels() {
-		return 8
-	}
-	for _, in := range m.Exprs {
-		if in.Op == ECall && in.A == bFilter {
-			return 6
-		}
-	}
-	for _, in := range m.Exprs {
-		if in.Op == ETerminal {
-			return 5
-		}
-	}
-	for _, in := range m.Code {
-		if in.Op == OpRepeatWide || in.Op == OpScanWide {
-			return 4
-		}
-	}
-	return 3
-}
+// instructionSetVersion is the instruction set of every module: the value model's.
+func (m *Module) instructionSetVersion() int { return isaVersion }
 
 // Class is a character class. Ranges is a list of lower and upper bound pairs.
 type Class struct {

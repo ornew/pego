@@ -192,7 +192,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	for _, omit := range []bool{false, true} {
 		p := compile(t, constructorGrammar)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-		if err != nil || data[len(compiledMagic)+1] != 5 {
+		if err != nil || data[len(compiledMagic)+1] != isaVersion {
 			t.Fatalf("terminal ISA: %v", err)
 		}
 		loaded, _, err := LoadProgram(data, Options{})
@@ -207,9 +207,9 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 				}
 			}
 		}
-		data[len(compiledMagic)+1] = 4
+		data[len(compiledMagic)+1] = isaVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "instruction set version 5") {
+		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("wrong ISA accepted: %v", err)
 		}
 		module := p.Module()
@@ -226,7 +226,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []Match{$v1}`} {
 		p := compile(t, source)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		if err != nil || data[len(compiledMagic)+1] != 3 {
+		if err != nil || data[len(compiledMagic)+1] != isaVersion {
 			t.Fatalf("unchanged/list-only ISA: %v", err)
 		}
 	}
