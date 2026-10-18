@@ -49,6 +49,7 @@ examined 1240001 positions in 292.65ms (profiling included)
 What to look at:
 - Most time is spent in item (30%), spaced (27%), word (17%), not counting the rules they call.
 - Evaluated again where they had been evaluated before: ws (130001 of 330002 evaluations, up to 4 times at 2:61). A memoized rule is usually evaluated at most twice at a position; a rule that is not is evaluated whenever its caller is retried there. Look for choices whose alternatives begin with the same calls, and factor the common part out.
+- Failed after examining much input: spaced (61 positions from 2:1). A call that fails late throws its work away, and what is tried next often matches the same input again. Check whether an alternative shares a long prefix with a later one, and whether a cut (#cut) after the part that identifies an alternative can stop the parser from trying the others.
 ```
 
 (The times differ from run to run; the counts do not.)
