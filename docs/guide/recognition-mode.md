@@ -45,7 +45,7 @@ exits with status 1).
 
 ## Related Topics
 
-- [Backends](backends.md): the engines that recognition runs on.
+- [Choosing a Backend](backends.md): the engines that recognition runs on.
 - [Compiled Grammars](compiled-grammars.md): which saved grammars can recognize.
 - [Generated Go API](generated-go-api.md#recognition--recognize): recognition in generated parsers.
 - [Running Parsers](running-parsers.md): the other options of a parse.

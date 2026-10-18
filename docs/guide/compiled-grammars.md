@@ -136,7 +136,7 @@ pego compile -g existing-noast.pegoc -no-ast -o copy-noast.pegoc
 Choose the file without the AST for a build artifact that is only ever executed, and the full file when something may
 want to read the grammar again (a tool that lints, formats or generates from it) or when the closure backend's speed
 matters more than the load time. The effects on size and load time are in the next section. The effect on parse speed
-is the difference between the backends, which the [Backends](backends.md#which-one) measures: on its benchmarks the
+is the difference between the backends, which the [Choosing a Backend](backends.md#which-one) measures: on its benchmarks the
 recursive bytecode VM is 1.1 to 1.3 times slower than the closure backend. If you load a file without the AST and want
 the iterative VM, say so: `pego.WithBackend(pego.BytecodeIterative)`.
 

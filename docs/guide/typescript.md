@@ -1,4 +1,4 @@
-# Generating TypeScript Parsers With `pego gen -lang ts`
+# Generated TypeScript Parsers
 
 `pego gen -lang ts` turns a grammar into a TypeScript module: a parser you commit next to your code and import like
 any other module. The module has no dependencies, not even on Node.js: it runs in Node.js, Deno, Bun and browsers,

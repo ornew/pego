@@ -294,7 +294,7 @@ Notes:
   invocation, and `-max-depth` changes the generated default. With the nested-parentheses grammar
   `rule nested = "(" nested ")" / "x"`, 50,000 levels parse and 200,000 levels fail with that error. If you must accept
   deeper nesting beyond the host stack, the engine's `BytecodeIterative` backend with `WithMaxDepth` is the tool
-  ([Backends](backends.md#deep-nesting-and-withmaxdepth)).
+  ([Choosing a Backend](backends.md#deep-nesting-and-withmaxdepth)).
 - **Memory.** Generated parsers memoize in the same way as the engine, so memory still grows with the input. For input
   larger than memory, generate `ParseStream` with `-stream` or use the engine's `ParseStream`.
 - Using a stream grammar with the generator is fine: `Parse` treats the `#stream` pragma as an ordinary repetition, so

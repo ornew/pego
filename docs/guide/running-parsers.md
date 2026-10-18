@@ -256,7 +256,7 @@ kept and lost, sizes, embedding, versions and loading files you did not produce.
 - [Generating Parsers](code-generation.md), [Incremental Parsing](incremental.md) and [Streaming](streaming.md): the other ways to
   run a grammar, when a plain `Parse` does not fit.
 - [Cancellation and Work Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
-  Units](position-units.md) and [Backends](backends.md): the options of a parse.
+  Units](position-units.md) and [Choosing a Backend](backends.md): the options of a parse.
 - [Reading Trees](reading-trees.md): what to do with the result.
 - [Error Messages](error-messages.md): reporting syntax errors.
 - [Recovering from Errors](recovery.md): parsing on after a syntax error.

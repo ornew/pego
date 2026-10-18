@@ -1,4 +1,4 @@
-# Backends
+# Choosing a Backend
 
 A backend is the way a compiled grammar is executed. This guide compares them, helps you choose one, and explains the
 nesting limit that bounds recursion. [Recognition Mode](recognition-mode.md) and [Memoization](memoization.md) apply to every

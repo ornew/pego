@@ -21,7 +21,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | Guide | Contents |
 |:--|:--|
 | [Running Parsers](running-parsers.md) | The Go API: the pipeline from source to parser, compiling, start rules, results and errors, concurrency, choosing a feature |
-| [Backends](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit |
+| [Choosing a Backend](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit |
 | [Recognition Mode](recognition-mode.md) | `RecognizeOnly`: checking input without building a tree, what it still evaluates and where it does not apply |
 | [Memoization](memoization.md) | What the packrat memo table remembers, when, and what it means for memory, streaming and incremental parsing |
 | [Cancellation and Work Limits](cancellation-and-limits.md) | `WithContext` and `WithWorkLimits`: stopping a parse and what it returns |
@@ -80,7 +80,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | A service that parses with a fixed grammar and wants the fastest parser | [Generating Parsers](code-generation.md) |
 | A fixed grammar where start-up matters, or the grammar must be a data file | [Compiled Grammars](compiled-grammars.md) |
 | Validating input, no tree needed | [Recognition Mode](recognition-mode.md) |
-| Untrusted or machine-generated input that may nest deeply | [Backends](backends.md) |
+| Untrusted or machine-generated input that may nest deeply | [Choosing a Backend](backends.md) |
 | Input larger than memory | [Streaming](streaming.md) |
 | Editor-style reparsing after small edits | [Incremental Parsing](incremental.md) |
 | Positions that index a Go string | [Position Units](position-units.md) |

@@ -393,7 +393,7 @@ Each check came from a kind of bug:
 | Check | Catches |
 |:--|:--|
 | The parse returns, with a tree or an error | A panic or an endless loop, reported by the test run |
-| All backends return the same tree and error | A bug in one of the three engines, or an action that depends on something other than its inputs (the three are specified to agree: see the [Backends](backends.md)) |
+| All backends return the same tree and error | A bug in one of the three engines, or an action that depends on something other than its inputs (the three are specified to agree: see the [Choosing a Backend](backends.md)) |
 | `RecognizeOnly` agrees with `Parse` | Recognition and a full parse that diverge: a bug in one of them, or an action that fails at run time (recognition does not run actions) |
 | The error position lies inside the input | Off-by-one positions of errors, most often at the end of input |
 | Every node lies inside its parent, and a terminal's `Text` is the input at its position | Wrong `Start` and `End`, such as a rule that consumes trailing space but reports a range without it |
