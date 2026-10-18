@@ -34,9 +34,9 @@ type Node struct {
 	kind *nodeKind
 	// start and end are the range in the input, in the parse's position unit (end is exclusive).
 	start, end int32
-	// text is the text of a terminal.
+	// text is the string value of a string node.
 	text string
-	// children are the children of Seq, List, and Operator nodes. Omitted elements are nil.
+	// children are the elements of a tuple or list value. An optional that did not match is nil.
 	children []*Node
 	// fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
 	fields Fields
@@ -46,11 +46,11 @@ type Node struct {
 	fresh bool
 	// terminal reports that the node is a terminal.
 	terminal bool
-	// labeled reports that the captures in Fields are output (source information was requested).
+	// labeled reports that the captures in fields are output (source information was requested).
 	labeled bool
 	// gen is the number of Document edits that the positions account for (see moveTree).
 	gen uint32
-	// box is the value carried by a Box.
+	// box is the value of an action that is not a node (a KindValue node).
 	box any
 }
 

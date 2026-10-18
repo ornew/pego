@@ -1,6 +1,6 @@
 # 060. Value Types and Generic Nodes
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-17
 
@@ -330,3 +330,32 @@ rewritten to the new syntax. Compare tree size, allocation and parse time with
 the current representation on the benchmark grammars before and after the
 removal of capture fields; record whether compile-time capture indexes remove
 lookup costs as expected.
+
+## Performance and Results
+
+Three alternating samples of `BenchmarkParse`, `BenchmarkRecognize`,
+`BenchmarkIncremental` and `BenchmarkStream` compared the previous tree model
+with the value model, each binary run against its own revision's grammars, on
+an Apple M3 Max with Go 1.27.1. Over the 120 benchmarks the geometric means of
+the median ratios were 1.013× time, 1.066× bytes and 1.048× allocations per
+operation; the time spread between samples was mostly 0–3% and up to 8%.
+
+- **Every node is larger.** A node now has room for a value built by an
+  action, which accounts for the uniform 1.04–1.09× bytes on JSON, CSV, XML, Outline and streams, at 0.98–1.04× time.
+- **Grammars with many valued subexpressions build more nodes.** Optionals,
+  repetitions and literals inside sequences are nodes of their own, and
+  operator lines build tuples. Minilang parses took 1.20–1.41× bytes and
+  1.03–1.08× time on the engine backends and 1.70× bytes on the generated
+  `Node` parser; operators-rule arithmetic took 1.27× bytes and recovery
+  1.21–1.67×.
+- **Typed generated values are smaller.** Without node fields, generated typed
+  Minilang parses took 0.21× bytes and 0.84× time, and recovery 0.25× bytes and
+  0.83× time.
+- **Recognition is unchanged** within 0.99–1.04× time; its allocation counts
+  stay in the tens per parse.
+- **Incremental reparses** took 1.04–1.06× time; fresh Documents took
+  1.22–1.41× bytes and Document edits 1.03×.
+
+The node size and the extra nodes of valued subexpressions are the candidates
+for later work: carrying action values outside the node, and not allocating
+nodes for terminals, which the opaque `Node` permits.
