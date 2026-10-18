@@ -68,3 +68,18 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md) | Generating inputs a grammar accepts with `pego sample` and package `sample`: seeds and size bounds, coverage, near-miss invalid inputs, seeding Go fuzz tests |
 | [Editor Support](editor-support.md) | The language server (`pego lsp`): diagnostics, formatting, navigation, hover, rename, completion and semantic highlighting; setting up VS Code, Neovim, Helix and Emacs |
 | [The Playground](playground.md) | The browser playground: inspecting trees and errors, sharing grammar state, its limits and the WebAssembly API |
+
+## Choosing a Guide
+
+| Situation | Read |
+|:--|:--|
+| Prototyping a grammar, or a tool that reads grammars at run time | [Running Parsers](running-parsers.md); `pego parse` to experiment ([The `pego` Command](command-line.md)) |
+| A service that parses with a fixed grammar and wants the fastest parser | [Generating Parsers](code-generation.md) |
+| A fixed grammar where start-up matters, or the grammar must be a data file | [Compiled Grammars](compiled-grammars.md) |
+| Validating input, no tree needed | [Recognition Mode](recognition-mode.md) |
+| Untrusted or machine-generated input that may nest deeply | [Backends](backends.md) |
+| Input larger than memory | [Streaming](streaming.md) |
+| Editor-style reparsing after small edits | [Incremental Parsing](incremental.md) |
+| Positions that index a Go string | [Position Units](position-units.md) |
+| Several entry points for one grammar | [Running Parsers](running-parsers.md#choosing-a-start-rule) |
+| Finding why an input fails or a parse is slow | [Debugging and Profiling](debugging.md) |

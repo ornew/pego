@@ -251,24 +251,10 @@ it; on the command line, `pego compile` writes the file and every `-g` argument 
 grammar AST runs only on the bytecode backends. The [Compiled Grammars](compiled-grammars.md) guide covers what is
 kept and lost, sizes, embedding, versions and loading files you did not produce.
 
-## Choosing a Feature
-
-| Situation | Use |
-|:--|:--|
-| Prototyping a grammar, or a tool that reads grammars at run time | `CompileSource` and the default backend; `pego parse` to experiment |
-| A service that parses with a fixed grammar and wants the fastest parser | [`pego gen`](code-generation.md) |
-| A fixed grammar where start-up matters, or the grammar must be a data file | `pego compile` plus `go:embed` and `LoadParser` (see [compiled grammars](compiled-grammars.md)) |
-| Validating input, no tree needed | `RecognizeOnly()` (or `pego parse -check`) |
-| Untrusted or machine-generated input that may nest deeply | `BytecodeIterative` (or a lowered `WithMaxDepth`) |
-| Input larger than memory | `#stream` and `ParseStream` |
-| Editor-style reparsing after small edits | `NewDocument` |
-| Positions that index a Go string | `WithUnit(pego.Bytes)` |
-| Several entry points for one grammar | `Parser.WithStart` |
-| Many goroutines | Share one `*pego.Parser` |
-| Finding why an input fails or a parse is slow | `pego explain`, `pego trace`, `pego profile` (see [debugging.md](debugging.md)) |
-
 ## Related Topics
 
+- [Generating Parsers](code-generation.md), [Incremental Parsing](incremental.md) and [Streaming](streaming.md): the other ways to
+  run a grammar, when a plain `Parse` does not fit.
 - [Cancellation and Work Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
   Units](position-units.md) and [Backends](backends.md): the options of a parse.
 - [Reading Trees](reading-trees.md): what to do with the result.
