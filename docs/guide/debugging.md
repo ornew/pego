@@ -480,14 +480,10 @@ _, err := pairsparser.Parse(input,
 )
 ```
 
-Filtering a rule includes its named descendants; unknown names match nothing.
-With no filter names, all entered rules are delivered. Depth starts at one for
-the start rule; zero or a negative limit is unlimited. `TraceEnter` and
-`TraceExit` describe calls that ran. `TraceSkipped` is unpaired and currently
-reports only first-character dispatch skips whose target can be identified.
-In batch parses `ExaminedKnown` is false, so do not interpret `Examined` as a
-complete input range; Document parses report it, as described below. An aborted parse may omit exit events. Callback panics propagate
-unchanged after cleanup.
+Filtering a rule includes its named descendants, and unknown names match nothing. Depth starts at one for the start
+rule. `TraceSkipped` is not paired with an exit event, and in batch parses `Examined` is not a complete input range
+(`ExaminedKnown` is false). The [specification](../../spec/observability.md#generated-go-batch-tracing) defines the
+events, the filters and what an aborted parse omits.
 
 With `-types`, `ParseAST` and `ParseRuleAST` accept the same trace options. This
 applies to both direct typed execution and Node-conversion fallback. Events
@@ -676,38 +672,17 @@ const snapshot = profile.snapshot();
 console.log(JSON.stringify(snapshot));
 ```
 
-The same option works with `parseRuleWithOptions` and
-`recognizeWithOptions`; with `-types`, it also works with
-`parseASTWithOptions`. The legacy positional-unit APIs do not accept profiling
-options. A `Profile` aggregates across parses, but cannot be shared by
-concurrent calls. Its snapshot owns rule rows sorted by name, skip-reason
-counts sorted by reason, and each `maxEvalsAt` location. Modifying a snapshot
-does not change later snapshots. No input, callback, parser history or
-per-call state is retained.
+The same option works with `parseRuleWithOptions`, `recognizeWithOptions` and, with `-types`, `parseASTWithOptions`.
+A `Profile` aggregates across parses but cannot be shared by concurrent calls, and a snapshot is a copy that later
+parses do not change. The counters are the camel-case counterparts of the generated Go profile; `time` and `selfTime`
+are in milliseconds, measured with the host's `performance.now()` clock, and the flags `examinedKnown`
+and `wastedKnown` are false. The [specification](../../spec/observability.md#generated-typescript-batch-profiling)
+defines every counter, including when a snapshot taken inside a trace callback leaves out the current call.
 
-The camel-case counters mirror the generated Go profile. `entered` counts
-started calls; `calls`, evaluation counts, matches/failures and timings cover
-completed calls. Skips are counted independently of trace filters.
-`examinedKnown` and `wastedKnown` are false. `time` and `selfTime` are in
-milliseconds and use the host's monotonic `performance.now()` clock. Root time
-excludes input setup, whole-input end checks and typed-result conversion; rule
-time counts recursive calls of the same rule once per invocation, and self
-time excludes child time. Both include synchronous trace callback work. When
-the exit-time clock read succeeds, an exit is recorded after its callback
-returns or throws. A snapshot taken inside that callback can omit the current
-call until it unwinds. Callback throws retain their original value after
-cleanup.
-
-Profiling requires `performance.now()`; without it, a profiled invocation
-returns an `Error`. The runtime has no `Date.now()` fallback. Clock access or
-invocation failures preserve the thrown value, while non-finite or backward
-readings fail explicitly and can leave a partial profile. If both a trace
-callback and a later clock read fail, the callback's original thrown value
-wins and that exit may be omitted from the profile. Focused Node 24.19 runs
-measured profile paths at 1.58–4.02× ordinary time, depending on API and fixture. These synthetic runs did not measure
-JavaScript allocations, retained heap or browser timing; see [design
-043](../design/043-generated-parser-observability.md#typescript-profile-measurements)
-for conditions and limits.
+Profiling requires `performance.now()`; without it, a profiled invocation returns an `Error`, and there is no
+`Date.now()` fallback. Profiled runs took 1.58 to 4.02 times as long as ordinary ones in focused Node 24.19
+measurements; see [design 043](../design/043-generated-parser-observability.md#typescript-profile-measurements) for the
+conditions and limits. The specification covers clock failures and callback errors.
 
 ## Costs and Limits
 
