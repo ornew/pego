@@ -166,6 +166,8 @@ func TestValueActionTypes(t *testing.T) {
 		// text is the input a node spans, whatever its value.
 		{`rule a = x:("x" "y")* => text($x)`, "a", `string`},
 		{`rule a = x:"x"? => text($x)`, "a", `string`},
+		{"rule a = x:(b / c)? => text($x)\nrule b = \"b\" \"1\"\nrule c = \"c\"", "a", `string`},
+		{"rule a = x:(b / c)? => len($x)\nrule b = \"b\" \"1\"\nrule c = \"c\"", "a", `int`},
 		// The example of the record: map over the node of a repetition reads its elements.
 		{`rule a = x:(y:.)* => map($x, (i) => i.$y)`, "a", `[]node[string]`},
 		{`rule a = x:(y:.)* => map($x.Value, (i) => i.Value[0])`, "a", `[]node[string]`},

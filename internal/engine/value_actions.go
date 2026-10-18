@@ -104,6 +104,23 @@ func (v *valueInference) alts(t ty) []ty {
 	return []ty{v.expand(t)}
 }
 
+// everyAlt reports whether ok holds for every argument of the expanded union t, looking through
+// optional types. nil, unknown values and _|_ are accepted.
+func (v *valueInference) everyAlt(t ty, ok func(ty) bool) bool {
+	for _, x := range v.alts(t) {
+		if o, isOpt := x.(optTy); isOpt {
+			if !v.everyAlt(o.elem, ok) {
+				return false
+			}
+			continue
+		}
+		if x != tyNil && x != tyAny && x != tyBottom && !ok(x) {
+			return false
+		}
+	}
+	return true
+}
+
 // assignable reports whether a value of type s fits a location of type d. Subtyping is minimal:
 // _|_ <= T <= _, T <= *T, nil <= *T, a union argument is below its union, lists, optional types
 // and nodes are covariant, tuples are covariant element-wise, and structs compare by identity.
@@ -507,34 +524,24 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 	switch t.Func {
 	case "len":
 		a := arg(0)
-		for _, x := range v.alts(a) {
-			if o, ok := x.(optTy); ok {
-				x = v.expand(o.elem)
-			}
+		if !v.everyAlt(a, func(x ty) bool {
 			switch x.(type) {
 			case nodeTy, listTy, tupleTy:
-				continue
+				return true
 			}
-			if x != tyString && x != tyNil && x != tyAny && x != tyBottom {
-				v.errorf(t.Diagnostic(), "len: invalid argument %s", a)
-				break
-			}
+			return x == tyString
+		}) {
+			v.errorf(t.Diagnostic(), "len: invalid argument %s", a)
 		}
 		return tyInt
 	case "text":
 		// text(x) is the input that node x spans; nil and strings are kept as they are.
 		a := arg(0)
-		for _, x := range v.alts(a) {
-			if o, ok := x.(optTy); ok {
-				x = v.expand(o.elem)
-			}
-			if _, ok := x.(nodeTy); ok {
-				continue
-			}
-			if x != tyString && x != tyNil && x != tyAny && x != tyBottom {
-				v.errorf(t.Diagnostic(), "text: invalid argument %s", a)
-				break
-			}
+		if !v.everyAlt(a, func(x ty) bool {
+			_, ok := x.(nodeTy)
+			return ok || x == tyString
+		}) {
+			v.errorf(t.Diagnostic(), "text: invalid argument %s", a)
 		}
 		return tyString
 	case "foldl", "foldr":
