@@ -28,7 +28,7 @@ The chapters are in three parts, in reading order: each builds on the ones befor
 
 | | Chapter | Defines |
 |--:|:--|:--|
-| 1 | [Overview](overview.md) | The main ideas of the language and a complete example grammar |
+| 1 | [Overview](overview.md) | The main ideas of the language and the chapter that defines each |
 | 2 | [Lexical Structure](lexical.md) | Characters, white space, `//` and nested `/* ... */` comments, identifiers, keywords, literals, escape sequences, punctuation and adjacency |
 | 3 | [Grammar Files](grammar-files.md) | The optional package clause, Type and Rule Definition Statements, names, source metadata and grammar representations |
 | 4 | [Type System](types.md) | Built-in and reserved types, struct, union and terminal types, names of types, assignability |
