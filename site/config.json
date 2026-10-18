@@ -50,7 +50,8 @@
       "title": "Tutorial",
       "match": [
         "docs/tutorial/*.md"
-      ]
+      ],
+      "index": "docs/tutorial/README.md"
     },
     {
       "title": "Guides",

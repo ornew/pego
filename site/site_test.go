@@ -588,7 +588,7 @@ func TestNavigation(t *testing.T) {
 	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Project"; got != want {
 		t.Errorf("sections = %s, want %s", got, want)
 	}
-	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
+	if want := map[string]bool{"docs/tutorial/": true, "docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
 		t.Errorf("pages titled Introduction = %v, want %v", intro, want)
 	}
 	apiPage, err := os.ReadFile(filepath.Join(out, "reference", "grammar", "index.html"))
