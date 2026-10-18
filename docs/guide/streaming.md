@@ -28,15 +28,15 @@ Recognition treats `#stream` as an ordinary repetition and invokes no callbacks.
 predicates still work, but element values are not collected or decorated with captures. This applies to both VM
 backends as well as Closure; recognition from a saved grammar requires its AST.
 
-- [A first example](#a-first-example)
-- [Pulling one element at a time](#pulling-one-element-at-a-time)
-- [What is emitted, and when](#what-is-emitted-and-when)
-- [Rules and limits](#rules-and-limits)
-- [Positions and text](#positions-and-text)
+- [A First Example](#a-first-example)
+- [Pulling One Element at a Time](#pulling-one-element-at-a-time)
+- [What Is Emitted, and When](#what-is-emitted-and-when)
+- [Rules and Limits](#rules-and-limits)
+- [Positions and Text](#positions-and-text)
 - [Errors](#errors)
 - [Memory](#memory)
-- [Cancelling a stream](#cancelling-a-stream)
-- [See also](#see-also)
+- [Cancelling a Stream](#cancelling-a-stream)
+- [See Also](#see-also)
 
 ## A First Example
 
@@ -250,22 +250,29 @@ next chunk shows it is not followed by another letter, and `ef` until the end of
 
 ## Rules and Limits
 
-| | |
-|:--|:--|
-| Where `#stream` can appear | On a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`). Anywhere else (inside a choice or a group, or on something that is not a repetition) is a compile error, as is a second `#stream` in the same rule or any argument to it. |
-| Which rule streams | Only the **start rule** of the parse, at call depth 1. `ParseStream` fails with `rule main has no #stream repetition` if the start rule has none, even when a rule it calls does. Use `Parser.WithStart` to stream from another rule. In every other call of a rule that contains `#stream`, the repetition is an ordinary one. |
-| What may follow | Anything. After the repetition ends, the rest of the start rule must match as usual, normally `$$`. |
-| Finite bounds | `#repeat(n,m)` delivers at most `m` elements and fails if fewer than `n` match. `#repeat(0)` executes no elements. Input beyond the maximum is left for the suffix: `"a" #repeat(1,2) #stream "a" $$` accepts `aaa` and delivers two elements. A later suffix or minimum failure does not retract elements already delivered. |
-| Recovery boundary | `#recover` cannot wrap the `#stream` repetition in either pragma order: rewinding could reach input already discarded. Put recovery inside each repeated element or its rule. `@error` may still label the streaming repetition. Older saved modules with the unsafe wrapper are rejected, including files without an AST. |
-| Elements that can match nothing | If the maximum permits an element, the first element that matches the empty string is delivered once and then ends the repetition. It counts toward the minimum; if the total is still below the minimum, parsing fails without retracting delivered elements. For example, `_ #repeat(2) #stream` on empty input emits once and fails, just as batch parsing fails after one empty iteration. Without a guard like the `!$$` in [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers one extra empty record at the end of input. |
-| Options | `WithUnit` and `WithBackend` work; `WithMaxDepth` applies; `RecognizeOnly` is an error. |
-| Lookbehind | After an element, the input before it is dropped except for the one character before it, so `^` (beginning of line) still works at the start of the next element. Nothing in the language looks further back. |
-| Concurrency | A `Parser` can run many `ParseStream` calls at once. Each call has its own state. |
+The rules that matter when you write a grammar, in short:
 
-The compile errors are `#stream is only allowed at the top level of a rule body`, `a rule body can have only one
-#stream`, `#recover cannot wrap a #stream repetition; recover inside each element instead`, `#stream must be attached to
-a repetition (*, +, or #repeat(...))` and `#stream takes no arguments` (which only a grammar AST or JSON can produce). A
-grammar can report more than one, in no specified order.
+- `#stream` goes on a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule or an item of its top-level
+  sequence, such as `items:record* #stream`, and a rule has at most one.
+- Only the **start rule** streams. `ParseStream` fails with `rule main has no #stream repetition` if the start rule has
+  none, even when a rule it calls does; use `Parser.WithStart` to stream from another rule. Everywhere else the
+  repetition is an ordinary one.
+- After the repetition ends, the rest of the start rule must match as usual, normally `$$`. With finite bounds,
+  `"a" #repeat(1,2) #stream "a" $$` accepts `aaa` and delivers two elements, and a later failure does not retract the
+  elements already delivered.
+- `#recover` cannot wrap the `#stream` repetition, because rewinding could reach input that is already discarded. Put
+  recovery inside each repeated element or its rule.
+- An element that can match nothing is delivered once and then ends the repetition. Without a guard like the `!$$` in
+  [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers
+  one extra empty record at the end of the input.
+- `WithUnit`, `WithBackend` and `WithMaxDepth` work; `RecognizeOnly` is an error. After an element only the one
+  character before it is kept, so `^` still works at the start of the next element.
+- A `Parser` can run many `ParseStream` calls at once.
+
+The [specification](../../spec/streaming.md#contract) states each of these exactly.
+
+Misplaced `#stream` pragmas are compile errors; the specification lists them under
+[Validation and Errors](../../spec/streaming.md#validation-and-errors).
 
 ## Positions and Text
 
@@ -414,32 +421,14 @@ an error, parsing stops with that error and the corresponding element is not
 delivered. Recoveries in a successful suffix are reported before the terminal
 result.
 
-By default, the terminal error retains every recovered diagnostic as
-`pego.SyntaxErrors`. Add `pego.WithDiagnosticLimit(n)` to retain only the latest
-`n` committed recoveries in occurrence order. A positive limit bounds the
-retained tail while the callback, if supplied, still receives every committed
-recovery for as long as it returns nil. If any errors were dropped, the terminal
-error is `*pego.TruncatedSyntaxErrors`; use `errors.As` to inspect its `Errors`, `Total`,
-`Dropped`, and `CountsSaturated` fields. Its `Unwrap` method also exposes the
-retained errors as `pego.SyntaxErrors`. Counts saturate rather than wrap; when
-`CountsSaturated` is true, `Total` and `Dropped` are lower bounds. If the total
-does not exceed the limit, the terminal error is an ordinary
-`pego.SyntaxErrors`.
-
-A limit of zero keeps the legacy unbounded result. Supplying zero explicitly is
-still a stream-only option, as is any positive limit; negative limits are
-invalid. Diagnostic options are rejected by `Parse`, `ParsePrefix`, and
-`Document`. Retaining a bounded tail does not bound errors that the callback
-stores itself. When tracing is enabled with a positive limit, the successful
-start-rule exit event exposes the same ordered retained tail through
-`TraceEvent.Recovered()`, including recoveries from a successful suffix. The
-trace event exposes only the retained errors; inspect the terminal
-`TruncatedSyntaxErrors` for total and dropped counts. `WithContext` and
-`WithWorkLimits` apply to the whole stream invocation, including diagnostic
-callbacks and the work to copy a bounded tail. If a work check observes
-interruption before the stream reaches its terminal result, the interruption
-error is returned instead of a completed diagnostic result. A callback or reader already blocked in caller-owned code cannot be
-preempted by the parser.
+By default, the terminal error retains every recovered diagnostic as `pego.SyntaxErrors`, so an input with an error on
+every line holds them all. Add `pego.WithDiagnosticLimit(n)` to retain only the latest `n`. If any were dropped, the
+terminal error is a `*pego.TruncatedSyntaxErrors`, which you inspect with `errors.As` (`Errors`, `Total`, `Dropped`).
+The callback still receives every committed recovery, and errors that the callback stores itself are not bounded. The
+diagnostic options are for streams only; `Parse`, `ParsePrefix` and `Document` reject them. `WithContext` and
+`WithWorkLimits` cover the callbacks too, but a callback or reader that is blocked in your code cannot be preempted. The
+[specification](../../spec/streaming.md#recovered-errors) defines the counts, their saturation, tracing and the order of
+the reports.
 
 A panic from your reader or callback propagates with its original value on every backend,
 including values implementing Go's `runtime.Error`. Already delivered elements remain valid;
@@ -452,17 +441,11 @@ before `SyntaxError.Pos` that was delivered is final.
 
 ## Memory
 
-An action may construct temporary nodes and return `nil`. The callback receives
-that nil value, and the action's construction tracker releases its references
-before delivery. Clearing that tracker preserves nodes the action returns;
-it does not change their fields or positions. Variables hold scalar values.
-
-Repeated variable assignments keep one current binding per name. Environments
-saved for backtracking or a caller remain immutable, but the current environment
-does not retain all previous assignments from consumed records. Lookup cost
-depends on distinct variable names. Large variable values, active rollback
-points and memo keys can still keep their own data alive. To measure these costs
-in your workload, see the [performance measurement method](../performance.md#how-to-measure).
+An action may construct temporary nodes and return `nil`; the callback then receives `nil` and the temporary nodes are
+released. Variable assignments do not accumulate over the records already consumed, but large variable values, active
+rollback points and memo keys keep their own data alive. To measure these costs in your workload, see the
+[performance measurement method](../performance.md#how-to-measure) and the
+[specification](../../spec/streaming.md#memory).
 
 What a stream parse releases as it goes:
 
