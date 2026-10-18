@@ -42,9 +42,24 @@ type Parser struct {
 	start string
 }
 
+// CompileOption configures compilation.
+type CompileOption func(*engine.Options)
+
+// WithSourceInfo records source information in parse results: the rule that produced each node
+// and where its captures are. Node.Rule, Node.Field, the rule and capture names of JSON and
+// S-expression output, and rule constraints in queries need it. It costs time and memory, so
+// parsers omit it by default.
+func WithSourceInfo() CompileOption {
+	return func(o *engine.Options) { o.SourceInfo = true }
+}
+
 // Compile compiles the grammar g into a parser that starts parsing at the rule start.
-func Compile(g *grammar.Grammar, start string) (*Parser, error) {
-	prog, err := engine.Compile(g, engine.Options{})
+func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, error) {
+	var o engine.Options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	prog, err := engine.Compile(g, o)
 	if err != nil {
 		return nil, err
 	}
@@ -54,16 +69,19 @@ func Compile(g *grammar.Grammar, start string) (*Parser, error) {
 	return &Parser{prog: prog, start: start}, nil
 }
 
+// SourceInfo reports whether the parser records source information (WithSourceInfo).
+func (p *Parser) SourceInfo() bool { return p.prog.SourceInfo() }
+
 // CompileSource compiles PEGO source code into a parser that starts parsing at the rule start.
-func CompileSource(src, start string) (*Parser, error) {
+func CompileSource(src, start string, opts ...CompileOption) (*Parser, error) {
 	g, err := ParseGrammar(src)
 	if err != nil {
 		return nil, err
 	}
-	return Compile(g, start)
+	return Compile(g, start, opts...)
 }
 
-// PositionUnit is the unit of input positions: node Start and End, startPos and endPos in actions, syntax error
+// PositionUnit is the unit of input positions: node Start and End (also in actions), syntax error
 // positions and columns, and the len builtin.
 type PositionUnit = engine.PositionUnit
 
@@ -379,6 +397,12 @@ type GenOption func(*engine.GenOptions)
 // Names colliding with runtime declarations gain underscores.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
+}
+
+// WithGeneratedSourceInfo makes the generated parser record source information, as WithSourceInfo
+// does for a compiled parser.
+func WithGeneratedSourceInfo() GenOption {
+	return func(o *engine.GenOptions) { o.SourceInfo = true }
 }
 
 // WithDocument generates a mutable incremental Document for Go. Combined with

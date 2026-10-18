@@ -20,14 +20,14 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := n.String(); got != `(Pair Key="abc" Value="12")` {
+	if got := n.String(); got != `Pair{Key: "abc", Value: "12"}` {
 		t.Errorf("got %s", got)
 	}
 	data, err := json.Marshal(n)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `"Key":{"type":"Match","start":0,"end":3,"text":"abc"}`) {
+	if !strings.Contains(string(data), `"Key":{"start":0,"end":3,"value":"abc"}`) {
 		t.Errorf("json %s", data)
 	}
 
@@ -44,7 +44,7 @@ func TestCompileAST(t *testing.T) {
 			&grammar.Literal{Value: "a"}, &grammar.Literal{Value: "b"},
 		}}},
 	}}
-	p, err := pego.Compile(g, "main")
+	p, err := pego.Compile(g, "main", pego.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,14 +76,14 @@ func TestParseStream(t *testing.T) {
 		got = append(got, n.String())
 		return nil
 	})
-	if err != nil || strings.Join(got, " ") != `(Seq "ab") (Seq "cd")` {
+	if err != nil || strings.Join(got, " ") != `("ab") ("cd")` {
 		t.Errorf("got %v, %v", got, err)
 	}
 }
 
 func TestDocument(t *testing.T) {
 	p, err := pego.CompileSource(`rule main = line*
-rule line = [a-z]+ #atomic -"\n"`, "main")
+rule line = [a-z]+ #atomic -"\n"`, "main", pego.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ rule line = [a-z]+ #atomic -"\n"`, "main")
 		t.Fatal(err)
 	}
 	n, err := doc.Parse()
-	if err != nil || n.String() != `[(Seq "ab")@line (Seq "xyz")@line (Seq "ef")@line]@main` || doc.Text() != "ab\nxyz\nef\n" {
+	if err != nil || n.String() != `[("ab")@line ("xyz")@line ("ef")@line]@main` || doc.Text() != "ab\nxyz\nef\n" {
 		t.Errorf("got %v, %v", n, err)
 	}
 	if st := doc.Stats(); st.Reused == 0 {
@@ -109,7 +109,7 @@ rule line = [a-z]+ #atomic -"\n"`, "main")
 func TestMarshalAndLoadParser(t *testing.T) {
 	p, err := pego.CompileSource(`type Pair = { Key Match; Value Match }
 rule main = k:key "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
-rule key = [a-z]+ #atomic`, "main")
+rule key = [a-z]+ #atomic`, "main", pego.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ rule key = [a-z]+ #atomic`, "main")
 		t.Fatal(err)
 	}
 	n, err := loaded.Parse("abc=12")
-	if err != nil || n.String() != `(Pair Key="abc"@key Value="12")` {
+	if err != nil || n.String() != `Pair{Key: "abc"@key, Value: "12"}` {
 		t.Errorf("got %v, %v", n, err)
 	}
 	key, err := loaded.WithStart("key")
@@ -177,7 +177,7 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	}
 	for _, b := range []pego.Backend{pego.DefaultBackend, pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 		n, err := p.Parse("abc=12", pego.WithBackend(b))
-		if err != nil || n.String() != `(Pair Key="abc" Value="12")` {
+		if err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
 			t.Errorf("%v: %v %v", b, n, err)
 		}
 	}
@@ -193,7 +193,7 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if bare.Grammar() != nil {
 		t.Error("grammar of a parser saved without AST")
 	}
-	if n, err := bare.Parse("abc=12"); err != nil || n.String() != `(Pair Key="abc" Value="12")` {
+	if n, err := bare.Parse("abc=12"); err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
 		t.Errorf("bare: %v %v", n, err)
 	}
 	for _, backend := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
@@ -211,7 +211,7 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n, err := doc.Parse(); err != nil || n.String() != `(Pair Key="a" Value="1")` {
+	if n, err := doc.Parse(); err != nil || n.String() != `Pair{Key: "a", Value: "1"}` {
 		t.Errorf("document: %v %v", n, err)
 	}
 }

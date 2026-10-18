@@ -52,7 +52,8 @@ rule fatal = v1:"a" => A{N: 1 / (len($v1) - 1)}`, "main")
 					t.Fatalf("empty: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("nilvalue", "é😀tail", opts...)
-				if err != nil || r.Node != nil || r.ConsumedBytes != 6 {
+				// A rule of dropped elements produces the empty tuple.
+				if err != nil || recognize != (r.Node == nil) || !recognize && r.Node.String() != "()" || r.ConsumedBytes != 6 {
 					t.Fatalf("discarded: %+v %v", r, err)
 				}
 				r, err = p.ParsePrefix("eof", "é😀", opts...)

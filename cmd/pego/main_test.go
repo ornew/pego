@@ -32,15 +32,23 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `(Seq "a" "=" "1" k="a" v="1")@main` + "\n"; out != want {
+	if want := `("a" "=" "1")` + "\n"; out != want {
 		t.Errorf("got %q", out)
+	}
+	out, err = runCLI(t, "", "parse", "-g", g, "-i", "a=1", "-f", "sexpr", "-source-info")
+	if want := `(k:"a" "=" v:"1")@main` + "\n"; err != nil || out != want {
+		t.Errorf("got %q, %v", out, err)
 	}
 	out, err = runCLI(t, "b=2", "parse", "-g", g)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, `"rule": "main"`) || !strings.Contains(out, `"text": "b"`) {
+	if strings.Contains(out, `"rule"`) || !strings.Contains(out, `"value": "b"`) {
 		t.Errorf("got %s", out)
+	}
+	out, err = runCLI(t, "b=2", "parse", "-g", g, "-source-info")
+	if err != nil || !strings.Contains(out, `"rule": "main"`) || !strings.Contains(out, `"captures"`) {
+		t.Errorf("got %s, %v", out, err)
 	}
 	if _, err := runCLI(t, "", "parse", "-g", g, "-i", "a="); err == nil || !strings.Contains(err.Error(), "1:3: syntax error") {
 		t.Errorf("got %v", err)
@@ -198,7 +206,7 @@ func TestConvert(t *testing.T) {
 	if out, err := runCLI(t, "", "convert", g, "-to", "pego"); err != nil || out != tidy {
 		t.Errorf("got %q, %v", out, err)
 	}
-	if out, err := runCLI(t, "", "parse", "-g", jg, "-i", "x=9", "-f", "sexpr"); err != nil || !strings.Contains(out, `k="x"`) {
+	if out, err := runCLI(t, "", "parse", "-g", jg, "-i", "x=9", "-f", "sexpr", "-source-info"); err != nil || !strings.Contains(out, `k:"x"`) {
 		t.Errorf("got %q, %v", out, err)
 	}
 	// -o writes a file.
@@ -237,7 +245,7 @@ func TestErrors(t *testing.T) {
 func TestParseRecovered(t *testing.T) {
 	g := writeFile(t, "r.pego", `rule main = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")*`)
 	out, err := runCLI(t, "", "parse", "-g", g, "-i", "a;1;b;", "-f", "sexpr")
-	if !strings.Contains(out, `Error"1;"`) || err == nil || !strings.Contains(err.Error(), "1:3: syntax error") {
+	if !strings.Contains(out, `error("1:3: syntax error: expected [a-z]")`) || err == nil || !strings.Contains(err.Error(), "1:3: syntax error") {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
@@ -245,11 +253,11 @@ func TestParseRecovered(t *testing.T) {
 func TestParseStream(t *testing.T) {
 	g := writeFile(t, "s.pego", `rule main = ([a-z]+ #atomic -"\n")* #stream`)
 	out, err := runCLI(t, "ab\ncd\n", "parse", "-g", g, "-stream", "-f", "sexpr")
-	if err != nil || out != "(Seq \"ab\")\n(Seq \"cd\")\n" {
+	if err != nil || out != "(\"ab\")\n(\"cd\")\n" {
 		t.Errorf("got %q, %v", out, err)
 	}
 	out, err = runCLI(t, "ab\n", "parse", "-g", g, "-stream")
-	if err != nil || !strings.HasPrefix(out, `{"type":"Seq"`) || strings.Count(out, "\n") != 1 {
+	if err != nil || !strings.HasPrefix(out, `{"start":0,"end":3,"value":`) || strings.Count(out, "\n") != 1 {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
@@ -353,11 +361,11 @@ func TestGenTypeScript(t *testing.T) {
 func TestCompile(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv+"\nrule other = \"x\"")
 	out := filepath.Join(t.TempDir(), "kv.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-o", out); err != nil {
+	if _, err := runCLI(t, "", "compile", "-g", g, "-source-info", "-o", out); err != nil {
 		t.Fatal(err)
 	}
 	got, err := runCLI(t, "", "parse", "-g", out, "-i", "a=1", "-f", "sexpr")
-	if err != nil || got != `(Seq "a" "=" "1" k="a" v="1")@main`+"\n" {
+	if err != nil || got != `(k:"a" "=" v:"1")@main`+"\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
 	if got, err := runCLI(t, "", "parse", "-g", out, "-s", "other", "-i", "x", "-f", "sexpr"); err != nil || got != `"x"@other`+"\n" {
@@ -382,8 +390,12 @@ func TestCompile(t *testing.T) {
 	if _, err := runCLI(t, "", "compile", "-g", g, "-no-ast", "-o", bare); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-f", "sexpr"); err != nil || got != `(Seq "a" "=" "1" k="a" v="1")@main`+"\n" {
+	if got, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-f", "sexpr"); err != nil || got != `("a" "=" "1")`+"\n" {
 		t.Errorf("got %q, %v", got, err)
+	}
+	// Source information is compiled in: a file without it cannot provide it.
+	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-source-info"); err == nil || !strings.Contains(err.Error(), "compile it with -source-info") {
+		t.Errorf("got %v", err)
 	}
 	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-backend", "closure"); err == nil {
 		t.Error("expected an error for the closure backend without AST")
@@ -406,13 +418,13 @@ func TestCompile(t *testing.T) {
 	}
 	// Without -s, the start rule saved by compile -s is used.
 	other := filepath.Join(t.TempDir(), "other.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "other", "-o", other); err != nil {
+	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "other", "-source-info", "-o", other); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := runCLI(t, "", "parse", "-g", other, "-i", "x", "-f", "sexpr"); err != nil || got != `"x"@other`+"\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
-	if got, err := runCLI(t, "", "parse", "-g", other, "-s", "main", "-i", "a=1", "-f", "sexpr"); err != nil || got != `(Seq "a" "=" "1" k="a" v="1")@main`+"\n" {
+	if got, err := runCLI(t, "", "parse", "-g", other, "-s", "main", "-i", "a=1", "-f", "sexpr"); err != nil || got != `(k:"a" "=" v:"1")@main`+"\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
 	fromOther, err := runCLI(t, "", "gen", "-g", other, "-pkg", "p")
@@ -447,7 +459,7 @@ func TestParseBackend(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
 	for _, b := range []string{"closure", "bytecode", "bytecode-iterative"} {
 		got, err := runCLI(t, "", "parse", "-g", g, "-i", "a=1", "-f", "sexpr", "-backend", b)
-		if err != nil || got != `(Seq "a" "=" "1" k="a" v="1")@main`+"\n" {
+		if err != nil || got != `("a" "=" "1")`+"\n" {
 			t.Errorf("%s: got %q, %v", b, got, err)
 		}
 	}

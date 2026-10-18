@@ -1449,3 +1449,7 @@ func elementScoped(e grammar.Expr) bool { return elementScopedControlled(e, nil)
 func predicatesReadCaptures(e grammar.Expr) bool { return predicatesReadCapturesControlled(e, nil) }
 
 func hasCaptures(e grammar.Expr) bool { return hasCapturesControlled(e, nil) }
+
+// SourceInfo reports whether the program records source information in its results
+// (Options.SourceInfo).
+func (p *Program) SourceInfo() bool { return p.sourceInfo }
