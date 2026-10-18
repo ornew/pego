@@ -21,7 +21,7 @@ definition and the place where the term is defined.
 | cut | `#cut`: commits the enclosing choice to the current alternative. See [Cut](parser-expressions.md#cut). |
 | Definition Statement | A Type Definition Statement or Rule Definition Statement in a `.pego` file. See [Grammar Files](grammar-files.md#structure). |
 | discard | `-a`: matches `a` and has no value. See [Discard](parser-expressions.md#discard). |
-| Document | A mutable text together with its parse result, updated by edits and reparsed incrementally. See [Documents](documents.md). |
+| Document | A mutable text together with its parse result, updated by edits and reparsed incrementally. See [Incremental Documents](documents.md). |
 | edit | The replacement of a range of a Document's text; the next parse reuses the results that the edit did not affect. See [Edits](documents.md#edits). |
 | expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. See [Syntax errors](parsing.md#syntax-errors). |
 | farthest failure | The farthest position at which parsing failed, with the items expected there; the syntax error reports it. See [Syntax errors](parsing.md#syntax-errors). |
@@ -53,7 +53,7 @@ definition and the place where the term is defined.
 | terminal | A node that holds the matched input text and has no children: a `Match` node or a node of a terminal type. See [Nodes](parsing.md#nodes). |
 | terminal type | A user-defined node type for terminals. See [Terminal types](types.md#terminal-types). |
 | token | A lexical element of a grammar file: an identifier, a literal, a capture reference or punctuation. See [Tokens](lexical.md#tokens). |
-| Type Definition Statement | A statement that defines a struct, terminal, alias or union type. See [Type Definitions](types.md#type-definitions). |
+| Type Definition Statement | A statement that declares a type name in one of three forms: a struct type (`=`), an alias (`~`), which includes a union type, or a terminal type. See [Type Definitions](types.md#type-definitions). |
 | Type Expression | An expression that specifies a type, including the declared value type of a rule or a type alias. See [Type Definitions](types.md#type-definitions). |
 | union type | A type whose values are values of any one of its member types. See [Type aliases and union types](types.md#type-aliases-and-union-types). |
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, or an integer, string or boolean inside actions. See [Rule Expressions](parser-expressions.md#values-and-the-concrete-syntax-tree). |

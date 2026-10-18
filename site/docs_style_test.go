@@ -190,17 +190,81 @@ func forEachFence(t *testing.T, f func(file, lang string, line int, body []strin
 	}
 }
 
+// fenceLanguageProblem returns what is wrong with the language tag of a code block, or
+// the empty string.
+func fenceLanguageProblem(lang string) string {
+	switch lang {
+	case "":
+		return "code block without a language; use pego, go, ts, json, bash or text"
+	case "sh", "shell", "zsh", "console", "terminal":
+		return "code block tagged " + lang + "; use bash for commands and text for output"
+	}
+	return ""
+}
+
+func TestFenceLanguageProblem(t *testing.T) {
+	for lang, bad := range map[string]bool{
+		"": true, "sh": true, "shell": true, "zsh": true, "console": true, "terminal": true,
+		"bash": false, "text": false, "pego": false, "go": false, "ts": false, "json": false,
+	} {
+		if got := fenceLanguageProblem(lang) != ""; got != bad {
+			t.Errorf("fenceLanguageProblem(%q) reports a problem: %v, want %v", lang, got, bad)
+		}
+	}
+}
+
 // TestCodeFenceLanguages checks that every fenced code block names its language, and
 // that shell commands are tagged bash (not sh, shell or console).
 func TestCodeFenceLanguages(t *testing.T) {
 	forEachFence(t, func(file, lang string, line int, _ []string) {
-		switch lang {
-		case "":
-			t.Errorf("%s:%d: code block without a language; use pego, go, ts, json, bash or text", file, line)
-		case "sh", "shell", "zsh", "console", "terminal":
-			t.Errorf("%s:%d: code block tagged %q; use bash for commands and text for output", file, line, lang)
+		if msg := fenceLanguageProblem(lang); msg != "" {
+			t.Errorf("%s:%d: %s", file, line, msg)
 		}
 	})
+}
+
+// promptLines returns the indexes of the lines of a bash or text block that start with a
+// shell prompt.
+func promptLines(lang string, body []string) []int {
+	var found []int
+	if lang != "bash" && lang != "text" {
+		return found
+	}
+	for n, l := range body {
+		if promptRe.MatchString(l) {
+			found = append(found, n)
+		}
+	}
+	return found
+}
+
+func TestPromptLines(t *testing.T) {
+	cases := []struct {
+		name string
+		lang string
+		body []string
+		want []int
+	}{
+		{"prompt in bash", "bash", []string{"$ pego fmt", "out"}, []int{0}},
+		{"prompt in text", "text", []string{"out", "  $ ls"}, []int{1}},
+		{"two prompts", "bash", []string{"$ a", "$ b"}, []int{0, 1}},
+		{"clean bash", "bash", []string{"pego fmt x.pego", "echo $HOME"}, nil},
+		{"dollar in text", "text", []string{"cost: $5", "$$"}, nil},
+		{"go is not checked", "go", []string{"$ x := 1"}, nil},
+		{"pego anchor", "pego", []string{"$ $"}, nil},
+	}
+	for _, c := range cases {
+		got := promptLines(c.lang, c.body)
+		if len(got) != len(c.want) {
+			t.Errorf("%s: promptLines = %v, want %v", c.name, got, c.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.want[i] {
+				t.Errorf("%s: promptLines = %v, want %v", c.name, got, c.want)
+			}
+		}
+	}
 }
 
 // TestCookbookRecipes checks that every recipe follows docs/cookbook/TEMPLATE.md: the
@@ -257,13 +321,8 @@ func TestCookbookRecipes(t *testing.T) {
 // prompt: the commands are a bash block and their output a separate text block.
 func TestNoCommandPrompts(t *testing.T) {
 	forEachFence(t, func(file, lang string, line int, body []string) {
-		if lang != "bash" && lang != "text" {
-			return
-		}
-		for n, l := range body {
-			if promptRe.MatchString(l) {
-				t.Errorf("%s:%d: %q starts with a shell prompt; show the command in a bash block and its output in a text block", file, line+1+n, l)
-			}
+		for _, n := range promptLines(lang, body) {
+			t.Errorf("%s:%d: %q starts with a shell prompt; show the command in a bash block and its output in a text block", file, line+1+n, body[n])
 		}
 	})
 }
