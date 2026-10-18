@@ -392,8 +392,9 @@ func WithDocument() GenOption {
 // WithStream generates ParseStream for Go, which reads the input from an
 // io.Reader and passes each committed element of the start rule's #stream
 // repetition to a callback, as Parser.ParseStream does. The start rule must
-// have a #stream repetition. It cannot yet be combined with WithTypes, and
-// TypeScript generation does not support it.
+// have a #stream repetition. With WithTypes it also generates ParseStreamAST
+// and IterateAST, which pass the typed value of each element. TypeScript
+// generation does not support it.
 func WithStream() GenOption {
 	return func(o *engine.GenOptions) { o.Stream = true }
 }
