@@ -228,6 +228,10 @@ and every guide. Saved bytecode and schema formats need new versions.
   choice occupies one tuple element and both `x` and `y` index it. A capture
   whose alternative did not match is `nil`, so `$x` has type `*A` and `$y` type
   `*B`; the runtime records which alternative matched.
+- **A capture has one position.** Alternatives that capture the same name must
+  capture it at the same position of the tuple: `(y:b / y:d) e` is allowed,
+  while `(y:b c / y:d) e` is an error, since `y` is the first element of a
+  nested tuple in one alternative and the whole element in the other.
 - **Casts are written `x.(T)`.** The postfix form chains with field access and
   fails at run time with an action error when the value is not a `T`.
 - **Migration replaces the old syntax at once.** No compatibility mode is
@@ -264,6 +268,11 @@ and every guide. Saved bytecode and schema formats need new versions.
   captured subtrees.
 - **Keep positional captures alongside names.** This keeps the fragility the
   change removes.
+- **Give a capture a position per alternative.** `C` would map a name to the
+  positions of several alternatives, and the runtime would select one from the
+  alternative that matched, so every read of such a capture pays for the
+  selection. No grammar in the repository captures a name at different
+  positions, and distinct names, or a capture of the whole choice, express it.
 
 ## Testing and Performance Plan
 

@@ -375,13 +375,17 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		if valueless {
 			t = vopt(t)
 		}
-		// A name captured in only some alternatives is nil when another matched.
+		// A name captured in only some alternatives is nil when another matched. A name has one
+		// position in the tuple of its scope, so the alternatives that capture it must agree on it.
 		var caps []capIndex
 		for _, c := range all {
 			if count[c.name] < alts {
 				c.t = vopt(c.t)
 			}
-			caps = mergeCap(caps, c)
+			var ok bool
+			if caps, ok = mergeCap(caps, c); !ok {
+				v.errorf(e.Diagnostic(), "capture %s is at different positions in the alternatives of a choice", c.name)
+			}
 		}
 		return []valueElem{{t: t, caps: caps}}
 	case *grammar.Optional:
@@ -446,23 +450,17 @@ func neverMatches(e grammar.Expr) bool {
 	return false
 }
 
-// mergeCap adds c to caps, joining the types and paths of captures of the same name.
-func mergeCap(caps []capIndex, c capIndex) []capIndex {
+// mergeCap adds c to caps, joining the types of captures of the same name. ok is false when they
+// are at different positions; the position of the first is kept.
+func mergeCap(caps []capIndex, c capIndex) (_ []capIndex, ok bool) {
 	for i, o := range caps {
 		if o.name != c.name {
 			continue
 		}
 		caps[i].t = vunion(o.t, c.t)
-		paths := slices.Clone(o.paths)
-		for _, p := range c.paths {
-			if !slices.ContainsFunc(paths, func(q []int) bool { return slices.Equal(p, q) }) {
-				paths = append(paths, p)
-			}
-		}
-		caps[i].paths = paths
-		return caps
+		return caps, slices.EqualFunc(o.paths, c.paths, func(p, q []int) bool { return slices.Equal(p, q) })
 	}
-	return append(caps, c)
+	return append(caps, c), true
 }
 
 // operatorsRule is the union of the operand values and of the values of the operator lines: an

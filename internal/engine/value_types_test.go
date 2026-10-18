@@ -46,8 +46,8 @@ func TestValueTypes(t *testing.T) {
 		// Recovery is an explicit union; what recovers is one element.
 		{`rule a = "a" #missing`, "a", `node[string] | error`},
 		{"rule a = b (c d) #recover(skip=[^;]*) \";\"\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(b, node[(c, d)] | error, node[string])]`},
-		// A capture in alternatives of different shapes has a path for each.
-		{"rule a = (y:b c / y:d) e\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(node[(b, c), {"y": 0}] | d, e), {"y": 0.0 | 0}]`},
+		// A capture in alternatives at the same position has that position.
+		{"rule a = (y:b / y:d) e\nrule b = \"b\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(b | d, e), {"y": 0}]`},
 		// T <= *T, and a valueless alternative makes the choice optional.
 		{`rule a = ("a"? / "b") "c"`, "a", `node[(*node[string], node[string])]`},
 		{`rule a = ("a" / -"b" -"c") "d"`, "a", `node[(*node[string], node[string])]`},
@@ -209,6 +209,19 @@ func TestValueActionTypes(t *testing.T) {
 		if got := types[tc.rule].String(); got != tc.want {
 			t.Errorf("%q: rule %s\ngot  %s\nwant %s", tc.src, tc.rule, got, tc.want)
 		}
+	}
+}
+
+// A capture in alternatives at different positions is an error; it keeps the position of the
+// first alternative.
+func TestValueCaptureAtDifferentPositions(t *testing.T) {
+	src := "rule a = (y:b c / y:d) e\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"\nrule e = \"e\""
+	types, errs := valueTypesOf(t, src)
+	if len(errs) != 1 || errs[0].Msg != "capture y is at different positions in the alternatives of a choice" {
+		t.Errorf("errors %v", errs)
+	}
+	if got, want := types["a"].String(), `node[(node[(b, c), {"y": 0}] | d, e), {"y": 0.0}]`; got != want {
+		t.Errorf("got  %s\nwant %s", got, want)
 	}
 }
 
