@@ -51,11 +51,10 @@ The inputs are random, not pretty: the grammar allows whitespace between tokens,
 characters are drawn mostly from printable ASCII with some multi-byte characters mixed in, and otherwise from any code
 point the character class matches (never a surrogate). `strconv.Unquote` reads each line back.
 
-`-seed` selects the random decisions; the default is 0. With the same version of PEGO, built with the same Go release,
-the same grammar, options and seed give the same inputs on every run and machine, so a seed is enough to reproduce a
-test case. Across versions they may differ: the generator's algorithm changes as it improves, and it draws its random
-numbers with `math/rand/v2`, whose algorithms Go does not promise to keep. Keep the inputs themselves (as test files,
-or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
+`-seed` selects the random decisions; the default is 0. With the same version of PEGO, the same grammar, options and
+seed give the same inputs on every run and machine, whichever Go release built it, so a seed is enough to reproduce a
+test case. Across versions of PEGO they may differ, as the generator's algorithm changes as it improves. Keep the
+inputs themselves (as test files, or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
 
 ```bash
 $ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json

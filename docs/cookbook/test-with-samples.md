@@ -157,8 +157,8 @@ With the fixed expression, five seconds of fuzzing found no input on which the f
   (`GenerateInvalid` keeps a mutation only if the parser rejects it), so no expected values are written by hand.
 - **Near misses find the edge cases.** The grammar accepts `0` and `10`, not `01`. A mutation such as "insert `0` at the
   start" produces that input from a valid one, which is exactly the case a hand-written test forgets.
-- **Reproducible.** The same version of PEGO, built with the same Go release, gives the same inputs for the same grammar,
-  options and seed. A failure that matters should be kept as a test case of its own, as the inputs may change when you
+- **Reproducible.** The same version of PEGO gives the same inputs for the same grammar, options and seed, whichever Go
+  release built it. A failure that matters should be kept as a test case of its own, as the inputs may change when you
   upgrade.
 - **The fuzz seed.** `sample.Seed` adds generated inputs to the corpus of a fuzz test. A fuzzer started from nothing
   rarely gets past the first character of a format like this; started from valid inputs, it mutates real ones.

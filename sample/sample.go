@@ -3,11 +3,11 @@
 //
 // A Generator walks the grammar AST of a parser from its start rule and writes candidate inputs, making
 // random decisions at ordered choices, repetitions, optional expressions and Operators Rule expressions. The
-// decisions are reproducible: the same parser, options and seed give the same inputs, with the same
-// version of this package built with the same Go release (the generator's algorithm may change between
-// versions, and math/rand/v2, which draws the random numbers, does not promise to keep its algorithms
-// across Go releases). Recursion and length are bounded softly (WithMaxDepth, WithMaxLen): past the
-// bounds, the generator prefers the shortest way to finish the input. The search itself has hard limits
+// decisions are reproducible: the same parser, options and seed give the same inputs with the same
+// version of this package, whichever Go release built it (the generator's algorithm may change between
+// versions; the package draws its random numbers with its own generator, as math/rand/v2 does not
+// promise to keep its algorithms across Go releases). Recursion and length are bounded softly
+// (WithMaxDepth, WithMaxLen): past the bounds, the generator prefers the shortest way to finish the input. The search itself has hard limits
 // (WithBudget, and the limits on nesting and iterations described with WithMaxDepth and WithMaxRepeat).
 //
 // Every input that the generator returns has been parsed with the parser and accepted without errors
@@ -60,8 +60,7 @@ type config struct {
 type Option func(*config)
 
 // WithSeed sets the seed of the random decisions (default 0). The same parser, options and seed give
-// the same inputs, with the same version of this package and Go release (see the package
-// documentation).
+// the same inputs with the same version of this package (see the package documentation).
 func WithSeed(seed uint64) Option { return func(c *config) { c.seed = seed } }
 
 // WithMaxDepth bounds recursion: once rule calls are nested d deep inside calls of the same rules, the

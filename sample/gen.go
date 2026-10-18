@@ -2,7 +2,6 @@ package sample
 
 import (
 	"cmp"
-	"math/rand/v2"
 	"slices"
 	"unicode/utf8"
 
@@ -74,7 +73,7 @@ type sibling struct {
 type gen struct {
 	in      *info
 	cfg     *config
-	rng     *rand.Rand
+	rng     *pcg
 	covered bitset // targets exercised by accepted inputs
 	settled bitset // targets that coverage mode no longer pursues: covered or hopeless
 	// rejected counts, for each target, the failed attempts that tried it while it was not exercised
@@ -111,7 +110,7 @@ func newGen(in *info, cfg *config) *gen {
 		in:       in,
 		cfg:      cfg,
 		m:        matcher{in: in},
-		rng:      rand.New(rand.NewPCG(cfg.seed, 0x9e3779b97f4a7c15)),
+		rng:      newPCG(cfg.seed, 0x9e3779b97f4a7c15),
 		covered:  newBitset(len(in.targets)),
 		rejected: make([]int, len(in.targets)),
 		tent:     newBitset(len(in.targets)),
