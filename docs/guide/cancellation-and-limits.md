@@ -35,7 +35,7 @@ limit, and backtracking never refunds them. An interruption is fatal to the pars
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in
 [Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits); the
-[Streaming](streaming.md#recipe-cancelling-a-stream) guide shows how to cancel caller-owned I/O.
+[Streaming](streaming.md#cancelling-a-stream) guide shows how to cancel caller-owned I/O.
 
 ## Related Topics
 

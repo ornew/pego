@@ -34,6 +34,9 @@ times differ from machine to machine.
 | [Read a configuration file into Go structs](config-to-structs.md) | A grammar for `key = value` lines with typed values, and Go code that fills a struct and reports the line of a wrong value |
 | [Parse log lines fast](log-lines.md) | A generated parser with typed values (`ParseAST`) and `Recognize`; what each costs on 100,000 lines |
 | [Process a file that does not fit in memory](big-files.md) | `#stream` and `ParseStream`: records one at a time, in 17 MiB for 5 million lines |
+| [Sum a column of a big CSV file](sum-a-csv-column.md) | The CSV grammar of `parsers/csv` streamed record by record: a total in about 13 MB, and the offset of the first bad record |
+| [Read a header and then records](header-and-records.md) | A stream whose first element is a header: telling the kinds of element apart in the callback |
+| [Stop a stream when the caller gives up](cancel-a-stream.md) | `WithContext` plus a reader that fails from outside, for a producer that goes quiet |
 | [Parse indentation-based input](indentation.md) | Nested entries as nested Go maps, with a variable for the indentation and an error for inconsistent indentation |
 
 ## Evaluate and Query

@@ -45,7 +45,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | [What Incremental Parsing Reuses](incremental-reuse.md) | Which results survive an edit and why, and writing grammars that reuse well |
 | [Incremental Parsing Performance](incremental-performance.md) | Measurements of reparsing after an edit, and the limits of a `Document` |
 | [Document Change Notifications](document-changes.md) | Recording what an edit and a parse changed, for tools that keep an outline, an index or highlights |
-| [Streaming](streaming.md) | `#stream` and `ParseStream` for input that is too big to hold or never ends: what is emitted and when, memory, errors, recipes (summing a column, a header followed by records, cancelling) |
+| [Streaming](streaming.md) | `#stream` and `ParseStream` for input that is too big to hold or never ends: what is emitted and when, memory, errors, cancelling |
 
 ## Shipping Parsers
 

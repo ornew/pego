@@ -35,9 +35,7 @@ backends as well as Closure; recognition from a saved grammar requires its AST.
 - [Positions and text](#positions-and-text)
 - [Errors](#errors)
 - [Memory](#memory)
-- [Recipe: summing a CSV column](#recipe-summing-a-csv-column)
-- [Recipe: a header followed by records](#recipe-a-header-followed-by-records)
-- [Recipe: cancelling a stream](#recipe-cancelling-a-stream)
+- [Cancelling a stream](#cancelling-a-stream)
 - [See also](#see-also)
 
 ## A First Example
@@ -158,8 +156,8 @@ The example assumes `p`, `reader` and `consume` are in scope. Repeated calls to 
   runs.
 - **Only the elements.** `ParseStream` returns just an `error`: there is no tree, and the elements are not collected
   into the repetition's `List`. The values of whatever comes before or after the repetition (a header, a footer) are
-  parsed and checked, but thrown away. To see a header, make it an element; see
-  [the header recipe](#recipe-a-header-followed-by-records).
+  parsed and checked, but thrown away. To see a header, make it an element of the
+  repetition and tell the kinds of element apart by the type of the node in the callback.
 - **An element is final.** Once the callback has seen an element, the parser never goes back before it. This is why the
   grammar must say where the cut points are with `#stream`: PEG backtracks, and without such a promise no part of the
   result is final until the end of the input. The corollary is that **what you receive is provisional until
@@ -471,9 +469,9 @@ What it holds: the element being matched (an element is matched in memory, so th
 set, and one huge element, such as a whole document wrapped in a single rule, defeats streaming), the memo entries of
 the last few elements, your callback's own state, and the list of recovered errors.
 
-The effect on a real input, a 27 MiB CSV file with 1,000,000 records (Apple silicon, Go 1.27.1; the program is in the
-[recipe](#recipe-summing-a-csv-column)): `ParseStream` finished in about 1.2 to 2.0 seconds with a peak resident size of
-about 58 MB, and `Parse` finished in about 1.0 second with about 1.9 GB. Streaming is not faster: it trades a little
+The effect on a real input, a 27 MiB CSV file with 1,000,000 records (Apple silicon, Go 1.27.1, with the grammar of
+[parsers/csv](../../parsers/csv/csv.pego) and a callback that sums a column): `ParseStream` finished in about 1.4 seconds
+with a peak resident size of about 13 MB, and `Parse` finished in about 0.8 seconds with about 1.0 GB. Streaming is not faster: it trades a little
 time for memory, and the memory is bounded by the working set rather than by the size of the input.
 
 The nodes handed to you are allocated in chunks, and a chunk stays reachable while anything in it is. The parser starts
@@ -565,170 +563,7 @@ Both stay flat: what is reachable is the parser's working set, not the elements 
 gigabytes, measuring your own grammar with a helper like the one above is still worthwhile; what it should show is a
 number that does not grow with the input.
 
-## Recipe: Summing a CSV Column
-
-The CSV grammar of [parsers/csv](../../parsers/csv/csv.pego) streams record by record. This program, with a copy of
-`csv.pego` next to it, sums the third column and reports the first bad record with its offset; with `-whole` it uses
-`Parse` instead, to compare.
-
-```go
-package main
-
-import (
-	_ "embed"
-	"flag"
-	"fmt"
-	"io"
-	"os"
-	"strconv"
-
-	"github.com/ornew/pego"
-)
-
-//go:embed csv.pego
-var grammar string
-
-func main() {
-	whole := flag.Bool("whole", false, "read all the input and call Parse instead of ParseStream")
-	flag.Parse()
-
-	p, err := pego.CompileSource(grammar, "main")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
-	}
-
-	var rows int
-	var total float64
-	// sum adds up the third column of a record. The first record is the header.
-	sum := func(rec *pego.Node) error {
-		rows++
-		if rows == 1 {
-			return nil
-		}
-		fields := rec.Field("Fields").(*pego.Node).Children
-		if len(fields) != 3 {
-			return fmt.Errorf("record %d (offset %d): want 3 fields, got %d", rows, rec.Start, len(fields))
-		}
-		v, err := strconv.ParseFloat(fields[2].Text, 64)
-		if err != nil {
-			return fmt.Errorf("record %d (offset %d): %w", rows, rec.Start, err)
-		}
-		total += v
-		return nil
-	}
-
-	if *whole {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		// main returns a File whose Records field holds all the records.
-		tree, err := p.Parse(string(data))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		for _, rec := range tree.Field("Records").(*pego.Node).Children {
-			if err := sum(rec); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-		}
-	} else if err := p.ParseStream(os.Stdin, sum); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	fmt.Printf("%d records, total %.2f\n", rows-1, total)
-}
-```
-
-Test data, a header and then records such as `7,"item, no. 7",7.25`, and a run (on macOS, `/usr/bin/time -l` reports the
-peak memory as "maximum resident set size"):
-
-```bash
-$ awk 'BEGIN { print "id,name,amount"; for (i = 1; i <= 1000000; i++) printf "%d,\"item, no. %d\",%d.25\n", i, i % 100, i % 1000 }' > big.csv
-$ /usr/bin/time -l ./csvsum < big.csv
-1000000 records, total 499750000.00
-$ ./csvsum -whole < big.csv
-1000000 records, total 499750000.00
-```
-
-Errors carry enough to locate the bad input, both from the callback and from the parser:
-
-```bash
-$ printf 'id,name,amount\n1,a,2.5\n2,b,oops\n3,c,1\n' | ./csvsum
-record 3 (offset 23): strconv.ParseFloat: parsing "oops": invalid syntax
-$ printf 'id,name,amount\n1,a,2.5\n2,"b\n' | ./csvsum
-4:1: syntax error: expected "\"", "\"\"", [^"]
-```
-
-(The record number counts the header. The callback's error is wrapped with the record's `Start` offset; the parser's
-error says the quoted field never ended.) Line-oriented formats work the same way; the parts that matter are a record
-rule that cannot match the empty string at the end of input (`!$$`), an `eol` that also accepts `$$`, and `$$` after the
-repetition.
-
-## Recipe: A Header Followed by Records
-
-`ParseStream` does not return the header. Make it an element and tell the kinds apart by node type:
-
-```go
-package main
-
-import (
-	"fmt"
-	"strings"
-
-	"github.com/ornew/pego"
-)
-
-const grammar = `package kv
-
-type Header = { Version Version }
-type Version terminal
-type Pair = { Key Key; Value Value }
-type Key terminal
-type Value terminal
-
-rule main =  ^^ item* #stream $$
-rule item =  header / pair
-rule header Header =  "#version " v:version "\n" => Header{Version: $v}
-rule version Version =  [0-9]+ #atomic
-rule pair Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
-rule key Key =  [a-z_]+ #atomic
-rule value Value =  [0-9]+ #atomic `
-
-func main() {
-	p, err := pego.CompileSource(grammar, "main")
-	if err != nil {
-		panic(err)
-	}
-	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *pego.Node) error {
-		switch n.Type() {
-		case "Header":
-			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text)
-		case "Pair":
-			fmt.Println("pair", n.Field("Key").(*pego.Node).Text, "=", n.Field("Value").(*pego.Node).Text)
-		}
-		return nil
-	})
-	fmt.Println("err:", err)
-}
-```
-
-```
-header, version 2
-pair a = 1
-pair b = 2
-err: <nil>
-```
-
-Here `item = header / pair` is the repeated element, so a stream whose header appears later, or twice, is accepted by the
-grammar; if that matters, check it in the callback (or give the first element its own rule outside the repetition and
-accept that its value is not delivered).
-
-## Recipe: Cancelling a Stream
+## Cancelling a Stream
 
 Pass `pego.WithContext(ctx)` to interrupt engine work cooperatively, or
 `pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: ..., MaxSteps: ...})` to bound
@@ -762,60 +597,7 @@ The parser still blocks inside `Read` while it waits for input. A context cannot
 make an arbitrary reader or callback return. To give up on a quiet connection,
 make `Read` fail from outside: close the connection, set a read deadline, or close
 the write end of the pipe with an error. The parser never closes your reader or
-starts a goroutine for you. This example combines engine cancellation with
-caller-owned I/O cancellation:
-
-```go
-package main
-
-import (
-	"context"
-	"errors"
-	"fmt"
-	"io"
-	"log"
-	"time"
-
-	"github.com/ornew/pego"
-)
-
-const grammar = `rule main =  line* #stream $$
-rule line =  [a-z0-9]+ #atomic "\n" `
-
-// parseContext streams r into emit and gives up when ctx is cancelled. The parser blocks inside r.Read, so
-// cancelling needs the reader to fail: cancelRead must make a blocked Read return the error (closing the
-// connection, or the write end of a pipe, does).
-func parseContext(ctx context.Context, p *pego.Parser, r io.Reader, cancelRead func(error), emit func(*pego.Node) error) error {
-	stop := context.AfterFunc(ctx, func() { cancelRead(ctx.Err()) })
-	defer stop()
-	return p.ParseStream(r, emit, pego.WithContext(ctx))
-}
-
-func main() {
-	p, err := pego.CompileSource(grammar, "main")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pr, pw := io.Pipe()
-	go func() {
-		io.WriteString(pw, "one\ntwo\n")
-		// ... and then the producer goes quiet.
-	}()
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
-	err = parseContext(ctx, p, pr, func(err error) { pw.CloseWithError(err) }, func(n *pego.Node) error {
-		fmt.Println("line", n.Children[0].Text)
-		return nil
-	})
-	fmt.Println("err:", err, errors.Is(err, context.DeadlineExceeded))
-}
-```
-
-```
-line one
-line two
-err: context deadline exceeded true
-```
+starts a goroutine for you. Stopping a stream that waits for a quiet reader needs both: cancel the context, and make the reader fail.
 
 ## See Also
 

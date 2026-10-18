@@ -157,11 +157,12 @@ memory figures vary by a few MiB from run to run.)
 ## Variations
 
 - **Cancel on a quiet connection.** `ParseStream` blocks in `Read`. To stop it from outside, make `Read` fail (close the
-  connection or the write end of a pipe); see the guide on [streaming](../guide/streaming.md).
+  connection or the write end of a pipe); see [Stop a stream when the caller gives up](cancel-a-stream.md).
 - **Skip bad records.** Add [`#recover`](several-errors.md) inside the record rule. The bad record becomes an `Error`
   node that your function receives, and `ParseStream` returns the recorded errors at the end.
 - **Do not hold on to nodes.** The record is reachable only through your function; if you keep it (in a slice, say),
   memory grows again.
-- **CSV.** [parsers/csv](../../parsers/csv/) has a grammar with a `#stream` repetition of records.
+- **CSV.** [Sum a column of a big CSV file](sum-a-csv-column.md) streams the grammar of [parsers/csv](../../parsers/csv/).
+- **A header.** [Read a header and then records](header-and-records.md) makes the header an element.
 
 See [spec/pragmas.md](../../spec/pragmas.md) for the rules of `#stream`.

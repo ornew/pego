@@ -131,7 +131,7 @@ cleanup.
 `WithContext` cooperatively cancels engine work, and `WithWorkLimits` bounds
 per-invocation input work and execution steps. These are not elapsed-time or
 buffered-byte limits. A blocked reader or callback cannot be preempted by the
-parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#recipe-cancelling-a-stream)
+parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#cancelling-a-stream)
 for the reader ownership boundary and [Runtime](running-parsers.md) for option names and
 error handling.
 
