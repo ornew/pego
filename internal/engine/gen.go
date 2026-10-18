@@ -904,6 +904,31 @@ func (g *generator) recv() string     { return g.pick("parser", "tparser") }
 func (g *generator) valType() string  { return g.pick("*Node", "any") }
 func (g *generator) ctxType() string  { return g.pick("actx", "tctx") }
 func (g *generator) rt() string       { return g.pick("rt", "trt") }
+
+// comparison reports whether op compares two values.
+func comparison(op string) bool {
+	switch op {
+	case "==", "!=", "<", "<=", ">", ">=":
+		return true
+	}
+	return false
+}
+
+// fieldRead reports whether t reads a field of a value, x.F.
+func fieldRead(t grammar.Term) bool {
+	m, ok := t.(*grammar.Member)
+	return ok && !strings.HasPrefix(m.Name, "$")
+}
+
+// operand returns a typed runtime operand (toperand) of a comparison: a field read keeps a
+// string field unboxed.
+func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) string {
+	if fieldRead(t) {
+		m := t.(*grammar.Member)
+		return fmt.Sprintf("c.fieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
+	}
+	return "toperand{v: " + g.term(t, s, locals) + "}"
+}
 func (g *generator) frameVar() string { return g.pick("emptyFrame", "emptyTFrame") }
 
 func (g *generator) seenVar() string {
@@ -1613,6 +1638,10 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				}
 				return fmt.Sprintf("any(c.textStr(%s) %s c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
 			}
+		}
+		if g.table == "trules" && comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) {
+			// Compare string fields of typed values without boxing them (see tctx.compare).
+			return fmt.Sprintf("c.compare(%q, %s, %s)", t.Op, g.operand(t.L, s, locals), g.operand(t.R, s, locals))
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
 		switch t.Op {

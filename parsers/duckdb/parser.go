@@ -6109,6 +6109,66 @@ func (c *tctx) listNode(kids []any) *tnode {
 	return n
 }
 
+// toperand is an operand of a comparison in the typed runtime: a string field read without
+// boxing it (str, with isStr), or any other value (v).
+type toperand struct {
+	v     any
+	str   string
+	isStr bool
+}
+
+// tstrFields is implemented by the generated struct types: tstrField returns the value of a
+// string field without boxing it.
+type tstrFields interface {
+	tstrField(name string) (string, bool)
+}
+
+// fieldOperand reads x.name as member does, keeping a string field of a struct unboxed.
+func (c *tctx) fieldOperand(x any, name string) toperand {
+	if !workControlsEnabled || c.p.control == nil {
+		if n, ok := x.(tstrFields); ok {
+			if s, ok := n.tstrField(name); ok {
+				return toperand{str: s, isStr: true}
+			}
+		}
+	}
+	return toperand{v: c.member(x, name)}
+}
+
+// compare applies a comparison operator as binary does, comparing two strings directly.
+func (c *tctx) compare(op string, l, r toperand) any {
+	if !l.isStr {
+		l.str, l.isStr = l.v.(string)
+	}
+	if !r.isStr {
+		r.str, r.isStr = r.v.(string)
+	}
+	if l.isStr && r.isStr && (!workControlsEnabled || c.p.control == nil) {
+		switch op {
+		case "==":
+			return l.str == r.str
+		case "!=":
+			return l.str != r.str
+		case "<":
+			return l.str < r.str
+		case "<=":
+			return l.str <= r.str
+		case ">":
+			return l.str > r.str
+		case ">=":
+			return l.str >= r.str
+		}
+	}
+	return c.binary(op, l.value(), r.value())
+}
+
+func (o toperand) value() any {
+	if o.isStr && o.v == nil {
+		return o.str
+	}
+	return o.v
+}
+
 func (c *tctx) member(x any, name string) any {
 	n := asTval(x)
 	if n == nil {
@@ -8604,6 +8664,20 @@ func (v *AlterCmd) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *AlterCmd) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	case "Value":
+		return v.Value, true
+	case "When":
+		return v.When, true
+	case "Behavior":
+		return v.Behavior, true
+	}
+	return "", false
+}
+
 func (v *AlterCmd) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Kind":
@@ -8764,6 +8838,14 @@ func (v *AlterObjectSchemaStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *AlterObjectSchemaStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Object":
+		return v.Object, true
+	}
+	return "", false
+}
+
 func (v *AlterObjectSchemaStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Object":
@@ -8858,6 +8940,14 @@ func (v *AlterTableStmt) tfield(name string) (any, bool) {
 		}(), true
 	}
 	return nil, false
+}
+
+func (v *AlterTableStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Object":
+		return v.Object, true
+	}
+	return "", false
 }
 
 func (v *AlterTableStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8955,6 +9045,16 @@ func (v *AnyAll) tfield(name string) (any, bool) {
 		return tback(v.Source), true
 	}
 	return nil, false
+}
+
+func (v *AnyAll) tstrField(name string) (string, bool) {
+	switch name {
+	case "Op":
+		return v.Op, true
+	case "Quantifier":
+		return v.Quantifier, true
+	}
+	return "", false
 }
 
 func (v *AnyAll) tfieldWork(p *tparser, name string) (any, bool) {
@@ -9070,6 +9170,14 @@ func (v *AtClause) tfield(name string) (any, bool) {
 		return tback(v.Value), true
 	}
 	return nil, false
+}
+
+func (v *AtClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Unit":
+		return v.Unit, true
+	}
+	return "", false
 }
 
 func (v *AtClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -9297,6 +9405,14 @@ func (v *BitLit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *BitLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *BitLit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -9317,6 +9433,14 @@ func (v *BoolLit) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *BoolLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *BoolLit) tfieldWork(p *tparser, name string) (any, bool) {
@@ -9625,6 +9749,14 @@ func (v *ColumnConstraint) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *ColumnConstraint) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	}
+	return "", false
+}
+
 func (v *ColumnConstraint) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
@@ -9795,6 +9927,14 @@ func (v *CommentStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CommentStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Object":
+		return v.Object, true
+	}
+	return "", false
+}
+
 func (v *CommentStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Object":
@@ -9825,6 +9965,14 @@ func (v *CopyDatabaseStmt) tfield(name string) (any, bool) {
 		return any(v.Flag), true
 	}
 	return nil, false
+}
+
+func (v *CopyDatabaseStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Flag":
+		return v.Flag, true
+	}
+	return "", false
 }
 
 func (v *CopyDatabaseStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -9864,6 +10012,16 @@ func (v *CopyOption) tfield(name string) (any, bool) {
 		}(), true
 	}
 	return nil, false
+}
+
+func (v *CopyOption) tstrField(name string) (string, bool) {
+	switch name {
+	case "Name":
+		return v.Name, true
+	case "Value":
+		return v.Value, true
+	}
+	return "", false
 }
 
 func (v *CopyOption) tfieldWork(p *tparser, name string) (any, bool) {
@@ -9947,6 +10105,16 @@ func (v *CopyStmt) tfield(name string) (any, bool) {
 		}(), true
 	}
 	return nil, false
+}
+
+func (v *CopyStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Direction":
+		return v.Direction, true
+	case "Std":
+		return v.Std, true
+	}
+	return "", false
 }
 
 func (v *CopyStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -10132,6 +10300,14 @@ func (v *CreateMacroStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CreateMacroStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	}
+	return "", false
+}
+
 func (v *CreateMacroStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "OrReplace":
@@ -10246,6 +10422,14 @@ func (v *CreateSecretStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CreateSecretStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Persist":
+		return v.Persist, true
+	}
+	return "", false
+}
+
 func (v *CreateSecretStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "OrReplace":
@@ -10303,6 +10487,14 @@ func (v *CreateSequenceStmt) tfield(name string) (any, bool) {
 		}(), true
 	}
 	return nil, false
+}
+
+func (v *CreateSequenceStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	}
+	return "", false
 }
 
 func (v *CreateSequenceStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -10388,6 +10580,18 @@ func (v *CreateTableAsStmt) tfield(name string) (any, bool) {
 		return any(v.WithData), true
 	}
 	return nil, false
+}
+
+func (v *CreateTableAsStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	case "OnCommit":
+		return v.OnCommit, true
+	case "WithData":
+		return v.WithData, true
+	}
+	return "", false
 }
 
 func (v *CreateTableAsStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -10501,6 +10705,16 @@ func (v *CreateTableStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CreateTableStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	case "OnCommit":
+		return v.OnCommit, true
+	}
+	return "", false
+}
+
 func (v *CreateTableStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "OrReplace":
@@ -10590,6 +10804,14 @@ func (v *CreateTypeStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CreateTypeStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	}
+	return "", false
+}
+
 func (v *CreateTypeStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "OrReplace":
@@ -10668,6 +10890,16 @@ func (v *CreateViewStmt) tfield(name string) (any, bool) {
 		return any(v.CheckOption), true
 	}
 	return nil, false
+}
+
+func (v *CreateViewStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	case "CheckOption":
+		return v.CheckOption, true
+	}
+	return "", false
 }
 
 func (v *CreateViewStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -10756,6 +10988,14 @@ func (v *DefElem) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *DefElem) tstrField(name string) (string, bool) {
+	switch name {
+	case "Value":
+		return v.Value, true
+	}
+	return "", false
+}
+
 func (v *DefElem) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
@@ -10778,6 +11018,14 @@ func (v *DefaultExpr) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *DefaultExpr) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *DefaultExpr) tfieldWork(p *tparser, name string) (any, bool) {
@@ -10989,6 +11237,14 @@ func (v *DropSecretStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *DropSecretStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Persist":
+		return v.Persist, true
+	}
+	return "", false
+}
+
 func (v *DropSecretStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Persist":
@@ -11032,6 +11288,16 @@ func (v *DropStmt) tfield(name string) (any, bool) {
 		return any(v.Behavior), true
 	}
 	return nil, false
+}
+
+func (v *DropStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Type":
+		return v.Type, true
+	case "Behavior":
+		return v.Behavior, true
+	}
+	return "", false
 }
 
 func (v *DropStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11143,6 +11409,16 @@ func (v *ExplainOption) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *ExplainOption) tstrField(name string) (string, bool) {
+	switch name {
+	case "Name":
+		return v.Name, true
+	case "Value":
+		return v.Value, true
+	}
+	return "", false
+}
+
 func (v *ExplainOption) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
@@ -11180,6 +11456,14 @@ func (v *ExplainStmt) tfield(name string) (any, bool) {
 		return tback(v.Stmt), true
 	}
 	return nil, false
+}
+
+func (v *ExplainStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Analyze":
+		return v.Analyze, true
+	}
+	return "", false
 }
 
 func (v *ExplainStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11347,6 +11631,16 @@ func (v *Frame) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Frame) tstrField(name string) (string, bool) {
+	switch name {
+	case "Unit":
+		return v.Unit, true
+	case "Exclude":
+		return v.Exclude, true
+	}
+	return "", false
+}
+
 func (v *Frame) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Unit":
@@ -11375,6 +11669,14 @@ func (v *FrameBound) tfield(name string) (any, bool) {
 		return tback(v.Expr), true
 	}
 	return nil, false
+}
+
+func (v *FrameBound) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	}
+	return "", false
 }
 
 func (v *FrameBound) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11426,6 +11728,16 @@ func (v *FuncCall) tfield(name string) (any, bool) {
 		return tptr(v.Over), true
 	}
 	return nil, false
+}
+
+func (v *FuncCall) tstrField(name string) (string, bool) {
+	switch name {
+	case "Quantifier":
+		return v.Quantifier, true
+	case "Nulls":
+		return v.Nulls, true
+	}
+	return "", false
 }
 
 func (v *FuncCall) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11560,6 +11872,16 @@ func (v *GeneratedColumn) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *GeneratedColumn) tstrField(name string) (string, bool) {
+	switch name {
+	case "When":
+		return v.When, true
+	case "Storage":
+		return v.Storage, true
+	}
+	return "", false
+}
+
 func (v *GeneratedColumn) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "When":
@@ -11602,6 +11924,14 @@ func (v *GenericAlterOption) tfield(name string) (any, bool) {
 		return tptr(v.Value), true
 	}
 	return nil, false
+}
+
+func (v *GenericAlterOption) tstrField(name string) (string, bool) {
+	switch name {
+	case "Action":
+		return v.Action, true
+	}
+	return "", false
 }
 
 func (v *GenericAlterOption) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11712,6 +12042,14 @@ func (v *Grouping) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Grouping) tstrField(name string) (string, bool) {
+	switch name {
+	case "Name":
+		return v.Name, true
+	}
+	return "", false
+}
+
 func (v *Grouping) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
@@ -11757,6 +12095,14 @@ func (v *GroupingSet) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *GroupingSet) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	}
+	return "", false
+}
+
 func (v *GroupingSet) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Kind":
@@ -11789,6 +12135,14 @@ func (v *Ident) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Ident) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Ident) tfieldWork(p *tparser, name string) (any, bool) {
@@ -11898,6 +12252,16 @@ func (v *IndexElem) tfield(name string) (any, bool) {
 		return any(v.Nulls), true
 	}
 	return nil, false
+}
+
+func (v *IndexElem) tstrField(name string) (string, bool) {
+	switch name {
+	case "Direction":
+		return v.Direction, true
+	case "Nulls":
+		return v.Nulls, true
+	}
+	return "", false
 }
 
 func (v *IndexElem) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12016,6 +12380,18 @@ func (v *InsertStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *InsertStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "OrAction":
+		return v.OrAction, true
+	case "By":
+		return v.By, true
+	case "Overriding":
+		return v.Overriding, true
+	}
+	return "", false
+}
+
 func (v *InsertStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "With":
@@ -12104,6 +12480,14 @@ func (v *IntervalUnit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *IntervalUnit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *IntervalUnit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -12126,6 +12510,14 @@ func (v *IntoClause) tfield(name string) (any, bool) {
 		return tptr(v.Table), true
 	}
 	return nil, false
+}
+
+func (v *IntoClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Temp":
+		return v.Temp, true
+	}
+	return "", false
 }
 
 func (v *IntoClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12154,6 +12546,14 @@ func (v *IsExpr) tfield(name string) (any, bool) {
 		return any(v.Test), true
 	}
 	return nil, false
+}
+
+func (v *IsExpr) tstrField(name string) (string, bool) {
+	switch name {
+	case "Test":
+		return v.Test, true
+	}
+	return "", false
 }
 
 func (v *IsExpr) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12246,6 +12646,14 @@ func (v *Join) tfield(name string) (any, bool) {
 		}(), true
 	}
 	return nil, false
+}
+
+func (v *Join) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	}
+	return "", false
 }
 
 func (v *Join) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12345,6 +12753,14 @@ func (v *Like) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Like) tstrField(name string) (string, bool) {
+	switch name {
+	case "Op":
+		return v.Op, true
+	}
+	return "", false
+}
+
 func (v *Like) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "X":
@@ -12381,6 +12797,16 @@ func (v *LimitClause) tfield(name string) (any, bool) {
 		return tback(v.Offset), true
 	}
 	return nil, false
+}
+
+func (v *LimitClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Keyword":
+		return v.Keyword, true
+	case "Percent":
+		return v.Percent, true
+	}
+	return "", false
 }
 
 func (v *LimitClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12556,6 +12982,16 @@ func (v *LockClause) tfield(name string) (any, bool) {
 		return any(v.Wait), true
 	}
 	return nil, false
+}
+
+func (v *LockClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Strength":
+		return v.Strength, true
+	case "Wait":
+		return v.Wait, true
+	}
+	return "", false
 }
 
 func (v *LockClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -12785,6 +13221,16 @@ func (v *MergeAction) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *MergeAction) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	case "ByName":
+		return v.ByName, true
+	}
+	return "", false
+}
+
 func (v *MergeAction) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Kind":
@@ -12960,6 +13406,14 @@ func (v *MergeWhen) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *MergeWhen) tstrField(name string) (string, bool) {
+	switch name {
+	case "By":
+		return v.By, true
+	}
+	return "", false
+}
+
 func (v *MergeWhen) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Not":
@@ -13081,6 +13535,14 @@ func (v *NullLit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *NullLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *NullLit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -13101,6 +13563,14 @@ func (v *Number) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Number) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
@@ -13125,6 +13595,14 @@ func (v *OffsetClause) tfield(name string) (any, bool) {
 		return any(v.Rows), true
 	}
 	return nil, false
+}
+
+func (v *OffsetClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Rows":
+		return v.Rows, true
+	}
+	return "", false
 }
 
 func (v *OffsetClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -13246,6 +13724,16 @@ func (v *OrderBy) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *OrderBy) tstrField(name string) (string, bool) {
+	switch name {
+	case "Direction":
+		return v.Direction, true
+	case "Nulls":
+		return v.Nulls, true
+	}
+	return "", false
+}
+
 func (v *OrderBy) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Items":
@@ -13282,6 +13770,14 @@ func (v *Param) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Param) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Param) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14024,6 +14520,14 @@ func (v *RenameStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *RenameStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Object":
+		return v.Object, true
+	}
+	return "", false
+}
+
 func (v *RenameStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Object":
@@ -14086,6 +14590,16 @@ func (v *ResetStmt) tfield(name string) (any, bool) {
 		return any(v.Special), true
 	}
 	return nil, false
+}
+
+func (v *ResetStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Scope":
+		return v.Scope, true
+	case "Special":
+		return v.Special, true
+	}
+	return "", false
 }
 
 func (v *ResetStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14212,6 +14726,14 @@ func (v *SampleClause) tfield(name string) (any, bool) {
 		return tptr(v.Seed), true
 	}
 	return nil, false
+}
+
+func (v *SampleClause) tstrField(name string) (string, bool) {
+	switch name {
+	case "Unit":
+		return v.Unit, true
+	}
+	return "", false
 }
 
 func (v *SampleClause) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14531,6 +15053,16 @@ func (v *SeqOption) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *SeqOption) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	case "Value":
+		return v.Value, true
+	}
+	return "", false
+}
+
 func (v *SeqOption) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Kind":
@@ -14616,6 +15148,16 @@ func (v *SetOp) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *SetOp) tstrField(name string) (string, bool) {
+	switch name {
+	case "Op":
+		return v.Op, true
+	case "Quantifier":
+		return v.Quantifier, true
+	}
+	return "", false
+}
+
 func (v *SetOp) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Left":
@@ -14663,6 +15205,16 @@ func (v *SetStmt) tfield(name string) (any, bool) {
 		return tptr(v.Schema), true
 	}
 	return nil, false
+}
+
+func (v *SetStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Scope":
+		return v.Scope, true
+	case "TimeZone":
+		return v.TimeZone, true
+	}
+	return "", false
 }
 
 func (v *SetStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14717,6 +15269,16 @@ func (v *ShowStmt) tfield(name string) (any, bool) {
 		return any(v.All), true
 	}
 	return nil, false
+}
+
+func (v *ShowStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	case "Special":
+		return v.Special, true
+	}
+	return "", false
 }
 
 func (v *ShowStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14793,6 +15355,18 @@ func (v *SortItem) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *SortItem) tstrField(name string) (string, bool) {
+	switch name {
+	case "Using":
+		return v.Using, true
+	case "Direction":
+		return v.Direction, true
+	case "Nulls":
+		return v.Nulls, true
+	}
+	return "", false
+}
+
 func (v *SortItem) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Expr":
@@ -14851,6 +15425,16 @@ func (v *SpecialCall) tfield(name string) (any, bool) {
 		return tptr(v.Type), true
 	}
 	return nil, false
+}
+
+func (v *SpecialCall) tstrField(name string) (string, bool) {
+	switch name {
+	case "Name":
+		return v.Name, true
+	case "Spec":
+		return v.Spec, true
+	}
+	return "", false
 }
 
 func (v *SpecialCall) tfieldWork(p *tparser, name string) (any, bool) {
@@ -14998,6 +15582,14 @@ func (v *StringLit) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *StringLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *StringLit) tfieldWork(p *tparser, name string) (any, bool) {
@@ -15262,6 +15854,14 @@ func (v *TableConstraint) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *TableConstraint) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	}
+	return "", false
+}
+
 func (v *TableConstraint) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
@@ -15437,6 +16037,18 @@ func (v *TransactionStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *TransactionStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Kind":
+		return v.Kind, true
+	case "Work":
+		return v.Work, true
+	case "Mode":
+		return v.Mode, true
+	}
+	return "", false
+}
+
 func (v *TransactionStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Kind":
@@ -15507,6 +16119,16 @@ func (v *Type) tfield(name string) (any, bool) {
 		return any(v.Zone), true
 	}
 	return nil, false
+}
+
+func (v *Type) tstrField(name string) (string, bool) {
+	switch name {
+	case "Name":
+		return v.Name, true
+	case "Zone":
+		return v.Zone, true
+	}
+	return "", false
 }
 
 func (v *Type) tfieldWork(p *tparser, name string) (any, bool) {

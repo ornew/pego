@@ -767,22 +767,25 @@ func (t *typedGen) nodeMember(m *grammar.Member) bool {
 // readsFields reports whether an action or predicate may read a field of a struct: a member
 // access whose name is a field of some struct type. A typed value keeps its fields converted to
 // their Go types (a list as a slice, an Error where a struct is expected as nil, an omitted int as
-// 0), so reading them back would not give what the node's fields hold. A string field reads the
-// same where every constructor of every struct with a field of that name sets it to a string.
+// 0), so reading them back would not give what the node's fields hold. A string, int or bool field
+// reads the same where every struct with a field of that name declares it with the same one of
+// these types and every constructor of those structs sets it.
 func (t *typedGen) readsFields() bool {
 	fields := map[string]bool{}
-	// owners maps a field name to the structs with a field of that name, and stringField reports
-	// whether every one of them declares it string.
+	// owners maps a field name to the structs with a field of that name, and scalarField reports
+	// whether every one of them declares it with the same type, string, int or bool.
 	owners := map[string][]string{}
-	stringField := map[string]bool{}
+	scalarField := map[string]bool{}
+	fieldType := map[string]ty{}
 	for _, name := range t.structs {
 		for _, f := range t.info.fields[name] {
 			if !fields[f.name] {
-				stringField[f.name] = true
+				scalarField[f.name] = f.t == tyString || f.t == tyInt || f.t == tyBool
+				fieldType[f.name] = f.t
 			}
 			fields[f.name] = true
 			owners[f.name] = append(owners[f.name], name)
-			stringField[f.name] = stringField[f.name] && f.t == tyString
+			scalarField[f.name] = scalarField[f.name] && f.t == fieldType[f.name]
 		}
 	}
 	var terms []grammar.Term
@@ -848,7 +851,7 @@ func (t *typedGen) readsFields() bool {
 		})
 	}
 	faithful := func(field string) bool {
-		if aliased || !stringField[field] {
+		if aliased || !scalarField[field] {
 			return false
 		}
 		for _, s := range owners[field] {
@@ -928,6 +931,19 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 			}
 		}
 		b.WriteString("\t}\n\treturn nil, false\n}\n\n")
+		var strs []string
+		for _, f := range t.info.fields[name] {
+			if f.t == tyString {
+				strs = append(strs, f.name)
+			}
+		}
+		if len(strs) > 0 {
+			fmt.Fprintf(b, "func (v *%s) tstrField(name string) (string, bool) {\n\tswitch name {\n", g)
+			for _, f := range strs {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn v.%s, true\n", f, f)
+			}
+			b.WriteString("\t}\n\treturn \"\", false\n}\n\n")
+		}
 		if t.g.goWorkControls {
 			fmt.Fprintf(b, "func (v *%s) tfieldWork(p *tparser, name string) (any, bool) {\n\tswitch name {\n", g)
 			for _, f := range t.info.fields[name] {

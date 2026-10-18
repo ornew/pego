@@ -44,10 +44,21 @@ type B = { Text string; N int }
 rule main = x:(a / b) $$ => Out{V: $x.Text}
 rule a = t:[a-z]+ #atomic => A{Text: text($t)}
 rule b = t:[0-9]+ #atomic => B{Text: text($t), N: 1}`, []string{"ab", "12", "", "a1"}}, true},
+		{genCase{"comparisons of scalar fields", `type Out = { V string; N int; B bool }
+type Name = { Text string; Len int }
+rule main = sorted / pair
+rule pair = l:name r:name {$l.Text != $r.Text || $l.Len >= 0} $$ => Out{B: $l.Text < $r.Text, N: $r.Len, V: $r.Text}
+rule sorted = "!" l:name r:name {$l.Text <= $r.Text} {"m" > $r.Text} {$r.Text >= ("a")} {$l.Len == 1} $$ => Out{V: $r.Text}
+rule name = t:[a-z]+ #atomic -" "? => Name{Text: text($t), Len: 1}`, []string{"a b", "b a", "a a", "ab ab", "z y", "a", "!a b", "!b a", "!a z", "!a a"}}, true},
 		{genCase{"string field not always set", `type Out = { V string; N int; B bool }
 type A = { Text string }
 rule main = x:(a / e) $$ => Out{B: $x.Text == ""}
 rule a = t:[a-z]+ #atomic => A{Text: text($t)}
+rule e = "!" => A{}`, []string{"ab", "!", ""}}, false},
+		{genCase{"int field not always set", `type Out = { V string; N int; B bool }
+type A = { Len int }
+rule main = x:(a / e) $$ => Out{B: $x.Len == 0}
+rule a = [a-z]+ => A{Len: 1}
 rule e = "!" => A{}`, []string{"ab", "!", ""}}, false},
 		{genCase{"string field shared with another type", `type Out = { V string; N int; B bool }
 type A = { Text string }

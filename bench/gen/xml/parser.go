@@ -6110,6 +6110,66 @@ func (c *tctx) listNode(kids []any) *tnode {
 	return n
 }
 
+// toperand is an operand of a comparison in the typed runtime: a string field read without
+// boxing it (str, with isStr), or any other value (v).
+type toperand struct {
+	v     any
+	str   string
+	isStr bool
+}
+
+// tstrFields is implemented by the generated struct types: tstrField returns the value of a
+// string field without boxing it.
+type tstrFields interface {
+	tstrField(name string) (string, bool)
+}
+
+// fieldOperand reads x.name as member does, keeping a string field of a struct unboxed.
+func (c *tctx) fieldOperand(x any, name string) toperand {
+	if !workControlsEnabled || c.p.control == nil {
+		if n, ok := x.(tstrFields); ok {
+			if s, ok := n.tstrField(name); ok {
+				return toperand{str: s, isStr: true}
+			}
+		}
+	}
+	return toperand{v: c.member(x, name)}
+}
+
+// compare applies a comparison operator as binary does, comparing two strings directly.
+func (c *tctx) compare(op string, l, r toperand) any {
+	if !l.isStr {
+		l.str, l.isStr = l.v.(string)
+	}
+	if !r.isStr {
+		r.str, r.isStr = r.v.(string)
+	}
+	if l.isStr && r.isStr && (!workControlsEnabled || c.p.control == nil) {
+		switch op {
+		case "==":
+			return l.str == r.str
+		case "!=":
+			return l.str != r.str
+		case "<":
+			return l.str < r.str
+		case "<=":
+			return l.str <= r.str
+		case ">":
+			return l.str > r.str
+		case ">=":
+			return l.str >= r.str
+		}
+	}
+	return c.binary(op, l.value(), r.value())
+}
+
+func (o toperand) value() any {
+	if o.isStr && o.v == nil {
+		return o.str
+	}
+	return o.v
+}
+
 func (c *tctx) member(x any, name string) any {
 	n := asTval(x)
 	if n == nil {
@@ -7235,6 +7295,14 @@ func (v *AttValue) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *AttValue) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *AttValue) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7328,6 +7396,14 @@ func (v *CDSect) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CDSect) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *CDSect) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7350,6 +7426,14 @@ func (v *CharData) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *CharData) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *CharData) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7370,6 +7454,14 @@ func (v *CharRef) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *CharRef) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *CharRef) tfieldWork(p *tparser, name string) (any, bool) {
@@ -7437,6 +7529,14 @@ func (v *Comment) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Comment) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Comment) tfieldWork(p *tparser, name string) (any, bool) {
@@ -7680,6 +7780,14 @@ func (v *EncName) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *EncName) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *EncName) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7740,6 +7848,14 @@ func (v *EntityRef) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *EntityRef) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *EntityRef) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7760,6 +7876,14 @@ func (v *EntityValue) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *EntityValue) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *EntityValue) tfieldWork(p *tparser, name string) (any, bool) {
@@ -7851,6 +7975,14 @@ func (v *Keyword) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Keyword) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *Keyword) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7914,6 +8046,14 @@ func (v *Name) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Name) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *Name) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -7960,6 +8100,14 @@ func (v *Nmtoken) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Nmtoken) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Nmtoken) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8051,6 +8199,14 @@ func (v *Occurrence) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *Occurrence) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *Occurrence) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8071,6 +8227,14 @@ func (v *PERef) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *PERef) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *PERef) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8121,6 +8285,14 @@ func (v *PIData) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *PIData) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *PIData) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8141,6 +8313,14 @@ func (v *PubidLiteral) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *PubidLiteral) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *PubidLiteral) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8210,6 +8390,14 @@ func (v *SystemLiteral) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *SystemLiteral) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *SystemLiteral) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8230,6 +8418,14 @@ func (v *Version) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Version) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Version) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8282,6 +8478,14 @@ func (v *YesNo) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *YesNo) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *YesNo) tfieldWork(p *tparser, name string) (any, bool) {
@@ -42407,47 +42611,47 @@ func (p *tparser) i13() (any, bool) {
 
 										return c.and(func() any {
 
-											return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xml") }())
+											return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("xml") }()})
 										}(), func() any {
 											return func() any {
 
-												return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xmL") }())
+												return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("xmL") }()})
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xMl") }())
+											return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("xMl") }()})
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("xML") }())
+										return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("xML") }()})
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("Xml") }())
+									return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("Xml") }()})
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XmL") }())
+								return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("XmL") }()})
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XMl") }())
+							return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("XMl") }()})
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.binary("!=", func() any { return c.member(func() any { return k1 }(), "Text") }(), func() any { return any("XML") }())
+						return c.compare("!=", c.fieldOperand(func() any { return k1 }(), "Text"), toperand{v: func() any { return any("XML") }()})
 					}()
 				})
 			}()
@@ -42569,47 +42773,47 @@ func (p *tparser) i13() (any, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xml") }())
+										return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("xml") }()})
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xmL") }())
+											return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("xmL") }()})
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xMl") }())
+										return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("xMl") }()})
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("xML") }())
+									return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("xML") }()})
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("Xml") }())
+								return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("Xml") }()})
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XmL") }())
+							return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("XmL") }()})
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XMl") }())
+						return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("XMl") }()})
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.binary("!=", func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }(), func() any { c.p.stepWork(); return any("XML") }())
+					return c.compare("!=", c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"), toperand{v: func() any { c.p.stepWork(); return any("XML") }()})
 				}()
 			})
 		}()
@@ -50942,10 +51146,7 @@ func (p *tparser) i55() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.binary("==", func() any {
-
-					return c.member(func() any { return c.cast(func() any { return k19 }(), fieldType1) }(), "Text")
-				}(), func() any { return c.member(func() any { return k1 }(), "Text") }())
+				return c.compare("==", c.fieldOperand(func() any { return c.cast(func() any { return k19 }(), fieldType1) }(), "Text"), c.fieldOperand(func() any { return k1 }(), "Text"))
 			}()
 		}) {
 			goto L35_ordinary
@@ -51162,10 +51363,7 @@ L24:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.binary("==", func() any {
-				c.p.stepWork()
-				return c.member(func() any { c.p.stepWork(); return c.cast(func() any { c.p.stepWork(); return k19 }(), fieldType1) }(), "Text")
-			}(), func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return k1 }(), "Text") }())
+			return c.compare("==", c.fieldOperand(func() any { c.p.stepWork(); return c.cast(func() any { c.p.stepWork(); return k19 }(), fieldType1) }(), "Text"), c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text"))
 		}()
 	}) {
 		goto L35

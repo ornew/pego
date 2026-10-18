@@ -6109,6 +6109,66 @@ func (c *tctx) listNode(kids []any) *tnode {
 	return n
 }
 
+// toperand is an operand of a comparison in the typed runtime: a string field read without
+// boxing it (str, with isStr), or any other value (v).
+type toperand struct {
+	v     any
+	str   string
+	isStr bool
+}
+
+// tstrFields is implemented by the generated struct types: tstrField returns the value of a
+// string field without boxing it.
+type tstrFields interface {
+	tstrField(name string) (string, bool)
+}
+
+// fieldOperand reads x.name as member does, keeping a string field of a struct unboxed.
+func (c *tctx) fieldOperand(x any, name string) toperand {
+	if !workControlsEnabled || c.p.control == nil {
+		if n, ok := x.(tstrFields); ok {
+			if s, ok := n.tstrField(name); ok {
+				return toperand{str: s, isStr: true}
+			}
+		}
+	}
+	return toperand{v: c.member(x, name)}
+}
+
+// compare applies a comparison operator as binary does, comparing two strings directly.
+func (c *tctx) compare(op string, l, r toperand) any {
+	if !l.isStr {
+		l.str, l.isStr = l.v.(string)
+	}
+	if !r.isStr {
+		r.str, r.isStr = r.v.(string)
+	}
+	if l.isStr && r.isStr && (!workControlsEnabled || c.p.control == nil) {
+		switch op {
+		case "==":
+			return l.str == r.str
+		case "!=":
+			return l.str != r.str
+		case "<":
+			return l.str < r.str
+		case "<=":
+			return l.str <= r.str
+		case ">":
+			return l.str > r.str
+		case ">=":
+			return l.str >= r.str
+		}
+	}
+	return c.binary(op, l.value(), r.value())
+}
+
+func (o toperand) value() any {
+	if o.isStr && o.v == nil {
+		return o.str
+	}
+	return o.v
+}
+
 func (c *tctx) member(x any, name string) any {
 	n := asTval(x)
 	if n == nil {
@@ -7401,6 +7461,14 @@ func (v *AssignStmt) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *AssignStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Tok":
+		return v.Tok, true
+	}
+	return "", false
+}
+
 func (v *AssignStmt) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Lhs":
@@ -7449,6 +7517,14 @@ func (v *BinaryExpr) tfield(name string) (any, bool) {
 		return tback(v.Y), true
 	}
 	return nil, false
+}
+
+func (v *BinaryExpr) tstrField(name string) (string, bool) {
+	switch name {
+	case "Op":
+		return v.Op, true
+	}
+	return "", false
 }
 
 func (v *BinaryExpr) tfieldWork(p *tparser, name string) (any, bool) {
@@ -7518,6 +7594,14 @@ func (v *BranchStmt) tfield(name string) (any, bool) {
 		return tptr(v.Label), true
 	}
 	return nil, false
+}
+
+func (v *BranchStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Tok":
+		return v.Tok, true
+	}
+	return "", false
 }
 
 func (v *BranchStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -7681,6 +7765,14 @@ func (v *CharLit) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *CharLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *CharLit) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8036,6 +8128,14 @@ func (v *FloatLit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *FloatLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *FloatLit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8193,6 +8293,14 @@ func (v *GenDecl) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *GenDecl) tstrField(name string) (string, bool) {
+	switch name {
+	case "Tok":
+		return v.Tok, true
+	}
+	return "", false
+}
+
 func (v *GenDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Tok":
@@ -8247,6 +8355,14 @@ func (v *Ident) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *Ident) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *Ident) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8305,6 +8421,14 @@ func (v *ImagLit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *ImagLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *ImagLit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8353,6 +8477,14 @@ func (v *IncDecStmt) tfield(name string) (any, bool) {
 		return any(v.Tok), true
 	}
 	return nil, false
+}
+
+func (v *IncDecStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Tok":
+		return v.Tok, true
+	}
+	return "", false
 }
 
 func (v *IncDecStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8448,6 +8580,14 @@ func (v *IntLit) tfield(name string) (any, bool) {
 		return any(v.Text), true
 	}
 	return nil, false
+}
+
+func (v *IntLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
 }
 
 func (v *IntLit) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8600,6 +8740,14 @@ func (v *RangeStmt) tfield(name string) (any, bool) {
 		return tptr(v.Body), true
 	}
 	return nil, false
+}
+
+func (v *RangeStmt) tstrField(name string) (string, bool) {
+	switch name {
+	case "Tok":
+		return v.Tok, true
+	}
+	return "", false
 }
 
 func (v *RangeStmt) tfieldWork(p *tparser, name string) (any, bool) {
@@ -8803,6 +8951,14 @@ func (v *StringLit) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *StringLit) tstrField(name string) (string, bool) {
+	switch name {
+	case "Text":
+		return v.Text, true
+	}
+	return "", false
+}
+
 func (v *StringLit) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Text":
@@ -8967,6 +9123,14 @@ func (v *UnaryExpr) tfield(name string) (any, bool) {
 		return tback(v.X), true
 	}
 	return nil, false
+}
+
+func (v *UnaryExpr) tstrField(name string) (string, bool) {
+	switch name {
+	case "Op":
+		return v.Op, true
+	}
+	return "", false
 }
 
 func (v *UnaryExpr) tfieldWork(p *tparser, name string) (any, bool) {
