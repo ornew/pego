@@ -282,7 +282,7 @@ that has to decide, at each token, among the alternatives that the Bison automat
 of a PEG tries them one after the other. In the CPU profile of `ParseAST`, about a tenth of the time is spent recording
 what each failed alternative expected (for the error message), another tenth in the memo table, and another in the
 allocator and the garbage collector. `Recognize` builds nothing and is not faster than `ParseAST`, whose rules the generator
-compiles into direct code (see the [code generation guide](../../docs/guide/generated-go-api.md#typed-values--types)). Tuning the grammar took `ParseAST` from 4.1 MB/s to
+compiles into direct code (see the [code generation guide](../../docs/guide/generated-typed-values.md)). Tuning the grammar took `ParseAST` from 4.1 MB/s to
 5.6 MB/s: the operators of the expressions are tried only when the character that follows could begin them, a function call
 is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS` and the rest are one operator each, and
 the benchmarked version compared a word with unreserved keywords beginning with its letter, rather than all 330

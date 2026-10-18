@@ -16,7 +16,7 @@ the new text from scratch.
 
 An engine `Document` works with every backend ([Runtime](running-parsers.md)) and with both position units. It does
 not work with `RecognizeOnly` (`NewDocument` returns an error). Standalone generated Go parsers support an opt-in
-Document with the [`-document` option](generated-go-api.md#incremental-documents--document). With `-types`, they
+Document with the [`-document` option](generated-documents.md). With `-types`, they
 also expose `Document.ParseAST`: eligible grammars use direct typed incremental matching, while other results use
 the existing Node conversion path. Returned typed values belong to that invocation, though CST Node members may
 share the mutable Document graph. The model, history APIs, performance examples and recipes in these guides describe the engine

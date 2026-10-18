@@ -63,7 +63,7 @@ Bytes allocated / number of allocations.
 `ParseAST` builds the grammar's Go types directly when every value it can return has a Go type of its own ("direct");
 otherwise (the values include CST nodes, as in minilang and recovery) it runs `Parse` and converts the tree ("converted").
 CSV builds typed `File`, `Record`, and `Field` values directly.
-See [code generation](guide/generated-go-api.md#typed-values--types). The factor is relative to the generated parser's
+See [code generation](guide/generated-typed-values.md). The factor is relative to the generated parser's
 `Parse` (code points).
 
 | Workload | `ParseAST` | `Parse` | `ParseAST` | Memory (`Parse` → `ParseAST`) |

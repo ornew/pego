@@ -166,7 +166,7 @@ lambda.
 
 `Node` is a generic representation. A generated Go parser built with `-types` also returns the result as values of Go
 types that mirror the types of the grammar, so a type switch replaces field lookups and type assertions. See
-[Typed Values](generated-go-api.md#typed-values--types) and the mapping defined in
+[Typed Values](generated-typed-values.md) and the mapping defined in
 [Generated Parsers](../../spec/generated-parsers.md#typed-values).
 
 ## Related Topics

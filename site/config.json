@@ -142,6 +142,9 @@
             "docs/guide/compiled-grammars.md",
             "docs/guide/code-generation.md",
             "docs/guide/generated-go-api.md",
+            "docs/guide/generated-typed-values.md",
+            "docs/guide/generated-documents.md",
+            "docs/guide/generated-streams.md",
             "docs/guide/typescript.md",
             "docs/guide/ready-made-parsers.md"
           ],
@@ -149,6 +152,9 @@
             "docs/guide/compiled-grammars.md",
             "docs/guide/code-generation.md",
             "docs/guide/generated-go-api.md",
+            "docs/guide/generated-typed-values.md",
+            "docs/guide/generated-documents.md",
+            "docs/guide/generated-streams.md",
             "docs/guide/typescript.md",
             "docs/guide/ready-made-parsers.md"
           ]

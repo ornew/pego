@@ -97,7 +97,7 @@ Two things to know:
 
 Generated parsers have the same default of 100,000. `pego.WithGeneratedMaxDepth` or `pego gen -max-depth` sets a
 generated default; generated Go `WithMaxDepth` and TypeScript options-aware entry points override it per invocation
-(see [code generation](generated-go-api.md#invocation-options-and-migration) and
+(see [code generation](generated-go-api.md#invocation-options) and
 [TypeScript depth options](typescript.md#deep-nesting-and-the-javascript-stack)). Their recursive host stacks still
 bound acceptance even when the configured limit is higher.
 
