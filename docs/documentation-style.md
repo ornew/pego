@@ -87,8 +87,9 @@ the title without a trailing qualifier.
   or "This guide". A guide shows basic usage before options.
 - A section opens with its point, then shows the example, then states the rule that the example demonstrates. A long
   page lists its sections near the top only when a reader would use the list to jump.
-- A guide ends with Related Topics, a tutorial lesson with Next Steps. A cookbook recipe follows its template: the
-  problem, the files, the expected output, how it works, and what to change.
+- A guide ends with Related Topics, a tutorial lesson with Next Steps. A cookbook recipe follows its template: a
+  "**Problem.**" paragraph, the solution with its files, Expected Output, How It Works, and Variations and Limits.
+  `TestCookbookRecipes` enforces the paragraph and the order of the sections.
 - The first line of a code block that holds a file the reader should save is a comment with the file name
   (`// main.go`, `// rules.pego`). The extraction rule of the cookbook relies on it.
 

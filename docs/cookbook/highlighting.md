@@ -111,7 +111,7 @@ func main() {
 - **Positions.** Each token has `Start` and `End`. For an editor, send those (they are code points by default; `pego.WithUnit`
   changes that) instead of HTML.
 
-## Variations
+## Variations and Limits
 
 - **A scope per token.** Replace the `class` map with the names your editor or theme uses, such as `keyword.sql`.
 - **More precision.** Tokens that depend on what follows (a function name before `(`) are a lookahead away: an `ident`

@@ -162,7 +162,7 @@ BenchmarkGeneratedRecognize    20 ms   285 MB/s    45.4 MB/op      4 allocs/op
 Generating the parser halves the time, and typed values and recognition halve it again. Numbers differ between machines
 and inputs; measure your own grammar and input (see [Debugging and Profiling](../guide/debugging.md) for profiling a parse).
 
-## Variations
+## Variations and Limits
 
 - **Several formats.** Put each in its own grammar and package, or use `ParseRule` of the generated parser to start at
   another rule.

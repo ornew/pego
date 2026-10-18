@@ -155,7 +155,7 @@ go run . bad.yml
 - **`*Match` for the optional value.** `v:value?` is a `Match` or nothing, which the struct field must say with `*Match`;
   in Go, `Field("Value")` is then a `*pego.Node` or `nil`, which `v, ok := ....(*pego.Node)` tells apart.
 
-## Variations
+## Variations and Limits
 
 - **Tabs.** This grammar counts only spaces: a tab at the start of a line is a syntax error. To allow tabs, make
   `spaces` match them and decide what `len` should count, or reject them with a message of their own.

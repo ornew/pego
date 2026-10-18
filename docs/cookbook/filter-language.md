@@ -208,7 +208,7 @@ age > 30 and                                     error: 1:13: syntax error: expe
   error never becomes a predicate. Checks that need your schema (does the field exist? is `age` a number?) belong in
   `compile`, where you can return an error with the position of the node (`n.Start`).
 
-## Variations
+## Variations and Limits
 
 - **More operators**: `in` (a list operand), `contains`, arithmetic on operands, `is null`. Each is a level or an
   operand of the table.

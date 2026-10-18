@@ -177,7 +177,7 @@ Max with Go 1.27.1:
 
 A generated parser needs no preparation at all, and is also the fastest at parsing.
 
-## Variations
+## Variations and Limits
 
 - **Several grammars**: one `go:generate` line and one package each; [parsers/generate.go](../../parsers/generate.go) does
   this for the ready-made parsers.

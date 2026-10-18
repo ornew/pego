@@ -139,7 +139,7 @@ app.conf:1:11: expected ';'
 - **The end of the input.** An error after the last line break has a line number one past the last line, so `report`
   shows an empty line instead of indexing past the end.
 
-## Variations
+## Variations and Limits
 
 - **Colors, ranges, context lines**: all of it is string formatting; the error gives only the position of the farthest
   failure. To underline a range, you need the node that failed, which a recovered `Error` node has (see [Report several

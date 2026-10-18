@@ -113,7 +113,7 @@ func main() {
 - **`Value()` decodes.** A scalar's `Text` is the source (with its quotes), and `Value()` is its content after the
   escapes of the quoting style are decoded.
 
-## Variations
+## Variations and Limits
 
 - **Other formats**: JSON ([`json.Decode`](../../parsers/json/), `json.ParseAST`), CSV, XML, CEL, CUE, Go, Python,
   TypeScript and DuckDB SQL work the same way. The Go parser also returns `go/ast` trees, for use with `go/printer`,

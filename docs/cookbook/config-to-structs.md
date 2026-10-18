@@ -172,7 +172,7 @@ error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\
   the output). A file that has the format but not the meaning your program needs, such as a wrong type or an unknown
   key, fails in your code, which knows the position of the entry.
 
-## Variations
+## Variations and Limits
 
 - The syntax error lists every token that could have come next. [Report an error with its source line and a
   caret](error-carets.md) shows how to replace it with a message such as `expected a value`.

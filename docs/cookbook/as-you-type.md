@@ -151,7 +151,7 @@ The unit of reuse is the rule call, so:
   make the rules that use them run again after every edit.
 - **Check with `Stats`** as above: a good grammar evaluates a handful of rule bodies per keystroke.
 
-## Variations
+## Variations and Limits
 
 - **Keep the last good tree.** A tree returned by `Parse` is changed in place by the next `Parse` (nodes that are reused
   are moved to their new positions). To keep it, take `tree.Clone()` before editing again.

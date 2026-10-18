@@ -142,7 +142,7 @@ The program exits with status 1, because there were errors.
   stops too soon produces a second, bogus error.
 - **Do not use the tree for code that must not run on broken input.** Check `len(errs)` before acting on it.
 
-## Variations
+## Variations and Limits
 
 - **Several error formats.** Show each error with a caret, using `report` of [Report an error with its source line and a
   caret](error-carets.md) on each element of `errs`.

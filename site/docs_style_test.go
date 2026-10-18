@@ -203,6 +203,56 @@ func TestCodeFenceLanguages(t *testing.T) {
 	})
 }
 
+// TestCookbookRecipes checks that every recipe follows docs/cookbook/TEMPLATE.md: the
+// title is followed by a paragraph that starts with "Problem.", and the sections are,
+// in order, an optional Expected Output, How It Works, and Variations and Limits.
+func TestCookbookRecipes(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("..", "docs", "cookbook", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range paths {
+		name := filepath.Base(p)
+		if name == "README.md" {
+			continue
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := maskCode(strings.Split(string(data), "\n"))
+		if len(lines) < 3 || !strings.HasPrefix(lines[0], "# ") || lines[1] != "" || !strings.HasPrefix(lines[2], "**Problem.** ") {
+			t.Errorf("%s: the title must be followed by a paragraph that starts with \"**Problem.** \"", name)
+		}
+		var sections []string
+		for _, l := range lines {
+			if strings.HasPrefix(l, "## ") {
+				sections = append(sections, l[3:])
+			}
+		}
+		last := len(sections) - 1
+		if last < 1 || sections[last] != "Variations and Limits" {
+			t.Errorf("%s: the last section must be \"Variations and Limits\", got %q", name, sections)
+			continue
+		}
+		how := -1
+		for i, s := range sections {
+			if s == "How It Works" {
+				how = i
+			}
+		}
+		if how < 0 || how > last {
+			t.Errorf("%s: missing the section \"How It Works\" before \"Variations and Limits\"", name)
+			continue
+		}
+		for i, s := range sections {
+			if s == "Expected Output" && i > how {
+				t.Errorf("%s: \"Expected Output\" must come before \"How It Works\"", name)
+			}
+		}
+	}
+}
+
 // TestNoCommandPrompts checks that command blocks hold commands only, without a "$ "
 // prompt: the commands are a bash block and their output a separate text block.
 func TestNoCommandPrompts(t *testing.T) {

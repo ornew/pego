@@ -164,7 +164,7 @@ With the fixed expression, five seconds of fuzzing found no input on which the f
 - **The fuzz seed.** `sample.Seed` adds generated inputs to the corpus of a fuzz test. A fuzzer started from nothing
   rarely gets past the first character of a format like this; started from valid inputs, it mutates real ones.
 
-## Variations
+## Variations and Limits
 
 - **The same check from the command line**: `pego sample -g version.pego -n 20` prints inputs, and `-invalid -f json`
   near misses with their mutation and error. `-coverage` reports the rules and alternatives that the inputs did not

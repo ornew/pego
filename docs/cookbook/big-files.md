@@ -154,7 +154,7 @@ memory figures vary by a few MiB from run to run.)
 - **Positions and memory.** `Start` and `End` of a record count from the start of the whole input. The parser keeps the
   record it is matching and a few more, so one huge record defeats streaming: keep records small.
 
-## Variations
+## Variations and Limits
 
 - **Cancel on a quiet connection.** `ParseStream` blocks in `Read`. To stop it from outside, make `Read` fail (close the
   connection or the write end of a pipe); see [Stop a stream when the caller gives up](cancel-a-stream.md).

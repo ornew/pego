@@ -1,17 +1,14 @@
 # Solve a Concrete Task
 
-## Problem
+**Problem.** Describe the task and its constraints in one or two sentences, and what the reader wants to end up with.
 
-Describe the task and constraints in one or two sentences.
-
-## Solution
-
-List prerequisites. Provide complete files, inputs and commands without
-unexplained dependencies on other recipes.
+State the prerequisites, then give the solution: complete files, inputs and commands without unexplained dependencies
+on other recipes. Steps are imperative. A recipe may add its own headings here when the solution has distinct parts.
 
 ## Expected Output
 
-Include output verified with the shown commands and environment.
+Include output produced by the shown commands and environment. A recipe whose output is part of the solution text
+may leave this section out.
 
 ## How It Works
 

@@ -185,7 +185,7 @@ z * 2            0 undefined variable "z"
   values (undefined variable, division by zero) are found while evaluating; wrong arity and undefined functions could
   also be found in a pass over the tree before any evaluation.
 
-## Variations
+## Variations and Limits
 
 - **Integer arithmetic** (or `big.Int`): change the `Num` conversion and the operators in `eval`.
 - **Comparison and logic**: add levels, loosest first. The [filter language](filter-language.md) does.
