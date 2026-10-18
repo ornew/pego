@@ -73,6 +73,8 @@ times differ from machine to machine.
 | [Ship a parser and keep it up to date](ship-a-parser.md) | `pego gen` with `go generate`, a test that fails when the generated file is stale, and `.pegoc` for grammars that stay data |
 | [Validate a YAML file and point at the problem](ready-made-parsers.md) | A ready-made parser of [parsers/](../../parsers/README.md): syntax errors with positions, and your own checks with the positions of the typed tree |
 | [Test hand-written code against a grammar](test-with-samples.md) | Inputs and near misses generated from the grammar, a differential test and a fuzz test |
+| [Fuzz the edits of a grammar in your tests](edit-fuzz-grammar.md) | `editfuzz` in `go test`: random edits, undos and redos checked against fresh parses, saved failures as regression tests, and a case written by hand |
+| [Check a file in a TypeScript tool with the same grammar](typescript-parser.md) | `pego gen -lang ts -types`: a dependency-free module, typed values, recovered syntax errors and a check of the tool's own |
 | [Check grammars in continuous integration](lint-in-ci.md) | One script for `pego fmt -check`, `pego lint -strict` and `pego test`, and a workflow that runs it |
 
 ## Where to Go Next
