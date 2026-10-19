@@ -146,8 +146,11 @@ for comment and layout preservation.
 
 `x.Name` reads field `Name` from node `x`. An unset field reads as `nil`; a
 field that no member of the static type declares is a compile-time error. For
-a union type, a field declared by only some members has an optional result
-type. Reading a declared struct whose type lacks that field is a runtime
+a union type, the result type is the union of the field types of the members
+that declare the field (a single type if they are equal), and it is optional if
+only some members declare it. Struct fields and the node members below count alike, so
+`x.Start` on `N | node[string]` is `int`, and `x.F` on `A | B` is the union of the types of `F` in `A` and `B`,
+which chains: `x.F.G` accesses `G` on that union. Reading a declared struct whose type lacks that field is a runtime
 action error. A string, tuple or list node has no fields other than the members
 below; naming another field is a compile-time error. Accessing a field on `nil` is a
 runtime error; an explicitly optional receiver type is rejected by type checking.
