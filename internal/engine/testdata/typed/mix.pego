@@ -1,4 +1,4 @@
-type Name = { Text string }
+type Name = node[string]
 type Item = { N Name; Kids []It; Tag *node[string]; Cnt int; Txt string; Ok bool }
 type It ~ Item | error
 type Pair = { L It; R It }
@@ -8,8 +8,8 @@ rule main Doc = {d := 0} ts:(t:top ";"?)* ns:(-"#" n:name)* $$ => Doc{Tops: map(
 rule top Top = pair / item
 rule pair Pair = l:item "=" #cut r:item => Pair{L: $l, R: $r}
 rule item It = item1 / item2 / bad
-rule item1 Item = &n:name s:(nm:name tg:"!"? ks:("(" k:item ")")*) {len($nm.Text) < 4} => Item{N: $nm, Kids: map($ks, (z) => z.$k), Tag: $tg, Cnt: len($ks), Txt: $nm.Text + "/" + text($s), Ok: $tg == nil}
+rule item1 Item = &n:name s:(nm:name tg:"!"? ks:("(" k:item ")")*) {len($nm) < 4} => Item{N: $nm, Kids: map($ks, (z) => z.$k), Tag: $tg, Cnt: len($ks), Txt: text($nm) + "/" + text($s), Ok: $tg == nil}
 rule item2 Item = "<" xs:(x:item)+ ">" => Item{Kids: map($xs, (e) => e.$x), Txt: "grp"}
 rule bad It = digits #recover(skip=[0-9]* [a-z])
-rule name Name = t:([a-c]+) #atomic => Name{Text: text($t)}
+rule name Name = ([a-c]+) #atomic
 rule digits Item = d:[0-9]+ #atomic => Item{Txt: text($d), Cnt: len($d)}

@@ -452,10 +452,7 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 		if n.children != nil {
 			r.children = make([]int, len(n.children))
 		}
-		if n.textField {
-			// The record of a text struct holds its field: it has no node to visit.
-			r.text, r.fields = "", n.fieldList()
-		} else if n.fields != nil {
+		if n.fields != nil {
 			r.fields = make(Fields, len(n.fields))
 		}
 		g.nodes = growWork(p, g.nodes, 1)

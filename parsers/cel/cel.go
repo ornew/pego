@@ -75,7 +75,7 @@ func sign(text string) (string, string) {
 // Name returns the name of an identifier, a function or a message type (a dotted name, as a.b.C, for a message),
 // without the whitespace and comments that may be in the text, and without the leading dot that Rooted tells of.
 func (n *Ident) Name() string {
-	s := compact(n.Text)
+	s := compact(n.Value)
 	if strings.HasPrefix(s, ".") {
 		return s[1:]
 	}
@@ -83,19 +83,19 @@ func (n *Ident) Name() string {
 }
 
 // Rooted reports whether the identifier starts with a dot, which resolves it in the root scope.
-func (n *Ident) Rooted() bool { return strings.HasPrefix(n.Text, ".") }
+func (n *Ident) Rooted() bool { return strings.HasPrefix(n.Value, ".") }
 
 // Value returns the name of a field, without the backquotes of an escaped name.
 func (n *Name) Value() string {
-	if strings.HasPrefix(n.Text, "`") {
-		return n.Text[1 : len(n.Text)-1]
+	if strings.HasPrefix(n.TNode.Value, "`") {
+		return n.TNode.Value[1 : len(n.TNode.Value)-1]
 	}
-	return n.Text
+	return n.TNode.Value
 }
 
 // Value returns the integer. A value outside the range of int64 is an error.
 func (n *IntLit) Value() (int64, error) {
-	sg, t := sign(n.Text)
+	sg, t := sign(n.TNode.Value)
 	base := 10
 	if strings.HasPrefix(t, "0x") {
 		base, t = 16, t[2:]
@@ -109,7 +109,7 @@ func (n *IntLit) Value() (int64, error) {
 
 // Value returns the unsigned integer. A value outside the range of uint64 is an error.
 func (n *UintLit) Value() (uint64, error) {
-	t := n.Text[:len(n.Text)-1]
+	t := n.TNode.Value[:len(n.TNode.Value)-1]
 	base := 10
 	if strings.HasPrefix(t, "0x") {
 		base, t = 16, t[2:]
@@ -123,7 +123,7 @@ func (n *UintLit) Value() (uint64, error) {
 
 // Value returns the floating-point number. A value too large for float64 is an error.
 func (n *DoubleLit) Value() (float64, error) {
-	sg, t := sign(n.Text)
+	sg, t := sign(n.TNode.Value)
 	f, err := strconv.ParseFloat(sg+t, 64)
 	if err != nil {
 		return 0, errors.New("invalid double literal")
@@ -132,18 +132,18 @@ func (n *DoubleLit) Value() (float64, error) {
 }
 
 // Value returns the boolean.
-func (n *BoolLit) Value() bool { return n.Text == "true" }
+func (n *BoolLit) Value() bool { return n.TNode.Value == "true" }
 
 // Value returns the string the literal denotes, with its escape sequences decoded.
 func (n *StringLit) Value() string {
-	s, _ := unquote(n.Text, false)
+	s, _ := unquote(n.TNode.Value, false)
 	return s
 }
 
 // Value returns the bytes the literal denotes. The UTF-8 encoding of the characters of the literal and the
 // values of its octal and hexadecimal escapes make up the bytes.
 func (n *BytesLit) Value() []byte {
-	s, _ := unquote(n.Text[1:], true)
+	s, _ := unquote(n.TNode.Value[1:], true)
 	return []byte(s)
 }
 

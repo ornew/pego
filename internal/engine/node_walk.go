@@ -142,7 +142,7 @@ func walkFields(n *Node) Fields {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	fields := n.fieldList().sorted()
+	fields := n.fields.sorted()
 	if !n.labeled {
 		return fields
 	}

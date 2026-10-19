@@ -49,8 +49,7 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 }
 
 // A value of a terminal type was a string node, with the members of a node. pego fix rewrites the
-// terminal type to a text struct, which has only its field Text, so the compiler reports the node
-// members that the action still reads.
+// terminal type to a named string node, which keeps those members.
 func TestNodeMembersOfTerminalTypes(t *testing.T) {
 	fixed, err := syntax.Fix(`type Num terminal
 type Out = { S int; E int; V string }
@@ -59,12 +58,12 @@ rule num Num = [0-9]+ #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(fixed)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "Num has no field Start") {
-		t.Fatalf("got %v\n%s", err, fixed)
+	program := compile(t, fixed)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
+		if err != nil || n.String() != `Out{E: 3, S: 1, V: "12"}` {
+			t.Fatalf("%s: %v %v\n%s", backend, n, err, fixed)
+		}
 	}
 }
 

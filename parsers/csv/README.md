@@ -22,7 +22,7 @@ name := slices.Index(header, "name")
 f, err := csv.ParseAST("a,\"b\"\"c\"\n\nd\n")
 for _, r := range f.Records {
 	for _, fl := range r.Fields {
-		fmt.Println(fl.Start, fl.End, fl.Text, fl.Quoted(), fl.Value()) // 2 8 "b""c" true b"c
+		fmt.Println(fl.Start, fl.End, fl.TNode.Value, fl.Quoted(), fl.Value()) // 2 8 "b""c" true b"c
 	}
 }
 

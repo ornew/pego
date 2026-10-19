@@ -14,11 +14,11 @@ import (
 //
 // An escape of E'...' that makes an invalid UTF-8 sequence (\xff) is kept as the byte, as the scanner of DuckDB
 // does before it checks the string.
-func (s *StringLit) Value() string { return stringValue(s.Text) }
+func (s *StringLit) Value() string { return stringValue(s.TNode.Value) }
 
 // Kind returns how the string is written.
 func (s *StringLit) Kind() StringKind {
-	t := s.Text
+	t := s.TNode.Value
 	switch {
 	case t != "" && t[0] == '$':
 		return DollarQuoted
@@ -176,7 +176,7 @@ func isHex(c byte) bool { return c >= '0' && c <= '9' || c >= 'a' && c <= 'f' ||
 // Bits returns the digits of a bit string literal (B'101' gives "101") or its hexadecimal digits (X'FF' gives
 // "FF"), and whether it is a hexadecimal one.
 func (b *BitLit) Bits() (digits string, hex bool) {
-	t := b.Text
+	t := b.Value
 	if t == "" {
 		return "", false
 	}
@@ -269,7 +269,7 @@ func (n *Number) DecimalWidthScale() (width, scale int) {
 
 // Index returns the number of a parameter written $1 or ?1.
 func (p *Param) Index() (int, bool) {
-	t := p.Text
+	t := p.Value
 	if len(t) < 2 || (t[0] != '$' && t[0] != '?') || t[1] < '0' || t[1] > '9' {
 		return 0, false
 	}
@@ -279,7 +279,7 @@ func (p *Param) Index() (int, bool) {
 
 // ParamName returns the name of a parameter written $name.
 func (p *Param) ParamName() (string, bool) {
-	t := p.Text
+	t := p.Value
 	if len(t) < 2 || t[0] != '$' || (t[1] >= '0' && t[1] <= '9') {
 		return "", false
 	}
@@ -287,4 +287,4 @@ func (p *Param) ParamName() (string, bool) {
 }
 
 // Positional reports whether the parameter is a plain ? (its number is the order in the statement).
-func (p *Param) Positional() bool { return p.Text == "?" }
+func (p *Param) Positional() bool { return p.Value == "?" }

@@ -8,7 +8,7 @@ import (
 
 // Quoted reports whether the identifier is written between double quotes (or is a string used as a name).
 func (i *Ident) Quoted() bool {
-	t := i.Text
+	t := i.Value
 	return t != "" && (t[0] == '"' || t[0] == '\'' || t[0] == '$' || isPrefixedQuote(t) ||
 		len(t) > 2 && (t[0] == 'U' || t[0] == 'u') && t[1] == '&' && t[2] == '"')
 }
@@ -19,7 +19,7 @@ func (i *Ident) Quoted() bool {
 // DuckDB keeps the case of an identifier. Names are compared without regard to the case of ASCII letters:
 // compare Fold of two names, or use EqualFold.
 func (i *Ident) Name() string {
-	t := i.Text
+	t := i.Value
 	switch {
 	case t == "":
 		return ""
@@ -152,7 +152,7 @@ func (n *Name) String() string {
 		if i > 0 {
 			b.WriteByte('.')
 		}
-		b.WriteString(p.Text)
+		b.WriteString(p.Value)
 	}
 	return b.String()
 }

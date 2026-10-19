@@ -41,11 +41,12 @@ func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
 	return child
 }
 
-// sourceText returns the text held by field name of n, a struct with a Text field.
+// sourceText returns the text held by field name of n, a named string node.
 func sourceText(t *testing.T, n *pego.Node, name string) string {
 	t.Helper()
-	text, ok := sourceField(t, n, name).Field("Text").(string)
-	if !ok {
+	field := sourceField(t, n, name)
+	text := field.Text()
+	if field.Kind() != pego.KindString {
 		t.Fatalf("%s.%s has no text", n.Type(), name)
 	}
 	return text

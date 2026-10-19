@@ -709,11 +709,11 @@ func (g *generator) rules() {
 			if r.nodeType != "" {
 				extra += fmt.Sprintf("nodeType: %q, ", r.nodeType)
 			}
-			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, textType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
-				r.id, r.name, goStrings(scopes[r].names), value, r.textType, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
+			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
+				r.id, r.name, goStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
-		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.textType)\n\t\tif r.nodeType != \"\" {\n\t\t\tr.nodeKinds = newNodeTypeKinds(r.nodeType)\n\t\t}\n\t}\n", g.table)
+		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name)\n\t\tif r.nodeType != \"\" {\n\t\t\tr.nodeKinds = newNodeTypeKinds(r.nodeType)\n\t\t}\n\t}\n", g.table)
 		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	}
 	for _, r := range all {
@@ -835,7 +835,7 @@ func (g *generator) typedResultConversion(r *rule, v, body string) string {
 // ownsBody reports whether finishing the value of rule r in the typed runtime converts the fresh
 // node of its body in place: the rule has a named node type and returns its body's value.
 func (g *generator) ownsBody(r *rule) bool {
-	return r.nodeType != "" && !r.novalue && r.action == nil && r.textType == ""
+	return r.nodeType != "" && !r.novalue && r.action == nil
 }
 
 // typedCall writes the methods that call the rule r in the typed runtime: s<id> for a rule never
@@ -872,8 +872,6 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		case r.action != nil:
 			fmt.Fprintf(m, "\t\tc := p.useCtx(tctx{p: p, f: %s, start: start, end: p.pos, cbase: len(p.created)})\n", frame)
 			fmt.Fprintf(m, "\t\tv = c.result(ta%d, %q)\n", r.id, r.name)
-		case r.textType != "":
-			fmt.Fprintf(m, "\t\tv = trules[%d].text(p, start, p.pos, p.text(start, p.pos))\n", r.id)
 		default:
 			fmt.Fprintf(m, "\t\tv = p.scopeValue(trules[%d].value, v, start)\n", r.id)
 			if len(s.names) > 0 {
@@ -1726,8 +1724,8 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				return fmt.Sprintf("any(c.textStr(%s) %s c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
 			}
 		}
-		if comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !g.boxedComparisons {
-			// Compare string fields without boxing them (see tctx.compare and actx.compare).
+		if g.table == "trules" && comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !g.boxedComparisons {
+			// Compare string fields without boxing them (see tctx.compare).
 			return fmt.Sprintf("c.compare(%q, %s, %s)", t.Op, g.operand(t.L, s, locals), g.operand(t.R, s, locals))
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)

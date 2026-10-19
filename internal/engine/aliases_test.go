@@ -5,44 +5,44 @@ import (
 )
 
 var aliasCases = []genCase{
-	{"terminal singleton union", `type Num = { Text string }
-rule main Num | Num = t:("é"+ $$) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
-	{"alias terminal", `type Num = { Text string }
+	{"terminal singleton union", `type Num = node[string]
+rule main Num | Num = ("é"+ $$) #atomic`, []string{"éé", "", "x"}},
+	{"alias terminal", `type Num = node[string]
 type Alias ~ Num
 type Deep ~ Alias
-rule main Deep = t:("é"+ $$) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
-	{"alias terminals in structs", `type Num = { Text string }
+rule main Deep = ("é"+ $$) #atomic`, []string{"éé", "", "x"}},
+	{"alias terminals in structs", `type Num = node[string]
 type Alias ~ Num
 type Deep ~ Alias
 type Box = { Value Num }
 rule main Box = v:num $$ => Box{Value: $v}
-rule num Deep = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
-	{"alias constructors", `type Num = { Text string }
+rule num Deep = ("é"+) #atomic`, []string{"éé", "", "x"}},
+	{"alias constructors", `type Num = node[string]
 type NumAlias ~ Num
 type P = { Value Num; N int }
 type Alias ~ P
 type Deep ~ Alias
 rule main Deep = v:num $$ => Deep{Value: $v, N: 7}
-rule num NumAlias = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
-	{"alias singleton unions", `type Num = { Text string }
+rule num NumAlias = ("é"+) #atomic`, []string{"éé", "", "x"}},
+	{"alias singleton unions", `type Num = node[string]
 type Alias ~ Num | Num
 type P = { Value Alias }
 type Deep ~ P | P
 rule main Deep = v:num $$ => Deep{Value: $v}
-rule num Alias = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
-	{"alias terminal action", `type Num = { Text string }
+rule num Alias = ("é"+) #atomic`, []string{"éé", "", "x"}},
+	{"alias terminal action", `type Num = node[string]
 type Alias ~ Num
 rule main Alias = v:num $$ => $v
-rule num Num = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+rule num Num = ("é"+) #atomic`, []string{"éé", "", "x"}},
 }
 
 var aliasTypedGoldens = map[string]string{
-	"terminal singleton union":   `{"Start":0,"End":2,"Text":"éé"}`,
-	"alias terminal":             `{"Start":0,"End":2,"Text":"éé"}`,
-	"alias terminals in structs": `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Text":"éé"}}`,
-	"alias constructors":         `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Text":"éé"},"N":7}`,
-	"alias singleton unions":     `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Text":"éé"}}`,
-	"alias terminal action":      `{"Start":0,"End":2,"Text":"éé"}`,
+	"terminal singleton union":   `{"Start":0,"End":2,"Value":"éé"}`,
+	"alias terminal":             `{"Start":0,"End":2,"Value":"éé"}`,
+	"alias terminals in structs": `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
+	"alias constructors":         `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"},"N":7}`,
+	"alias singleton unions":     `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
+	"alias terminal action":      `{"Start":0,"End":2,"Value":"éé"}`,
 }
 
 func TestAliasNodeIdentity(t *testing.T) {

@@ -234,7 +234,7 @@ func (m *mapper) expr(e duckdb.Expr) any {
 		return varchar(e.Value())
 	case *duckdb.BoolLit:
 		v := "f"
-		if strings.EqualFold(e.Text, "true") {
+		if strings.EqualFold(e.Value, "true") {
 			v = "t"
 		}
 		return shape{"class": "CAST", "type": "OPERATOR_CAST", "child": varchar(v), "cast_type": shape{"id": "BOOLEAN"}}
@@ -1365,7 +1365,7 @@ func logTop(t *testing.T, title string, m map[string]int, example map[string]str
 
 func extractField(spec string) string {
 	if strings.HasPrefix(spec, "'") {
-		return (&duckdb.StringLit{Text: spec}).Value()
+		return (&duckdb.StringLit{TNode: duckdb.TNode[string]{Value: spec}}).Value()
 	}
 	return spec
 }

@@ -30,7 +30,7 @@ var Ellipsis = EllipsisType{}
 // The error reports escape sequences that CPython rejects although the grammar accepts them (an
 // unknown name in \N{...}).
 func (c *Constant) Value() (any, error) {
-	v, err := constValue(c.Text)
+	v, err := constValue(c.TNode.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -59,12 +59,12 @@ func (c *Constant) Value() (any, error) {
 // surrogates (\ud800), and whether the first literal has the prefix u in lower case (Python's
 // Constant.kind "u"). It is an error for a constant that is not a string.
 func (c *Constant) StringValue() (value []rune, u bool, err error) {
-	v, err := constValue(c.Text)
+	v, err := constValue(c.TNode.Value)
 	if err != nil {
 		return nil, false, err
 	}
 	if v.kind != kStr {
-		return nil, false, fmt.Errorf("python: %.20q is not a string", c.Text)
+		return nil, false, fmt.Errorf("python: %.20q is not a string", c.TNode.Value)
 	}
 	return v.str, v.u, nil
 }
@@ -72,14 +72,14 @@ func (c *Constant) StringValue() (value []rune, u bool, err error) {
 // Value returns the text the part stands for: escape sequences decoded, doubled braces made
 // single, and newlines read as \n.
 func (m *FStringMiddle) Value() (string, error) {
-	rs, err := decodeFStringText(m.Text, false)
+	rs, err := decodeFStringText(m.TNode.Value, false)
 	return runesString(rs), err
 }
 
 // Value returns the text the part stands for: doubled braces made single, and newlines read as
 // \n (backslashes are kept).
 func (m *FStringRawMiddle) Value() string {
-	rs, _ := decodeFStringText(m.Text, true)
+	rs, _ := decodeFStringText(m.TNode.Value, true)
 	return runesString(rs)
 }
 

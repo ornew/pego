@@ -15,8 +15,8 @@ An Operators Rule is a specialized Rule Definition.
 
 ```pego
 package example
-type Number = { Text string }
-rule main Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+type Number = node[string]
+rule main Number = ([0-9]+) #atomic
 rule expr Expr = operators { ... }
 ```
 

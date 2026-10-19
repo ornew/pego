@@ -143,8 +143,8 @@ func TestFrameAST(t *testing.T) {
 						t.Fatalf("%q: unexpected column %#v", sql, e)
 					}
 					for i, name := range names {
-						if c.Parts[i].Text != name {
-							t.Fatalf("%q: column part %q, want %q", sql, c.Parts[i].Text, name)
+						if c.Parts[i].Value != name {
+							t.Fatalf("%q: column part %q, want %q", sql, c.Parts[i].Value, name)
 						}
 					}
 				}

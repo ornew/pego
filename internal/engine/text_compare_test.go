@@ -11,8 +11,8 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// textCompareGrammar compares the text of text structs with each other, with string fields of
-// other structs, with literals and in predicates.
+// textCompareGrammar compares string fields of structs with each other, with literals and in
+// predicates.
 const textCompareGrammar = `type Name = { Text string }
 type Tag = { Text string; N int }
 type Ops = { Eq bool; Ne bool; Lt bool; Le bool; Gt bool; Ge bool }
@@ -27,11 +27,9 @@ rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}`
 
 var textCompareInputs = []string{"", "a,b", "b,a", "ab,ab", "%ab:<ab>", "%z:<a>", "%a:<x>", "?no", "?yes", "a,b %c:<d> ?x", "?", "a,"}
 
-// TestTextFieldComparisons checks that comparisons reading the unboxed text of a text struct give
-// the results of comparisons reading the field list of the struct the action makes, on every
-// backend, with and without work controls.
+// TestTextFieldComparisons checks that the backends agree on comparisons of string fields, with
+// and without work controls.
 func TestTextFieldComparisons(t *testing.T) {
-	ref := compileBare(t, textCompareGrammar, Options{NoTypeCheck: true, noTextStructs: true})
 	prog := compileBare(t, textCompareGrammar, Options{NoTypeCheck: true})
 	limits := WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
 	for _, controlled := range []bool{false, true} {
@@ -41,8 +39,8 @@ func TestTextFieldComparisons(t *testing.T) {
 				if controlled {
 					opts.WorkLimits = limits
 				}
-				want := resultJSON(ref.ParseWith("main", input, opts))
-				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+				want := resultJSON(prog.ParseWith("main", input, opts))
+				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 					opts.Backend = backend
 					if got := resultJSON(prog.ParseWith("main", input, opts)); got != want {
 						t.Errorf("controlled=%t %s/%s %q:\n got %s\nwant %s", controlled, backend, unit, input, got, want)
@@ -53,49 +51,10 @@ func TestTextFieldComparisons(t *testing.T) {
 	}
 }
 
-// TestTextFieldComparisonWork checks that the unboxed reads and comparisons charge the work of the
-// reads and comparisons they replace.
-func TestTextFieldComparisonWork(t *testing.T) {
-	limits := WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
-	for _, name := range []string{"Text", "Tex", "Texts", "Name", "text"} {
-		p := actionWorkParser(nil, limits, Bytes)
-		q := actionWorkParser(nil, limits, Bytes)
-		got := p.textFieldName(name)
-		_, want := q.valueField(Fields{{Name: "Text", Value: "abc"}}, name)
-		if got != want || p.control.stepsUsed != q.control.stepsUsed || p.control.inputUsed != q.control.inputUsed {
-			t.Errorf("textFieldName(%q) = %t with %d steps, want %t with %d steps", name, got, p.control.stepsUsed, want, q.control.stepsUsed)
-		}
-	}
-	long := string(make([]byte, 3*valueWorkChunk))
-	pairs := [][2]string{{"", ""}, {"a", "b"}, {"b", "a"}, {"ab", "abc"}, {long, long}, {long, long + "x"}, {long + "a", long + "b"}}
-	for _, op := range []string{"==", "!=", "<", "<=", ">", ">="} {
-		for _, pair := range pairs {
-			p := actionWorkParser(nil, limits, Bytes)
-			q := actionWorkParser(nil, limits, Bytes)
-			got, ok := p.compareStrings(op, pair[0], pair[1])
-			want, err := q.valueBinary(op, pair[0], pair[1])
-			if !ok || err != nil || got != want || p.control.stepsUsed != q.control.stepsUsed || p.control.inputUsed != q.control.inputUsed {
-				t.Errorf("compareStrings(%q, %d bytes, %d bytes) = %t with %d steps, want %v with %d steps", op, len(pair[0]), len(pair[1]), got, p.control.stepsUsed, want, q.control.stepsUsed)
-			}
-		}
-	}
-	// A comparison of a text with a value of another type is left to valueBinary.
-	p := actionWorkParser(nil, limits, Bytes)
-	if v, err := p.compareOperands("==", operand{str: "1", isStr: true}, operand{v: 1}); err != nil || v != false {
-		t.Errorf("text == 1: %v, %v", v, err)
-	}
-	if _, err := p.compareOperands("<", operand{str: "1", isStr: true}, operand{v: 1}); err == nil {
-		t.Error("text < 1: no error")
-	}
-	if _, ok := p.compareStrings("+", "a", "b"); ok {
-		t.Error("compareStrings accepted +")
-	}
-}
-
 // TestGeneratedTextFieldComparisons checks that generated parsers give the same results for
-// comparisons of the text of text structs with and without work controls, in the node and typed
-// runtimes, and that they need the steps of comparisons that box the text: the least step limit
-// that each parse succeeds with is the same.
+// comparisons of string fields with and without work controls, in the node and typed runtimes,
+// and that the typed runtime's unboxed comparisons need the steps of comparisons that box the
+// strings: the least step limit that each parse succeeds with is the same.
 func TestGeneratedTextFieldComparisons(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -172,24 +131,6 @@ func TestComparisons(t *testing.T){
 }
 `
 
-// TestTextFieldComparisonSteps checks that, on every backend, comparisons reading the text of
-// text structs unboxed take the steps of comparisons reading it as any other field.
-func TestTextFieldComparisonSteps(t *testing.T) {
-	prog := compileBare(t, textCompareGrammar, Options{NoTypeCheck: true})
-	boxed := compileBare(t, textCompareGrammar, Options{NoTypeCheck: true, boxedComparisons: true})
-	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		for _, input := range textCompareInputs {
-			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				got, gotErr := parseSteps(t, prog, backend, unit, input)
-				want, wantErr := parseSteps(t, boxed, backend, unit, input)
-				if got != want || gotErr != wantErr {
-					t.Errorf("%s/%s %q: %d steps (%s), want %d (%s)", backend, unit, input, got, gotErr, want, wantErr)
-				}
-			}
-		}
-	}
-}
-
 // parseSteps parses input as ParseWith does, under work controls, and returns the steps used and
 // the result.
 func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit, input string) (uint64, string) {
@@ -222,73 +163,23 @@ rule nested = "&" a:name "," b:name => Ops{Eq: ($a.Text == "x") == ($b.Text != "
 rule word = [a-z]+
 rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}`
 
-// TestTextFieldComparisonEdges checks the comparisons of textCompareEdgeGrammar, including the
-// errors, against the comparisons that box the text, with and without work controls.
+// TestTextFieldComparisonEdges checks that the backends agree on the comparisons of
+// textCompareEdgeGrammar, including the errors, with and without work controls.
 func TestTextFieldComparisonEdges(t *testing.T) {
 	inputs := []string{"?!", "?a!", "#a", "^ab", "^m", "~ab", "=a", "&x,y", "&a,b", "&b,a", "&ab,ab"}
-	for _, noTextStructs := range []bool{false, true} {
-		prog := compileBare(t, textCompareEdgeGrammar, Options{NoTypeCheck: true, noTextStructs: noTextStructs})
-		boxed := compileBare(t, textCompareEdgeGrammar, Options{NoTypeCheck: true, noTextStructs: noTextStructs, boxedComparisons: true})
-		for _, unit := range []PositionUnit{CodePoints, Bytes} {
-			for _, input := range inputs {
-				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					got, gotResult := parseSteps(t, prog, backend, unit, input)
-					want, wantResult := parseSteps(t, boxed, backend, unit, input)
-					if got != want || gotResult != wantResult {
-						t.Errorf("noTextStructs=%t %s/%s %q: %d steps %s\nwant %d steps %s", noTextStructs, backend, unit, input, got, gotResult, want, wantResult)
-					}
-					opts := ParseOptions{Backend: backend, Unit: unit}
-					if got, want := resultJSON(prog.ParseWith("main", input, opts)), resultJSON(boxed.ParseWith("main", input, opts)); got != want {
-						t.Errorf("noTextStructs=%t %s/%s %q uncontrolled:\n got %s\nwant %s", noTextStructs, backend, unit, input, got, want)
-					}
+	prog := compileBare(t, textCompareEdgeGrammar, Options{NoTypeCheck: true})
+	for _, unit := range []PositionUnit{CodePoints, Bytes} {
+		for _, input := range inputs {
+			_, wantResult := parseSteps(t, prog, Closure, unit, input)
+			wantUncontrolled := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
+			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+				if _, gotResult := parseSteps(t, prog, backend, unit, input); gotResult != wantResult {
+					t.Errorf("%s/%s %q: %s\nwant %s", backend, unit, input, gotResult, wantResult)
+				}
+				if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})); got != wantUncontrolled {
+					t.Errorf("%s/%s %q uncontrolled:\n got %s\nwant %s", backend, unit, input, got, wantUncontrolled)
 				}
 			}
-		}
-	}
-}
-
-// TestTextComparisonInstructions checks the flag of EMEMBER and EBIN that keeps a text unboxed:
-// the compiler sets it on the operands of a comparison, a module keeps it through a round trip,
-// the disassembly shows it and a module with another value is rejected.
-func TestTextComparisonInstructions(t *testing.T) {
-	prog := compile(t, textCompareGrammar)
-	module := prog.Module()
-	flagged := map[Op]int{}
-	for _, in := range module.Exprs {
-		if (in.Op == EMember || in.Op == EBin) && in.B == 1 {
-			flagged[in.Op]++
-		}
-	}
-	if flagged[EMember] == 0 || flagged[EBin] == 0 {
-		t.Fatalf("flagged instructions %v", flagged)
-	}
-	if !strings.Contains(module.Disassemble(), " text") {
-		t.Error("disassembly does not show the flag")
-	}
-	data, err := prog.MarshalBinary("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded, _, err := LoadProgram(data, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, input := range textCompareInputs {
-		opts := ParseOptions{Backend: Bytecode}
-		if got, want := resultJSON(loaded.ParseWith("main", input, opts)), resultJSON(prog.ParseWith("main", input, opts)); got != want {
-			t.Errorf("loaded %q: %s, want %s", input, got, want)
-		}
-	}
-	for _, op := range []Op{EMember, EBin} {
-		m := prog.Module()
-		for i := range m.Exprs {
-			if m.Exprs[i].Op == op {
-				m.Exprs[i].B = 2
-				break
-			}
-		}
-		if err := validateModule(m); err == nil {
-			t.Errorf("%v with B 2 accepted", op)
 		}
 	}
 }

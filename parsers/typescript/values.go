@@ -12,19 +12,19 @@ import (
 // no value and do not break a surrogate pair. An escape of an unpaired surrogate gives U+FFFD, as Go strings
 // cannot hold one.
 func (s *StringLiteral) Value() string {
-	if len(s.Text) < 2 {
+	if len(s.TNode.Value) < 2 {
 		return ""
 	}
-	return decodeEscapes(s.Text[1 : len(s.Text)-1])
+	return decodeEscapes(s.TNode.Value[1 : len(s.TNode.Value)-1])
 }
 
 // Value returns the text of the template without its backquotes, with its escapes decoded (the cooked value).
 // Actual CR and CRLF line endings become LF before escape decoding; an escaped \r remains CR.
 func (t *NoSubstitutionTemplateLiteral) Value() string {
-	if len(t.Text) < 2 {
+	if len(t.TNode.Value) < 2 {
 		return ""
 	}
-	body := strings.ReplaceAll(t.Text[1:len(t.Text)-1], "\r\n", "\n")
+	body := strings.ReplaceAll(t.TNode.Value[1:len(t.TNode.Value)-1], "\r\n", "\n")
 	return decodeEscapes(strings.ReplaceAll(body, "\r", "\n"))
 }
 
@@ -138,7 +138,7 @@ func hexValue(s string, n int) (rune, int) {
 // Value returns the number as a float64, from a decimal, hexadecimal (0x), binary (0b) or octal (0o) literal with
 // numeric separators. A literal too large for a float64 is +Inf, as in JavaScript.
 func (n *NumericLiteral) Value() float64 {
-	t := strings.ReplaceAll(n.Text, "_", "")
+	t := strings.ReplaceAll(n.TNode.Value, "_", "")
 	if base := literalBase(t); base != 10 {
 		v, ok := new(big.Int).SetString(t[2:], base)
 		if !ok {
@@ -153,7 +153,7 @@ func (n *NumericLiteral) Value() float64 {
 
 // Value returns the integer of a bigint literal, without its n.
 func (n *BigIntLiteral) Value() *big.Int {
-	t := strings.TrimSuffix(strings.ReplaceAll(n.Text, "_", ""), "n")
+	t := strings.TrimSuffix(strings.ReplaceAll(n.TNode.Value, "_", ""), "n")
 	base := literalBase(t)
 	if base != 10 {
 		t = t[2:]
@@ -182,12 +182,12 @@ func literalBase(t string) int {
 
 // Value returns the name with its unicode escapes (a, \u{61}) decoded.
 func (i *Identifier) Value() string {
-	return decodeIdentifier(i.Text)
+	return decodeIdentifier(i.TNode.Value)
 }
 
 // Value returns the name with its unicode escapes decoded.
 func (i *PrivateIdentifier) Value() string {
-	return decodeIdentifier(i.Text)
+	return decodeIdentifier(i.TNode.Value)
 }
 
 func decodeIdentifier(s string) string {

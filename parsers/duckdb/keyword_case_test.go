@@ -68,7 +68,7 @@ func TestMixedCaseKeywordNames(t *testing.T) {
 		}
 	}
 	ids := find[duckdb.Ident](t, "SELECT tExT FROM tExT")
-	if len(ids) != 2 || ids[0].Text != "tExT" || ids[1].Text != "tExT" {
+	if len(ids) != 2 || ids[0].Value != "tExT" || ids[1].Value != "tExT" {
 		t.Fatalf("identifier text changed: %#v", ids)
 	}
 }

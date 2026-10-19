@@ -5,16 +5,16 @@ package duckdb
 // ===================================================================================================
 
 // An identifier, a keyword used as a name, or a string used as a name, as written (quotes included).
-type Ident = { Text string }
+type Ident = node[string]
 // A qualified name: a, a.b, a.b.c
 type Name = { Parts []Ident }
 
 type Number = { Text string }    // an integer, decimal or real literal as written
-type StringLit = { Text string } // a string literal as written: '...', E'...', $$...$$, U&'...'
-type BitLit = { Text string }    // B'...' or X'...'
-type BoolLit = { Text string }   // TRUE or FALSE
-type NullLit = { Text string }   // NULL
-type Param = { Text string }     // ?, ?1, $1 or $name
+type StringLit = node[string] // a string literal as written: '...', E'...', $$...$$, U&'...'
+type BitLit = node[string]    // B'...' or X'...'
+type BoolLit = node[string]   // TRUE or FALSE
+type NullLit = node[string]   // NULL
+type Param = node[string]     // ?, ?1, $1 or $name
 
 // A type: its name as written ("int", "double precision", "a.b.t"), and its modifiers, fields and array dimensions.
 type Type = {
@@ -34,7 +34,7 @@ type ArrayDim = { Size *Number }
 
 type Paren = { X Expr }
 type ColumnRef = { Parts []Ident }
-type DefaultExpr = { Text string }                  // DEFAULT
+type DefaultExpr = node[string]                  // DEFAULT
 type PositionalRef = { Index Number } // #1
 
 // * and t.* with their modifiers, and COLUMNS(...) and UNPACK(...)
@@ -83,7 +83,7 @@ type ArraySubquery = { Query ParenQuery }              // ARRAY(SELECT ...)
 type Grouping = { Name string; Args []Expr }           // GROUPING(a, b), GROUPING_ID(a, b)
 type TypedLit = { Type Type; Value StringLit }         // DATE '2020-01-01', DECIMAL(10, 2) '1.5'
 type IntervalLit = { Value Expr; Unit *IntervalUnit }  // INTERVAL '1' DAY, INTERVAL (x) HOUR, INTERVAL 5 DAY
-type IntervalUnit = { Text string }                                  // DAY, YEAR TO MONTH, ...
+type IntervalUnit = node[string]                                  // DAY, YEAR TO MONTH, ...
 type NamedArg = { Name Ident; Value Expr; Arrow bool } // name := value, name => value (Arrow)
 // A function call, with the clauses that follow it.
 type FuncCall = {
@@ -468,16 +468,16 @@ rule uquoted_ident = [uU] "&" quoted_ident (ws [uU] [eE] [sS] [cC] [aA] [pP] [eE
 
 // The kinds of names of the grammar differ in the keywords they may not be (see keywords.py). A quoted
 // identifier is always a name.
-rule col_id Ident = t:(quoted_ident / uquoted_ident / !kw_not_col_id word) #atomic => Ident{Text: text($t)}
-rule type_function_name Ident = t:(quoted_ident / uquoted_ident / !kw_not_type_func word) #atomic => Ident{Text: text($t)}
-rule function_name_token Ident = t:(quoted_ident / uquoted_ident / !kw_not_func_name word) #atomic => Ident{Text: text($t)}
-rule type_name_token Ident = t:(quoted_ident / uquoted_ident / !kw_not_type_name word) #atomic => Ident{Text: text($t)}
+rule col_id Ident = (quoted_ident / uquoted_ident / !kw_not_col_id word) #atomic
+rule type_function_name Ident = (quoted_ident / uquoted_ident / !kw_not_type_func word) #atomic
+rule function_name_token Ident = (quoted_ident / uquoted_ident / !kw_not_func_name word) #atomic
+rule type_name_token Ident = (quoted_ident / uquoted_ident / !kw_not_type_name word) #atomic
 // IDENT: not a keyword at all
-rule ident_only Ident = t:(quoted_ident / uquoted_ident / !kw_any word) #atomic => Ident{Text: text($t)}
+rule ident_only Ident = (quoted_ident / uquoted_ident / !kw_any word) #atomic
 // ColLabel: any word
 // NOT before BETWEEN, IN, LIKE, ILIKE and SIMILAR is a token of its own (NOT_LA) that no name accepts
-rule col_label Ident = t:(quoted_ident / uquoted_ident / !(NOT ws (BETWEEN / IN / LIKE / ILIKE / SIMILAR)) word) #atomic => Ident{Text: text($t)}
-rule non_reserved_word Ident = t:(quoted_ident / uquoted_ident / !kw_reserved word) #atomic => Ident{Text: text($t)}
+rule col_label Ident = (quoted_ident / uquoted_ident / !(NOT ws (BETWEEN / IN / LIKE / ILIKE / SIMILAR)) word) #atomic
+rule non_reserved_word Ident = (quoted_ident / uquoted_ident / !kw_reserved word) #atomic
 
 // ---- Strings ----
 
@@ -495,8 +495,8 @@ rule dq_close = "$" u:dq_tag "$" {text($u) == tag}
 rule dq_tag = [a-zA-Z_\u{80}-\u{10ffff}] [a-zA-Z_0-9\u{80}-\u{10ffff}]* / _
 rule bit_string = [bBxX] "'" [^']* "'" (sq_cont [^']* "'")*
 
-rule sconst StringLit = t:(e_string / sq_string / dollar_string / u_string) #atomic => StringLit{Text: text($t)}
-rule bit_lit BitLit = t:(bit_string) #atomic => BitLit{Text: text($t)}
+rule sconst StringLit = (e_string / sq_string / dollar_string / u_string) #atomic
+rule bit_lit BitLit = (bit_string) #atomic
 
 // ---- Numbers ----
 
@@ -547,10 +547,10 @@ rule core_long = !([*/<>=] &pm_end) core
 // Names
 // ===================================================================================================
 
-rule col_id_or_string Ident = t:(col_id / sconst) #atomic => Ident{Text: text($t)}
-rule name Ident = t:(col_id_or_string) #atomic => Ident{Text: text($t)}
-rule attr_name Ident = t:(col_label) #atomic => Ident{Text: text($t)}
-rule param_name Ident = t:(type_function_name) #atomic => Ident{Text: text($t)}
+rule col_id_or_string Ident = (col_id / sconst) #atomic
+rule name Ident = (col_id_or_string) #atomic
+rule attr_name Ident = (col_label) #atomic
+rule param_name Ident = (type_function_name) #atomic
 
 // qualified_name: ColIdOrString | ColId indirection (the dots)
 rule qualified_name Name = qn_dotted / qn_string
@@ -757,7 +757,7 @@ rule plain_literal Expr = l:(number / bit_lit) !(ws ("." / "[")) => $l
 // a string may be followed by .name and [i], but a call needs an expression in parentheses
 rule string_literal Expr = l:sconst !(ws "." ws attr_name ws "(") => $l
 // ICONST in positions where the grammar does not allow a float
-rule param Param = t:("?" [0-9]* / "$" digits / "$" ws dollar_name) #atomic => Param{Text: text($t)}
+rule param Param = ("?" [0-9]* / "$" digits / "$" ws dollar_name) #atomic
 // the name of a parameter has no $ in it: $a$ begins a dollar-quoted string
 rule dollar_name = quoted_ident / uquoted_ident / ident_start [a-zA-Z0-9_\u{80}-\u{9f}¡-\u{1fff}\u{200c}-\u{202e}‰-⁞\u{2061}-⿿、-\u{fefe}\u{ff00}-\u{10ffff}]*
 rule positional_ref PositionalRef = "#" ws i:iconst => PositionalRef{Index: $i}
@@ -824,7 +824,7 @@ rule expr_list_opt_comma []Expr = l:expr_list (ws ",")? => $l
 // ---- Stars, COLUMNS, DEFAULT, lambdas ----
 
 rule star_primary Expr = star_columns / star_expr / qualified_star / columns_expr / unpack_expr / default_expr / lambda_expr
-rule default_expr DefaultExpr = t:(DEFAULT) #atomic => DefaultExpr{Text: text($t)}
+rule default_expr DefaultExpr = (DEFAULT) #atomic
 rule columns_expr ColumnsExpr = COLUMNS ws "(" ws a:expr ws ")" => ColumnsExpr{Arg: $a, Star: false}
 rule star_columns ColumnsExpr = op_star ws COLUMNS ws "(" ws a:expr ws ")" => ColumnsExpr{Arg: $a, Star: true}
 rule unpack_expr UnpackExpr = UNPACK ws "(" ws a:expr ws ")" => UnpackExpr{Arg: $a}
@@ -851,8 +851,8 @@ rule rename_single []RenameItem = RENAME ws i:rename_item => list($i)
 // ---- Keyword expressions and special functions ----
 
 rule keyword_primary Expr = k:(bool_lit / null_lit / exists_expr / interval_lit / grouping_expr) !(ws ("." / "[")) => $k
-rule bool_lit BoolLit = t:(TRUE / FALSE) #atomic => BoolLit{Text: text($t)}
-rule null_lit NullLit = t:(NULL) #atomic => NullLit{Text: text($t)}
+rule bool_lit BoolLit = (TRUE / FALSE) #atomic
+rule null_lit NullLit = (NULL) #atomic
 rule exists_expr Exists = EXISTS ws q:select_with_parens => Exists{Query: $q}
 rule grouping_expr Grouping = n:(GROUPING_ID / GROUPING) #atomic ws "(" ws xs:expr_list_opt_comma ws ")" => Grouping{Name: text($n), Args: $xs}
 rule cast_expr Cast = cast_plain / cast_try
@@ -862,7 +862,7 @@ rule cast_try Cast = TRY_CAST ws "(" ws x:expr ws AS ws t:typename ws ")" => Cas
 rule interval_lit IntervalLit = interval_paren / interval_const
 rule interval_paren IntervalLit = INTERVAL ws "(" ws v:expr ws ")" (ws u:interval_unit)? => IntervalLit{Value: $v, Unit: $u}
 rule interval_const IntervalLit = INTERVAL ws v:(iconst / sconst) (ws u:interval_unit)? => IntervalLit{Value: $v, Unit: $u}
-rule interval_unit IntervalUnit = t:(interval_to / interval_field) #atomic => IntervalUnit{Text: text($t)}
+rule interval_unit IntervalUnit = (interval_to / interval_field) #atomic
 rule interval_to = (
     (YEARS / YEAR) ws TO ws (MONTHS / MONTH)
     / (DAYS / DAY) ws TO ws (HOURS / HOUR / MINUTES / MINUTE / SECONDS / SECOND)
@@ -1101,7 +1101,7 @@ rule target_list_opt_comma []SelectItem = first:select_item rest:(-ws -"," -ws i
 rule select_item SelectItem = item_prefixed / item_plain
 rule item_prefixed SelectItem = a:col_id ws colon ws e:expr => SelectItem{Expr: $e, Alias: $a, Prefix: true}
 rule item_plain SelectItem = e:expr (ws kw:AS ws al:col_label_or_string / ws al:ident_only)? => SelectItem{Expr: $e, Alias: $al, As: len($kw) > 0}
-rule col_label_or_string Ident = t:(col_label / sconst) #atomic => Ident{Text: text($t)}
+rule col_label_or_string Ident = (col_label / sconst) #atomic
 
 rule into_clause IntoClause = INTO ws t:opt_temp_table_name => $t
 rule opt_temp_table_name IntoClause = into_temp / into_table / into_plain
@@ -1790,8 +1790,8 @@ rule comment_column CommentStmt = k:(COMMENT ws ON ws COLUMN) #atomic ws c:c_exp
 rule comment_object CommentStmt = (
     COMMENT ws ON ws k:(TABLE / SEQUENCE / FUNCTION / MACRO (ws TABLE)? / VIEW / DATABASE / INDEX / SCHEMA / TYPE) #atomic ws n:qualified_name ws IS ws v:comment_value
 ) => CommentStmt{Object: text($k), Name: $n, Comment: $v}
-rule comment_value StringLit = t:(sconst / null_text) #atomic => StringLit{Text: text($t)}
-rule null_text StringLit = t:(NULL) #atomic => StringLit{Text: text($t)}
+rule comment_value StringLit = (sconst / null_text) #atomic
+rule null_text StringLit = (NULL) #atomic
 rule update_extensions_stmt UpdateExtensionsStmt = (w:with_clause ws)? UPDATE ws EXTENSIONS (ws "(" ws ns:column_list ws ")")? => UpdateExtensionsStmt{With: $w, Names: concat($ns)}
 
 // ===================================================================================================

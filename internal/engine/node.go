@@ -34,7 +34,7 @@ type Node struct {
 	kind *nodeKind
 	// start and end are the range in the input, in the parse's position unit (end is exclusive).
 	start, end int32
-	// text is the string value of a string node, and the Text field of a text struct.
+	// text is the string value of a string node.
 	text string
 	// children are the elements of a tuple or list value. An optional that did not match is nil.
 	children []*Node
@@ -48,9 +48,6 @@ type Node struct {
 	terminal bool
 	// labeled reports that the captures in fields are output (source information was requested).
 	labeled bool
-	// textField reports a text struct: a struct whose one field, Text, is text, so that the field
-	// is not boxed until it is read (see fieldList).
-	textField bool
 	// gen is the number of Document edits that the positions account for (see moveTree).
 	gen uint32
 	// box is the value of an action that is not a node (a KindValue node).
@@ -253,19 +250,15 @@ func (prog *Program) typeKind(typ string) *nodeKind {
 }
 
 // ruleKinds are the kinds of a rule's nodes: those of the reserved types, which the rule gives its
-// name to (finish), and of the struct of a text struct rule.
+// name to (finish).
 type ruleKinds struct {
 	reserved [len(reservedTypes)]*nodeKind
-	text     *nodeKind
 }
 
-func newRuleKinds(rule, textType string) ruleKinds {
+func newRuleKinds(rule string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
-	}
-	if textType != "" {
-		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -513,36 +506,7 @@ func (n *Node) Field(name string) any {
 
 // field returns the value of the field name of n.
 func (n *Node) field(name string) (any, bool) {
-	if n.textField {
-		if name == "Text" {
-			return n.text, true
-		}
-		return nil, false
-	}
 	return n.fields.Get(name)
-}
-
-// fieldList returns the fields of n, making the field list of a text struct.
-func (n *Node) fieldList() Fields {
-	if n.textField {
-		return Fields{{Name: "Text", Value: n.text}}
-	}
-	return n.fields
-}
-
-// fieldCount returns the number of fields of n without making the field list of a text struct.
-func (n *Node) fieldCount() int {
-	if n.textField {
-		return 1
-	}
-	return len(n.fields)
-}
-
-// materialize gives a text struct its field list, before the list is changed.
-func (n *Node) materialize() {
-	if n.textField {
-		n.fields, n.text, n.textField = n.fieldList(), "", false
-	}
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
@@ -558,7 +522,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fieldList() {
+		for _, f := range n.fields {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -763,7 +727,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.fieldList().sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]

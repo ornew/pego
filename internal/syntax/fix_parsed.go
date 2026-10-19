@@ -17,13 +17,13 @@ import (
 // referred to by $n is labeled unless it already has a label; a rule call is labeled with the
 // rule's name when that name is free, and anything else with v1, v2, .... $0 becomes
 // list($a, $b, ...) of every element with a value.
-func fixParsed(src string, positional bool) (string, []int, error) {
+func fixParsed(src string, positional bool) (string, []int, map[string]bool, error) {
 	g, forms, err := parseLegacy(src)
 	if err != nil {
 		if !positional {
-			return src, nil, nil
+			return src, nil, nil, nil
 		}
-		return "", nil, fmt.Errorf("positional captures cannot be rewritten until the grammar parses: %w", err)
+		return "", nil, nil, fmt.Errorf("positional captures cannot be rewritten until the grammar parses: %w", err)
 	}
 	o := newFixOffsets(src)
 	var edits []fixEdit
@@ -77,12 +77,12 @@ func fixParsed(src string, positional bool) (string, []int, error) {
 			})
 		}
 		if err != nil {
-			return "", nil, err
+			return "", nil, nil, err
 		}
 	}
 	params, err := paramEdits(o, g)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 	edits = append(edits, params...)
 	inspectAST(g, func(n any) {
@@ -102,14 +102,18 @@ func fixParsed(src string, positional bool) (string, []int, error) {
 	})
 	types, nodes, err := typeEdits(o, src, g, forms)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 	edits = append(edits, types...)
+	terminals := map[string]bool{}
+	for d := range forms.terminals {
+		terminals[d.Name] = true
+	}
 	if len(edits) == 0 {
-		return src, nil, nil
+		return src, nil, terminals, nil
 	}
 	out, marks := applyMarkedFixEdits(src, edits, nodes)
-	return out, marks, nil
+	return out, marks, terminals, nil
 }
 
 // valueTypeNames maps the reserved names of concrete syntax tree types to the value types that

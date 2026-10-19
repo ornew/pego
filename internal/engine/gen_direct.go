@@ -1285,9 +1285,6 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		// After finish, whose errors (a result that is not a node) also name the rule.
 		d.line("p.where = %s", d.rd(prevWhere))
 		return true, true
-	case r.textType != "":
-		d.line("v = trules[%d].text(p, start, p.pos, p.text(start, p.pos))", r.id)
-		return true, false
 	default:
 		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))
 		start = true

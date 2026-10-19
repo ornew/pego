@@ -69,7 +69,7 @@ func ToAny(v Value) (any, error) {
 // Value returns the string the literal denotes, with its escape sequences decoded. Invalid UTF-8 and
 // unpaired surrogates (\ud800 without a low surrogate after it) become U+FFFD, as in encoding/json.
 func (s *String) Value() string {
-	t := s.Text
+	t := s.TNode.Value
 	if !strings.ContainsRune(t, '\\') && utf8.ValidString(t) {
 		return t
 	}
@@ -137,9 +137,9 @@ func hex4(t string, i int) (rune, bool) {
 
 // Float64 returns the number as a float64. A number outside the range of float64 is an error.
 func (n *Number) Float64() (float64, error) {
-	f, err := strconv.ParseFloat(n.Text, 64)
+	f, err := strconv.ParseFloat(n.Value, 64)
 	if err != nil {
-		return 0, fmt.Errorf("json: number %s: %w", n.Text, err.(*strconv.NumError).Err)
+		return 0, fmt.Errorf("json: number %s: %w", n.Value, err.(*strconv.NumError).Err)
 	}
 	return f, nil
 }
@@ -147,12 +147,12 @@ func (n *Number) Float64() (float64, error) {
 // Int64 returns the number as an int64. A number with a fraction or an exponent, or outside the range of
 // int64, is an error.
 func (n *Number) Int64() (int64, error) {
-	i, err := strconv.ParseInt(n.Text, 10, 64)
+	i, err := strconv.ParseInt(n.Value, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("json: number %s: %w", n.Text, err.(*strconv.NumError).Err)
+		return 0, fmt.Errorf("json: number %s: %w", n.Value, err.(*strconv.NumError).Err)
 	}
 	return i, nil
 }
 
 // Value returns the boolean.
-func (b *Bool) Value() bool { return b.Text == "true" }
+func (b *Bool) Value() bool { return b.TNode.Value == "true" }

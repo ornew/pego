@@ -28,7 +28,7 @@ cel.Inspect(e, func(e cel.Expr) bool {
 })
 
 // Decode literals.
-s := (&cel.StringLit{Text: `'''a\nb'''`}).Value() // "a\nb"
+s := (&cel.StringLit{TNode: cel.TNode[string]{Value: `'''a\nb'''`}}).Value() // "a\nb"
 
 // Print the tree back as source.
 cel.Format(e) // `a.b + f(1, 2u)`
@@ -72,7 +72,7 @@ Positions are in code points by default; `cel.ParseAST(src, cel.WithUnit(cel.Byt
 | `StringLit`, `BytesLit` | `Text` | The source with its quotes and its `r` or `b` prefix: `'a'`, `"""a"""`, `r"\d"`, `b"\xff"` |
 | `BoolLit`, `NullLit` | `Text` | |
 | `Paren` | `X` | `(x)`. cel-go drops parentheses; this tree keeps them. |
-| `Select` | `X`, `Field *Name`, `Optional` | `x.f`, `x.?f`; a field escaped with backquotes (`` x.`a-b` ``) keeps them in `Field.Text` |
+| `Select` | `X`, `Field *Name`, `Optional` | `x.f`, `x.?f`; a field escaped with backquotes (`` x.`a-b` ``) keeps them in `Field.TNode.Value` |
 | `Index` | `X`, `Index`, `Optional` | `x[i]`, `x[?i]` |
 | `Call` | `Target`, `Func *Ident`, `Args` | `f(a)` with `Target` nil, `x.f(a)` with the receiver as `Target`; the macros are calls too |
 | `Unary` | `Op`, `X` | `!x`, `-x`. A run of operators is nested: `!!x` is a `Unary` of a `Unary`, which cel-go reduces to `x`. |

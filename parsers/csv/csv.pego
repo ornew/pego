@@ -9,7 +9,7 @@ package csv
 
 type File = { Records []Record }
 type Record = { Fields []Field }
-type Field = { Text string } // the raw field: a quoted field keeps its quotes and doubled ""
+type Field = node[string] // the raw field: a quoted field keeps its quotes and doubled ""
 
 rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs.Value}
 
@@ -23,9 +23,9 @@ rule record Record = (
 // a quoted field, a CR that does not end the line in an unquoted one). Written inline rather than as
 // rules of their own, and as runs rather than a repetition of a choice ((?^")+ / "\"\""), it makes
 // ParseAST about 8% faster and Recognize about 25%.
-rule field Field = t:(
+rule field Field = (
     "\"" [^"]* ("\"\"" [^"]*)* "\""
     / [^,"\r\n]* ("\r" &[^\n] [^,"\r\n]*)*
-) #atomic => Field{Text: text($t)}
+) #atomic
 
 rule eol = "\r\n" / "\n" / "\r"? $$

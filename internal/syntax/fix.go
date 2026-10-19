@@ -28,7 +28,12 @@ import (
 //     "rule r T = t:(e) #atomic => T{Text: text($t)}", without #atomic when e is atomic already
 //     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) and $x.Value become $x.Text
 //     where x captures a call of a rule of a terminal type. $x.Value also becomes $x.Text where
-//     x captures a call of a rule of a text struct { Text string };
+//     x captures a call of a rule of a struct { Text string };
+//   - a struct "type T = { Text string }" that rules make from the text they match,
+//     "rule r T = t:(e) #atomic => T{Text: text($t)}", and no other constructor makes, becomes
+//     the named node type "type T = node[string]", and those rules become "rule r T = (e) #atomic";
+//     a struct that a terminal type became is rewritten even if no rule makes it. Reads $x.Text
+//     of its values become text($x);
 //   - the type names terminal and Match become node[string], Seq, List and Operator become
 //     node[_], node without a type argument becomes node[_], and Error becomes error.
 //
@@ -62,10 +67,16 @@ func FixNodeTypes(src string) (string, []int, error) {
 		// node without a type argument becomes node[_].
 		parsed = parsed || t.kind == tIdent && t.text == "node" && (i+1 == len(toks) || toks[i+1].text != "[")
 	}
+	var marks []int
+	var terminals map[string]bool
 	if positional || parsed {
-		return fixParsed(out, positional)
+		var err error
+		if out, marks, terminals, err = fixParsed(out, positional); err != nil {
+			return "", nil, err
+		}
 	}
-	return out, nil, nil
+	out, marks = fixTextStructs(out, marks, terminals)
+	return out, marks, nil
 }
 
 // fixOffsets maps lexer positions in src to byte offsets.
@@ -124,8 +135,8 @@ func fixTokens(src string, toks []token) string {
 			switch {
 			case is(i+2, tIdent, "struct"):
 				replace(toks[i+2], "=")
-			case is(i+2, tPunct, "=") && !is(i+3, tPunct, "{"):
-				// "type T = {" is already a definition.
+			case is(i+2, tPunct, "=") && !is(i+3, tPunct, "{") && !(is(i+3, tIdent, "node") && is(i+4, tPunct, "[")):
+				// "type T = {" and "type T = node[" are already definitions.
 				replace(toks[i+2], "~")
 			}
 		}

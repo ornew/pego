@@ -832,9 +832,6 @@ interface Rule {
   body: (p: Parser, min: number) => R;
   action: Action | null;
   value: Shaper; // makes the value of a body without an action (see scopeValue)
-  // textType, if not "", means the rule's value is a struct of that type whose field Text is the
-  // matched text: the struct the rule's action makes, made without it.
-  textType: string;
   // memo means the rule's results are memoized. It is false for transient rules, whose entries
   // could never be reused.
   memo: boolean;
@@ -884,7 +881,6 @@ function mkRule(
   name: string,
   scope: string[],
   value: Shaper,
-  textType: string,
   memo: boolean,
   leader: boolean,
   seen: number,
@@ -898,7 +894,6 @@ function mkRule(
     body: failBody,
     action: null,
     value,
-    textType,
     memo,
     leader,
     seen,
@@ -2182,9 +2177,6 @@ class Parser {
     if (r.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
       return c.result(r.action, r.name);
-    }
-    if (r.textType !== "") {
-      return new Node(r.textType, "", start, this.pos, "", noNodes, [{ name: "Text", value: this.text(start, this.pos) }], false, false);
     }
     v = this.scopeValue(r.value, v, start);
     if (r.scope.length > 0) {

@@ -37,13 +37,13 @@ func Kind(v any) string {
 	node := AsNode(v)
 	switch n := node.(type) {
 	case *Token:
-		return tokenKinds[n.Text]
+		return tokenKinds[n.Value]
 	case *Modifier:
-		return tokenKinds[n.Text]
+		return tokenKinds[n.Value]
 	case *KeywordTypeNode:
-		return tokenKinds[n.Text]
+		return tokenKinds[n.Value]
 	case *BooleanLiteral:
-		return tokenKinds[n.Text]
+		return tokenKinds[n.Value]
 	case *ThisExpression:
 		return "ThisKeyword"
 	case *SuperExpression:

@@ -12,7 +12,7 @@ func IsMacroCall(c *Call) bool {
 	if c.Func.Rooted() {
 		return false
 	}
-	name, n := c.Func.Text, len(c.Args)
+	name, n := c.Func.Value, len(c.Args)
 	if c.Target == nil {
 		return name == "has" && n == 1
 	}
@@ -67,7 +67,7 @@ func checkMacros(e Expr) error {
 		}
 		id, ok := arg.(*Ident)
 		switch {
-		case !ok && c.Func.Text == "map" || !ok && c.Func.Text == "filter":
+		case !ok && c.Func.Value == "map" || !ok && c.Func.Value == "filter":
 			err = &CheckError{Span: SpanOf(arg), Message: "argument is not an identifier"}
 		case !ok:
 			err = &CheckError{Span: SpanOf(arg), Message: "argument must be a simple name"}

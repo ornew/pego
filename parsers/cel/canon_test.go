@@ -107,7 +107,7 @@ func (c *canon) expr(e cel.Expr) {
 	case *cel.BytesLit:
 		c.w("b:%s@%d", strconv.Quote(string(e.Value())), e.Start)
 	case *cel.BoolLit:
-		c.w("%s@%d", e.Text, e.Start)
+		c.w("%s@%d", e.TNode.Value, e.Start)
 	case *cel.NullLit:
 		c.w("null@%d", e.Start)
 	case *cel.Select:

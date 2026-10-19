@@ -38,7 +38,7 @@ func TestFormat(t *testing.T) {
 
 // TestFormatBuilt checks the parentheses that Format adds to trees built without Paren nodes.
 func TestFormatBuilt(t *testing.T) {
-	id := func(s string) *cel.Ident { return &cel.Ident{Text: s} }
+	id := func(s string) *cel.Ident { return &cel.Ident{TNode: cel.TNode[string]{Value: s}} }
 	op := func(s string) *cel.TNode[string] { return &cel.TNode[string]{Value: s} }
 	for _, tc := range []struct {
 		e    cel.Expr
@@ -47,9 +47,9 @@ func TestFormatBuilt(t *testing.T) {
 		{&cel.Binary{Left: &cel.Binary{Left: id("a"), Op: op("+"), Right: id("b")}, Op: op("*"), Right: id("c")}, "(a + b) * c"},
 		{&cel.Binary{Left: id("a"), Op: op("-"), Right: &cel.Binary{Left: id("b"), Op: op("-"), Right: id("c")}}, "a - (b - c)"},
 		{&cel.Binary{Left: &cel.Binary{Left: id("a"), Op: op("-"), Right: id("b")}, Op: op("-"), Right: id("c")}, "a - b - c"},
-		{&cel.Select{X: &cel.Unary{Op: op("-"), X: id("a")}, Field: &cel.Name{Text: "f"}}, "(-a).f"},
+		{&cel.Select{X: &cel.Unary{Op: op("-"), X: id("a")}, Field: &cel.Name{TNode: cel.TNode[string]{Value: "f"}}}, "(-a).f"},
 		{&cel.Unary{Op: op("!"), X: &cel.Binary{Left: id("a"), Op: op("||"), Right: id("b")}}, "!(a || b)"},
-		{&cel.Unary{Op: op("-"), X: &cel.IntLit{Text: "-1"}}, "-(-1)"},
+		{&cel.Unary{Op: op("-"), X: &cel.IntLit{TNode: cel.TNode[string]{Value: "-1"}}}, "-(-1)"},
 		{&cel.Unary{Op: op("!"), X: &cel.Unary{Op: op("!"), X: id("a")}}, "!!a"},
 		{&cel.Conditional{Cond: &cel.Conditional{Cond: id("a"), Then: id("b"), Else: id("c")}, Then: id("d"), Else: id("e")}, "(a ? b : c) ? d : e"},
 		{&cel.Conditional{Cond: id("a"), Then: &cel.Conditional{Cond: id("b"), Then: id("c"), Else: id("d")}, Else: id("e")}, "a ? (b ? c : d) : e"},

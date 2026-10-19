@@ -25,13 +25,13 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("package", file.Name.Text)
+	fmt.Println("package", file.Name.Value)
 	for _, d := range file.Decls {
 		switch d := d.(type) {
 		case *golang.GenDecl:
 			fmt.Printf("%s at %d-%d\n", d.Tok, d.Start, d.End)
 		case *golang.FuncDecl:
-			fmt.Printf("func %s at %d-%d, %d statement(s)\n", d.Name.Text, d.Start, d.End, len(d.Body.List))
+			fmt.Printf("func %s at %d-%d, %d statement(s)\n", d.Name.Value, d.Start, d.End, len(d.Body.List))
 		}
 	}
 	// Output:

@@ -75,7 +75,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Scope | The capture names of the body, in slot order |
 | Action | Start of the action in the expression code, or -1 if there is none |
 | Body is a sequence | Whether the body's value is a tuple; used to interpret `$n` |
-| Node type | Name of the type the rule makes its value as (see Rule Completion), or -1 if there is none: the struct type of a text struct rule, or the named node type a rule declared with one converts its value to |
+| Node type | Name of the named node type a rule declared with one converts its value to (see Rule Completion), or -1 if there is none |
 | Memoize, left-recursion leader, position-dependent | Results of static analysis |
 | Operators Rule | Index into the Operators Rule table, or -1 if there is none |
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
@@ -85,7 +85,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 
 **Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`#atomic`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
 
-**Value-free bodies.** The body of a text struct rule, and the body of a rule whose action does not refer to `$n`, are compiled without building values. Capture targets still build their values.
+**Value-free bodies.** The body of a rule whose action does not refer to `$n` is compiled without building values. Capture targets still build their values.
 
 ### Operators Rule Table
 
@@ -224,7 +224,6 @@ A leader rule is evaluated as follows:
 The value of the rule is built from the body value v and the start position:
 
 - **With an action:** evaluate the action with the `$n` items set to the children of v if the body is a sequence, and to [v] otherwise. If the result is a node newly created by the action, its range becomes the range of the rule. An `int`, `string` or `bool` result becomes a value node with the range of the rule.
-- **With a struct node type:** create a struct of that type whose only field, `Text`, is the text of the rule's range, with the rule's range. A compiler writes such a rule, a text struct rule, for `rule r T = t:(e) #atomic => T{Text: text($t)}` where `T`'s field `Text` is a `string`: its body is `e #atomic` and it has no action or scope, since the struct is what the action would make.
 - **Otherwise:** if the scope has captures, attach them. If v is fresh, give it the rule name if it has none, and clear its fresh mark.
 
 When the rule's node type is a named node type, the value built above is then checked against the rule's check, which names the underlying node type, and converted to the named node type as `ENODE` converts it; a value that is not a string, tuple or list node fails the parse with `cannot convert <value type> to <type> in result of rule <name>`.
@@ -266,9 +265,9 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 105 | `EITEM` | A n | Push `$n`. For n = 0, push a list value of all items. An out-of-range n is an error. |
 | 106 | `ELOCAL` | A index | Push a local (a lambda parameter, or `$lhs`, `$rhs`, `$op`). |
 | 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
-| 108 | `EMEMBER` | A name, B text | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. With B 1 the value is an operand of the next comparison (`EBIN` with B 1): the `Text` field of a text struct may be pushed as a reference to the text, which only that comparison takes. |
+| 108 | `EMEMBER` | A name | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
-| 110 | `EBIN` | A operator, B text | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. With B 1 the operator is a comparison whose operands may be text references pushed by `EMEMBER` with B 1. |
+| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. |
 | 111 | `EUNARY` | A operator | Pop a value and push the result of the operation. |
 | 112, 113 | `EAND` / `EOR` | A target | It is an error if the top value is not a boolean. `EAND` on false, and `EOR` on true, leave the value and jump to A. Otherwise pop the value and continue. |
 | 114 | `EBOOLCHK` | A operator | It is an error if the top value is not a boolean. |

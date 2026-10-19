@@ -281,8 +281,6 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// text makes the value of a text struct rule from the rule's range and text.
-	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -952,7 +950,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 // declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	var body any
-	if r.nt != 0 && r.action == nil && r.textType == "" {
+	if r.nt != 0 && r.action == nil {
 		body = tfreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
@@ -1079,9 +1077,6 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	if r.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
-	}
-	if r.textType != "" {
-		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {

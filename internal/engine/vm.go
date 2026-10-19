@@ -152,13 +152,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, vars: vm.names(ri.Vars),
 		}
 		if ri.NodeType >= 0 {
-			if vm.nodeKinds != nil && vm.nodeKinds[ri.NodeType] != nil {
-				r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
-			} else {
-				r.textType = m.Strings[ri.NodeType]
-			}
+			r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
 		}
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
@@ -1098,16 +1094,11 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			stack = append(stack, v)
 		case EMember:
 			x := pop()
-			o, err := ctx.memberOperand(x, m.Strings[in.A])
+			o, err := ctx.member(x, m.Strings[in.A])
 			if err != nil {
 				return nil, err
 			}
-			if in.B != 0 && o.isStr {
-				// A pointer stored in an interface does not allocate, unlike the text.
-				stack = append(stack, (*textOperand)(x.(*Node)))
-			} else {
-				stack = append(stack, o.value())
-			}
+			stack = append(stack, o)
 		case ENew:
 			names := vm.fields[in.B]
 			top := len(stack) - len(names)
@@ -1135,13 +1126,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBin:
 			r := pop()
 			l := pop()
-			var v any
-			var err error
-			if in.B != 0 {
-				v, err = p.compareOperands(m.Strings[in.A], vmOperand(l), vmOperand(r))
-			} else {
-				v, err = p.valueBinary(m.Strings[in.A], l, r)
-			}
+			v, err := p.valueBinary(m.Strings[in.A], l, r)
 			if err != nil {
 				return nil, err
 			}

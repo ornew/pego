@@ -523,7 +523,7 @@ func (d *dumper) conv0(x any) any {
 func identifiers(ids []*Identifier) plist {
 	out := make(plist, len(ids))
 	for i, id := range ids {
-		out[i] = str(id.Text)
+		out[i] = str(id.Value)
 	}
 	return out
 }
@@ -565,7 +565,7 @@ func opNode(o *Op, m map[string]string) *pnode {
 	if o == nil {
 		return node("<nil op>")
 	}
-	op := o.Text
+	op := o.Value
 	if n, ok := m[op]; ok {
 		return node(n)
 	}
@@ -576,7 +576,7 @@ func constant(c *Constant) any {
 	if c == nil {
 		return nil
 	}
-	v, err := constValue(c.Text)
+	v, err := constValue(c.TNode.Value)
 	if err != nil {
 		return prepr("<error: " + err.Error() + ">")
 	}
@@ -632,14 +632,14 @@ func (d *dumper) joinedValues(parts []StrPart) plist {
 			}
 			items = append(items, strItem{text: rs, u: u, span: p.Span})
 		case *FStringMiddle:
-			rs, err := decodeFStringText(p.Text, false)
+			rs, err := decodeFStringText(p.TNode.Value, false)
 			if err != nil {
 				items = append(items, strItem{node: prepr("<error: " + err.Error() + ">")})
 				continue
 			}
 			items = append(items, strItem{text: rs, span: p.Span})
 		case *FStringRawMiddle:
-			rs, _ := decodeFStringText(p.Text, true)
+			rs, _ := decodeFStringText(p.TNode.Value, true)
 			items = append(items, strItem{text: rs, span: p.Span})
 		case *FormattedValue:
 			if p.Debug != "" {

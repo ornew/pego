@@ -36,7 +36,7 @@ func loadSuite(t *testing.T, dir string) []suiteCase {
 				continue
 			}
 			e := tree.DTD.Entities[ref.Name()]
-			file := filepath.Join(dir, e.External.System.Text)
+			file := filepath.Join(dir, e.External.System.TNode.Value)
 			col := decodeEntity(t, file)
 			rel, _ := filepath.Rel(dir, file)
 			for _, el := range col.Root.Elements() {
@@ -308,13 +308,13 @@ func canonicalItem(b *strings.Builder, it xml.Item) {
 	case *xml.Text:
 		b.WriteString(canonicalText(it.Data))
 	case *xml.PI:
-		b.WriteString("<?" + it.Target.Text + " ")
+		b.WriteString("<?" + it.Target.Value + " ")
 		if it.Data != nil {
 			b.WriteString(it.Data.Value())
 		}
 		b.WriteString("?>")
 	case *xml.EntityRef:
-		b.WriteString(it.Text)
+		b.WriteString(it.Value)
 	}
 }
 

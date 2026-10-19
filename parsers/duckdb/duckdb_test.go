@@ -376,8 +376,8 @@ func TestSpans(t *testing.T) {
 		// a terminal covers the text it holds
 		duckdb.Walk(script, func(n any) bool {
 			if id, ok := n.(*duckdb.Ident); ok {
-				if got := src[id.Span.Start:id.Span.End]; got != id.Text {
-					t.Errorf("%s: identifier %q at %d-%d covers %q", in, id.Text, id.Span.Start, id.Span.End, got)
+				if got := src[id.Span.Start:id.Span.End]; got != id.Value {
+					t.Errorf("%s: identifier %q at %d-%d covers %q", in, id.Value, id.Span.Start, id.Span.End, got)
 				}
 			}
 			return true
@@ -393,7 +393,7 @@ func TestWalk(t *testing.T) {
 	var order []string
 	duckdb.Walk(script, func(n any) bool {
 		if id, ok := n.(*duckdb.Ident); ok {
-			order = append(order, id.Text)
+			order = append(order, id.Value)
 		}
 		return true
 	})

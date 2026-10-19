@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
@@ -33,7 +32,13 @@ func TestFixTerminalTypes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%q: %v", fixed, err)
 			}
-			if text := fmt.Sprint(got.Field("Text")); text != tc.want {
+			// A terminal type becomes a named string node, or a struct { Text string } when
+			// another constructor makes it.
+			text := got.Text()
+			if v, ok := got.Field("Text").(string); ok {
+				text = v
+			}
+			if text != tc.want {
 				t.Errorf("%q: Text is %q, want %q", fixed, text, tc.want)
 			}
 		}

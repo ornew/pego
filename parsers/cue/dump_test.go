@@ -90,7 +90,7 @@ func (d *dumper) decl(x Decl) {
 		d.w(")")
 	case *Attribute:
 		d.open("attr", x)
-		d.w(" %s)", strconv.Quote(x.Text))
+		d.w(" %s)", strconv.Quote(x.Value))
 	case *ImportDecl:
 		d.open("import", x)
 		if x.Lparen != nil {
@@ -217,17 +217,17 @@ func (d *dumper) expr(x any) {
 	switch x := x.(type) {
 	case *Ident:
 		d.open("id", x)
-		d.w(" %s)", strconv.Quote(x.Text))
+		d.w(" %s)", strconv.Quote(x.Value))
 	case *Int:
-		d.w("(lit %d %d INT %s)", x.Start, x.End, strconv.Quote(x.Text))
+		d.w("(lit %d %d INT %s)", x.Start, x.End, strconv.Quote(x.TNode.Value))
 	case *Float:
-		d.w("(lit %d %d FLOAT %s)", x.Start, x.End, strconv.Quote(x.Text))
+		d.w("(lit %d %d FLOAT %s)", x.Start, x.End, strconv.Quote(x.Value))
 	case *String:
 		d.w("(lit %d %d STRING %s)", x.Start, nodeEnd(x), strconv.Quote(refText(x.Text)))
 	case *Bool:
-		d.w("(lit %d %d %s %s)", x.Start, x.End, x.Text, strconv.Quote(x.Text))
+		d.w("(lit %d %d %s %s)", x.Start, x.End, x.TNode.Value, strconv.Quote(x.TNode.Value))
 	case *Null:
-		d.w("(lit %d %d null %s)", x.Start, x.End, strconv.Quote(x.Text))
+		d.w("(lit %d %d null %s)", x.Start, x.End, strconv.Quote(x.Value))
 	case *Bottom:
 		d.open("bottom", x)
 		d.w(")")

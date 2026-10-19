@@ -6,8 +6,8 @@ precedence and an associativity. Operand and operator shapes are ordinary Rule E
 Their combination follows a parsing algorithm inspired by Pratt parsing.
 
 ```pego
-type Num = { Text string }
-type Ident = { Text string }
+type Num = node[string]
+type Ident = node[string]
 type Comma = { L Expr; R Expr }
 type Assign = { L Expr; R Expr }
 type Cond = { Cond Expr; Then Expr; Else Expr }
@@ -41,8 +41,8 @@ rule expr Expr = operators {
 
 rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => r.$x))
 
-rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
-rule ident Ident = t:([a-z]+) #atomic => Ident{Text: text($t)}
+rule number Num = ([0-9]+) #atomic
+rule ident Ident = ([a-z]+) #atomic
 rule ws = [ \t\r\n]*
 ```
 

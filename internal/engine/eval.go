@@ -346,52 +346,36 @@ func (c *evalCtx) evalTuple(elems []grammar.Term) (any, error) {
 // not captures, which are read with x.$name.
 var nodeMembers = map[string]bool{"Start": true, "End": true, "Value": true, "startPos": true, "endPos": true, "children": true}
 
+// member reads x.name.
 func (c *evalCtx) member(x any, name string) (any, error) {
-	o, err := c.memberOperand(x, name)
-	return o.value(), err
-}
-
-// memberOperand reads x.name, keeping the text of a text struct unboxed.
-func (c *evalCtx) memberOperand(x any, name string) (operand, error) {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
-		return operand{}, c.p.actionError("cannot access .", name, " of ", typeName(x))
-	}
-	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
-		// The text of a text struct, its one field, read without looking the struct up. Work
-		// controls charge the lookup below.
-		return operand{str: n.text, isStr: true}, nil
+		return nil, c.p.actionError("cannot access .", name, " of ", typeName(x))
 	}
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return operand{v: int(n.start)}, nil
+			return int(n.start), nil
 		case "End":
-			return operand{v: int(n.end)}, nil
+			return int(n.end), nil
 		case "Value":
-			return operand{v: c.p.nodeValue(n)}, nil
+			return c.p.nodeValue(n), nil
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
 		if _, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok {
-			return operand{}, c.p.actionError(n.Type(), " has no capture ", capture)
+			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return operand{v: unboxValue(v)}, nil
+		return unboxValue(v), nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok && !c.p.hasValueField(st, name) {
-		return operand{}, c.p.actionError(n.Type(), " has no field ", name)
+		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
-	if n.textField {
-		if c.p.textFieldName(name) {
-			return operand{str: n.text, isStr: true}, nil
-		}
-		return operand{}, nil
-	}
 	v, _ := c.p.valueField(n.fields, name)
-	return operand{v: v}, nil
+	return v, nil
 }
 
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
@@ -494,9 +478,6 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 			}
 		}
 	}
-	if comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !c.p.prog.boxedComparisons {
-		return c.compare(t)
-	}
 	l, err := c.eval(t.L)
 	if err != nil {
 		return nil, err
@@ -525,79 +506,6 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 		return nil, err
 	}
 	return c.p.valueBinary(t.Op, l, r)
-}
-
-// operand is an operand of a comparison: the text of a text struct read without boxing it (str,
-// with isStr), or any other value (v).
-type operand struct {
-	v     any
-	str   string
-	isStr bool
-}
-
-// operand evaluates t, keeping the Text field of a text struct unboxed.
-func (c *evalCtx) operand(t grammar.Term) (operand, error) {
-	m, ok := t.(*grammar.Member)
-	if !ok || !fieldRead(t) {
-		v, err := c.eval(t)
-		return operand{v: v}, err
-	}
-	c.p.stepWork() // The step that eval charges for the member read.
-	x, err := c.eval(m.X)
-	if err != nil {
-		return operand{}, err
-	}
-	return c.memberOperand(x, m.Name)
-}
-
-// compare applies the comparison of t as binary does, comparing two strings directly: storing
-// the text of a text struct in an interface would allocate.
-func (c *evalCtx) compare(t *grammar.Binary) (any, error) {
-	l, err := c.operand(t.L)
-	if err != nil {
-		return nil, err
-	}
-	r, err := c.operand(t.R)
-	if err != nil {
-		return nil, err
-	}
-	return c.p.compareOperands(t.Op, l, r)
-}
-
-// compareOperands applies the comparison operator op as valueBinary does.
-func (p *parser) compareOperands(op string, l, r operand) (any, error) {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := p.compareStrings(op, l.str, r.str); ok {
-			return v, nil
-		}
-	}
-	return p.valueBinary(op, l.value(), r.value())
-}
-
-// textOperand is the node of a text struct on the value stack of the action VM, standing for its
-// text as an operand of a comparison. Only EMEMBER with B 1 pushes it and only the EBIN with B 1
-// that the compiler emits for the comparison pops it, so it never escapes into a value.
-type textOperand Node
-
-// vmOperand is the operand of a comparison for v, a value on the stack of the action VM.
-func vmOperand(v any) operand {
-	if t, ok := v.(*textOperand); ok {
-		return operand{str: t.text, isStr: true}
-	}
-	return operand{v: v}
-}
-
-func (o operand) value() any {
-	if o.isStr && o.v == nil {
-		return o.str
-	}
-	return o.v
 }
 
 // binaryOp performs a binary operation other than a logical one.
@@ -1054,7 +962,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			c.errorf(t.Diagnostic(), "%s is not a struct type or a node type", t.Type)
 		} else if len(t.Args) != 0 {
 			if f := fieldOf(st, "Text"); f != nil && len(t.Args) == 1 {
-				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Text: ...} for a text struct (pego fix rewrites %s{...})", t.Type, t.Type)
+				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Text: ...} (pego fix rewrites %s{...})", t.Type, t.Type)
 			} else {
 				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Field: value}", t.Type)
 			}

@@ -57,10 +57,10 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 		}
 		switch x.shape() {
 		case shapeStruct:
-			if err := b.charge(uint64(x.fieldCount())); err != nil {
+			if err := b.charge(uint64(len(x.fields))); err != nil {
 				return err
 			}
-			fields := append(Fields(nil), x.fieldList()...)
+			fields := append(Fields(nil), x.fields...)
 			sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 			for i := len(fields) - 1; i >= 0; i-- {
 				if err := push(fields[i].Value, QueryEdge{Kind: "field", Name: fields[i].Name}); err != nil {

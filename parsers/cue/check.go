@@ -147,7 +147,7 @@ func (c *checker) fill(s *scope, decls []Decl) {
 		case *Field:
 			if a, ok := x.Label.(*Alias); ok {
 				if _, isList := a.Expr.(*ListLit); !isList {
-					c.insert(s, a.Ident.Text, x, a, nil)
+					c.insert(s, a.Ident.Value, x, a, nil)
 				}
 				if x.Alias != nil {
 					c.errf(x, "field has both label alias and postfix alias")
@@ -164,7 +164,7 @@ func (c *checker) fill(s *scope, decls []Decl) {
 				c.insert(s, name, v, x, nil)
 			}
 		case *LetClause:
-			if name := x.Ident.Text; isValidIdent(name) {
+			if name := x.Ident.Value; isValidIdent(name) {
 				c.insert(s, name, x, x, nil)
 			}
 		case *ImportDecl:
@@ -184,7 +184,7 @@ func importIdent(spec *ImportSpec) string {
 		return ""
 	}
 	if spec.Name != nil {
-		return spec.Name.Text
+		return spec.Name.Value
 	}
 	// ast.ParseImportPath: an explicit qualifier after the last colon, otherwise the last element of
 	// the path without its version.
@@ -209,14 +209,14 @@ func labelName(l Label) (string, bool) {
 	}
 	switch n := l.(type) {
 	case *Ident:
-		if !isValidIdent(n.Text) {
+		if !isValidIdent(n.Value) {
 			return "", false
 		}
-		return n.Text, true
+		return n.Value, true
 	case *Bool:
-		return n.Text, true
+		return n.TNode.Value, true
 	case *Null:
-		return n.Text, true
+		return n.Value, true
 	}
 	return "", false
 }
@@ -324,25 +324,25 @@ func (c *checker) insertPostfixAliases(s *scope, x *Field, expr any) {
 	if a == nil {
 		return
 	}
-	hasField := a.Field != nil && a.Field.Text != "_"
+	hasField := a.Field != nil && a.Field.Value != "_"
 	if a.Label == nil {
 		if !hasField {
-			c.errf(a, "single postfix alias %q field cannot be the blank identifier", a.Field.Text)
+			c.errf(a, "single postfix alias %q field cannot be the blank identifier", a.Field.Value)
 		} else {
-			c.insert(s, a.Field.Text, x, a, nil)
+			c.insert(s, a.Field.Value, x, a, nil)
 		}
 		return
 	}
-	hasLabel := a.Label != nil && a.Label.Text != "_"
+	hasLabel := a.Label != nil && a.Label.Value != "_"
 	if !hasField && !hasLabel {
 		c.errf(a, "both label and field in postfix alias cannot be the blank identifier")
 		return
 	}
 	if hasLabel {
-		c.insert(s, a.Label.Text, expr, a, x)
+		c.insert(s, a.Label.Value, expr, a, x)
 	}
 	if hasField {
-		c.insert(s, a.Field.Text, x, a, nil)
+		c.insert(s, a.Field.Value, x, a, nil)
 	}
 }
 
@@ -364,7 +364,7 @@ func (c *checker) walk(s *scope, n any) {
 	case *Field:
 		c.walkField(s, x)
 	case *LetClause:
-		name := x.Ident.Text
+		name := x.Ident.Value
 		saved := s.index[name]
 		delete(s.index, name)
 		s.inField = true
@@ -372,7 +372,7 @@ func (c *checker) walk(s *scope, n any) {
 		s.inField = false
 		s.index[name] = saved
 	case *Alias:
-		name := x.Ident.Text
+		name := x.Ident.Value
 		saved := s.index[name]
 		delete(s.index, name)
 		c.walk(s, x.Expr)
@@ -412,15 +412,15 @@ func (c *checker) walkField(s *scope, x *Field) {
 				c.errf(x, "pattern constraint has both label alias and postfix alias")
 			}
 			expr = a.Expr
-			c.insert(s, a.Ident.Text, a.Expr, a, x)
+			c.insert(s, a.Ident.Value, a.Expr, a, x)
 		} else {
 			c.insertPostfixAliases(s, x, expr)
 		}
 		inspect(expr, func(n any) {
 			if id, ok := n.(*Ident); ok {
 				for sc := s; sc != nil && !sc.inField; sc = sc.outer {
-					if _, ok := sc.index[id.Text]; ok {
-						c.errf(id, "reference %q in label expression refers to field against which it would be matched", id.Text)
+					if _, ok := sc.index[id.Value]; ok {
+						c.errf(id, "reference %q in label expression refers to field against which it would be matched", id.Value)
 					}
 				}
 			}
@@ -431,7 +431,7 @@ func (c *checker) walkField(s *scope, x *Field) {
 		v := x.Value
 		if a, ok := v.(*Alias); ok {
 			s = c.newScope(s, x, nil)
-			c.insert(s, a.Ident.Text, a, x, nil)
+			c.insert(s, a.Ident.Value, a, x, nil)
 			v = a.Expr
 		}
 		s.inField = true
@@ -447,18 +447,18 @@ func (c *checker) scopeClauses(s *scope, clauses []Clause) *scope {
 			c.walk(s, x.Source)
 			s = &scope{outer: s, node: x, index: map[string]entry{}}
 			if x.Key != nil {
-				c.insert(s, x.Key.Text, x.Key, x, nil)
+				c.insert(s, x.Key.Value, x.Key, x, nil)
 			}
-			c.insert(s, x.Value.Text, x.Value, x, nil)
+			c.insert(s, x.Value.Value, x.Value, x, nil)
 		case *LetClause:
 			c.walk(s, x.Expr)
 			s = &scope{outer: s, node: x, index: map[string]entry{}}
-			c.insert(s, x.Ident.Text, x.Ident, x, nil)
+			c.insert(s, x.Ident.Value, x.Ident, x, nil)
 		case *TryClause:
 			if x.Ident != nil {
 				c.walk(s, x.Expr)
 				s = &scope{outer: s, node: x, index: map[string]entry{}}
-				c.insert(s, x.Ident.Text, x.Ident, x, nil)
+				c.insert(s, x.Ident.Value, x.Ident, x, nil)
 			}
 		case *IfClause:
 			c.walk(s, x.Condition)

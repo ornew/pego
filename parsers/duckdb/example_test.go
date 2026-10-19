@@ -73,7 +73,7 @@ func ExampleIdent_Name() {
 	}
 	duckdb.Walk(script, func(n any) bool {
 		if id, ok := n.(*duckdb.Ident); ok {
-			fmt.Printf("%-24s %-16q quoted=%v\n", id.Text, id.Name(), id.Quoted())
+			fmt.Printf("%-24s %-16q quoted=%v\n", id.Value, id.Name(), id.Quoted())
 		}
 		return true
 	})

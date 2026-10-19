@@ -288,8 +288,8 @@ func TestParseAST(t *testing.T) {
 		var values []string
 		for j, fl := range r.Fields {
 			wf := w.fields[j]
-			if fl.Text != wf.text || fl.Start != wf.start || fl.End != wf.end || fl.Quoted() != wf.quoted || fl.Value() != wf.value {
-				t.Errorf("record %d field %d: %q %v quoted %v value %q, want %+v", i, j, fl.Text, fl.Span, fl.Quoted(), fl.Value(), wf)
+			if fl.TNode.Value != wf.text || fl.Start != wf.start || fl.End != wf.end || fl.Quoted() != wf.quoted || fl.Value() != wf.value {
+				t.Errorf("record %d field %d: %q %v quoted %v value %q, want %+v", i, j, fl.TNode.Value, fl.Span, fl.Quoted(), fl.Value(), wf)
 			}
 			values = append(values, wf.value)
 		}

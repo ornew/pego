@@ -88,7 +88,7 @@ func TestFixNodeTypesKeepsCastsAndNames(t *testing.T) {
 		"// a node\n" +
 		"rule main Q = a:node b:(\"x\" / \"y\" \"z\") => Q{A: $a, B: $b.(node)}\n" +
 		"rule node = \"node\"\n"
-	const fixed = "type Name = { Text string }\n" +
+	const fixed = "type Name = node[string]\n" +
 		"type Q = { A node[string]; B node[_] }\n" +
 		"// a node\n" +
 		"rule main Q = a:node b:(\"x\" / \"y\" \"z\") => Q{A: $a, B: $b.(node[_])}\n" +

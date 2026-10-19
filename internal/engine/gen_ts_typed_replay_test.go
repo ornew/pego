@@ -176,6 +176,7 @@ func normal(v reflect.Value) any {
   case reflect.Slice:
     if v.IsNil(){return nil};out:=make([]any,v.Len());for i:=range out {out[i]=normal(v.Index(i))};return out
   case reflect.Struct:
+    if v.NumField()==1&&v.Type().Field(0).Anonymous&&strings.HasPrefix(v.Type().Field(0).Type.Name(),"TNode["){return normal(v.Field(0))}
     typeKey:=v.Type().PkgPath()+"."+v.Type().Name();name:=v.Type().Name();if n,ok:=valueNames[typeKey];ok{name=n}else if strings.HasPrefix(name,"TNode["){return map[string]any{"start":v.FieldByName("Start").Int(),"end":v.FieldByName("End").Int(),"value":normal(v.FieldByName("Value"))}}else if name=="Unit"||strings.HasPrefix(name,"Tuple"){out:=make([]any,v.NumField());for i:=range out{out[i]=normal(v.Field(i))};return out};if _,ok:=valueNames[typeKey];!ok&&name=="Error"{name="error"};out:=map[string]any{"type":name}
     for i:=0;i<v.NumField();i++ {if v.Type().Field(i).Anonymous {sp:=v.Field(i);out["start"]=sp.FieldByName("Start").Int();out["end"]=sp.FieldByName("End").Int()}}
     for i:=0;i<v.NumField();i++ {name:=v.Type().Field(i).Name;if v.Type().Field(i).Anonymous{continue};if name=="Text"&&terminalTypes[typeKey]{name="text"};if name=="Message"&&v.Type().Name()=="Error"{name="message"};out[name]=normal(v.Field(i))};return out

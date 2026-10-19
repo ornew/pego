@@ -24,26 +24,27 @@ func TestFix(t *testing.T) {
 		{"type P struct { A int; B string }", "type P = { A int; B string }"},
 		{"type P struct{}", "type P = {}"},
 		{"type P struct {\n    A int // a\n}", "type P = {\n    A int // a\n}"},
-		{"type U = P | Q\ntype V = (\n    P\n    | Q\n)\ntype P = {}\ntype Q terminal", "type U ~ P | Q\ntype V ~ (\n    P\n    | Q\n)\ntype P = {}\ntype Q = { Text string }"},
-		// Terminal types become structs holding the text of the match.
-		{"type N terminal // a number\nrule n N = [0-9]+", "type N = { Text string } // a number\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}"},
-		{"type N terminal\nrule n N = (\"-\"? [0-9]+)", "type N = { Text string }\nrule n N = t:(\"-\"? [0-9]+) #atomic => N{Text: text($t)}"},
-		{"type N terminal\nrule n N = [0-9]+ #atomic\nrule m N = ([0-9]+ #atomic)", "type N = { Text string }\nrule n N = t:([0-9]+ #atomic) => N{Text: text($t)}\nrule m N = t:([0-9]+ #atomic) => N{Text: text($t)}"},
-		{"type N terminal\nrule n N = \"a\" / \"b\" => ...", "type N = { Text string }\nrule n N = t:(\"a\" / \"b\") #atomic => N{Text: text($t)}"},
+		{"type U = P | Q\ntype V = (\n    P\n    | Q\n)\ntype P = {}\ntype Q terminal", "type U ~ P | Q\ntype V ~ (\n    P\n    | Q\n)\ntype P = {}\ntype Q = node[string]"},
+		// Terminal types become named node types holding the text of the match, or structs
+		// holding it where a rule's captures make the text differ from its value.
+		{"type N terminal // a number\nrule n N = [0-9]+", "type N = node[string] // a number\nrule n N = ([0-9]+) #atomic"},
+		{"type N terminal\nrule n N = (\"-\"? [0-9]+)", "type N = node[string]\nrule n N = (\"-\"? [0-9]+) #atomic"},
+		{"type N terminal\nrule n N = [0-9]+ #atomic\nrule m N = ([0-9]+ #atomic)", "type N = node[string]\nrule n N = [0-9]+ #atomic\nrule m N = [0-9]+ #atomic"},
+		{"type N terminal\nrule n N = \"a\" / \"b\" => ...", "type N = node[string]\nrule n N = (\"a\" / \"b\") #atomic"},
 		{"type N terminal\ntype A ~ N\nrule n A = t:\"a\" t1:\"b\"", "type N = { Text string }\ntype A ~ N\nrule n A = t2:(t:\"a\" t1:\"b\") => N{Text: text($t2)}"},
 		{"type N terminal\nrule n N = x:[0-9]+ => N{text($x)}\nrule m terminal = \"m\"", "type N = { Text string }\nrule n N = x:[0-9]+ => N{Text: text($x)}\nrule m node[string] = \"m\""},
-		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / \"y\") {len($x) > 1} => list(len($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / \"y\") {len($x.Text) > 1} => list(len($y))"},
-		{"type N terminal\nrule n N = [0-9]+\nrule m = x:(n / n) {text($x) != \"0\"} y:(n / \"y\") => list(text($x), text($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:(n / n) {$x.Text != \"0\"} y:(n / \"y\") => list($x.Text, text($y))"},
-		// The member Value of a terminal read its text, which the struct holds in Text.
-		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Value, $y.Value, $z.Value)", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Text, $y.Text, $z.Value)"},
+		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / \"y\") {len($x) > 1} => list(len($y))", "type N = node[string]\nrule n N = ([0-9]+) #atomic\nrule m = x:n y:(n / \"y\") {len($x) > 1} => list(len($y))"},
+		{"type N terminal\nrule n N = [0-9]+\nrule m = x:(n / n) {text($x) != \"0\"} y:(n / \"y\") => list(text($x), text($y))", "type N = node[string]\nrule n N = ([0-9]+) #atomic\nrule m = x:(n / n) {text($x) != \"0\"} y:(n / \"y\") => list(text($x), text($y))"},
+		// The member Value of a terminal read its text.
+		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Value, $y.Value, $z.Value)", "type N = node[string]\nrule n N = ([0-9]+) #atomic\nrule m = x:n y:(n / n) z:(n / \"z\") => list(text($x), text($y), $z.Value)"},
 		{"type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Value != \"\"} => list($x.Value, $y.Value, map($x, (v) => v.Value))", "type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Text != \"\"} => list($x.Text, $y.Value, map($x, (v) => v.Value))"},
 		{"type P = { A Match; B []Seq; C *List; D Operator; E Error }\nrule a = x:\"a\" => $x.(Match)", "type P = { A node[string]; B []node[_]; C *node[_]; D node[_]; E error }\nrule a = x:\"a\" => $x.(node[string])"},
 		{"type P = { M *Missing }\nrule a = \"a\"", "type P = { M *missing }\nrule a = \"a\""},
 		{"type L =[]P\ntype P = {}", "type L ~ []P\ntype P = {}"},
 		{"type P = { A int }\ntype U ~ P", "type P = { A int }\ntype U ~ P"},
 		{"rule struct_x = \"struct\" // type A struct", "rule struct_x = \"struct\" // type A struct"},
-		{"type K terminal\ntype P = {\n  type K\n  struct K\n}", "type K = { Text string }\ntype P = {\n  type K\n  struct K\n}"},
-		{"type K terminal\ntype P struct { type K; struct K }", "type K = { Text string }\ntype P = { type K; struct K }"},
+		{"type K terminal\ntype P = {\n  type K\n  struct K\n}", "type K = node[string]\ntype P = {\n  type K\n  struct K\n}"},
+		{"type K terminal\ntype P struct { type K; struct K }", "type K = node[string]\ntype P = { type K; struct K }"},
 		{`rule a = "a"`, `rule a = "a"`},
 	} {
 		got, err := Fix(tc.in)

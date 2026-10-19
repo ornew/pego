@@ -29,34 +29,34 @@ import (
 )
 
 // Name returns the name of the entity.
-func (r *EntityRef) Name() string { return r.Text[1 : len(r.Text)-1] }
+func (r *EntityRef) Name() string { return r.Value[1 : len(r.Value)-1] }
 
 // Name returns the name of the parameter entity.
-func (r *PERef) Name() string { return r.Text[1 : len(r.Text)-1] }
+func (r *PERef) Name() string { return r.Value[1 : len(r.Value)-1] }
 
 // Rune returns the character the reference denotes, and false if it is not a legal character (the
 // constraint "Legal Character").
-func (r *CharRef) Rune() (rune, bool) { return charRef(r.Text[2 : len(r.Text)-1]) }
+func (r *CharRef) Rune() (rune, bool) { return charRef(r.Value[2 : len(r.Value)-1]) }
 
 // Value returns the character data with line ends normalized (CR LF and CR become LF).
-func (t *CharData) Value() string { return newlines(t.Text) }
+func (t *CharData) Value() string { return newlines(t.TNode.Value) }
 
 // Value returns the text of the CDATA section with line ends normalized.
-func (t *CDSect) Value() string { return newlines(t.Text) }
+func (t *CDSect) Value() string { return newlines(t.TNode.Value) }
 
 // Value returns the text of the comment with line ends normalized.
-func (c *Comment) Value() string { return newlines(c.Text) }
+func (c *Comment) Value() string { return newlines(c.TNode.Value) }
 
 // Value returns the data of the processing instruction with line ends normalized.
-func (d *PIData) Value() string { return newlines(d.Text) }
+func (d *PIData) Value() string { return newlines(d.TNode.Value) }
 
 // Value returns the literal with line ends normalized.
-func (l *SystemLiteral) Value() string { return newlines(l.Text) }
+func (l *SystemLiteral) Value() string { return newlines(l.TNode.Value) }
 
 // Value returns the public identifier normalized: line ends and runs of spaces become one space, and
 // leading and trailing spaces are removed.
 func (l *PubidLiteral) Value() string {
-	return strings.Join(strings.FieldsFunc(l.Text, func(r rune) bool { return r == ' ' || r == '\r' || r == '\n' }), " ")
+	return strings.Join(strings.FieldsFunc(l.TNode.Value, func(r rune) bool { return r == ' ' || r == '\r' || r == '\n' }), " ")
 }
 
 // Value returns the attribute value normalized for an attribute of type CDATA (XML 1.0, 3.3.3), for a
@@ -64,12 +64,12 @@ func (l *PubidLiteral) Value() string {
 // apos, quot) are expanded, and white space becomes spaces. A reference to any other entity is an error;
 // Decode expands the entities a document declares.
 func (v *AttValue) Value() (string, error) {
-	if !strings.ContainsAny(v.Text, "&\t\n\r") {
-		return v.Text, nil
+	if !strings.ContainsAny(v.TNode.Value, "&\t\n\r") {
+		return v.TNode.Value, nil
 	}
 	p := processor{strict: true, ref: -1, budget: ExpansionLimit}
 	var b strings.Builder
-	if err := p.attValue(&b, v.Text, true, 0); err != nil {
+	if err := p.attValue(&b, v.TNode.Value, true, 0); err != nil {
 		return "", errors.New(err.(*WFError).Msg)
 	}
 	return b.String(), nil

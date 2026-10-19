@@ -454,7 +454,7 @@ func isValidImport(lit string) bool {
 // likewise). A fraction in front of a multiplier is allowed where the product is an integer (1.5G is
 // 1,500,000,000); otherwise (1.3Ki is 1,331.2) the value is an error, as it is for cue/literal.
 func (n *Int) Value() (*big.Int, error) {
-	t := strings.ReplaceAll(n.Text, "_", "")
+	t := strings.ReplaceAll(n.TNode.Value, "_", "")
 	var base int
 	switch {
 	case len(t) > 2 && t[0] == '0' && (t[1] == 'x' || t[1] == 'X'):
@@ -467,7 +467,7 @@ func (n *Int) Value() (*big.Int, error) {
 	if base != 0 {
 		v, ok := new(big.Int).SetString(t, base)
 		if !ok {
-			return nil, fmt.Errorf("cue: invalid integer %s", n.Text)
+			return nil, fmt.Errorf("cue: invalid integer %s", n.TNode.Value)
 		}
 		return v, nil
 	}
@@ -490,11 +490,11 @@ func (n *Int) Value() (*big.Int, error) {
 	}
 	r, ok := new(big.Rat).SetString(t)
 	if !ok {
-		return nil, fmt.Errorf("cue: invalid integer %s", n.Text)
+		return nil, fmt.Errorf("cue: invalid integer %s", n.TNode.Value)
 	}
 	r.Mul(r, new(big.Rat).SetInt(mult))
 	if !r.IsInt() {
-		return nil, fmt.Errorf("cue: number %s cannot be represented as an int", n.Text)
+		return nil, fmt.Errorf("cue: number %s cannot be represented as an int", n.TNode.Value)
 	}
 	return new(big.Int).Set(r.Num()), nil
 }
@@ -506,44 +506,44 @@ func (n *Int) Int64() (int64, error) {
 		return 0, err
 	}
 	if !v.IsInt64() {
-		return 0, fmt.Errorf("cue: integer %s out of the range of int64", n.Text)
+		return 0, fmt.Errorf("cue: integer %s out of the range of int64", n.TNode.Value)
 	}
 	return v.Int64(), nil
 }
 
 // Rat returns the exact value of the number: CUE floats are decimal numbers of any precision.
 func (f *Float) Rat() (*big.Rat, error) {
-	r, ok := new(big.Rat).SetString(strings.ReplaceAll(f.Text, "_", ""))
+	r, ok := new(big.Rat).SetString(strings.ReplaceAll(f.Value, "_", ""))
 	if !ok {
-		return nil, fmt.Errorf("cue: invalid float %s", f.Text)
+		return nil, fmt.Errorf("cue: invalid float %s", f.Value)
 	}
 	return r, nil
 }
 
 // Float64 returns the number as a float64; a value out of its range is an error.
 func (f *Float) Float64() (float64, error) {
-	v, err := strconv.ParseFloat(strings.ReplaceAll(f.Text, "_", ""), 64)
+	v, err := strconv.ParseFloat(strings.ReplaceAll(f.Value, "_", ""), 64)
 	if err != nil {
-		return 0, fmt.Errorf("cue: float %s: %w", f.Text, err.(*strconv.NumError).Err)
+		return 0, fmt.Errorf("cue: float %s: %w", f.Value, err.(*strconv.NumError).Err)
 	}
 	return v, nil
 }
 
 // Value returns the boolean.
-func (b *Bool) Value() bool { return b.Text == "true" }
+func (b *Bool) Value() bool { return b.TNode.Value == "true" }
 
 // IsDefinition reports whether the identifier names a definition (#Name or _#Name).
 func (id *Ident) IsDefinition() bool {
-	return strings.HasPrefix(id.Text, "#") || strings.HasPrefix(id.Text, "_#")
+	return strings.HasPrefix(id.Value, "#") || strings.HasPrefix(id.Value, "_#")
 }
 
 // IsHidden reports whether the identifier names a hidden field (_name or _#Name).
-func (id *Ident) IsHidden() bool { return strings.HasPrefix(id.Text, "_") && id.Text != "_" }
+func (id *Ident) IsHidden() bool { return strings.HasPrefix(id.Value, "_") && id.Value != "_" }
 
 // Split returns the name and the body of an attribute: for @go(Field), "go" and "Field".
 func (a *Attribute) Split() (name, body string) {
-	name, body, ok := strings.Cut(a.Text, "(")
-	if !ok || !strings.HasPrefix(a.Text, "@") || !strings.HasSuffix(a.Text, ")") {
+	name, body, ok := strings.Cut(a.Value, "(")
+	if !ok || !strings.HasPrefix(a.Value, "@") || !strings.HasSuffix(a.Value, ")") {
 		return "", ""
 	}
 	return name[1:], body[:len(body)-1]

@@ -72,7 +72,7 @@ func TestDirectiveNameBoundaries(t *testing.T) {
 }
 
 func TestMalformedDirectiveAST(t *testing.T) {
-	word := func(s string) *yaml.Word { return &yaml.Word{Text: s} }
+	word := func(s string) *yaml.Word { return &yaml.Word{TNode: yaml.TNode[string]{Value: s}} }
 	for _, tc := range []struct {
 		name string
 		dir  *yaml.Directive
@@ -115,7 +115,7 @@ func TestMalformedDirectiveAST(t *testing.T) {
 			check(err)
 			_, err = d.Load()
 			check(err)
-			_, err = d.ResolveTag(&yaml.Tag{Text: "!!str"})
+			_, err = d.ResolveTag(&yaml.Tag{TNode: yaml.TNode[string]{Value: "!!str"}})
 			check(err)
 		})
 	}

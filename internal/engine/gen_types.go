@@ -759,7 +759,7 @@ func (a *astConv) stepWork() {
 func (a *astConv) field(n *Node, name string) any {
  if !workControlsEnabled || a.control == nil { return n.field(name) }
  if n == nil { return nil }
- for _, f := range n.fieldList() {
+ for _, f := range n.fields {
   a.stepWork()
   if f.Name == name { return f.Value }
  }
@@ -1158,11 +1158,6 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		if r.nodeType != "" {
 			fmt.Fprintf(&reg, "\ttrules[%d].nt = %d\n", r.id, t.g.nodeTypeIndex(r.nodeType))
 		}
-		if r.textType == "" {
-			continue
-		}
-		g := t.names[r.textType]
-		fmt.Fprintf(&reg, "\ttrules[%d].text = func(p *tparser, start, end int, text string) tval {\n\t\tp.stepWork()\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
 	}
 	var cons strings.Builder
 	for _, name := range t.structs {

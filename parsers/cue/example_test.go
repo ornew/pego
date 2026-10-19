@@ -26,13 +26,13 @@ web: #Service & {name: strings.ToLower("WEB")} @go(Web)
 	for _, d := range f.Decls {
 		switch d := d.(type) {
 		case *cue.Package:
-			fmt.Println("package", d.Name.Text)
+			fmt.Println("package", d.Name.Value)
 		case *cue.ImportDecl:
 			path, _ := d.Specs[0].Path.Unquote()
 			fmt.Println("import", path)
 		case *cue.Field:
 			name := d.Label.(*cue.Ident)
-			fmt.Printf("field %s (definition %v) at %d-%d\n", name.Text, name.IsDefinition(), d.Start, d.End)
+			fmt.Printf("field %s (definition %v) at %d-%d\n", name.Value, name.IsDefinition(), d.Start, d.End)
 		}
 	}
 	// Output:
@@ -104,7 +104,7 @@ func ExampleInspect() {
 	f, _ := cue.ParseFile("a: b: c\nd: [for x in a if x != _|_ {x}]\n")
 	n := 0
 	cue.Inspect(f, func(node any) bool {
-		if id, ok := node.(*cue.Ident); ok && id.Text == "x" {
+		if id, ok := node.(*cue.Ident); ok && id.Value == "x" {
 			n++
 		}
 		return true

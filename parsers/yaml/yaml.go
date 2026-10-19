@@ -90,10 +90,10 @@ func (p *Properties) anchor() *Anchor {
 }
 
 // Name returns the name of the anchor, without "&".
-func (a *Anchor) Name() string { return a.Text[1:] }
+func (a *Anchor) Name() string { return a.Value[1:] }
 
 // Name returns the name of the anchor the alias refers to, without "*".
-func (a *Alias) Name() string { return a.Text[1:] }
+func (a *Alias) Name() string { return a.Value[1:] }
 
 // Value returns the content of the scalar: for a plain or quoted scalar, its text with the lines folded
 // and, in a double-quoted scalar, the escape sequences decoded; for a block scalar, its lines without
@@ -350,12 +350,12 @@ func (d *Document) tagHandles() (map[string]string, error) {
 		if dir.Name == nil {
 			return nil, errorAt(dir.Span, "directive has no name")
 		}
-		switch dir.Name.Text {
+		switch dir.Name.Value {
 		case "YAML":
 			if len(dir.Params) != 1 || dir.Params[0] == nil {
 				return nil, errorAt(dir.Span, "YAML directive requires one version")
 			}
-			v := dir.Params[0].Text
+			v := dir.Params[0].Value
 			major, minor, ok := strings.Cut(v, ".")
 			if !ok || !decimalDigits(major) || !decimalDigits(minor) {
 				return nil, errorAt(dir.Span, "invalid YAML version "+v)
@@ -371,14 +371,14 @@ func (d *Document) tagHandles() (map[string]string, error) {
 			if len(dir.Params) != 2 || dir.Params[0] == nil || dir.Params[1] == nil {
 				return nil, errorAt(dir.Span, "TAG directive requires a handle and prefix")
 			}
-			h := dir.Params[0].Text
+			h := dir.Params[0].Value
 			if !validTagHandle(h) {
 				return nil, errorAt(dir.Span, "invalid TAG handle "+h)
 			}
-			if dir.Params[1].Text == "" {
+			if dir.Params[1].Value == "" {
 				return nil, errorAt(dir.Span, "TAG directive requires a non-empty prefix")
 			}
-			prefix := dir.Params[1].Text
+			prefix := dir.Params[1].Value
 			if !tagCharacters(prefix, false) || prefix[0] != '!' && strings.ContainsAny(prefix[:1], ",[]{}") {
 				return nil, errorAt(dir.Span, "invalid TAG prefix "+prefix)
 			}
@@ -386,7 +386,7 @@ func (d *Document) tagHandles() (map[string]string, error) {
 				return nil, errorAt(dir.Span, "more than one TAG directive for the handle "+h)
 			}
 			declared[h] = true
-			handles[h] = dir.Params[1].Text
+			handles[h] = dir.Params[1].Value
 		}
 	}
 	return handles, nil
@@ -481,7 +481,7 @@ func resolveTag(t *Tag, handles map[string]string) (string, error) {
 	if t == nil {
 		return "", errorAt(Span{}, "nil tag")
 	}
-	s := t.Text
+	s := t.Value
 	if strings.HasPrefix(s, "!<") {
 		if len(s) < 4 || s[len(s)-1] != '>' {
 			return "", errorAt(t.Span, "malformed verbatim tag")
@@ -590,7 +590,7 @@ func (c *checker) node(v Value) error {
 		p = v.Props
 	case *Alias:
 		if !c.anchors[v.Name()] {
-			return errorAt(v.Span, "undefined alias "+v.Text)
+			return errorAt(v.Span, "undefined alias "+v.Value)
 		}
 	}
 	if a := p.anchor(); a != nil {
@@ -859,10 +859,10 @@ func (c *composer) value(v Value) (any, error) {
 	case *Alias:
 		a, ok := c.anchors[v.Name()]
 		if !ok {
-			return nil, errorAt(v.Span, "undefined alias "+v.Text)
+			return nil, errorAt(v.Span, "undefined alias "+v.Value)
 		}
 		if !a.done {
-			return nil, errorAt(v.Span, "alias "+v.Text+" inside the node it refers to")
+			return nil, errorAt(v.Span, "alias "+v.Value+" inside the node it refers to")
 		}
 		return a.v, nil
 	}

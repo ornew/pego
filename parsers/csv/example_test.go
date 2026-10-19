@@ -48,7 +48,7 @@ func ExampleParseAST() {
 	for _, r := range f.Records {
 		fmt.Printf("record %d-%d blank=%v\n", r.Start, r.End, r.Blank())
 		for _, fl := range r.Fields {
-			fmt.Printf("  %d-%d %s quoted=%v value=%q\n", fl.Start, fl.End, fl.Text, fl.Quoted(), fl.Value())
+			fmt.Printf("  %d-%d %s quoted=%v value=%q\n", fl.Start, fl.End, fl.TNode.Value, fl.Quoted(), fl.Value())
 		}
 	}
 	// Output:

@@ -181,12 +181,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 			return str(a) + " mode=diagnostic"
 		}
 		return str(a)
-	case EMember, EBin:
-		if bb == 1 {
-			return str(a) + " text"
-		}
-		return str(a)
-	case EStr, EVar, EUnary, EBoolChk:
+	case EStr, EVar, EUnary, EBoolChk, EMember, EBin:
 		return str(a)
 	case EInt:
 		return strconv.FormatInt(int64(a)+int64(bb)<<32, 10)

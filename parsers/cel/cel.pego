@@ -14,15 +14,15 @@
 // 38% and 24% more on a long one (the benchmarks of testdata/bench; see the README for the method).
 package cel
 
-type Ident = { Text string }
-type Name = { Text string }
-type IntLit = { Text string }
-type UintLit = { Text string }
-type DoubleLit = { Text string }
-type StringLit = { Text string }
-type BytesLit = { Text string }
-type BoolLit = { Text string }
-type NullLit = { Text string }
+type Ident = node[string]
+type Name = node[string]
+type IntLit = node[string]
+type UintLit = node[string]
+type DoubleLit = node[string]
+type StringLit = node[string]
+type BytesLit = node[string]
+type BoolLit = node[string]
+type NullLit = node[string]
 
 type Paren = { X Expr }
 type Select = { X Expr; Field Name; Optional bool }
@@ -92,7 +92,7 @@ rule primary Expr = (
 ) => $v
 // It never matches: it only makes the error message of an operand list the characters that an operand starts with,
 // which the lookaheads of the alternatives above do not record (lookaheads leave out of the message what they test).
-rule expected_start IntLit = t:(![A-Za-z_] [A-Za-z_] / ![0-9] [0-9] / !["'] ["'] / !"." "." / !"-" "-") #atomic => IntLit{Text: text($t)}
+rule expected_start IntLit = (![A-Za-z_] [A-Za-z_] / ![0-9] [0-9] / !["'] ["'] / !"." "." / !"-" "-") #atomic
 // A word that is a literal: true, false, null, a raw string r"..." or a bytes literal b"...".
 rule word_lit Expr = &[tf] v:bool / &"n" v:null / &[rR] v:string / &[bB] v:bytes => $v
 
@@ -100,7 +100,7 @@ rule paren Paren = "(" ws e:expr ws ")" => Paren{X: $e}
 
 // An identifier that is not called, then a call: a call first took 4% more time.
 rule ident_only Ident = i:ident !(ws "(") => $i
-rule ident Ident = t:(("." ws)? name_global) #atomic => Ident{Text: text($t)}
+rule ident Ident = (("." ws)? name_global) #atomic
 rule call Call = f:ident ws "(" ws as:args? ws ")" => Call{Target: nil, Func: $f, Args: concat($as)}
 rule args = first:expr rest:(-ws -"," -ws x:expr)* => concat(list($first), map($rest, (r) => r.$x))
 
@@ -122,7 +122,7 @@ rule message MessageLit = (
     &(("." ws)? [A-Za-z_] [A-Za-z0-9_]* (ws "." ws [A-Za-z_] [A-Za-z0-9_]*)* ws "{")
     t:type_name ws "{" ws fs:fields? ws ","? ws "}"
 ) => MessageLit{Type: $t, Fields: concat($fs)}
-rule type_name Ident = t:(("." ws)? name_plain (ws "." ws name_plain)*) #atomic => Ident{Text: text($t)}
+rule type_name Ident = (("." ws)? name_plain (ws "." ws name_plain)*) #atomic
 rule fields = first:field rest:(-ws -"," -ws x:field)* => concat(list($first), map($rest, (r) => r.$x))
 rule field Field = opt_field / plain_field
 rule opt_field Field = "?" ws n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, Optional: true}
@@ -134,22 +134,22 @@ rule plain_field Field = n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, O
 // a signed integer. The sign of a number is part of the literal (and may be followed by whitespace and comments);
 // a sign before an unsigned integer is a negation.
 
-rule bool BoolLit = t:(("true" / "false") ![A-Za-z0-9_]) #atomic => BoolLit{Text: text($t)}
-rule null NullLit = t:("null" ![A-Za-z0-9_]) #atomic => NullLit{Text: text($t)}
+rule bool BoolLit = (("true" / "false") ![A-Za-z0-9_]) #atomic
+rule null NullLit = ("null" ![A-Za-z0-9_]) #atomic
 
 // Most integers are decimal, and not followed by anything that could continue a number.
-rule int_plain IntLit = t:([0-9]+ ![0-9a-zA-Z_.]) #atomic => IntLit{Text: text($t)}
+rule int_plain IntLit = ([0-9]+ ![0-9a-zA-Z_.]) #atomic
 rule sign = "-" ws
-rule double DoubleLit = t:(sign? ([0-9]+ "." [0-9]+ exponent? / [0-9]+ exponent / "." [0-9]+ exponent?)) #atomic => DoubleLit{Text: text($t)}
+rule double DoubleLit = (sign? ([0-9]+ "." [0-9]+ exponent? / [0-9]+ exponent / "." [0-9]+ exponent?)) #atomic
 rule exponent = [eE] [+\-]? [0-9]+
-rule uint UintLit = t:(("0x" [0-9a-fA-F]+ / [0-9]+) [uU]) #atomic => UintLit{Text: text($t)}
-rule int IntLit = t:(sign? ("0x" [0-9a-fA-F]+ / [0-9]+) ![uU]) #atomic => IntLit{Text: text($t)}
+rule uint UintLit = (("0x" [0-9a-fA-F]+ / [0-9]+) [uU]) #atomic
+rule int IntLit = (sign? ("0x" [0-9a-fA-F]+ / [0-9]+) ![uU]) #atomic
 
 // Strings: single or triple quotes, raw or with escape sequences, and a b prefix for bytes. A triple-quoted string
 // ends at the first closing triple quote. Escapes are checked here as cel-go's unescape does, which rejects them
 // after the lexer has read them: a surrogate in \u and \U, a code point over 10FFFF, and \u and \U in bytes.
-rule string StringLit = t:([rR] &["'] raw_body / str_body) #atomic => StringLit{Text: text($t)}
-rule bytes BytesLit = t:([bB] ([rR] &["'] raw_body / bytes_body)) #atomic => BytesLit{Text: text($t)}
+rule string StringLit = ([rR] &["'] raw_body / str_body) #atomic
+rule bytes BytesLit = ([bB] ([rR] &["'] raw_body / bytes_body)) #atomic
 
 rule raw_body = "\"\"\"" (!"\"\"\"" .)* "\"\"\"" / "'''" (!"'''" .)* "'''" / "\"" [^"\n\r]* "\"" / "'" [^'\n\r]* "'"
 
@@ -177,14 +177,14 @@ rule hex = [0-9a-fA-F]
 // characters of a name took 10% more time to recognize typical expressions.
 
 // A name that is not one of the keywords true, false, null and in: a selector, a field, a method and a part of a message.
-rule name_plain Ident = t:(!(("true" / "false" / "null" / "in") ![A-Za-z0-9_]) [A-Za-z_] [A-Za-z0-9_]*) #atomic => Ident{Text: text($t)}
+rule name_plain Ident = (!(("true" / "false" / "null" / "in") ![A-Za-z0-9_]) [A-Za-z_] [A-Za-z0-9_]*) #atomic
 // A variable or a function must not be a reserved word either.
 rule name_global = (
     !(("true" / "false" / "null" / "in" / "as" / "break" / "const" / "continue" / "else" / "for" / "function" / "if" / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") ![A-Za-z0-9_])
     [A-Za-z_] [A-Za-z0-9_]*
 )
 // A field may be escaped with backquotes.
-rule name Name = t:(name_plain / "`" [A-Za-z0-9_.\-/ ]+ "`") #atomic => Name{Text: text($t)}
+rule name Name = (name_plain / "`" [A-Za-z0-9_.\-/ ]+ "`") #atomic
 
 // Whitespace and comments. It calls no other rule: a rule that does is memoized, and a ws that called another rule
 // for its body took 14% more time to recognize typical expressions.

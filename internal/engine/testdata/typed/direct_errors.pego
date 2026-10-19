@@ -1,15 +1,15 @@
 // Direct rules of the typed runtime: predicates reading captures, #error, recovered errors of a
 // callee undone when the caller backtracks (and replayed from the memo), anchors, bounded
 // repetitions, ., _ and _|_, and choices whose later alternatives can never be tried.
-type Name = { Text string }
+type Name = node[string]
 type T = { Open Name; Close Name; Note *Name; Tail *node[string]; Pick *node[string]; Ws []node[string] }
 type D = { Ts []T; End *node[string] }
 rule main D = ^^ ts:(t:tag ";" / t:tag ".")* e:end $$ => D{Ts: map($ts, (x) => x.$t), End: $e}
 rule tag T = (
-    "<" a:name ">" ("w" _|_ / "w")? b:name {$a.Text == $b.Text} @error(message="mismatched") n:note?
+    "<" a:name ">" ("w" _|_ / "w")? b:name {text($a) == text($b)} @error(message="mismatched") n:note?
     k:("Q"? / "Z") ws:(-"," w:[0-9] #repeat(2, 3) #atomic)* "\n"? x:((^ "!") #atomic / $ #atomic / _)
 ) => T{Open: $a, Close: $b, Note: $n, Tail: $k, Pick: $x, Ws: map($ws, (y) => y.$w)}
 rule note Name = "/" m:rname => $m
-rule rname Name = t:([a-z]+ #recover(skip=[0-9]+)) #atomic => Name{Text: text($t)}
+rule rname Name = ([a-z]+ #recover(skip=[0-9]+)) #atomic
 rule end = (. #repeat(0, 2) "\n"?) #atomic
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
+rule name Name = ([a-z]+) #atomic

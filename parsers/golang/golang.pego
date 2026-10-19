@@ -50,12 +50,12 @@ type FieldList = { List []Field }
 type Field = { Names []Ident; Type Expr; Tag *StringLit }
 
 // --- Expressions and types ---
-type Ident = { Text string }
-type IntLit = { Text string }
-type FloatLit = { Text string }
-type ImagLit = { Text string }
-type CharLit = { Text string }
-type StringLit = { Text string }                              // including the quotes
+type Ident = node[string]
+type IntLit = node[string]
+type FloatLit = node[string]
+type ImagLit = node[string]
+type CharLit = node[string]
+type StringLit = node[string]                              // including the quotes
 type Ellipsis = { Elt *Expr }                   // ...T in a parameter list, or the length of [...]T (no Elt)
 type CompositeLit = { Type *Expr; Elts []Expr } // Type is nil in an elided literal {...}
 type FuncLit = { Type FuncType; Body BlockStmt }
@@ -123,7 +123,7 @@ rule importOne = s:importSpec => list($s)
 rule importGroup = "(" -ws ss:(s:importSpec -sp -groupTerm -ws)* ")" => map($ss, (x) => x.$s)
 rule importSpec ImportSpec = n:importName? p:stringLit => ImportSpec{Name: $n, Path: $p}
 rule importName Ident = i:ident -sp / i:dotName -ws => $i
-rule dotName Ident = t:("." !"..") #atomic => Ident{Text: text($t)}
+rule dotName Ident = ("." !"..") #atomic
 
 rule constDecl GenDecl = kw_const -ws ss:(constGroup / constOne) => GenDecl{Tok: "const", Specs: $ss}
 rule constOne = s:constSpec => list($s)
@@ -701,7 +701,7 @@ rule dirUint = &[0-9] "0"* n:([1-9] [0-9]*)? #atomic {len($n) < 20 || len($n) ==
 
 // Letters and digits are those of Unicode (unicode.IsLetter, unicode.IsDigit), see uLetter and
 // uDigit.
-rule ident Ident = t:(!keyword idStart idRest) #atomic => Ident{Text: text($t)}
+rule ident Ident = (!keyword idStart idRest) #atomic
 rule idStart = [a-zA-Z_] / &[\u{80}-\u{10ffff}] uLetter
 rule idRest = (&[a-zA-Z0-9_\u{80}-\u{10ffff}] ([a-zA-Z0-9_] (&[a-zA-Z0-9_] [a-zA-Z0-9_])* / uLetter / uDigit))*
 // A keyword must not be followed by a letter or digit. (Any other non-ASCII character is an error
@@ -744,9 +744,9 @@ rule basicLit Expr = imagLit / floatLit / intLit / charLit / stringLit
 // Numbers: each form must not be followed by a character that go/scanner would read as part of the
 // same literal (it would report an error), nor by a letter or digit (two literals, or a literal and
 // a name, never follow each other).
-rule intLit IntLit = t:(("0" [xX] "_"? hexDigits / "0" [oO] "_"? octDigits / "0" [bB] "_"? binDigits / "0" ("_"? [0-7])* / [1-9] ("_"? [0-9])*) ![0-9a-zA-Z_.]) #atomic => IntLit{Text: text($t)}
-rule floatLit FloatLit = t:((decimalFloat / hexFloat) ![0-9a-zA-Z_]) #atomic => FloatLit{Text: text($t)}
-rule imagLit ImagLit = t:((decimalFloat "i" / hexFloat "i" / imagInt "i") ![0-9a-zA-Z_]) #atomic => ImagLit{Text: text($t)}
+rule intLit IntLit = (("0" [xX] "_"? hexDigits / "0" [oO] "_"? octDigits / "0" [bB] "_"? binDigits / "0" ("_"? [0-7])* / [1-9] ("_"? [0-9])*) ![0-9a-zA-Z_.]) #atomic
+rule floatLit FloatLit = ((decimalFloat / hexFloat) ![0-9a-zA-Z_]) #atomic
+rule imagLit ImagLit = ((decimalFloat "i" / hexFloat "i" / imagInt "i") ![0-9a-zA-Z_]) #atomic
 // The integer part of an imaginary literal may hold digits invalid for its base (as go/scanner
 // allows), and 0123i is decimal.
 rule imagInt = "0" [xX] "_"? hexDigits / "0" [oObB] "_"? decDigits / decDigits
@@ -758,8 +758,8 @@ rule hexDigits = [0-9a-fA-F] ("_"? [0-9a-fA-F])*
 rule octDigits = [0-7] ("_"? [0-7])*
 rule binDigits = [01] ("_"? [01])*
 
-rule charLit CharLit = t:("'" (charEscape / !['\\\n] srcChar) "'") #atomic => CharLit{Text: text($t)}
-rule stringLit StringLit = t:("`" (!"`" srcChar)* "`" / "\"" ([^"\\\n\u{0}\u{feff}�]+ / stringEscape / validFFFD)* "\"") #atomic => StringLit{Text: text($t)}
+rule charLit CharLit = ("'" (charEscape / !['\\\n] srcChar) "'") #atomic
+rule stringLit StringLit = ("`" (!"`" srcChar)* "`" / "\"" ([^"\\\n\u{0}\u{feff}�]+ / stringEscape / validFFFD)* "\"") #atomic
 // A character of the source: not NUL, nor a byte order mark, nor invalid UTF-8.
 rule srcChar = [^\u{0}\u{feff}�] / validFFFD
 rule charEscape = "\\" ([abfnrtv\\'] / escapeValue)

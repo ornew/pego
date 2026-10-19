@@ -282,23 +282,6 @@ func validateModule(m *Module) error {
 			}
 		}
 	}
-	// ruleType reports whether name is a declared type a rule makes its value as: a named node
-	// type, or a type with a field Text, as a text struct rule builds it.
-	ruleType := func(name string) bool {
-		for _, t := range m.Types {
-			if m.Strings[t.Name] == name {
-				if t.Node >= 0 {
-					return true
-				}
-				for _, f := range t.Fields {
-					if m.Strings[f] == "Text" {
-						return true
-					}
-				}
-			}
-		}
-		return false
-	}
 	// nodeType reports whether name is a declared named node type.
 	nodeType := func(name string) bool {
 		for _, t := range m.Types {
@@ -320,8 +303,8 @@ func validateModule(m *Module) error {
 		strs(r.Scope)
 		opt("action", r.Action, len(m.Exprs))
 		opt("string", r.NodeType, len(m.Strings))
-		if err == nil && r.NodeType >= 0 && !ruleType(m.Strings[r.NodeType]) {
-			fail("type %q is not a named node type, and is not a declared type with a field Text", m.Strings[r.NodeType])
+		if err == nil && r.NodeType >= 0 && !nodeType(m.Strings[r.NodeType]) {
+			fail("type %q is not a named node type", m.Strings[r.NodeType])
 		}
 		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
 		strs(r.Vars)
@@ -459,10 +442,7 @@ func validateModule(m *Module) error {
 			nonneg(x.A)
 		case EBool:
 			flag(x.A, 1)
-		case EMember, EBin:
-			str(int(x.A))
-			flag(x.B, 1)
-		case EStr, EVar, EUnary, EBoolChk:
+		case EStr, EVar, EUnary, EBoolChk, EMember, EBin:
 			str(int(x.A))
 		case ECap, EItem, ELocal:
 			nonneg(x.A)

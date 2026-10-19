@@ -108,7 +108,7 @@ func TestInspect(t *testing.T) {
 		depth++
 		max = max2(max, depth)
 		if id, ok := n.(*Ident); ok {
-			idents = append(idents, id.Text)
+			idents = append(idents, id.Value)
 		}
 		return true
 	})
@@ -199,7 +199,7 @@ func TestIdent(t *testing.T) {
 		{"_#D", true, true},
 		{"$x", false, false},
 	} {
-		id := &Ident{Text: c.text}
+		id := &Ident{TNode: TNode[string]{Value: c.text}}
 		if id.IsDefinition() != c.def || id.IsHidden() != c.hidden {
 			t.Errorf("%s: definition %v, hidden %v", c.text, id.IsDefinition(), id.IsHidden())
 		}
@@ -213,7 +213,7 @@ func TestAttributeSplit(t *testing.T) {
 		{"@a()", "a", ""},
 		{"@a(b(c), \"d)\")", "a", `b(c), "d)"`},
 	} {
-		name, body := (&Attribute{Text: c.in}).Split()
+		name, body := (&Attribute{TNode: TNode[string]{Value: c.in}}).Split()
 		if name != c.name || body != c.body {
 			t.Errorf("%s: %q, %q", c.in, name, body)
 		}

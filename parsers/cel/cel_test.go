@@ -251,16 +251,16 @@ func checkSpans(t testing.TB, src string, e cel.Expr, bytes bool) {
 		}
 		switch e := e.(type) {
 		case *cel.Ident:
-			if slice(sp) != e.Text {
-				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.Text)
+			if slice(sp) != e.Value {
+				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.Value)
 			}
 		case *cel.IntLit:
-			if slice(sp) != e.Text {
-				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.Text)
+			if slice(sp) != e.TNode.Value {
+				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.TNode.Value)
 			}
 		case *cel.StringLit:
-			if slice(sp) != e.Text {
-				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.Text)
+			if slice(sp) != e.TNode.Value {
+				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.TNode.Value)
 			}
 		}
 		end := sp.Start

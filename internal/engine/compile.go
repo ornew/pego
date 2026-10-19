@@ -26,9 +26,6 @@ type Program struct {
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
-	noTextStructs bool
-	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
-	boxedComparisons bool
 	// sourceInfo reports that nodes record source information (Options.SourceInfo).
 	sourceInfo bool
 	// defaultValue reports that value actions and declared rule types were dropped
@@ -100,10 +97,6 @@ type Options struct {
 	// noProjections compiles repetitions as written (project.go), for tests: with projections in
 	// every backend, only a program without them can check what they produce.
 	noProjections bool
-	// noTextStructs compiles the actions that textStructRule recognizes as written, for tests.
-	noTextStructs bool
-	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
-	boxedComparisons bool
 	// eagerAttributeCopies disables copy-on-change normalization for measurements.
 	// It affects compilation only; parser execution has no corresponding branch.
 	eagerAttributeCopies bool
@@ -127,11 +120,6 @@ type rule struct {
 	body      func(p *parser, min int) (*Node, bool)
 	action    grammar.Term
 	bodyIsSeq bool
-	// textType, if not "", is the struct type of a text struct rule (textStructRule): the rule's
-	// value is a struct of that type whose field Text is the matched text, made without the rule's
-	// action, and textBody is the body that is matched instead of def.Expr.
-	textType string
-	textBody grammar.Expr
 	// nodeType, if not "", is the named node type the rule's value is converted to
 	// (Program.ruleNodeType), whose kinds are nodeKinds.
 	nodeType  string
@@ -154,8 +142,7 @@ type rule struct {
 	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
 	entry int
 	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
-	// value-free bodies). It is created for rules that return a CST (no action and no text type)
-	// and are not part of a left-recursion cycle (twinOK), when such a call exists. It matches the
+	// value-free bodies). It is created for rules that return a CST (no action) and are not part of a left-recursion cycle (twinOK), when such a call exists. It matches the
 	// same input in the same way, but keeps a separate memo (ids from len(rules) on).
 	twin   *rule
 	twinOK bool
@@ -177,8 +164,8 @@ type rule struct {
 	// captures referenced by predicates (other captures build no values). It is nil for ordinary
 	// rules.
 	predCaps map[string]bool
-	// lean reports that the body's value is unused (a text struct rule, or an action that does not use
-	// $n), so the body runs value-free. Captures still build values.
+	// lean reports that the body's value is unused (an action, which reads captures only), so the
+	// body runs value-free. Captures still build values.
 	lean bool
 }
 
@@ -411,8 +398,6 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	prog.workRecognize = opts.recognize
 	prog.checks = opts.checks
 	prog.noProjections = opts.noProjections
-	prog.noTextStructs = opts.noTextStructs
-	prog.boxedComparisons = opts.boxedComparisons
 	prog.sourceInfo = opts.SourceInfo
 	prog.defaultValue = opts.DefaultValue
 
@@ -461,12 +446,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}
 		r.transient = transient[r.name]
 		r.vars = vars[r.name]
-		if typ, body, ok := prog.textStructRule(r.def); ok && !opts.noTextStructs {
-			r.textType, r.textBody, r.action = typ, body, nil
-		}
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
-			twin = r.action == nil && r.textType == "" && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
+			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
 		}
 		r.twinOK = twin
 	}
@@ -477,7 +459,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		for _, r := range prog.rules {
 			control.poll()
 			if !needed[r.name] {
-				r.novalue, r.action, r.textType, r.twinOK = true, nil, "", false
+				r.novalue, r.action, r.twinOK = true, nil, false
 				r.predCaps = predicateCapturesControlled(r.def.Expr, control)
 			}
 		}
@@ -559,7 +541,7 @@ func (c *compiler) compileRule(r *rule) {
 	control := c.control
 	c.control.poll()
 	c.rule = r
-	r.kinds = newRuleKinds(r.name, r.textType)
+	r.kinds = newRuleKinds(r.name)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 		// The lines build the rule's value.
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
@@ -587,67 +569,19 @@ func (c *compiler) compileRule(r *rule) {
 	}
 }
 
-// textStructRule recognizes a rule that makes a struct from the text it matches,
-//
-//	rule r T = t:(e) #atomic => T{Text: text($t)}
-//
-// where T is a struct whose field Text is a string, and returns T and the body e #atomic. The
-// rule's value is the struct its action makes, a T whose Text is the matched text with the
-// rule's range, so it can be made directly from the matched range, without the capture and
-// the action.
-func (prog *Program) textStructRule(rd *grammar.RuleDef) (string, grammar.Expr, bool) {
-	n, ok := rd.Action.(*grammar.New)
-	if !ok || len(n.Fields) != 1 || n.Fields[0].Name != "Text" {
-		return "", nil, false
-	}
-	st, ok := prog.types[n.Type].(*grammar.TypeDef)
-	if !ok {
-		return "", nil, false
-	}
-	if f := fieldOf(st, "Text"); f == nil {
-		return "", nil, false
-	} else if ref, ok := f.Type.(*grammar.TypeRef); !ok || ref.Name != "string" {
-		return "", nil, false
-	}
-	call, ok := ungroupTerm(n.Fields[0].Value).(*grammar.Call)
-	if !ok || call.Func != "text" || len(call.Args) != 1 {
-		return "", nil, false
-	}
-	ref, ok := ungroupTerm(call.Args[0]).(*grammar.CaptureRef)
-	if !ok || ref.Param {
-		return "", nil, false
-	}
-	capture, ok := ungroupExpr(rd.Expr).(*grammar.Capture)
-	if !ok || capture.Name != ref.Name {
-		return "", nil, false
-	}
-	if _, ok := ungroupExpr(capture.Expr).(*grammar.Atomic); !ok {
-		return "", nil, false
-	}
-	if rd.Type != nil {
-		if name, _ := prog.concreteType(rd.Type); name != n.Type {
-			return "", nil, false
-		}
-	}
-	return n.Type, capture.Expr, true
-}
-
 // bodyExpr returns the expression the rule's body matches.
 func (r *rule) bodyExpr() grammar.Expr {
-	if r.textBody != nil {
-		return r.textBody
-	}
 	return r.def.Expr
 }
 
 // leanBody reports whether the value of the rule body is unused. It is unused when there is an
-// action, which reads captures only, or a text type, provided the rule has no #stream. Every backend and the code generator
-// use this test to compile the body value-free.
+// action, which reads captures only, provided the rule has no #stream. Every backend and the
+// code generator use this test to compile the body value-free.
 func leanBody(r *rule) bool {
 	if r.stream {
 		return false
 	}
-	return r.action != nil || r.textType != ""
+	return r.action != nil
 }
 
 // twinOf returns the value-free twin of rule r (creating it if needed; it is assembled later).

@@ -23,51 +23,51 @@ type Document = {
 }
 
 type XMLDecl = { Version Version; Encoding *EncName; Standalone *YesNo }
-type Version = { Text string }
-type EncName = { Text string }
-type YesNo = { Text string }
+type Version = node[string]
+type EncName = node[string]
+type YesNo = node[string]
 type Misc ~ Comment | PI
 
 type Doctype = { Name Name; ExternalID *ExternalID; Subset []Decl }
 type ExternalID = { Public *PubidLiteral; System *SystemLiteral }
-type PubidLiteral = { Text string }  // between the quotes
-type SystemLiteral = { Text string } // between the quotes
+type PubidLiteral = node[string]  // between the quotes
+type SystemLiteral = node[string] // between the quotes
 type Decl ~ ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef
-type PERef = { Text string } // "%name;"
+type PERef = node[string] // "%name;"
 
 type ElementDecl = { Name Name; Content ContentSpec }
 type ContentSpec ~ Keyword | Mixed | Choice | Sequence
-type Keyword = { Text string } // EMPTY, ANY, CDATA, ID, ..., #REQUIRED, #IMPLIED, #FIXED
+type Keyword = node[string] // EMPTY, ANY, CDATA, ID, ..., #REQUIRED, #IMPLIED, #FIXED
 type Mixed = { Names []Name }
 type Choice = { Items []Particle; Occur *Occurrence }
 type Sequence = { Items []Particle; Occur *Occurrence }
 type NameParticle = { Name Name; Occur *Occurrence }
 type Particle ~ NameParticle | Choice | Sequence
-type Occurrence = { Text string } // ?, * or +
+type Occurrence = node[string] // ?, * or +
 
 type AttlistDecl = { Name Name; Defs []AttDef }
 type AttDef = { Name Name; Type AttType; Default *Keyword; Value *AttValue }
 type AttType ~ Keyword | Enumeration | NotationType
 type Enumeration = { Values []Nmtoken }
 type NotationType = { Names []Name }
-type Nmtoken = { Text string }
+type Nmtoken = node[string]
 
 type EntityDecl = { Parameter bool; Name Name; Value *EntityValue; ExternalID *ExternalID; NData *Name }
-type EntityValue = { Text string } // between the quotes
+type EntityValue = node[string] // between the quotes
 type NotationDecl = { Name Name; ExternalID ExternalID }
 
 type Element = { Name Name; Attrs []Attribute; Content []Content }
 type Attribute = { Name Name; Value AttValue }
-type AttValue = { Text string } // between the quotes
+type AttValue = node[string] // between the quotes
 type Content ~ Element | CharData | EntityRef | CharRef | CDSect | PI | Comment
-type CharData = { Text string }
-type EntityRef = { Text string } // "&name;"
-type CharRef = { Text string }   // "&#...;"
-type CDSect = { Text string }    // between "<![CDATA[" and "]]>"
+type CharData = node[string]
+type EntityRef = node[string] // "&name;"
+type CharRef = node[string]   // "&#...;"
+type CDSect = node[string]    // between "<![CDATA[" and "]]>"
 type PI = { Target Name; Data *PIData }
-type PIData = { Text string }
-type Comment = { Text string } // between "<!--" and "-->"
-type Name = { Text string }
+type PIData = node[string]
+type Comment = node[string] // between "<!--" and "-->"
+type Name = node[string]
 
 // A byte order mark (U+FEFF) may precede the document (Appendix F).
 rule main Document = (
@@ -84,30 +84,30 @@ rule xml_decl XMLDecl = (
 ) => XMLDecl{Version: $v, Encoding: $e, Standalone: $sd}
 // [24] VersionInfo, [26] VersionNum ::= '1.' [0-9]+
 rule version_info = s "version" eq ("\"" v:version_num "\"" / "'" v:version_num "'") => $v
-rule version_num Version = t:("1." [0-9]+) #atomic => Version{Text: text($t)}
+rule version_num Version = ("1." [0-9]+) #atomic
 // [80] EncodingDecl, [81] EncName ::= [A-Za-z] ([A-Za-z0-9._] | '-')*
 rule encoding_decl = s "encoding" eq ("\"" e:enc_name "\"" / "'" e:enc_name "'") => $e
-rule enc_name EncName = t:([A-Za-z] [A-Za-z0-9._\-]*) #atomic => EncName{Text: text($t)}
+rule enc_name EncName = ([A-Za-z] [A-Za-z0-9._\-]*) #atomic
 // [32] SDDecl
 rule sd_decl = s "standalone" eq ("\"" v:yes_no "\"" / "'" v:yes_no "'") => $v
-rule yes_no YesNo = t:("yes" / "no") #atomic => YesNo{Text: text($t)}
+rule yes_no YesNo = ("yes" / "no") #atomic
 // [25] Eq ::= S? '=' S?
 rule eq = ws "=" ws
 
 // [15] Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
 rule comment = "<!--" c:comment_text "-->" => $c
-rule comment_text Comment = t:(([.-\u{d7ff} -,\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "-" [.-\u{d7ff} -,\n\t\r\u{e000}-�𐀀-\u{10ffff}])*) #atomic => Comment{Text: text($t)}
+rule comment_text Comment = (([.-\u{d7ff} -,\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "-" [.-\u{d7ff} -,\n\t\r\u{e000}-�𐀀-\u{10ffff}])*) #atomic
 
 // [16] PI ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 // [17] PITarget ::= Name - (('X' | 'x') ('M' | 'm') ('L' | 'l'))
 // The predicate fails at the end of a reserved target, so that its message is the error reported for a
 // misplaced XML declaration (a lookahead before the name would record no position).
 rule pi PI = (
-    "<?" t:name {$t.Text != "xml" && $t.Text != "xmL" && $t.Text != "xMl" && $t.Text != "xML" && $t.Text != "Xml" && $t.Text != "XmL" && $t.Text != "XMl" && $t.Text != "XML"}
+    "<?" t:name {text($t) != "xml" && text($t) != "xmL" && text($t) != "xMl" && text($t) != "xML" && text($t) != "Xml" && text($t) != "XmL" && text($t) != "XMl" && text($t) != "XML"}
     @error(message="the processing instruction target xml is reserved (an XML declaration must come first)")
     (s d:pi_data)? "?>"
 ) => PI{Target: $t, Data: $d}
-rule pi_data PIData = t:(([@-\u{d7ff} ->\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "?" !">")*) #atomic => PIData{Text: text($t)}
+rule pi_data PIData = (([@-\u{d7ff} ->\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "?" !">")*) #atomic
 
 // [28] doctypedecl ::= '<!DOCTYPE' S Name (S ExternalID)? S? ('[' intSubset ']' S?)? '>'
 rule doctype Doctype = (
@@ -120,7 +120,7 @@ rule doctype Doctype = (
 rule int_subset = ds:(-ws d:decl)* -ws => map($ds, (x) => x.$d)
 rule decl Decl = element_decl / attlist_decl / entity_decl / notation_decl / pi / comment / pe_ref
 // [69] PEReference ::= '%' Name ';'
-rule pe_ref PERef = t:("%" name ";") #atomic => PERef{Text: text($t)}
+rule pe_ref PERef = ("%" name ";") #atomic
 
 // [75] ExternalID ::= 'SYSTEM' S SystemLiteral | 'PUBLIC' S PubidLiteral S SystemLiteral
 rule external_id ExternalID = system_id / public_id
@@ -128,19 +128,19 @@ rule system_id ExternalID = "SYSTEM" s l:system_literal => ExternalID{System: $l
 rule public_id ExternalID = "PUBLIC" s p:pubid_literal s l:system_literal => ExternalID{Public: $p, System: $l}
 // [11] SystemLiteral ::= ('"' [^"]* '"') | ("'" [^']* "'")
 rule system_literal = "\"" l:system_dq "\"" / "'" l:system_sq "'" => $l
-rule system_dq SystemLiteral = t:([#-\u{d7ff} -!\n\t\r\u{e000}-�𐀀-\u{10ffff}]*) #atomic => SystemLiteral{Text: text($t)}
-rule system_sq SystemLiteral = t:([(-\u{d7ff} -&\n\t\r\u{e000}-�𐀀-\u{10ffff}]*) #atomic => SystemLiteral{Text: text($t)}
+rule system_dq SystemLiteral = ([#-\u{d7ff} -!\n\t\r\u{e000}-�𐀀-\u{10ffff}]*) #atomic
+rule system_sq SystemLiteral = ([(-\u{d7ff} -&\n\t\r\u{e000}-�𐀀-\u{10ffff}]*) #atomic
 // [12] PubidLiteral, [13] PubidChar ::= #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%]
 rule pubid_literal = "\"" l:pubid_dq "\"" / "'" l:pubid_sq "'" => $l
-rule pubid_dq PubidLiteral = t:([a-zA-Z0-9 \r\n\-'()+,./:=?;!*#@$_%]*) #atomic => PubidLiteral{Text: text($t)}
-rule pubid_sq PubidLiteral = t:([a-zA-Z0-9 \r\n\-()+,./:=?;!*#@$_%]*) #atomic => PubidLiteral{Text: text($t)}
+rule pubid_dq PubidLiteral = ([a-zA-Z0-9 \r\n\-'()+,./:=?;!*#@$_%]*) #atomic
+rule pubid_sq PubidLiteral = ([a-zA-Z0-9 \r\n\-()+,./:=?;!*#@$_%]*) #atomic
 
 // [45] elementdecl ::= '<!ELEMENT' S Name S contentspec S? '>'
 // [46] contentspec ::= 'EMPTY' | 'ANY' | Mixed | children
 rule element_decl ElementDecl = "<!ELEMENT" s n:name s c:content_spec ws ">" => ElementDecl{Name: $n, Content: $c}
 rule content_spec ContentSpec = kw_empty / kw_any / mixed / choice / sequence
-rule kw_empty Keyword = t:("EMPTY") #atomic => Keyword{Text: text($t)}
-rule kw_any Keyword = t:("ANY") #atomic => Keyword{Text: text($t)}
+rule kw_empty Keyword = ("EMPTY") #atomic
+rule kw_any Keyword = ("ANY") #atomic
 // [51] Mixed ::= '(' S? '#PCDATA' (S? '|' S? Name)* S? ')*' | '(' S? '#PCDATA' S? ')'
 rule mixed Mixed = (
     "(" ws "#PCDATA" ns:(-ws -"|" -ws n:name)* ws (")*" / ")" {len($ns) == 0})
@@ -155,7 +155,7 @@ rule sequence Sequence = (
 ) => Sequence{Items: concat(list($f), map($rs, (x) => x.$c)), Occur: $o}
 rule cp Particle = name_particle / choice / sequence
 rule name_particle NameParticle = n:name o:occurrence? => NameParticle{Name: $n, Occur: $o}
-rule occurrence Occurrence = t:([*+?]) #atomic => Occurrence{Text: text($t)}
+rule occurrence Occurrence = ([*+?]) #atomic
 
 // [52] AttlistDecl ::= '<!ATTLIST' S Name AttDef* S? '>'
 // [53] AttDef ::= S Name S AttType S DefaultDecl
@@ -166,11 +166,11 @@ rule attlist_decl AttlistDecl = (
 rule att_def AttDef = (
     n:name s t:att_type s (k:kw_required / (k:kw_fixed s)? v:att_value)
 ) => AttDef{Name: $n, Type: $t, Default: $k, Value: $v}
-rule kw_required Keyword = t:("#REQUIRED" / "#IMPLIED") #atomic => Keyword{Text: text($t)}
-rule kw_fixed Keyword = t:("#FIXED") #atomic => Keyword{Text: text($t)}
+rule kw_required Keyword = ("#REQUIRED" / "#IMPLIED") #atomic
+rule kw_fixed Keyword = ("#FIXED") #atomic
 // [54] AttType ::= StringType | TokenizedType | EnumeratedType
 rule att_type AttType = kw_type / notation_type / enumeration
-rule kw_type Keyword = t:("CDATA" / "IDREFS" / "IDREF" / "ID" / "ENTITY" / "ENTITIES" / "NMTOKENS" / "NMTOKEN") #atomic => Keyword{Text: text($t)}
+rule kw_type Keyword = ("CDATA" / "IDREFS" / "IDREF" / "ID" / "ENTITY" / "ENTITIES" / "NMTOKENS" / "NMTOKEN") #atomic
 // [58] NotationType ::= 'NOTATION' S '(' S? Name (S? '|' S? Name)* S? ')'
 rule notation_type NotationType = (
     "NOTATION" s "(" ws f:name rs:(-ws -"|" -ws n:name)* ws ")"
@@ -193,8 +193,8 @@ rule pe_decl EntityDecl = (
 // [9] EntityValue ::= '"' ([^%&"] | PEReference | Reference)* '"' | "'" ([^%&'] | PEReference | Reference)* "'"
 // without PEReference, which the internal subset does not allow inside a declaration.
 rule entity_value = "\"" v:entity_dq "\"" / "'" v:entity_sq "'" => $v
-rule entity_dq EntityValue = t:((['-\u{d7ff} -!#-$\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic => EntityValue{Text: text($t)}
-rule entity_sq EntityValue = t:(([(-\u{d7ff} -$\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic => EntityValue{Text: text($t)}
+rule entity_dq EntityValue = ((['-\u{d7ff} -!#-$\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic
+rule entity_sq EntityValue = (([(-\u{d7ff} -$\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic
 
 // [82] NotationDecl ::= '<!NOTATION' S Name S (ExternalID | PublicID) S? '>', [83] PublicID ::= 'PUBLIC' S PubidLiteral
 rule notation_decl NotationDecl = "<!NOTATION" s n:name s x:notation_id ws ">" => NotationDecl{Name: $n, ExternalID: $x}
@@ -206,14 +206,14 @@ rule public_notation ExternalID = "PUBLIC" s p:pubid_literal (s l:system_literal
 // [42] ETag ::= '</' Name S? '>' (WFC: Element Type Match)
 // One rule for both forms, so that the start tag is not parsed twice.
 rule element Element = (
-    "<" n:name as:(-s a:attribute)* ws ("/>" / ">" cs:content "</" e:name {$e.(Name).Text == $n.Text} @error(message="mismatched end tag") ws ">")
+    "<" n:name as:(-s a:attribute)* ws ("/>" / ">" cs:content "</" e:name {text($e) == text($n)} @error(message="mismatched end tag") ws ">")
 ) => Element{Name: $n, Attrs: map($as, (x) => x.$a), Content: concat($cs)}
 // [41] Attribute ::= Name Eq AttValue
 rule attribute Attribute = n:name eq v:att_value => Attribute{Name: $n, Value: $v}
 // [10] AttValue ::= '"' ([^<&"] | Reference)* '"' | "'" ([^<&'] | Reference)* "'"
 rule att_value = "\"" v:att_dq "\"" / "'" v:att_sq "'" => $v
-rule att_dq AttValue = t:(([=-\u{d7ff}'-; -!#-%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic => AttValue{Text: text($t)}
-rule att_sq AttValue = t:(([=-\u{d7ff}(-; -%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic => AttValue{Text: text($t)}
+rule att_dq AttValue = (([=-\u{d7ff}'-; -!#-%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic
+rule att_sq AttValue = (([=-\u{d7ff}(-; -%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / reference)*) #atomic
 
 // [43] content ::= CharData? ((element | Reference | CDSect | PI | Comment) CharData?)*
 rule content = content_item*
@@ -222,16 +222,16 @@ rule content_item Content = char_data / markup
 // makes ParseAST about 10% faster and Recognize about 30%.
 rule markup Content = !"</" c:(element / reference / comment / cdsect / pi) => $c
 // [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
-rule char_data CharData = t:(([\^-\u{d7ff}=-\\'-; -%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "]" !"]>")+) #atomic => CharData{Text: text($t)}
+rule char_data CharData = (([\^-\u{d7ff}=-\\'-; -%\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "]" !"]>")+) #atomic
 // [18] CDSect ::= CDStart CData CDEnd, [20] CData ::= (Char* - (Char* ']]>' Char*))
 rule cdsect = "<![CDATA[" c:cdata "]]>" => $c
-rule cdata CDSect = t:(([\^-\u{d7ff} -\\\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "]" !"]>")*) #atomic => CDSect{Text: text($t)}
+rule cdata CDSect = (([\^-\u{d7ff} -\\\n\t\r\u{e000}-�𐀀-\u{10ffff}]+ / "]" !"]>")*) #atomic
 
 // [67] Reference ::= EntityRef | CharRef, [68] EntityRef ::= '&' Name ';'
 // [66] CharRef ::= '&#' [0-9]+ ';' | '&#x' [0-9a-fA-F]+ ';'
 rule reference = char_ref / entity_ref
-rule char_ref CharRef = t:("&#x" [0-9a-fA-F]+ ";" / "&#" [0-9]+ ";") #atomic => CharRef{Text: text($t)}
-rule entity_ref EntityRef = t:("&" name ";") #atomic => EntityRef{Text: text($t)}
+rule char_ref CharRef = ("&#x" [0-9a-fA-F]+ ";" / "&#" [0-9]+ ";") #atomic
+rule entity_ref EntityRef = ("&" name ";") #atomic
 
 // [5] Name ::= NameStartChar (NameChar)*
 // [4] NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D]
@@ -240,13 +240,13 @@ rule entity_ref EntityRef = t:("&" name ";") #atomic => EntityRef{Text: text($t)
 // [4a] NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 // The name characters are an inline class rather than a call of name_char, which makes ParseAST about
 // 7% faster.
-rule name Name = t:(
+rule name Name = (
     [a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\u{1fff}\u{200c}-\u{200d}⁰-\u{218f}Ⰰ-\u{2fef}、-\u{d7ff}豈-﷏ﷰ-�𐀀-\u{effff}]
     [a-zA-Z0-9_:.\-·À-ÖØ-öø-ͽͿ-\u{1fff}\u{200c}-\u{200d}‿-⁀⁰-\u{218f}Ⰰ-\u{2fef}、-\u{d7ff}豈-﷏ﷰ-�𐀀-\u{effff}]*
-) #atomic => Name{Text: text($t)}
+) #atomic
 rule name_char = [a-zA-Z0-9_:.\-·À-ÖØ-öø-ͽͿ-\u{1fff}\u{200c}-\u{200d}‿-⁀⁰-\u{218f}Ⰰ-\u{2fef}、-\u{d7ff}豈-﷏ﷰ-�𐀀-\u{effff}]
 // [7] Nmtoken ::= (NameChar)+
-rule nmtoken Nmtoken = t:(name_char+) #atomic => Nmtoken{Text: text($t)}
+rule nmtoken Nmtoken = (name_char+) #atomic
 
 // [3] S ::= (#x20 | #x9 | #xD | #xA)+
 rule s = [ \t\r\n]+

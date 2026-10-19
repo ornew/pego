@@ -124,7 +124,7 @@ func IsExternalModule(f *SourceFile) bool {
 	}
 	found := false
 	Inspect(f, func(n ASTNode) bool {
-		if m, ok := n.(*MetaProperty); ok && m.KeywordToken == "import" && m.Name.Text == "meta" {
+		if m, ok := n.(*MetaProperty); ok && m.KeywordToken == "import" && m.Name.TNode.Value == "meta" {
 			found = true
 		}
 		return !found
@@ -153,7 +153,7 @@ func hasExportModifier(s Statement) bool {
 		mods = s.Modifiers
 	}
 	for _, m := range mods {
-		if m, ok := m.(*Modifier); ok && m.Text == "export" {
+		if m, ok := m.(*Modifier); ok && m.Value == "export" {
 			return true
 		}
 	}

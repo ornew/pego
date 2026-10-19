@@ -105,8 +105,8 @@ func TestDocumentPiecesCrossBoundaryParsing(t *testing.T) {
 }
 
 func TestDocumentPiecesCodePointNormalizationAndNodeText(t *testing.T) {
-	program := compile(t, `rule main Word = t:([a-z]+ $$) #atomic => Word{Text: text($t)}
-type Word = { Text string }`)
+	program := compile(t, `rule main Word = ([a-z]+ $$) #atomic
+type Word = node[string]`)
 	prefix := strings.Repeat("x", documentPieceMinSize)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
@@ -234,8 +234,8 @@ func TestDocumentPiecesCompactionPreservesEarlierNodeText(t *testing.T) {
 	if !documentPieceInput {
 		t.Skip("piece storage is disabled")
 	}
-	program := compile(t, `rule main Word = t:([a-z]+ $$) #atomic => Word{Text: text($t)}
-type Word = { Text string }`)
+	program := compile(t, `rule main Word = ([a-z]+ $$) #atomic
+type Word = node[string]`)
 	initial := strings.Repeat("a", documentPieceMinSize)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		t.Run(unit.String(), func(t *testing.T) {

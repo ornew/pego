@@ -1,1 +1,1 @@
-Binary{Left: Number{Text: "1"}, Op: "+", Right: Binary{Left: Number{Text: "2"}, Op: "*", Right: Number{Text: "3"}}}
+Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}

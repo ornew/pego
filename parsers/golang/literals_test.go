@@ -50,10 +50,10 @@ func TestLiterals(t *testing.T) {
 		}
 	}
 	// A literal that is not valid is an error, not a panic.
-	if _, err := (&golang.IntLit{Text: "0x"}).Constant(); err == nil {
+	if _, err := (&golang.IntLit{TNode: golang.TNode[string]{Value: "0x"}}).Constant(); err == nil {
 		t.Error("IntLit 0x: no error")
 	}
-	if _, err := (&golang.StringLit{Text: `"\q"`}).Value(); err == nil {
+	if _, err := (&golang.StringLit{TNode: golang.TNode[string]{Value: `"\q"`}}).Value(); err == nil {
 		t.Error(`StringLit "\q": no error`)
 	}
 }

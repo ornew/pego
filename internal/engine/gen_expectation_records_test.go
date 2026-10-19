@@ -27,8 +27,8 @@ func TestGeneratedExpectationRecords(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type N = { Text string }
-rule main N = t:("é") #atomic => N{Text: text($t)}`)
+	g, err := syntax.Parse(`type N = node[string]
+rule main N = ("é") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
  for _,unit := range []PositionUnit{CodePoints,Bytes} {
   for i:=0;i<3;i++ {
    if _,err:=ParseAST("!",WithUnit(unit));err==nil { t.Fatal("invalid input accepted") }
-   if n,err:=ParseAST("é",WithUnit(unit));err!=nil || n.Text!="é" { t.Fatalf("typed reuse: %v",err) }
+   if n,err:=ParseAST("é",WithUnit(unit));err!=nil || n.Value!="é" { t.Fatalf("typed reuse: %v",err) }
   }
  }
 }

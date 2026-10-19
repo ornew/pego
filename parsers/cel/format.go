@@ -67,9 +67,9 @@ func (f *formatter) expr(e Expr, min int) {
 	case *Ident:
 		f.ident(e)
 	case *IntLit:
-		f.s(compact(e.Text))
+		f.s(compact(e.TNode.Value))
 	case *DoubleLit:
-		f.s(compact(e.Text))
+		f.s(compact(e.TNode.Value))
 	case *UintLit, *StringLit, *BytesLit, *BoolLit, *NullLit:
 		f.s(literalText(e))
 	case *Select:
@@ -78,7 +78,7 @@ func (f *formatter) expr(e Expr, min int) {
 		if e.Optional {
 			f.s("?")
 		}
-		f.s(e.Field.Text)
+		f.s(e.Field.TNode.Value)
 	case *Index:
 		f.expr(e.X, precMember)
 		f.s("[")
@@ -153,7 +153,7 @@ func (f *formatter) expr(e Expr, min int) {
 			if fl.Optional {
 				f.s("?")
 			}
-			f.s(fl.Name.Text + ": ")
+			f.s(fl.Name.TNode.Value + ": ")
 			f.expr(fl.Value, precCond)
 		}
 		f.s("}")
@@ -184,15 +184,15 @@ func (f *formatter) args(args []Expr) {
 func literalText(e Expr) string {
 	switch e := e.(type) {
 	case *UintLit:
-		return e.Text
+		return e.TNode.Value
 	case *StringLit:
-		return e.Text
+		return e.TNode.Value
 	case *BytesLit:
-		return e.Text
+		return e.TNode.Value
 	case *BoolLit:
-		return e.Text
+		return e.TNode.Value
 	case *NullLit:
-		return e.Text
+		return e.Value
 	}
 	return ""
 }

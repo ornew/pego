@@ -46,7 +46,7 @@ func (m *mapper) interval(e *duckdb.IntervalLit) any {
 	if e.Unit == nil {
 		return castTo(v, "INTERVAL")
 	}
-	unit := strings.Join(strings.Fields(lower(e.Unit.Text)), " ")
+	unit := strings.Join(strings.Fields(lower(e.Unit.Value)), " ")
 	if strings.Contains(unit, " ") {
 		unsup("interval range")
 	}

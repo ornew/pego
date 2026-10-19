@@ -397,37 +397,6 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 	return nil, false
 }
 
-// fieldOperand reads x.name as member does, keeping the text of a text struct unboxed.
-func (c *actx) fieldOperand(x any, name string) toperand {
-	return c.memberOperand(x, name)
-}
-
-// compare applies a comparison operator as binary does, comparing two strings without boxing them.
-func (c *actx) compare(op string, l, r toperand) any {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
-			return v
-		}
-	}
-	return c.binary(op, l.value(), r.value())
-}
-
-// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
-// valueField looking it up in the field list {Text}.
-func (p *parser) textFieldName(name string) bool {
-	if !workControlsEnabled || p.control == nil {
-		return name == "Text"
-	}
-	p.stepWork()
-	return p.textEqual("Text", name)
-}
-
 // compareStrings applies the comparison operator op to two strings as stringBinary does.
 func (p *parser) compareStrings(op string, l, r string) (bool, bool) {
 	switch op {

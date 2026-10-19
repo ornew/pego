@@ -765,7 +765,7 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 
 // finish builds the rule's value from the value of the rule body, checks it against the rule's
 // declared type if needed, and converts it to the rule's named node type, if any. A value-free
-// rule and a text struct rule are never checked.
+// rule is never checked.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
@@ -779,9 +779,6 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 			v = p.convertResult(r, v)
 		}
 		return v
-	}
-	if r.textType != "" {
-		return p.textStruct(r, start)
 	}
 	v = r.value(p, v, start)
 	if len(r.scope.names) > 0 {
@@ -811,13 +808,6 @@ func (p *parser) convertResult(r *rule, v *Node) *Node {
 	return n
 }
 
-// textStruct makes the value of a rule of textStructRule: the struct its action makes, whose
-// field Text is the matched text, with the rule's range. The node keeps the text unboxed
-// (textField).
-func (p *parser) textStruct(r *rule, start int) *Node {
-	return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-}
-
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are
 // not attached. If the node belongs to another rule, it is wrapped in a tuple node first.
 func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *Node {
@@ -839,7 +829,6 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(s.names))
 	}

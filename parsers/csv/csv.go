@@ -123,15 +123,15 @@ func (r *Record) Strings() []string {
 
 // Blank reports whether the record is an empty line: a single empty field without quotes. Records and
 // Table leave blank records out, as encoding/csv does.
-func (r *Record) Blank() bool { return len(r.Fields) == 1 && r.Fields[0].Text == "" }
+func (r *Record) Blank() bool { return len(r.Fields) == 1 && r.Fields[0].TNode.Value == "" }
 
 // Quoted reports whether the field is enclosed in double quotes.
-func (f *Field) Quoted() bool { return f.Text != "" && f.Text[0] == '"' }
+func (f *Field) Quoted() bool { return f.TNode.Value != "" && f.TNode.Value[0] == '"' }
 
 // Value returns the field's value: the text of an unquoted field, or the text between the quotes of a
 // quoted field with each "" replaced by ".
 func (f *Field) Value() string {
-	t := f.Text
+	t := f.TNode.Value
 	if t == "" || t[0] != '"' {
 		return t
 	}

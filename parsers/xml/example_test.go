@@ -54,9 +54,9 @@ func ExampleParseAST() {
 	for _, c := range doc.Root.Content {
 		switch c := c.(type) {
 		case *xml.Element:
-			fmt.Printf("element %s at %d-%d\n", c.Name.Text, c.Start, c.End)
+			fmt.Printf("element %s at %d-%d\n", c.Name.Value, c.Start, c.End)
 		case *xml.Comment:
-			fmt.Printf("comment %q at %d-%d\n", c.Text, c.Start, c.End)
+			fmt.Printf("comment %q at %d-%d\n", c.TNode.Value, c.Start, c.End)
 		}
 	}
 	// Output:

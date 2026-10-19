@@ -189,15 +189,15 @@ func process(doc *Document, input string) (*Tree, error) {
 	t := &Tree{Doc: doc, input: input}
 	p := &processor{input: input, tree: t, strict: true, budget: ExpansionLimit, ref: -1}
 	if d := doc.Decl; d != nil {
-		t.Version = d.Version.Text
+		t.Version = d.Version.Value
 		if d.Encoding != nil {
-			t.Encoding = d.Encoding.Text
+			t.Encoding = d.Encoding.Value
 		}
-		t.Standalone = d.Standalone != nil && d.Standalone.Text == "yes"
+		t.Standalone = d.Standalone != nil && d.Standalone.Value == "yes"
 	}
 	if dt := doc.Doctype; dt != nil {
 		p.dtd = &DTD{
-			Name:       dt.Name.Text,
+			Name:       dt.Name.Value,
 			ExternalID: dt.ExternalID,
 			Elements:   map[string]*ElementDecl{},
 			Attributes: map[string][]*AttributeDecl{},
@@ -291,16 +291,16 @@ func (p *processor) subset(decls []Decl, doc bool) error {
 		var err error
 		switch d := d.(type) {
 		case *ElementDecl:
-			if _, ok := p.dtd.Elements[d.Name.Text]; !ok {
-				p.dtd.Elements[d.Name.Text] = d
+			if _, ok := p.dtd.Elements[d.Name.Value]; !ok {
+				p.dtd.Elements[d.Name.Value] = d
 			}
 		case *EntityDecl:
 			err = p.entityDecl(d, doc)
 		case *AttlistDecl:
 			err = p.attlistDecl(d, doc)
 		case *NotationDecl:
-			if _, ok := p.dtd.Notations[d.Name.Text]; !ok {
-				p.dtd.Notations[d.Name.Text] = d
+			if _, ok := p.dtd.Notations[d.Name.Value]; !ok {
+				p.dtd.Notations[d.Name.Value] = d
 			}
 		case *PERef:
 			err = p.peRef(d)
@@ -313,13 +313,13 @@ func (p *processor) subset(decls []Decl, doc bool) error {
 }
 
 func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
-	e := &Entity{Name: d.Name.Text, Parameter: d.Parameter, External: d.ExternalID, Decl: d}
+	e := &Entity{Name: d.Name.Value, Parameter: d.Parameter, External: d.ExternalID, Decl: d}
 	if d.NData != nil {
-		e.NData = d.NData.Text
+		e.NData = d.NData.Value
 	}
 	if d.Value != nil {
 		// The replacement text: character references expanded, entity references bypassed.
-		raw := d.Value.Text
+		raw := d.Value.Value
 		if doc {
 			raw = newlines(raw)
 		}
@@ -355,29 +355,29 @@ func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
 }
 
 func (p *processor) attlistDecl(d *AttlistDecl, doc bool) error {
-	el := d.Name.Text
+	el := d.Name.Value
 	for _, def := range d.Defs {
-		a := &AttributeDecl{Element: el, Name: def.Name.Text, Decl: def}
+		a := &AttributeDecl{Element: el, Name: def.Name.Value, Decl: def}
 		switch t := def.Type.(type) {
 		case *Keyword:
-			a.Type = t.Text
+			a.Type = t.Value
 		case *Enumeration:
 			a.Type = "ENUMERATION"
 			for _, v := range t.Values {
-				a.Values = append(a.Values, v.Text)
+				a.Values = append(a.Values, v.Value)
 			}
 		case *NotationType:
 			a.Type = "NOTATION"
 			for _, n := range t.Names {
-				a.Values = append(a.Values, n.Text)
+				a.Values = append(a.Values, n.Value)
 			}
 		}
 		if def.Default != nil {
-			a.Default = def.Default.Text
+			a.Default = def.Default.Value
 		}
 		if def.Value != nil {
 			var b strings.Builder
-			if err := p.attValue(&b, def.Value.Text, doc, def.Value.Start); err != nil {
+			if err := p.attValue(&b, def.Value.TNode.Value, doc, def.Value.Start); err != nil {
 				return err
 			}
 			a.Value = b.String()
@@ -435,7 +435,7 @@ func (p *processor) peRef(r *PERef) error {
 // normalized), ent names the entity otherwise.
 func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
 	el := p.newElem()
-	*el = Elem{Name: x.Name.Text, Src: x, Entity: ent, ref: p.ref}
+	*el = Elem{Name: x.Name.Value, Src: x, Entity: ent, ref: p.ref}
 	var decls []*AttributeDecl
 	if p.dtd != nil {
 		decls = p.dtd.Attributes[el.Name]
@@ -444,10 +444,10 @@ func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
 		el.Attrs = p.newAttrs(n)
 	}
 	for i, a := range x.Attrs {
-		name := a.Name.Text
+		name := a.Name.Value
 		if i < 16 {
 			for _, o := range x.Attrs[:i] {
-				if o.Name.Text == name {
+				if o.Name.Value == name {
 					return nil, p.errorf(a.Start, "attribute %s appears twice", name)
 				}
 			}
@@ -458,7 +458,7 @@ func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
 				}
 			}
 		}
-		v := a.Value.Text
+		v := a.Value.TNode.Value
 		if strings.ContainsAny(v, "&\t\n\r") {
 			var b strings.Builder
 			if err := p.attValue(&b, v, doc, a.Value.Start); err != nil {
@@ -608,20 +608,20 @@ func (p *processor) content(b *builder, items []Content, doc bool, ent string) e
 		switch x := it.(type) {
 		case *CharData:
 			if doc {
-				b.addText(newlines(x.Text))
+				b.addText(newlines(x.TNode.Value))
 			} else {
-				b.addText(x.Text)
+				b.addText(x.TNode.Value)
 			}
 		case *CDSect:
 			if doc {
-				b.addText(newlines(x.Text))
+				b.addText(newlines(x.TNode.Value))
 			} else {
-				b.addText(x.Text)
+				b.addText(x.TNode.Value)
 			}
 		case *CharRef:
-			r, ok := charRef(x.Text[2 : len(x.Text)-1])
+			r, ok := charRef(x.Value[2 : len(x.Value)-1])
 			if !ok {
-				return p.errorf(x.Start, "character reference %s is not a legal character", x.Text)
+				return p.errorf(x.Start, "character reference %s is not a legal character", x.Value)
 			}
 			b.addRune(r)
 		case *EntityRef:

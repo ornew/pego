@@ -48,9 +48,8 @@ type RuleInfo struct {
 	Scope     []int
 	Action    int // start of the action's expression code (-1 if none)
 	BodyIsSeq bool
-	// NodeType is the declared type the rule's value is made as (string table index, -1 if none):
-	// for a struct type, the rule is a text struct rule; for a named node type, the rule's value
-	// is converted to it (instruction set 16).
+	// NodeType is the named node type the rule's value is converted to (string table index, -1 if
+	// none).
 	NodeType      int
 	Memo          bool
 	Leader        bool

@@ -137,17 +137,17 @@ func Check(m *Module, src string, unit ...PositionUnit) error {
 		}
 		switch n := n.(type) {
 		case *Constant:
-			v, e := constValue(n.Text)
+			v, e := constValue(n.TNode.Value)
 			switch {
 			case e != nil:
 				err = fail(n.Start, "%s", strings.TrimPrefix(e.Error(), "python: "))
-			case v.kind == kInt && isDecimal(n.Text):
+			case v.kind == kInt && isDecimal(n.TNode.Value):
 				if d := len(v.i.String()); d > 4300 {
 					err = fail(n.Start, "Exceeds the limit (4300 digits) for integer string conversion: value has %d digits", d)
 				}
 			}
 		case *FStringMiddle:
-			if _, e := decodeFStringText(n.Text, false); e != nil {
+			if _, e := decodeFStringText(n.TNode.Value, false); e != nil {
 				err = fail(n.Start, "%s", strings.TrimPrefix(e.Error(), "python: "))
 			}
 		}
@@ -205,7 +205,7 @@ func identifiersOf(n any) []string {
 	case *MatchMapping:
 		return []string{n.Rest}
 	case *Identifier:
-		return []string{n.Text}
+		return []string{n.Value}
 	case *TypeVar:
 		return []string{n.Name}
 	case *ParamSpec:
@@ -246,8 +246,8 @@ func checkFuture(m *Module, fail func(int, string, ...any) error) error {
 	body := m.Body
 	if len(body) > 0 {
 		if e, ok := body[0].(*ExprStmt); ok {
-			if c, ok := e.Value.(*Constant); ok && c.Text != "" && strings.ContainsAny(c.Text[:1], "'\"rRuU") {
-				if v, err := constValue(c.Text); err == nil && v.kind == kStr {
+			if c, ok := e.Value.(*Constant); ok && c.TNode.Value != "" && strings.ContainsAny(c.TNode.Value[:1], "'\"rRuU") {
+				if v, err := constValue(c.TNode.Value); err == nil && v.kind == kStr {
 					body = body[1:]
 				}
 			}
@@ -287,7 +287,7 @@ func checkBarry(m *Module, fail func(int, string, ...any) error) error {
 			}
 		case *Compare:
 			for _, o := range n.Ops {
-				if o.Text == "<>" || o.Text == "!=" {
+				if o.Value == "<>" || o.Value == "!=" {
 					ops = append(ops, o)
 				}
 			}
@@ -297,9 +297,9 @@ func checkBarry(m *Module, fail func(int, string, ...any) error) error {
 	for _, o := range ops {
 		after := barry >= 0 && o.Start >= barry
 		switch {
-		case o.Text == "<>" && !after:
+		case o.Value == "<>" && !after:
 			return fail(o.Start, "invalid syntax")
-		case o.Text == "!=" && after:
+		case o.Value == "!=" && after:
 			return fail(o.Start, "with Barry as BDFL, use '<>' instead of '!='")
 		}
 	}

@@ -114,7 +114,7 @@ func BenchmarkCookedLiteralValue(b *testing.B) {
 		{"surrogate continuation", strings.Repeat(`\uD83D`+"\\\n"+`\uDE00`, 64)},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
-			literal := &typescript.NoSubstitutionTemplateLiteral{Text: "`" + tc.body + "`"}
+			literal := &typescript.NoSubstitutionTemplateLiteral{TNode: typescript.TNode[string]{Value: "`" + tc.body + "`"}}
 			b.SetBytes(int64(len(tc.body)))
 			b.ReportAllocs()
 			for b.Loop() {

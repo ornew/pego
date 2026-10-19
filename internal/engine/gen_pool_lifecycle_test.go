@@ -72,10 +72,10 @@ func TestGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type A = { Text string }
+	g, err := syntax.Parse(`type A = node[string]
 rule main A = lead value:small => $value
 rule lead = [^b]*
-rule small A = t:("b") #atomic => A{Text: text($t)}`)
+rule small A = ("b") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}

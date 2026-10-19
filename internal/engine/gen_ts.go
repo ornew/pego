@@ -609,8 +609,8 @@ func (g *tsGen) rules() {
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			value = 0 // the lines build the rule's value
 		}
-		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
-			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.textType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
+		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
+			r.id, tsString(r.name), tsStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
 		vars = append(vars, g.ruleVar(r))
 		if r.nodeType != "" {
 			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), tsString(r.nodeType))

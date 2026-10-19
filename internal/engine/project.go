@@ -317,9 +317,6 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 		}
 		seen[e.Name] = true
 		defer delete(seen, e.Name)
-		if r.textType != "" {
-			return true
-		}
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			// Every line's value is never nil ($lhs and $rhs are values of the rule itself).
 			for _, o := range pr.Operands {

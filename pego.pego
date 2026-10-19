@@ -2,14 +2,14 @@
 // Source forms are preserved before semantic validation and compilation.
 package pego
 
-type Ident = { Text string }
-type Int = { Text string }
-type String = { Text string }
-type True = { Text string }
-type False = { Text string }
-type Nil = { Text string }
-type CaptureRef = { Text string }
-type VarRef = { Text string }
+type Ident = node[string]
+type Int = node[string]
+type String = node[string]
+type True = node[string]
+type False = node[string]
+type Nil = node[string]
+type CaptureRef = node[string]
+type VarRef = node[string]
 
 type File = { Pkg *PkgDecl; Decls []Decl; Comments []Comment; TrailingComments []Comment; Text string; Head SourceLead }
 type PkgDecl ~ Pkg | error
@@ -67,17 +67,17 @@ type Sequence = { L RuleExpr; R RuleExpr }
 type Choice = { L RuleExpr; R RuleExpr }
 type Discard = { X RuleExpr }
 type Lookahead = { Op string; X RuleExpr }
-type Top = { Text string }
-type Bottom = { Text string }
-type BeginLine = { Text string }
-type BeginInput = { Text string }
-type EndLine = { Text string }
-type EndInput = { Text string }
-type Any = { Text string }
-type Cut = { Text string }
+type Top = node[string]
+type Bottom = node[string]
+type BeginLine = node[string]
+type BeginInput = node[string]
+type EndLine = node[string]
+type EndInput = node[string]
+type Any = node[string]
+type Cut = node[string]
 type CharClass = { Not bool; Items []CharClassItem }
 type CharClassItem ~ Char | CharRng
-type Char = { Text string }
+type Char = node[string]
 type CharRng = { Start Char; End Char }
 type Optional = { X RuleExpr }
 type ZeroOrMore = { X RuleExpr }
@@ -115,7 +115,7 @@ type Action ~ ActionExpr | ActionBlock | DefaultAction
 type ActionStmt ~ ActionAssign | ActionExpr | error
 type ActionAssign = { Name Ident; Expr ActionExpr }
 type ActionBlock = { Actions []ActionStmt; Comments []Comment }
-type DefaultAction = { Text string }
+type DefaultAction = node[string]
 type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
   | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | ActionTuple | ActionGroup | Lambda
@@ -312,14 +312,14 @@ rule level_call LevelCall = (
   lev:(ident @error(message="expected level name")) -ws
   -(")" @error(message="expected closing parenthesis for level call"))
 ) => LevelCall{Rule: $name, Level: $lev}
-rule top Top = t:("_" !ident_char) #atomic => Top{Text: text($t)}
-rule bottom Bottom = t:("_|_") #atomic => Bottom{Text: text($t)}
-rule begin_input BeginInput = t:("^^") #atomic => BeginInput{Text: text($t)}
-rule begin_line BeginLine = t:("^") #atomic => BeginLine{Text: text($t)}
-rule end_input EndInput = t:("$$") #atomic => EndInput{Text: text($t)}
-rule end_line EndLine = t:("$" !(ident_start / digit)) #atomic => EndLine{Text: text($t)}
-rule any Any = t:(".") #atomic => Any{Text: text($t)}
-rule cut Cut = t:("#cut" !ident_char !"(") #atomic => Cut{Text: text($t)}
+rule top Top = ("_" !ident_char) #atomic
+rule bottom Bottom = ("_|_") #atomic
+rule begin_input BeginInput = ("^^") #atomic
+rule begin_line BeginLine = ("^") #atomic
+rule end_input EndInput = ("$$") #atomic
+rule end_line EndLine = ("$" !(ident_start / digit)) #atomic
+rule any Any = (".") #atomic
+rule cut Cut = ("#cut" !ident_char !"(") #atomic
 rule predicate Predicate = b:action_block => Predicate{Actions: $b.Actions, Comments: $b.Comments}
 
 // Postfix pragmas have dedicated payloads. Metadata attributes retain ordered
@@ -333,7 +333,7 @@ rule repeat_range RepeatBounds = repeat_from / repeat_to
 rule repeat_from RepeatBounds = min:repeat_int -ws "," -ws max:repeat_int? => RepeatBounds{Min: $min, Max: $max, Range: true}
 rule repeat_to RepeatBounds = "," -ws max:repeat_int => RepeatBounds{Max: $max, Range: true}
 rule repeat_count RepeatBounds = n:repeat_int => RepeatBounds{Min: $n, Max: $n, Range: false}
-rule repeat_int Int = t:((digit+ / "-" -ws "0"+ !digit) #atomic) => Int{Text: text($t)}
+rule repeat_int Int = (digit+ / "-" -ws "0"+ !digit) #atomic
 rule recover_args RuleExpr = (
   "(" {ml := true} -ws -("skip" @error(message="expected skip= in #recover")) -word_end
   -("=" @error(message="expected '=' after skip")) -ws x:rule_expr -ws
@@ -362,7 +362,7 @@ rule attr_named AttrNamed = (
   name:ident -ws "=" -ws v:(attr_value @error(message="expected attribute argument value"))
 ) => AttrNamed{Name: $name, Value: $v}
 rule attr_value AttrValue = true / false / nil / signed_int / string / rule_expr
-rule signed_int Int = t:(("-" -ws)? digit+ #atomic) #atomic => Int{Text: text($t)}
+rule signed_int Int = (("-" -ws)? digit+ #atomic) #atomic
 
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
@@ -422,7 +422,7 @@ rule ops_infix_body OperatorsOperatorBody = (
 // Predicate Actions and Value Actions share statement syntax. The source AST
 // retains unsupported blocks and inline actions for later compilation checks.
 rule action Action = default_action / action_block / action_expr
-rule default_action DefaultAction = t:("...") #atomic => DefaultAction{Text: text($t)}
+rule default_action DefaultAction = ("...") #atomic
 rule action_block ActionBlock = (
   "{" {ml := false} xs:(s:action_block_stmt)* cs:comments
   -("}" @error(message="expected closing brace for action block"))
@@ -498,13 +498,13 @@ rule init_field_body InitFieldBody = (
   name:(ident @error(message="expected initializer field name")) -ws -":" -ws
   x:(action_expr @error(message="expected initializer value"))
 ) => InitFieldBody{Name: $name, Val: $x}
-rule int Int = t:(digit+ #atomic) => Int{Text: text($t)}
-rule true True = t:("true" !ident_char) #atomic => True{Text: text($t)}
-rule false False = t:("false" !ident_char) #atomic => False{Text: text($t)}
-rule nil Nil = t:("nil" !ident_char) #atomic => Nil{Text: text($t)}
-rule capture_ref CaptureRef = t:("$" ident #atomic) #atomic => CaptureRef{Text: text($t)}
-rule var_name VarRef = t:(ident) #atomic => VarRef{Text: text($t)}
-rule var_ref VarRef = t:(ident !"(") #atomic => VarRef{Text: text($t)}
+rule int Int = digit+ #atomic
+rule true True = ("true" !ident_char) #atomic
+rule false False = ("false" !ident_char) #atomic
+rule nil Nil = ("nil" !ident_char) #atomic
+rule capture_ref CaptureRef = ("$" ident #atomic) #atomic
+rule var_name VarRef = (ident) #atomic
+rule var_ref VarRef = (ident !"(") #atomic
 
 // Trivia. Space is discarded before and after each retained comment, keeping
 // the resulting list homogeneous without introducing nil whitespace elements.
@@ -539,17 +539,17 @@ rule block_with_line InlineComment = (
   body:((block_no_line / !("/*" / "*/" / nl) .)* (nl / block_with_line) (inline_comment / !("/*" / "*/") .)*)
   #atomic end:"*/"
 ) => InlineComment{Start: $start, Body: $body, End: $end}
-rule ident Ident = t:((ident_start ident_char*) #atomic) => Ident{Text: text($t)}
+rule ident Ident = (ident_start ident_char*) #atomic
 rule ident_start = [a-zA-Z_]
 rule ident_char = [a-zA-Z0-9_]
 rule digit = [0-9]
-rule string String = t:("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic) #atomic => String{Text: text($t)}
+rule string String = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic) #atomic
 rule char_class CharClass = (
   "[" not:"^"? items:(char_class_rng / char_class_chr)+
   -("]" @error(message="expected closing bracket for character class"))
 ) => CharClass{Not: $not != nil, Items: $items.Value}
 rule char_class_rng CharRng = start:char_class_chr "-" !"]" end:char_class_chr => CharRng{Start: $start, End: $end}
-rule char_class_chr Char = t:(("\\" escape_char / [^\]\\\n]) #atomic) => Char{Text: text($t)}
+rule char_class_chr Char = ("\\" escape_char / [^\]\\\n]) #atomic
 rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab0] / [^a-zA-Z0-9]
 
 // Normalized declaration ownership, independent of raw formatter comments.

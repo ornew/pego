@@ -29,15 +29,14 @@ type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
 	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
 	end      int32
-	text     string  // the text of a string node, and the Text field of a text struct
+	text     string  // the text of a string node
 	children []*Node // the elements of a tuple or list
 	fields   Fields  // struct fields and captures
 
-	fresh     bool
-	terminal  bool
-	labeled   bool // the captures in Fields are output (source information)
-	textField bool // a struct whose one field, Text, is text, kept unboxed (see fieldList)
-	box       any  // the value carried by a box
+	fresh    bool
+	terminal bool
+	labeled  bool // the captures in Fields are output (source information)
+	box      any  // the value carried by a box
 }
 
 // Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
@@ -243,20 +242,15 @@ func (c *actx) convert(typ string, v any) any {
 	return n
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
-// struct of a text struct rule.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name.
 type ruleKinds struct {
 	reserved [len(reservedTypes)]*nodeKind
-	text     *nodeKind
 }
 
-func newRuleKinds(rule, textType string) ruleKinds {
+func newRuleKinds(rule string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
-	}
-	if textType != "" {
-		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -468,29 +462,8 @@ func (n *Node) field(name string) any {
 	if n == nil {
 		return nil
 	}
-	if n.textField {
-		if name == "Text" {
-			return n.text
-		}
-		return nil
-	}
 	v, _ := n.fields.Get(name)
 	return v
-}
-
-// fieldList returns the fields of n, making the field list of a text struct.
-func (n *Node) fieldList() Fields {
-	if n.textField {
-		return Fields{{Name: "Text", Value: n.text}}
-	}
-	return n.fields
-}
-
-// materialize gives a text struct its field list, before the list is changed.
-func (n *Node) materialize() {
-	if n.textField {
-		n.fields, n.text, n.textField = n.fieldList(), "", false
-	}
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
@@ -506,7 +479,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fieldList() {
+		for _, f := range n.fields {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -611,7 +584,7 @@ func walkFields(n *Node) Fields {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	fields := n.fieldList().sorted()
+	fields := n.fields.sorted()
 	if !n.labeled {
 		return fields
 	}
@@ -733,7 +706,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.fieldList().sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -848,10 +821,6 @@ type rule struct {
 	body   func(p *parser, min int) (*Node, bool)
 	action func(c *actx) any
 	value  shaper // makes the rule's value from the value of its body, without an action
-	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
-	// of that type whose field Text is the matched text, the struct the rule's action makes, made
-	// without it.
-	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// nodeType, if not "", is the named node type the rule's value is converted to, whose kinds
@@ -2152,9 +2121,6 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.textType != "" {
-		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
@@ -2191,7 +2157,6 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(names))
 	}
@@ -2712,29 +2677,20 @@ func (o toperand) value() any {
 	return o.v
 }
 
+// member reads x.name.
 func (c *actx) member(x any, name string) any {
-	return c.memberOperand(x, name).value()
-}
-
-// memberOperand reads x.name, keeping the text of a text struct unboxed.
-func (c *actx) memberOperand(x any, name string) toperand {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
-	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
-		// The text of a text struct, its one field, read without looking the struct up. Work
-		// controls charge the lookup below.
-		return toperand{str: n.text, isStr: true}
-	}
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return toperand{v: int(n.start)}
+			return int(n.start)
 		case "End":
-			return toperand{v: int(n.end)}
+			return int(n.end)
 		case "Value":
-			return toperand{v: c.p.nodeValue(n)}
+			return c.p.nodeValue(n)
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
@@ -2743,19 +2699,13 @@ func (c *actx) memberOperand(x any, name string) toperand {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return toperand{v: unboxValue(v)}
+		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	if n.textField {
-		if c.p.textFieldName(name) {
-			return toperand{str: n.text, isStr: true}
-		}
-		return toperand{}
-	}
 	v, _ := c.p.valueField(n.fields, name)
-	return toperand{v: v}
+	return v
 }
 
 func rtUnary(op string, x any) any {
@@ -3590,7 +3540,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.fieldList().sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
@@ -4346,37 +4296,6 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 		return out.String(), true
 	}
 	return nil, false
-}
-
-// fieldOperand reads x.name as member does, keeping the text of a text struct unboxed.
-func (c *actx) fieldOperand(x any, name string) toperand {
-	return c.memberOperand(x, name)
-}
-
-// compare applies a comparison operator as binary does, comparing two strings without boxing them.
-func (c *actx) compare(op string, l, r toperand) any {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
-			return v
-		}
-	}
-	return c.binary(op, l.value(), r.value())
-}
-
-// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
-// valueField looking it up in the field list {Text}.
-func (p *parser) textFieldName(name string) bool {
-	if !workControlsEnabled || p.control == nil {
-		return name == "Text"
-	}
-	p.stepWork()
-	return p.textEqual("Text", name)
 }
 
 // compareStrings applies the comparison operator op to two strings as stringBinary does.
@@ -5349,8 +5268,6 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// text makes the value of a text struct rule from the rule's range and text.
-	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -6020,7 +5937,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 // declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	var body any
-	if r.nt != 0 && r.action == nil && r.textType == "" {
+	if r.nt != 0 && r.action == nil {
 		body = tfreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
@@ -6147,9 +6064,6 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	if r.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
-	}
-	if r.textType != "" {
-		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -7769,19 +7683,19 @@ var scope15 = []string{}
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"items"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 1, name: "block", scope: []string{"v1"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
-		{id: 2, name: "item", scope: []string{"s", "text", "cs"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 3, name: "children", scope: []string{"s", "b"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 8, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 9, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"items"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 1, name: "block", scope: []string{"v1"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
+		{id: 2, name: "item", scope: []string{"s", "text", "cs"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 3, name: "children", scope: []string{"s", "b"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 8, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 9, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range rules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}
@@ -7814,17 +7728,17 @@ func init() {
 	structFields["Item"] = map[string]bool{"Text": true, "Children": true}
 	typeKinds["Item"] = kindOf("Item", "")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 1, name: "block", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{"indent"}},
-		{id: 2, name: "item", scope: []string{"s"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 3, name: "children", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 1, name: "block", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 0, novalue: true, vars: []string{"indent"}},
+		{id: 2, name: "item", scope: []string{"s"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 3, name: "children", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}

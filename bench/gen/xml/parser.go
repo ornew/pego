@@ -29,15 +29,14 @@ type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
 	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
 	end      int32
-	text     string  // the text of a string node, and the Text field of a text struct
+	text     string  // the text of a string node
 	children []*Node // the elements of a tuple or list
 	fields   Fields  // struct fields and captures
 
-	fresh     bool
-	terminal  bool
-	labeled   bool // the captures in Fields are output (source information)
-	textField bool // a struct whose one field, Text, is text, kept unboxed (see fieldList)
-	box       any  // the value carried by a box
+	fresh    bool
+	terminal bool
+	labeled  bool // the captures in Fields are output (source information)
+	box      any  // the value carried by a box
 }
 
 // Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
@@ -243,20 +242,15 @@ func (c *actx) convert(typ string, v any) any {
 	return n
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
-// struct of a text struct rule.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name.
 type ruleKinds struct {
 	reserved [len(reservedTypes)]*nodeKind
-	text     *nodeKind
 }
 
-func newRuleKinds(rule, textType string) ruleKinds {
+func newRuleKinds(rule string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
-	}
-	if textType != "" {
-		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -468,29 +462,8 @@ func (n *Node) field(name string) any {
 	if n == nil {
 		return nil
 	}
-	if n.textField {
-		if name == "Text" {
-			return n.text
-		}
-		return nil
-	}
 	v, _ := n.fields.Get(name)
 	return v
-}
-
-// fieldList returns the fields of n, making the field list of a text struct.
-func (n *Node) fieldList() Fields {
-	if n.textField {
-		return Fields{{Name: "Text", Value: n.text}}
-	}
-	return n.fields
-}
-
-// materialize gives a text struct its field list, before the list is changed.
-func (n *Node) materialize() {
-	if n.textField {
-		n.fields, n.text, n.textField = n.fieldList(), "", false
-	}
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
@@ -506,7 +479,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fieldList() {
+		for _, f := range n.fields {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -611,7 +584,7 @@ func walkFields(n *Node) Fields {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	fields := n.fieldList().sorted()
+	fields := n.fields.sorted()
 	if !n.labeled {
 		return fields
 	}
@@ -733,7 +706,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.fieldList().sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -848,10 +821,6 @@ type rule struct {
 	body   func(p *parser, min int) (*Node, bool)
 	action func(c *actx) any
 	value  shaper // makes the rule's value from the value of its body, without an action
-	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
-	// of that type whose field Text is the matched text, the struct the rule's action makes, made
-	// without it.
-	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// nodeType, if not "", is the named node type the rule's value is converted to, whose kinds
@@ -2152,9 +2121,6 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.textType != "" {
-		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
@@ -2191,7 +2157,6 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(names))
 	}
@@ -2712,29 +2677,20 @@ func (o toperand) value() any {
 	return o.v
 }
 
+// member reads x.name.
 func (c *actx) member(x any, name string) any {
-	return c.memberOperand(x, name).value()
-}
-
-// memberOperand reads x.name, keeping the text of a text struct unboxed.
-func (c *actx) memberOperand(x any, name string) toperand {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
-	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
-		// The text of a text struct, its one field, read without looking the struct up. Work
-		// controls charge the lookup below.
-		return toperand{str: n.text, isStr: true}
-	}
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return toperand{v: int(n.start)}
+			return int(n.start)
 		case "End":
-			return toperand{v: int(n.end)}
+			return int(n.end)
 		case "Value":
-			return toperand{v: c.p.nodeValue(n)}
+			return c.p.nodeValue(n)
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
@@ -2743,19 +2699,13 @@ func (c *actx) memberOperand(x any, name string) toperand {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return toperand{v: unboxValue(v)}
+		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	if n.textField {
-		if c.p.textFieldName(name) {
-			return toperand{str: n.text, isStr: true}
-		}
-		return toperand{}
-	}
 	v, _ := c.p.valueField(n.fields, name)
-	return toperand{v: v}
+	return v
 }
 
 func rtUnary(op string, x any) any {
@@ -3590,7 +3540,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.fieldList().sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
@@ -4346,37 +4296,6 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 		return out.String(), true
 	}
 	return nil, false
-}
-
-// fieldOperand reads x.name as member does, keeping the text of a text struct unboxed.
-func (c *actx) fieldOperand(x any, name string) toperand {
-	return c.memberOperand(x, name)
-}
-
-// compare applies a comparison operator as binary does, comparing two strings without boxing them.
-func (c *actx) compare(op string, l, r toperand) any {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
-			return v
-		}
-	}
-	return c.binary(op, l.value(), r.value())
-}
-
-// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
-// valueField looking it up in the field list {Text}.
-func (p *parser) textFieldName(name string) bool {
-	if !workControlsEnabled || p.control == nil {
-		return name == "Text"
-	}
-	p.stepWork()
-	return p.textEqual("Text", name)
 }
 
 // compareStrings applies the comparison operator op to two strings as stringBinary does.
@@ -5349,8 +5268,6 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// text makes the value of a text struct rule from the rule's range and text.
-	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -6020,7 +5937,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 // declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	var body any
-	if r.nt != 0 && r.action == nil && r.textType == "" {
+	if r.nt != 0 && r.action == nil {
 		body = tfreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
@@ -6147,9 +6064,6 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	if r.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
-	}
-	if r.textType != "" {
-		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -7389,12 +7303,6 @@ type AttDef struct {
 	Value   *AttValue
 }
 
-// AttValue is the struct type AttValue.
-type AttValue struct {
-	Span
-	Text string
-}
-
 // AttlistDecl is the struct type AttlistDecl.
 type AttlistDecl struct {
 	Span
@@ -7409,35 +7317,11 @@ type Attribute struct {
 	Value *AttValue
 }
 
-// CDSect is the struct type CDSect.
-type CDSect struct {
-	Span
-	Text string
-}
-
-// CharData is the struct type CharData.
-type CharData struct {
-	Span
-	Text string
-}
-
-// CharRef is the struct type CharRef.
-type CharRef struct {
-	Span
-	Text string
-}
-
 // Choice is the struct type Choice.
 type Choice struct {
 	Span
 	Items []Particle
 	Occur *Occurrence
-}
-
-// Comment is the struct type Comment.
-type Comment struct {
-	Span
-	Text string
 }
 
 // Doctype is the struct type Doctype.
@@ -7473,12 +7357,6 @@ type ElementDecl struct {
 	Content ContentSpec
 }
 
-// EncName is the struct type EncName.
-type EncName struct {
-	Span
-	Text string
-}
-
 // EntityDecl is the struct type EntityDecl.
 type EntityDecl struct {
 	Span
@@ -7487,18 +7365,6 @@ type EntityDecl struct {
 	Value      *EntityValue
 	ExternalID *ExternalID
 	NData      *Name
-}
-
-// EntityRef is the struct type EntityRef.
-type EntityRef struct {
-	Span
-	Text string
-}
-
-// EntityValue is the struct type EntityValue.
-type EntityValue struct {
-	Span
-	Text string
 }
 
 // Enumeration is the struct type Enumeration.
@@ -7514,22 +7380,10 @@ type ExternalID struct {
 	System *SystemLiteral
 }
 
-// Keyword is the struct type Keyword.
-type Keyword struct {
-	Span
-	Text string
-}
-
 // Mixed is the struct type Mixed.
 type Mixed struct {
 	Span
 	Names []*Name
-}
-
-// Name is the struct type Name.
-type Name struct {
-	Span
-	Text string
 }
 
 // NameParticle is the struct type NameParticle.
@@ -7537,12 +7391,6 @@ type NameParticle struct {
 	Span
 	Name  *Name
 	Occur *Occurrence
-}
-
-// Nmtoken is the struct type Nmtoken.
-type Nmtoken struct {
-	Span
-	Text string
 }
 
 // NotationDecl is the struct type NotationDecl.
@@ -7558,18 +7406,6 @@ type NotationType struct {
 	Names []*Name
 }
 
-// Occurrence is the struct type Occurrence.
-type Occurrence struct {
-	Span
-	Text string
-}
-
-// PERef is the struct type PERef.
-type PERef struct {
-	Span
-	Text string
-}
-
 // PI is the struct type PI.
 type PI struct {
 	Span
@@ -7577,35 +7413,11 @@ type PI struct {
 	Data   *PIData
 }
 
-// PIData is the struct type PIData.
-type PIData struct {
-	Span
-	Text string
-}
-
-// PubidLiteral is the struct type PubidLiteral.
-type PubidLiteral struct {
-	Span
-	Text string
-}
-
 // Sequence is the struct type Sequence.
 type Sequence struct {
 	Span
 	Items []Particle
 	Occur *Occurrence
-}
-
-// SystemLiteral is the struct type SystemLiteral.
-type SystemLiteral struct {
-	Span
-	Text string
-}
-
-// Version is the struct type Version.
-type Version struct {
-	Span
-	Text string
 }
 
 // XMLDecl is the struct type XMLDecl.
@@ -7616,11 +7428,59 @@ type XMLDecl struct {
 	Standalone *YesNo
 }
 
-// YesNo is the struct type YesNo.
-type YesNo struct {
-	Span
-	Text string
-}
+// AttValue is the node type AttValue = node[string].
+type AttValue struct{ TNode[string] }
+
+// CDSect is the node type CDSect = node[string].
+type CDSect struct{ TNode[string] }
+
+// CharData is the node type CharData = node[string].
+type CharData struct{ TNode[string] }
+
+// CharRef is the node type CharRef = node[string].
+type CharRef struct{ TNode[string] }
+
+// Comment is the node type Comment = node[string].
+type Comment struct{ TNode[string] }
+
+// EncName is the node type EncName = node[string].
+type EncName struct{ TNode[string] }
+
+// EntityRef is the node type EntityRef = node[string].
+type EntityRef struct{ TNode[string] }
+
+// EntityValue is the node type EntityValue = node[string].
+type EntityValue struct{ TNode[string] }
+
+// Keyword is the node type Keyword = node[string].
+type Keyword struct{ TNode[string] }
+
+// Name is the node type Name = node[string].
+type Name struct{ TNode[string] }
+
+// Nmtoken is the node type Nmtoken = node[string].
+type Nmtoken struct{ TNode[string] }
+
+// Occurrence is the node type Occurrence = node[string].
+type Occurrence struct{ TNode[string] }
+
+// PERef is the node type PERef = node[string].
+type PERef struct{ TNode[string] }
+
+// PIData is the node type PIData = node[string].
+type PIData struct{ TNode[string] }
+
+// PubidLiteral is the node type PubidLiteral = node[string].
+type PubidLiteral struct{ TNode[string] }
+
+// SystemLiteral is the node type SystemLiteral = node[string].
+type SystemLiteral struct{ TNode[string] }
+
+// Version is the node type Version = node[string].
+type Version struct{ TNode[string] }
+
+// YesNo is the node type YesNo = node[string].
+type YesNo struct{ TNode[string] }
 
 // AttType is the union type AttType ~ Keyword | Enumeration | NotationType. Error (left by #recover) also implements it.
 type AttType interface{ isAttType() }
@@ -7682,13 +7542,13 @@ func (v *AttDef) tsetFresh(bool)        {}
 func (v *AttDef) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Type":
 		return tback(v.Type), true
 	case "Default":
-		return tptr(v.Default), true
+		return tb1(v.Default), true
 	case "Value":
-		return tptr(v.Value), true
+		return tb2(v.Value), true
 	}
 	return nil, false
 }
@@ -7696,43 +7556,13 @@ func (v *AttDef) tfield(name string) (any, bool) {
 func (v *AttDef) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Type":
 		return tback(v.Type), true
 	case "Default":
-		return tptr(v.Default), true
+		return tb1(v.Default), true
 	case "Value":
-		return tptr(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *AttValue) tname() string         { return "AttValue" }
-func (v *AttValue) ttext() (string, bool) { return "", false }
-func (v *AttValue) tkids() []any          { return nil }
-func (v *AttValue) tstruct() bool         { return true }
-func (v *AttValue) tfresh() bool          { return false }
-func (v *AttValue) tsetFresh(bool)        {}
-func (v *AttValue) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *AttValue) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *AttValue) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb2(v.Value), true
 	}
 	return nil, false
 }
@@ -7746,7 +7576,7 @@ func (v *AttlistDecl) tsetFresh(bool)        {}
 func (v *AttlistDecl) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Defs":
 		return func() any {
 			if v.Defs == nil {
@@ -7765,7 +7595,7 @@ func (v *AttlistDecl) tfield(name string) (any, bool) {
 func (v *AttlistDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Defs":
 		return func() any {
 			if v.Defs == nil {
@@ -7791,9 +7621,9 @@ func (v *Attribute) tsetFresh(bool)        {}
 func (v *Attribute) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Value":
-		return tptr(v.Value), true
+		return tb2(v.Value), true
 	}
 	return nil, false
 }
@@ -7801,99 +7631,9 @@ func (v *Attribute) tfield(name string) (any, bool) {
 func (v *Attribute) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Value":
-		return tptr(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *CDSect) tname() string         { return "CDSect" }
-func (v *CDSect) ttext() (string, bool) { return "", false }
-func (v *CDSect) tkids() []any          { return nil }
-func (v *CDSect) tstruct() bool         { return true }
-func (v *CDSect) tfresh() bool          { return false }
-func (v *CDSect) tsetFresh(bool)        {}
-func (v *CDSect) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *CDSect) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *CDSect) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *CharData) tname() string         { return "CharData" }
-func (v *CharData) ttext() (string, bool) { return "", false }
-func (v *CharData) tkids() []any          { return nil }
-func (v *CharData) tstruct() bool         { return true }
-func (v *CharData) tfresh() bool          { return false }
-func (v *CharData) tsetFresh(bool)        {}
-func (v *CharData) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *CharData) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *CharData) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *CharRef) tname() string         { return "CharRef" }
-func (v *CharRef) ttext() (string, bool) { return "", false }
-func (v *CharRef) tkids() []any          { return nil }
-func (v *CharRef) tstruct() bool         { return true }
-func (v *CharRef) tfresh() bool          { return false }
-func (v *CharRef) tsetFresh(bool)        {}
-func (v *CharRef) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *CharRef) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *CharRef) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb2(v.Value), true
 	}
 	return nil, false
 }
@@ -7918,7 +7658,7 @@ func (v *Choice) tfield(name string) (any, bool) {
 			return tlistOf(kids)
 		}(), true
 	case "Occur":
-		return tptr(v.Occur), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -7938,37 +7678,7 @@ func (v *Choice) tfieldWork(p *tparser, name string) (any, bool) {
 			return p.listField(kids)
 		}(), true
 	case "Occur":
-		return tptr(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *Comment) tname() string         { return "Comment" }
-func (v *Comment) ttext() (string, bool) { return "", false }
-func (v *Comment) tkids() []any          { return nil }
-func (v *Comment) tstruct() bool         { return true }
-func (v *Comment) tfresh() bool          { return false }
-func (v *Comment) tsetFresh(bool)        {}
-func (v *Comment) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Comment) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Comment) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -7982,7 +7692,7 @@ func (v *Doctype) tsetFresh(bool)        {}
 func (v *Doctype) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	case "Subset":
@@ -8003,7 +7713,7 @@ func (v *Doctype) tfield(name string) (any, bool) {
 func (v *Doctype) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	case "Subset":
@@ -8107,7 +7817,7 @@ func (v *Element) tsetFresh(bool)        {}
 func (v *Element) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Attrs":
 		return func() any {
 			if v.Attrs == nil {
@@ -8137,7 +7847,7 @@ func (v *Element) tfield(name string) (any, bool) {
 func (v *Element) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Attrs":
 		return func() any {
 			if v.Attrs == nil {
@@ -8175,7 +7885,7 @@ func (v *ElementDecl) tsetFresh(bool)        {}
 func (v *ElementDecl) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Content":
 		return tback(v.Content), true
 	}
@@ -8185,39 +7895,9 @@ func (v *ElementDecl) tfield(name string) (any, bool) {
 func (v *ElementDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Content":
 		return tback(v.Content), true
-	}
-	return nil, false
-}
-
-func (v *EncName) tname() string         { return "EncName" }
-func (v *EncName) ttext() (string, bool) { return "", false }
-func (v *EncName) tkids() []any          { return nil }
-func (v *EncName) tstruct() bool         { return true }
-func (v *EncName) tfresh() bool          { return false }
-func (v *EncName) tsetFresh(bool)        {}
-func (v *EncName) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *EncName) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *EncName) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8233,13 +7913,13 @@ func (v *EntityDecl) tfield(name string) (any, bool) {
 	case "Parameter":
 		return any(v.Parameter), true
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Value":
-		return tptr(v.Value), true
+		return tb4(v.Value), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	case "NData":
-		return tptr(v.NData), true
+		return tb0(v.NData), true
 	}
 	return nil, false
 }
@@ -8249,73 +7929,13 @@ func (v *EntityDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	case "Parameter":
 		return any(v.Parameter), true
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Value":
-		return tptr(v.Value), true
+		return tb4(v.Value), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	case "NData":
-		return tptr(v.NData), true
-	}
-	return nil, false
-}
-
-func (v *EntityRef) tname() string         { return "EntityRef" }
-func (v *EntityRef) ttext() (string, bool) { return "", false }
-func (v *EntityRef) tkids() []any          { return nil }
-func (v *EntityRef) tstruct() bool         { return true }
-func (v *EntityRef) tfresh() bool          { return false }
-func (v *EntityRef) tsetFresh(bool)        {}
-func (v *EntityRef) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *EntityRef) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *EntityRef) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *EntityValue) tname() string         { return "EntityValue" }
-func (v *EntityValue) ttext() (string, bool) { return "", false }
-func (v *EntityValue) tkids() []any          { return nil }
-func (v *EntityValue) tstruct() bool         { return true }
-func (v *EntityValue) tfresh() bool          { return false }
-func (v *EntityValue) tsetFresh(bool)        {}
-func (v *EntityValue) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *EntityValue) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *EntityValue) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb0(v.NData), true
 	}
 	return nil, false
 }
@@ -8335,7 +7955,7 @@ func (v *Enumeration) tfield(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-				kids[i] = tptr(x)
+				kids[i] = tb5(x)
 			}
 			return tlistOf(kids)
 		}(), true
@@ -8353,7 +7973,7 @@ func (v *Enumeration) tfieldWork(p *tparser, name string) (any, bool) {
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
 				p.stepWork()
-				kids[i] = tptr(x)
+				kids[i] = tb5(x)
 			}
 			return p.listField(kids)
 		}(), true
@@ -8370,9 +7990,9 @@ func (v *ExternalID) tsetFresh(bool)        {}
 func (v *ExternalID) tfield(name string) (any, bool) {
 	switch name {
 	case "Public":
-		return tptr(v.Public), true
+		return tb6(v.Public), true
 	case "System":
-		return tptr(v.System), true
+		return tb7(v.System), true
 	}
 	return nil, false
 }
@@ -8380,39 +8000,9 @@ func (v *ExternalID) tfield(name string) (any, bool) {
 func (v *ExternalID) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Public":
-		return tptr(v.Public), true
+		return tb6(v.Public), true
 	case "System":
-		return tptr(v.System), true
-	}
-	return nil, false
-}
-
-func (v *Keyword) tname() string         { return "Keyword" }
-func (v *Keyword) ttext() (string, bool) { return "", false }
-func (v *Keyword) tkids() []any          { return nil }
-func (v *Keyword) tstruct() bool         { return true }
-func (v *Keyword) tfresh() bool          { return false }
-func (v *Keyword) tsetFresh(bool)        {}
-func (v *Keyword) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Keyword) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Keyword) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb7(v.System), true
 	}
 	return nil, false
 }
@@ -8432,7 +8022,7 @@ func (v *Mixed) tfield(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				kids[i] = tptr(x)
+				kids[i] = tb0(x)
 			}
 			return tlistOf(kids)
 		}(), true
@@ -8450,40 +8040,10 @@ func (v *Mixed) tfieldWork(p *tparser, name string) (any, bool) {
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
 				p.stepWork()
-				kids[i] = tptr(x)
+				kids[i] = tb0(x)
 			}
 			return p.listField(kids)
 		}(), true
-	}
-	return nil, false
-}
-
-func (v *Name) tname() string         { return "Name" }
-func (v *Name) ttext() (string, bool) { return "", false }
-func (v *Name) tkids() []any          { return nil }
-func (v *Name) tstruct() bool         { return true }
-func (v *Name) tfresh() bool          { return false }
-func (v *Name) tsetFresh(bool)        {}
-func (v *Name) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Name) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Name) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8497,9 +8057,9 @@ func (v *NameParticle) tsetFresh(bool)        {}
 func (v *NameParticle) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Occur":
-		return tptr(v.Occur), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -8507,39 +8067,9 @@ func (v *NameParticle) tfield(name string) (any, bool) {
 func (v *NameParticle) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "Occur":
-		return tptr(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *Nmtoken) tname() string         { return "Nmtoken" }
-func (v *Nmtoken) ttext() (string, bool) { return "", false }
-func (v *Nmtoken) tkids() []any          { return nil }
-func (v *Nmtoken) tstruct() bool         { return true }
-func (v *Nmtoken) tfresh() bool          { return false }
-func (v *Nmtoken) tsetFresh(bool)        {}
-func (v *Nmtoken) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Nmtoken) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Nmtoken) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -8553,7 +8083,7 @@ func (v *NotationDecl) tsetFresh(bool)        {}
 func (v *NotationDecl) tfield(name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	}
@@ -8563,7 +8093,7 @@ func (v *NotationDecl) tfield(name string) (any, bool) {
 func (v *NotationDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Name":
-		return tptr(v.Name), true
+		return tb0(v.Name), true
 	case "ExternalID":
 		return tptr(v.ExternalID), true
 	}
@@ -8585,7 +8115,7 @@ func (v *NotationType) tfield(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				kids[i] = tptr(x)
+				kids[i] = tb0(x)
 			}
 			return tlistOf(kids)
 		}(), true
@@ -8603,70 +8133,10 @@ func (v *NotationType) tfieldWork(p *tparser, name string) (any, bool) {
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
 				p.stepWork()
-				kids[i] = tptr(x)
+				kids[i] = tb0(x)
 			}
 			return p.listField(kids)
 		}(), true
-	}
-	return nil, false
-}
-
-func (v *Occurrence) tname() string         { return "Occurrence" }
-func (v *Occurrence) ttext() (string, bool) { return "", false }
-func (v *Occurrence) tkids() []any          { return nil }
-func (v *Occurrence) tstruct() bool         { return true }
-func (v *Occurrence) tfresh() bool          { return false }
-func (v *Occurrence) tsetFresh(bool)        {}
-func (v *Occurrence) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Occurrence) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Occurrence) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *PERef) tname() string         { return "PERef" }
-func (v *PERef) ttext() (string, bool) { return "", false }
-func (v *PERef) tkids() []any          { return nil }
-func (v *PERef) tstruct() bool         { return true }
-func (v *PERef) tfresh() bool          { return false }
-func (v *PERef) tsetFresh(bool)        {}
-func (v *PERef) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *PERef) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *PERef) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -8680,9 +8150,9 @@ func (v *PI) tsetFresh(bool)        {}
 func (v *PI) tfield(name string) (any, bool) {
 	switch name {
 	case "Target":
-		return tptr(v.Target), true
+		return tb0(v.Target), true
 	case "Data":
-		return tptr(v.Data), true
+		return tb8(v.Data), true
 	}
 	return nil, false
 }
@@ -8690,69 +8160,9 @@ func (v *PI) tfield(name string) (any, bool) {
 func (v *PI) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Target":
-		return tptr(v.Target), true
+		return tb0(v.Target), true
 	case "Data":
-		return tptr(v.Data), true
-	}
-	return nil, false
-}
-
-func (v *PIData) tname() string         { return "PIData" }
-func (v *PIData) ttext() (string, bool) { return "", false }
-func (v *PIData) tkids() []any          { return nil }
-func (v *PIData) tstruct() bool         { return true }
-func (v *PIData) tfresh() bool          { return false }
-func (v *PIData) tsetFresh(bool)        {}
-func (v *PIData) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *PIData) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *PIData) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *PubidLiteral) tname() string         { return "PubidLiteral" }
-func (v *PubidLiteral) ttext() (string, bool) { return "", false }
-func (v *PubidLiteral) tkids() []any          { return nil }
-func (v *PubidLiteral) tstruct() bool         { return true }
-func (v *PubidLiteral) tfresh() bool          { return false }
-func (v *PubidLiteral) tsetFresh(bool)        {}
-func (v *PubidLiteral) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *PubidLiteral) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *PubidLiteral) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb8(v.Data), true
 	}
 	return nil, false
 }
@@ -8777,7 +8187,7 @@ func (v *Sequence) tfield(name string) (any, bool) {
 			return tlistOf(kids)
 		}(), true
 	case "Occur":
-		return tptr(v.Occur), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -8797,67 +8207,7 @@ func (v *Sequence) tfieldWork(p *tparser, name string) (any, bool) {
 			return p.listField(kids)
 		}(), true
 	case "Occur":
-		return tptr(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *SystemLiteral) tname() string         { return "SystemLiteral" }
-func (v *SystemLiteral) ttext() (string, bool) { return "", false }
-func (v *SystemLiteral) tkids() []any          { return nil }
-func (v *SystemLiteral) tstruct() bool         { return true }
-func (v *SystemLiteral) tfresh() bool          { return false }
-func (v *SystemLiteral) tsetFresh(bool)        {}
-func (v *SystemLiteral) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *SystemLiteral) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *SystemLiteral) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Version) tname() string         { return "Version" }
-func (v *Version) ttext() (string, bool) { return "", false }
-func (v *Version) tkids() []any          { return nil }
-func (v *Version) tstruct() bool         { return true }
-func (v *Version) tfresh() bool          { return false }
-func (v *Version) tsetFresh(bool)        {}
-func (v *Version) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Version) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Version) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+		return tb3(v.Occur), true
 	}
 	return nil, false
 }
@@ -8871,11 +8221,11 @@ func (v *XMLDecl) tsetFresh(bool)        {}
 func (v *XMLDecl) tfield(name string) (any, bool) {
 	switch name {
 	case "Version":
-		return tptr(v.Version), true
+		return tb9(v.Version), true
 	case "Encoding":
-		return tptr(v.Encoding), true
+		return tb10(v.Encoding), true
 	case "Standalone":
-		return tptr(v.Standalone), true
+		return tb11(v.Standalone), true
 	}
 	return nil, false
 }
@@ -8883,43 +8233,97 @@ func (v *XMLDecl) tfield(name string) (any, bool) {
 func (v *XMLDecl) tfieldWork(p *tparser, name string) (any, bool) {
 	switch name {
 	case "Version":
-		return tptr(v.Version), true
+		return tb9(v.Version), true
 	case "Encoding":
-		return tptr(v.Encoding), true
+		return tb10(v.Encoding), true
 	case "Standalone":
-		return tptr(v.Standalone), true
+		return tb11(v.Standalone), true
 	}
 	return nil, false
 }
 
-func (v *YesNo) tname() string         { return "YesNo" }
-func (v *YesNo) ttext() (string, bool) { return "", false }
-func (v *YesNo) tkids() []any          { return nil }
-func (v *YesNo) tstruct() bool         { return true }
-func (v *YesNo) tfresh() bool          { return false }
-func (v *YesNo) tsetFresh(bool)        {}
-func (v *YesNo) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+func tb0(v *Name) any {
+	if v == nil {
+		return nil
 	}
-	return nil, false
+	return tsetNodeType(tback(&v.TNode), 10)
 }
 
-func (v *YesNo) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
+func tb1(v *Keyword) any {
+	if v == nil {
+		return nil
 	}
-	return "", false
+	return tsetNodeType(tback(&v.TNode), 9)
 }
 
-func (v *YesNo) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
+func tb2(v *AttValue) any {
+	if v == nil {
+		return nil
 	}
-	return nil, false
+	return tsetNodeType(tback(&v.TNode), 1)
+}
+
+func tb3(v *Occurrence) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 12)
+}
+
+func tb4(v *EntityValue) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 8)
+}
+
+func tb5(v *Nmtoken) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 11)
+}
+
+func tb6(v *PubidLiteral) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 15)
+}
+
+func tb7(v *SystemLiteral) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 16)
+}
+
+func tb8(v *PIData) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 14)
+}
+
+func tb9(v *Version) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 17)
+}
+
+func tb10(v *EncName) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 6)
+}
+
+func tb11(v *YesNo) any {
+	if v == nil {
+		return nil
+	}
+	return tsetNodeType(tback(&v.TNode), 18)
 }
 
 func astNode(v any) *Node { n, _ := v.(*Node); return n }
@@ -9019,162 +8423,78 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
-	trules[5].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tVersion)
-		*v = Version{Span: Span{start, end}, Text: text}
-		return v
+	tnodeTypeNames = []string{"", "AttValue", "CDSect", "CharData", "CharRef", "Comment", "EncName", "EntityRef", "EntityValue", "Keyword", "Name", "Nmtoken", "Occurrence", "PERef", "PIData", "PubidLiteral", "SystemLiteral", "Version", "YesNo"}
+	tnamedPub = func(a any, x tval) any {
+		s, _ := a.(*tslabs)
+		if s == nil {
+			s = &tslabs{}
+		}
+		switch x.tname() {
+		case "AttValue":
+			return tv22(s, x)
+		case "CDSect":
+			return tv26(s, x)
+		case "CharData":
+			return tv24(s, x)
+		case "CharRef":
+			return tv28(s, x)
+		case "Comment":
+			return tv9(s, x)
+		case "EncName":
+			return tv4(s, x)
+		case "EntityRef":
+			return tv29(s, x)
+		case "EntityValue":
+			return tv20(s, x)
+		case "Keyword":
+			return tv17(s, x)
+		case "Name":
+			return tv30(s, x)
+		case "Nmtoken":
+			return tv32(s, x)
+		case "Occurrence":
+			return tv18(s, x)
+		case "PERef":
+			return tv12(s, x)
+		case "PIData":
+			return tv10(s, x)
+		case "PubidLiteral":
+			return tv16(s, x)
+		case "SystemLiteral":
+			return tv14(s, x)
+		case "Version":
+			return tv2(s, x)
+		case "YesNo":
+			return tv6(s, x)
+		}
+		return nil
 	}
-	trules[7].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tEncName)
-		*v = EncName{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[9].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tYesNo)
-		*v = YesNo{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[12].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tComment)
-		*v = Comment{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[14].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tPIData)
-		*v = PIData{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[18].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tPERef)
-		*v = PERef{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[23].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tSystemLiteral)
-		*v = SystemLiteral{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[24].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tSystemLiteral)
-		*v = SystemLiteral{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[26].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tPubidLiteral)
-		*v = PubidLiteral{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[27].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tPubidLiteral)
-		*v = PubidLiteral{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[30].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tKeyword)
-		*v = Keyword{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[31].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tKeyword)
-		*v = Keyword{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[37].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tOccurrence)
-		*v = Occurrence{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[40].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tKeyword)
-		*v = Keyword{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[41].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tKeyword)
-		*v = Keyword{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[43].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tKeyword)
-		*v = Keyword{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[50].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tEntityValue)
-		*v = EntityValue{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[51].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tEntityValue)
-		*v = EntityValue{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[58].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tAttValue)
-		*v = AttValue{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[59].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tAttValue)
-		*v = AttValue{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[63].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tCharData)
-		*v = CharData{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[65].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tCDSect)
-		*v = CDSect{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[67].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tCharRef)
-		*v = CharRef{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[68].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tEntityRef)
-		*v = EntityRef{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[69].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tName)
-		*v = Name{Span: Span{start, end}, Text: text}
-		return v
-	}
-	trules[71].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tNmtoken)
-		*v = Nmtoken{Span: Span{start, end}, Text: text}
-		return v
-	}
+	trules[5].nt = 17
+	trules[7].nt = 6
+	trules[9].nt = 18
+	trules[12].nt = 5
+	trules[14].nt = 14
+	trules[18].nt = 13
+	trules[23].nt = 16
+	trules[24].nt = 16
+	trules[26].nt = 15
+	trules[27].nt = 15
+	trules[30].nt = 9
+	trules[31].nt = 9
+	trules[37].nt = 12
+	trules[40].nt = 9
+	trules[41].nt = 9
+	trules[43].nt = 9
+	trules[50].nt = 8
+	trules[51].nt = 8
+	trules[58].nt = 1
+	trules[59].nt = 1
+	trules[63].nt = 3
+	trules[65].nt = 2
+	trules[67].nt = 4
+	trules[68].nt = 7
+	trules[69].nt = 10
+	trules[71].nt = 11
 }
 
 // tmk_AttDef makes a AttDef in an action (newStruct in the typed runtime).
@@ -9183,13 +8503,13 @@ func tmk_AttDef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tAttDef)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
-	v.Type = tAs[AttType](tpub(f1))
+	v.Type = tAs[AttType](tpubIn(a, f1))
 	c.p.stepWork()
-	v.Default = tAs[*Keyword](f2)
+	v.Default = tv17(a, f2)
 	c.p.stepWork()
-	v.Value = tAs[*AttValue](f3)
+	v.Value = tv22(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9206,30 +8526,13 @@ func tmk_AttDef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_AttValue makes a AttValue in an action (newStruct in the typed runtime).
-func tmk_AttValue(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tAttValue)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_AttlistDecl makes a AttlistDecl in an action (newStruct in the typed runtime).
 func tmk_AttlistDecl(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tAttlistDecl)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
 	v.Defs = tl0(a, f1)
 	if final {
@@ -9250,9 +8553,9 @@ func tmk_Attribute(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tAttribute)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
-	v.Value = tAs[*AttValue](f1)
+	v.Value = tv22(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9262,57 +8565,6 @@ func tmk_Attribute(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_CDSect makes a CDSect in an action (newStruct in the typed runtime).
-func tmk_CDSect(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tCDSect)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_CharData makes a CharData in an action (newStruct in the typed runtime).
-func tmk_CharData(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tCharData)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_CharRef makes a CharRef in an action (newStruct in the typed runtime).
-func tmk_CharRef(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tCharRef)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9324,7 +8576,7 @@ func tmk_Choice(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	v.Items = tl1(a, f0)
 	c.p.stepWork()
-	v.Occur = tAs[*Occurrence](f1)
+	v.Occur = tv18(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9337,30 +8589,13 @@ func tmk_Choice(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_Comment makes a Comment in an action (newStruct in the typed runtime).
-func tmk_Comment(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tComment)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_Doctype makes a Doctype in an action (newStruct in the typed runtime).
 func tmk_Doctype(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDoctype)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
 	v.ExternalID = tAs[*ExternalID](f1)
 	c.p.stepWork()
@@ -9418,7 +8653,7 @@ func tmk_Element(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tElement)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
 	v.Attrs = tl4(a, f1)
 	c.p.stepWork()
@@ -9443,9 +8678,9 @@ func tmk_ElementDecl(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tElementDecl)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
-	v.Content = tAs[ContentSpec](tpub(f1))
+	v.Content = tAs[ContentSpec](tpubIn(a, f1))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9458,23 +8693,6 @@ func tmk_ElementDecl(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_EncName makes a EncName in an action (newStruct in the typed runtime).
-func tmk_EncName(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tEncName)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_EntityDecl makes a EntityDecl in an action (newStruct in the typed runtime).
 func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	c.p.stepWork()
@@ -9483,13 +8701,13 @@ func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 	c.p.stepWork()
 	v.Parameter = astBool(f0)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f1)
+	v.Name = tv30(a, f1)
 	c.p.stepWork()
-	v.Value = tAs[*EntityValue](f2)
+	v.Value = tv20(a, f2)
 	c.p.stepWork()
 	v.ExternalID = tAs[*ExternalID](f3)
 	c.p.stepWork()
-	v.NData = tAs[*Name](f4)
+	v.NData = tv30(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9505,40 +8723,6 @@ func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 	spanOf(f3, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f4, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_EntityRef makes a EntityRef in an action (newStruct in the typed runtime).
-func tmk_EntityRef(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tEntityRef)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_EntityValue makes a EntityValue in an action (newStruct in the typed runtime).
-func tmk_EntityValue(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tEntityValue)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9565,9 +8749,9 @@ func tmk_ExternalID(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tExternalID)
 	c.p.stepWork()
-	v.Public = tAs[*PubidLiteral](f0)
+	v.Public = tv16(a, f0)
 	c.p.stepWork()
-	v.System = tAs[*SystemLiteral](f1)
+	v.System = tv14(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9577,23 +8761,6 @@ func tmk_ExternalID(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_Keyword makes a Keyword in an action (newStruct in the typed runtime).
-func tmk_Keyword(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tKeyword)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9614,32 +8781,15 @@ func tmk_Mixed(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_Name makes a Name in an action (newStruct in the typed runtime).
-func tmk_Name(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tName)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_NameParticle makes a NameParticle in an action (newStruct in the typed runtime).
 func tmk_NameParticle(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNameParticle)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
-	v.Occur = tAs[*Occurrence](f1)
+	v.Occur = tv18(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9652,30 +8802,13 @@ func tmk_NameParticle(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_Nmtoken makes a Nmtoken in an action (newStruct in the typed runtime).
-func tmk_Nmtoken(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tNmtoken)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_NotationDecl makes a NotationDecl in an action (newStruct in the typed runtime).
 func tmk_NotationDecl(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNotationDecl)
 	c.p.stepWork()
-	v.Name = tAs[*Name](f0)
+	v.Name = tv30(a, f0)
 	c.p.stepWork()
 	v.ExternalID = tAs[*ExternalID](f1)
 	if final {
@@ -9707,49 +8840,15 @@ func tmk_NotationType(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_Occurrence makes a Occurrence in an action (newStruct in the typed runtime).
-func tmk_Occurrence(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tOccurrence)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_PERef makes a PERef in an action (newStruct in the typed runtime).
-func tmk_PERef(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tPERef)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_PI makes a PI in an action (newStruct in the typed runtime).
 func tmk_PI(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPI)
 	c.p.stepWork()
-	v.Target = tAs[*Name](f0)
+	v.Target = tv30(a, f0)
 	c.p.stepWork()
-	v.Data = tAs[*PIData](f1)
+	v.Data = tv10(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9759,40 +8858,6 @@ func tmk_PI(c *tctx, final bool, f0 any, f1 any) any {
 	spanOf(f0, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f1, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_PIData makes a PIData in an action (newStruct in the typed runtime).
-func tmk_PIData(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tPIData)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_PubidLiteral makes a PubidLiteral in an action (newStruct in the typed runtime).
-func tmk_PubidLiteral(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tPubidLiteral)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9804,7 +8869,7 @@ func tmk_Sequence(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	v.Items = tl1(a, f0)
 	c.p.stepWork()
-	v.Occur = tAs[*Occurrence](f1)
+	v.Occur = tv18(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9817,51 +8882,17 @@ func tmk_Sequence(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_SystemLiteral makes a SystemLiteral in an action (newStruct in the typed runtime).
-func tmk_SystemLiteral(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tSystemLiteral)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_Version makes a Version in an action (newStruct in the typed runtime).
-func tmk_Version(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tVersion)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_XMLDecl makes a XMLDecl in an action (newStruct in the typed runtime).
 func tmk_XMLDecl(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tXMLDecl)
 	c.p.stepWork()
-	v.Version = tAs[*Version](f0)
+	v.Version = tv2(a, f0)
 	c.p.stepWork()
-	v.Encoding = tAs[*EncName](f1)
+	v.Encoding = tv4(a, f1)
 	c.p.stepWork()
-	v.Standalone = tAs[*YesNo](f2)
+	v.Standalone = tv6(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9873,23 +8904,6 @@ func tmk_XMLDecl(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	spanOf(f1, &first, &start, &end)
 	c.p.stepWork()
 	spanOf(f2, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
-// tmk_YesNo makes a YesNo in an action (newStruct in the typed runtime).
-func tmk_YesNo(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tYesNo)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
@@ -9922,7 +8936,7 @@ func tl1(a *tslabs, v any) []Particle {
 	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[Particle](tpub(c))
+		out[i] = tAs[Particle](tpubIn(a, c))
 	}
 	return out
 }
@@ -9939,7 +8953,7 @@ func tl2(a *tslabs, v any) []Decl {
 	out := astSlice(&a.tl2Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[Decl](tpub(c))
+		out[i] = tAs[Decl](tpubIn(a, c))
 	}
 	return out
 }
@@ -9956,7 +8970,7 @@ func tl3(a *tslabs, v any) []Misc {
 	out := astSlice(&a.tl3Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[Misc](tpub(c))
+		out[i] = tAs[Misc](tpubIn(a, c))
 	}
 	return out
 }
@@ -9990,7 +9004,7 @@ func tl5(a *tslabs, v any) []Content {
 	out := astSlice(&a.tl5Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[Content](tpub(c))
+		out[i] = tAs[Content](tpubIn(a, c))
 	}
 	return out
 }
@@ -10007,7 +9021,7 @@ func tl6(a *tslabs, v any) []*Nmtoken {
 	out := astSlice(&a.tl6Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[*Nmtoken](c)
+		out[i] = tv32(a, c)
 	}
 	return out
 }
@@ -10024,7 +9038,7 @@ func tl7(a *tslabs, v any) []*Name {
 	out := astSlice(&a.tl7Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tAs[*Name](c)
+		out[i] = tv30(a, c)
 	}
 	return out
 }
@@ -10036,85 +9050,481 @@ func tv0(a *tslabs, v any) []Misc {
 
 func tv1(a *tslabs, v any) *Version {
 	a.stepWork()
-	return tAs[*Version](v)
+	return tv2(a, v)
 }
 
-func tv2(a *tslabs, v any) *EncName {
+func tv2(a *tslabs, v any) *Version {
 	a.stepWork()
-	return tAs[*EncName](v)
+	x := asTval(v)
+	if x == nil || x.tname() != "Version" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Version)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tVersion)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv3(a *tslabs, v any) *YesNo {
+func tv3(a *tslabs, v any) *EncName {
 	a.stepWork()
-	return tAs[*YesNo](v)
+	return tv4(a, v)
 }
 
-func tv4(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+func tv4(a *tslabs, v any) *EncName {
 	a.stepWork()
-	return tv17(a, v)
+	x := asTval(v)
+	if x == nil || x.tname() != "EncName" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*EncName)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tEncName)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv5(a *tslabs, v any) *Comment {
+func tv5(a *tslabs, v any) *YesNo {
 	a.stepWork()
-	return tAs[*Comment](v)
+	return tv6(a, v)
 }
 
-func tv6(a *tslabs, v any) []Decl {
+func tv6(a *tslabs, v any) *YesNo {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "YesNo" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*YesNo)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tYesNo)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv7(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+	a.stepWork()
+	return tv35(a, v)
+}
+
+func tv8(a *tslabs, v any) *Comment {
+	a.stepWork()
+	return tv9(a, v)
+}
+
+func tv9(a *tslabs, v any) *Comment {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "Comment" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Comment)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tComment)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv10(a *tslabs, v any) *PIData {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "PIData" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*PIData)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tPIData)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv11(a *tslabs, v any) []Decl {
 	a.stepWork()
 	return tl2(a, v)
 }
 
-func tv7(a *tslabs, v any) *SystemLiteral {
+func tv12(a *tslabs, v any) *PERef {
 	a.stepWork()
-	return tAs[*SystemLiteral](v)
+	x := asTval(v)
+	if x == nil || x.tname() != "PERef" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*PERef)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tPERef)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv8(a *tslabs, v any) *PubidLiteral {
+func tv13(a *tslabs, v any) *SystemLiteral {
 	a.stepWork()
-	return tAs[*PubidLiteral](v)
+	return tv14(a, v)
 }
 
-func tv9(a *tslabs, v any) *EntityValue {
+func tv14(a *tslabs, v any) *SystemLiteral {
 	a.stepWork()
-	return tAs[*EntityValue](v)
+	x := asTval(v)
+	if x == nil || x.tname() != "SystemLiteral" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*SystemLiteral)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tSystemLiteral)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv10(a *tslabs, v any) *AttValue {
+func tv15(a *tslabs, v any) *PubidLiteral {
 	a.stepWork()
-	return tAs[*AttValue](v)
+	return tv16(a, v)
 }
 
-func tv11(a *tslabs, v any) *TNode[[]Content] {
+func tv16(a *tslabs, v any) *PubidLiteral {
 	a.stepWork()
-	return tv18(a, v)
+	x := asTval(v)
+	if x == nil || x.tname() != "PubidLiteral" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*PubidLiteral)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tPubidLiteral)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv12(a *tslabs, v any) *CDSect {
+func tv17(a *tslabs, v any) *Keyword {
 	a.stepWork()
-	return tAs[*CDSect](v)
+	x := asTval(v)
+	if x == nil || x.tname() != "Keyword" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Keyword)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tKeyword)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv13(a *tslabs, v any) any {
+func tv18(a *tslabs, v any) *Occurrence {
 	a.stepWork()
-	return tpub(v)
+	x := asTval(v)
+	if x == nil || x.tname() != "Occurrence" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Occurrence)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tOccurrence)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv14(a *tslabs, v any) *TNode[string] {
+func tv19(a *tslabs, v any) *EntityValue {
+	a.stepWork()
+	return tv20(a, v)
+}
+
+func tv20(a *tslabs, v any) *EntityValue {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "EntityValue" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*EntityValue)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tEntityValue)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv21(a *tslabs, v any) *AttValue {
+	a.stepWork()
+	return tv22(a, v)
+}
+
+func tv22(a *tslabs, v any) *AttValue {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "AttValue" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*AttValue)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tAttValue)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv23(a *tslabs, v any) *TNode[[]Content] {
+	a.stepWork()
+	return tv36(a, v)
+}
+
+func tv24(a *tslabs, v any) *CharData {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "CharData" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*CharData)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tCharData)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv25(a *tslabs, v any) *CDSect {
+	a.stepWork()
+	return tv26(a, v)
+}
+
+func tv26(a *tslabs, v any) *CDSect {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "CDSect" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*CDSect)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tCDSect)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv27(a *tslabs, v any) any {
+	a.stepWork()
+	return tpubIn(a, v)
+}
+
+func tv28(a *tslabs, v any) *CharRef {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "CharRef" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*CharRef)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tCharRef)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv29(a *tslabs, v any) *EntityRef {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "EntityRef" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*EntityRef)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tEntityRef)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv30(a *tslabs, v any) *Name {
+	a.stepWork()
+	x := asTval(v)
+	if x == nil || x.tname() != "Name" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Name)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tName)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
+}
+
+func tv31(a *tslabs, v any) *TNode[string] {
 	a.stepWork()
 	return tpubMatch(v)
 }
 
-func tv15(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv32(a *tslabs, v any) *Nmtoken {
 	a.stepWork()
-	return tv19(a, v)
+	x := asTval(v)
+	if x == nil || x.tname() != "Nmtoken" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Nmtoken)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tNmtoken)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
-func tv16(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv33(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
-	return tv19(a, v)
+	return tv37(a, v)
 }
 
-func tv17(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+func tv34(a *tslabs, v any) *TNode[[]*TNode[string]] {
+	a.stepWork()
+	return tv37(a, v)
+}
+
+func tv35(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -10122,7 +9532,7 @@ func tv17(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[strin
 			return nil
 		}
 		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]]{Span: x.Span}
-		out.Value = tv20(a, x)
+		out.Value = tv38(a, x)
 		return out
 	case *terror:
 		return nil
@@ -10134,13 +9544,13 @@ func tv17(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[strin
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]]{Span: Span{s, e}}
-		out.Value = tv20(a, text)
+		out.Value = tv38(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv18(a *tslabs, v any) *TNode[[]Content] {
+func tv36(a *tslabs, v any) *TNode[[]Content] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -10166,7 +9576,7 @@ func tv18(a *tslabs, v any) *TNode[[]Content] {
 	return nil
 }
 
-func tv19(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv37(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -10192,16 +9602,16 @@ func tv19(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	return nil
 }
 
-func tv20(a *tslabs, v any) Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]] {
+func tv38(a *tslabs, v any) Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]] {
 	a.stepWork()
 	var out Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv16(a, tkid(x.kids, 0))
+	out.E0 = tv34(a, tkid(x.kids, 0))
 	out.E1 = tpubMatch(tkid(x.kids, 1))
-	out.E2 = tv16(a, tkid(x.kids, 2))
+	out.E2 = tv34(a, tkid(x.kids, 2))
 	return out
 }
 
@@ -10224,42 +9634,44 @@ func tl8(a *tslabs, v any) []*TNode[string] {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control        *workControl
-	tAttDef        astChunk[AttDef]
+	control       *workControl
+	tAttDef       astChunk[AttDef]
+	tAttlistDecl  astChunk[AttlistDecl]
+	tAttribute    astChunk[Attribute]
+	tChoice       astChunk[Choice]
+	tDoctype      astChunk[Doctype]
+	tDocument     astChunk[Document]
+	tElement      astChunk[Element]
+	tElementDecl  astChunk[ElementDecl]
+	tEntityDecl   astChunk[EntityDecl]
+	tEnumeration  astChunk[Enumeration]
+	tExternalID   astChunk[ExternalID]
+	tMixed        astChunk[Mixed]
+	tNameParticle astChunk[NameParticle]
+	tNotationDecl astChunk[NotationDecl]
+	tNotationType astChunk[NotationType]
+	tPI           astChunk[PI]
+	tSequence     astChunk[Sequence]
+	tXMLDecl      astChunk[XMLDecl]
+	// named holds the public forms of the nodes of named node types by their values.
+	named          map[any]any
 	tAttValue      astChunk[AttValue]
-	tAttlistDecl   astChunk[AttlistDecl]
-	tAttribute     astChunk[Attribute]
 	tCDSect        astChunk[CDSect]
 	tCharData      astChunk[CharData]
 	tCharRef       astChunk[CharRef]
-	tChoice        astChunk[Choice]
 	tComment       astChunk[Comment]
-	tDoctype       astChunk[Doctype]
-	tDocument      astChunk[Document]
-	tElement       astChunk[Element]
-	tElementDecl   astChunk[ElementDecl]
 	tEncName       astChunk[EncName]
-	tEntityDecl    astChunk[EntityDecl]
 	tEntityRef     astChunk[EntityRef]
 	tEntityValue   astChunk[EntityValue]
-	tEnumeration   astChunk[Enumeration]
-	tExternalID    astChunk[ExternalID]
 	tKeyword       astChunk[Keyword]
-	tMixed         astChunk[Mixed]
 	tName          astChunk[Name]
-	tNameParticle  astChunk[NameParticle]
 	tNmtoken       astChunk[Nmtoken]
-	tNotationDecl  astChunk[NotationDecl]
-	tNotationType  astChunk[NotationType]
 	tOccurrence    astChunk[Occurrence]
 	tPERef         astChunk[PERef]
-	tPI            astChunk[PI]
 	tPIData        astChunk[PIData]
 	tPubidLiteral  astChunk[PubidLiteral]
-	tSequence      astChunk[Sequence]
 	tSystemLiteral astChunk[SystemLiteral]
 	tVersion       astChunk[Version]
-	tXMLDecl       astChunk[XMLDecl]
 	tYesNo         astChunk[YesNo]
 	tl0Chunk       astChunk[*AttDef]
 	tl1Chunk       astChunk[Particle]
@@ -10387,7 +9799,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[1], input, o, a, func(v any) []Misc { return tv0(a, v) })
 	case "misc":
 		a := &tslabs{}
-		return tparseResolved(trules[2], input, o, a, func(v any) Misc { return tAs[Misc](tpub(v)) })
+		return tparseResolved(trules[2], input, o, a, func(v any) Misc { return tAs[Misc](tpubIn(a, v)) })
 	case "xml_decl":
 		a := &tslabs{}
 		return tparseResolved(trules[3], input, o, a, func(v any) *XMLDecl { return tAs[*XMLDecl](v) })
@@ -10396,48 +9808,48 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[4], input, o, a, func(v any) *Version { return tv1(a, v) })
 	case "version_num":
 		a := &tslabs{}
-		return tparseResolved(trules[5], input, o, a, func(v any) *Version { return tAs[*Version](v) })
+		return tparseResolved(trules[5], input, o, a, func(v any) *Version { return tv2(a, v) })
 	case "encoding_decl":
 		a := &tslabs{}
-		return tparseResolved(trules[6], input, o, a, func(v any) *EncName { return tv2(a, v) })
+		return tparseResolved(trules[6], input, o, a, func(v any) *EncName { return tv3(a, v) })
 	case "enc_name":
 		a := &tslabs{}
-		return tparseResolved(trules[7], input, o, a, func(v any) *EncName { return tAs[*EncName](v) })
+		return tparseResolved(trules[7], input, o, a, func(v any) *EncName { return tv4(a, v) })
 	case "sd_decl":
 		a := &tslabs{}
-		return tparseResolved(trules[8], input, o, a, func(v any) *YesNo { return tv3(a, v) })
+		return tparseResolved(trules[8], input, o, a, func(v any) *YesNo { return tv5(a, v) })
 	case "yes_no":
 		a := &tslabs{}
-		return tparseResolved(trules[9], input, o, a, func(v any) *YesNo { return tAs[*YesNo](v) })
+		return tparseResolved(trules[9], input, o, a, func(v any) *YesNo { return tv6(a, v) })
 	case "eq":
 		a := &tslabs{}
 		return tparseResolved(trules[10], input, o, a, func(v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
-			return tv4(a, v)
+			return tv7(a, v)
 		})
 	case "comment":
 		a := &tslabs{}
-		return tparseResolved(trules[11], input, o, a, func(v any) *Comment { return tv5(a, v) })
+		return tparseResolved(trules[11], input, o, a, func(v any) *Comment { return tv8(a, v) })
 	case "comment_text":
 		a := &tslabs{}
-		return tparseResolved(trules[12], input, o, a, func(v any) *Comment { return tAs[*Comment](v) })
+		return tparseResolved(trules[12], input, o, a, func(v any) *Comment { return tv9(a, v) })
 	case "pi":
 		a := &tslabs{}
 		return tparseResolved(trules[13], input, o, a, func(v any) *PI { return tAs[*PI](v) })
 	case "pi_data":
 		a := &tslabs{}
-		return tparseResolved(trules[14], input, o, a, func(v any) *PIData { return tAs[*PIData](v) })
+		return tparseResolved(trules[14], input, o, a, func(v any) *PIData { return tv10(a, v) })
 	case "doctype":
 		a := &tslabs{}
 		return tparseResolved(trules[15], input, o, a, func(v any) *Doctype { return tAs[*Doctype](v) })
 	case "int_subset":
 		a := &tslabs{}
-		return tparseResolved(trules[16], input, o, a, func(v any) []Decl { return tv6(a, v) })
+		return tparseResolved(trules[16], input, o, a, func(v any) []Decl { return tv11(a, v) })
 	case "decl":
 		a := &tslabs{}
-		return tparseResolved(trules[17], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+		return tparseResolved(trules[17], input, o, a, func(v any) Decl { return tAs[Decl](tpubIn(a, v)) })
 	case "pe_ref":
 		a := &tslabs{}
-		return tparseResolved(trules[18], input, o, a, func(v any) *PERef { return tAs[*PERef](v) })
+		return tparseResolved(trules[18], input, o, a, func(v any) *PERef { return tv12(a, v) })
 	case "external_id":
 		a := &tslabs{}
 		return tparseResolved(trules[19], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
@@ -10449,34 +9861,34 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[21], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
 	case "system_literal":
 		a := &tslabs{}
-		return tparseResolved(trules[22], input, o, a, func(v any) *SystemLiteral { return tv7(a, v) })
+		return tparseResolved(trules[22], input, o, a, func(v any) *SystemLiteral { return tv13(a, v) })
 	case "system_dq":
 		a := &tslabs{}
-		return tparseResolved(trules[23], input, o, a, func(v any) *SystemLiteral { return tAs[*SystemLiteral](v) })
+		return tparseResolved(trules[23], input, o, a, func(v any) *SystemLiteral { return tv14(a, v) })
 	case "system_sq":
 		a := &tslabs{}
-		return tparseResolved(trules[24], input, o, a, func(v any) *SystemLiteral { return tAs[*SystemLiteral](v) })
+		return tparseResolved(trules[24], input, o, a, func(v any) *SystemLiteral { return tv14(a, v) })
 	case "pubid_literal":
 		a := &tslabs{}
-		return tparseResolved(trules[25], input, o, a, func(v any) *PubidLiteral { return tv8(a, v) })
+		return tparseResolved(trules[25], input, o, a, func(v any) *PubidLiteral { return tv15(a, v) })
 	case "pubid_dq":
 		a := &tslabs{}
-		return tparseResolved(trules[26], input, o, a, func(v any) *PubidLiteral { return tAs[*PubidLiteral](v) })
+		return tparseResolved(trules[26], input, o, a, func(v any) *PubidLiteral { return tv16(a, v) })
 	case "pubid_sq":
 		a := &tslabs{}
-		return tparseResolved(trules[27], input, o, a, func(v any) *PubidLiteral { return tAs[*PubidLiteral](v) })
+		return tparseResolved(trules[27], input, o, a, func(v any) *PubidLiteral { return tv16(a, v) })
 	case "element_decl":
 		a := &tslabs{}
 		return tparseResolved(trules[28], input, o, a, func(v any) *ElementDecl { return tAs[*ElementDecl](v) })
 	case "content_spec":
 		a := &tslabs{}
-		return tparseResolved(trules[29], input, o, a, func(v any) ContentSpec { return tAs[ContentSpec](tpub(v)) })
+		return tparseResolved(trules[29], input, o, a, func(v any) ContentSpec { return tAs[ContentSpec](tpubIn(a, v)) })
 	case "kw_empty":
 		a := &tslabs{}
-		return tparseResolved(trules[30], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+		return tparseResolved(trules[30], input, o, a, func(v any) *Keyword { return tv17(a, v) })
 	case "kw_any":
 		a := &tslabs{}
-		return tparseResolved(trules[31], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+		return tparseResolved(trules[31], input, o, a, func(v any) *Keyword { return tv17(a, v) })
 	case "mixed":
 		a := &tslabs{}
 		return tparseResolved(trules[32], input, o, a, func(v any) *Mixed { return tAs[*Mixed](v) })
@@ -10488,13 +9900,13 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[34], input, o, a, func(v any) *Sequence { return tAs[*Sequence](v) })
 	case "cp":
 		a := &tslabs{}
-		return tparseResolved(trules[35], input, o, a, func(v any) Particle { return tAs[Particle](tpub(v)) })
+		return tparseResolved(trules[35], input, o, a, func(v any) Particle { return tAs[Particle](tpubIn(a, v)) })
 	case "name_particle":
 		a := &tslabs{}
 		return tparseResolved(trules[36], input, o, a, func(v any) *NameParticle { return tAs[*NameParticle](v) })
 	case "occurrence":
 		a := &tslabs{}
-		return tparseResolved(trules[37], input, o, a, func(v any) *Occurrence { return tAs[*Occurrence](v) })
+		return tparseResolved(trules[37], input, o, a, func(v any) *Occurrence { return tv18(a, v) })
 	case "attlist_decl":
 		a := &tslabs{}
 		return tparseResolved(trules[38], input, o, a, func(v any) *AttlistDecl { return tAs[*AttlistDecl](v) })
@@ -10503,16 +9915,16 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[39], input, o, a, func(v any) *AttDef { return tAs[*AttDef](v) })
 	case "kw_required":
 		a := &tslabs{}
-		return tparseResolved(trules[40], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+		return tparseResolved(trules[40], input, o, a, func(v any) *Keyword { return tv17(a, v) })
 	case "kw_fixed":
 		a := &tslabs{}
-		return tparseResolved(trules[41], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+		return tparseResolved(trules[41], input, o, a, func(v any) *Keyword { return tv17(a, v) })
 	case "att_type":
 		a := &tslabs{}
-		return tparseResolved(trules[42], input, o, a, func(v any) AttType { return tAs[AttType](tpub(v)) })
+		return tparseResolved(trules[42], input, o, a, func(v any) AttType { return tAs[AttType](tpubIn(a, v)) })
 	case "kw_type":
 		a := &tslabs{}
-		return tparseResolved(trules[43], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+		return tparseResolved(trules[43], input, o, a, func(v any) *Keyword { return tv17(a, v) })
 	case "notation_type":
 		a := &tslabs{}
 		return tparseResolved(trules[44], input, o, a, func(v any) *NotationType { return tAs[*NotationType](v) })
@@ -10530,13 +9942,13 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[48], input, o, a, func(v any) *EntityDecl { return tAs[*EntityDecl](v) })
 	case "entity_value":
 		a := &tslabs{}
-		return tparseResolved(trules[49], input, o, a, func(v any) *EntityValue { return tv9(a, v) })
+		return tparseResolved(trules[49], input, o, a, func(v any) *EntityValue { return tv19(a, v) })
 	case "entity_dq":
 		a := &tslabs{}
-		return tparseResolved(trules[50], input, o, a, func(v any) *EntityValue { return tAs[*EntityValue](v) })
+		return tparseResolved(trules[50], input, o, a, func(v any) *EntityValue { return tv20(a, v) })
 	case "entity_sq":
 		a := &tslabs{}
-		return tparseResolved(trules[51], input, o, a, func(v any) *EntityValue { return tAs[*EntityValue](v) })
+		return tparseResolved(trules[51], input, o, a, func(v any) *EntityValue { return tv20(a, v) })
 	case "notation_decl":
 		a := &tslabs{}
 		return tparseResolved(trules[52], input, o, a, func(v any) *NotationDecl { return tAs[*NotationDecl](v) })
@@ -10554,358 +9966,58 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[56], input, o, a, func(v any) *Attribute { return tAs[*Attribute](v) })
 	case "att_value":
 		a := &tslabs{}
-		return tparseResolved(trules[57], input, o, a, func(v any) *AttValue { return tv10(a, v) })
+		return tparseResolved(trules[57], input, o, a, func(v any) *AttValue { return tv21(a, v) })
 	case "att_dq":
 		a := &tslabs{}
-		return tparseResolved(trules[58], input, o, a, func(v any) *AttValue { return tAs[*AttValue](v) })
+		return tparseResolved(trules[58], input, o, a, func(v any) *AttValue { return tv22(a, v) })
 	case "att_sq":
 		a := &tslabs{}
-		return tparseResolved(trules[59], input, o, a, func(v any) *AttValue { return tAs[*AttValue](v) })
+		return tparseResolved(trules[59], input, o, a, func(v any) *AttValue { return tv22(a, v) })
 	case "content":
 		a := &tslabs{}
-		return tparseResolved(trules[60], input, o, a, func(v any) *TNode[[]Content] { return tv11(a, v) })
+		return tparseResolved(trules[60], input, o, a, func(v any) *TNode[[]Content] { return tv23(a, v) })
 	case "content_item":
 		a := &tslabs{}
-		return tparseResolved(trules[61], input, o, a, func(v any) Content { return tAs[Content](tpub(v)) })
+		return tparseResolved(trules[61], input, o, a, func(v any) Content { return tAs[Content](tpubIn(a, v)) })
 	case "markup":
 		a := &tslabs{}
-		return tparseResolved(trules[62], input, o, a, func(v any) Content { return tAs[Content](tpub(v)) })
+		return tparseResolved(trules[62], input, o, a, func(v any) Content { return tAs[Content](tpubIn(a, v)) })
 	case "char_data":
 		a := &tslabs{}
-		return tparseResolved(trules[63], input, o, a, func(v any) *CharData { return tAs[*CharData](v) })
+		return tparseResolved(trules[63], input, o, a, func(v any) *CharData { return tv24(a, v) })
 	case "cdsect":
 		a := &tslabs{}
-		return tparseResolved(trules[64], input, o, a, func(v any) *CDSect { return tv12(a, v) })
+		return tparseResolved(trules[64], input, o, a, func(v any) *CDSect { return tv25(a, v) })
 	case "cdata":
 		a := &tslabs{}
-		return tparseResolved(trules[65], input, o, a, func(v any) *CDSect { return tAs[*CDSect](v) })
+		return tparseResolved(trules[65], input, o, a, func(v any) *CDSect { return tv26(a, v) })
 	case "reference":
 		a := &tslabs{}
-		return tparseResolved(trules[66], input, o, a, func(v any) any { return tv13(a, v) })
+		return tparseResolved(trules[66], input, o, a, func(v any) any { return tv27(a, v) })
 	case "char_ref":
 		a := &tslabs{}
-		return tparseResolved(trules[67], input, o, a, func(v any) *CharRef { return tAs[*CharRef](v) })
+		return tparseResolved(trules[67], input, o, a, func(v any) *CharRef { return tv28(a, v) })
 	case "entity_ref":
 		a := &tslabs{}
-		return tparseResolved(trules[68], input, o, a, func(v any) *EntityRef { return tAs[*EntityRef](v) })
+		return tparseResolved(trules[68], input, o, a, func(v any) *EntityRef { return tv29(a, v) })
 	case "name":
 		a := &tslabs{}
-		return tparseResolved(trules[69], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+		return tparseResolved(trules[69], input, o, a, func(v any) *Name { return tv30(a, v) })
 	case "name_char":
 		a := &tslabs{}
-		return tparseResolved(trules[70], input, o, a, func(v any) *TNode[string] { return tv14(a, v) })
+		return tparseResolved(trules[70], input, o, a, func(v any) *TNode[string] { return tv31(a, v) })
 	case "nmtoken":
 		a := &tslabs{}
-		return tparseResolved(trules[71], input, o, a, func(v any) *Nmtoken { return tAs[*Nmtoken](v) })
+		return tparseResolved(trules[71], input, o, a, func(v any) *Nmtoken { return tv32(a, v) })
 	case "s":
 		a := &tslabs{}
-		return tparseResolved(trules[72], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv15(a, v) })
+		return tparseResolved(trules[72], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv33(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return tparseResolved(trules[73], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv16(a, v) })
+		return tparseResolved(trules[73], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv34(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-}
-
-// --- Constructed field checks ---
-
-// fieldType is a declared struct field type that a constructor checks a dynamically typed value
-// against. Generated code declares one for each checked field.
-type fieldType struct {
-	kind byte // i int, s string, b bool, z nil, n node[_], S node[string], v node[elem], E error, N struct or named node type, l list, t tuple (alts), o optional, u union, _ top
-	name string
-	elem *fieldType
-	alts []*fieldType
-	text string
-}
-
-// checkField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *actx) checkField(v any, t *fieldType, field, typ string) any {
-	if !c.p.fieldConforms(t, v) {
-		c.p.evalErrorf("cannot use %s as %s in field %s of %s", typeName(v), t.text, field, typ)
-	}
-	return v
-}
-
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *actx) convertCheck(v any, t *fieldType, typ string) any {
-	if !c.p.fieldConforms(t, v) {
-		c.p.evalErrorf("cannot convert %s to %s", typeName(unboxValue(v)), typ)
-	}
-	return v
-}
-
-// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *actx) cast(v any, t *fieldType) any {
-	if !c.p.fieldConforms(t, v) {
-		c.p.evalErrorf("cannot cast %s to %s", typeName(v), t.text)
-	}
-	return v
-}
-
-// checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
-// type.
-func (p *parser) checkResult(v *Node, t *fieldType, rule string) {
-	if u := unboxNode(v); !p.fieldConforms(t, u) {
-		panic(fatal{resultError("cannot use " + typeName(u) + " as " + t.text + " in result of rule " + rule)})
-	}
-}
-
-// resultError is the error of a result that does not fit its declared type.
-type resultError string
-
-func (e resultError) Error() string { return string(e) }
-
-// fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list or tuple element it examines. node[T] is a node whose value is of type T (node[_] any
-// node with a value), and error an error value; a list or tuple type takes a list or tuple value,
-// not the node of a repetition or sequence.
-func (p *parser) fieldConforms(t *fieldType, v any) bool {
-	n, isNode := v.(*Node)
-	if isNode && n == nil {
-		v, isNode = nil, false
-	}
-	if isNode && n.shape() == shapeBox {
-		return p.fieldConforms(t, n.box)
-	}
-	switch t.kind {
-	case '_':
-		return true
-	case 'i':
-		_, ok := v.(int)
-		return ok
-	case 's':
-		_, ok := v.(string)
-		return ok
-	case 'b':
-		_, ok := v.(bool)
-		return ok
-	case 'z':
-		return v == nil
-	case 'o':
-		return v == nil || p.fieldConforms(t.elem, v)
-	case 'u':
-		for _, a := range t.alts {
-			if p.fieldConforms(a, v) {
-				return true
-			}
-		}
-		return false
-	}
-	if !isNode {
-		return false
-	}
-	shape := n.shape()
-	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
-	switch t.kind {
-	case 'n':
-		return valueNode
-	case 'S':
-		return shape == shapeString
-	case 'E':
-		return shape == shapeError
-	case 'N':
-		return n.Type() == t.name
-	case 'l':
-		return shape == shapeListValue && p.elemsConform(t.elem, n.children)
-	case 't':
-		return shape == shapeTupleValue && p.tupleConforms(t.alts, n.children)
-	case 'v':
-		return p.nodeValueConforms(t.elem, n, shape)
-	}
-	return false
-}
-
-// nodeValueConforms reports whether the value of node n, of shape shape, is of type t: a string
-// node's value is a string, and a tuple or list node's value its elements.
-func (p *parser) nodeValueConforms(t *fieldType, n *Node, shape nodeShape) bool {
-	switch t.kind {
-	case '_':
-		return shape == shapeString || shape == shapeTuple || shape == shapeList
-	case 's':
-		return shape == shapeString
-	case 'l':
-		return shape == shapeList && p.elemsConform(t.elem, n.children)
-	case 't':
-		return shape == shapeTuple && p.tupleConforms(t.alts, n.children)
-	case 'o':
-		return p.nodeValueConforms(t.elem, n, shape) // a node always has a value
-	case 'u':
-		for _, a := range t.alts {
-			if p.nodeValueConforms(a, n, shape) {
-				return true
-			}
-		}
-	}
-	// No node has a value of another type yet.
-	return false
-}
-
-// elemsConform reports whether every element of a list is of type t, charging a step for each.
-func (p *parser) elemsConform(t *fieldType, elems []*Node) bool {
-	if t.kind == '_' {
-		return true
-	}
-	for _, c := range elems {
-		p.stepWork()
-		if !p.fieldConforms(t, c) {
-			return false
-		}
-	}
-	return true
-}
-
-// tupleConforms reports whether the elements of a tuple are of the types ts, charging a step for
-// each.
-func (p *parser) tupleConforms(ts []*fieldType, elems []*Node) bool {
-	if len(elems) != len(ts) {
-		return false
-	}
-	for i, c := range elems {
-		p.stepWork()
-		if !p.fieldConforms(ts[i], c) {
-			return false
-		}
-	}
-	return true
-}
-
-// checkField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *tctx) checkField(v any, t *fieldType, field, typ string) any {
-	if !tfieldConforms(c.p.parser, t, v) {
-		c.p.evalErrorf("cannot use %s as %s in field %s of %s", ttypeName(v), t.text, field, typ)
-	}
-	return v
-}
-
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *tctx) convertCheck(v any, t *fieldType, typ string) any {
-	if !tfieldConforms(c.p.parser, t, v) {
-		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), typ)
-	}
-	return v
-}
-
-// cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *tctx) cast(v any, t *fieldType) any {
-	if !tfieldConforms(c.p.parser, t, v) {
-		c.p.evalErrorf("cannot cast %s to %s", ttypeName(v), t.text)
-	}
-	return v
-}
-
-// tcheckResult is checkResult for the values of the typed runtime.
-func (p *tparser) tcheckResult(v any, t *fieldType, rule string) {
-	if !tfieldConforms(p.parser, t, v) {
-		panic(fatal{resultError("cannot use " + ttypeName(v) + " as " + t.text + " in result of rule " + rule)})
-	}
-}
-
-// tfieldConforms is fieldConforms for the values of the typed runtime.
-func tfieldConforms(p *parser, t *fieldType, v any) bool {
-	switch t.kind {
-	case '_':
-		return true
-	case 'i':
-		_, ok := v.(int)
-		return ok
-	case 's':
-		_, ok := v.(string)
-		return ok
-	case 'b':
-		_, ok := v.(bool)
-		return ok
-	case 'z':
-		return v == nil
-	case 'o':
-		return v == nil || tfieldConforms(p, t.elem, v)
-	case 'u':
-		for _, a := range t.alts {
-			if tfieldConforms(p, a, v) {
-				return true
-			}
-		}
-		return false
-	}
-	n := asTval(v)
-	if n == nil {
-		return false
-	}
-	shape := tshape(n)
-	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
-	switch t.kind {
-	case 'n':
-		return valueNode
-	case 'S':
-		return shape == shapeString
-	case 'E':
-		return shape == shapeError
-	case 'N':
-		return n.tname() == t.name
-	case 'l':
-		return shape == shapeListValue && telemsConform(p, t.elem, n.tkids())
-	case 't':
-		return shape == shapeTupleValue && ttupleConforms(p, t.alts, n.tkids())
-	case 'v':
-		return tnodeValueConforms(p, t.elem, n, shape)
-	}
-	return false
-}
-
-// tnodeValueConforms is nodeValueConforms for the values of the typed runtime.
-func tnodeValueConforms(p *parser, t *fieldType, n tval, shape nodeShape) bool {
-	switch t.kind {
-	case '_':
-		return shape == shapeString || shape == shapeTuple || shape == shapeList
-	case 's':
-		return shape == shapeString
-	case 'l':
-		return shape == shapeList && telemsConform(p, t.elem, n.tkids())
-	case 't':
-		return shape == shapeTuple && ttupleConforms(p, t.alts, n.tkids())
-	case 'o':
-		return tnodeValueConforms(p, t.elem, n, shape)
-	case 'u':
-		for _, a := range t.alts {
-			if tnodeValueConforms(p, a, n, shape) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// telemsConform is elemsConform for the values of the typed runtime.
-func telemsConform(p *parser, t *fieldType, elems []any) bool {
-	if t.kind == '_' {
-		return true
-	}
-	for _, c := range elems {
-		p.stepWork()
-		if !tfieldConforms(p, t, c) {
-			return false
-		}
-	}
-	return true
-}
-
-// ttupleConforms is tupleConforms for the values of the typed runtime.
-func ttupleConforms(p *parser, ts []*fieldType, elems []any) bool {
-	if len(elems) != len(ts) {
-		return false
-	}
-	for i, c := range elems {
-		p.stepWork()
-		if !tfieldConforms(p, ts[i], c) {
-			return false
-		}
-	}
-	return true
 }
 
 var lit1 = []rune("\ufeff")
@@ -10980,7 +10092,6 @@ var lit124 = []rune("<")
 var scope125 = []string{"a"}
 var lit126 = []rune("/>")
 var lit127 = []rune("</")
-var fieldType1 = &fieldType{kind: 'N', text: "Name", name: "Name"}
 var workClass131 = []workRange{{61, 55295}, {39, 59}, {32, 33}, {35, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
 var workClass133 = []workRange{{61, 55295}, {40, 59}, {32, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
 var workClass138 = []workRange{{94, 55295}, {61, 92}, {39, 59}, {32, 37}, {10, 10}, {9, 9}, {13, 13}, {57344, 65533}, {65536, 1114111}}
@@ -10992,97 +10103,100 @@ var lit147 = []rune("&#x")
 var lit148 = []rune("&#")
 var lit150 = []rune("&")
 var workClass152 = []workRange{{97, 122}, {65, 90}, {48, 57}, {95, 95}, {58, 58}, {46, 46}, {45, 45}, {183, 183}, {192, 214}, {216, 246}, {248, 893}, {895, 8191}, {8204, 8205}, {8255, 8256}, {8304, 8591}, {11264, 12271}, {12289, 55295}, {63744, 64975}, {65008, 65533}, {65536, 983039}}
-var scope165 = []string{}
-var scope197 = []string{"n"}
-var scope199 = []string{}
-var scope201 = []string{}
-var scope223 = []string{}
-var scope257 = []string{"n"}
+var scope168 = []string{}
+var scope200 = []string{"n"}
+var scope202 = []string{}
+var scope204 = []string{}
+var scope226 = []string{}
+var scope259 = []string{"n"}
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"d", "p1", "dt", "p2", "r", "e"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 1, name: "misc_list", scope: []string{"ms"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 3, name: "xml_decl", scope: []string{"v", "e", "sd"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 4, name: "version_info", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Version", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 6, name: "encoding_decl", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EncName", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 8, name: "sd_decl", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "YesNo", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
-		{id: 11, name: "comment", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
-		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Comment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 13, name: "pi", scope: []string{"t", "d"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
-		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PIData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 15, name: "doctype", scope: []string{"n", "x", "ds"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 16, name: "int_subset", scope: []string{"ds"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PERef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
-		{id: 20, name: "system_id", scope: []string{"l"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
-		{id: 21, name: "public_id", scope: []string{"p", "l"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 22, name: "system_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
-		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 25, name: "pubid_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
-		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 28, name: "element_decl", scope: []string{"n", "c"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 33, name: "choice", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
-		{id: 34, name: "sequence", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
-		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
-		{id: 36, name: "name_particle", scope: []string{"n", "o"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Occurrence", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 38, name: "attlist_decl", scope: []string{"n", "ds"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 39, name: "att_def", scope: []string{"n", "t", "k", "v"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 44, name: "notation_type", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 45, name: "enumeration", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 47, name: "ge_decl", scope: []string{"n", "v", "x", "nd"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 48, name: "pe_decl", scope: []string{"n", "v", "x"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 49, name: "entity_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
-		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 52, name: "notation_decl", scope: []string{"n", "x"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 54, name: "public_notation", scope: []string{"p", "l"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 55, name: "element", scope: []string{"n", "as", "cs", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
-		{id: 56, name: "attribute", scope: []string{"n", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 57, name: "att_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
-		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 62, name: "markup", scope: []string{"c"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CharData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 64, name: "cdsect", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CDSect", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{}},
-		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CharRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Nmtoken", memo: true, leader: false, seen: 15, novalue: false, vars: []string{}},
-		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 75, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 76, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 16, novalue: true, vars: []string{}},
-		{id: 77, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 17, novalue: true, vars: []string{}},
-		{id: 78, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"d", "p1", "dt", "p2", "r", "e"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 1, name: "misc_list", scope: []string{"ms"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
+		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 3, name: "xml_decl", scope: []string{"v", "e", "sd"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 4, name: "version_info", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Version", seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "encoding_decl", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "EncName", seen: -1, novalue: false, vars: []string{}},
+		{id: 8, name: "sd_decl", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "YesNo", seen: -1, novalue: false, vars: []string{}},
+		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
+		{id: 11, name: "comment", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
+		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Comment", seen: -1, novalue: false, vars: []string{}},
+		{id: 13, name: "pi", scope: []string{"t", "d"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
+		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "PIData", seen: -1, novalue: false, vars: []string{}},
+		{id: 15, name: "doctype", scope: []string{"n", "x", "ds"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 16, name: "int_subset", scope: []string{"ds"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "PERef", seen: -1, novalue: false, vars: []string{}},
+		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
+		{id: 20, name: "system_id", scope: []string{"l"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
+		{id: 21, name: "public_id", scope: []string{"p", "l"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 22, name: "system_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
+		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "SystemLiteral", seen: -1, novalue: false, vars: []string{}},
+		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "SystemLiteral", seen: -1, novalue: false, vars: []string{}},
+		{id: 25, name: "pubid_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
+		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "PubidLiteral", seen: -1, novalue: false, vars: []string{}},
+		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "PubidLiteral", seen: -1, novalue: false, vars: []string{}},
+		{id: 28, name: "element_decl", scope: []string{"n", "c"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Keyword", seen: -1, novalue: false, vars: []string{}},
+		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Keyword", seen: -1, novalue: false, vars: []string{}},
+		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 33, name: "choice", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
+		{id: 34, name: "sequence", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
+		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
+		{id: 36, name: "name_particle", scope: []string{"n", "o"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Occurrence", seen: -1, novalue: false, vars: []string{}},
+		{id: 38, name: "attlist_decl", scope: []string{"n", "ds"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 39, name: "att_def", scope: []string{"n", "t", "k", "v"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Keyword", seen: -1, novalue: false, vars: []string{}},
+		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Keyword", seen: -1, novalue: false, vars: []string{}},
+		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Keyword", seen: -1, novalue: false, vars: []string{}},
+		{id: 44, name: "notation_type", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 45, name: "enumeration", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 47, name: "ge_decl", scope: []string{"n", "v", "x", "nd"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 48, name: "pe_decl", scope: []string{"n", "v", "x"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 49, name: "entity_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
+		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "EntityValue", seen: -1, novalue: false, vars: []string{}},
+		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "EntityValue", seen: -1, novalue: false, vars: []string{}},
+		{id: 52, name: "notation_decl", scope: []string{"n", "x"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 54, name: "public_notation", scope: []string{"p", "l"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 55, name: "element", scope: []string{"n", "as", "cs", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
+		{id: 56, name: "attribute", scope: []string{"n", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 57, name: "att_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
+		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "AttValue", seen: -1, novalue: false, vars: []string{}},
+		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "AttValue", seen: -1, novalue: false, vars: []string{}},
+		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 62, name: "markup", scope: []string{"c"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "CharData", seen: -1, novalue: false, vars: []string{}},
+		{id: 64, name: "cdsect", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "CDSect", seen: -1, novalue: false, vars: []string{}},
+		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 14, novalue: false, vars: []string{}},
+		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "CharRef", seen: -1, novalue: false, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "EntityRef", seen: -1, novalue: false, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Name", seen: -1, novalue: false, vars: []string{}},
+		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, nodeType: "Nmtoken", seen: 15, novalue: false, vars: []string{}},
+		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 75, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 76, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 16, novalue: true, vars: []string{}},
+		{id: 77, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 78, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 17, novalue: true, vars: []string{}},
+		{id: 79, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 80, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 81, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range rules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}
@@ -11189,10 +10303,10 @@ func init() {
 			c.p.stepWork()
 			return c.newStruct("Mixed", "Names", func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_163 any) any {
+				return c.mapList(func() any { c.p.stepWork(); return c.cap(0) }(), func(l_166 any) any {
 					return func() any {
 						c.p.stepWork()
-						return c.member(func() any { c.p.stepWork(); return unboxValue(l_163) }(), "$n")
+						return c.member(func() any { c.p.stepWork(); return unboxValue(l_166) }(), "$n")
 					}()
 				})
 			}())
@@ -11364,24 +10478,17 @@ func init() {
 	rules[76].body = func(p *parser, _ int) (*Node, bool) { return p.e160() }
 	rules[77].body = func(p *parser, _ int) (*Node, bool) { return p.e161() }
 	rules[78].body = func(p *parser, _ int) (*Node, bool) { return p.e162() }
+	rules[79].body = func(p *parser, _ int) (*Node, bool) { return p.e163() }
+	rules[80].body = func(p *parser, _ int) (*Node, bool) { return p.e164() }
+	rules[81].body = func(p *parser, _ int) (*Node, bool) { return p.e165() }
 	structFields["AttDef"] = map[string]bool{"Name": true, "Type": true, "Default": true, "Value": true}
 	typeKinds["AttDef"] = kindOf("AttDef", "")
-	structFields["AttValue"] = map[string]bool{"Text": true}
-	typeKinds["AttValue"] = kindOf("AttValue", "")
 	structFields["AttlistDecl"] = map[string]bool{"Name": true, "Defs": true}
 	typeKinds["AttlistDecl"] = kindOf("AttlistDecl", "")
 	structFields["Attribute"] = map[string]bool{"Name": true, "Value": true}
 	typeKinds["Attribute"] = kindOf("Attribute", "")
-	structFields["CDSect"] = map[string]bool{"Text": true}
-	typeKinds["CDSect"] = kindOf("CDSect", "")
-	structFields["CharData"] = map[string]bool{"Text": true}
-	typeKinds["CharData"] = kindOf("CharData", "")
-	structFields["CharRef"] = map[string]bool{"Text": true}
-	typeKinds["CharRef"] = kindOf("CharRef", "")
 	structFields["Choice"] = map[string]bool{"Items": true, "Occur": true}
 	typeKinds["Choice"] = kindOf("Choice", "")
-	structFields["Comment"] = map[string]bool{"Text": true}
-	typeKinds["Comment"] = kindOf("Comment", "")
 	structFields["Doctype"] = map[string]bool{"Name": true, "ExternalID": true, "Subset": true}
 	typeKinds["Doctype"] = kindOf("Doctype", "")
 	structFields["Document"] = map[string]bool{"Decl": true, "Prolog": true, "Doctype": true, "Root": true, "Epilog": true}
@@ -11390,211 +10497,205 @@ func init() {
 	typeKinds["Element"] = kindOf("Element", "")
 	structFields["ElementDecl"] = map[string]bool{"Name": true, "Content": true}
 	typeKinds["ElementDecl"] = kindOf("ElementDecl", "")
-	structFields["EncName"] = map[string]bool{"Text": true}
-	typeKinds["EncName"] = kindOf("EncName", "")
 	structFields["EntityDecl"] = map[string]bool{"Parameter": true, "Name": true, "Value": true, "ExternalID": true, "NData": true}
 	typeKinds["EntityDecl"] = kindOf("EntityDecl", "")
-	structFields["EntityRef"] = map[string]bool{"Text": true}
-	typeKinds["EntityRef"] = kindOf("EntityRef", "")
-	structFields["EntityValue"] = map[string]bool{"Text": true}
-	typeKinds["EntityValue"] = kindOf("EntityValue", "")
 	structFields["Enumeration"] = map[string]bool{"Values": true}
 	typeKinds["Enumeration"] = kindOf("Enumeration", "")
 	structFields["ExternalID"] = map[string]bool{"Public": true, "System": true}
 	typeKinds["ExternalID"] = kindOf("ExternalID", "")
-	structFields["Keyword"] = map[string]bool{"Text": true}
-	typeKinds["Keyword"] = kindOf("Keyword", "")
 	structFields["Mixed"] = map[string]bool{"Names": true}
 	typeKinds["Mixed"] = kindOf("Mixed", "")
-	structFields["Name"] = map[string]bool{"Text": true}
-	typeKinds["Name"] = kindOf("Name", "")
 	structFields["NameParticle"] = map[string]bool{"Name": true, "Occur": true}
 	typeKinds["NameParticle"] = kindOf("NameParticle", "")
-	structFields["Nmtoken"] = map[string]bool{"Text": true}
-	typeKinds["Nmtoken"] = kindOf("Nmtoken", "")
 	structFields["NotationDecl"] = map[string]bool{"Name": true, "ExternalID": true}
 	typeKinds["NotationDecl"] = kindOf("NotationDecl", "")
 	structFields["NotationType"] = map[string]bool{"Names": true}
 	typeKinds["NotationType"] = kindOf("NotationType", "")
-	structFields["Occurrence"] = map[string]bool{"Text": true}
-	typeKinds["Occurrence"] = kindOf("Occurrence", "")
-	structFields["PERef"] = map[string]bool{"Text": true}
-	typeKinds["PERef"] = kindOf("PERef", "")
 	structFields["PI"] = map[string]bool{"Target": true, "Data": true}
 	typeKinds["PI"] = kindOf("PI", "")
-	structFields["PIData"] = map[string]bool{"Text": true}
-	typeKinds["PIData"] = kindOf("PIData", "")
-	structFields["PubidLiteral"] = map[string]bool{"Text": true}
-	typeKinds["PubidLiteral"] = kindOf("PubidLiteral", "")
 	structFields["Sequence"] = map[string]bool{"Items": true, "Occur": true}
 	typeKinds["Sequence"] = kindOf("Sequence", "")
-	structFields["SystemLiteral"] = map[string]bool{"Text": true}
-	typeKinds["SystemLiteral"] = kindOf("SystemLiteral", "")
-	structFields["Version"] = map[string]bool{"Text": true}
-	typeKinds["Version"] = kindOf("Version", "")
 	structFields["XMLDecl"] = map[string]bool{"Version": true, "Encoding": true, "Standalone": true}
 	typeKinds["XMLDecl"] = kindOf("XMLDecl", "")
-	structFields["YesNo"] = map[string]bool{"Text": true}
-	typeKinds["YesNo"] = kindOf("YesNo", "")
+	nodeTypes["AttValue"] = newNodeTypeKinds("AttValue")
+	nodeTypes["CDSect"] = newNodeTypeKinds("CDSect")
+	nodeTypes["CharData"] = newNodeTypeKinds("CharData")
+	nodeTypes["CharRef"] = newNodeTypeKinds("CharRef")
+	nodeTypes["Comment"] = newNodeTypeKinds("Comment")
+	nodeTypes["EncName"] = newNodeTypeKinds("EncName")
+	nodeTypes["EntityRef"] = newNodeTypeKinds("EntityRef")
+	nodeTypes["EntityValue"] = newNodeTypeKinds("EntityValue")
+	nodeTypes["Keyword"] = newNodeTypeKinds("Keyword")
+	nodeTypes["Name"] = newNodeTypeKinds("Name")
+	nodeTypes["Nmtoken"] = newNodeTypeKinds("Nmtoken")
+	nodeTypes["Occurrence"] = newNodeTypeKinds("Occurrence")
+	nodeTypes["PERef"] = newNodeTypeKinds("PERef")
+	nodeTypes["PIData"] = newNodeTypeKinds("PIData")
+	nodeTypes["PubidLiteral"] = newNodeTypeKinds("PubidLiteral")
+	nodeTypes["SystemLiteral"] = newNodeTypeKinds("SystemLiteral")
+	nodeTypes["Version"] = newNodeTypeKinds("Version")
+	nodeTypes["YesNo"] = newNodeTypeKinds("YesNo")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 1, name: "misc_list", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
-		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 3, name: "xml_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 4, name: "version_info", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 6, name: "encoding_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 8, name: "sd_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
-		{id: 11, name: "comment", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 2, novalue: true, vars: []string{}},
-		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 13, name: "pi", scope: []string{"t"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
-		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 15, name: "doctype", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 16, name: "int_subset", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
-		{id: 20, name: "system_id", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
-		{id: 21, name: "public_id", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 22, name: "system_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
-		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 25, name: "pubid_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
-		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 28, name: "element_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 33, name: "choice", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 8, novalue: true, vars: []string{}},
-		{id: 34, name: "sequence", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
-		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 10, novalue: true, vars: []string{}},
-		{id: 36, name: "name_particle", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 38, name: "attlist_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 39, name: "att_def", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 44, name: "notation_type", scope: []string{}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 45, name: "enumeration", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 47, name: "ge_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 48, name: "pe_decl", scope: []string{}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 49, name: "entity_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 11, novalue: true, vars: []string{}},
-		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 52, name: "notation_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 54, name: "public_notation", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 55, name: "element", scope: []string{"n", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
-		{id: 56, name: "attribute", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 57, name: "att_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
-		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 62, name: "markup", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 64, name: "cdsect", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 14, novalue: true, vars: []string{}},
-		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 15, novalue: true, vars: []string{}},
-		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 1, name: "misc_list", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
+		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 3, name: "xml_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 4, name: "version_info", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "encoding_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 8, name: "sd_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
+		{id: 11, name: "comment", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 2, novalue: true, vars: []string{}},
+		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 13, name: "pi", scope: []string{"t"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
+		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 15, name: "doctype", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 16, name: "int_subset", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
+		{id: 20, name: "system_id", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
+		{id: 21, name: "public_id", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 22, name: "system_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
+		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 25, name: "pubid_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
+		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 28, name: "element_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 33, name: "choice", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: true, leader: false, seen: 8, novalue: true, vars: []string{}},
+		{id: 34, name: "sequence", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
+		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 10, novalue: true, vars: []string{}},
+		{id: 36, name: "name_particle", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 38, name: "attlist_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 39, name: "att_def", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 44, name: "notation_type", scope: []string{}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 45, name: "enumeration", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 47, name: "ge_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 48, name: "pe_decl", scope: []string{}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 49, name: "entity_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 11, novalue: true, vars: []string{}},
+		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 52, name: "notation_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 54, name: "public_notation", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 55, name: "element", scope: []string{"n", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
+		{id: 56, name: "attribute", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 57, name: "att_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
+		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 62, name: "markup", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 64, name: "cdsect", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 14, novalue: true, vars: []string{}},
+		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Name", seen: -1, novalue: false, vars: []string{}},
+		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: true, leader: false, seen: 15, novalue: true, vars: []string{}},
+		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 75, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}
 	}
 	recNseen = 16
-	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e164() }
-	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e166() }
-	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e167() }
-	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e168() }
-	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e169() }
-	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e170() }
-	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e171() }
-	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e172() }
-	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e173() }
-	recRules[9].body = func(p *parser, _ int) (*Node, bool) { return p.e174() }
-	recRules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e175() }
-	recRules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e176() }
-	recRules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e177() }
-	recRules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e178() }
-	recRules[14].body = func(p *parser, _ int) (*Node, bool) { return p.e179() }
-	recRules[15].body = func(p *parser, _ int) (*Node, bool) { return p.e180() }
-	recRules[16].body = func(p *parser, _ int) (*Node, bool) { return p.e181() }
-	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e182() }
-	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e183() }
-	recRules[19].body = func(p *parser, _ int) (*Node, bool) { return p.e184() }
-	recRules[20].body = func(p *parser, _ int) (*Node, bool) { return p.e185() }
-	recRules[21].body = func(p *parser, _ int) (*Node, bool) { return p.e186() }
-	recRules[22].body = func(p *parser, _ int) (*Node, bool) { return p.e187() }
-	recRules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e188() }
-	recRules[24].body = func(p *parser, _ int) (*Node, bool) { return p.e189() }
-	recRules[25].body = func(p *parser, _ int) (*Node, bool) { return p.e190() }
-	recRules[26].body = func(p *parser, _ int) (*Node, bool) { return p.e191() }
-	recRules[27].body = func(p *parser, _ int) (*Node, bool) { return p.e192() }
-	recRules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e193() }
-	recRules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e194() }
-	recRules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e195() }
-	recRules[31].body = func(p *parser, _ int) (*Node, bool) { return p.e196() }
-	recRules[32].body = func(p *parser, _ int) (*Node, bool) { return p.e198() }
-	recRules[33].body = func(p *parser, _ int) (*Node, bool) { return p.e200() }
-	recRules[34].body = func(p *parser, _ int) (*Node, bool) { return p.e202() }
-	recRules[35].body = func(p *parser, _ int) (*Node, bool) { return p.e203() }
-	recRules[36].body = func(p *parser, _ int) (*Node, bool) { return p.e204() }
-	recRules[37].body = func(p *parser, _ int) (*Node, bool) { return p.e205() }
-	recRules[38].body = func(p *parser, _ int) (*Node, bool) { return p.e206() }
-	recRules[39].body = func(p *parser, _ int) (*Node, bool) { return p.e207() }
-	recRules[40].body = func(p *parser, _ int) (*Node, bool) { return p.e208() }
-	recRules[41].body = func(p *parser, _ int) (*Node, bool) { return p.e209() }
-	recRules[42].body = func(p *parser, _ int) (*Node, bool) { return p.e210() }
-	recRules[43].body = func(p *parser, _ int) (*Node, bool) { return p.e211() }
-	recRules[44].body = func(p *parser, _ int) (*Node, bool) { return p.e212() }
-	recRules[45].body = func(p *parser, _ int) (*Node, bool) { return p.e213() }
-	recRules[46].body = func(p *parser, _ int) (*Node, bool) { return p.e214() }
-	recRules[47].body = func(p *parser, _ int) (*Node, bool) { return p.e215() }
-	recRules[48].body = func(p *parser, _ int) (*Node, bool) { return p.e216() }
-	recRules[49].body = func(p *parser, _ int) (*Node, bool) { return p.e217() }
-	recRules[50].body = func(p *parser, _ int) (*Node, bool) { return p.e218() }
-	recRules[51].body = func(p *parser, _ int) (*Node, bool) { return p.e219() }
-	recRules[52].body = func(p *parser, _ int) (*Node, bool) { return p.e220() }
-	recRules[53].body = func(p *parser, _ int) (*Node, bool) { return p.e221() }
-	recRules[54].body = func(p *parser, _ int) (*Node, bool) { return p.e222() }
-	recRules[55].body = func(p *parser, _ int) (*Node, bool) { return p.e224() }
-	recRules[56].body = func(p *parser, _ int) (*Node, bool) { return p.e225() }
-	recRules[57].body = func(p *parser, _ int) (*Node, bool) { return p.e226() }
-	recRules[58].body = func(p *parser, _ int) (*Node, bool) { return p.e227() }
-	recRules[59].body = func(p *parser, _ int) (*Node, bool) { return p.e228() }
-	recRules[60].body = func(p *parser, _ int) (*Node, bool) { return p.e229() }
-	recRules[61].body = func(p *parser, _ int) (*Node, bool) { return p.e230() }
-	recRules[62].body = func(p *parser, _ int) (*Node, bool) { return p.e231() }
-	recRules[63].body = func(p *parser, _ int) (*Node, bool) { return p.e232() }
-	recRules[64].body = func(p *parser, _ int) (*Node, bool) { return p.e233() }
-	recRules[65].body = func(p *parser, _ int) (*Node, bool) { return p.e234() }
-	recRules[66].body = func(p *parser, _ int) (*Node, bool) { return p.e235() }
-	recRules[67].body = func(p *parser, _ int) (*Node, bool) { return p.e236() }
-	recRules[68].body = func(p *parser, _ int) (*Node, bool) { return p.e237() }
+	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e167() }
+	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e169() }
+	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e170() }
+	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e171() }
+	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e172() }
+	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e173() }
+	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e174() }
+	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e175() }
+	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e176() }
+	recRules[9].body = func(p *parser, _ int) (*Node, bool) { return p.e177() }
+	recRules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e178() }
+	recRules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e179() }
+	recRules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e180() }
+	recRules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e181() }
+	recRules[14].body = func(p *parser, _ int) (*Node, bool) { return p.e182() }
+	recRules[15].body = func(p *parser, _ int) (*Node, bool) { return p.e183() }
+	recRules[16].body = func(p *parser, _ int) (*Node, bool) { return p.e184() }
+	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e185() }
+	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e186() }
+	recRules[19].body = func(p *parser, _ int) (*Node, bool) { return p.e187() }
+	recRules[20].body = func(p *parser, _ int) (*Node, bool) { return p.e188() }
+	recRules[21].body = func(p *parser, _ int) (*Node, bool) { return p.e189() }
+	recRules[22].body = func(p *parser, _ int) (*Node, bool) { return p.e190() }
+	recRules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e191() }
+	recRules[24].body = func(p *parser, _ int) (*Node, bool) { return p.e192() }
+	recRules[25].body = func(p *parser, _ int) (*Node, bool) { return p.e193() }
+	recRules[26].body = func(p *parser, _ int) (*Node, bool) { return p.e194() }
+	recRules[27].body = func(p *parser, _ int) (*Node, bool) { return p.e195() }
+	recRules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e196() }
+	recRules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e197() }
+	recRules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e198() }
+	recRules[31].body = func(p *parser, _ int) (*Node, bool) { return p.e199() }
+	recRules[32].body = func(p *parser, _ int) (*Node, bool) { return p.e201() }
+	recRules[33].body = func(p *parser, _ int) (*Node, bool) { return p.e203() }
+	recRules[34].body = func(p *parser, _ int) (*Node, bool) { return p.e205() }
+	recRules[35].body = func(p *parser, _ int) (*Node, bool) { return p.e206() }
+	recRules[36].body = func(p *parser, _ int) (*Node, bool) { return p.e207() }
+	recRules[37].body = func(p *parser, _ int) (*Node, bool) { return p.e208() }
+	recRules[38].body = func(p *parser, _ int) (*Node, bool) { return p.e209() }
+	recRules[39].body = func(p *parser, _ int) (*Node, bool) { return p.e210() }
+	recRules[40].body = func(p *parser, _ int) (*Node, bool) { return p.e211() }
+	recRules[41].body = func(p *parser, _ int) (*Node, bool) { return p.e212() }
+	recRules[42].body = func(p *parser, _ int) (*Node, bool) { return p.e213() }
+	recRules[43].body = func(p *parser, _ int) (*Node, bool) { return p.e214() }
+	recRules[44].body = func(p *parser, _ int) (*Node, bool) { return p.e215() }
+	recRules[45].body = func(p *parser, _ int) (*Node, bool) { return p.e216() }
+	recRules[46].body = func(p *parser, _ int) (*Node, bool) { return p.e217() }
+	recRules[47].body = func(p *parser, _ int) (*Node, bool) { return p.e218() }
+	recRules[48].body = func(p *parser, _ int) (*Node, bool) { return p.e219() }
+	recRules[49].body = func(p *parser, _ int) (*Node, bool) { return p.e220() }
+	recRules[50].body = func(p *parser, _ int) (*Node, bool) { return p.e221() }
+	recRules[51].body = func(p *parser, _ int) (*Node, bool) { return p.e222() }
+	recRules[52].body = func(p *parser, _ int) (*Node, bool) { return p.e223() }
+	recRules[53].body = func(p *parser, _ int) (*Node, bool) { return p.e224() }
+	recRules[54].body = func(p *parser, _ int) (*Node, bool) { return p.e225() }
+	recRules[55].body = func(p *parser, _ int) (*Node, bool) { return p.e227() }
+	recRules[56].body = func(p *parser, _ int) (*Node, bool) { return p.e228() }
+	recRules[57].body = func(p *parser, _ int) (*Node, bool) { return p.e229() }
+	recRules[58].body = func(p *parser, _ int) (*Node, bool) { return p.e230() }
+	recRules[59].body = func(p *parser, _ int) (*Node, bool) { return p.e231() }
+	recRules[60].body = func(p *parser, _ int) (*Node, bool) { return p.e232() }
+	recRules[61].body = func(p *parser, _ int) (*Node, bool) { return p.e233() }
+	recRules[62].body = func(p *parser, _ int) (*Node, bool) { return p.e234() }
+	recRules[63].body = func(p *parser, _ int) (*Node, bool) { return p.e235() }
+	recRules[64].body = func(p *parser, _ int) (*Node, bool) { return p.e236() }
+	recRules[65].body = func(p *parser, _ int) (*Node, bool) { return p.e237() }
+	recRules[66].body = func(p *parser, _ int) (*Node, bool) { return p.e238() }
+	recRules[67].body = func(p *parser, _ int) (*Node, bool) { return p.e164() }
+	recRules[68].body = func(p *parser, _ int) (*Node, bool) { return p.e239() }
 	recRules[69].body = func(p *parser, _ int) (*Node, bool) { return p.e153() }
-	recRules[70].body = func(p *parser, _ int) (*Node, bool) { return p.e162() }
-	recRules[71].body = func(p *parser, _ int) (*Node, bool) { return p.e238() }
+	recRules[70].body = func(p *parser, _ int) (*Node, bool) { return p.e163() }
+	recRules[71].body = func(p *parser, _ int) (*Node, bool) { return p.e240() }
 	recRules[72].body = func(p *parser, _ int) (*Node, bool) { return p.e159() }
 	recRules[73].body = func(p *parser, _ int) (*Node, bool) { return p.e157() }
 	recRules[74].body = func(p *parser, _ int) (*Node, bool) { return p.e158() }
+	recRules[75].body = func(p *parser, _ int) (*Node, bool) { return p.e161() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"<!--\"", "\"<?\"", "\"<?xml\"", "\"?>\"", "\"version\"", "\"\\\"\"", "\"'\"", "\"1.\"", "[0-9]", "\"encoding\"", "[A-Za-z]", "[A-Za-z0-9._\\-]", "\"standalone\"", "\"yes\"", "\"no\"", "\"=\"", "\"-->\"", "[.-\\ud7ff -,\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"-\"", "the processing instruction target xml is reserved (an XML declaration must come first)", "[@-\\ud7ff ->\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"?\"", "\">\"", "\"<!DOCTYPE\"", "\"[\"", "\"]\"", "\"<!ELEMENT\"", "\"<!ATTLIST\"", "\"<!NOTATION\"", "\"%\"", "\";\"", "\"SYSTEM\"", "\"PUBLIC\"", "[#-\\ud7ff -!\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -&\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[a-zA-Z0-9 \\r\\n\\-\\'()+,./:=?;!*#@$_%]", "[a-zA-Z0-9 \\r\\n\\-()+,./:=?;!*#@$_%]", "\"EMPTY\"", "\"ANY\"", "\"(\"", "\"#PCDATA\"", "\"|\"", "\")*\"", "\")\"", "\",\"", "[a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\\u1fff\\u200c-\\u200d⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[*+?]", "\"#REQUIRED\"", "\"#IMPLIED\"", "\"#FIXED\"", "\"NOTATION\"", "\"CDATA\"", "\"IDREFS\"", "\"IDREF\"", "\"ID\"", "\"ENTITY\"", "\"ENTITIES\"", "\"NMTOKENS\"", "\"NMTOKEN\"", "\"<!ENTITY\"", "\"NDATA\"", "[\\'-\\ud7ff -!#-$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<\"", "\"/>\"", "\"</\"", "mismatched end tag", "[=-\\ud7ff\\'-; -!#-%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[=-\\ud7ff(-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<![CDATA[\"", "[\\^-\\ud7ff=-\\\\\\'-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"]>\"", "\"]]>\"", "[\\^-\\ud7ff -\\\\\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"&\"", "\"&#x\"", "[0-9a-fA-F]", "\"&#\"", "[a-zA-Z0-9_:.\\-·À-ÖØ-öø-ͽͿ-\\u1fff\\u200c-\\u200d‿-⁀⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[ \\t\\r\\n]"}
 	trules = []*trule{
 		{rule: rules[0]},
@@ -11676,6 +10777,9 @@ func init() {
 		{rule: rules[76]},
 		{rule: rules[77]},
 		{rule: rules[78]},
+		{rule: rules[79]},
+		{rule: rules[80]},
+		{rule: rules[81]},
 	}
 	defer tinit()
 	trules[0].entry = (*tparser).u0
@@ -11755,8 +10859,11 @@ func init() {
 	trules[74].entry = (*tparser).s74
 	trules[75].entry = (*tparser).s75
 	trules[76].entry = (*tparser).u76
-	trules[77].entry = (*tparser).u77
-	trules[78].entry = (*tparser).s78
+	trules[77].entry = (*tparser).s77
+	trules[78].entry = (*tparser).u78
+	trules[79].entry = (*tparser).s79
+	trules[80].entry = (*tparser).s80
+	trules[81].entry = (*tparser).s81
 }
 
 // main (Node body inlined)
@@ -12536,11 +11643,15 @@ func (p *parser) e14() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ok   bool
 			ch   rune
 			size int
-			x1   int
+			x2   int
+			v3   *Node
 		)
+
+		x1 = p.pos
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 			p.pos += 2
@@ -12548,7 +11659,7 @@ func (p *parser) e14() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		x1 = 0
+		x2 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -12561,24 +11672,28 @@ func (p *parser) e14() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x1++
+			x2++
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		return nil, true
+		v3 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v3, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ok   bool
 		ch   rune
 		size int
-		x1   int
+		x2   int
+		v3   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
@@ -12587,7 +11702,7 @@ func (p *parser) e14() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -12600,12 +11715,13 @@ func (p *parser) e14() (*Node, bool) {
 			break
 		}
 		p.pos += size
-		x1++
+		x2++
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	return nil, true
+	v3 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v3, true
 fail:
 	return nil, false
 }
@@ -12807,10 +11923,14 @@ func (p *parser) e18() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -12837,18 +11957,22 @@ func (p *parser) e18() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -12876,7 +12000,8 @@ func (p *parser) e18() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -13078,101 +12203,110 @@ func (p *parser) e23() (*Node, bool) {
 	if p.control == nil {
 
 		var (
-			x1 mark
-			x3 rune
-			x4 bool
-			ok bool
+			x1  int
+			x2  mark
+			x4  rune
+			x5  bool
+			ok  bool
+			v10 *Node
 		)
 
-		x1 = p.mark()
+		x1 = p.pos
+
+		x2 = p.mark()
 		if p.pos < len(p.in) {
 
-			x3, _, x4 = p.in[p.pos], 1, true
+			x4, _, x5 = p.in[p.pos], 1, true
 		} else {
-			x3, _, x4 = p.peek()
+			x4, _, x5 = p.peek()
 		}
-		if !(x4 && (x3 == 121)) && p.depth <= p.maxDepth {
+		if !(x5 && (x4 == 121)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 19)
-			goto L5_ordinary
+			goto L6_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 121 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 115) {
 			p.pos += 3
 		} else if _, ok = p.matchLiteral(lit21, "yes", 19, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.reset(x1)
-	L5_ordinary:
-		if !(x4 && (x3 == 110)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 20)
 			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.reset(x2)
+	L6_ordinary:
+		if !(x5 && (x4 == 110)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 20)
+			goto L8_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit22, "no", 20, false); !ok {
-			goto L8_ordinary
+			goto L9_ordinary
 		}
-		goto L2_ordinary
+		goto L3_ordinary
+	L9_ordinary:
+		p.reset(x2)
 	L8_ordinary:
-		p.reset(x1)
-	L7_ordinary:
 		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
+	L3_ordinary:
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
-		x1 mark
-		x3 rune
-		x4 bool
-		ok bool
+		x1  int
+		x2  mark
+		x4  rune
+		x5  bool
+		ok  bool
+		v10 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = p.mark()
+	x2 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x3, _, x4 = p.in[p.pos], 1, true
+		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
-		x3, _, x4 = p.peek()
+		x4, _, x5 = p.peek()
 	}
-	if !(x4 && (x3 == 121)) && p.depth <= p.maxDepth {
+	if !(x5 && (x4 == 121)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 19)
-		goto L5
+		goto L6
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 121 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 115) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit21, "yes", 19, false); !ok {
-		goto L6
-	}
-	goto L2
-L6:
-	p.reset(x1)
-L5:
-	if !(x4 && (x3 == 110)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 20)
 		goto L7
+	}
+	goto L3
+L7:
+	p.reset(x2)
+L6:
+	if !(x5 && (x4 == 110)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 20)
+		goto L8
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit22, "no", 20, false); !ok {
-		goto L8
+		goto L9
 	}
-	goto L2
+	goto L3
+L9:
+	p.reset(x2)
 L8:
-	p.reset(x1)
-L7:
 	goto fail
-L2:
-	return nil, true
+L3:
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 fail:
 	return nil, false
 }
@@ -13330,24 +12464,28 @@ func (p *parser) e31() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
-			x8   rune
-			x9   bool
+			x8   int
+			x9   rune
+			x10  bool
+			v13  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -13360,29 +12498,29 @@ func (p *parser) e31() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 			if p.pos < len(p.in) {
 
-				x8, _, x9 = p.in[p.pos], 1, true
+				x9, _, x10 = p.in[p.pos], 1, true
 			} else {
-				x8, _, x9 = p.peek()
+				x9, _, x10 = p.peek()
 			}
-			if !(x9 && (x8 == 45)) && p.depth <= p.maxDepth {
+			if !(x10 && (x9 == 45)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 24)
-				goto L10_ordinary
+				goto L11_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 				p.pos++
 			} else if _, ok = p.matchLiteral(lit30, "-", 24, false); !ok {
-				goto L11_ordinary
+				goto L12_ordinary
 			}
 
 			if p.pos < len(p.in) {
@@ -13393,49 +12531,53 @@ func (p *parser) e31() (*Node, bool) {
 			}
 			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass29, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 46 && ch <= 55295 || ch >= 32 && ch <= 44 || ch == 10 || ch == 9 || ch == 13 || ch >= 57344 && ch <= 65533 || ch >= 65536 && ch <= 1114111)))) {
 				p.expectOrdinary(p.pos, 23)
-				goto L11_ordinary
+				goto L12_ordinary
 			}
 			p.pos += size
-			goto L5_ordinary
+			goto L6_ordinary
+		L12_ordinary:
+			p.reset(x5)
 		L11_ordinary:
-			p.reset(x4)
-		L10_ordinary:
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v13 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v13, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
+		x8   int
+		x9   rune
+		x10  bool
+		v13  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -13448,30 +12590,30 @@ func (p *parser) e31() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x8, _, x9 = p.in[p.pos], 1, true
+			x9, _, x10 = p.in[p.pos], 1, true
 		} else {
-			x8, _, x9 = p.peek()
+			x9, _, x10 = p.peek()
 		}
-		if !(x9 && (x8 == 45)) && p.depth <= p.maxDepth {
+		if !(x10 && (x9 == 45)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 24)
-			goto L10
+			goto L11
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit30, "-", 24, false); !ok {
-			goto L11
+			goto L12
 		}
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -13482,25 +12624,26 @@ func (p *parser) e31() (*Node, bool) {
 		}
 		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass29, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 46 && ch <= 55295 || ch >= 32 && ch <= 44 || ch == 10 || ch == 9 || ch == 13 || ch >= 57344 && ch <= 65533 || ch >= 65536 && ch <= 1114111)))) {
 			p.expect(p.pos, 23)
-			goto L11
+			goto L12
 		}
 		p.pos += size
-		goto L5
+		goto L6
+	L12:
+		p.reset(x5)
 	L11:
-		p.reset(x4)
-	L10:
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v13 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v13, true
 }
 
 // pi (Node body inlined)
@@ -13552,71 +12695,47 @@ func (p *parser) e33() (*Node, bool) {
 
 										return c.and(func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { return any("xml") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.compare("!=", func() toperand {
-
-													return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-												}(), toperand{v: func() any { return any("xmL") }()})
+												return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { return any("xMl") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.compare("!=", func() toperand {
-
-											return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { return any("xML") }()})
+										return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.compare("!=", func() toperand {
-
-										return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-									}(), toperand{v: func() any { return any("Xml") }()})
+									return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.compare("!=", func() toperand {
-
-									return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-								}(), toperand{v: func() any { return any("XmL") }()})
+								return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.compare("!=", func() toperand {
-
-								return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-							}(), toperand{v: func() any { return any("XMl") }()})
+							return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.compare("!=", func() toperand {
-
-							return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-						}(), toperand{v: func() any { return any("XML") }()})
+						return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -13706,71 +12825,47 @@ func (p *parser) e33() (*Node, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xml") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.compare("!=", func() toperand {
-												c.p.stepWork()
-												return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { c.p.stepWork(); return any("xmL") }()})
+											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xMl") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.compare("!=", func() toperand {
-										c.p.stepWork()
-										return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-									}(), toperand{v: func() any { c.p.stepWork(); return any("xML") }()})
+									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.compare("!=", func() toperand {
-									c.p.stepWork()
-									return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-								}(), toperand{v: func() any { c.p.stepWork(); return any("Xml") }()})
+								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.compare("!=", func() toperand {
-								c.p.stepWork()
-								return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-							}(), toperand{v: func() any { c.p.stepWork(); return any("XmL") }()})
+							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.compare("!=", func() toperand {
-							c.p.stepWork()
-							return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-						}(), toperand{v: func() any { c.p.stepWork(); return any("XMl") }()})
+						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.compare("!=", func() toperand {
-						c.p.stepWork()
-						return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-					}(), toperand{v: func() any { c.p.stepWork(); return any("XML") }()})
+					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -13820,25 +12915,29 @@ func (p *parser) e37() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
-			x8   rune
-			x9   bool
-			x12  mark
+			x8   int
+			x9   rune
+			x10  bool
+			x13  mark
+			v15  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -13851,86 +12950,90 @@ func (p *parser) e37() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 			if p.pos < len(p.in) {
 
-				x8, _, x9 = p.in[p.pos], 1, true
+				x9, _, x10 = p.in[p.pos], 1, true
 			} else {
-				x8, _, x9 = p.peek()
+				x9, _, x10 = p.peek()
 			}
-			if !(x9 && (x8 == 63)) && p.depth <= p.maxDepth {
+			if !(x10 && (x9 == 63)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 27)
-				goto L10_ordinary
+				goto L11_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 				p.pos++
 			} else if _, ok = p.matchLiteral(lit35, "?", 27, false); !ok {
-				goto L11_ordinary
+				goto L12_ordinary
 			}
 
-			x12 = p.mark()
+			x13 = p.mark()
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 62) {
 				p.pos++
 			} else if _, ok = p.matchLiteral(lit36, ">", 28, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 			p.silent--
-			p.reset(x12)
-			goto L11_ordinary
-		L13_ordinary:
+			p.reset(x13)
+			goto L12_ordinary
+		L14_ordinary:
 			p.silent--
-			p.reset(x12)
-			goto L5_ordinary
+			p.reset(x13)
+			goto L6_ordinary
+		L12_ordinary:
+			p.reset(x5)
 		L11_ordinary:
-			p.reset(x4)
-		L10_ordinary:
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v15, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
-		x12  mark
+		x8   int
+		x9   rune
+		x10  bool
+		x13  mark
+		v15  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -13943,62 +13046,63 @@ func (p *parser) e37() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x8, _, x9 = p.in[p.pos], 1, true
+			x9, _, x10 = p.in[p.pos], 1, true
 		} else {
-			x8, _, x9 = p.peek()
+			x9, _, x10 = p.peek()
 		}
-		if !(x9 && (x8 == 63)) && p.depth <= p.maxDepth {
+		if !(x10 && (x9 == 63)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 27)
-			goto L10
+			goto L11
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit35, "?", 27, false); !ok {
-			goto L11
+			goto L12
 		}
 		p.stepWork()
-		x12 = p.mark()
+		x13 = p.mark()
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 62) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit36, ">", 28, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.silent--
-		p.reset(x12)
-		goto L11
-	L13:
+		p.reset(x13)
+		goto L12
+	L14:
 		p.silent--
-		p.reset(x12)
-		goto L5
+		p.reset(x13)
+		goto L6
+	L12:
+		p.reset(x5)
 	L11:
-		p.reset(x4)
-	L10:
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v15, true
 }
 
 // doctype (Node body inlined)
@@ -14546,8 +13650,12 @@ func (p *parser) e47() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1 int
 			ok bool
+			v2 *Node
 		)
+
+		x1 = p.pos
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
 			p.pos++
@@ -14555,7 +13663,7 @@ func (p *parser) e47() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.r69(); !ok {
+		if _, ok = p.r77(); !ok {
 			goto fail_ordinary
 		}
 
@@ -14564,16 +13672,20 @@ func (p *parser) e47() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1 int
 		ok bool
+		v2 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
@@ -14582,7 +13694,7 @@ func (p *parser) e47() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.r69(); !ok {
+	if _, ok = p.r77(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -14591,7 +13703,8 @@ func (p *parser) e47() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -15015,10 +14128,14 @@ func (p *parser) e55() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -15033,16 +14150,20 @@ func (p *parser) e55() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -15057,7 +14178,8 @@ func (p *parser) e55() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 }
 
 // system_sq (Node body inlined)
@@ -15065,10 +14187,14 @@ func (p *parser) e57() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -15083,16 +14209,20 @@ func (p *parser) e57() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -15107,7 +14237,8 @@ func (p *parser) e57() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 }
 
 // pubid_literal (Node body inlined)
@@ -15282,10 +14413,14 @@ func (p *parser) e60() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -15300,16 +14435,20 @@ func (p *parser) e60() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -15324,7 +14463,8 @@ func (p *parser) e60() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 }
 
 // pubid_sq (Node body inlined)
@@ -15332,10 +14472,14 @@ func (p *parser) e62() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -15350,16 +14494,20 @@ func (p *parser) e62() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -15374,7 +14522,8 @@ func (p *parser) e62() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 }
 
 // element_decl (Node body inlined)
@@ -15675,27 +14824,36 @@ func (p *parser) e67() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1 int
 			ok bool
+			v2 *Node
 		)
+
+		x1 = p.pos
 
 		if _, ok = p.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 			goto fail_ordinary
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1 int
 		ok bool
+		v2 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -15705,31 +14863,40 @@ func (p *parser) e69() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1 int
 			ok bool
+			v2 *Node
 		)
+
+		x1 = p.pos
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 			p.pos += 3
 		} else if _, ok = p.matchLiteral(lit68, "ANY", 44, false); !ok {
 			goto fail_ordinary
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1 int
 		ok bool
+		v2 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit68, "ANY", 44, false); !ok {
 		goto fail
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -16718,10 +15885,14 @@ func (p *parser) e85() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -16734,18 +15905,22 @@ func (p *parser) e85() (*Node, bool) {
 			goto fail_ordinary
 		}
 		p.pos += size
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -16758,7 +15933,8 @@ func (p *parser) e85() (*Node, bool) {
 		goto fail
 	}
 	p.pos += size
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -17110,93 +16286,102 @@ func (p *parser) e92() (*Node, bool) {
 	if p.control == nil {
 
 		var (
-			x1 mark
-			x3 rune
-			x4 bool
-			ok bool
+			x1  int
+			x2  mark
+			x4  rune
+			x5  bool
+			ok  bool
+			v10 *Node
 		)
 
-		x1 = p.mark()
+		x1 = p.pos
+
+		x2 = p.mark()
 		if p.pos < len(p.in) {
 
-			x3, _, x4 = p.in[p.pos], 1, true
+			x4, _, x5 = p.in[p.pos], 1, true
 		} else {
-			x3, _, x4 = p.peek()
+			x4, _, x5 = p.peek()
 		}
-		if !(x4 && (x3 == 35)) && p.depth <= p.maxDepth {
+		if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 53)
-			goto L5_ordinary
+			goto L6_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit90, "#REQUIRED", 53, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.reset(x1)
-	L5_ordinary:
-		if !(x4 && (x3 == 35)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 54)
 			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.reset(x2)
+	L6_ordinary:
+		if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 54)
+			goto L8_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit91, "#IMPLIED", 54, false); !ok {
-			goto L8_ordinary
+			goto L9_ordinary
 		}
-		goto L2_ordinary
+		goto L3_ordinary
+	L9_ordinary:
+		p.reset(x2)
 	L8_ordinary:
-		p.reset(x1)
-	L7_ordinary:
 		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
+	L3_ordinary:
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
-		x1 mark
-		x3 rune
-		x4 bool
-		ok bool
+		x1  int
+		x2  mark
+		x4  rune
+		x5  bool
+		ok  bool
+		v10 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = p.mark()
+	x2 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x3, _, x4 = p.in[p.pos], 1, true
+		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
-		x3, _, x4 = p.peek()
+		x4, _, x5 = p.peek()
 	}
-	if !(x4 && (x3 == 35)) && p.depth <= p.maxDepth {
+	if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 53)
-		goto L5
+		goto L6
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit90, "#REQUIRED", 53, false); !ok {
-		goto L6
-	}
-	goto L2
-L6:
-	p.reset(x1)
-L5:
-	if !(x4 && (x3 == 35)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 54)
 		goto L7
+	}
+	goto L3
+L7:
+	p.reset(x2)
+L6:
+	if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 54)
+		goto L8
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit91, "#IMPLIED", 54, false); !ok {
-		goto L8
+		goto L9
 	}
-	goto L2
+	goto L3
+L9:
+	p.reset(x2)
 L8:
-	p.reset(x1)
-L7:
 	goto fail
-L2:
-	return nil, true
+L3:
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 fail:
 	return nil, false
 }
@@ -17206,27 +16391,36 @@ func (p *parser) e94() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1 int
 			ok bool
+			v2 *Node
 		)
+
+		x1 = p.pos
 
 		if _, ok = p.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 			goto fail_ordinary
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1 int
 		ok bool
+		v2 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -17359,241 +16553,250 @@ func (p *parser) e104() (*Node, bool) {
 	if p.control == nil {
 
 		var (
-			x1 mark
-			x3 rune
-			x4 bool
-			ok bool
+			x1  int
+			x2  mark
+			x4  rune
+			x5  bool
+			ok  bool
+			v22 *Node
 		)
 
-		x1 = p.mark()
+		x1 = p.pos
+
+		x2 = p.mark()
 		if p.pos < len(p.in) {
 
-			x3, _, x4 = p.in[p.pos], 1, true
+			x4, _, x5 = p.in[p.pos], 1, true
 		} else {
-			x3, _, x4 = p.peek()
+			x4, _, x5 = p.peek()
 		}
-		if !(x4 && (x3 == 67)) && p.depth <= p.maxDepth {
+		if !(x5 && (x4 == 67)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 57)
-			goto L5_ordinary
+			goto L6_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit96, "CDATA", 57, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.reset(x1)
-	L5_ordinary:
-		if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 58)
 			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.reset(x2)
+	L6_ordinary:
+		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 58)
+			goto L8_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit97, "IDREFS", 58, false); !ok {
-			goto L8_ordinary
-		}
-		goto L2_ordinary
-	L8_ordinary:
-		p.reset(x1)
-	L7_ordinary:
-		if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 59)
 			goto L9_ordinary
+		}
+		goto L3_ordinary
+	L9_ordinary:
+		p.reset(x2)
+	L8_ordinary:
+		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 59)
+			goto L10_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit98, "IDREF", 59, false); !ok {
-			goto L10_ordinary
-		}
-		goto L2_ordinary
-	L10_ordinary:
-		p.reset(x1)
-	L9_ordinary:
-		if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 60)
 			goto L11_ordinary
+		}
+		goto L3_ordinary
+	L11_ordinary:
+		p.reset(x2)
+	L10_ordinary:
+		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 60)
+			goto L12_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 73 && p.in[p.pos+1] == 68) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit99, "ID", 60, false); !ok {
-			goto L12_ordinary
-		}
-		goto L2_ordinary
-	L12_ordinary:
-		p.reset(x1)
-	L11_ordinary:
-		if !(x4 && (x3 == 69)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 61)
 			goto L13_ordinary
+		}
+		goto L3_ordinary
+	L13_ordinary:
+		p.reset(x2)
+	L12_ordinary:
+		if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 61)
+			goto L14_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit100, "ENTITY", 61, false); !ok {
-			goto L14_ordinary
-		}
-		goto L2_ordinary
-	L14_ordinary:
-		p.reset(x1)
-	L13_ordinary:
-		if !(x4 && (x3 == 69)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 62)
 			goto L15_ordinary
+		}
+		goto L3_ordinary
+	L15_ordinary:
+		p.reset(x2)
+	L14_ordinary:
+		if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 62)
+			goto L16_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit101, "ENTITIES", 62, false); !ok {
-			goto L16_ordinary
-		}
-		goto L2_ordinary
-	L16_ordinary:
-		p.reset(x1)
-	L15_ordinary:
-		if !(x4 && (x3 == 78)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 63)
 			goto L17_ordinary
+		}
+		goto L3_ordinary
+	L17_ordinary:
+		p.reset(x2)
+	L16_ordinary:
+		if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 63)
+			goto L18_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit102, "NMTOKENS", 63, false); !ok {
-			goto L18_ordinary
-		}
-		goto L2_ordinary
-	L18_ordinary:
-		p.reset(x1)
-	L17_ordinary:
-		if !(x4 && (x3 == 78)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 64)
 			goto L19_ordinary
+		}
+		goto L3_ordinary
+	L19_ordinary:
+		p.reset(x2)
+	L18_ordinary:
+		if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 64)
+			goto L20_ordinary
 		}
 
 		if _, ok = p.matchLiteral(lit103, "NMTOKEN", 64, false); !ok {
-			goto L20_ordinary
+			goto L21_ordinary
 		}
-		goto L2_ordinary
+		goto L3_ordinary
+	L21_ordinary:
+		p.reset(x2)
 	L20_ordinary:
-		p.reset(x1)
-	L19_ordinary:
 		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
+	L3_ordinary:
+		v22 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v22, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
-		x1 mark
-		x3 rune
-		x4 bool
-		ok bool
+		x1  int
+		x2  mark
+		x4  rune
+		x5  bool
+		ok  bool
+		v22 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = p.mark()
+	x2 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x3, _, x4 = p.in[p.pos], 1, true
+		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
-		x3, _, x4 = p.peek()
+		x4, _, x5 = p.peek()
 	}
-	if !(x4 && (x3 == 67)) && p.depth <= p.maxDepth {
+	if !(x5 && (x4 == 67)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 57)
-		goto L5
+		goto L6
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit96, "CDATA", 57, false); !ok {
-		goto L6
-	}
-	goto L2
-L6:
-	p.reset(x1)
-L5:
-	if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 58)
 		goto L7
+	}
+	goto L3
+L7:
+	p.reset(x2)
+L6:
+	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 58)
+		goto L8
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit97, "IDREFS", 58, false); !ok {
-		goto L8
-	}
-	goto L2
-L8:
-	p.reset(x1)
-L7:
-	if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 59)
 		goto L9
+	}
+	goto L3
+L9:
+	p.reset(x2)
+L8:
+	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 59)
+		goto L10
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit98, "IDREF", 59, false); !ok {
-		goto L10
-	}
-	goto L2
-L10:
-	p.reset(x1)
-L9:
-	if !(x4 && (x3 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 60)
 		goto L11
+	}
+	goto L3
+L11:
+	p.reset(x2)
+L10:
+	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 60)
+		goto L12
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 73 && p.in[p.pos+1] == 68) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit99, "ID", 60, false); !ok {
-		goto L12
-	}
-	goto L2
-L12:
-	p.reset(x1)
-L11:
-	if !(x4 && (x3 == 69)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 61)
 		goto L13
+	}
+	goto L3
+L13:
+	p.reset(x2)
+L12:
+	if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 61)
+		goto L14
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit100, "ENTITY", 61, false); !ok {
-		goto L14
-	}
-	goto L2
-L14:
-	p.reset(x1)
-L13:
-	if !(x4 && (x3 == 69)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 62)
 		goto L15
+	}
+	goto L3
+L15:
+	p.reset(x2)
+L14:
+	if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 62)
+		goto L16
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit101, "ENTITIES", 62, false); !ok {
-		goto L16
-	}
-	goto L2
-L16:
-	p.reset(x1)
-L15:
-	if !(x4 && (x3 == 78)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 63)
 		goto L17
+	}
+	goto L3
+L17:
+	p.reset(x2)
+L16:
+	if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 63)
+		goto L18
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit102, "NMTOKENS", 63, false); !ok {
-		goto L18
-	}
-	goto L2
-L18:
-	p.reset(x1)
-L17:
-	if !(x4 && (x3 == 78)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 64)
 		goto L19
+	}
+	goto L3
+L19:
+	p.reset(x2)
+L18:
+	if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 64)
+		goto L20
 	}
 	p.stepWork()
 	if _, ok = p.matchLiteral(lit103, "NMTOKEN", 64, false); !ok {
-		goto L20
+		goto L21
 	}
-	goto L2
+	goto L3
+L21:
+	p.reset(x2)
 L20:
-	p.reset(x1)
-L19:
 	goto fail
-L2:
-	return nil, true
+L3:
+	v22 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v22, true
 fail:
 	return nil, false
 }
@@ -18642,22 +17845,26 @@ func (p *parser) e117() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
+			x8   int
+			v10  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -18670,55 +17877,59 @@ func (p *parser) e117() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 
-			if _, ok = p.call(rules[77], 0); !ok {
-				goto L8_ordinary
+			if _, ok = p.call(rules[78], 0); !ok {
+				goto L9_ordinary
 			}
-			goto L5_ordinary
-		L8_ordinary:
-			p.reset(x4)
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L6_ordinary
+		L9_ordinary:
+			p.reset(x5)
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
+		x8   int
+		v10  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -18731,33 +17942,34 @@ func (p *parser) e117() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		p.stepWork()
-		if _, ok = p.call(rules[77], 0); !ok {
-			goto L8
+		if _, ok = p.call(rules[78], 0); !ok {
+			goto L9
 		}
-		goto L5
-	L8:
-		p.reset(x4)
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L6
+	L9:
+		p.reset(x5)
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 }
 
 // entity_sq (Node body inlined)
@@ -18766,22 +17978,26 @@ func (p *parser) e119() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
+			x8   int
+			v10  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -18794,55 +18010,59 @@ func (p *parser) e119() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 
-			if _, ok = p.call(rules[77], 0); !ok {
-				goto L8_ordinary
+			if _, ok = p.call(rules[78], 0); !ok {
+				goto L9_ordinary
 			}
-			goto L5_ordinary
-		L8_ordinary:
-			p.reset(x4)
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L6_ordinary
+		L9_ordinary:
+			p.reset(x5)
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
+		x8   int
+		v10  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -18855,33 +18075,34 @@ func (p *parser) e119() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		p.stepWork()
-		if _, ok = p.call(rules[77], 0); !ok {
-			goto L8
+		if _, ok = p.call(rules[78], 0); !ok {
+			goto L9
 		}
-		goto L5
-	L8:
-		p.reset(x4)
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L6
+	L9:
+		p.reset(x5)
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 }
 
 // notation_decl (Node body inlined)
@@ -19330,16 +18551,7 @@ func (p *parser) e128() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.compare("==", func() toperand {
-
-					return c.fieldOperand(func() any {
-
-						return c.cast(func() any { return c.cap(3) }(), fieldType1)
-					}(), "Text")
-				}(), func() toperand {
-
-					return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-				}())
+				return any(c.p.textEqual(c.textStr(func() any { return c.cap(3) }()), c.textStr(func() any { return c.cap(0) }())) == true)
 			}()
 		}) {
 			goto L28_ordinary
@@ -19512,16 +18724,7 @@ L17:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.compare("==", func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any {
-					c.p.stepWork()
-					return c.cast(func() any { c.p.stepWork(); return c.cap(3) }(), fieldType1)
-				}(), "Text")
-			}(), func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-			}())
+			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return c.cap(3) }()), c.textStr(func() any { c.p.stepWork(); return c.cap(0) }())) == true)
 		}()
 	}) {
 		goto L28
@@ -19796,22 +18999,26 @@ func (p *parser) e132() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
+			x8   int
+			v10  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -19824,55 +19031,59 @@ func (p *parser) e132() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 
-			if _, ok = p.call(rules[77], 0); !ok {
-				goto L8_ordinary
+			if _, ok = p.call(rules[78], 0); !ok {
+				goto L9_ordinary
 			}
-			goto L5_ordinary
-		L8_ordinary:
-			p.reset(x4)
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L6_ordinary
+		L9_ordinary:
+			p.reset(x5)
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
+		x8   int
+		v10  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -19885,33 +19096,34 @@ func (p *parser) e132() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		p.stepWork()
-		if _, ok = p.call(rules[77], 0); !ok {
-			goto L8
+		if _, ok = p.call(rules[78], 0); !ok {
+			goto L9
 		}
-		goto L5
-	L8:
-		p.reset(x4)
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L6
+	L9:
+		p.reset(x5)
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 }
 
 // att_sq (Node body inlined)
@@ -19920,22 +19132,26 @@ func (p *parser) e134() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
+			x8   int
+			v10  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -19948,55 +19164,59 @@ func (p *parser) e134() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 
-			if _, ok = p.call(rules[77], 0); !ok {
-				goto L8_ordinary
+			if _, ok = p.call(rules[78], 0); !ok {
+				goto L9_ordinary
 			}
-			goto L5_ordinary
-		L8_ordinary:
-			p.reset(x4)
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L6_ordinary
+		L9_ordinary:
+			p.reset(x5)
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v10 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v10, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
+		x8   int
+		v10  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -20009,33 +19229,34 @@ func (p *parser) e134() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		p.stepWork()
-		if _, ok = p.call(rules[77], 0); !ok {
-			goto L8
+		if _, ok = p.call(rules[78], 0); !ok {
+			goto L9
 		}
-		goto L5
-	L8:
-		p.reset(x4)
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L6
+	L9:
+		p.reset(x5)
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v10 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v10, true
 }
 
 // content (Node body inlined)
@@ -20410,24 +19631,28 @@ func (p *parser) e140() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
-			x8   rune
-			x9   bool
-			x12  mark
+			x8   int
+			x9   rune
+			x10  bool
+			x13  mark
+			v15  *Node
 		)
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -20440,64 +19665,65 @@ func (p *parser) e140() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 			if p.pos < len(p.in) {
 
-				x8, _, x9 = p.in[p.pos], 1, true
+				x9, _, x10 = p.in[p.pos], 1, true
 			} else {
-				x8, _, x9 = p.peek()
+				x9, _, x10 = p.peek()
 			}
-			if !(x9 && (x8 == 93)) && p.depth <= p.maxDepth {
+			if !(x10 && (x9 == 93)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 31)
-				goto L10_ordinary
+				goto L11_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 				p.pos++
 			} else if _, ok = p.matchLiteral(lit40, "]", 31, false); !ok {
-				goto L11_ordinary
+				goto L12_ordinary
 			}
 
-			x12 = p.mark()
+			x13 = p.mark()
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 				p.pos += 2
 			} else if _, ok = p.matchLiteral(lit139, "]>", 77, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 			p.silent--
-			p.reset(x12)
-			goto L11_ordinary
-		L13_ordinary:
+			p.reset(x13)
+			goto L12_ordinary
+		L14_ordinary:
 			p.silent--
-			p.reset(x12)
-			goto L5_ordinary
+			p.reset(x13)
+			goto L6_ordinary
+		L12_ordinary:
+			p.reset(x5)
 		L11_ordinary:
-			p.reset(x4)
-		L10_ordinary:
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		return nil, true
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v15, true
 	fail_ordinary:
 		return nil, false
 	}
@@ -20505,25 +19731,28 @@ func (p *parser) e140() (*Node, bool) {
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
-		x12  mark
+		x8   int
+		x9   rune
+		x10  bool
+		x13  mark
+		v15  *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -20536,65 +19765,66 @@ func (p *parser) e140() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x8, _, x9 = p.in[p.pos], 1, true
+			x9, _, x10 = p.in[p.pos], 1, true
 		} else {
-			x8, _, x9 = p.peek()
+			x9, _, x10 = p.peek()
 		}
-		if !(x9 && (x8 == 93)) && p.depth <= p.maxDepth {
+		if !(x10 && (x9 == 93)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 31)
-			goto L10
+			goto L11
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit40, "]", 31, false); !ok {
-			goto L11
+			goto L12
 		}
 		p.stepWork()
-		x12 = p.mark()
+		x13 = p.mark()
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit139, "]>", 77, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.silent--
-		p.reset(x12)
-		goto L11
-	L13:
+		p.reset(x13)
+		goto L12
+	L14:
 		p.silent--
-		p.reset(x12)
-		goto L5
+		p.reset(x13)
+		goto L6
+	L12:
+		p.reset(x5)
 	L11:
-		p.reset(x4)
-	L10:
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	return nil, true
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v15, true
 fail:
 	return nil, false
 }
@@ -20667,25 +19897,29 @@ func (p *parser) e145() (*Node, bool) {
 
 		var (
 			x1   int
-			x2   mark
-			x4   mark
+			x2   int
+			x3   mark
+			x5   mark
 			ch   rune
 			size int
 			ok   bool
-			x7   int
-			x8   rune
-			x9   bool
-			x12  mark
+			x8   int
+			x9   rune
+			x10  bool
+			x13  mark
+			v15  *Node
 		)
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2 = p.mark()
+			x3 = p.mark()
 
-			x4 = p.mark()
+			x5 = p.mark()
 
-			x7 = 0
+			x8 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -20698,86 +19932,90 @@ func (p *parser) e145() (*Node, bool) {
 					break
 				}
 				p.pos += size
-				x7++
+				x8++
 			}
-			if x7 < 1 {
-				goto L6_ordinary
+			if x8 < 1 {
+				goto L7_ordinary
 			}
-			goto L5_ordinary
-		L6_ordinary:
-			p.reset(x4)
+			goto L6_ordinary
+		L7_ordinary:
+			p.reset(x5)
 			if p.pos < len(p.in) {
 
-				x8, _, x9 = p.in[p.pos], 1, true
+				x9, _, x10 = p.in[p.pos], 1, true
 			} else {
-				x8, _, x9 = p.peek()
+				x9, _, x10 = p.peek()
 			}
-			if !(x9 && (x8 == 93)) && p.depth <= p.maxDepth {
+			if !(x10 && (x9 == 93)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 31)
-				goto L10_ordinary
+				goto L11_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 				p.pos++
 			} else if _, ok = p.matchLiteral(lit40, "]", 31, false); !ok {
-				goto L11_ordinary
+				goto L12_ordinary
 			}
 
-			x12 = p.mark()
+			x13 = p.mark()
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 				p.pos += 2
 			} else if _, ok = p.matchLiteral(lit139, "]>", 77, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 			p.silent--
-			p.reset(x12)
-			goto L11_ordinary
-		L13_ordinary:
+			p.reset(x13)
+			goto L12_ordinary
+		L14_ordinary:
 			p.silent--
-			p.reset(x12)
-			goto L5_ordinary
+			p.reset(x13)
+			goto L6_ordinary
+		L12_ordinary:
+			p.reset(x5)
 		L11_ordinary:
-			p.reset(x4)
-		L10_ordinary:
-			goto L3_ordinary
-		L5_ordinary:
-			x1++
-			if p.pos == x2.pos {
+			goto L4_ordinary
+		L6_ordinary:
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		return nil, true
+		v15 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v15, true
 	}
 
 	p.stepWork()
 	var (
 		x1   int
-		x2   mark
-		x4   mark
+		x2   int
+		x3   mark
+		x5   mark
 		ch   rune
 		size int
 		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
-		x12  mark
+		x8   int
+		x9   rune
+		x10  bool
+		x13  mark
+		v15  *Node
 	)
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		x4 = p.mark()
+		x5 = p.mark()
 		p.stepWork()
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -20790,62 +20028,63 @@ func (p *parser) e145() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6
+		if x8 < 1 {
+			goto L7
 		}
-		goto L5
-	L6:
-		p.reset(x4)
+		goto L6
+	L7:
+		p.reset(x5)
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x8, _, x9 = p.in[p.pos], 1, true
+			x9, _, x10 = p.in[p.pos], 1, true
 		} else {
-			x8, _, x9 = p.peek()
+			x9, _, x10 = p.peek()
 		}
-		if !(x9 && (x8 == 93)) && p.depth <= p.maxDepth {
+		if !(x10 && (x9 == 93)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 31)
-			goto L10
+			goto L11
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit40, "]", 31, false); !ok {
-			goto L11
+			goto L12
 		}
 		p.stepWork()
-		x12 = p.mark()
+		x13 = p.mark()
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit139, "]>", 77, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.silent--
-		p.reset(x12)
-		goto L11
-	L13:
+		p.reset(x13)
+		goto L12
+	L14:
 		p.silent--
-		p.reset(x12)
-		goto L5
+		p.reset(x13)
+		goto L6
+	L12:
+		p.reset(x5)
 	L11:
-		p.reset(x4)
-	L10:
-		goto L3
-	L5:
-		x1++
-		if p.pos == x2.pos {
+		goto L4
+	L6:
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	return nil, true
+	v15 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v15, true
 }
 
 // reference (Node body inlined)
@@ -20948,35 +20187,39 @@ func (p *parser) e149() (*Node, bool) {
 	if p.control == nil {
 
 		var (
-			x1   mark
-			x3   rune
-			x4   bool
+			x1   int
+			x2   mark
+			x4   rune
+			x5   bool
 			ok   bool
 			ch   rune
 			size int
-			x7   int
-			x10  int
+			x8   int
+			x11  int
+			v12  *Node
 		)
 
-		x1 = p.mark()
+		x1 = p.pos
+
+		x2 = p.mark()
 		if p.pos < len(p.in) {
 
-			x3, _, x4 = p.in[p.pos], 1, true
+			x4, _, x5 = p.in[p.pos], 1, true
 		} else {
-			x3, _, x4 = p.peek()
+			x4, _, x5 = p.peek()
 		}
-		if !(x4 && (x3 == 38)) && p.depth <= p.maxDepth {
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 81)
-			goto L5_ordinary
+			goto L6_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
 			p.pos += 3
 		} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
-			goto L6_ordinary
+			goto L7_ordinary
 		}
 
-		x7 = 0
+		x8 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -20989,33 +20232,33 @@ func (p *parser) e149() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x7++
+			x8++
 		}
-		if x7 < 1 {
-			goto L6_ordinary
+		if x8 < 1 {
+			goto L7_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L6_ordinary
+			goto L7_ordinary
 		}
-		goto L2_ordinary
+		goto L3_ordinary
+	L7_ordinary:
+		p.reset(x2)
 	L6_ordinary:
-		p.reset(x1)
-	L5_ordinary:
-		if !(x4 && (x3 == 38)) && p.depth <= p.maxDepth {
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 83)
-			goto L8_ordinary
+			goto L9_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
-			goto L9_ordinary
+			goto L10_ordinary
 		}
 
-		x10 = 0
+		x11 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -21028,61 +20271,65 @@ func (p *parser) e149() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x10++
+			x11++
 		}
-		if x10 < 1 {
-			goto L9_ordinary
+		if x11 < 1 {
+			goto L10_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L9_ordinary
+			goto L10_ordinary
 		}
-		goto L2_ordinary
+		goto L3_ordinary
+	L10_ordinary:
+		p.reset(x2)
 	L9_ordinary:
-		p.reset(x1)
-	L8_ordinary:
 		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
+	L3_ordinary:
+		v12 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v12, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
-		x1   mark
-		x3   rune
-		x4   bool
+		x1   int
+		x2   mark
+		x4   rune
+		x5   bool
 		ok   bool
 		ch   rune
 		size int
-		x7   int
-		x10  int
+		x8   int
+		x11  int
+		v12  *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = p.mark()
+	x2 = p.mark()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x3, _, x4 = p.in[p.pos], 1, true
+		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
-		x3, _, x4 = p.peek()
+		x4, _, x5 = p.peek()
 	}
-	if !(x4 && (x3 == 38)) && p.depth <= p.maxDepth {
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 81)
-		goto L5
+		goto L6
 	}
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
 		p.pos += 3
 	} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
-		goto L6
+		goto L7
 	}
 	p.stepWork()
-	x7 = 0
+	x8 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -21095,34 +20342,34 @@ func (p *parser) e149() (*Node, bool) {
 			break
 		}
 		p.pos += size
-		x7++
+		x8++
 	}
-	if x7 < 1 {
-		goto L6
+	if x8 < 1 {
+		goto L7
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L6
+		goto L7
 	}
-	goto L2
+	goto L3
+L7:
+	p.reset(x2)
 L6:
-	p.reset(x1)
-L5:
-	if !(x4 && (x3 == 38)) && p.depth <= p.maxDepth {
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 83)
-		goto L8
+		goto L9
 	}
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
-		goto L9
+		goto L10
 	}
 	p.stepWork()
-	x10 = 0
+	x11 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -21135,24 +20382,25 @@ L5:
 			break
 		}
 		p.pos += size
-		x10++
+		x11++
 	}
-	if x10 < 1 {
-		goto L9
+	if x11 < 1 {
+		goto L10
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L9
+		goto L10
 	}
-	goto L2
+	goto L3
+L10:
+	p.reset(x2)
 L9:
-	p.reset(x1)
-L8:
 	goto fail
-L2:
-	return nil, true
+L3:
+	v12 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v12, true
 fail:
 	return nil, false
 }
@@ -21162,8 +20410,12 @@ func (p *parser) e151() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1 int
 			ok bool
+			v2 *Node
 		)
+
+		x1 = p.pos
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 			p.pos++
@@ -21171,7 +20423,7 @@ func (p *parser) e151() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.r69(); !ok {
+		if _, ok = p.r77(); !ok {
 			goto fail_ordinary
 		}
 
@@ -21180,16 +20432,20 @@ func (p *parser) e151() (*Node, bool) {
 		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1 int
 		ok bool
+		v2 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -21198,7 +20454,7 @@ func (p *parser) e151() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.r69(); !ok {
+	if _, ok = p.r77(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -21207,7 +20463,8 @@ func (p *parser) e151() (*Node, bool) {
 	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -21217,10 +20474,14 @@ func (p *parser) e153() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
+			v2   *Node
 		)
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -21247,18 +20508,22 @@ func (p *parser) e153() (*Node, bool) {
 			}
 			p.pos += size
 		}
-		return nil, true
+		v2 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v2, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
+		v2   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -21286,7 +20551,8 @@ func (p *parser) e153() (*Node, bool) {
 		}
 		p.pos += size
 	}
-	return nil, true
+	v2 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v2, true
 fail:
 	return nil, false
 }
@@ -21354,30 +20620,35 @@ func (p *parser) e155() (*Node, bool) {
 
 		var (
 			x1 int
-			x2 mark
+			x2 int
+			x3 mark
 			ok bool
+			v5 *Node
 		)
 
-		x1 = 0
-		for {
-			x2 = p.mark()
+		x1 = p.pos
 
-			if _, ok = p.r78(); !ok {
-				goto L3_ordinary
+		x2 = 0
+		for {
+			x3 = p.mark()
+
+			if _, ok = p.r79(); !ok {
+				goto L4_ordinary
 			}
-			x1++
-			if p.pos == x2.pos {
+			x2++
+			if p.pos == x3.pos {
 				break
 			}
 			continue
-		L3_ordinary:
-			p.reset(x2)
+		L4_ordinary:
+			p.reset(x3)
 			break
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		return nil, true
+		v5 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v5, true
 	fail_ordinary:
 		return nil, false
 	}
@@ -21385,31 +20656,35 @@ func (p *parser) e155() (*Node, bool) {
 	p.stepWork()
 	var (
 		x1 int
-		x2 mark
+		x2 int
+		x3 mark
 		ok bool
+		v5 *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2 = p.mark()
+		x3 = p.mark()
 		p.stepWork()
-		if _, ok = p.r78(); !ok {
-			goto L3
+		if _, ok = p.r79(); !ok {
+			goto L4
 		}
-		x1++
-		if p.pos == x2.pos {
+		x2++
+		if p.pos == x3.pos {
 			break
 		}
 		continue
-	L3:
-		p.reset(x2)
+	L4:
+		p.reset(x3)
 		break
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	return nil, true
+	v5 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v5, true
 fail:
 	return nil, false
 }
@@ -21798,8 +21073,91 @@ fail:
 	return nil, false
 }
 
-// reference (Node body inlined)
+// name (value-free body inlined)
 func (p *parser) e161() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v    *Node
+			ch   rune
+			size int
+			ok   bool
+		)
+
+		if p.pos < len(p.in) {
+
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expectOrdinary(p.pos, 51)
+			goto fail_ordinary
+		}
+		p.pos += size
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+				p.expectOrdinary(p.pos, 84)
+				break
+			}
+			p.pos += size
+		}
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		v    *Node
+		ch   rune
+		size int
+		ok   bool
+	)
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+		p.expect(p.pos, 51)
+		goto fail
+	}
+	p.pos += size
+	p.stepWork()
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expect(p.pos, 84)
+			break
+		}
+		p.pos += size
+	}
+	v = nil
+	return v, true
+fail:
+	return nil, false
+}
+
+// reference (Node body inlined)
+func (p *parser) e162() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -21811,7 +21169,7 @@ func (p *parser) e161() (*Node, bool) {
 
 		x1 = p.mark()
 
-		if _, ok = p.r67(); !ok {
+		if _, ok = p.r80(); !ok {
 			goto L3_ordinary
 		}
 		goto L2_ordinary
@@ -21828,7 +21186,7 @@ func (p *parser) e161() (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if _, ok = p.r68(); !ok {
+		if _, ok = p.r81(); !ok {
 			goto L7_ordinary
 		}
 		goto L2_ordinary
@@ -21852,7 +21210,7 @@ func (p *parser) e161() (*Node, bool) {
 	p.stepWork()
 	x1 = p.mark()
 	p.stepWork()
-	if _, ok = p.r67(); !ok {
+	if _, ok = p.r80(); !ok {
 		goto L3
 	}
 	goto L2
@@ -21869,7 +21227,7 @@ L3:
 		goto L6
 	}
 	p.stepWork()
-	if _, ok = p.r68(); !ok {
+	if _, ok = p.r81(); !ok {
 		goto L7
 	}
 	goto L2
@@ -21884,7 +21242,7 @@ fail:
 }
 
 // name_char (value-free body inlined)
-func (p *parser) e162() (*Node, bool) {
+func (p *parser) e163() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -21930,6 +21288,289 @@ func (p *parser) e162() (*Node, bool) {
 		goto fail
 	}
 	p.pos += size
+	v = nil
+	return v, true
+fail:
+	return nil, false
+}
+
+// char_ref (value-free body inlined)
+func (p *parser) e164() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v    *Node
+			x1   int
+			x2   int
+			x4   rune
+			x5   bool
+			ok   bool
+			ch   rune
+			size int
+			x8   int
+			x11  int
+		)
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 81)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+			p.pos += 3
+		} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
+			goto L7_ordinary
+		}
+
+		x8 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+				p.expectOrdinary(p.pos, 82)
+				break
+			}
+			p.pos += size
+			x8++
+		}
+		if x8 < 1 {
+			goto L7_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 83)
+			goto L9_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
+			goto L10_ordinary
+		}
+
+		x11 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57) {
+				p.expectOrdinary(p.pos, 14)
+				break
+			}
+			p.pos += size
+			x11++
+		}
+		if x11 < 1 {
+			goto L10_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L9_ordinary:
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		v    *Node
+		x1   int
+		x2   int
+		x4   rune
+		x5   bool
+		ok   bool
+		ch   rune
+		size int
+		x8   int
+		x11  int
+	)
+	p.stepWork()
+	p.stepWork()
+	x1, x2 = p.pos, len(p.recovered)
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 81)
+		goto L6
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+		p.pos += 3
+	} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
+		goto L7
+	}
+	p.stepWork()
+	x8 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+			p.expect(p.pos, 82)
+			break
+		}
+		p.pos += size
+		x8++
+	}
+	if x8 < 1 {
+		goto L7
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L6:
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 83)
+		goto L9
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+		p.pos += 2
+	} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
+		goto L10
+	}
+	p.stepWork()
+	x11 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 14)
+			break
+		}
+		p.pos += size
+		x11++
+	}
+	if x11 < 1 {
+		goto L10
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L10
+	}
+	goto L3
+L10:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L9:
+	goto fail
+L3:
+	v = nil
+	return v, true
+fail:
+	return nil, false
+}
+
+// entity_ref (value-free body inlined)
+func (p *parser) e165() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			v  *Node
+			ok bool
+		)
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
+			goto fail_ordinary
+		}
+
+		if _, ok = p.r77(); !ok {
+			goto fail_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto fail_ordinary
+		}
+		v = nil
+		return v, true
+	fail_ordinary:
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		v  *Node
+		ok bool
+	)
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if _, ok = p.r77(); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto fail
+	}
 	v = nil
 	return v, true
 fail:
@@ -23782,8 +23423,113 @@ fail:
 	return nil, false
 }
 
+// name, called as by invokePlain (body inlined)
+func (p *parser) r77() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			ch    rune
+			size  int
+			ok    bool
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		if p.pos < len(p.in) {
+
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expectOrdinary(p.pos, 51)
+			goto fail_ordinary
+		}
+		p.pos += size
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+				p.expectOrdinary(p.pos, 84)
+				break
+			}
+			p.pos += size
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     *Node
+		rec   int
+		ch    rune
+		size  int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+		p.expect(p.pos, 51)
+		goto fail
+	}
+	p.pos += size
+	p.stepWork()
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expect(p.pos, 84)
+			break
+		}
+		p.pos += size
+	}
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
 // name_char, called as by invokePlain (body inlined)
-func (p *parser) r78() (*Node, bool) {
+func (p *parser) r79() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -23857,8 +23603,335 @@ fail:
 	return nil, false
 }
 
+// char_ref, called as by invokePlain (body inlined)
+func (p *parser) r80() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			ch    rune
+			size  int
+			x8    int
+			x11   int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 81)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+			p.pos += 3
+		} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
+			goto L7_ordinary
+		}
+
+		x8 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+				p.expectOrdinary(p.pos, 82)
+				break
+			}
+			p.pos += size
+			x8++
+		}
+		if x8 < 1 {
+			goto L7_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 83)
+			goto L9_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
+			goto L10_ordinary
+		}
+
+		x11 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57) {
+				p.expectOrdinary(p.pos, 14)
+				break
+			}
+			p.pos += size
+			x11++
+		}
+		if x11 < 1 {
+			goto L10_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L9_ordinary:
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     *Node
+		rec   int
+		x1    int
+		x2    int
+		x4    rune
+		x5    bool
+		ok    bool
+		ch    rune
+		size  int
+		x8    int
+		x11   int
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	x1, x2 = p.pos, len(p.recovered)
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 81)
+		goto L6
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+		p.pos += 3
+	} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
+		goto L7
+	}
+	p.stepWork()
+	x8 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+			p.expect(p.pos, 82)
+			break
+		}
+		p.pos += size
+		x8++
+	}
+	if x8 < 1 {
+		goto L7
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L6:
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 83)
+		goto L9
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+		p.pos += 2
+	} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
+		goto L10
+	}
+	p.stepWork()
+	x11 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 14)
+			break
+		}
+		p.pos += size
+		x11++
+	}
+	if x11 < 1 {
+		goto L10
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L10
+	}
+	goto L3
+L10:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L9:
+	goto fail
+L3:
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
+// entity_ref, called as by invokePlain (body inlined)
+func (p *parser) r81() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			ok    bool
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
+			goto fail_ordinary
+		}
+
+		if _, ok = p.r77(); !ok {
+			goto fail_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+			goto fail_ordinary
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     *Node
+		rec   int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit150, "&", 80, false); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if _, ok = p.r77(); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
+		goto fail
+	}
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
 // main (value-free body inlined)
-func (p *parser) e164() (*Node, bool) {
+func (p *parser) e167() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24017,7 +24090,7 @@ fail:
 }
 
 // misc_list (Node body inlined)
-func (p *parser) e166() (*Node, bool) {
+func (p *parser) e169() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24033,7 +24106,7 @@ func (p *parser) e166() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope165))
+			x1 = p.newFrame(len(scope168))
 			p.frame = x1
 
 			if _, ok = p.q74(); !ok {
@@ -24079,7 +24152,7 @@ func (p *parser) e166() (*Node, bool) {
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope165))
+		x1 = p.newFrame(len(scope168))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -24114,7 +24187,7 @@ fail:
 }
 
 // misc (value-free body inlined)
-func (p *parser) e167() (*Node, bool) {
+func (p *parser) e170() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24219,7 +24292,7 @@ fail:
 }
 
 // xml_decl (value-free body inlined)
-func (p *parser) e168() (*Node, bool) {
+func (p *parser) e171() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24337,7 +24410,7 @@ fail:
 }
 
 // version_info (value-free body inlined)
-func (p *parser) e169() (*Node, bool) {
+func (p *parser) e172() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24519,7 +24592,7 @@ fail:
 }
 
 // version_num (value-free body inlined)
-func (p *parser) e170() (*Node, bool) {
+func (p *parser) e173() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24602,7 +24675,7 @@ fail:
 }
 
 // encoding_decl (value-free body inlined)
-func (p *parser) e171() (*Node, bool) {
+func (p *parser) e174() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24784,7 +24857,7 @@ fail:
 }
 
 // enc_name (value-free body inlined)
-func (p *parser) e172() (*Node, bool) {
+func (p *parser) e175() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -24867,7 +24940,7 @@ fail:
 }
 
 // sd_decl (value-free body inlined)
-func (p *parser) e173() (*Node, bool) {
+func (p *parser) e176() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25049,7 +25122,7 @@ fail:
 }
 
 // yes_no (value-free body inlined)
-func (p *parser) e174() (*Node, bool) {
+func (p *parser) e177() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25163,7 +25236,7 @@ fail:
 }
 
 // eq (Node body inlined)
-func (p *parser) e175() (*Node, bool) {
+func (p *parser) e178() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25213,7 +25286,7 @@ fail:
 }
 
 // comment (Node body inlined)
-func (p *parser) e176() (*Node, bool) {
+func (p *parser) e179() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25268,7 +25341,7 @@ fail:
 }
 
 // comment_text (value-free body inlined)
-func (p *parser) e177() (*Node, bool) {
+func (p *parser) e180() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25461,7 +25534,7 @@ func (p *parser) e177() (*Node, bool) {
 }
 
 // pi (Node body inlined)
-func (p *parser) e178() (*Node, bool) {
+func (p *parser) e181() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25507,71 +25580,47 @@ func (p *parser) e178() (*Node, bool) {
 
 										return c.and(func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { return any("xml") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.compare("!=", func() toperand {
-
-													return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-												}(), toperand{v: func() any { return any("xmL") }()})
+												return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { return any("xMl") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.compare("!=", func() toperand {
-
-											return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { return any("xML") }()})
+										return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.compare("!=", func() toperand {
-
-										return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-									}(), toperand{v: func() any { return any("Xml") }()})
+									return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.compare("!=", func() toperand {
-
-									return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-								}(), toperand{v: func() any { return any("XmL") }()})
+								return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.compare("!=", func() toperand {
-
-								return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-							}(), toperand{v: func() any { return any("XMl") }()})
+							return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.compare("!=", func() toperand {
-
-							return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-						}(), toperand{v: func() any { return any("XML") }()})
+						return c.binary("!=", func() any { return c.text(func() any { return c.cap(0) }()) }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -25656,71 +25705,47 @@ func (p *parser) e178() (*Node, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xml") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.compare("!=", func() toperand {
-												c.p.stepWork()
-												return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-											}(), toperand{v: func() any { c.p.stepWork(); return any("xmL") }()})
+											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xMl") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.compare("!=", func() toperand {
-										c.p.stepWork()
-										return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-									}(), toperand{v: func() any { c.p.stepWork(); return any("xML") }()})
+									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.compare("!=", func() toperand {
-									c.p.stepWork()
-									return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-								}(), toperand{v: func() any { c.p.stepWork(); return any("Xml") }()})
+								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.compare("!=", func() toperand {
-								c.p.stepWork()
-								return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-							}(), toperand{v: func() any { c.p.stepWork(); return any("XmL") }()})
+							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.compare("!=", func() toperand {
-							c.p.stepWork()
-							return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-						}(), toperand{v: func() any { c.p.stepWork(); return any("XMl") }()})
+						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.compare("!=", func() toperand {
-						c.p.stepWork()
-						return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-					}(), toperand{v: func() any { c.p.stepWork(); return any("XML") }()})
+					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return c.cap(0) }()) }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -25763,7 +25788,7 @@ fail:
 }
 
 // pi_data (value-free body inlined)
-func (p *parser) e179() (*Node, bool) {
+func (p *parser) e182() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25970,7 +25995,7 @@ func (p *parser) e179() (*Node, bool) {
 }
 
 // doctype (value-free body inlined)
-func (p *parser) e180() (*Node, bool) {
+func (p *parser) e183() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -25990,7 +26015,7 @@ func (p *parser) e180() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -26071,7 +26096,7 @@ func (p *parser) e180() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -26137,7 +26162,7 @@ fail:
 }
 
 // int_subset (value-free body inlined)
-func (p *parser) e181() (*Node, bool) {
+func (p *parser) e184() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26228,7 +26253,7 @@ fail:
 }
 
 // decl (value-free body inlined)
-func (p *parser) e182() (*Node, bool) {
+func (p *parser) e185() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26453,7 +26478,7 @@ fail:
 }
 
 // pe_ref (value-free body inlined)
-func (p *parser) e183() (*Node, bool) {
+func (p *parser) e186() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26467,7 +26492,7 @@ func (p *parser) e183() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -26496,7 +26521,7 @@ func (p *parser) e183() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -26512,7 +26537,7 @@ fail:
 }
 
 // external_id (Node body inlined)
-func (p *parser) e184() (*Node, bool) {
+func (p *parser) e187() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26607,7 +26632,7 @@ fail:
 }
 
 // system_id (Node body inlined)
-func (p *parser) e185() (*Node, bool) {
+func (p *parser) e188() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26654,7 +26679,7 @@ fail:
 }
 
 // public_id (value-free body inlined)
-func (p *parser) e186() (*Node, bool) {
+func (p *parser) e189() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26722,7 +26747,7 @@ fail:
 }
 
 // system_literal (Node body inlined)
-func (p *parser) e187() (*Node, bool) {
+func (p *parser) e190() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26869,7 +26894,7 @@ fail:
 }
 
 // system_dq (value-free body inlined)
-func (p *parser) e188() (*Node, bool) {
+func (p *parser) e191() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26923,7 +26948,7 @@ func (p *parser) e188() (*Node, bool) {
 }
 
 // system_sq (value-free body inlined)
-func (p *parser) e189() (*Node, bool) {
+func (p *parser) e192() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -26977,7 +27002,7 @@ func (p *parser) e189() (*Node, bool) {
 }
 
 // pubid_literal (Node body inlined)
-func (p *parser) e190() (*Node, bool) {
+func (p *parser) e193() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27124,7 +27149,7 @@ fail:
 }
 
 // pubid_dq (value-free body inlined)
-func (p *parser) e191() (*Node, bool) {
+func (p *parser) e194() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27178,7 +27203,7 @@ func (p *parser) e191() (*Node, bool) {
 }
 
 // pubid_sq (value-free body inlined)
-func (p *parser) e192() (*Node, bool) {
+func (p *parser) e195() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27232,7 +27257,7 @@ func (p *parser) e192() (*Node, bool) {
 }
 
 // element_decl (value-free body inlined)
-func (p *parser) e193() (*Node, bool) {
+func (p *parser) e196() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27248,7 +27273,7 @@ func (p *parser) e193() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -27291,7 +27316,7 @@ func (p *parser) e193() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -27320,7 +27345,7 @@ fail:
 }
 
 // content_spec (value-free body inlined)
-func (p *parser) e194() (*Node, bool) {
+func (p *parser) e197() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27503,7 +27528,7 @@ fail:
 }
 
 // kw_empty (value-free body inlined)
-func (p *parser) e195() (*Node, bool) {
+func (p *parser) e198() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27537,7 +27562,7 @@ fail:
 }
 
 // kw_any (value-free body inlined)
-func (p *parser) e196() (*Node, bool) {
+func (p *parser) e199() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27575,7 +27600,7 @@ fail:
 }
 
 // mixed (Node body inlined)
-func (p *parser) e198() (*Node, bool) {
+func (p *parser) e201() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27622,7 +27647,7 @@ func (p *parser) e198() (*Node, bool) {
 		for {
 			x7 = p.mark()
 			x5 = p.frame
-			x4 = p.newFrame(len(scope197))
+			x4 = p.newFrame(len(scope200))
 			p.frame = x4
 
 			x9 = p.pos
@@ -27652,7 +27677,7 @@ func (p *parser) e198() (*Node, bool) {
 			v13 = p.newNodeOrdinary(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 			v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 			p.frame = x5
-			v15 = p.attachCaptures(v14, scope197, x4, x7.pos, p.pos)
+			v15 = p.attachCaptures(v14, scope200, x4, x7.pos, p.pos)
 			x6++
 			p.kidStack = append(p.kidStack, v15)
 			if p.pos == x7.pos {
@@ -27768,7 +27793,7 @@ func (p *parser) e198() (*Node, bool) {
 	for {
 		x7 = p.mark()
 		x5 = p.frame
-		x4 = p.newFrame(len(scope197))
+		x4 = p.newFrame(len(scope200))
 		p.frame = x4
 		p.stepWork()
 		x9 = p.pos
@@ -27801,7 +27826,7 @@ func (p *parser) e198() (*Node, bool) {
 		v13 = p.newNode(Node{kind: kindSeq, start: int32(x9), end: int32(p.pos), children: x10, fresh: true})
 		v14 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v13, x7.pos)
 		p.frame = x5
-		v15 = p.attachCaptures(v14, scope197, x4, x7.pos, p.pos)
+		v15 = p.attachCaptures(v14, scope200, x4, x7.pos, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v15)
 		if p.pos == x7.pos {
@@ -27873,7 +27898,7 @@ fail:
 }
 
 // choice (Node body inlined)
-func (p *parser) e200() (*Node, bool) {
+func (p *parser) e203() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -27903,7 +27928,7 @@ func (p *parser) e200() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope199))
+			x1 = p.newFrame(len(scope202))
 			p.frame = x1
 
 			if _, ok = p.q74(); !ok {
@@ -27993,7 +28018,7 @@ func (p *parser) e200() (*Node, bool) {
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope199))
+		x1 = p.newFrame(len(scope202))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -28059,7 +28084,7 @@ fail:
 }
 
 // sequence (Node body inlined)
-func (p *parser) e202() (*Node, bool) {
+func (p *parser) e205() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28090,7 +28115,7 @@ func (p *parser) e202() (*Node, bool) {
 		for {
 			x4 = p.mark()
 			x2 = p.frame
-			x1 = p.newFrame(len(scope201))
+			x1 = p.newFrame(len(scope204))
 			p.frame = x1
 
 			if _, ok = p.q74(); !ok {
@@ -28178,7 +28203,7 @@ func (p *parser) e202() (*Node, bool) {
 	for {
 		x4 = p.mark()
 		x2 = p.frame
-		x1 = p.newFrame(len(scope201))
+		x1 = p.newFrame(len(scope204))
 		p.frame = x1
 		p.stepWork()
 		p.stepWork()
@@ -28241,7 +28266,7 @@ fail:
 }
 
 // cp (Node body inlined)
-func (p *parser) e203() (*Node, bool) {
+func (p *parser) e206() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28360,7 +28385,7 @@ fail:
 }
 
 // name_particle (value-free body inlined)
-func (p *parser) e204() (*Node, bool) {
+func (p *parser) e207() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28370,7 +28395,7 @@ func (p *parser) e204() (*Node, bool) {
 			x2 int
 		)
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -28400,7 +28425,7 @@ func (p *parser) e204() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -28422,7 +28447,7 @@ fail:
 }
 
 // occurrence (value-free body inlined)
-func (p *parser) e205() (*Node, bool) {
+func (p *parser) e208() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28476,7 +28501,7 @@ fail:
 }
 
 // attlist_decl (value-free body inlined)
-func (p *parser) e206() (*Node, bool) {
+func (p *parser) e209() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28496,7 +28521,7 @@ func (p *parser) e206() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -28557,7 +28582,7 @@ func (p *parser) e206() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -28603,7 +28628,7 @@ fail:
 }
 
 // att_def (value-free body inlined)
-func (p *parser) e207() (*Node, bool) {
+func (p *parser) e210() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28615,7 +28640,7 @@ func (p *parser) e207() (*Node, bool) {
 			x7 int
 		)
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -28684,7 +28709,7 @@ func (p *parser) e207() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -28747,7 +28772,7 @@ fail:
 }
 
 // kw_required (value-free body inlined)
-func (p *parser) e208() (*Node, bool) {
+func (p *parser) e211() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28853,7 +28878,7 @@ fail:
 }
 
 // kw_fixed (value-free body inlined)
-func (p *parser) e209() (*Node, bool) {
+func (p *parser) e212() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -28887,7 +28912,7 @@ fail:
 }
 
 // att_type (value-free body inlined)
-func (p *parser) e210() (*Node, bool) {
+func (p *parser) e213() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29008,7 +29033,7 @@ fail:
 }
 
 // kw_type (value-free body inlined)
-func (p *parser) e211() (*Node, bool) {
+func (p *parser) e214() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29274,7 +29299,7 @@ fail:
 }
 
 // notation_type (value-free body inlined)
-func (p *parser) e212() (*Node, bool) {
+func (p *parser) e215() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29304,7 +29329,7 @@ func (p *parser) e212() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -29326,7 +29351,7 @@ func (p *parser) e212() (*Node, bool) {
 				goto L4_ordinary
 			}
 
-			if _, ok = p.q69(); !ok {
+			if _, ok = p.q75(); !ok {
 				goto L4_ordinary
 			}
 			x1++
@@ -29385,7 +29410,7 @@ func (p *parser) e212() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -29413,7 +29438,7 @@ func (p *parser) e212() (*Node, bool) {
 		}
 		p.stepWork()
 		p.stepWork()
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto L4
 		}
 		x1++
@@ -29443,7 +29468,7 @@ fail:
 }
 
 // enumeration (value-free body inlined)
-func (p *parser) e213() (*Node, bool) {
+func (p *parser) e216() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29596,7 +29621,7 @@ fail:
 }
 
 // entity_decl (value-free body inlined)
-func (p *parser) e214() (*Node, bool) {
+func (p *parser) e217() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29701,7 +29726,7 @@ fail:
 }
 
 // ge_decl (value-free body inlined)
-func (p *parser) e215() (*Node, bool) {
+func (p *parser) e218() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29721,7 +29746,7 @@ func (p *parser) e215() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -29757,7 +29782,7 @@ func (p *parser) e215() (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto L8_ordinary
 		}
 		goto L9_ordinary
@@ -29807,7 +29832,7 @@ func (p *parser) e215() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -29848,7 +29873,7 @@ L4:
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto L8
 	}
 	goto L9
@@ -29879,7 +29904,7 @@ fail:
 }
 
 // pe_decl (value-free body inlined)
-func (p *parser) e216() (*Node, bool) {
+func (p *parser) e219() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -29907,7 +29932,7 @@ func (p *parser) e216() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -29978,7 +30003,7 @@ func (p *parser) e216() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -30024,7 +30049,7 @@ fail:
 }
 
 // entity_value (Node body inlined)
-func (p *parser) e217() (*Node, bool) {
+func (p *parser) e220() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30171,7 +30196,7 @@ fail:
 }
 
 // entity_dq (value-free body inlined)
-func (p *parser) e218() (*Node, bool) {
+func (p *parser) e221() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30309,7 +30334,7 @@ func (p *parser) e218() (*Node, bool) {
 }
 
 // entity_sq (value-free body inlined)
-func (p *parser) e219() (*Node, bool) {
+func (p *parser) e222() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30447,7 +30472,7 @@ func (p *parser) e219() (*Node, bool) {
 }
 
 // notation_decl (value-free body inlined)
-func (p *parser) e220() (*Node, bool) {
+func (p *parser) e223() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30463,7 +30488,7 @@ func (p *parser) e220() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -30506,7 +30531,7 @@ func (p *parser) e220() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -30535,7 +30560,7 @@ fail:
 }
 
 // notation_id (value-free body inlined)
-func (p *parser) e221() (*Node, bool) {
+func (p *parser) e224() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30640,7 +30665,7 @@ fail:
 }
 
 // public_notation (value-free body inlined)
-func (p *parser) e222() (*Node, bool) {
+func (p *parser) e225() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30727,7 +30752,7 @@ fail:
 }
 
 // element (Node body inlined)
-func (p *parser) e224() (*Node, bool) {
+func (p *parser) e227() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -30766,7 +30791,7 @@ func (p *parser) e224() (*Node, bool) {
 		for {
 			x6 = p.mark()
 			x4 = p.frame
-			x3 = p.newFrame(len(scope223))
+			x3 = p.newFrame(len(scope226))
 			p.frame = x3
 
 			if _, ok = p.q72(); !ok {
@@ -30846,16 +30871,7 @@ func (p *parser) e224() (*Node, bool) {
 		if !p.predicate(func(c *actx) any {
 			return func() any {
 
-				return c.compare("==", func() toperand {
-
-					return c.fieldOperand(func() any {
-
-						return c.cast(func() any { return c.cap(1) }(), fieldType1)
-					}(), "Text")
-				}(), func() toperand {
-
-					return c.fieldOperand(func() any { return c.cap(0) }(), "Text")
-				}())
+				return any(c.p.textEqual(c.textStr(func() any { return c.cap(1) }()), c.textStr(func() any { return c.cap(0) }())) == true)
 			}()
 		}) {
 			goto L21_ordinary
@@ -30928,7 +30944,7 @@ func (p *parser) e224() (*Node, bool) {
 	for {
 		x6 = p.mark()
 		x4 = p.frame
-		x3 = p.newFrame(len(scope223))
+		x3 = p.newFrame(len(scope226))
 		p.frame = x3
 		p.stepWork()
 		p.stepWork()
@@ -31013,16 +31029,7 @@ L12:
 	if !p.predicate(func(c *actx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.compare("==", func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any {
-					c.p.stepWork()
-					return c.cast(func() any { c.p.stepWork(); return c.cap(1) }(), fieldType1)
-				}(), "Text")
-			}(), func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any { c.p.stepWork(); return c.cap(0) }(), "Text")
-			}())
+			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return c.cap(1) }()), c.textStr(func() any { c.p.stepWork(); return c.cap(0) }())) == true)
 		}()
 	}) {
 		goto L21
@@ -31057,7 +31064,7 @@ fail:
 }
 
 // attribute (value-free body inlined)
-func (p *parser) e225() (*Node, bool) {
+func (p *parser) e228() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31065,7 +31072,7 @@ func (p *parser) e225() (*Node, bool) {
 			ok bool
 		)
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -31090,7 +31097,7 @@ func (p *parser) e225() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -31109,7 +31116,7 @@ fail:
 }
 
 // att_value (Node body inlined)
-func (p *parser) e226() (*Node, bool) {
+func (p *parser) e229() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31256,7 +31263,7 @@ fail:
 }
 
 // att_dq (value-free body inlined)
-func (p *parser) e227() (*Node, bool) {
+func (p *parser) e230() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31394,7 +31401,7 @@ func (p *parser) e227() (*Node, bool) {
 }
 
 // att_sq (value-free body inlined)
-func (p *parser) e228() (*Node, bool) {
+func (p *parser) e231() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31532,7 +31539,7 @@ func (p *parser) e228() (*Node, bool) {
 }
 
 // content (value-free body inlined)
-func (p *parser) e229() (*Node, bool) {
+func (p *parser) e232() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31597,7 +31604,7 @@ func (p *parser) e229() (*Node, bool) {
 }
 
 // content_item (value-free body inlined)
-func (p *parser) e230() (*Node, bool) {
+func (p *parser) e233() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31666,7 +31673,7 @@ fail:
 }
 
 // markup (value-free body inlined)
-func (p *parser) e231() (*Node, bool) {
+func (p *parser) e234() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -31879,7 +31886,7 @@ fail:
 }
 
 // char_data (value-free body inlined)
-func (p *parser) e232() (*Node, bool) {
+func (p *parser) e235() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -32096,7 +32103,7 @@ fail:
 }
 
 // cdsect (value-free body inlined)
-func (p *parser) e233() (*Node, bool) {
+func (p *parser) e236() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -32151,7 +32158,7 @@ fail:
 }
 
 // cdata (value-free body inlined)
-func (p *parser) e234() (*Node, bool) {
+func (p *parser) e237() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -32358,7 +32365,7 @@ func (p *parser) e234() (*Node, bool) {
 }
 
 // reference (Node body inlined)
-func (p *parser) e235() (*Node, bool) {
+func (p *parser) e238() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -32442,232 +32449,8 @@ fail:
 	return nil, false
 }
 
-// char_ref (value-free body inlined)
-func (p *parser) e236() (*Node, bool) {
-	if p.control == nil {
-
-		var (
-			v    *Node
-			x1   int
-			x2   int
-			x4   rune
-			x5   bool
-			ok   bool
-			ch   rune
-			size int
-			x8   int
-			x11  int
-		)
-
-		x1, x2 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) {
-
-			x4, _, x5 = p.in[p.pos], 1, true
-		} else {
-			x4, _, x5 = p.peek()
-		}
-		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 81)
-			goto L6_ordinary
-		}
-
-		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
-			p.pos += 3
-		} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
-			goto L7_ordinary
-		}
-
-		x8 = 0
-		for {
-			if p.pos < len(p.in) {
-
-				ch, size, ok = p.in[p.pos], 1, true
-			} else {
-				ch, size, ok = p.peek()
-			}
-			if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-				p.expectOrdinary(p.pos, 82)
-				break
-			}
-			p.pos += size
-			x8++
-		}
-		if x8 < 1 {
-			goto L7_ordinary
-		}
-
-		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
-			p.pos++
-		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L6_ordinary:
-		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 83)
-			goto L9_ordinary
-		}
-
-		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
-			p.pos += 2
-		} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
-			goto L10_ordinary
-		}
-
-		x11 = 0
-		for {
-			if p.pos < len(p.in) {
-
-				ch, size, ok = p.in[p.pos], 1, true
-			} else {
-				ch, size, ok = p.peek()
-			}
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.expectOrdinary(p.pos, 14)
-				break
-			}
-			p.pos += size
-			x11++
-		}
-		if x11 < 1 {
-			goto L10_ordinary
-		}
-
-		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
-			p.pos++
-		} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L10_ordinary
-		}
-		goto L3_ordinary
-	L10_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L9_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.stepWork()
-	var (
-		v    *Node
-		x1   int
-		x2   int
-		x4   rune
-		x5   bool
-		ok   bool
-		ch   rune
-		size int
-		x8   int
-		x11  int
-	)
-	p.stepWork()
-	p.stepWork()
-	x1, x2 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) {
-		p.inputWork(1)
-		x4, _, x5 = p.in[p.pos], 1, true
-	} else {
-		x4, _, x5 = p.peek()
-	}
-	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 81)
-		goto L6
-	}
-	p.stepWork()
-	p.stepWork()
-	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
-		p.pos += 3
-	} else if _, ok = p.matchLiteral(lit147, "&#x", 81, false); !ok {
-		goto L7
-	}
-	p.stepWork()
-	x8 = 0
-	for {
-		if p.pos < len(p.in) {
-			p.inputWork(1)
-			ch, size, ok = p.in[p.pos], 1, true
-		} else {
-			ch, size, ok = p.peek()
-		}
-		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-			p.expect(p.pos, 82)
-			break
-		}
-		p.pos += size
-		x8++
-	}
-	if x8 < 1 {
-		goto L7
-	}
-	p.stepWork()
-	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
-		p.pos++
-	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L6:
-	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 83)
-		goto L9
-	}
-	p.stepWork()
-	p.stepWork()
-	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
-		p.pos += 2
-	} else if _, ok = p.matchLiteral(lit148, "&#", 83, false); !ok {
-		goto L10
-	}
-	p.stepWork()
-	x11 = 0
-	for {
-		if p.pos < len(p.in) {
-			p.inputWork(1)
-			ch, size, ok = p.in[p.pos], 1, true
-		} else {
-			ch, size, ok = p.peek()
-		}
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.expect(p.pos, 14)
-			break
-		}
-		p.pos += size
-		x11++
-	}
-	if x11 < 1 {
-		goto L10
-	}
-	p.stepWork()
-	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
-		p.pos++
-	} else if _, ok = p.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L10
-	}
-	goto L3
-L10:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L9:
-	goto fail
-L3:
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
 // entity_ref (value-free body inlined)
-func (p *parser) e237() (*Node, bool) {
+func (p *parser) e239() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -32681,7 +32464,7 @@ func (p *parser) e237() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -32710,7 +32493,7 @@ func (p *parser) e237() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -32726,7 +32509,7 @@ fail:
 }
 
 // nmtoken (Node body inlined)
-func (p *parser) e238() (*Node, bool) {
+func (p *parser) e240() (*Node, bool) {
 	if p.control == nil {
 
 		var (
@@ -34645,7 +34428,7 @@ func (p *parser) q15() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -34737,7 +34520,7 @@ func (p *parser) q15() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -35188,7 +34971,7 @@ func (p *parser) q18() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -35228,7 +35011,7 @@ func (p *parser) q18() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -35617,7 +35400,7 @@ func (p *parser) q28() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -35671,7 +35454,7 @@ func (p *parser) q28() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -36042,7 +35825,7 @@ func (p *parser) q36() (*Node, bool) {
 			p.tooDeep()
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -36083,7 +35866,7 @@ func (p *parser) q36() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -36212,7 +35995,7 @@ func (p *parser) q38() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -36284,7 +36067,7 @@ func (p *parser) q38() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -36353,7 +36136,7 @@ func (p *parser) q39() (*Node, bool) {
 			p.tooDeep()
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -36433,7 +36216,7 @@ func (p *parser) q39() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -37152,7 +36935,7 @@ func (p *parser) q44() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -37174,7 +36957,7 @@ func (p *parser) q44() (*Node, bool) {
 				goto L4_ordinary
 			}
 
-			if _, ok = p.q69(); !ok {
+			if _, ok = p.q75(); !ok {
 				goto L4_ordinary
 			}
 			x1++
@@ -37244,7 +37027,7 @@ func (p *parser) q44() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -37272,7 +37055,7 @@ func (p *parser) q44() (*Node, bool) {
 		}
 		p.stepWork()
 		p.stepWork()
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto L4
 		}
 		x1++
@@ -37635,7 +37418,7 @@ func (p *parser) q47() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -37671,7 +37454,7 @@ func (p *parser) q47() (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto L8_ordinary
 		}
 		goto L9_ordinary
@@ -37732,7 +37515,7 @@ func (p *parser) q47() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -37773,7 +37556,7 @@ L4:
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto L8
 	}
 	goto L9
@@ -37843,7 +37626,7 @@ func (p *parser) q48() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -37925,7 +37708,7 @@ func (p *parser) q48() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -38294,7 +38077,7 @@ func (p *parser) q52() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -38348,7 +38131,7 @@ func (p *parser) q52() (*Node, bool) {
 	}
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -38632,7 +38415,7 @@ func (p *parser) q56() (*Node, bool) {
 			p.tooDeep()
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -38668,7 +38451,7 @@ func (p *parser) q56() (*Node, bool) {
 	p.stepWork()
 	p.stepWork()
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -40188,7 +39971,7 @@ func (p *parser) q68() (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.q69(); !ok {
+		if _, ok = p.q75(); !ok {
 			goto fail_ordinary
 		}
 
@@ -40228,7 +40011,7 @@ func (p *parser) q68() (*Node, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.q69(); !ok {
+	if _, ok = p.q75(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -40570,6 +40353,111 @@ func (p *parser) q74() (*Node, bool) {
 	return v, true
 }
 
+// name, called as by invokePlain (body inlined)
+func (p *parser) q75() (*Node, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     *Node
+			rec   int
+			ch    rune
+			size  int
+			ok    bool
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		if p.pos < len(p.in) {
+
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expectOrdinary(p.pos, 51)
+			goto fail_ordinary
+		}
+		p.pos += size
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+				p.expectOrdinary(p.pos, 84)
+				break
+			}
+			p.pos += size
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     *Node
+		rec   int
+		ch    rune
+		size  int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+		p.expect(p.pos, 51)
+		goto fail
+	}
+	p.pos += size
+	p.stepWork()
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expect(p.pos, 84)
+			break
+		}
+		p.pos += size
+	}
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
 // main, called as by call
 func (p *tparser) u0() (any, bool) {
 	if p.control == nil {
@@ -40718,15 +40606,15 @@ func (p *tparser) i0() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_239 := func() any { return k5 }()
-				f_240 := func() any {
+				f_241 := func() any { return k5 }()
+				f_242 := func() any {
 
 					return c.concat(func() any { return k13 }(), func() any { return k24 }())
 				}()
-				f_241 := func() any { return k16 }()
-				f_242 := func() any { return k27 }()
-				f_243 := func() any { return k30 }()
-				return tmk_Document(c, true, f_239, f_240, f_241, f_242, f_243)
+				f_243 := func() any { return k16 }()
+				f_244 := func() any { return k27 }()
+				f_245 := func() any { return k30 }()
+				return tmk_Document(c, true, f_241, f_242, f_243, f_244, f_245)
 			}()
 		}()
 		p.where = w
@@ -40862,15 +40750,15 @@ L22:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_239 := func() any { c.p.stepWork(); return k5 }()
-			f_240 := func() any {
+			f_241 := func() any { c.p.stepWork(); return k5 }()
+			f_242 := func() any {
 				c.p.stepWork()
 				return c.concat(func() any { c.p.stepWork(); return k13 }(), func() any { c.p.stepWork(); return k24 }())
 			}()
-			f_241 := func() any { c.p.stepWork(); return k16 }()
-			f_242 := func() any { c.p.stepWork(); return k27 }()
-			f_243 := func() any { c.p.stepWork(); return k30 }()
-			return tmk_Document(c, true, f_239, f_240, f_241, f_242, f_243)
+			f_243 := func() any { c.p.stepWork(); return k16 }()
+			f_244 := func() any { c.p.stepWork(); return k27 }()
+			f_245 := func() any { c.p.stepWork(); return k30 }()
+			return tmk_Document(c, true, f_241, f_242, f_243, f_244, f_245)
 		}()
 	}()
 	p.where = w
@@ -41318,10 +41206,10 @@ func (p *tparser) i3() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_244 := func() any { return k1 }()
-				f_245 := func() any { return k4 }()
-				f_246 := func() any { return k12 }()
-				return tmk_XMLDecl(c, true, f_244, f_245, f_246)
+				f_246 := func() any { return k1 }()
+				f_247 := func() any { return k4 }()
+				f_248 := func() any { return k12 }()
+				return tmk_XMLDecl(c, true, f_246, f_247, f_248)
 			}()
 		}()
 		p.where = w
@@ -41421,10 +41309,10 @@ L18:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_244 := func() any { c.p.stepWork(); return k1 }()
-			f_245 := func() any { c.p.stepWork(); return k4 }()
-			f_246 := func() any { c.p.stepWork(); return k12 }()
-			return tmk_XMLDecl(c, true, f_244, f_245, f_246)
+			f_246 := func() any { c.p.stepWork(); return k1 }()
+			f_247 := func() any { c.p.stepWork(); return k4 }()
+			f_248 := func() any { c.p.stepWork(); return k12 }()
+			return tmk_XMLDecl(c, true, f_246, f_247, f_248)
 		}()
 	}()
 	p.where = w
@@ -41712,10 +41600,13 @@ func (p *tparser) s5() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
 			ch    rune
 			size  int
-			x1    int
+			x2    int
+			v3    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -41723,13 +41614,15 @@ func (p *tparser) s5() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit13, "1.", 13, false); !ok {
 			goto fail_ordinary
 		}
 
-		x1 = 0
+		x2 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -41742,12 +41635,18 @@ func (p *tparser) s5() (any, bool) {
 				break
 			}
 			p.pos += size
-			x1++
+			x2++
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[5].text(p, start, p.pos, p.text(start, p.pos))
+		v3 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v3)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v3, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[5], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -41762,10 +41661,13 @@ func (p *tparser) s5() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
 		ch    rune
 		size  int
-		x1    int
+		x2    int
+		v3    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -41773,6 +41675,7 @@ func (p *tparser) s5() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 49 && p.in[p.pos+1] == 46) {
@@ -41781,7 +41684,7 @@ func (p *tparser) s5() (any, bool) {
 		goto fail
 	}
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -41794,12 +41697,18 @@ func (p *tparser) s5() (any, bool) {
 			break
 		}
 		p.pos += size
-		x1++
+		x2++
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	v = trules[5].text(p, start, p.pos, p.text(start, p.pos))
+	v3 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v3)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v3, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[5], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -42086,15 +41995,20 @@ func (p *tparser) s7() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -42121,7 +42035,13 @@ func (p *tparser) s7() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[7].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[7], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -42136,9 +42056,12 @@ func (p *tparser) s7() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -42146,6 +42069,7 @@ func (p *tparser) s7() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -42173,7 +42097,13 @@ func (p *tparser) s7() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[7].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[7], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -42462,9 +42392,12 @@ func (p *tparser) s9() (any, bool) {
 			rec   int
 			x1    int
 			x2    int
-			x4    rune
-			x5    bool
+			x3    int
+			x5    rune
+			x6    bool
 			ok    bool
+			v11   any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -42472,46 +42405,54 @@ func (p *tparser) s9() (any, bool) {
 			p.tooDeep()
 		}
 
-		x1, x2 = p.pos, len(p.recovered)
+		x1 = p.pos
+
+		x2, x3 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 
-			x4, _, x5 = p.in[p.pos], 1, true
+			x5, _, x6 = p.in[p.pos], 1, true
 		} else {
-			x4, _, x5 = p.peek()
+			x5, _, x6 = p.peek()
 		}
-		if !(x5 && (x4 == 121)) && p.depth <= p.maxDepth {
+		if !(x6 && (x5 == 121)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 19)
-			goto L6_ordinary
+			goto L7_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 121 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 115) {
 			p.pos += 3
 		} else if _, ok = p.parser.matchLiteral(lit21, "yes", 19, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L6_ordinary:
-		if !(x5 && (x4 == 110)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 20)
 			goto L8_ordinary
+		}
+		goto L4_ordinary
+	L8_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L7_ordinary:
+		if !(x6 && (x5 == 110)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 20)
+			goto L9_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit22, "no", 20, false); !ok {
-			goto L9_ordinary
+			goto L10_ordinary
 		}
-		goto L3_ordinary
+		goto L4_ordinary
+	L10_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
 	L9_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L8_ordinary:
 		goto fail_ordinary
-	L3_ordinary:
-		v = trules[9].text(p, start, p.pos, p.text(start, p.pos))
+	L4_ordinary:
+		v11 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v11)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[9], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -42528,9 +42469,12 @@ func (p *tparser) s9() (any, bool) {
 		rec   int
 		x1    int
 		x2    int
-		x4    rune
-		x5    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
+		v11   any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -42538,47 +42482,54 @@ func (p *tparser) s9() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1, x2 = p.pos, len(p.recovered)
+	x2, x3 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x4, _, x5 = p.in[p.pos], 1, true
+		x5, _, x6 = p.in[p.pos], 1, true
 	} else {
-		x4, _, x5 = p.peek()
+		x5, _, x6 = p.peek()
 	}
-	if !(x5 && (x4 == 121)) && p.depth <= p.maxDepth {
+	if !(x6 && (x5 == 121)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 19)
-		goto L6
+		goto L7
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 121 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 115) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit21, "yes", 19, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L6:
-	if !(x5 && (x4 == 110)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 20)
 		goto L8
+	}
+	goto L4
+L8:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L7:
+	if !(x6 && (x5 == 110)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 20)
+		goto L9
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 111) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit22, "no", 20, false); !ok {
-		goto L9
+		goto L10
 	}
-	goto L3
+	goto L4
+L10:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
 L9:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L8:
 	goto fail
-L3:
-	v = trules[9].text(p, start, p.pos, p.text(start, p.pos))
+L4:
+	v11 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v11)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[9], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -42962,29 +42913,34 @@ func (p *tparser) s12() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
-			x10   rune
-			x11   bool
+			x10   int
+			x11   rune
+			x12   bool
+			v15   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -42997,30 +42953,30 @@ func (p *tparser) s12() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 			if p.pos < len(p.in) {
 
-				x10, _, x11 = p.in[p.pos], 1, true
+				x11, _, x12 = p.in[p.pos], 1, true
 			} else {
-				x10, _, x11 = p.peek()
+				x11, _, x12 = p.peek()
 			}
-			if !(x11 && (x10 == 45)) && p.depth <= p.maxDepth {
+			if !(x12 && (x11 == 45)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 24)
-				goto L12_ordinary
+				goto L13_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 				p.pos++
 			} else if _, ok = p.parser.matchLiteral(lit30, "-", 24, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 
 			if p.pos < len(p.in) {
@@ -43031,27 +42987,33 @@ func (p *tparser) s12() (any, bool) {
 			}
 			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass29, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 46 && ch <= 55295 || ch >= 32 && ch <= 44 || ch == 10 || ch == 9 || ch == 13 || ch >= 57344 && ch <= 65533 || ch >= 65536 && ch <= 1114111)))) {
 				p.expectOrdinary(p.pos, 23)
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 			p.pos += size
-			goto L7_ordinary
+			goto L8_ordinary
+		L14_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 		L13_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[12].text(p, start, p.pos, p.text(start, p.pos))
+		v15 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v15)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v15, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[12], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -43063,30 +43025,34 @@ func (p *tparser) s12() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
-		x10   rune
-		x11   bool
+		x10   int
+		x11   rune
+		x12   bool
+		v15   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -43099,31 +43065,31 @@ func (p *tparser) s12() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x10, _, x11 = p.in[p.pos], 1, true
+			x11, _, x12 = p.in[p.pos], 1, true
 		} else {
-			x10, _, x11 = p.peek()
+			x11, _, x12 = p.peek()
 		}
-		if !(x11 && (x10 == 45)) && p.depth <= p.maxDepth {
+		if !(x12 && (x11 == 45)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 24)
-			goto L12
+			goto L13
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 45) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit30, "-", 24, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.stepWork()
 		if p.pos < len(p.in) {
@@ -43134,27 +43100,33 @@ func (p *tparser) s12() (any, bool) {
 		}
 		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass29, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 46 && ch <= 55295 || ch >= 32 && ch <= 44 || ch == 10 || ch == 9 || ch == 13 || ch >= 57344 && ch <= 65533 || ch >= 65536 && ch <= 1114111)))) {
 			p.expect(p.pos, 23)
-			goto L13
+			goto L14
 		}
 		p.pos += size
-		goto L7
+		goto L8
+	L14:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 	L13:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-	L12:
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[12].text(p, start, p.pos, p.text(start, p.pos))
+	v15 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v15)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v15, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[12], v, bv)
 	p.depth--
 	return v, true
 }
@@ -43248,71 +43220,47 @@ func (p *tparser) i13() (any, bool) {
 
 										return c.and(func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return k1 }(), "Text")
-											}(), toperand{v: func() any { return any("xml") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xml") }())
 										}(), func() any {
 											return func() any {
 
-												return c.compare("!=", func() toperand {
-
-													return c.fieldOperand(func() any { return k1 }(), "Text")
-												}(), toperand{v: func() any { return any("xmL") }()})
+												return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xmL") }())
 											}()
 										})
 									}(), func() any {
 										return func() any {
 
-											return c.compare("!=", func() toperand {
-
-												return c.fieldOperand(func() any { return k1 }(), "Text")
-											}(), toperand{v: func() any { return any("xMl") }()})
+											return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xMl") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 
-										return c.compare("!=", func() toperand {
-
-											return c.fieldOperand(func() any { return k1 }(), "Text")
-										}(), toperand{v: func() any { return any("xML") }()})
+										return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("xML") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 
-									return c.compare("!=", func() toperand {
-
-										return c.fieldOperand(func() any { return k1 }(), "Text")
-									}(), toperand{v: func() any { return any("Xml") }()})
+									return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("Xml") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 
-								return c.compare("!=", func() toperand {
-
-									return c.fieldOperand(func() any { return k1 }(), "Text")
-								}(), toperand{v: func() any { return any("XmL") }()})
+								return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XmL") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 
-							return c.compare("!=", func() toperand {
-
-								return c.fieldOperand(func() any { return k1 }(), "Text")
-							}(), toperand{v: func() any { return any("XMl") }()})
+							return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XMl") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 
-						return c.compare("!=", func() toperand {
-
-							return c.fieldOperand(func() any { return k1 }(), "Text")
-						}(), toperand{v: func() any { return any("XML") }()})
+						return c.binary("!=", func() any { return c.text(func() any { return k1 }()) }(), func() any { return any("XML") }())
 					}()
 				})
 			}()
@@ -43361,9 +43309,9 @@ func (p *tparser) i13() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_247 := func() any { return k1 }()
-				f_248 := func() any { return k11 }()
-				return tmk_PI(c, true, f_247, f_248)
+				f_249 := func() any { return k1 }()
+				f_250 := func() any { return k11 }()
+				return tmk_PI(c, true, f_249, f_250)
 			}()
 		}()
 		p.where = w
@@ -43434,71 +43382,47 @@ func (p *tparser) i13() (any, bool) {
 									c.p.stepWork()
 									return c.and(func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xml") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xml") }())
 									}(), func() any {
 										return func() any {
 											c.p.stepWork()
-											return c.compare("!=", func() toperand {
-												c.p.stepWork()
-												return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-											}(), toperand{v: func() any { c.p.stepWork(); return any("xmL") }()})
+											return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xmL") }())
 										}()
 									})
 								}(), func() any {
 									return func() any {
 										c.p.stepWork()
-										return c.compare("!=", func() toperand {
-											c.p.stepWork()
-											return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-										}(), toperand{v: func() any { c.p.stepWork(); return any("xMl") }()})
+										return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xMl") }())
 									}()
 								})
 							}(), func() any {
 								return func() any {
 									c.p.stepWork()
-									return c.compare("!=", func() toperand {
-										c.p.stepWork()
-										return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-									}(), toperand{v: func() any { c.p.stepWork(); return any("xML") }()})
+									return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("xML") }())
 								}()
 							})
 						}(), func() any {
 							return func() any {
 								c.p.stepWork()
-								return c.compare("!=", func() toperand {
-									c.p.stepWork()
-									return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-								}(), toperand{v: func() any { c.p.stepWork(); return any("Xml") }()})
+								return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("Xml") }())
 							}()
 						})
 					}(), func() any {
 						return func() any {
 							c.p.stepWork()
-							return c.compare("!=", func() toperand {
-								c.p.stepWork()
-								return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-							}(), toperand{v: func() any { c.p.stepWork(); return any("XmL") }()})
+							return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XmL") }())
 						}()
 					})
 				}(), func() any {
 					return func() any {
 						c.p.stepWork()
-						return c.compare("!=", func() toperand {
-							c.p.stepWork()
-							return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-						}(), toperand{v: func() any { c.p.stepWork(); return any("XMl") }()})
+						return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XMl") }())
 					}()
 				})
 			}(), func() any {
 				return func() any {
 					c.p.stepWork()
-					return c.compare("!=", func() toperand {
-						c.p.stepWork()
-						return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-					}(), toperand{v: func() any { c.p.stepWork(); return any("XML") }()})
+					return c.binary("!=", func() any { c.p.stepWork(); return c.text(func() any { c.p.stepWork(); return k1 }()) }(), func() any { c.p.stepWork(); return any("XML") }())
 				}()
 			})
 		}()
@@ -43548,9 +43472,9 @@ L14:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_247 := func() any { c.p.stepWork(); return k1 }()
-			f_248 := func() any { c.p.stepWork(); return k11 }()
-			return tmk_PI(c, true, f_247, f_248)
+			f_249 := func() any { c.p.stepWork(); return k1 }()
+			f_250 := func() any { c.p.stepWork(); return k11 }()
+			return tmk_PI(c, true, f_249, f_250)
 		}()
 	}()
 	p.where = w
@@ -43571,31 +43495,36 @@ func (p *tparser) s14() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
-			x10   rune
-			x11   bool
-			x14   int
+			x10   int
+			x11   rune
+			x12   bool
 			x15   int
+			x16   int
+			v18   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -43608,66 +43537,72 @@ func (p *tparser) s14() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 			if p.pos < len(p.in) {
 
-				x10, _, x11 = p.in[p.pos], 1, true
+				x11, _, x12 = p.in[p.pos], 1, true
 			} else {
-				x10, _, x11 = p.peek()
+				x11, _, x12 = p.peek()
 			}
-			if !(x11 && (x10 == 63)) && p.depth <= p.maxDepth {
+			if !(x12 && (x11 == 63)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 27)
-				goto L12_ordinary
+				goto L13_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 				p.pos++
 			} else if _, ok = p.parser.matchLiteral(lit35, "?", 27, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 
-			x14, x15 = p.pos, len(p.recovered)
+			x15, x16 = p.pos, len(p.recovered)
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 62) {
 				p.pos++
 			} else if _, ok = p.parser.matchLiteral(lit36, ">", 28, false); !ok {
-				goto L16_ordinary
+				goto L17_ordinary
 			}
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L13_ordinary
-		L16_ordinary:
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L14_ordinary
+		L17_ordinary:
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L7_ordinary
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L8_ordinary
+		L14_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 		L13_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[14].text(p, start, p.pos, p.text(start, p.pos))
+		v18 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v18)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[14], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -43679,32 +43614,36 @@ func (p *tparser) s14() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
-		x10   rune
-		x11   bool
-		x14   int
+		x10   int
+		x11   rune
+		x12   bool
 		x15   int
+		x16   int
+		v18   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -43717,67 +43656,73 @@ func (p *tparser) s14() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x10, _, x11 = p.in[p.pos], 1, true
+			x11, _, x12 = p.in[p.pos], 1, true
 		} else {
-			x10, _, x11 = p.peek()
+			x11, _, x12 = p.peek()
 		}
-		if !(x11 && (x10 == 63)) && p.depth <= p.maxDepth {
+		if !(x12 && (x11 == 63)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 27)
-			goto L12
+			goto L13
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 63) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit35, "?", 27, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.stepWork()
-		x14, x15 = p.pos, len(p.recovered)
+		x15, x16 = p.pos, len(p.recovered)
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 62) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit36, ">", 28, false); !ok {
-			goto L16
+			goto L17
 		}
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L13
-	L16:
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L14
+	L17:
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L7
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L8
+	L14:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 	L13:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-	L12:
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[14].text(p, start, p.pos, p.text(start, p.pos))
+	v18 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v18)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[14], v, bv)
 	p.depth--
 	return v, true
 }
@@ -43922,10 +43867,10 @@ func (p *tparser) i15() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_249 := func() any { return k1 }()
-				f_250 := func() any { return k6 }()
-				f_251 := func() any { return c.concat(func() any { return k14 }()) }()
-				return tmk_Doctype(c, true, f_249, f_250, f_251)
+				f_251 := func() any { return k1 }()
+				f_252 := func() any { return k6 }()
+				f_253 := func() any { return c.concat(func() any { return k14 }()) }()
+				return tmk_Doctype(c, true, f_251, f_252, f_253)
 			}()
 		}()
 		p.where = w
@@ -44055,10 +44000,10 @@ L17:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_249 := func() any { c.p.stepWork(); return k1 }()
-			f_250 := func() any { c.p.stepWork(); return k6 }()
-			f_251 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
-			return tmk_Doctype(c, true, f_249, f_250, f_251)
+			f_251 := func() any { c.p.stepWork(); return k1 }()
+			f_252 := func() any { c.p.stepWork(); return k6 }()
+			f_253 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k14 }()) }()
+			return tmk_Doctype(c, true, f_251, f_252, f_253)
 		}()
 	}()
 	p.where = w
@@ -44536,7 +44481,10 @@ func (p *tparser) s18() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -44544,13 +44492,15 @@ func (p *tparser) s18() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit45, "%", 35, false); !ok {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.s69(); !ok {
+		if _, ok = p.s77(); !ok {
 			goto fail_ordinary
 		}
 
@@ -44559,7 +44509,13 @@ func (p *tparser) s18() (any, bool) {
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[18].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[18], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -44574,7 +44530,10 @@ func (p *tparser) s18() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -44582,6 +44541,7 @@ func (p *tparser) s18() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 37) {
@@ -44590,7 +44550,7 @@ func (p *tparser) s18() (any, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.s69(); !ok {
+	if _, ok = p.s77(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -44599,7 +44559,13 @@ func (p *tparser) s18() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	v = trules[18].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[18], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -44972,8 +44938,8 @@ func (p *tparser) i20() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_252 := func() any { return k1 }()
-				return tmk_ExternalID(c, true, nil, f_252)
+				f_254 := func() any { return k1 }()
+				return tmk_ExternalID(c, true, nil, f_254)
 			}()
 		}()
 		p.where = w
@@ -45023,8 +44989,8 @@ func (p *tparser) i20() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_252 := func() any { c.p.stepWork(); return k1 }()
-			return tmk_ExternalID(c, true, nil, f_252)
+			f_254 := func() any { c.p.stepWork(); return k1 }()
+			return tmk_ExternalID(c, true, nil, f_254)
 		}()
 	}()
 	p.where = w
@@ -45111,9 +45077,9 @@ func (p *tparser) i21() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_253 := func() any { return k1 }()
-				f_254 := func() any { return k4 }()
-				return tmk_ExternalID(c, true, f_253, f_254)
+				f_255 := func() any { return k1 }()
+				f_256 := func() any { return k4 }()
+				return tmk_ExternalID(c, true, f_255, f_256)
 			}()
 		}()
 		p.where = w
@@ -45177,9 +45143,9 @@ func (p *tparser) i21() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_253 := func() any { c.p.stepWork(); return k1 }()
-			f_254 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ExternalID(c, true, f_253, f_254)
+			f_255 := func() any { c.p.stepWork(); return k1 }()
+			f_256 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ExternalID(c, true, f_255, f_256)
 		}()
 	}()
 	p.where = w
@@ -45447,15 +45413,20 @@ func (p *tparser) s23() (any, bool) {
 		var (
 			start int
 			v     any
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -45470,7 +45441,13 @@ func (p *tparser) s23() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[23].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[23], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -45479,9 +45456,12 @@ func (p *tparser) s23() (any, bool) {
 	var (
 		start int
 		v     any
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
@@ -45489,6 +45469,7 @@ func (p *tparser) s23() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -45503,7 +45484,13 @@ func (p *tparser) s23() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[23].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[23], v, bv)
 	p.depth--
 	return v, true
 }
@@ -45515,15 +45502,20 @@ func (p *tparser) s24() (any, bool) {
 		var (
 			start int
 			v     any
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -45538,7 +45530,13 @@ func (p *tparser) s24() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[24].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[24], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -45547,9 +45545,12 @@ func (p *tparser) s24() (any, bool) {
 	var (
 		start int
 		v     any
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
@@ -45557,6 +45558,7 @@ func (p *tparser) s24() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -45571,7 +45573,13 @@ func (p *tparser) s24() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[24].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[24], v, bv)
 	p.depth--
 	return v, true
 }
@@ -45833,15 +45841,20 @@ func (p *tparser) s26() (any, bool) {
 		var (
 			start int
 			v     any
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -45856,7 +45869,13 @@ func (p *tparser) s26() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[26].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[26], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -45865,9 +45884,12 @@ func (p *tparser) s26() (any, bool) {
 	var (
 		start int
 		v     any
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
@@ -45875,6 +45897,7 @@ func (p *tparser) s26() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -45889,7 +45912,13 @@ func (p *tparser) s26() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[26].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[26], v, bv)
 	p.depth--
 	return v, true
 }
@@ -45901,15 +45930,20 @@ func (p *tparser) s27() (any, bool) {
 		var (
 			start int
 			v     any
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		for {
 			if p.pos < len(p.in) {
@@ -45924,7 +45958,13 @@ func (p *tparser) s27() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[27].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[27], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -45933,9 +45973,12 @@ func (p *tparser) s27() (any, bool) {
 	var (
 		start int
 		v     any
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
@@ -45943,6 +45986,7 @@ func (p *tparser) s27() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
@@ -45957,7 +46001,13 @@ func (p *tparser) s27() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[27].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[27], v, bv)
 	p.depth--
 	return v, true
 }
@@ -46048,9 +46098,9 @@ func (p *tparser) i28() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_255 := func() any { return k1 }()
-				f_256 := func() any { return k4 }()
-				return tmk_ElementDecl(c, true, f_255, f_256)
+				f_257 := func() any { return k1 }()
+				f_258 := func() any { return k4 }()
+				return tmk_ElementDecl(c, true, f_257, f_258)
 			}()
 		}()
 		p.where = w
@@ -46124,9 +46174,9 @@ func (p *tparser) i28() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_255 := func() any { c.p.stepWork(); return k1 }()
-			f_256 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_ElementDecl(c, true, f_255, f_256)
+			f_257 := func() any { c.p.stepWork(); return k1 }()
+			f_258 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_ElementDecl(c, true, f_257, f_258)
 		}()
 	}()
 	p.where = w
@@ -46378,7 +46428,10 @@ func (p *tparser) s30() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -46386,10 +46439,18 @@ func (p *tparser) s30() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if _, ok = p.parser.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[30].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[30], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -46404,7 +46465,10 @@ func (p *tparser) s30() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -46412,11 +46476,18 @@ func (p *tparser) s30() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
-	v = trules[30].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[30], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -46434,7 +46505,10 @@ func (p *tparser) s31() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -46442,12 +46516,20 @@ func (p *tparser) s31() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 			p.pos += 3
 		} else if _, ok = p.parser.matchLiteral(lit68, "ANY", 44, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[31].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[31], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -46462,7 +46544,10 @@ func (p *tparser) s31() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -46470,13 +46555,20 @@ func (p *tparser) s31() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 65 && p.in[p.pos+1] == 78 && p.in[p.pos+2] == 89) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit68, "ANY", 44, false); !ok {
 		goto fail
 	}
-	v = trules[31].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[31], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -46594,7 +46686,7 @@ func (p *tparser) i32() (any, bool) {
 			x11 = append(x11, v13)
 			v14 = p.newNodeOrdinary("tuple", x10, p.pos, x11)
 			v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-			v16 = p.attachCaptures(v15, scope257, []any{k8}, x6, p.pos)
+			v16 = p.attachCaptures(v15, scope259, []any{k8}, x6, p.pos)
 			x5++
 			p.pushKid(v16)
 			if p.pos == x6 {
@@ -46667,13 +46759,13 @@ func (p *tparser) i32() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_258 := func() any {
+				f_260 := func() any {
 
-					return c.mapList(func() any { return k1 }(), func(l_259 any) any {
-						return func() any { return c.member(func() any { return (l_259) }(), "$n") }()
+					return c.mapList(func() any { return k1 }(), func(l_261 any) any {
+						return func() any { return c.member(func() any { return (l_261) }(), "$n") }()
 					})
 				}()
-				return tmk_Mixed(c, true, f_258)
+				return tmk_Mixed(c, true, f_260)
 			}()
 		}()
 		p.where = w
@@ -46772,7 +46864,7 @@ func (p *tparser) i32() (any, bool) {
 		x11 = append(x11, v13)
 		v14 = p.newNode("tuple", x10, p.pos, x11)
 		v15 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v14, x6)
-		v16 = p.attachCaptures(v15, scope257, []any{k8}, x6, p.pos)
+		v16 = p.attachCaptures(v15, scope259, []any{k8}, x6, p.pos)
 		x5++
 		p.pushKid(v16)
 		if p.pos == x6 {
@@ -46846,13 +46938,13 @@ L20:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_258 := func() any {
+			f_260 := func() any {
 				c.p.stepWork()
-				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_259 any) any {
-					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_259) }(), "$n") }()
+				return c.mapList(func() any { c.p.stepWork(); return k1 }(), func(l_261 any) any {
+					return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return (l_261) }(), "$n") }()
 				})
 			}()
-			return tmk_Mixed(c, true, f_258)
+			return tmk_Mixed(c, true, f_260)
 		}()
 	}()
 	p.where = w
@@ -47019,7 +47111,7 @@ func (p *tparser) i33() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_260 := func() any {
+				f_262 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -47028,8 +47120,8 @@ func (p *tparser) i33() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_261 := func() any { return k15 }()
-				return tmk_Choice(c, true, f_260, f_261)
+				f_263 := func() any { return k15 }()
+				return tmk_Choice(c, true, f_262, f_263)
 			}()
 		}()
 		p.where = w
@@ -47171,7 +47263,7 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_260 := func() any {
+			f_262 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -47180,8 +47272,8 @@ L21:
 					return c.endList(b)
 				}()
 			}()
-			f_261 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_Choice(c, true, f_260, f_261)
+			f_263 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_Choice(c, true, f_262, f_263)
 		}()
 	}()
 	p.where = w
@@ -47344,7 +47436,7 @@ func (p *tparser) i34() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_262 := func() any {
+				f_264 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -47353,8 +47445,8 @@ func (p *tparser) i34() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				f_263 := func() any { return k15 }()
-				return tmk_Sequence(c, true, f_262, f_263)
+				f_265 := func() any { return k15 }()
+				return tmk_Sequence(c, true, f_264, f_265)
 			}()
 		}()
 		p.where = w
@@ -47492,7 +47584,7 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_262 := func() any {
+			f_264 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -47501,8 +47593,8 @@ L21:
 					return c.endList(b)
 				}()
 			}()
-			f_263 := func() any { c.p.stepWork(); return k15 }()
-			return tmk_Sequence(c, true, f_262, f_263)
+			f_265 := func() any { c.p.stepWork(); return k15 }()
+			return tmk_Sequence(c, true, f_264, f_265)
 		}()
 	}()
 	p.where = w
@@ -47944,9 +48036,9 @@ func (p *tparser) i36() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_264 := func() any { return k1 }()
-				f_265 := func() any { return k4 }()
-				return tmk_NameParticle(c, true, f_264, f_265)
+				f_266 := func() any { return k1 }()
+				f_267 := func() any { return k4 }()
+				return tmk_NameParticle(c, true, f_266, f_267)
 			}()
 		}()
 		p.where = w
@@ -48010,9 +48102,9 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_264 := func() any { c.p.stepWork(); return k1 }()
-			f_265 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_NameParticle(c, true, f_264, f_265)
+			f_266 := func() any { c.p.stepWork(); return k1 }()
+			f_267 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_NameParticle(c, true, f_266, f_267)
 		}()
 	}()
 	p.where = w
@@ -48031,15 +48123,20 @@ func (p *tparser) s37() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -48052,7 +48149,13 @@ func (p *tparser) s37() (any, bool) {
 			goto fail_ordinary
 		}
 		p.pos += size
-		v = trules[37].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[37], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48067,9 +48170,12 @@ func (p *tparser) s37() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -48077,6 +48183,7 @@ func (p *tparser) s37() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if p.pos < len(p.in) {
 		p.inputWork(1)
@@ -48089,7 +48196,13 @@ func (p *tparser) s37() (any, bool) {
 		goto fail
 	}
 	p.pos += size
-	v = trules[37].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[37], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -48211,12 +48324,12 @@ func (p *tparser) i38() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_266 := func() any { return k1 }()
-				f_267 := func() any {
+				f_268 := func() any { return k1 }()
+				f_269 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k4 }()))
 				}()
-				return tmk_AttlistDecl(c, true, f_266, f_267)
+				return tmk_AttlistDecl(c, true, f_268, f_269)
 			}()
 		}()
 		p.where = w
@@ -48318,12 +48431,12 @@ func (p *tparser) i38() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_266 := func() any { c.p.stepWork(); return k1 }()
-			f_267 := func() any {
+			f_268 := func() any { c.p.stepWork(); return k1 }()
+			f_269 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k4 }()))
 			}()
-			return tmk_AttlistDecl(c, true, f_266, f_267)
+			return tmk_AttlistDecl(c, true, f_268, f_269)
 		}()
 	}()
 	p.where = w
@@ -48481,11 +48594,11 @@ func (p *tparser) i39() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_268 := func() any { return k1 }()
-				f_269 := func() any { return k4 }()
-				f_270 := func() any { return k9 }()
-				f_271 := func() any { return k11 }()
-				return tmk_AttDef(c, true, f_268, f_269, f_270, f_271)
+				f_270 := func() any { return k1 }()
+				f_271 := func() any { return k4 }()
+				f_272 := func() any { return k9 }()
+				f_273 := func() any { return k11 }()
+				return tmk_AttDef(c, true, f_270, f_271, f_272, f_273)
 			}()
 		}()
 		p.where = w
@@ -48622,11 +48735,11 @@ L13:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_268 := func() any { c.p.stepWork(); return k1 }()
-			f_269 := func() any { c.p.stepWork(); return k4 }()
-			f_270 := func() any { c.p.stepWork(); return k9 }()
-			f_271 := func() any { c.p.stepWork(); return k11 }()
-			return tmk_AttDef(c, true, f_268, f_269, f_270, f_271)
+			f_270 := func() any { c.p.stepWork(); return k1 }()
+			f_271 := func() any { c.p.stepWork(); return k4 }()
+			f_272 := func() any { c.p.stepWork(); return k9 }()
+			f_273 := func() any { c.p.stepWork(); return k11 }()
+			return tmk_AttDef(c, true, f_270, f_271, f_272, f_273)
 		}()
 	}()
 	p.where = w
@@ -48647,9 +48760,12 @@ func (p *tparser) s40() (any, bool) {
 			rec   int
 			x1    int
 			x2    int
-			x4    rune
-			x5    bool
+			x3    int
+			x5    rune
+			x6    bool
 			ok    bool
+			v11   any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -48657,42 +48773,50 @@ func (p *tparser) s40() (any, bool) {
 			p.tooDeep()
 		}
 
-		x1, x2 = p.pos, len(p.recovered)
+		x1 = p.pos
+
+		x2, x3 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 
-			x4, _, x5 = p.in[p.pos], 1, true
+			x5, _, x6 = p.in[p.pos], 1, true
 		} else {
-			x4, _, x5 = p.peek()
+			x5, _, x6 = p.peek()
 		}
-		if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
+		if !(x6 && (x5 == 35)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 53)
-			goto L6_ordinary
+			goto L7_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit90, "#REQUIRED", 53, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L6_ordinary:
-		if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 54)
 			goto L8_ordinary
+		}
+		goto L4_ordinary
+	L8_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L7_ordinary:
+		if !(x6 && (x5 == 35)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 54)
+			goto L9_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit91, "#IMPLIED", 54, false); !ok {
-			goto L9_ordinary
+			goto L10_ordinary
 		}
-		goto L3_ordinary
+		goto L4_ordinary
+	L10_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
 	L9_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L8_ordinary:
 		goto fail_ordinary
-	L3_ordinary:
-		v = trules[40].text(p, start, p.pos, p.text(start, p.pos))
+	L4_ordinary:
+		v11 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v11)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[40], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48709,9 +48833,12 @@ func (p *tparser) s40() (any, bool) {
 		rec   int
 		x1    int
 		x2    int
-		x4    rune
-		x5    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
+		v11   any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -48719,43 +48846,50 @@ func (p *tparser) s40() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1, x2 = p.pos, len(p.recovered)
+	x2, x3 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x4, _, x5 = p.in[p.pos], 1, true
+		x5, _, x6 = p.in[p.pos], 1, true
 	} else {
-		x4, _, x5 = p.peek()
+		x5, _, x6 = p.peek()
 	}
-	if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
+	if !(x6 && (x5 == 35)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 53)
-		goto L6
+		goto L7
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit90, "#REQUIRED", 53, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L6:
-	if !(x5 && (x4 == 35)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 54)
 		goto L8
+	}
+	goto L4
+L8:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L7:
+	if !(x6 && (x5 == 35)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 54)
+		goto L9
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit91, "#IMPLIED", 54, false); !ok {
-		goto L9
+		goto L10
 	}
-	goto L3
+	goto L4
+L10:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
 L9:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L8:
 	goto fail
-L3:
-	v = trules[40].text(p, start, p.pos, p.text(start, p.pos))
+L4:
+	v11 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v11)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v11, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[40], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -48773,7 +48907,10 @@ func (p *tparser) s41() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -48781,10 +48918,18 @@ func (p *tparser) s41() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if _, ok = p.parser.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[41].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[41], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48799,7 +48944,10 @@ func (p *tparser) s41() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -48807,11 +48955,18 @@ func (p *tparser) s41() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
 	}
-	v = trules[41].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[41], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -48994,9 +49149,12 @@ func (p *tparser) s43() (any, bool) {
 			rec   int
 			x1    int
 			x2    int
-			x4    rune
-			x5    bool
+			x3    int
+			x5    rune
+			x6    bool
 			ok    bool
+			v23   any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -49004,122 +49162,130 @@ func (p *tparser) s43() (any, bool) {
 			p.tooDeep()
 		}
 
-		x1, x2 = p.pos, len(p.recovered)
+		x1 = p.pos
+
+		x2, x3 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 
-			x4, _, x5 = p.in[p.pos], 1, true
+			x5, _, x6 = p.in[p.pos], 1, true
 		} else {
-			x4, _, x5 = p.peek()
+			x5, _, x6 = p.peek()
 		}
-		if !(x5 && (x4 == 67)) && p.depth <= p.maxDepth {
+		if !(x6 && (x5 == 67)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 57)
-			goto L6_ordinary
+			goto L7_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit96, "CDATA", 57, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L6_ordinary:
-		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 58)
 			goto L8_ordinary
+		}
+		goto L4_ordinary
+	L8_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L7_ordinary:
+		if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 58)
+			goto L9_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit97, "IDREFS", 58, false); !ok {
-			goto L9_ordinary
-		}
-		goto L3_ordinary
-	L9_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L8_ordinary:
-		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 59)
 			goto L10_ordinary
+		}
+		goto L4_ordinary
+	L10_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L9_ordinary:
+		if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 59)
+			goto L11_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit98, "IDREF", 59, false); !ok {
-			goto L11_ordinary
-		}
-		goto L3_ordinary
-	L11_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L10_ordinary:
-		if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 60)
 			goto L12_ordinary
+		}
+		goto L4_ordinary
+	L12_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L11_ordinary:
+		if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 60)
+			goto L13_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 73 && p.in[p.pos+1] == 68) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit99, "ID", 60, false); !ok {
-			goto L13_ordinary
-		}
-		goto L3_ordinary
-	L13_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L12_ordinary:
-		if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 61)
 			goto L14_ordinary
+		}
+		goto L4_ordinary
+	L14_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L13_ordinary:
+		if !(x6 && (x5 == 69)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 61)
+			goto L15_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit100, "ENTITY", 61, false); !ok {
-			goto L15_ordinary
-		}
-		goto L3_ordinary
-	L15_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L14_ordinary:
-		if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 62)
 			goto L16_ordinary
+		}
+		goto L4_ordinary
+	L16_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L15_ordinary:
+		if !(x6 && (x5 == 69)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 62)
+			goto L17_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit101, "ENTITIES", 62, false); !ok {
-			goto L17_ordinary
-		}
-		goto L3_ordinary
-	L17_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L16_ordinary:
-		if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 63)
 			goto L18_ordinary
+		}
+		goto L4_ordinary
+	L18_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L17_ordinary:
+		if !(x6 && (x5 == 78)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 63)
+			goto L19_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit102, "NMTOKENS", 63, false); !ok {
-			goto L19_ordinary
-		}
-		goto L3_ordinary
-	L19_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L18_ordinary:
-		if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
-			p.expectOrdinary(p.pos, 64)
 			goto L20_ordinary
+		}
+		goto L4_ordinary
+	L20_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
+	L19_ordinary:
+		if !(x6 && (x5 == 78)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 64)
+			goto L21_ordinary
 		}
 
 		if _, ok = p.parser.matchLiteral(lit103, "NMTOKEN", 64, false); !ok {
-			goto L21_ordinary
+			goto L22_ordinary
 		}
-		goto L3_ordinary
+		goto L4_ordinary
+	L22_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
 	L21_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L20_ordinary:
 		goto fail_ordinary
-	L3_ordinary:
-		v = trules[43].text(p, start, p.pos, p.text(start, p.pos))
+	L4_ordinary:
+		v23 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v23)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v23, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[43], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -49136,9 +49302,12 @@ func (p *tparser) s43() (any, bool) {
 		rec   int
 		x1    int
 		x2    int
-		x4    rune
-		x5    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
+		v23   any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -49146,123 +49315,130 @@ func (p *tparser) s43() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1, x2 = p.pos, len(p.recovered)
+	x2, x3 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x4, _, x5 = p.in[p.pos], 1, true
+		x5, _, x6 = p.in[p.pos], 1, true
 	} else {
-		x4, _, x5 = p.peek()
+		x5, _, x6 = p.peek()
 	}
-	if !(x5 && (x4 == 67)) && p.depth <= p.maxDepth {
+	if !(x6 && (x5 == 67)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 57)
-		goto L6
+		goto L7
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit96, "CDATA", 57, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L6:
-	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 58)
 		goto L8
+	}
+	goto L4
+L8:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L7:
+	if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 58)
+		goto L9
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit97, "IDREFS", 58, false); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L8:
-	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 59)
 		goto L10
+	}
+	goto L4
+L10:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L9:
+	if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 59)
+		goto L11
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit98, "IDREF", 59, false); !ok {
-		goto L11
-	}
-	goto L3
-L11:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L10:
-	if !(x5 && (x4 == 73)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 60)
 		goto L12
+	}
+	goto L4
+L12:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L11:
+	if !(x6 && (x5 == 73)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 60)
+		goto L13
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 73 && p.in[p.pos+1] == 68) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit99, "ID", 60, false); !ok {
-		goto L13
-	}
-	goto L3
-L13:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L12:
-	if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 61)
 		goto L14
+	}
+	goto L4
+L14:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L13:
+	if !(x6 && (x5 == 69)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 61)
+		goto L15
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit100, "ENTITY", 61, false); !ok {
-		goto L15
-	}
-	goto L3
-L15:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L14:
-	if !(x5 && (x4 == 69)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 62)
 		goto L16
+	}
+	goto L4
+L16:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L15:
+	if !(x6 && (x5 == 69)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 62)
+		goto L17
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit101, "ENTITIES", 62, false); !ok {
-		goto L17
-	}
-	goto L3
-L17:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L16:
-	if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 63)
 		goto L18
+	}
+	goto L4
+L18:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L17:
+	if !(x6 && (x5 == 78)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 63)
+		goto L19
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit102, "NMTOKENS", 63, false); !ok {
-		goto L19
-	}
-	goto L3
-L19:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L18:
-	if !(x5 && (x4 == 78)) && p.depth <= p.maxDepth {
-		p.expect(p.pos, 64)
 		goto L20
+	}
+	goto L4
+L20:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
+L19:
+	if !(x6 && (x5 == 78)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 64)
+		goto L21
 	}
 	p.stepWork()
 	if _, ok = p.parser.matchLiteral(lit103, "NMTOKEN", 64, false); !ok {
-		goto L21
+		goto L22
 	}
-	goto L3
+	goto L4
+L22:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
 L21:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L20:
 	goto fail
-L3:
-	v = trules[43].text(p, start, p.pos, p.text(start, p.pos))
+L4:
+	v23 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v23)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v23, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[43], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -49404,7 +49580,7 @@ func (p *tparser) i44() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_272 := func() any {
+				f_274 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -49413,7 +49589,7 @@ func (p *tparser) i44() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_NotationType(c, true, f_272)
+				return tmk_NotationType(c, true, f_274)
 			}()
 		}()
 		p.where = w
@@ -49537,7 +49713,7 @@ func (p *tparser) i44() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_272 := func() any {
+			f_274 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -49546,7 +49722,7 @@ func (p *tparser) i44() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_NotationType(c, true, f_272)
+			return tmk_NotationType(c, true, f_274)
 		}()
 	}()
 	p.where = w
@@ -49681,7 +49857,7 @@ func (p *tparser) i45() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_273 := func() any {
+				f_275 := func() any {
 
 					return func() any {
 						b := len(c.p.kidStack)
@@ -49690,7 +49866,7 @@ func (p *tparser) i45() (any, bool) {
 						return c.endList(b)
 					}()
 				}()
-				return tmk_Enumeration(c, true, f_273)
+				return tmk_Enumeration(c, true, f_275)
 			}()
 		}()
 		p.where = w
@@ -49806,7 +49982,7 @@ func (p *tparser) i45() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_273 := func() any {
+			f_275 := func() any {
 				c.p.stepWork()
 				return func() any {
 					b := len(c.p.kidStack)
@@ -49815,7 +49991,7 @@ func (p *tparser) i45() (any, bool) {
 					return c.endList(b)
 				}()
 			}()
-			return tmk_Enumeration(c, true, f_273)
+			return tmk_Enumeration(c, true, f_275)
 		}()
 	}()
 	p.where = w
@@ -50136,12 +50312,12 @@ func (p *tparser) i47() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_274 := func() any { return any(false) }()
-				f_275 := func() any { return k1 }()
-				f_276 := func() any { return k6 }()
-				f_277 := func() any { return k8 }()
-				f_278 := func() any { return k10 }()
-				return tmk_EntityDecl(c, true, f_274, f_275, f_276, f_277, f_278)
+				f_276 := func() any { return any(false) }()
+				f_277 := func() any { return k1 }()
+				f_278 := func() any { return k6 }()
+				f_279 := func() any { return k8 }()
+				f_280 := func() any { return k10 }()
+				return tmk_EntityDecl(c, true, f_276, f_277, f_278, f_279, f_280)
 			}()
 		}()
 		p.where = w
@@ -50298,12 +50474,12 @@ L12:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_274 := func() any { c.p.stepWork(); return any(false) }()
-			f_275 := func() any { c.p.stepWork(); return k1 }()
-			f_276 := func() any { c.p.stepWork(); return k6 }()
-			f_277 := func() any { c.p.stepWork(); return k8 }()
-			f_278 := func() any { c.p.stepWork(); return k10 }()
-			return tmk_EntityDecl(c, true, f_274, f_275, f_276, f_277, f_278)
+			f_276 := func() any { c.p.stepWork(); return any(false) }()
+			f_277 := func() any { c.p.stepWork(); return k1 }()
+			f_278 := func() any { c.p.stepWork(); return k6 }()
+			f_279 := func() any { c.p.stepWork(); return k8 }()
+			f_280 := func() any { c.p.stepWork(); return k10 }()
+			return tmk_EntityDecl(c, true, f_276, f_277, f_278, f_279, f_280)
 		}()
 	}()
 	p.where = w
@@ -50448,11 +50624,11 @@ func (p *tparser) i48() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_279 := func() any { return any(true) }()
-				f_280 := func() any { return k1 }()
-				f_281 := func() any { return k6 }()
-				f_282 := func() any { return k8 }()
-				return tmk_EntityDecl(c, true, f_279, f_280, f_281, f_282, nil)
+				f_281 := func() any { return any(true) }()
+				f_282 := func() any { return k1 }()
+				f_283 := func() any { return k6 }()
+				f_284 := func() any { return k8 }()
+				return tmk_EntityDecl(c, true, f_281, f_282, f_283, f_284, nil)
 			}()
 		}()
 		p.where = w
@@ -50574,11 +50750,11 @@ L10:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_279 := func() any { c.p.stepWork(); return any(true) }()
-			f_280 := func() any { c.p.stepWork(); return k1 }()
-			f_281 := func() any { c.p.stepWork(); return k6 }()
-			f_282 := func() any { c.p.stepWork(); return k8 }()
-			return tmk_EntityDecl(c, true, f_279, f_280, f_281, f_282, nil)
+			f_281 := func() any { c.p.stepWork(); return any(true) }()
+			f_282 := func() any { c.p.stepWork(); return k1 }()
+			f_283 := func() any { c.p.stepWork(); return k6 }()
+			f_284 := func() any { c.p.stepWork(); return k8 }()
+			return tmk_EntityDecl(c, true, f_281, f_282, f_283, f_284, nil)
 		}()
 	}()
 	p.where = w
@@ -50849,27 +51025,32 @@ func (p *tparser) s50() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
+			x10   int
+			v12   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -50882,36 +51063,42 @@ func (p *tparser) s50() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 
-			if _, ok = p.u77(); !ok {
-				goto L10_ordinary
+			if _, ok = p.u78(); !ok {
+				goto L11_ordinary
 			}
-			goto L7_ordinary
-		L10_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L8_ordinary
+		L11_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[50].text(p, start, p.pos, p.text(start, p.pos))
+		v12 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v12)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[50], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -50923,28 +51110,32 @@ func (p *tparser) s50() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
+		x10   int
+		v12   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -50957,36 +51148,42 @@ func (p *tparser) s50() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		p.stepWork()
-		if _, ok = p.u77(); !ok {
-			goto L10
+		if _, ok = p.u78(); !ok {
+			goto L11
 		}
-		goto L7
-	L10:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L8
+	L11:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[50].text(p, start, p.pos, p.text(start, p.pos))
+	v12 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v12)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[50], v, bv)
 	p.depth--
 	return v, true
 }
@@ -51001,27 +51198,32 @@ func (p *tparser) s51() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
+			x10   int
+			v12   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -51034,36 +51236,42 @@ func (p *tparser) s51() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 
-			if _, ok = p.u77(); !ok {
-				goto L10_ordinary
+			if _, ok = p.u78(); !ok {
+				goto L11_ordinary
 			}
-			goto L7_ordinary
-		L10_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L8_ordinary
+		L11_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[51].text(p, start, p.pos, p.text(start, p.pos))
+		v12 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v12)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[51], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -51075,28 +51283,32 @@ func (p *tparser) s51() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
+		x10   int
+		v12   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -51109,36 +51321,42 @@ func (p *tparser) s51() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		p.stepWork()
-		if _, ok = p.u77(); !ok {
-			goto L10
+		if _, ok = p.u78(); !ok {
+			goto L11
 		}
-		goto L7
-	L10:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L8
+	L11:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[51].text(p, start, p.pos, p.text(start, p.pos))
+	v12 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v12)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[51], v, bv)
 	p.depth--
 	return v, true
 }
@@ -51229,9 +51447,9 @@ func (p *tparser) i52() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_283 := func() any { return k1 }()
-				f_284 := func() any { return k4 }()
-				return tmk_NotationDecl(c, true, f_283, f_284)
+				f_285 := func() any { return k1 }()
+				f_286 := func() any { return k4 }()
+				return tmk_NotationDecl(c, true, f_285, f_286)
 			}()
 		}()
 		p.where = w
@@ -51305,9 +51523,9 @@ func (p *tparser) i52() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_283 := func() any { c.p.stepWork(); return k1 }()
-			f_284 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_NotationDecl(c, true, f_283, f_284)
+			f_285 := func() any { c.p.stepWork(); return k1 }()
+			f_286 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_NotationDecl(c, true, f_285, f_286)
 		}()
 	}()
 	p.where = w
@@ -51551,9 +51769,9 @@ func (p *tparser) i54() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_285 := func() any { return k1 }()
-				f_286 := func() any { return k6 }()
-				return tmk_ExternalID(c, true, f_285, f_286)
+				f_287 := func() any { return k1 }()
+				f_288 := func() any { return k6 }()
+				return tmk_ExternalID(c, true, f_287, f_288)
 			}()
 		}()
 		p.where = w
@@ -51632,9 +51850,9 @@ L9:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_285 := func() any { c.p.stepWork(); return k1 }()
-			f_286 := func() any { c.p.stepWork(); return k6 }()
-			return tmk_ExternalID(c, true, f_285, f_286)
+			f_287 := func() any { c.p.stepWork(); return k1 }()
+			f_288 := func() any { c.p.stepWork(); return k6 }()
+			return tmk_ExternalID(c, true, f_287, f_288)
 		}()
 	}()
 	p.where = w
@@ -51831,13 +52049,7 @@ func (p *tparser) i55() (any, bool) {
 		if !p.predicate(func(c *tctx) any {
 			return func() any {
 
-				return c.compare("==", func() toperand {
-
-					return c.fieldOperand(func() any { return c.cast(func() any { return k19 }(), fieldType1) }(), "Text")
-				}(), func() toperand {
-
-					return c.fieldOperand(func() any { return k1 }(), "Text")
-				}())
+				return any(c.p.textEqual(c.textStr(func() any { return k19 }()), c.textStr(func() any { return k1 }())) == true)
 			}()
 		}) {
 			goto L35_ordinary
@@ -51877,13 +52089,13 @@ func (p *tparser) i55() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_287 := func() any { return k1 }()
-				f_288 := func() any {
+				f_289 := func() any { return k1 }()
+				f_290 := func() any {
 
 					return c.newList(c.listItems("map", func() any { return k4 }()))
 				}()
-				f_289 := func() any { return c.concat(func() any { return k17 }()) }()
-				return tmk_Element(c, true, f_287, f_288, f_289)
+				f_291 := func() any { return c.concat(func() any { return k17 }()) }()
+				return tmk_Element(c, true, f_289, f_290, f_291)
 			}()
 		}()
 		p.where = w
@@ -52054,13 +52266,7 @@ L24:
 	if !p.predicate(func(c *tctx) any {
 		return func() any {
 			c.p.stepWork()
-			return c.compare("==", func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any { c.p.stepWork(); return c.cast(func() any { c.p.stepWork(); return k19 }(), fieldType1) }(), "Text")
-			}(), func() toperand {
-				c.p.stepWork()
-				return c.fieldOperand(func() any { c.p.stepWork(); return k1 }(), "Text")
-			}())
+			return any(c.p.textEqual(c.textStr(func() any { c.p.stepWork(); return k19 }()), c.textStr(func() any { c.p.stepWork(); return k1 }())) == true)
 		}()
 	}) {
 		goto L35
@@ -52100,13 +52306,13 @@ L21:
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_287 := func() any { c.p.stepWork(); return k1 }()
-			f_288 := func() any {
+			f_289 := func() any { c.p.stepWork(); return k1 }()
+			f_290 := func() any {
 				c.p.stepWork()
 				return c.newList(c.listItems("map", func() any { c.p.stepWork(); return k4 }()))
 			}()
-			f_289 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
-			return tmk_Element(c, true, f_287, f_288, f_289)
+			f_291 := func() any { c.p.stepWork(); return c.concat(func() any { c.p.stepWork(); return k17 }()) }()
+			return tmk_Element(c, true, f_289, f_290, f_291)
 		}()
 	}()
 	p.where = w
@@ -52185,9 +52391,9 @@ func (p *tparser) i56() (any, bool) {
 		v = func() any {
 
 			return func() any {
-				f_290 := func() any { return k1 }()
-				f_291 := func() any { return k4 }()
-				return tmk_Attribute(c, true, f_290, f_291)
+				f_292 := func() any { return k1 }()
+				f_293 := func() any { return k4 }()
+				return tmk_Attribute(c, true, f_292, f_293)
 			}()
 		}()
 		p.where = w
@@ -52243,9 +52449,9 @@ func (p *tparser) i56() (any, bool) {
 	v = func() any {
 		c.p.stepWork()
 		return func() any {
-			f_290 := func() any { c.p.stepWork(); return k1 }()
-			f_291 := func() any { c.p.stepWork(); return k4 }()
-			return tmk_Attribute(c, true, f_290, f_291)
+			f_292 := func() any { c.p.stepWork(); return k1 }()
+			f_293 := func() any { c.p.stepWork(); return k4 }()
+			return tmk_Attribute(c, true, f_292, f_293)
 		}()
 	}()
 	p.where = w
@@ -52516,27 +52722,32 @@ func (p *tparser) s58() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
+			x10   int
+			v12   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -52549,36 +52760,42 @@ func (p *tparser) s58() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 
-			if _, ok = p.u77(); !ok {
-				goto L10_ordinary
+			if _, ok = p.u78(); !ok {
+				goto L11_ordinary
 			}
-			goto L7_ordinary
-		L10_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L8_ordinary
+		L11_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[58].text(p, start, p.pos, p.text(start, p.pos))
+		v12 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v12)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[58], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -52590,28 +52807,32 @@ func (p *tparser) s58() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
+		x10   int
+		v12   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -52624,36 +52845,42 @@ func (p *tparser) s58() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		p.stepWork()
-		if _, ok = p.u77(); !ok {
-			goto L10
+		if _, ok = p.u78(); !ok {
+			goto L11
 		}
-		goto L7
-	L10:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L8
+	L11:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[58].text(p, start, p.pos, p.text(start, p.pos))
+	v12 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v12)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[58], v, bv)
 	p.depth--
 	return v, true
 }
@@ -52668,27 +52895,32 @@ func (p *tparser) s59() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
+			x10   int
+			v12   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -52701,36 +52933,42 @@ func (p *tparser) s59() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 
-			if _, ok = p.u77(); !ok {
-				goto L10_ordinary
+			if _, ok = p.u78(); !ok {
+				goto L11_ordinary
 			}
-			goto L7_ordinary
-		L10_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L8_ordinary
+		L11_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[59].text(p, start, p.pos, p.text(start, p.pos))
+		v12 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v12)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[59], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -52742,28 +52980,32 @@ func (p *tparser) s59() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
+		x10   int
+		v12   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -52776,36 +53018,42 @@ func (p *tparser) s59() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		p.stepWork()
-		if _, ok = p.u77(); !ok {
-			goto L10
+		if _, ok = p.u78(); !ok {
+			goto L11
 		}
-		goto L7
-	L10:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L8
+	L11:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[59].text(p, start, p.pos, p.text(start, p.pos))
+	v12 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v12)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v12, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[59], v, bv)
 	p.depth--
 	return v, true
 }
@@ -53328,31 +53576,36 @@ func (p *tparser) s63() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
-			x10   rune
-			x11   bool
-			x14   int
+			x10   int
+			x11   rune
+			x12   bool
 			x15   int
+			x16   int
+			v18   any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -53365,69 +53618,75 @@ func (p *tparser) s63() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 			if p.pos < len(p.in) {
 
-				x10, _, x11 = p.in[p.pos], 1, true
+				x11, _, x12 = p.in[p.pos], 1, true
 			} else {
-				x10, _, x11 = p.peek()
+				x11, _, x12 = p.peek()
 			}
-			if !(x11 && (x10 == 93)) && p.depth <= p.maxDepth {
+			if !(x12 && (x11 == 93)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 31)
-				goto L12_ordinary
+				goto L13_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 				p.pos++
 			} else if _, ok = p.parser.matchLiteral(lit40, "]", 31, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 
-			x14, x15 = p.pos, len(p.recovered)
+			x15, x16 = p.pos, len(p.recovered)
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 				p.pos += 2
 			} else if _, ok = p.parser.matchLiteral(lit139, "]>", 77, false); !ok {
-				goto L16_ordinary
+				goto L17_ordinary
 			}
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L13_ordinary
-		L16_ordinary:
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L14_ordinary
+		L17_ordinary:
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L7_ordinary
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L8_ordinary
+		L14_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 		L13_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[63].text(p, start, p.pos, p.text(start, p.pos))
+		v18 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v18)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[63], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -53445,32 +53704,36 @@ func (p *tparser) s63() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
-		x10   rune
-		x11   bool
-		x14   int
+		x10   int
+		x11   rune
+		x12   bool
 		x15   int
+		x16   int
+		v18   any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -53483,70 +53746,76 @@ func (p *tparser) s63() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x10, _, x11 = p.in[p.pos], 1, true
+			x11, _, x12 = p.in[p.pos], 1, true
 		} else {
-			x10, _, x11 = p.peek()
+			x11, _, x12 = p.peek()
 		}
-		if !(x11 && (x10 == 93)) && p.depth <= p.maxDepth {
+		if !(x12 && (x11 == 93)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 31)
-			goto L12
+			goto L13
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit40, "]", 31, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.stepWork()
-		x14, x15 = p.pos, len(p.recovered)
+		x15, x16 = p.pos, len(p.recovered)
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit139, "]>", 77, false); !ok {
-			goto L16
+			goto L17
 		}
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L13
-	L16:
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L14
+	L17:
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L7
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L8
+	L14:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 	L13:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-	L12:
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	v = trules[63].text(p, start, p.pos, p.text(start, p.pos))
+	v18 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v18)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[63], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -53685,31 +53954,36 @@ func (p *tparser) s65() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
-			x5    int
+			x4    int
 			x6    int
+			x7    int
 			ch    rune
 			size  int
 			ok    bool
-			x9    int
-			x10   rune
-			x11   bool
-			x14   int
+			x10   int
+			x11   rune
+			x12   bool
 			x15   int
+			x16   int
+			v18   any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			x5, x6 = p.pos, len(p.recovered)
+			x6, x7 = p.pos, len(p.recovered)
 
-			x9 = 0
+			x10 = 0
 			for {
 				if p.pos < len(p.in) {
 
@@ -53722,66 +53996,72 @@ func (p *tparser) s65() (any, bool) {
 					break
 				}
 				p.pos += size
-				x9++
+				x10++
 			}
-			if x9 < 1 {
-				goto L8_ordinary
+			if x10 < 1 {
+				goto L9_ordinary
 			}
-			goto L7_ordinary
-		L8_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
+			goto L8_ordinary
+		L9_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 			if p.pos < len(p.in) {
 
-				x10, _, x11 = p.in[p.pos], 1, true
+				x11, _, x12 = p.in[p.pos], 1, true
 			} else {
-				x10, _, x11 = p.peek()
+				x11, _, x12 = p.peek()
 			}
-			if !(x11 && (x10 == 93)) && p.depth <= p.maxDepth {
+			if !(x12 && (x11 == 93)) && p.depth <= p.maxDepth {
 				p.expectOrdinary(p.pos, 31)
-				goto L12_ordinary
+				goto L13_ordinary
 			}
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 				p.pos++
 			} else if _, ok = p.parser.matchLiteral(lit40, "]", 31, false); !ok {
-				goto L13_ordinary
+				goto L14_ordinary
 			}
 
-			x14, x15 = p.pos, len(p.recovered)
+			x15, x16 = p.pos, len(p.recovered)
 			p.silent++
 
 			if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 				p.pos += 2
 			} else if _, ok = p.parser.matchLiteral(lit139, "]>", 77, false); !ok {
-				goto L16_ordinary
+				goto L17_ordinary
 			}
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L13_ordinary
-		L16_ordinary:
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L14_ordinary
+		L17_ordinary:
 			p.silent--
-			p.pos = x14
-			p.recovered = p.recovered[:x15]
-			goto L7_ordinary
+			p.pos = x15
+			p.recovered = p.recovered[:x16]
+			goto L8_ordinary
+		L14_ordinary:
+			p.pos = x6
+			p.recovered = p.recovered[:x7]
 		L13_ordinary:
-			p.pos = x5
-			p.recovered = p.recovered[:x6]
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			x1++
-			if p.pos == x2 {
+			goto L5_ordinary
+		L8_ordinary:
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		v = trules[65].text(p, start, p.pos, p.text(start, p.pos))
+		v18 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v18)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[65], v, bv)
 		p.depth--
 		return v, true
 	}
@@ -53793,32 +54073,36 @@ func (p *tparser) s65() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
-		x5    int
+		x4    int
 		x6    int
+		x7    int
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
-		x10   rune
-		x11   bool
-		x14   int
+		x10   int
+		x11   rune
+		x12   bool
 		x15   int
+		x16   int
+		v18   any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		x5, x6 = p.pos, len(p.recovered)
+		x6, x7 = p.pos, len(p.recovered)
 		p.stepWork()
-		x9 = 0
+		x10 = 0
 		for {
 			if p.pos < len(p.in) {
 				p.inputWork(1)
@@ -53831,67 +54115,73 @@ func (p *tparser) s65() (any, bool) {
 				break
 			}
 			p.pos += size
-			x9++
+			x10++
 		}
-		if x9 < 1 {
-			goto L8
+		if x10 < 1 {
+			goto L9
 		}
-		goto L7
-	L8:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
+		goto L8
+	L9:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 		if p.pos < len(p.in) {
 			p.inputWork(1)
-			x10, _, x11 = p.in[p.pos], 1, true
+			x11, _, x12 = p.in[p.pos], 1, true
 		} else {
-			x10, _, x11 = p.peek()
+			x11, _, x12 = p.peek()
 		}
-		if !(x11 && (x10 == 93)) && p.depth <= p.maxDepth {
+		if !(x12 && (x11 == 93)) && p.depth <= p.maxDepth {
 			p.expect(p.pos, 31)
-			goto L12
+			goto L13
 		}
 		p.stepWork()
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 93) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit40, "]", 31, false); !ok {
-			goto L13
+			goto L14
 		}
 		p.stepWork()
-		x14, x15 = p.pos, len(p.recovered)
+		x15, x16 = p.pos, len(p.recovered)
 		p.silent++
 		p.stepWork()
 		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 62) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit139, "]>", 77, false); !ok {
-			goto L16
+			goto L17
 		}
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L13
-	L16:
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L14
+	L17:
 		p.silent--
-		p.pos = x14
-		p.recovered = p.recovered[:x15]
-		goto L7
+		p.pos = x15
+		p.recovered = p.recovered[:x16]
+		goto L8
+	L14:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
 	L13:
-		p.pos = x5
-		p.recovered = p.recovered[:x6]
-	L12:
-		goto L4
-	L7:
-		x1++
-		if p.pos == x2 {
+		goto L5
+	L8:
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	v = trules[65].text(p, start, p.pos, p.text(start, p.pos))
+	v18 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v18)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v18, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[65], v, bv)
 	p.depth--
 	return v, true
 }
@@ -54181,13 +54471,16 @@ func (p *tparser) s67() (any, bool) {
 			rec   int
 			x1    int
 			x2    int
-			x4    rune
-			x5    bool
+			x3    int
+			x5    rune
+			x6    bool
 			ok    bool
 			ch    rune
 			size  int
-			x8    int
-			x11   int
+			x9    int
+			x12   int
+			v13   any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -54195,25 +54488,27 @@ func (p *tparser) s67() (any, bool) {
 			p.tooDeep()
 		}
 
-		x1, x2 = p.pos, len(p.recovered)
+		x1 = p.pos
+
+		x2, x3 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 
-			x4, _, x5 = p.in[p.pos], 1, true
+			x5, _, x6 = p.in[p.pos], 1, true
 		} else {
-			x4, _, x5 = p.peek()
+			x5, _, x6 = p.peek()
 		}
-		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		if !(x6 && (x5 == 38)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 81)
-			goto L6_ordinary
+			goto L7_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
 			p.pos += 3
 		} else if _, ok = p.parser.matchLiteral(lit147, "&#x", 81, false); !ok {
-			goto L7_ordinary
+			goto L8_ordinary
 		}
 
-		x8 = 0
+		x9 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -54226,34 +54521,34 @@ func (p *tparser) s67() (any, bool) {
 				break
 			}
 			p.pos += size
-			x8++
+			x9++
 		}
-		if x8 < 1 {
-			goto L7_ordinary
+		if x9 < 1 {
+			goto L8_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L7_ordinary
+			goto L8_ordinary
 		}
-		goto L3_ordinary
+		goto L4_ordinary
+	L8_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
 	L7_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L6_ordinary:
-		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		if !(x6 && (x5 == 38)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 83)
-			goto L9_ordinary
+			goto L10_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit148, "&#", 83, false); !ok {
-			goto L10_ordinary
+			goto L11_ordinary
 		}
 
-		x11 = 0
+		x12 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -54266,25 +54561,31 @@ func (p *tparser) s67() (any, bool) {
 				break
 			}
 			p.pos += size
-			x11++
+			x12++
 		}
-		if x11 < 1 {
-			goto L10_ordinary
+		if x12 < 1 {
+			goto L11_ordinary
 		}
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
-			goto L10_ordinary
+			goto L11_ordinary
 		}
-		goto L3_ordinary
+		goto L4_ordinary
+	L11_ordinary:
+		p.pos = x2
+		p.recovered = p.recovered[:x3]
 	L10_ordinary:
-		p.pos = x1
-		p.recovered = p.recovered[:x2]
-	L9_ordinary:
 		goto fail_ordinary
-	L3_ordinary:
-		v = trules[67].text(p, start, p.pos, p.text(start, p.pos))
+	L4_ordinary:
+		v13 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v13)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v13, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[67], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54301,13 +54602,16 @@ func (p *tparser) s67() (any, bool) {
 		rec   int
 		x1    int
 		x2    int
-		x4    rune
-		x5    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
 		ch    rune
 		size  int
-		x8    int
-		x11   int
+		x9    int
+		x12   int
+		v13   any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -54315,27 +54619,28 @@ func (p *tparser) s67() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1, x2 = p.pos, len(p.recovered)
+	x2, x3 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		p.inputWork(1)
-		x4, _, x5 = p.in[p.pos], 1, true
+		x5, _, x6 = p.in[p.pos], 1, true
 	} else {
-		x4, _, x5 = p.peek()
+		x5, _, x6 = p.peek()
 	}
-	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+	if !(x6 && (x5 == 38)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 81)
-		goto L6
+		goto L7
 	}
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
 		p.pos += 3
 	} else if _, ok = p.parser.matchLiteral(lit147, "&#x", 81, false); !ok {
-		goto L7
+		goto L8
 	}
 	p.stepWork()
-	x8 = 0
+	x9 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -54348,35 +54653,35 @@ func (p *tparser) s67() (any, bool) {
 			break
 		}
 		p.pos += size
-		x8++
+		x9++
 	}
-	if x8 < 1 {
-		goto L7
+	if x9 < 1 {
+		goto L8
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L7
+		goto L8
 	}
-	goto L3
+	goto L4
+L8:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
 L7:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L6:
-	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+	if !(x6 && (x5 == 38)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 83)
-		goto L9
+		goto L10
 	}
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit148, "&#", 83, false); !ok {
-		goto L10
+		goto L11
 	}
 	p.stepWork()
-	x11 = 0
+	x12 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -54389,25 +54694,31 @@ L6:
 			break
 		}
 		p.pos += size
-		x11++
+		x12++
 	}
-	if x11 < 1 {
-		goto L10
+	if x12 < 1 {
+		goto L11
 	}
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
-		goto L10
+		goto L11
 	}
-	goto L3
+	goto L4
+L11:
+	p.pos = x2
+	p.recovered = p.recovered[:x3]
 L10:
-	p.pos = x1
-	p.recovered = p.recovered[:x2]
-L9:
 	goto fail
-L3:
-	v = trules[67].text(p, start, p.pos, p.text(start, p.pos))
+L4:
+	v13 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v13)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v13, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[67], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -54425,7 +54736,10 @@ func (p *tparser) s68() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -54433,13 +54747,15 @@ func (p *tparser) s68() (any, bool) {
 			p.tooDeep()
 		}
 
+		x1 = p.pos
+
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit150, "&", 80, false); !ok {
 			goto fail_ordinary
 		}
 
-		if _, ok = p.s69(); !ok {
+		if _, ok = p.s77(); !ok {
 			goto fail_ordinary
 		}
 
@@ -54448,7 +54764,13 @@ func (p *tparser) s68() (any, bool) {
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[68].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[68], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54463,7 +54785,10 @@ func (p *tparser) s68() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -54471,6 +54796,7 @@ func (p *tparser) s68() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
@@ -54479,7 +54805,7 @@ func (p *tparser) s68() (any, bool) {
 		goto fail
 	}
 	p.stepWork()
-	if _, ok = p.s69(); !ok {
+	if _, ok = p.s77(); !ok {
 		goto fail
 	}
 	p.stepWork()
@@ -54488,7 +54814,13 @@ func (p *tparser) s68() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	v = trules[68].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[68], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -54506,15 +54838,20 @@ func (p *tparser) s69() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
+			v2    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
+
+		x1 = p.pos
 
 		if p.pos < len(p.in) {
 
@@ -54541,7 +54878,13 @@ func (p *tparser) s69() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[69].text(p, start, p.pos, p.text(start, p.pos))
+		v2 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v2)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[69], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54556,9 +54899,12 @@ func (p *tparser) s69() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
+		v2    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -54566,6 +54912,7 @@ func (p *tparser) s69() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
 	if p.pos < len(p.in) {
@@ -54593,7 +54940,13 @@ func (p *tparser) s69() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[69].text(p, start, p.pos, p.text(start, p.pos))
+	v2 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v2)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v2, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[69], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -54718,36 +55071,47 @@ func (p *tparser) v71() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
+			x4    int
 			ok    bool
+			v6    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			if _, ok = p.s78(); !ok {
-				goto L4_ordinary
+			if _, ok = p.s79(); !ok {
+				goto L5_ordinary
 			}
-			x1++
-			if p.pos == x2 {
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
+		v6 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v6)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v6, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[71], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54765,37 +55129,47 @@ func (p *tparser) v71() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
+		x4    int
 		ok    bool
+		v6    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		if _, ok = p.s78(); !ok {
-			goto L4
+		if _, ok = p.s79(); !ok {
+			goto L5
 		}
-		x1++
-		if p.pos == x2 {
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
+	v6 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v6)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v6, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[71], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -54815,36 +55189,47 @@ func (p *tparser) i71() (any, bool) {
 			x1    int
 			x2    int
 			x3    int
+			x4    int
 			ok    bool
+			v6    any
+			bv    any
 		)
 		start = p.pos
 		p.depth++
 		if p.depth > p.maxDepth {
 			p.tooDeep()
 		}
-		_ = x1
+		_ = x2
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
-			x2, x3 = p.pos, len(p.recovered)
+			x3, x4 = p.pos, len(p.recovered)
 
-			if _, ok = p.s78(); !ok {
-				goto L4_ordinary
+			if _, ok = p.s79(); !ok {
+				goto L5_ordinary
 			}
-			x1++
-			if p.pos == x2 {
+			x2++
+			if p.pos == x3 {
 				break
 			}
 			continue
-		L4_ordinary:
-			p.pos = x2
-			p.recovered = p.recovered[:x3]
+		L5_ordinary:
+			p.pos = x3
+			p.recovered = p.recovered[:x4]
 			break
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
+		v6 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v6)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v6, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[71], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54859,37 +55244,47 @@ func (p *tparser) i71() (any, bool) {
 		x1    int
 		x2    int
 		x3    int
+		x4    int
 		ok    bool
+		v6    any
+		bv    any
 	)
 	start = p.pos
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	_ = x1
+	_ = x2
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 		p.stepWork()
-		if _, ok = p.s78(); !ok {
-			goto L4
+		if _, ok = p.s79(); !ok {
+			goto L5
 		}
-		x1++
-		if p.pos == x2 {
+		x2++
+		if p.pos == x3 {
 			break
 		}
 		continue
-	L4:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
 		break
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
-	v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
+	v6 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v6)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v6, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[71], v, bv)
 	p.depth--
 	return v, true
 fail:
@@ -55486,23 +55881,128 @@ fail:
 	return nil, false
 }
 
-// reference, called as by call
-func (p *tparser) u77() (any, bool) {
+// name, called as by invokePlain (body inlined)
+func (p *tparser) s77() (any, bool) {
 	if p.control == nil {
-		if !p.firstCall(rules[77]) {
-			return p.callMemo(trules[77], (*tparser).i77)
+
+		var (
+			start int
+			v     any
+			rec   int
+			ch    rune
+			size  int
+			ok    bool
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
 		}
-		return p.v77()
+
+		if p.pos < len(p.in) {
+
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expectOrdinary(p.pos, 51)
+			goto fail_ordinary
+		}
+		p.pos += size
+
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || ((workControlsEnabled && (*workControl)(nil) != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || (*workControl)(nil) == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+				p.expectOrdinary(p.pos, 84)
+				break
+			}
+			p.pos += size
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
 	}
 
-	if !p.firstCall(rules[77]) {
-		return p.callMemo(trules[77], (*tparser).i77)
+	p.stepWork()
+	var (
+		start int
+		v     any
+		rec   int
+		ch    rune
+		size  int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
 	}
-	return p.v77()
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass82, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 58 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 767 || ch >= 880 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+		p.expect(p.pos, 51)
+		goto fail
+	}
+	p.pos += size
+	p.stepWork()
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || ((workControlsEnabled && p.control != nil && p.rejectWorkClass(ch, workClass152, false)) || ((!workControlsEnabled || p.control == nil) && (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch == 58 || ch == 46 || ch == 45 || ch == 183 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 893 || ch >= 895 && ch <= 8191 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch >= 8304 && ch <= 8591 || ch >= 11264 && ch <= 12271 || ch >= 12289 && ch <= 55295 || ch >= 63744 && ch <= 64975 || ch >= 65008 && ch <= 65533 || ch >= 65536 && ch <= 983039)))) {
+			p.expect(p.pos, 84)
+			break
+		}
+		p.pos += size
+	}
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
+// reference, called as by call
+func (p *tparser) u78() (any, bool) {
+	if p.control == nil {
+		if !p.firstCall(rules[78]) {
+			return p.callMemo(trules[78], (*tparser).i78)
+		}
+		return p.v78()
+	}
+
+	if !p.firstCall(rules[78]) {
+		return p.callMemo(trules[78], (*tparser).i78)
+	}
+	return p.v78()
 }
 
 // reference, called as by invokePlain (body inlined)
-func (p *tparser) v77() (any, bool) {
+func (p *tparser) v78() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -55523,7 +56023,7 @@ func (p *tparser) v77() (any, bool) {
 
 		x1, x2 = p.pos, len(p.recovered)
 
-		if _, ok = p.s67(); !ok {
+		if _, ok = p.s80(); !ok {
 			goto L4_ordinary
 		}
 		goto L3_ordinary
@@ -55541,7 +56041,7 @@ func (p *tparser) v77() (any, bool) {
 			goto L7_ordinary
 		}
 
-		if _, ok = p.s68(); !ok {
+		if _, ok = p.s81(); !ok {
 			goto L8_ordinary
 		}
 		goto L3_ordinary
@@ -55580,7 +56080,7 @@ func (p *tparser) v77() (any, bool) {
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
-	if _, ok = p.s67(); !ok {
+	if _, ok = p.s80(); !ok {
 		goto L4
 	}
 	goto L3
@@ -55598,7 +56098,7 @@ L4:
 		goto L7
 	}
 	p.stepWork()
-	if _, ok = p.s68(); !ok {
+	if _, ok = p.s81(); !ok {
 		goto L8
 	}
 	goto L3
@@ -55619,7 +56119,7 @@ fail:
 }
 
 // reference, invoked as by invoke (body inlined)
-func (p *tparser) i77() (any, bool) {
+func (p *tparser) i78() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -55637,7 +56137,7 @@ func (p *tparser) i77() (any, bool) {
 
 		x1, x2 = p.pos, len(p.recovered)
 
-		if _, ok = p.s67(); !ok {
+		if _, ok = p.s80(); !ok {
 			goto L4_ordinary
 		}
 		goto L3_ordinary
@@ -55655,7 +56155,7 @@ func (p *tparser) i77() (any, bool) {
 			goto L7_ordinary
 		}
 
-		if _, ok = p.s68(); !ok {
+		if _, ok = p.s81(); !ok {
 			goto L8_ordinary
 		}
 		goto L3_ordinary
@@ -55689,7 +56189,7 @@ func (p *tparser) i77() (any, bool) {
 	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.stepWork()
-	if _, ok = p.s67(); !ok {
+	if _, ok = p.s80(); !ok {
 		goto L4
 	}
 	goto L3
@@ -55707,7 +56207,7 @@ L4:
 		goto L7
 	}
 	p.stepWork()
-	if _, ok = p.s68(); !ok {
+	if _, ok = p.s81(); !ok {
 		goto L8
 	}
 	goto L3
@@ -55726,7 +56226,7 @@ fail:
 }
 
 // name_char, called as by invokePlain (body inlined)
-func (p *tparser) s78() (any, bool) {
+func (p *tparser) s79() (any, bool) {
 	if p.control == nil {
 
 		var (
@@ -55790,6 +56290,333 @@ func (p *tparser) s78() (any, bool) {
 		goto fail
 	}
 	p.pos += size
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
+// char_ref, called as by invokePlain (body inlined)
+func (p *tparser) s80() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			rec   int
+			x1    int
+			x2    int
+			x4    rune
+			x5    bool
+			ok    bool
+			ch    rune
+			size  int
+			x8    int
+			x11   int
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		x1, x2 = p.pos, len(p.recovered)
+		if p.pos < len(p.in) {
+
+			x4, _, x5 = p.in[p.pos], 1, true
+		} else {
+			x4, _, x5 = p.peek()
+		}
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 81)
+			goto L6_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+			p.pos += 3
+		} else if _, ok = p.parser.matchLiteral(lit147, "&#x", 81, false); !ok {
+			goto L7_ordinary
+		}
+
+		x8 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+				p.expectOrdinary(p.pos, 82)
+				break
+			}
+			p.pos += size
+			x8++
+		}
+		if x8 < 1 {
+			goto L7_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L7_ordinary
+		}
+		goto L3_ordinary
+	L7_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L6_ordinary:
+		if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+			p.expectOrdinary(p.pos, 83)
+			goto L9_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit148, "&#", 83, false); !ok {
+			goto L10_ordinary
+		}
+
+		x11 = 0
+		for {
+			if p.pos < len(p.in) {
+
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || !(ch >= 48 && ch <= 57) {
+				p.expectOrdinary(p.pos, 14)
+				break
+			}
+			p.pos += size
+			x11++
+		}
+		if x11 < 1 {
+			goto L10_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+			goto L10_ordinary
+		}
+		goto L3_ordinary
+	L10_ordinary:
+		p.pos = x1
+		p.recovered = p.recovered[:x2]
+	L9_ordinary:
+		goto fail_ordinary
+	L3_ordinary:
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     any
+		rec   int
+		x1    int
+		x2    int
+		x4    rune
+		x5    bool
+		ok    bool
+		ch    rune
+		size  int
+		x8    int
+		x11   int
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	x1, x2 = p.pos, len(p.recovered)
+	if p.pos < len(p.in) {
+		p.inputWork(1)
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 81)
+		goto L6
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+3 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35 && p.in[p.pos+2] == 120) {
+		p.pos += 3
+	} else if _, ok = p.parser.matchLiteral(lit147, "&#x", 81, false); !ok {
+		goto L7
+	}
+	p.stepWork()
+	x8 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+			p.expect(p.pos, 82)
+			break
+		}
+		p.pos += size
+		x8++
+	}
+	if x8 < 1 {
+		goto L7
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L6:
+	if !(x5 && (x4 == 38)) && p.depth <= p.maxDepth {
+		p.expect(p.pos, 83)
+		goto L9
+	}
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 35) {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit148, "&#", 83, false); !ok {
+		goto L10
+	}
+	p.stepWork()
+	x11 = 0
+	for {
+		if p.pos < len(p.in) {
+			p.inputWork(1)
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 14)
+			break
+		}
+		p.pos += size
+		x11++
+	}
+	if x11 < 1 {
+		goto L10
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+		goto L10
+	}
+	goto L3
+L10:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L9:
+	goto fail
+L3:
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
+}
+
+// entity_ref, called as by invokePlain (body inlined)
+func (p *tparser) s81() (any, bool) {
+	if p.control == nil {
+
+		var (
+			start int
+			v     any
+			rec   int
+			ok    bool
+		)
+		start, rec = p.pos, len(p.recovered)
+		p.depth++
+		if p.depth > p.maxDepth {
+			p.tooDeep()
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit150, "&", 80, false); !ok {
+			goto fail_ordinary
+		}
+
+		if _, ok = p.s77(); !ok {
+			goto fail_ordinary
+		}
+
+		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+			goto fail_ordinary
+		}
+		v = nil
+		p.depth--
+		return v, true
+	fail_ordinary:
+		p.depth--
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+		return nil, false
+	}
+
+	p.stepWork()
+	var (
+		start int
+		v     any
+		rec   int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.tooDeep()
+	}
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 38) {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit150, "&", 80, false); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if _, ok = p.s77(); !ok {
+		goto fail
+	}
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 59) {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
+		goto fail
+	}
 	v = nil
 	p.depth--
 	return v, true

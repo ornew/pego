@@ -117,7 +117,7 @@ func ourTokens(t *xml.Tree) []string {
 			if it.Data != nil {
 				data = it.Data.Value()
 			}
-			toks = append(toks, "P"+it.Target.Text+" "+data)
+			toks = append(toks, "P"+it.Target.Value+" "+data)
 		}
 	}
 	for _, it := range t.Prolog {

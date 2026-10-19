@@ -29,15 +29,14 @@ type Node struct {
 	kind     *nodeKind // the type and rule names (Type, Rule)
 	start    int32     // the range in the input, in the parse's position unit (End is exclusive)
 	end      int32
-	text     string  // the text of a string node, and the Text field of a text struct
+	text     string  // the text of a string node
 	children []*Node // the elements of a tuple or list
 	fields   Fields  // struct fields and captures
 
-	fresh     bool
-	terminal  bool
-	labeled   bool // the captures in Fields are output (source information)
-	textField bool // a struct whose one field, Text, is text, kept unboxed (see fieldList)
-	box       any  // the value carried by a box
+	fresh    bool
+	terminal bool
+	labeled  bool // the captures in Fields are output (source information)
+	box      any  // the value carried by a box
 }
 
 // Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
@@ -243,20 +242,15 @@ func (c *actx) convert(typ string, v any) any {
 	return n
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
-// struct of a text struct rule.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name.
 type ruleKinds struct {
 	reserved [len(reservedTypes)]*nodeKind
-	text     *nodeKind
 }
 
-func newRuleKinds(rule, textType string) ruleKinds {
+func newRuleKinds(rule string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
-	}
-	if textType != "" {
-		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -468,29 +462,8 @@ func (n *Node) field(name string) any {
 	if n == nil {
 		return nil
 	}
-	if n.textField {
-		if name == "Text" {
-			return n.text
-		}
-		return nil
-	}
 	v, _ := n.fields.Get(name)
 	return v
-}
-
-// fieldList returns the fields of n, making the field list of a text struct.
-func (n *Node) fieldList() Fields {
-	if n.textField {
-		return Fields{{Name: "Text", Value: n.text}}
-	}
-	return n.fields
-}
-
-// materialize gives a text struct its field list, before the list is changed.
-func (n *Node) materialize() {
-	if n.textField {
-		n.fields, n.text, n.textField = n.fieldList(), "", false
-	}
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
@@ -506,7 +479,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fieldList() {
+		for _, f := range n.fields {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -611,7 +584,7 @@ func walkFields(n *Node) Fields {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	fields := n.fieldList().sorted()
+	fields := n.fields.sorted()
 	if !n.labeled {
 		return fields
 	}
@@ -733,7 +706,7 @@ func writeValue(b *strings.Builder, v any) {
 			continue
 		}
 		if sh == shapeStruct {
-			fields := n.fieldList().sorted()
+			fields := n.fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -848,10 +821,6 @@ type rule struct {
 	body   func(p *parser, min int) (*Node, bool)
 	action func(c *actx) any
 	value  shaper // makes the rule's value from the value of its body, without an action
-	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
-	// of that type whose field Text is the matched text, the struct the rule's action makes, made
-	// without it.
-	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// nodeType, if not "", is the named node type the rule's value is converted to, whose kinds
@@ -2152,9 +2121,6 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.textType != "" {
-		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
@@ -2191,7 +2157,6 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	if wrap {
 		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
 	}
-	v.materialize()
 	if v.fields == nil {
 		v.fields = p.fields(len(names))
 	}
@@ -2712,29 +2677,20 @@ func (o toperand) value() any {
 	return o.v
 }
 
+// member reads x.name.
 func (c *actx) member(x any, name string) any {
-	return c.memberOperand(x, name).value()
-}
-
-// memberOperand reads x.name, keeping the text of a text struct unboxed.
-func (c *actx) memberOperand(x any, name string) toperand {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
-	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
-		// The text of a text struct, its one field, read without looking the struct up. Work
-		// controls charge the lookup below.
-		return toperand{str: n.text, isStr: true}
-	}
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return toperand{v: int(n.start)}
+			return int(n.start)
 		case "End":
-			return toperand{v: int(n.end)}
+			return int(n.end)
 		case "Value":
-			return toperand{v: c.p.nodeValue(n)}
+			return c.p.nodeValue(n)
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
@@ -2743,19 +2699,13 @@ func (c *actx) memberOperand(x any, name string) toperand {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return toperand{v: unboxValue(v)}
+		return unboxValue(v)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	if n.textField {
-		if c.p.textFieldName(name) {
-			return toperand{str: n.text, isStr: true}
-		}
-		return toperand{}
-	}
 	v, _ := c.p.valueField(n.fields, name)
-	return toperand{v: v}
+	return v
 }
 
 func rtUnary(op string, x any) any {
@@ -3590,7 +3540,7 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
-					frame.fields = value.fieldList().sorted()
+					frame.fields = value.fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
@@ -4346,37 +4296,6 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 		return out.String(), true
 	}
 	return nil, false
-}
-
-// fieldOperand reads x.name as member does, keeping the text of a text struct unboxed.
-func (c *actx) fieldOperand(x any, name string) toperand {
-	return c.memberOperand(x, name)
-}
-
-// compare applies a comparison operator as binary does, comparing two strings without boxing them.
-func (c *actx) compare(op string, l, r toperand) any {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
-			return v
-		}
-	}
-	return c.binary(op, l.value(), r.value())
-}
-
-// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
-// valueField looking it up in the field list {Text}.
-func (p *parser) textFieldName(name string) bool {
-	if !workControlsEnabled || p.control == nil {
-		return name == "Text"
-	}
-	p.stepWork()
-	return p.textEqual("Text", name)
 }
 
 // compareStrings applies the comparison operator op to two strings as stringBinary does.
@@ -5349,8 +5268,6 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// text makes the value of a text struct rule from the rule's range and text.
-	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -6020,7 +5937,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 // declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	var body any
-	if r.nt != 0 && r.action == nil && r.textType == "" {
+	if r.nt != 0 && r.action == nil {
 		body = tfreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
@@ -6147,9 +6064,6 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 	if r.action != nil {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
-	}
-	if r.textType != "" {
-		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -7388,18 +7302,15 @@ type Binary struct {
 	Right Expr
 }
 
-// Number is the struct type Number.
-type Number struct {
-	Span
-	Text string
-}
-
 // Unary is the struct type Unary.
 type Unary struct {
 	Span
 	Op *TNode[string]
 	X  Expr
 }
+
+// Number is the node type Number = node[string].
+type Number struct{ TNode[string] }
 
 // Expr is the union type Expr ~ Number | Binary | Unary. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
@@ -7435,36 +7346,6 @@ func (v *Binary) tfieldWork(p *tparser, name string) (any, bool) {
 		return tback(v.Op), true
 	case "Right":
 		return tback(v.Right), true
-	}
-	return nil, false
-}
-
-func (v *Number) tname() string         { return "Number" }
-func (v *Number) ttext() (string, bool) { return "", false }
-func (v *Number) tkids() []any          { return nil }
-func (v *Number) tstruct() bool         { return true }
-func (v *Number) tfresh() bool          { return false }
-func (v *Number) tsetFresh(bool)        {}
-func (v *Number) tfield(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *Number) tstrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *Number) tfieldWork(p *tparser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
 	}
 	return nil, false
 }
@@ -7592,12 +7473,19 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
-	trules[2].text = func(p *tparser, start, end int, text string) tval {
-		p.stepWork()
-		v := astNew(&p.ext.(*tslabs).tNumber)
-		*v = Number{Span: Span{start, end}, Text: text}
-		return v
+	tnodeTypeNames = []string{"", "Number"}
+	tnamedPub = func(a any, x tval) any {
+		s, _ := a.(*tslabs)
+		if s == nil {
+			s = &tslabs{}
+		}
+		switch x.tname() {
+		case "Number":
+			return tv0(s, x)
+		}
+		return nil
 	}
+	trules[2].nt = 1
 }
 
 // tmk_Binary makes a Binary in an action (newStruct in the typed runtime).
@@ -7606,11 +7494,11 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBinary)
 	c.p.stepWork()
-	v.Left = tAs[Expr](tpub(f0))
+	v.Left = tAs[Expr](tpubIn(a, f0))
 	c.p.stepWork()
 	v.Op = tpubMatch(f1)
 	c.p.stepWork()
-	v.Right = tAs[Expr](tpub(f2))
+	v.Right = tAs[Expr](tpubIn(a, f2))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -7625,23 +7513,6 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
-// tmk_Number makes a Number in an action (newStruct in the typed runtime).
-func tmk_Number(c *tctx, final bool, f0 any) any {
-	c.p.stepWork()
-	a := c.p.ext.(*tslabs)
-	v := astNew(&a.tNumber)
-	c.p.stepWork()
-	v.Text = astString(f0)
-	if final {
-		v.Span = Span{c.start, c.end}
-		return v
-	}
-	first, start, end := true, 0, 0
-	c.p.stepWork()
-	spanOf(f0, &first, &start, &end)
-	return c.made(v, first, start, end)
-}
-
 // tmk_Unary makes a Unary in an action (newStruct in the typed runtime).
 func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
@@ -7650,7 +7521,7 @@ func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	v.Op = tpubMatch(f0)
 	c.p.stepWork()
-	v.X = tAs[Expr](tpub(f1))
+	v.X = tAs[Expr](tpubIn(a, f1))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -7663,12 +7534,34 @@ func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tv0(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv0(a *tslabs, v any) *Number {
 	a.stepWork()
-	return tv1(a, v)
+	x := asTval(v)
+	if x == nil || x.tname() != "Number" {
+		return nil
+	}
+	if out, ok := a.named[x]; ok {
+		return out.(*Number)
+	}
+	u := tpubMatch(v)
+	if u == nil {
+		return nil
+	}
+	out := astNew(&a.tNumber)
+	out.TNode = *u
+	if a.named == nil {
+		a.named = map[any]any{}
+	}
+	a.named[x] = out
+	return out
 }
 
 func tv1(a *tslabs, v any) *TNode[[]*TNode[string]] {
+	a.stepWork()
+	return tv2(a, v)
+}
+
+func tv2(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -7713,10 +7606,12 @@ func tl0(a *tslabs, v any) []*TNode[string] {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control  *workControl
-	tBinary  astChunk[Binary]
+	control *workControl
+	tBinary astChunk[Binary]
+	tUnary  astChunk[Unary]
+	// named holds the public forms of the nodes of named node types by their values.
+	named    map[any]any
 	tNumber  astChunk[Number]
-	tUnary   astChunk[Unary]
 	tl0Chunk astChunk[*TNode[string]]
 }
 
@@ -7733,7 +7628,7 @@ func (a *tslabs) stepWork() {
 // It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (Expr, error) {
 	a := &tslabs{}
-	return tparse(trules[0], input, opts, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	return tparse(trules[0], input, opts, a, func(v any) Expr { return tAs[Expr](tpubIn(a, v)) })
 }
 
 // ParseRuleAST parses the whole input with the named rule and returns its typed value.
@@ -7752,16 +7647,16 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 	switch name {
 	case "main":
 		a := &tslabs{}
-		return tparseResolved(trules[0], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+		return tparseResolved(trules[0], input, o, a, func(v any) Expr { return tAs[Expr](tpubIn(a, v)) })
 	case "expr":
 		a := &tslabs{}
-		return tparseResolved(trules[1], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+		return tparseResolved(trules[1], input, o, a, func(v any) Expr { return tAs[Expr](tpubIn(a, v)) })
 	case "number":
 		a := &tslabs{}
-		return tparseResolved(trules[2], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+		return tparseResolved(trules[2], input, o, a, func(v any) *Number { return tv0(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return tparseResolved(trules[3], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv0(a, v) })
+		return tparseResolved(trules[3], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv1(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
@@ -7779,14 +7674,14 @@ var lit28 = []rune("^")
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 1, name: "expr", scope: []string{}, value: shaper{}, textType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 4, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"e"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 1, name: "expr", scope: []string{}, value: shaper{}, memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
+		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, nodeType: "Number", seen: -1, novalue: false, vars: []string{}},
+		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 4, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range rules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}
@@ -7831,18 +7726,17 @@ func init() {
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	structFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	typeKinds["Binary"] = kindOf("Binary", "")
-	structFields["Number"] = map[string]bool{"Text": true}
-	typeKinds["Number"] = kindOf("Number", "")
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
 	typeKinds["Unary"] = kindOf("Unary", "")
+	nodeTypes["Number"] = newNodeTypeKinds("Number")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 1, name: "expr", scope: []string{}, value: shaper{}, textType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
-		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 1, name: "expr", scope: []string{}, value: shaper{}, memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
+		{id: 2, name: "number", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 3, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
-		r.kinds = newRuleKinds(r.name, r.textType)
+		r.kinds = newRuleKinds(r.name)
 		if r.nodeType != "" {
 			r.nodeKinds = newNodeTypeKinds(r.nodeType)
 		}
@@ -7994,15 +7888,19 @@ func (p *parser) e3() (*Node, bool) {
 	if p.control == nil {
 
 		var (
+			x1   int
 			ch   rune
 			size int
 			ok   bool
-			x1   int
-			x2   mark
-			x5   int
+			x2   int
+			x3   mark
+			x6   int
+			v7   *Node
 		)
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -8015,21 +7913,21 @@ func (p *parser) e3() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x1++
+			x2++
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
 
-		x2 = p.mark()
+		x3 = p.mark()
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit2, ".", 6, false); !ok {
-			goto L3_ordinary
+			goto L4_ordinary
 		}
 
-		x5 = 0
+		x6 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -8042,33 +7940,37 @@ func (p *parser) e3() (*Node, bool) {
 				break
 			}
 			p.pos += size
-			x5++
+			x6++
 		}
-		if x5 < 1 {
-			goto L3_ordinary
+		if x6 < 1 {
+			goto L4_ordinary
 		}
-		goto L4_ordinary
-	L3_ordinary:
-		p.reset(x2)
+		goto L5_ordinary
 	L4_ordinary:
-		return nil, true
+		p.reset(x3)
+	L5_ordinary:
+		v7 = p.newNodeOrdinary(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+		return v7, true
 	fail_ordinary:
 		return nil, false
 	}
 
 	p.stepWork()
 	var (
+		x1   int
 		ch   rune
 		size int
 		ok   bool
-		x1   int
-		x2   mark
-		x5   int
+		x2   int
+		x3   mark
+		x6   int
+		v7   *Node
 	)
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -8081,22 +7983,22 @@ func (p *parser) e3() (*Node, bool) {
 			break
 		}
 		p.pos += size
-		x1++
+		x2++
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
 	p.stepWork()
-	x2 = p.mark()
+	x3 = p.mark()
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit2, ".", 6, false); !ok {
-		goto L3
+		goto L4
 	}
 	p.stepWork()
-	x5 = 0
+	x6 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -8109,16 +8011,17 @@ func (p *parser) e3() (*Node, bool) {
 			break
 		}
 		p.pos += size
-		x5++
+		x6++
 	}
-	if x5 < 1 {
-		goto L3
+	if x6 < 1 {
+		goto L4
 	}
-	goto L4
-L3:
-	p.reset(x2)
+	goto L5
 L4:
-	return nil, true
+	p.reset(x3)
+L5:
+	v7 = p.newNode(Node{kind: kindMatch, start: int32(x1), end: int32(p.pos), text: p.text(x1, p.pos), terminal: true, fresh: true})
+	return v7, true
 fail:
 	return nil, false
 }
@@ -10519,13 +10422,16 @@ func (p *tparser) s2() (any, bool) {
 			start int
 			v     any
 			rec   int
+			x1    int
 			ch    rune
 			size  int
 			ok    bool
-			x1    int
 			x2    int
 			x3    int
-			x6    int
+			x4    int
+			x7    int
+			v8    any
+			bv    any
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -10533,7 +10439,9 @@ func (p *tparser) s2() (any, bool) {
 			p.tooDeep()
 		}
 
-		x1 = 0
+		x1 = p.pos
+
+		x2 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -10546,21 +10454,21 @@ func (p *tparser) s2() (any, bool) {
 				break
 			}
 			p.pos += size
-			x1++
+			x2++
 		}
-		if x1 < 1 {
+		if x2 < 1 {
 			goto fail_ordinary
 		}
 
-		x2, x3 = p.pos, len(p.recovered)
+		x3, x4 = p.pos, len(p.recovered)
 
 		if (!workControlsEnabled || (*workControl)(nil) == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit2, ".", 6, false); !ok {
-			goto L4_ordinary
+			goto L5_ordinary
 		}
 
-		x6 = 0
+		x7 = 0
 		for {
 			if p.pos < len(p.in) {
 
@@ -10573,17 +10481,23 @@ func (p *tparser) s2() (any, bool) {
 				break
 			}
 			p.pos += size
-			x6++
+			x7++
 		}
-		if x6 < 1 {
-			goto L4_ordinary
+		if x7 < 1 {
+			goto L5_ordinary
 		}
-		goto L5_ordinary
-	L4_ordinary:
-		p.pos = x2
-		p.recovered = p.recovered[:x3]
+		goto L6_ordinary
 	L5_ordinary:
-		v = trules[2].text(p, start, p.pos, p.text(start, p.pos))
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
+	L6_ordinary:
+		v8 = p.newMatchOrdinary(x1, p.pos, p.text(x1, p.pos), true)
+		bv = tfreshNode(v8)
+		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v8, start)
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+		v = p.tconvertResultOwned(trules[2], v, bv)
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -10598,13 +10512,16 @@ func (p *tparser) s2() (any, bool) {
 		start int
 		v     any
 		rec   int
+		x1    int
 		ch    rune
 		size  int
 		ok    bool
-		x1    int
 		x2    int
 		x3    int
-		x6    int
+		x4    int
+		x7    int
+		v8    any
+		bv    any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -10612,9 +10529,10 @@ func (p *tparser) s2() (any, bool) {
 		p.tooDeep()
 	}
 	p.stepWork()
+	x1 = p.pos
 	p.stepWork()
 	p.stepWork()
-	x1 = 0
+	x2 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -10627,22 +10545,22 @@ func (p *tparser) s2() (any, bool) {
 			break
 		}
 		p.pos += size
-		x1++
+		x2++
 	}
-	if x1 < 1 {
+	if x2 < 1 {
 		goto fail
 	}
 	p.stepWork()
-	x2, x3 = p.pos, len(p.recovered)
+	x3, x4 = p.pos, len(p.recovered)
 	p.stepWork()
 	p.stepWork()
 	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 46) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit2, ".", 6, false); !ok {
-		goto L4
+		goto L5
 	}
 	p.stepWork()
-	x6 = 0
+	x7 = 0
 	for {
 		if p.pos < len(p.in) {
 			p.inputWork(1)
@@ -10655,17 +10573,23 @@ func (p *tparser) s2() (any, bool) {
 			break
 		}
 		p.pos += size
-		x6++
+		x7++
 	}
-	if x6 < 1 {
-		goto L4
+	if x7 < 1 {
+		goto L5
 	}
-	goto L5
-L4:
-	p.pos = x2
-	p.recovered = p.recovered[:x3]
+	goto L6
 L5:
-	v = trules[2].text(p, start, p.pos, p.text(start, p.pos))
+	p.pos = x3
+	p.recovered = p.recovered[:x4]
+L6:
+	v8 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	bv = tfreshNode(v8)
+	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v8, start)
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	v = p.tconvertResultOwned(trules[2], v, bv)
 	p.depth--
 	return v, true
 fail:

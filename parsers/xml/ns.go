@@ -26,8 +26,8 @@ func (t *Tree) ResolveNamespaces() error {
 	}
 	for _, items := range [][]Item{t.Prolog, t.Epilog} {
 		for _, it := range items {
-			if pi, ok := it.(*PI); ok && strings.Contains(pi.Target.Text, ":") {
-				return r.errorf(pi.Start, -1, "the processing instruction target %s contains a colon", pi.Target.Text)
+			if pi, ok := it.(*PI); ok && strings.Contains(pi.Target.Value, ":") {
+				return r.errorf(pi.Start, -1, "the processing instruction target %s contains a colon", pi.Target.Value)
 			}
 		}
 	}
@@ -77,11 +77,11 @@ func (r *resolver) dtd() error {
 			var pos int
 			switch d := d.(type) {
 			case *EntityDecl:
-				name, pos = d.Name.Text, d.Start
+				name, pos = d.Name.Value, d.Start
 			case *NotationDecl:
-				name, pos = d.Name.Text, d.Start
+				name, pos = d.Name.Value, d.Start
 			case *PI:
-				name, pos = d.Target.Text, d.Start
+				name, pos = d.Target.Value, d.Start
 			case *PERef:
 				if e := r.t.DTD.Params[d.Name()]; e != nil && e.decls != nil && !seen[e] {
 					seen[e] = true
@@ -194,8 +194,8 @@ func (r *resolver) elem(el *Elem, scope *binding) error {
 				return err
 			}
 		case *PI:
-			if strings.Contains(c.Target.Text, ":") {
-				return r.errorf(c.Start, el.ref, "the processing instruction target %s contains a colon", c.Target.Text)
+			if strings.Contains(c.Target.Value, ":") {
+				return r.errorf(c.Start, el.ref, "the processing instruction target %s contains a colon", c.Target.Value)
 			}
 		}
 	}

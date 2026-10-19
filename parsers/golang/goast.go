@@ -106,7 +106,7 @@ func (c *converter) ident(id *Ident) *ast.Ident {
 	if id == nil {
 		return nil
 	}
-	return &ast.Ident{NamePos: c.pos(id.Start), Name: id.Text}
+	return &ast.Ident{NamePos: c.pos(id.Start), Name: id.Value}
 }
 
 func (c *converter) idents(ids []*Ident) []*ast.Ident {
@@ -161,7 +161,7 @@ func (c *converter) genDecl(d *GenDecl) *ast.GenDecl {
 func (c *converter) spec(s Spec) ast.Spec {
 	switch s := s.(type) {
 	case *ImportSpec:
-		is := &ast.ImportSpec{Name: c.ident(s.Name), Path: c.basicLit(s.Path.Span, token.STRING, s.Path.Text)}
+		is := &ast.ImportSpec{Name: c.ident(s.Name), Path: c.basicLit(s.Path.Span, token.STRING, s.Path.TNode.Value)}
 		c.imports = append(c.imports, is)
 		return is
 	case *ValueSpec:
@@ -199,7 +199,7 @@ func (c *converter) fieldList(l *FieldList) *ast.FieldList {
 func (c *converter) field(f *Field) *ast.Field {
 	af := &ast.Field{Names: c.idents(f.Names), Type: c.expr(f.Type)}
 	if f.Tag != nil {
-		af.Tag = c.basicLit(f.Tag.Span, token.STRING, f.Tag.Text)
+		af.Tag = c.basicLit(f.Tag.Span, token.STRING, f.Tag.TNode.Value)
 	}
 	return af
 }
@@ -235,15 +235,15 @@ func (c *converter) expr(e Expr) ast.Expr {
 	case *Ident:
 		return c.ident(e)
 	case *IntLit:
-		return c.basicLit(e.Span, token.INT, e.Text)
+		return c.basicLit(e.Span, token.INT, e.Value)
 	case *FloatLit:
-		return c.basicLit(e.Span, token.FLOAT, e.Text)
+		return c.basicLit(e.Span, token.FLOAT, e.Value)
 	case *ImagLit:
-		return c.basicLit(e.Span, token.IMAG, e.Text)
+		return c.basicLit(e.Span, token.IMAG, e.Value)
 	case *CharLit:
-		return c.basicLit(e.Span, token.CHAR, e.Text)
+		return c.basicLit(e.Span, token.CHAR, e.TNode.Value)
 	case *StringLit:
-		return c.basicLit(e.Span, token.STRING, e.Text)
+		return c.basicLit(e.Span, token.STRING, e.TNode.Value)
 	case *Ellipsis:
 		return &ast.Ellipsis{Ellipsis: c.pos(e.Start), Elt: c.expr(e.Elt)}
 	case *CompositeLit:

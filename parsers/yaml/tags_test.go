@@ -87,7 +87,7 @@ func TestMalformedTagAST(t *testing.T) {
 				t.Fatal(err)
 			}
 			d := s.Documents[0]
-			tag := &yaml.Tag{Text: text}
+			tag := &yaml.Tag{TNode: yaml.TNode[string]{Value: text}}
 			d.Root.(*yaml.Scalar).Props = &yaml.Properties{Tag: tag}
 			for _, f := range []func() error{
 				s.Check,

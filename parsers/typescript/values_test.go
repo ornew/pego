@@ -92,7 +92,7 @@ func TestIdentifierValue(t *testing.T) {
 	for i, want := range []string{"abc", "bc", "plain", "é"} {
 		id := f.Statements[i].(*typescript.ExpressionStatement).Expression.(*typescript.Identifier)
 		if got := id.Value(); got != want {
-			t.Errorf("%q: got %q, want %q", id.Text, got, want)
+			t.Errorf("%q: got %q, want %q", id.TNode.Value, got, want)
 		}
 	}
 }
