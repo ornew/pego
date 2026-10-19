@@ -344,7 +344,7 @@ own grammar, see the [performance measurement method](../performance.md#how-to-m
 
 The closing tag must repeat the name of the opening tag. When both are in the same rule, capture the names and compare
 the text. That is how [parsers/xml](../../parsers/xml/xml.pego) does it (a rule `element`, with
-`"<" n:name ... "</" e:name { $e.(Name).Text == $n.Text } @error(message="mismatched end tag")`):
+`"<" n:name ... "</" e:name {text($e) == text($n)} @error(message="mismatched end tag")`):
 
 ```bash
 pego parse -g parsers/xml/xml.pego -f sexpr -i '<a><b>text</c></a>'

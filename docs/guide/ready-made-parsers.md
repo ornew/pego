@@ -274,7 +274,7 @@ func main() {
 	}
 	for _, d := range file.Decls {
 		if fn, ok := d.(*golang.FuncDecl); ok {
-			fmt.Println(fn.Name.Text, fn.Start, fn.End)
+			fmt.Println(fn.Name.Value, fn.Start, fn.End)
 		}
 	}
 

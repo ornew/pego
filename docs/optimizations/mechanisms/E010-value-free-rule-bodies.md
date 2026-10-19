@@ -2,14 +2,12 @@
 
 A rule can consume input without retaining the intermediate tree used to match
 its body. This removes Node and child-list construction when an action needs
-named captures but no positional body values, or a text struct rule needs only the
-matched range.
+named captures but no positional body values.
 
 ## Mechanism and Invariants
 
 `leanBody` selects value-free lowering for an action that does not read
-positional body values (`$n`), or for a text struct rule, whose action the
-compiler replaces with building the struct from the matched text.
+positional body values (`$n`).
 Streaming bodies keep their general route. Captures still build the values their
 actions need.
 

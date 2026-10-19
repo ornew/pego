@@ -172,7 +172,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Status | Category | Feature |
 |:--|:--|:--|
 | Done | Type system | Type definitions (`type`) |
-| Done | | Structs (`T = { ... }`), including text structs (`T = { Text string }`) for tokens |
+| Done | | Structs (`T = { ... }`) |
 | Done | | Union types (`T \| U`) |
 | Done | | Type checking |
 | Done | | Type inference |

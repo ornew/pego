@@ -212,13 +212,15 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
 - the deprecated type `any` to `_`, where the grammar still compiles with `_`. A value of type `_` needs a cast before
   it is used as another type, so a use that would need one keeps `any`, as does a rule type or cast that must produce
   a node; `pego lint` reports them;
-- a terminal type `type T terminal` to the struct `type T = { Text string }`. A rule declared with it and without an
-  action, `rule r T = e`, which produced the text it matched, becomes `rule r T = t:(e) #atomic => T{Text: text($t)}`
-  (without `#atomic` when `e` is atomic already or has captures, which `#atomic` would ignore); `T{s}` becomes `T{Text: s}`; and `text($x)`
-  and `$x.Value` become `$x.Text`, and `len($x)` becomes `len($x.Text)`, where `x` captures a call of such a rule;
-  `$x.Value` also becomes `$x.Text` where the rule is declared with a struct `{ Text string }`. A capture that may be
-  absent needs a cast, `$x.(T).Text`, or a test for `nil`, which the type checker asks for. A struct has no range, so
-  `$x.Start` and `$x.End` on such a capture are reported by the type checker and need rewriting by hand;
+- a terminal type `type T terminal` to the named node type `type T = node[string]`. A rule declared with it and
+  without an action, `rule r T = e`, which produced the text it matched, becomes `rule r T = (e) #atomic` (without
+  `#atomic` when `e` is atomic already), and `$x.Value` becomes `text($x)` where `x` captures a call of such a rule. When a
+  rule of `T` has captures or makes `T` with a constructor `T{s}`, `T` becomes the struct `type T = { Text string }`
+  instead, and those rules make it with `T{Text: ...}`;
+- a struct `type T = { Text string }` that a rule makes from the text it matched, `rule r T = t:(e) #atomic =>
+  T{Text: text($t)}`, to the named node type `type T = node[string]` with `rule r T = (e) #atomic`, when no other
+  constructor makes `T`. A rule written that way without a type is declared with `T`. Reads `x.Text` of its values
+  become `text(x)`, and `len(x.Text)` becomes `len(x)`;
 - the type names `terminal` and `Match` to `node[string]`, `Seq`, `List` and `Operator` to `node[_]`, and `Error` to
   `error`;
 - a bare `node`, which needs a type argument, to `node[string]` where the grammar still type-checks with it, and

@@ -20,7 +20,7 @@ f, err := golang.ParseFile(fset, "x.go", src, 0) // golang.ParseComments collect
 file, err := golang.ParseAST(string(src), golang.WithUnit(golang.Bytes))
 for _, d := range file.Decls {
 	if fn, ok := d.(*golang.FuncDecl); ok {
-		fmt.Println(fn.Name.Text, fn.Start, fn.End)
+		fmt.Println(fn.Name.Value, fn.Start, fn.End)
 	}
 }
 
