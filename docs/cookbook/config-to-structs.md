@@ -9,10 +9,10 @@ The grammar describes the syntax and keeps each kind of value as a type. Go turn
 // config.pego
 package config
 
-type Key = { Text string }
-type Int = { Text string }
-type Str = { Text string }
-type Bool = { Text string }
+type Key = node[string]
+type Int = node[string]
+type Str = node[string]
+type Bool = node[string]
 type Array = { Items []Value }
 type Value ~ Int | Str | Bool | Array
 type Entry = { Key Key; Value Value }
@@ -23,10 +23,10 @@ rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
 rule value Value = int / str / bool / array
-rule key Key = t:([a-z_]+) #atomic => Key{Text: text($t)}
-rule int Int = t:("-"? [0-9]+) #atomic => Int{Text: text($t)}
-rule str Str = t:("\"" ("\\" . / [^"\\\n])* "\"") #atomic => Str{Text: text($t)}
-rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
+rule key Key = ([a-z_]+) #atomic
+rule int Int = ("-"? [0-9]+) #atomic
+rule str Str = ("\"" ("\\" . / [^"\\\n])* "\"") #atomic
+rule bool Bool = ("true" / "false") #atomic
 rule array Array = "[" -ws vs:(v:value -ws -","? -ws)* "]" => Array{Items: map($vs, (x) => x.$v)}
 
 rule ws = (blank / comment)*
@@ -60,8 +60,8 @@ type Config struct {
 	Tags  []string
 }
 
-// text returns the text of a Key, Int, Str or Bool, the value of its Text field.
-func text(v *pego.Node) string { return v.Field("Text").(string) }
+// text returns the text of a Key, Int, Str or Bool node.
+func text(v *pego.Node) string { return v.Text() }
 
 func asString(v *pego.Node) (string, error) {
 	if v.Type() != "Str" {

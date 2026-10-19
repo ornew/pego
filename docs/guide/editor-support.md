@@ -60,7 +60,7 @@ definition on one line can instead have a comment at the end of the line:
 // Leading zeros are allowed.
 rule number = [0-9]+ #atomic
 
-type Number = { Text string } // the text of a number
+type Number = node[string] // the text of a number
 ```
 
 A blank line between the comments and the definition ends the documentation.
@@ -72,9 +72,9 @@ type of the rule's value; in it, a rule with a declared type stands for that typ
 one for its name:
 
 ```pego
-type Num = { Text string }
+type Num = node[string]
 rule digits = [0-9]+ // hover: rule digits node[[]node[string]] (inferred)
-rule num Num = d:digits #atomic => Num{Text: text($d)}
+rule num Num = digits #atomic
 rule pair = a:num "," b:digits => list($a, $b) // hover: rule pair [](Num | digits) (inferred)
 ```
 

@@ -8,8 +8,8 @@ as it has been parsed. The input before the record is dropped after it.
 
 ```pego
 // stream.pego
-type Level = { Text string }
-type Millis = { Text string }
+type Level = node[string]
+type Millis = node[string]
 type Entry = { Level Level; Millis Millis }
 
 // Each entry is one line: time level service method path status millis.
@@ -17,8 +17,8 @@ rule main = entry* #stream $$
 
 rule entry Entry = -token " " l:severity " " -token " " -token " " -token " " -token " " ms:millis "ms\n" => Entry{Level: $l, Millis: $ms}
 rule token = [^ \n]+
-rule severity Level = t:("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic => Level{Text: text($t)}
-rule millis Millis = t:([0-9]+) #atomic => Millis{Text: text($t)}
+rule severity Level = ("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic
+rule millis Millis = ([0-9]+) #atomic
 ```
 
 The lines are those of [Parse log lines fast](log-lines.md). This grammar keeps only the level and the time, and skips the
@@ -86,10 +86,10 @@ func main() {
 	var lines, errors, totalMs int
 	count := func(e *pego.Node) error {
 		lines++
-		if e.Field("Level").(*pego.Node).Field("Text") == "ERROR" {
+		if e.Field("Level").(*pego.Node).Text() == "ERROR" {
 			errors++
 		}
-		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Field("Text").(string))
+		ms, _ := strconv.Atoi(e.Field("Millis").(*pego.Node).Text())
 		totalMs += ms
 		return nil
 	}

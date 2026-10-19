@@ -8,8 +8,8 @@ precedence and associativity in a table; the evaluator is a `switch` on the node
 
 ```pego
 // calc.pego
-type Num = { Text string }
-type Name = { Text string }
+type Num = node[string]
+type Name = node[string]
 type Bin = { Left Expr; Op node[string]; Right Expr }
 type Neg = { X Expr }
 type Call = { Fn Name; Args []Expr }
@@ -32,8 +32,8 @@ rule expr Expr = operators {
 rule call Call = f:name ws "(" ws as:args? ws ")" => Call{Fn: $f, Args: concat($as)}
 rule args = first:expr rest:(ws "," ws e:expr)* => concat(list($first), map($rest, (r) => r.$e))
 
-rule num Num = t:([0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
-rule name Name = t:([a-z_]+) #atomic => Name{Text: text($t)}
+rule num Num = ([0-9]+ ("." [0-9]+)?) #atomic
+rule name Name = ([a-z_]+) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -68,9 +68,9 @@ var funcs = map[string]struct {
 func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 	switch n.Type() {
 	case "Num":
-		return strconv.ParseFloat(n.Field("Text").(string), 64)
+		return strconv.ParseFloat(n.Text(), 64)
 	case "Name":
-		name := n.Field("Text").(string)
+		name := n.Text()
 		v, ok := vars[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined variable %q", name)
@@ -106,7 +106,7 @@ func eval(n *pego.Node, vars map[string]float64) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	case "Call":
-		name := n.Field("Fn").(*pego.Node).Field("Text").(string)
+		name := n.Field("Fn").(*pego.Node).Text()
 		fn, ok := funcs[name]
 		if !ok {
 			return 0, fmt.Errorf("undefined function %q", name)

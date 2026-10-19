@@ -8,10 +8,10 @@ and `not`, and comparisons that do not chain.
 
 ```pego
 // filter.pego
-type Num = { Text string }
-type Str = { Text string }
-type Bool = { Text string }
-type Field = { Text string }
+type Num = node[string]
+type Str = node[string]
+type Bool = node[string]
+type Field = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Not = { X Expr }
 type Expr ~ Num | Str | Bool | Field | Binary | Not
@@ -33,10 +33,10 @@ rule expr Expr = operators {
     }
 }
 
-rule num Num = t:("-"? [0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
-rule str Str = t:("\"" ("\\" . / [^"\\])* "\"") #atomic => Str{Text: text($t)}
-rule bool Bool = t:(("true" / "false") !wordchar) #atomic => Bool{Text: text($t)}
-rule field Field = t:(!keyword [a-z_] wordchar*) #atomic => Field{Text: text($t)}
+rule num Num = ("-"? [0-9]+ ("." [0-9]+)?) #atomic
+rule str Str = ("\"" ("\\" . / [^"\\])* "\"") #atomic
+rule bool Bool = (("true" / "false") !wordchar) #atomic
+rule field Field = (!keyword [a-z_] wordchar*) #atomic
 rule keyword = ("and" / "or" / "not") !wordchar
 rule wordchar = [a-z0-9_]
 rule ws = [ \t\r\n]*
@@ -67,8 +67,8 @@ type Record map[string]any
 // value computes the value of a subexpression for a record.
 type value func(Record) any
 
-// text returns the text of a Num, Str, Bool or Field, the value of its Text field.
-func text(n *pego.Node) string { return n.Field("Text").(string) }
+// text returns the text of a Num, Str, Bool or Field node.
+func text(n *pego.Node) string { return n.Text() }
 
 // compile turns a tree into closures, so that the tree is walked once, not once per record.
 func compile(n *pego.Node) value {

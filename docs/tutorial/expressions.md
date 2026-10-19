@@ -16,7 +16,7 @@ Complete [Building Typed Trees](typed-trees.md). This lesson does not use the co
 Start with an Operators Rule. Save as `calc.pego`:
 
 ```pego
-type Number = { Text string }
+type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
 
@@ -27,7 +27,7 @@ rule expr Expr = operators {
     level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule number Number = ([0-9]+) #atomic
 ```
 
 An Operators Rule Declaration Statement defines an expression by listing its
@@ -43,7 +43,7 @@ pego parse -g calc.pego -f sexpr -i '1+2-3'
 ```
 
 ```text
-Binary{Left: Binary{Left: Number{Text: "1"}, Op: "+", Right: Number{Text: "2"}}, Op: "-", Right: Number{Text: "3"}}
+Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "-", Right: "3"}
 ```
 
 `1+2-3` is `(1+2)-3`, as left associativity demands. But whitespace is not handled yet:
@@ -61,7 +61,7 @@ parentheses, a prefix operator and a right-associative one. **Levels declared ea
 of the `level` blocks is the precedence table, from loosest to tightest:
 
 ```pego
-type Number = { Text string }
+type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X Expr }
 type Expr ~ Number | Binary | Unary
@@ -78,7 +78,7 @@ rule expr Expr = operators {
     level power { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-rule number Number = t:([0-9]+ ("." [0-9]+)?) #atomic => Number{Text: text($t)}
+rule number Number = ([0-9]+ ("." [0-9]+)?) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -87,18 +87,18 @@ pego parse -g calc.pego -f sexpr -i '1+2*3'
 ```
 
 ```text
-Binary{Left: Number{Text: "1"}, Op: "+", Right: Binary{Left: Number{Text: "2"}, Op: "*", Right: Number{Text: "3"}}}
+Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}
 ```
 
 Multiplication binds tighter than addition. Some more inputs:
 
 | Input | Result |
 |:--|:--|
-| `1 - 2 - 3` | `Binary{Left: Binary{Left: Number{Text: "1"}, Op: "-", Right: Number{Text: "2"}}, Op: "-", Right: Number{Text: "3"}}` |
-| `2^3^2` | `Binary{Left: Number{Text: "2"}, Op: "^", Right: Binary{Left: Number{Text: "3"}, Op: "^", Right: Number{Text: "2"}}}` |
-| `-2^2` | `Unary{Op: "-", X: Binary{Left: Number{Text: "2"}, Op: "^", Right: Number{Text: "2"}}}` |
-| `(1+2)*3` | `Binary{Left: Binary{Left: Number{Text: "1"}, Op: "+", Right: Number{Text: "2"}}, Op: "*", Right: Number{Text: "3"}}` |
-| `1.5*2` | `Binary{Left: Number{Text: "1.5"}, Op: "*", Right: Number{Text: "2"}}` |
+| `1 - 2 - 3` | `Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}` |
+| `2^3^2` | `Binary{Left: "2", Op: "^", Right: Binary{Left: "3", Op: "^", Right: "2"}}` |
+| `-2^2` | `Unary{Op: "-", X: Binary{Left: "2", Op: "^", Right: "2"}}` |
+| `(1+2)*3` | `Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "*", Right: "3"}` |
+| `1.5*2` | `Binary{Left: "1.5", Op: "*", Right: "2"}` |
 
 `1 - 2 - 3` groups to the left, `2^3^2` is `2^(3^2)` because `^` is `infix right`, and `-2^2` is `-(2^2)` because `^`
 is declared after (so binds tighter than) the prefix `-`. A parenthesized operand returns `$e`, the inner expression,
@@ -113,7 +113,7 @@ A rule that starts by calling itself is **left recursive**, and PEGO accepts it.
 rule per level, each defined in terms of the next tighter one:
 
 ```pego
-type Number = { Text string }
+type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
 
@@ -127,7 +127,7 @@ rule mul Expr = l:product ws op:("*" / "/") #atomic ws r:atom => Binary{Left: $l
 
 rule atom Expr = number / group
 rule group Expr = "(" ws e:expr ws ")" => $e
-rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule number Number = ([0-9]+) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -136,7 +136,7 @@ pego parse -g calc-lr.pego -f sexpr -i '1 + 2 * 3 - 4'
 ```
 
 ```text
-Binary{Left: Binary{Left: Number{Text: "1"}, Op: "+", Right: Binary{Left: Number{Text: "2"}, Op: "*", Right: Number{Text: "3"}}}, Op: "-", Right: Number{Text: "4"}}
+Binary{Left: Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}, Op: "-", Right: "4"}
 ```
 
 This produces the same trees as the Operators Rule version, with one rule per level instead of one line per level. Operators Rule

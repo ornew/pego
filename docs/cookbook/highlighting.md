@@ -8,14 +8,14 @@ The tree is a flat list, and the highlighter turns each token into a `<span>`.
 
 ```pego
 // tokens.pego
-type Comment = { Text string }
-type Keyword = { Text string }
-type Ident = { Text string }
-type Number = { Text string }
-type String = { Text string }
-type Punct = { Text string }
-type Space = { Text string }
-type Unknown = { Text string }
+type Comment = node[string]
+type Keyword = node[string]
+type Ident = node[string]
+type Number = node[string]
+type String = node[string]
+type Punct = node[string]
+type Space = node[string]
+type Unknown = node[string]
 type Token ~ Comment | Keyword | Ident | Number | String | Punct | Space | Unknown
 type Tokens = { Items []Token }
 
@@ -24,15 +24,15 @@ rule main Tokens = ts:token* $$ => Tokens{Items: $ts.Value}
 
 rule token Token = comment / string / number / keyword / ident / punct / space / unknown
 
-rule comment Comment = t:("--" [^\n]*) #atomic => Comment{Text: text($t)}
+rule comment Comment = ("--" [^\n]*) #atomic
 // A string that is not closed runs to the end of the line, as an editor would show it.
-rule string String = t:("'" [^'\n]* "'"?) #atomic => String{Text: text($t)}
-rule number Number = t:([0-9]+ ("." [0-9]+)?) #atomic => Number{Text: text($t)}
-rule keyword Keyword = t:(("select" / "from" / "where" / "and" / "or" / "not" / "limit" / "order" / "by") !wordchar) #atomic => Keyword{Text: text($t)}
-rule ident Ident = t:([a-z_] wordchar*) #atomic => Ident{Text: text($t)}
-rule punct Punct = t:("<=" / ">=" / "<>" / [=<>+\-*/,;\(\)]) #atomic => Punct{Text: text($t)}
-rule space Space = t:([ \t\r\n]+) #atomic => Space{Text: text($t)}
-rule unknown Unknown = t:(.) #atomic => Unknown{Text: text($t)}
+rule string String = ("'" [^'\n]* "'"?) #atomic
+rule number Number = ([0-9]+ ("." [0-9]+)?) #atomic
+rule keyword Keyword = (("select" / "from" / "where" / "and" / "or" / "not" / "limit" / "order" / "by") !wordchar) #atomic
+rule ident Ident = ([a-z_] wordchar*) #atomic
+rule punct Punct = ("<=" / ">=" / "<>" / [=<>+\-*/,;\(\)]) #atomic
+rule space Space = ([ \t\r\n]+) #atomic
+rule unknown Unknown = (.) #atomic
 rule wordchar = [a-z0-9_]
 ```
 
@@ -66,7 +66,7 @@ func Highlight(p *pego.Parser, src string) (string, error) {
 	}
 	var b strings.Builder
 	for _, tok := range tree.Field("Items").(*pego.Node).Elems() {
-		text := html.EscapeString(tok.Field("Text").(string))
+		text := html.EscapeString(tok.Text())
 		if c, ok := class[tok.Type()]; ok {
 			fmt.Fprintf(&b, `<span class="%s">%s</span>`, c, text)
 		} else {
@@ -105,7 +105,7 @@ func main() {
 - **Broken input still highlights.** The string `'oops <b>` has no closing quote. `"'"?` makes the quote optional, so
   an unclosed string is a `String` up to the end of the line, which is also what most editors do, and the next line is
   highlighted normally.
-- **Spans are text.** Every token is a text struct holding its text, and the tokens, joined, are exactly the input, so
+- **Spans are text.** Every token is a string node holding its text, and the tokens, joined, are exactly the input, so
   `strings.Join` of the texts gives the source back. `html.EscapeString` keeps `<` and `&` of the source from becoming
   markup.
 - **Positions.** Each token has `Start()` and `End()`. For an editor, send those (they are code points by default; `pego.WithUnit`

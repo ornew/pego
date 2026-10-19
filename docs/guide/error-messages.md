@@ -198,8 +198,8 @@ and improves its errors step by step. The first version has the usual whitespace
 // toy.pego
 package toy
 
-type Name = { Text string }
-type Num = { Text string }
+type Name = node[string]
+type Num = node[string]
 type Let = { Name Name; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
@@ -220,8 +220,8 @@ rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (
 rule term Expr = number / name / group
 rule group Expr = "(" ws e:expr ws ")" => $e
 
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
-rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
+rule name Name = ([a-z]+) #atomic
+rule number Num = ([0-9]+) #atomic
 rule ws = [ \t\r\n]*
 ```
 
@@ -230,7 +230,7 @@ pego parse -g toy.pego -f sexpr -i 'let x = 1 + 2;'
 ```
 
 ```text
-Program{Body: [Let{Name: Name{Text: "x"}, Value: Sum{Left: Num{Text: "1"}, Right: Num{Text: "2"}}}]}
+Program{Body: [Let{Name: "x", Value: Sum{Left: "1", Right: "2"}}]}
 ```
 
 ```bash

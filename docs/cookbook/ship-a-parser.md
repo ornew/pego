@@ -10,8 +10,8 @@ The grammar reads versions such as `1.2.3` and `1.2.3-rc.1`:
 
 ```pego
 // version.pego
-type Num = { Text string }
-type Ident = { Text string }
+type Num = node[string]
+type Ident = node[string]
 type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
 
 rule main Version = v:version $$ => $v
@@ -21,8 +21,8 @@ rule version Version = (
 ) => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
 rule pre Ident = -"-" i:ident => $i
 
-rule num Num = t:("0" / [1-9] [0-9]*) #atomic => Num{Text: text($t)}
-rule ident Ident = t:([a-z0-9.]+) #atomic => Ident{Text: text($t)}
+rule num Num = ("0" / [1-9] [0-9]*) #atomic
+rule ident Ident = ([a-z0-9.]+) #atomic
 ```
 
 The layout is a module with the grammar, the code that uses the parser, and the generated parser in a package of its
@@ -67,9 +67,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("major %s, minor %s, patch %s", v.Major.Text, v.Minor.Text, v.Patch.Text)
+	fmt.Printf("major %s, minor %s, patch %s", v.Major.Value, v.Minor.Value, v.Patch.Value)
 	if v.Pre != nil {
-		fmt.Printf(", pre-release %s", v.Pre.Text)
+		fmt.Printf(", pre-release %s", v.Pre.Value)
 	}
 	fmt.Println()
 }

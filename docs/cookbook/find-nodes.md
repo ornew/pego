@@ -11,8 +11,8 @@ the calls of a small program with their positions, and finds the call that conta
 // calls.pego
 package calls
 
-type Name = { Text string }
-type Num = { Text string }
+type Name = node[string]
+type Num = node[string]
 type Call = { Name Name; Args []Expr }
 type Expr ~ Call | Name | Num
 type Program = { Body []Expr }
@@ -22,8 +22,8 @@ rule stmts = es:(e:expr -ws ";" -ws)* => map($es, (x) => x.$e)
 rule expr Expr = call / name / number
 rule call Call = n:name -ws "(" -ws args:args? ")" => Call{Name: $n, Args: concat($args)}
 rule args = first:expr rest:(-ws "," -ws e:expr -ws)* => concat(list($first), map($rest, (r) => r.$e))
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
-rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
+rule name Name = ([a-z]+) #atomic
+rule number Num = ([0-9]+) #atomic
 rule ws = (&[ \t\r\n] .)*
 ```
 
@@ -59,7 +59,7 @@ func main() {
 	// Every node of one kind, with its depth.
 	err = pego.Walk(root, func(v pego.WalkVisit) (pego.WalkAction, error) {
 		if v.Node != nil && v.Node.Type() == "Call" {
-			name := v.Node.Field("Name").(*pego.Node).Field("Text")
+			name := v.Node.Field("Name").(*pego.Node).Text()
 			fmt.Printf("call %-5s [%2d,%2d) depth %d\n", name, v.Node.Start(), v.Node.End(), v.Depth)
 		}
 		return pego.WalkContinue, nil
@@ -86,8 +86,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("at %d: innermost node %s %q, innermost call %s\n", pos, innermost.Type(), innermost.Field("Text"),
-		innermostCall.Field("Name").(*pego.Node).Field("Text"))
+	fmt.Printf("at %d: innermost node %s %q, innermost call %s\n", pos, innermost.Type(), innermost.Text(),
+		innermostCall.Field("Name").(*pego.Node).Text())
 }
 ```
 

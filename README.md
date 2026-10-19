@@ -20,7 +20,7 @@ the same everywhere.
 
 ```pego
 // calc.pego
-type Num = { Text string }
+type Num = node[string]
 type Bin = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Bin | Num
 
@@ -33,7 +33,7 @@ rule main Expr = operators {
     level power { infix right "^" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}
+rule num Num = ([0-9]+) #atomic
 ```
 
 ```bash
@@ -41,7 +41,7 @@ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
 ```
 
 ```text
-Bin{Left: Num{Text: "1"}, Op: "+", Right: Bin{Left: Num{Text: "2"}, Op: "*", Right: Bin{Left: Num{Text: "3"}, Op: "^", Right: Num{Text: "2"}}}}
+Bin{Left: "1", Op: "+", Right: Bin{Left: "2", Op: "*", Right: Bin{Left: "3", Op: "^", Right: "2"}}}
 ```
 
 ```bash

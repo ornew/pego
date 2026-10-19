@@ -20,10 +20,10 @@ grammar and construct them with actions. Save as `config.pego`:
 ```pego
 package config
 
-type Key = { Text string }
-type Number = { Text string }
-type String = { Text string }
-type Bool = { Text string }
+type Key = node[string]
+type Number = node[string]
+type String = node[string]
+type Bool = node[string]
 type Value ~ Number | String | Bool
 
 type Entry = {
@@ -40,10 +40,10 @@ rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
 rule value Value = number / string / bool
-rule key Key = t:([a-z_]+) #atomic => Key{Text: text($t)}
-rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
-rule string String = t:("\"" [^"]* "\"") #atomic => String{Text: text($t)}
-rule bool Bool = t:("true" / "false") #atomic => Bool{Text: text($t)}
+rule key Key = ([a-z_]+) #atomic
+rule number Number = ([0-9]+) #atomic
+rule string String = ("\"" [^"]* "\"") #atomic
+rule bool Bool = ("true" / "false") #atomic
 
 rule ws = (blank / comment)*
 rule blank = [ \t\r\n]+
@@ -55,17 +55,16 @@ pego parse -g config.pego -f sexpr < example.conf
 ```
 
 ```text
-Config{Entries: [Entry{Key: Key{Text: "host"}, Value: String{Text: "\"localhost\""}} Entry{Key: Key{Text: "port"}, Value: Number{Text: "8080"}} Entry{Key: Key{Text: "debug"}, Value: Bool{Text: "true"}}]}
+Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: "port", Value: "8080"} Entry{Key: "debug", Value: "true"}]}
 ```
 
 What is new:
 
 - `package config` is optional; it names the grammar's package and is used by the code generator
   (see [Shipping a Parser](shipping.md)). It must be the first item in the file.
-- `type Key = { Text string }` declares a **text type**: a struct with one `Text` field, for the leaves of the tree. A rule
-  of that type reads the text it matched with `t:(...) #atomic` and builds the value with
-  `Key{Text: text($t)}`. PEGO builds this exact form directly, without running the action, so it is as cheap as a plain
-  match. The text of a `String` includes its quotes, since it is the text the rule matched.
+- `type Key = node[string]` declares a **named node type** whose value is a string, for the leaves of the tree. A rule
+  of that type matches the text with `(...) #atomic` and has no action: its node holds the text it matched. The text of a
+  `String` includes its quotes, since it is the text the rule matched.
 - `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be
@@ -143,7 +142,7 @@ func main() {
 	for _, e := range entries.Elems() {
 		key := e.Field("Key").(*pego.Node)
 		value := e.Field("Value").(*pego.Node)
-		fmt.Printf("%-6s %-7s %s\n", key.Field("Text"), value.Type(), value.Field("Text"))
+		fmt.Printf("%-6s %-7s %s\n", key.Text(), value.Type(), value.Text())
 	}
 }
 ```
@@ -160,8 +159,8 @@ debug  Bool    true
 
 `node.Field(name)` returns the value of a struct field as an `any`: a `*pego.Node` for node values, lists, tuples and
 structs, or an `int`, `string` or `bool`. A list is a node whose elements `Len()`, `Elem(i)` and `Elems()` give.
-A text struct keeps its text in the `Text` field, so `Field("Text")` reads it. `value.Type()` tells you which member of the `Value` union you got, so a
-`switch` on it is how you walk a union.
+A string node keeps the text it matched, which `Text()` returns. `value.Type()` tells you which member of the `Value` union
+you got, so a `switch` on it is how you walk a union.
 
 ## Next Steps
 

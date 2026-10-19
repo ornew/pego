@@ -49,28 +49,35 @@ produces. Rule values, list elements, struct fields and action expressions may h
 An alias is only another name: with `type Binding ~ Assign`, `Binding{...}` produces an `Assign`. Chained aliases and
 unions reduced to one member follow the same rule; an alias does not create a distinct type.
 
-## Text Types
+## Named Node Types
 
-A leaf of the tree that should have a type of its own and keep the text it matched is a struct with one `Text` field:
+A leaf of the tree that should have a type of its own and keep the text it matched is a named node type over
+`string`, declared as `type N = node[string]`:
 
 ```pego
-// text-type.pego
-type Identifier = { Text string }
+// named-node.pego
+type Identifier = node[string]
 
-rule ident Identifier = t:([a-z]+) #atomic => Identifier{Text: text($t)}
+rule ident Identifier = [a-z]+ #atomic
 ```
 
 ```bash
-pego parse -g text-type.pego -s ident -f sexpr -i 'abc'
+pego parse -g named-node.pego -s ident -f json -i 'abc'
 ```
 
-```text
-Identifier{Text: "abc"}
+```json
+{
+  "type": "Identifier",
+  "start": 0,
+  "end": 3,
+  "value": "abc"
+}
 ```
 
-The capture `t:(...) #atomic` reads the text of the whole parenthesized expression, and the action only wraps it. PEGO
-builds exactly this form directly, without running the action, so a text type costs about as much as the plain match.
-Use the field in other actions as `$ident.Text`, and in Go as `Field("Text")` (or the `Text` field of a generated type).
+The rule matches the text with `#atomic` and needs no action: a rule whose declared type is exactly `Identifier` converts
+its value to that named type, which keeps the range and the text. The type name is recorded on the node, so `Node.Type()`
+reports `Identifier`. PEGO builds the node directly, so it is as cheap as a plain match. Use the value in other actions
+as `text($ident)`, and in Go as `Text()` on the node (or as the `Value` field of a generated type).
 
 ## Optional and List Fields
 

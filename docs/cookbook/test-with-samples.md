@@ -11,8 +11,8 @@ expression:
 
 ```pego
 // version.pego
-type Num = { Text string }
-type Ident = { Text string }
+type Num = node[string]
+type Ident = node[string]
 type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
 
 rule main Version = v:version $$ => $v
@@ -22,8 +22,8 @@ rule version Version = (
 ) => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
 rule pre Ident = -"-" i:ident => $i
 
-rule num Num = t:("0" / [1-9] [0-9]*) #atomic => Num{Text: text($t)}
-rule ident Ident = t:([a-z0-9.]+) #atomic => Ident{Text: text($t)}
+rule num Num = ("0" / [1-9] [0-9]*) #atomic
+rule ident Ident = ([a-z0-9.]+) #atomic
 ```
 
 ```go

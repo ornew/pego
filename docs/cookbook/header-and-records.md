@@ -20,18 +20,18 @@ import (
 const grammar = `package kv
 
 type Header = { Version Version }
-type Version = { Text string }
+type Version = node[string]
 type Pair = { Key Key; Value Value }
-type Key = { Text string }
-type Value = { Text string }
+type Key = node[string]
+type Value = node[string]
 
 rule main =  ^^ item* #stream $$
 rule item =  header / pair
 rule header Header =  "#version " v:version "\n" => Header{Version: $v}
-rule version Version =  t:([0-9]+) #atomic => Version{Text: text($t)}
+rule version Version =  ([0-9]+) #atomic
 rule pair Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
-rule key Key =  t:([a-z_]+) #atomic => Key{Text: text($t)}
-rule value Value =  t:([0-9]+) #atomic => Value{Text: text($t)} `
+rule key Key =  ([a-z_]+) #atomic
+rule value Value =  ([0-9]+) #atomic `
 
 func main() {
 	p, err := pego.CompileSource(grammar, "main")
@@ -41,9 +41,9 @@ func main() {
 	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *pego.Node) error {
 		switch n.Type() {
 		case "Header":
-			fmt.Println("header, version", n.Field("Version").(*pego.Node).Field("Text"))
+			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text())
 		case "Pair":
-			fmt.Println("pair", n.Field("Key").(*pego.Node).Field("Text"), "=", n.Field("Value").(*pego.Node).Field("Text"))
+			fmt.Println("pair", n.Field("Key").(*pego.Node).Text(), "=", n.Field("Value").(*pego.Node).Text())
 		}
 		return nil
 	})

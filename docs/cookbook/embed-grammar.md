@@ -12,16 +12,16 @@ is safe for concurrent use, and `WithStart` returns a parser for another start r
 // units.pego
 package units
 
-type Number = { Text string }
-type Unit = { Text string }
+type Number = node[string]
+type Unit = node[string]
 type Quantity = { Value Number; Unit Unit }
 
 rule duration []Quantity = qs:quantity+ $$ => $qs.Value
 rule size Quantity = q:quantity $$ => $q
 
 rule quantity Quantity = v:number u:unit => Quantity{Value: $v, Unit: $u}
-rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
-rule unit Unit = t:("ms" / "s" / "m" / "h" / "KiB" / "MiB" / "GiB") #atomic => Unit{Text: text($t)}
+rule number Number = ([0-9]+) #atomic
+rule unit Unit = ("ms" / "s" / "m" / "h" / "KiB" / "MiB" / "GiB") #atomic
 ```
 
 ```go
@@ -121,9 +121,9 @@ func main() {
 The results are printed in the order of the jobs, whatever order the goroutines finish in. Run `go run .` and `go test -race`:
 
 ```text
-duration "1h30m"  [Quantity{Unit: Unit{Text: "h"}, Value: Number{Text: "1"}} Quantity{Unit: Unit{Text: "m"}, Value: Number{Text: "30"}}]
-size     "10MiB"  Quantity{Unit: Unit{Text: "MiB"}, Value: Number{Text: "10"}}
-duration "250ms"  [Quantity{Unit: Unit{Text: "ms"}, Value: Number{Text: "250"}}]
+duration "1h30m"  [Quantity{Unit: "h", Value: "1"} Quantity{Unit: "m", Value: "30"}]
+size     "10MiB"  Quantity{Unit: "MiB", Value: "10"}
+duration "250ms"  [Quantity{Unit: "ms", Value: "250"}]
 size     "10 MiB" error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 duration "90"     error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 ```

@@ -12,13 +12,13 @@ A line looks like this:
 
 ```pego
 // logs.pego
-type Time = { Text string }
-type Level = { Text string }
-type Service = { Text string }
-type Method = { Text string }
-type Path = { Text string }
-type Status = { Text string }
-type Millis = { Text string }
+type Time = node[string]
+type Level = node[string]
+type Service = node[string]
+type Method = node[string]
+type Path = node[string]
+type Status = node[string]
+type Millis = node[string]
 
 type Line = {
     Time    Time
@@ -37,13 +37,13 @@ rule line Line = (
     t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
 ) => Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
 
-rule time Time = t:([0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z") #atomic => Time{Text: text($t)}
-rule severity Level = t:("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic => Level{Text: text($t)}
-rule service Service = t:([a-z\-]+) #atomic => Service{Text: text($t)}
-rule method Method = t:("GET" / "POST" / "PUT" / "DELETE") #atomic => Method{Text: text($t)}
-rule path Path = t:([^ \n]+) #atomic => Path{Text: text($t)}
-rule status Status = t:([0-9] #repeat(3)) #atomic => Status{Text: text($t)}
-rule millis Millis = t:([0-9]+) #atomic => Millis{Text: text($t)}
+rule time Time = ([0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z") #atomic
+rule severity Level = ("DEBUG" / "INFO" / "WARN" / "ERROR") #atomic
+rule service Service = ([a-z\-]+) #atomic
+rule method Method = ("GET" / "POST" / "PUT" / "DELETE") #atomic
+rule path Path = ([^ \n]+) #atomic
+rule status Status = ([0-9] #repeat(3)) #atomic
+rule millis Millis = ([0-9]+) #atomic
 ```
 
 Generate the parser with `-types` (Go types for the grammar's types and `ParseAST`) and `-recognize` (`Recognize`).
@@ -86,8 +86,8 @@ func main() {
 	var slowest *logparser.Line
 	slowestMs := -1
 	for _, l := range log.Lines {
-		count[l.Level.Text]++
-		ms, _ := strconv.Atoi(l.Millis.Text) // the grammar guarantees digits
+		count[l.Level.Value]++
+		ms, _ := strconv.Atoi(l.Millis.Value) // the grammar guarantees digits
 		if ms > slowestMs {
 			slowest, slowestMs = l, ms
 		}
@@ -96,7 +96,7 @@ func main() {
 		fmt.Printf("%-5s %d\n", level, count[level])
 	}
 	if slowest != nil {
-		fmt.Printf("slowest: %s %s %s (%sms)\n", slowest.Method.Text, slowest.Path.Text, slowest.Status.Text, slowest.Millis.Text)
+		fmt.Printf("slowest: %s %s %s (%sms)\n", slowest.Method.Value, slowest.Path.Value, slowest.Status.Value, slowest.Millis.Value)
 	}
 }
 ```
@@ -137,8 +137,8 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 
 - **A generated parser is the fast one.** `pego gen` writes a Go file with no dependency on PEGO. With `-types`, every
   rule here has a Go type of its own, so `ParseAST` builds `*Line` values directly, without the generic nodes `Parse`
-  would build first. The values are plain structs: `l.Level.Text`, `l.Millis.Text`.
-- **Text stays text.** `Millis` is a text struct, so its `Text` is the matched digits, and you convert
+  would build first. The values are plain structs: `l.Level.Value`, `l.Millis.Value`.
+- **Strings stay strings.** `Millis` is a string node, so its `Value` is the matched digits, and you convert
   (`strconv.Atoi`) only the fields you use.
 - **`Recognize` only checks.** If all you need is "is this file well formed", `logparser.Recognize(text)` returns the
   same error as `ParseAST` without building anything.

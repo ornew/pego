@@ -46,7 +46,7 @@ func main() {
 ```
 
 ```text
-Config{Entries: [Entry{Key: Key{Text: "port"}, Value: Number{Text: "8080"}}]}
+Config{Entries: [Entry{Key: "port", Value: "8080"}]}
 ```
 
 The generated `Node` type mirrors `pego.Node`, and the generated parser gives the same trees and errors as the

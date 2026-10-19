@@ -11,8 +11,8 @@ unaffected. The one rule to keep is that the skip must not eat a brace, or it wo
 // script.pego
 package script
 
-type Name = { Text string }
-type Num = { Text string }
+type Name = node[string]
+type Num = node[string]
 type Set = { Name Name; Value Num }
 type Block = { Cond Name; Body []Stmt }
 type Stmt ~ Set | Block | error
@@ -32,8 +32,8 @@ rule block Block = (
     "if" #atomic sp c:name -ws "{" @error(message="expected '{'") -ws b:stmts -ws "}" @error(message="expected '}'")
 ) => Block{Cond: $c, Body: $b}
 
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
-rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}
+rule name Name = ([a-z]+) #atomic
+rule num Num = ([0-9]+) #atomic
 rule sp = [ \t]+
 rule ws = (&[ \t\r\n] .)*
 ```
@@ -93,9 +93,9 @@ func main() {
 			}
 			switch n.Type() {
 			case "Set":
-				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*pego.Node).Field("Text"))
+				fmt.Printf("%sset %s\n", indent, n.Field("Name").(*pego.Node).Text())
 			case "Block":
-				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*pego.Node).Field("Text"))
+				fmt.Printf("%sif %s\n", indent, n.Field("Cond").(*pego.Node).Text())
 				outline(n.Field("Body").(*pego.Node), indent+"  ")
 			}
 		}
