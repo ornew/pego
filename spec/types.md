@@ -17,6 +17,7 @@ offending construct.
 | `bool` | A boolean. |
 | `node` | Any node. |
 | `node[string]` | A string node: the node of a literal, a character class, `.` or an atomic expression. |
+| `node[_]` | A node whose value may be of any type; the same type as `node`. |
 | `error` | The value of [error recovery](pragmas.md#recover): an error value or a `#missing` insertion. |
 | `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a list node, a `node` whose list is its `.Value`. |
 | `*T` | A `T` or `nil`. |
@@ -68,8 +69,8 @@ do not compile, also when types are otherwise not checked:
   it.
 - A type application `T[U, ...]` applies a type to type arguments, as in
   `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
-  takes type arguments, and of its applications only `node[string]` is
-  supported; any other type takes none.
+  takes type arguments, and of its applications only `node[string]` and
+  `node[_]` are supported; any other type takes none.
 - An unnamed struct type is written with the braces and fields of a struct
   definition, as in `type T ~ { Key node[string]; Value node[string] }` or a field of type
   `{ Line int }`. `type T = {...}` remains the way to define a struct type.

@@ -50,8 +50,8 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"type A ~ (B, C)\ntype B = { Text string }\ntype C = { Text string }\nrule main = \"a\"", "1:10: tuple types are not supported yet"},
 		{"rule main () = \"a\"", "1:11: tuple types are not supported yet"},
 		{"type T = { F (int,) }\nrule main = \"a\"", "1:14: tuple types are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[node[string]])", "type arguments of node other than node[string] are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] are not supported yet"},
+		{"rule main = x:\"a\" => $x.(node[node[string]])", "type arguments of node other than node[string] and node[_] are not supported yet"},
+		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] and node[_] are not supported yet"},
 		{"rule main = \"a\" => [](node[string], node){}", "tuple types are not supported yet"},
 		{"type B = { Text string }\nrule main B[node[string]] = \"a\"", "type B takes no type arguments"},
 		{"rule main int[node[string]] = \"a\"", "type int takes no type arguments"},
@@ -200,6 +200,63 @@ func TestReservedUnnamedStructType(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), want) || strings.Count(err.Error(), "\n") > 0 {
 				t.Errorf("%q (NoTypeCheck %v): got %v, want only %q", tc.src, opts.NoTypeCheck, err, want)
 			}
+		}
+	}
+}
+
+// node[_] is a node of any value: it accepts and rejects what node does, in a field, a rule's
+// declared type, a cast and an optional, on every backend, and reports the same type errors.
+func TestDynamicNodeType(t *testing.T) {
+	const src = `type S = { F TYPE }
+rule main S = v:val => S{F: $v}
+rule val = x:("a" / "b" "c" / "d"*) => $x
+rule cast TYPE = x:val => $x.(TYPE)
+rule opt *TYPE = x:val? => $x`
+	run := func(typ, in string) string {
+		prog := compile(t, strings.ReplaceAll(src, "TYPE", typ))
+		var out []string
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			for _, start := range []string{"main", "cast", "opt"} {
+				got := ""
+				if n, err := prog.ParseWith(start, in, ParseOptions{Backend: b}); err != nil {
+					got = "error: " + err.Error()
+				} else {
+					got = n.String()
+				}
+				out = append(out, start+" "+b.String()+": "+got)
+			}
+		}
+		return strings.Join(out, "\n")
+	}
+	for _, in := range []string{"a", "bc", "dd", "", "x"} {
+		if got, want := run("node[_]", in), run("node", in); got != want {
+			t.Errorf("%q:\nnode[_]:\n%s\nnode:\n%s", in, got, want)
+		}
+	}
+	// A struct and an int do not fit either.
+	const bad = `type S = { F TYPE }
+type T = { Text string }
+rule main = "t" => S{F: T{Text: "t"}}
+rule other TYPE = "i" => T{Text: "i"}
+rule cast = x:"a" => S{F: 1}`
+	errs := map[string]string{}
+	for _, typ := range []string{"node", "node[_]"} {
+		g, err := syntax.Parse(strings.ReplaceAll(bad, "TYPE", typ))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = Compile(g, Options{})
+		if err == nil {
+			t.Fatalf("%s: accepted", typ)
+		}
+		errs[typ] = err.Error()
+	}
+	if errs["node"] != errs["node[_]"] {
+		t.Errorf("errors differ:\nnode[_]: %s\nnode: %s", errs["node[_]"], errs["node"])
+	}
+	for _, typ := range []string{"node", "node[_]"} {
+		if got, _ := compile(t, "rule main = x:\"a\" => $x.("+typ+")").RuleType("main"); got != "node" {
+			t.Errorf("cast to %s: rule type %s", typ, got)
 		}
 	}
 }
