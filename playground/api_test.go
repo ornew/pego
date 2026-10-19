@@ -264,3 +264,39 @@ rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 		t.Errorf("runtime error: %+v", r)
 	}
 }
+
+func TestParseRuns(t *testing.T) {
+	// A request times one parse by default. Runs times that many parses, and the result comes from
+	// the first of them, so the runs do not change the tree.
+	r := call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3"})
+	if r.Runs != 1 || r.Micros < 0 {
+		t.Errorf("default runs = %d, micros = %d", r.Runs, r.Micros)
+	}
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3", Runs: 3})
+	if !r.Matched || r.Runs != 3 || r.Micros < 0 || r.SExpr != `[Pair{Key: "abc", Value: "12"} Pair{Key: "d", Value: "3"}]` {
+		t.Errorf("runs = %+v", r)
+	}
+	// Runs beyond the limit are capped, and the count reports what was timed.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3", Runs: maxParseRuns + 1})
+	if r.Runs != maxParseRuns {
+		t.Errorf("capped runs = %d, want %d", r.Runs, maxParseRuns)
+	}
+	// A failed match is timed too.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=x", Runs: 2})
+	if r.Matched || r.Runs != 2 || len(r.Errors) == 0 {
+		t.Errorf("failed runs = %+v", r)
+	}
+	// The median is the middle value of the sorted durations, and the lower one for an even count.
+	for _, tc := range []struct {
+		times []int64
+		want  int64
+	}{
+		{[]int64{7}, 7},
+		{[]int64{5, 1, 3}, 3},
+		{[]int64{9, 2, 4, 1}, 2},
+	} {
+		if got := medianMicros(tc.times); got != tc.want {
+			t.Errorf("medianMicros(%v) = %d, want %d", tc.times, got, tc.want)
+		}
+	}
+}

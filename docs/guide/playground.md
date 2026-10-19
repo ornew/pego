@@ -62,7 +62,9 @@ and positions. Generated Go and TypeScript parsers are exported from the **Gener
 does not execute them. Long reports are paged for display, while **Copy** copies the complete report. Error line and
 column values are one-based;
 columns and offsets use the selected position unit. The report shows at most 100 differences and summarizes the total.
-An equal result means that these three engine backends agreed for this input and option set.
+An equal result means that these three engine backends agreed for this input and option set. The summary shows the
+result in the status colours: agreement in green, differences in amber and a failed comparison in red. It also gives
+the median time of each backend over five parses of the same input.
 
 ### Nesting Limits
 
@@ -105,7 +107,7 @@ page or Node:
 | Method | Request | Response |
 |:--|:--|:--|
 | `compile` | `{grammar}` | `{ok, package, rules: [{name, type, line, col}], types: [{name, kind, spec, line, col}], start, diagnostics: [{line, col, message}]}` |
-| `parse` | `{grammar, input, start, unit, backend, recognize, sourceInfo, defaultValue, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
+| `parse` | `{grammar, input, start, unit, backend, recognize, sourceInfo, defaultValue, maxDepth, runs}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros, runs}` |
 | `format` | `{grammar}` | `{formatted, diagnostics}` |
 | `generate` | `{grammar, language, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |
@@ -114,7 +116,8 @@ page or Node:
 `json` is empty) and a parse that recovered from errors (then `recovered` is true and `errors` lists them); a syntax
 error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (with `-source-info` when `sourceInfo` is true, without the final newline), and
 `message` is the description of an error as the command prints it after `line:col:`. `maxDepth` overrides the [nesting limit](#nesting-limits) (for any backend); `nodes` and `depth` are the number of
-nodes of the tree and how deeply they nest. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
+nodes of the tree and how deeply they nest. `runs` (default 1, at most 100) parses the input that many times; `micros`
+is then the median time of those parses and `runs` is the number of parses it is measured over. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
 define is reported as the error `start rule X is not defined` (in `error` for `parse`, in `diagnostics` for
 `generate`). `unit` is `codepoints` (the
 default) or `bytes`; `backend` is empty (the default), `closure`, `bytecode` or `bytecode-iterative`. Grammar diagnostics

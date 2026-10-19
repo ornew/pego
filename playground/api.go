@@ -83,6 +83,9 @@ type parseRequest struct {
 	// MaxDepth limits the nesting of rule calls (pego.WithMaxDepth); 0 selects the playground's
 	// limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
+	// Runs is the number of times the parse is timed (Micros is then the median); 0 or 1 parses once.
+	// It is limited to maxParseRuns.
+	Runs int `json:"runs,omitempty"`
 }
 
 // syntaxError mirrors pego.SyntaxError. Pos is in the unit of the parse; Message is the description
@@ -113,9 +116,14 @@ type parseResult struct {
 	Recovered bool          `json:"recovered,omitempty"`
 	// Error is any other error, such as a runtime error in an action or an invalid option.
 	Error string `json:"error,omitempty"`
-	// Micros is the time the parse took, in microseconds.
+	// Micros is the time the parse took, in microseconds: the median of the Runs timed parses.
 	Micros int64 `json:"micros"`
+	// Runs is the number of parses that Micros is measured over.
+	Runs int `json:"runs,omitempty"`
 }
+
+// maxParseRuns bounds the parses that one request times, so that a comparison stays responsive.
+const maxParseRuns = 100
 
 type formatResult struct {
 	Formatted   string       `json:"formatted,omitempty"`
@@ -408,9 +416,18 @@ func parse(req parseRequest) parseResult {
 	}
 	res.Start = p.Start()
 
+	// The first run provides the result; the others only add timings.
+	runs := min(max(req.Runs, 1), maxParseRuns)
 	t0 := time.Now()
 	node, err := p.Parse(req.Input, opts...)
-	res.Micros = time.Since(t0).Microseconds()
+	times := []int64{time.Since(t0).Microseconds()}
+	for range runs - 1 {
+		t0 := time.Now()
+		_, _ = p.Parse(req.Input, opts...)
+		times = append(times, time.Since(t0).Microseconds())
+	}
+	res.Micros = medianMicros(times)
+	res.Runs = len(times)
 
 	// The input matched if the parse succeeded, possibly after recovering from errors. A start rule
 	// that produces no value (a discarded match) returns a nil node and no error.
@@ -451,6 +468,14 @@ func parse(req parseRequest) parseResult {
 		}
 	}
 	return res
+}
+
+// medianMicros returns the median of the non-empty list of durations, the lower one of the two middle
+// values when the count is even.
+func medianMicros(times []int64) int64 {
+	sorted := slices.Clone(times)
+	slices.Sort(sorted)
+	return sorted[(len(sorted)-1)/2]
 }
 
 // isFailure reports whether err means that the input did not match. A parse that recovered from

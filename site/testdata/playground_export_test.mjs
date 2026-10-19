@@ -72,8 +72,14 @@ test("comparison is opt-in and preserves the request unit and options", async ()
     assert.equal(req.start, "main");
     assert.equal(req.recognize, true);
     assert.equal(req.input, "é");
+    assert.equal(req.runs, 5);
   }
-  assert.match(h.el("pg-compare-summary").textContent, /agree.*Offsets: bytes.*columns in bytes/);
+  const summary = h.el("pg-compare-summary");
+  assert.equal(summary.className, "pg-status ok");
+  const [verdict, times, offsets] = summary.children.map((line) => line.textContent);
+  assert.equal(verdict, "✓ Values, errors and positions agree");
+  assert.match(times, /^Time per backend: closure .* bytecode-iterative .* \(median of \d+ runs? each\)\.$/);
+  assert.match(offsets, /^Offsets: bytes; .*columns in bytes\.$/);
 });
 
 test("comparison distinguishes values, errors and positions with a bounded result", async () => {

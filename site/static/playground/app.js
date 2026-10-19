@@ -4,7 +4,7 @@
 import { PegoClient, siteRoot } from "../assets/pego-client.js";
 import { escapeHTML, highlight, highlightJSON, tokenize } from "../assets/highlight.js";
 import { decodeState, encodeState } from "../assets/state.js";
-import { describeResult } from "./status.js";
+import { describeResult, fmtTime } from "./status.js";
 import { TreeView } from "./tree.js";
 
 const $ = (id) => document.getElementById(id);
@@ -633,6 +633,21 @@ function comparisonValue(res) {
 }
 let compareSeq = 0;
 let comparisonKey = "";
+// COMPARE_RUNS is the number of parses timed for each backend; the summary reports their median.
+const COMPARE_RUNS = 5;
+// setCompareSummary shows the summary in the status style (ok, warn, error or busy). Each line is
+// set as text, so no part of the report is parsed as HTML.
+function setCompareSummary(kind, lines) {
+  const summary = $("pg-compare-summary");
+  summary.className = "pg-status " + kind;
+  summary.textContent = "";
+  lines.forEach((text, i) => {
+    const span = document.createElement("span");
+    span.className = i === 0 ? "compare-verdict" : "compare-detail";
+    span.textContent = text;
+    summary.append(span);
+  });
+}
 function comparisonRequest() {
   return { grammar: grammarEditor.value, input: inputEditor.value, start: requestedStart, unit: unitSelect.value, recognize: recognizeBox.checked, sourceInfo: sourceInfoBox.checked, defaultValue: defaultValueBox.checked };
 }
@@ -640,17 +655,19 @@ $("pg-compare-run").addEventListener("click", async () => {
   const n = ++compareSeq;
   const req = comparisonRequest();
   comparisonKey = JSON.stringify(req);
-  $("pg-compare-summary").textContent = "Comparing…";
+  setCompareSummary("busy", ["Comparing…"]);
   pagedText("pg-compare", "");
   try {
     const names = ["closure", "bytecode", "bytecode-iterative"];
     let reference;
     let total = 0;
     const lines = [];
+    const timings = [];
     for (const backend of names) {
-      const res = await client.call("parse", { ...req, backend }, { key: "compare" });
+      const res = await client.call("parse", { ...req, backend, runs: COMPARE_RUNS }, { key: "compare" });
       if (n !== compareSeq || JSON.stringify(req) !== JSON.stringify(comparisonRequest())) return;
       if (!res.compile?.ok) throw new Error(res.error || res.compile?.diagnostics?.map((d) => d.message).join("\n") || "Invalid grammar");
+      timings.push({ backend, micros: res.micros ?? 0, runs: res.runs ?? 1 });
       const value = comparisonValue(res);
       if (!reference) reference = value;
       else {
@@ -660,10 +677,16 @@ $("pg-compare-run").addEventListener("click", async () => {
       }
     }
     const units = req.unit === "bytes" ? "bytes" : "code points";
-    $("pg-compare-summary").textContent = `${total ? `${total} differences; showing ${lines.length} (limit 100)` : "Values, errors and positions agree"}. Offsets: ${units}; line/column: 1-based, columns in ${units}.`;
+    const runs = timings[0].runs;
+    const durations = timings.map((t) => `${t.backend} ${fmtTime(t.micros)}`).join(" · ");
+    setCompareSummary(total ? "warn" : "ok", [
+      total ? `⚠ ${total} differences; showing ${lines.length} (limit 100)` : "✓ Values, errors and positions agree",
+      `Time per backend: ${durations} (median of ${runs} ${runs === 1 ? "run" : "runs"} each).`,
+      `Offsets: ${units}; line/column: 1-based, columns in ${units}.`,
+    ]);
     pagedText("pg-compare", lines.join("\n\n"));
   } catch (err) {
-    if (n === compareSeq && JSON.stringify(req) === JSON.stringify(comparisonRequest())) $("pg-compare-summary").textContent = String(err.message || err);
+    if (n === compareSeq && JSON.stringify(req) === JSON.stringify(comparisonRequest())) setCompareSummary("error", [String(err.message || err)]);
   }
 });
 

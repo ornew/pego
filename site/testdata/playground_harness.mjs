@@ -4,14 +4,17 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import * as highlighting from "../static/assets/highlight.js";
 import { decodeState, encodeState } from "../static/assets/state.js";
-import { describeResult } from "../static/playground/status.js";
+import { describeResult, fmtTime } from "../static/playground/status.js";
 import { TreeView } from "../static/playground/tree.js";
 
 export class Element {
   value = "";
   checked = false;
   disabled = false;
-  textContent = "";
+  #text = "";
+  // As in the DOM, setting textContent replaces the children.
+  get textContent() { return this.#text; }
+  set textContent(text) { this.#text = text; this.children = []; }
   innerHTML = "";
   style = {};
   children = [];
@@ -72,7 +75,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
     }
   }
   const context = vm.createContext({
-    ...highlighting, decodeState: decode, encodeState: encode, describeResult, TreeView,
+    ...highlighting, decodeState: decode, encodeState: encode, describeResult, fmtTime, TreeView,
     PegoClient, siteRoot: () => "/", document, location, URL,
     console: { ...console, warn: (...args) => warnings.push(args) },
     navigator: { clipboard: { writeText: async (text) => copies.push(text) } },
