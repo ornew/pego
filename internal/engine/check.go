@@ -99,6 +99,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	// Keep the types for code generation (typedGo).
 	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams, checks: checks, values: values, valueErrs: valueErrs}
 	info.valuesOnce.Do(func() {})
+	info.shown = shownRuleTypes(prog, control.rules(prog.Grammar), values, control)
 	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.Spec.(type) {
@@ -119,7 +120,8 @@ type typeInfo struct {
 	rules map[string]ty // the type of each rule
 	// values holds the type of each rule's value in the value model (Program.valueTypes).
 	values     map[string]ty
-	valueErrs  ErrorList // the errors of actions in the value model
+	valueErrs  ErrorList     // the errors of actions in the value model
+	shown      map[string]ty // the type of each rule as RuleType shows it (shownRuleTypes)
 	valuesOnce sync.Once
 	fields     map[string][]typedField // the fields of each struct type, in declaration order
 	aliases    map[string]ty           // the type each alias stands for
@@ -129,14 +131,16 @@ type typeInfo struct {
 	checks *checkInfo
 }
 
-// RuleType returns the type of the rule name, declared or inferred, as written in a grammar (for
-// example "[]Expr | *node[string]"). It reports false if the program has no such rule or its types were
-// not checked (Options.NoTypeCheck, or a program loaded from a compiled grammar).
+// RuleType returns the type of the value of the rule name: its declared type, or the inferred
+// type of its value (for example "[]Expr | node[[]node[string]]"). In an inferred type, a
+// reference to another rule is that rule's declared type, or the rule's name if it has none. It
+// reports false if the program has no such rule or its types were not checked
+// (Options.NoTypeCheck, or a program loaded from a compiled grammar).
 func (p *Program) RuleType(name string) (string, bool) {
 	if p.typed == nil {
 		return "", false
 	}
-	t, ok := p.typed.rules[name]
+	t, ok := p.typed.shown[name]
 	if !ok {
 		return "", false
 	}

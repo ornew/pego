@@ -284,7 +284,7 @@ func TestDocumentSymbols(t *testing.T) {
 		{"Any", "~ Pair | Num", symbolKindInterface, rng(6, 0, 6, 21), rng(6, 5, 6, 8), 0},
 		{"num", "Num", symbolKindFunction, rng(8, 0, 8, 56), rng(8, 5, 8, 8), 0},
 		{"pair", "Pair", symbolKindFunction, rng(12, 0, 12, 58), rng(12, 5, 12, 9), 0},
-		{"main", "node[_]", symbolKindFunction, rng(13, 0, 13, 27), rng(13, 5, 13, 9), 0},
+		{"main", "node[(pair | Num,)]", symbolKindFunction, rng(13, 0, 13, 27), rng(13, 5, 13, 9), 0},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got\n%+v\nwant\n%+v", got, want)
@@ -327,8 +327,8 @@ func TestHover(t *testing.T) {
 		{12, 6, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(12, 5, 12, 9)},
 		{13, 13, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(13, 13, 13, 17)},
 		{12, 26, "```pego\nrule num Num\n```", rng(12, 25, 12, 28)},
-		{13, 5, "```pego\nrule main node[_]\n```\n\n*Inferred type.*", rng(13, 5, 13, 9)},
-		{14, 5, "```pego\nrule lst []Num\n```\n\n*Inferred type.*", rng(14, 5, 14, 8)},
+		{13, 5, "```pego\nrule main node[(pair | Num,)]\n```\n\n*Inferred type.*", rng(13, 5, 13, 9)},
+		{14, 5, "```pego\nrule lst node[[]Num]\n```\n\n*Inferred type.*", rng(14, 5, 14, 8)},
 		{1, 6, "```pego\ntype Num = { Text string }\n```\n\nA number.", rng(1, 5, 1, 8)},
 		{12, 34, "```pego\ntype Pair = {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
 		{6, 6, "```pego\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
@@ -553,7 +553,7 @@ func TestCompletion(t *testing.T) {
 			num = it
 		}
 	}
-	if num.Kind != completionKindFunction || num.Detail != "[]node[string]" || num.Documentation == nil || num.Documentation.Value != "The digits." {
+	if num.Kind != completionKindFunction || num.Detail != "node[[]node[string]]" || num.Documentation == nil || num.Documentation.Value != "The digits." {
 		t.Errorf("item %+v", num)
 	}
 	c.exit()

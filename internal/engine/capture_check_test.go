@@ -30,7 +30,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 			}
 			var errs ErrorList
 			checkTypes(p, &errs)
-			got, ok := p.RuleType("main")
+			got, ok := inferredType(p, "main")
 			if !ok || got != tc.want {
 				t.Errorf("type: got %q, %v; want %q", got, ok, tc.want)
 			}

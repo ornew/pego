@@ -333,7 +333,7 @@ rule main = leaf #recover(skip=.+)`, "error", true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			prog := compile(t, c.src)
-			if got, ok := prog.RuleType("main"); !ok || got != c.inferred {
+			if got, ok := inferredType(prog, "main"); !ok || got != c.inferred {
 				t.Fatalf("inferred start = %s, want %s", got, c.inferred)
 			}
 			consumer := `import {parseAST, parse, Bytes, CodePoints, Node} from "./parser.ts";

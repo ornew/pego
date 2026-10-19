@@ -17,7 +17,7 @@ func (p *Program) RuleTypeWithPoll(name string, poll func()) (string, bool) {
 	if p.typed == nil {
 		return "", false
 	}
-	t, ok := p.typed.rules[name]
+	t, ok := p.typed.shown[name]
 	if !ok {
 		return "", false
 	}
@@ -46,6 +46,25 @@ func renderRuleType(t ty, poll func()) string {
 			parts[i] = renderRuleType(alt, poll)
 		}
 		return finish(joinRuleType(parts, " | ", poll))
+	case tupleTy:
+		parts := make([]string, len(t.elems))
+		for i, e := range t.elems {
+			poll()
+			parts[i] = renderRuleType(e, poll)
+		}
+		if len(parts) == 1 {
+			return finish("(" + parts[0] + ",)")
+		}
+		return finish("(" + joinRuleType(parts, ", ", poll) + ")")
+	case nodeTy:
+		if len(t.caps) == 0 && t.value == tyTop {
+			return finish("node[_]")
+		}
+		value := renderRuleType(t.value, poll)
+		if len(t.caps) == 0 {
+			return finish("node[" + value + "]")
+		}
+		return finish("node[" + value + ", " + t.capsText() + "]")
 	case recordTy:
 		names := make([]string, 0, len(t.fields))
 		for name := range t.fields {

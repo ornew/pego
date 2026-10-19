@@ -44,11 +44,11 @@ func TestInferenceDependencyChains(t *testing.T) {
 				}
 				p := compile(t, inferredChain(depth, reverse, ""))
 				for i := range depth {
-					if got, ok := p.RuleType(fmt.Sprint("r", i)); !ok || got != "P" {
+					if got, ok := inferredType(p, fmt.Sprint("r", i)); !ok || got != "P" {
 						t.Fatalf("r%d type = %q, %v; want P", i, got, ok)
 					}
 				}
-				if got, ok := p.RuleType("main"); !ok || got != "P" {
+				if got, ok := inferredType(p, "main"); !ok || got != "P" {
 					t.Errorf("main type = %q, %v; want P", got, ok)
 				}
 			})
@@ -61,11 +61,11 @@ func TestInferenceKeepsIndependentTypes(t *testing.T) {
 rule constant = "(" growing ")" => P{}`
 	p := compile(t, src)
 	for _, name := range []string{"main", "r0", "r127", "constant"} {
-		if got, _ := p.RuleType(name); got != "P" {
+		if got, _ := inferredType(p, name); got != "P" {
 			t.Errorf("%s type = %s; want P", name, got)
 		}
 	}
-	if got, _ := p.RuleType("growing"); got != "any" {
+	if got, _ := inferredType(p, "growing"); got != "any" {
 		t.Errorf("growing type = %s; want bounded inference to use any", got)
 	}
 }
@@ -78,12 +78,12 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 	}
 	src.WriteString("")
 	p := compile(t, src.String())
-	want, _ := p.RuleType("huge")
+	want, _ := inferredType(p, "huge")
 	if len(want) <= maxInferredType {
 		t.Fatalf("test type is only %d bytes", len(want))
 	}
 	for _, name := range []string{"main", "recursive"} {
-		if got, _ := p.RuleType(name); got != want {
+		if got, _ := inferredType(p, name); got != want {
 			t.Errorf("%s lost a finite recursive type: %s", name, got)
 		}
 	}
@@ -97,10 +97,10 @@ rule expression = operators {
     level { postfix "!" => list($lhs) }
 }
 rule constant = "a" => P{}`)
-	if got, _ := p.RuleType("expression"); got != "any" {
+	if got, _ := inferredType(p, "expression"); got != "any" {
 		t.Errorf("recursive OperatorsRule operator type = %s; want bounded inference to use any", got)
 	}
-	if got, _ := p.RuleType("constant"); got != "P" {
+	if got, _ := inferredType(p, "constant"); got != "P" {
 		t.Errorf("constant type = %s; want P", got)
 	}
 }
@@ -113,7 +113,7 @@ func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 		}
 		p := compile(t, "type P = {}\nrule main = constant\n"+strings.Join(rules, "\n"))
 		for _, name := range []string{"main", "constant"} {
-			if got, _ := p.RuleType(name); got != "P" {
+			if got, _ := inferredType(p, name); got != "P" {
 				t.Errorf("%s type = %s; want P", name, got)
 			}
 		}
@@ -132,7 +132,7 @@ func TestInferenceFiniteRecursiveChains(t *testing.T) {
 	}
 	p := compile(t, src.String())
 	for i := range 128 {
-		if got, _ := p.RuleType(fmt.Sprint("r", i)); got != "node[string]" {
+		if got, _ := inferredType(p, fmt.Sprint("r", i)); got != "node[string]" {
 			t.Errorf("r%d type = %s; want node[string]", i, got)
 		}
 	}
@@ -169,7 +169,8 @@ func TestInferenceFiniteUnionCycle(t *testing.T) {
 	}
 	p := compile(t, src.String())
 	for i := range count {
-		got, _ := p.RuleType(fmt.Sprint("r", i))
+		// The inferred type of the checker; RuleType shows the rules in a cycle by name.
+		got := p.typed.rules[fmt.Sprint("r", i)].String()
 		members := strings.Split(got, " | ")
 		if len(members) != count {
 			t.Errorf("r%d type has %d members; want %d: %s", i, len(members), count, got)
@@ -249,4 +250,14 @@ func TestInferenceChainFieldMismatch(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "cannot use P as node[string] in field Value of Holder") {
 		t.Errorf("long-chain field mismatch: %v", err)
 	}
+}
+
+// inferredType returns the type the checker infers for the rule name. RuleType shows the value
+// type instead, in which a rule without a declared type is referred to by name.
+func inferredType(p *Program, name string) (string, bool) {
+	t, ok := p.typed.rules[name]
+	if !ok {
+		return "", false
+	}
+	return t.String(), true
 }

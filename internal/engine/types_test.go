@@ -143,15 +143,23 @@ rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(me
 }
 
 func TestRuleType(t *testing.T) {
+	// A reference to a rule with a declared type shows that type; one to a rule without a declared
+	// type shows the rule's name.
 	prog := compile(t, `type N = { Text string }
 type P = { X N }
 rule n N = t:("1" #atomic) => N{Text: text($t)}
+rule nn = n
 rule p = x:n => P{X: $x}
 rule ps = p*
+rule pl = xs:p* => $xs.Value
 rule opt = "a"?
-rule main = ps $$`)
+rule on *N = n?
+rule oo = on?
+rule any node[_] = "a" "b"
+rule main = ps any $$`)
 	for name, want := range map[string]string{
-		"n": "N", "p": "P", "ps": "[]P", "opt": "*node[string]", "main": "node[_]",
+		"n": "N", "nn": "N", "p": "P", "ps": "node[[]p]", "pl": "[]p", "opt": "*node[string]", "on": "*N", "oo": "*N",
+		"any": "node[_]", "main": "node[(ps, node[_])]",
 	} {
 		if got, ok := prog.RuleType(name); !ok || got != want {
 			t.Errorf("RuleType(%s) = %q, %v; want %q", name, got, ok, want)

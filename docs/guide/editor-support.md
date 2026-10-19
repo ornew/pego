@@ -67,11 +67,15 @@ A blank line between the comments and the definition ends the documentation.
 
 ### Inferred Types
 
-Hover shows the type of every rule, also the rules without a declared type:
+Hover shows the type of every rule, also the rules without a declared type. An inferred type is the
+type of the rule's value; in it, a rule with a declared type stands for that type, and a rule without
+one for its name:
 
 ```pego
-rule digits = [0-9]+ // hover: rule digits []node[string] (inferred)
-rule pair = a:digits "," b:digits => list($a, $b)
+type Num = { Text string }
+rule digits = [0-9]+ // hover: rule digits node[[]node[string]] (inferred)
+rule num Num = d:digits #atomic => Num{Text: text($d)}
+rule pair = a:num "," b:digits => list($a, $b) // hover: rule pair [](Num | digits) (inferred)
 ```
 
 The types come from the type checker, so they are shown only while the whole grammar compiles. While it has errors,

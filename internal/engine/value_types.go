@@ -62,6 +62,11 @@ func (t nodeTy) String() string {
 	if len(t.caps) == 0 {
 		return "node[" + t.value.String() + "]"
 	}
+	return "node[" + t.value.String() + ", " + t.capsText() + "]"
+}
+
+// capsText is the text of the captures of t, as in node[T, {"name": 0.1}].
+func (t nodeTy) capsText() string {
 	parts := make([]string, len(t.caps))
 	for i, c := range t.caps {
 		paths := make([]string, len(c.paths))
@@ -77,7 +82,7 @@ func (t nodeTy) String() string {
 		}
 		parts[i] = strconv.Quote(c.name) + ": " + strings.Join(paths, " | ")
 	}
-	return "node[" + t.value.String() + ", {" + strings.Join(parts, ", ") + "}]"
+	return "{" + strings.Join(parts, ", ") + "}"
 }
 
 // ruleTy is the value type of a rule, referred to by the rule's name.

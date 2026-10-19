@@ -8,9 +8,12 @@ import (
 
 func TestRuleTypeWithPollParity(t *testing.T) {
 	record := recordTy{fields: map[string]ty{"z": listTy{unionTy{alts: []ty{tyMatch, tyNil}}}, "a": optTy{tyString}}}
-	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyMatch, listTy{tyMatch}, optTy{tyMatch}, unionTy{}, unionTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record}}
+	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyMatch, listTy{tyMatch}, optTy{tyMatch}, unionTy{}, unionTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record},
+		// Value-model types
+		tyTop, tyBottom, ruleTy{"expr"}, nodeTy{value: tyTop}, nodeTy{value: listTy{tyStringNode}}, tupleTy{[]ty{tyStringNode}},
+		nodeTy{value: tupleTy{[]ty{optTy{tyStringNode}, ruleTy{"x"}}}, caps: []capIndex{{name: "a", paths: [][]int{{0}, {1, 0}}}, {name: "b", side: true}}}}
 	for _, typ := range cases {
-		p := &Program{typed: &typeInfo{rules: map[string]ty{"main": typ}}}
+		p := &Program{typed: &typeInfo{shown: map[string]ty{"main": typ}}}
 		want, known := p.RuleType("main")
 		if !known {
 			t.Fatal("missing test rule")
@@ -29,7 +32,7 @@ func TestRuleTypeWithPollParity(t *testing.T) {
 			t.Fatal("type traversal changed its input")
 		}
 	}
-	for _, p := range []*Program{{}, {typed: &typeInfo{rules: map[string]ty{}}}} {
+	for _, p := range []*Program{{}, {typed: &typeInfo{shown: map[string]ty{}}}} {
 		for _, poll := range []func(){nil, func() {}} {
 			if got, ok := p.RuleTypeWithPoll("missing", poll); got != "" || ok {
 				t.Fatalf("missing=%q/%v", got, ok)
@@ -54,7 +57,7 @@ func TestRuleTypeWithPollCancelsWithinCollections(t *testing.T) {
 					t.Fatalf("%T did not preserve cancellation callback: %v", typ, got)
 				}
 			}()
-			p := &Program{typed: &typeInfo{rules: map[string]ty{"main": typ}}}
+			p := &Program{typed: &typeInfo{shown: map[string]ty{"main": typ}}}
 			p.RuleTypeWithPoll("main", func() {
 				calls++
 				if calls == 32 {
