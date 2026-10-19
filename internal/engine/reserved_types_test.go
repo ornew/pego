@@ -8,8 +8,8 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// Tuple types and type arguments are reserved syntax: they parse, format and round-trip through
-// JSON, but grammars using them do not compile, with or without type checking.
+// Tuple types and type arguments parse, format and round-trip through JSON. Tuple types and node[T]
+// compile; other type arguments are errors, with or without type checking.
 func TestReservedTypeSyntax(t *testing.T) {
 	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = \"a\""
 	g, err := syntax.Parse(src)
@@ -46,13 +46,38 @@ func TestReservedTypeSyntax(t *testing.T) {
 		t.Fatalf("JSON round trip:\n%s", got)
 	}
 
+	for _, src := range []string{
+		"type A ~ (B, C)\ntype B = { Text string }\ntype C = { Text string }\nrule main = \"a\"",
+		"type T = { F (int,) }\nrule main = \"a\"",
+		"rule main = \"a\" => [](node[string], node[_]){}",
+		"type A ~ node[node[string]] | node[int]\nrule main = \"a\"",
+	} {
+		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+			g, err := syntax.Parse(src)
+			if err != nil {
+				t.Fatalf("%q: %v", src, err)
+			}
+			if _, err := Compile(g, opts); err != nil {
+				t.Errorf("%q (NoTypeCheck %v): %v", src, opts.NoTypeCheck, err)
+			}
+		}
+	}
+	// A value that does not fit a tuple or node[T] type is a type error.
 	for _, tc := range []struct{ src, want string }{
-		{"type A ~ (B, C)\ntype B = { Text string }\ntype C = { Text string }\nrule main = \"a\"", "1:10: tuple types are not supported yet"},
-		{"rule main () = \"a\"", "1:11: tuple types are not supported yet"},
-		{"type T = { F (int,) }\nrule main = \"a\"", "1:14: tuple types are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[node[string]])", "type arguments of node other than node[string] and node[_] are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] and node[_] are not supported yet"},
-		{"rule main = \"a\" => [](node[string], node[_]){}", "tuple types are not supported yet"},
+		{"rule main () = \"a\"", "1:1: rule main produces node[string], which is not assignable to ()"},
+		{"rule main = x:\"a\" => $x.(node[node[string]])", "1:25: cannot cast node[string] to node[node[string]]"},
+	} {
+		g, err := syntax.Parse(tc.src)
+		if err != nil {
+			t.Fatalf("%q: %v", tc.src, err)
+		}
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
+		}
+	}
+
+	for _, tc := range []struct{ src, want string }{
+		{"rule main = x:\"a\" => $x.(node[string, int])", "1:26: node takes one type argument, got 2"},
 		{"type B = { Text string }\nrule main B[node[string]] = \"a\"", "type B takes no type arguments"},
 		{"rule main int[node[string]] = \"a\"", "type int takes no type arguments"},
 		{"rule main _[node[string]] = \"a\"", "type _ takes no type arguments"},
@@ -69,7 +94,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 			_, err = Compile(g, opts)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("%q (NoTypeCheck %v): got %v, want %q", tc.src, opts.NoTypeCheck, err, tc.want)
-			} else if strings.Count(err.Error(), "not supported") > 1 {
+			} else if strings.Count(err.Error(), "\n") > 0 {
 				t.Errorf("%q (NoTypeCheck %v): reported more than once: %v", tc.src, opts.NoTypeCheck, err)
 			}
 		}
@@ -84,15 +109,15 @@ func TestReservedTypeSyntax(t *testing.T) {
 	}
 	// A type used from several places, also by the checks of separate actions, is reported once.
 	for _, src := range []string{
-		"type A ~ node[node[string]]\nrule main A = \"a\"\nrule other A = \"b\"",
-		"type A ~ (node[string],)\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
+		"type A ~ node[string, int]\nrule main A = \"a\"\nrule other A = \"b\"",
+		"type A ~ node[string, int]\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
 	} {
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			g, err := syntax.Parse(src)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := Compile(g, opts); err == nil || strings.Count(err.Error(), "not supported") != 1 {
+			if _, err := Compile(g, opts); err == nil || strings.Count(err.Error(), "node takes one type argument") != 1 {
 				t.Fatalf("%q (NoTypeCheck %v): got %v", src, opts.NoTypeCheck, err)
 			}
 		}
@@ -243,7 +268,7 @@ rule opt *TYPE = x:val? => $x`
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "node takes a type argument: write node[T], or node[_] for a node of any value") {
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "node takes a type argument: write node[T] with the type T of the node's value") {
 			t.Errorf("%s: got %v", typ, err)
 		}
 	}

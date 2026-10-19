@@ -320,7 +320,7 @@ func TestSweepOpenValues(t *testing.T) {
   recovered,e:=ParseRuleAST("recovery","1;",WithUnit(unit)); if _,ok:=e.(SyntaxErrors); !ok {t.Fatal("open recovery",e)}
   r:=recovered.(*Record); if r.A.(*Error).Text!="1;" || r.M.(*Error).Text!="1;" || r.Items[0].(*Error).Text!="1;" {t.Fatal("open recovered values")}
   if _,e:=ParseAST("b",WithUnit(unit)); e==nil {t.Fatal("failed input")}
-  if v.A.(*TNode[string]).Value!="b" || v.Raw.(*TNode[any]).Value.([]any)[0].(*TNode[string]).Value!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
+  if v.A.(*TNode[string]).Value!="b" || v.Raw.Value.([]any)[0].(*TNode[string]).Value!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
  }
 }
 `

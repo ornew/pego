@@ -121,10 +121,11 @@ var valueTypeNames = map[string]string{
 	"List":     "node[_]",
 	"Operator": "node[_]",
 	"Error":    "error",
+	"Missing":  "missing",
 }
 
-// bareNode is the message for node without a type argument, which fix rewrites to node[_].
-const bareNode = "node takes a type argument: write node[T], or node[_] for a node of any value"
+// bareNode is the message for node without a type argument, which fix rewrites.
+const bareNode = "node takes a type argument: write node[T] with the type T of the node's value"
 
 // typeEdits returns the edits that replace terminal types and the reserved names of concrete
 // syntax tree types with value types. A terminal type T becomes the struct { Text string }; a

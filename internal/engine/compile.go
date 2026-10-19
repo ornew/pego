@@ -222,7 +222,7 @@ func (l ErrorList) Error() string {
 // Reserved type names.
 var builtinTypes = map[string]bool{
 	"int": true, "string": true, "bool": true, "node": true, "terminal": true,
-	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, TypeMissing: true,
+	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, "Missing": true, TypeMissing: true,
 }
 
 type compiler struct {

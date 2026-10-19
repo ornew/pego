@@ -28,7 +28,7 @@ The reference implementation is the Go package `internal/engine` (`bytecode.go`,
 | Function | A lambda: the start of its expression code, its number of parameters, and the locals captured when it was created |
 
 The reserved bytecode node types are the [kinds](types.md#node-type-names) `string`, `tuple`, `list` and `error`.
-The Closure-only `#missing` pragma and `Missing` type have no bytecode encoding;
+The Closure-only `#missing` pragma and `missing` type have no bytecode encoding;
 VM parsing, binary serialization and module construction reject those grammars.
 A node is *fresh* only while the body of the rule that created it is executing ([Rule completion](#rule-completion)).
 
@@ -279,8 +279,8 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. |
 | 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. |
 | 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a list value, as `concat` builds it. |
-| 124 | | | Not used. Instruction sets before 14 used it to construct terminals, which the type system no longer has. |
-| 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the declared type after alias resolution, as the value checker writes it (`*Ident`, `[]*(Ident \| Number)`, `int \| string`): a union with `nil` is an optional type, and `Missing` is `error`; B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. |
+| 124 | | | Not used. |
+| 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the declared type after alias resolution, as the value checker writes it (`*Ident`, `[]*(Ident \| Number)`, `int \| string`): a union with `nil` is an optional type; B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. |
 | 126 | `ECAST` | A type | Check that the value on top of the stack, which stays there, fits type A, as `ECHECK` does, for a cast `x.(T)` (see [Casts](actions.md#casts)); a mismatch raises the evaluation error `cannot cast <value type> to <A>`. A is written like the type of `ECHECK`. The compiler omits it when every value fits the type, such as `any` or a type containing `any`. |
 
 Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
@@ -337,7 +337,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every opcode is known, and every flag operand is within its range.
 - The text type of a rule names a declared type with a field `Text`.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum.
-- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, `error`, `node[string]`, `node[_]`, `int`, `string`, `bool`, `nil` and `any`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&` or `_|_`, and no `_` other than the argument of `node[_]`.
+- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, `error`, `node[T]`, tuple types `(T, ...)`, `int`, `string`, `bool`, `nil` and `any`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&` or `_|_`, and no `_` other than the argument of `node[_]`.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

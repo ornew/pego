@@ -24,12 +24,19 @@ const (
 	ftNil    = 'z'
 	ftNode   = 'n'
 	ftNamed  = 'N' // a struct type
-	// ftStringNode is node[string], and ftError error, the error value of recovery.
+	// ftStringNode is node[string], ftError error, the error value of recovery, and ftMissing
+	// missing, the error value of a missing token. Grammars that refer to missing run only on the
+	// Closure backend, so generated runtimes and the bytecode type text have no ftMissing.
 	ftStringNode = 'S'
 	ftError      = 'E'
+	ftMissing    = 'M'
 	ftList       = 'l'
 	ftOptional   = 'o'
 	ftUnion      = 'u'
+	// ftNodeOf is node[T] for a T other than string and _: a node whose value is of type elem.
+	ftNodeOf = 'v'
+	// ftTuple is a tuple type, whose element types are alts.
+	ftTuple = 't'
 	// ftTop is the element type _ or any of a list type, which every value fits.
 	ftTop = '_'
 )
@@ -56,36 +63,40 @@ func newFieldType(t ty) *fieldType {
 			return nil
 		}
 	case nodeTy:
-		// A declared type names node[string] or node[_], without captures.
+		// A declared type has no captures. node[_] and node[string] have their own kinds, which
+		// take one step to check.
 		switch {
 		case len(t.caps) > 0:
 			return nil
-		case t.value == tyTop:
+		case t.value == tyTop || t.value == tyAny:
 			f = &fieldType{kind: ftNode}
 		case t.value == tyString:
 			f = &fieldType{kind: ftStringNode}
 		default:
-			return nil
+			f = &fieldType{kind: ftNodeOf, elem: topFieldType(t.value)}
+		}
+	case tupleTy:
+		f = &fieldType{kind: ftTuple, alts: []*fieldType{}}
+		for _, e := range t.elems {
+			f.alts = append(f.alts, topFieldType(e))
 		}
 	case namedTy:
 		switch {
 		case t == tyMatch:
 			f = &fieldType{kind: ftStringNode}
-		case t == tyError || t == tyMissing:
+		case t == tyError:
 			f = &fieldType{kind: ftError}
+		case t == tyMissing:
+			f = &fieldType{kind: ftMissing}
 		case t.kind == 'c':
 			f = &fieldType{kind: ftNode}
 		default:
 			f = &fieldType{kind: ftNamed, name: t.name}
 		}
 	case listTy:
-		e := newFieldType(t.elem)
-		if e == nil {
-			// A list of _ or any only has to be a list, which takes one step to check whatever
-			// its length.
-			e = &fieldType{kind: ftTop, text: t.elem.String()}
-		}
-		f = &fieldType{kind: ftList, elem: e}
+		// A list of _ or any only has to be a list, which takes one step to check whatever its
+		// length.
+		f = &fieldType{kind: ftList, elem: topFieldType(t.elem)}
 	case optTy:
 		e := newFieldType(t.elem)
 		if e == nil {
@@ -106,6 +117,14 @@ func newFieldType(t ty) *fieldType {
 	}
 	f.text = t.String()
 	return f
+}
+
+// topFieldType is newFieldType for a part of a type, where _ and any are the type ftTop.
+func topFieldType(t ty) *fieldType {
+	if f := newFieldType(t); f != nil {
+		return f
+	}
+	return &fieldType{kind: ftTop, text: t.String()}
 }
 
 // parseFieldType reads the text of a type as ty.String writes it, resolving names against the
@@ -172,17 +191,34 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 		}
 		t = &fieldType{kind: kind, elem: e}
 	case strings.HasPrefix(rest, "("):
+		// A tuple (T, U), (T,) or (), or a parenthesized union.
 		r.pos++
-		u, err := r.union()
-		if err != nil {
-			return nil, err
-		}
-		if u.kind != ftUnion || !strings.HasPrefix(r.text[r.pos:], ")") {
-			return nil, fmt.Errorf("expected a parenthesized union at %d", start)
+		tuple := &fieldType{kind: ftTuple, alts: []*fieldType{}}
+		for !strings.HasPrefix(r.text[r.pos:], ")") {
+			u, err := r.union()
+			if err != nil {
+				return nil, err
+			}
+			if strings.HasPrefix(r.text[r.pos:], ")") && len(tuple.alts) == 0 {
+				if u.kind != ftUnion {
+					return nil, fmt.Errorf("expected a parenthesized union or a tuple at %d", start)
+				}
+				r.pos++
+				u.text = r.text[start:r.pos]
+				return u, nil
+			}
+			tuple.alts = append(tuple.alts, u)
+			switch {
+			case strings.HasPrefix(r.text[r.pos:], ", "):
+				r.pos += 2
+			case strings.HasPrefix(r.text[r.pos:], ",)"):
+				r.pos++
+			case !strings.HasPrefix(r.text[r.pos:], ")"):
+				return nil, fmt.Errorf("expected , or ) at %d", r.pos)
+			}
 		}
 		r.pos++
-		u.text = r.text[start:r.pos]
-		return u, nil
+		t = tuple
 	default:
 		end := r.pos
 		for end < len(r.text) && (r.text[end] == '_' || r.text[end] >= '0' && r.text[end] <= '9' || r.text[end] >= 'a' && r.text[end] <= 'z' || r.text[end] >= 'A' && r.text[end] <= 'Z') {
@@ -207,6 +243,17 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 			case strings.HasPrefix(r.text[r.pos:], "[_]"):
 				r.pos += len("[_]")
 				t = &fieldType{kind: ftNode}
+			case strings.HasPrefix(r.text[r.pos:], "["):
+				r.pos++
+				e, err := r.union()
+				if err != nil {
+					return nil, err
+				}
+				if !strings.HasPrefix(r.text[r.pos:], "]") {
+					return nil, fmt.Errorf("expected ] at %d", r.pos)
+				}
+				r.pos++
+				t = &fieldType{kind: ftNodeOf, elem: e}
 			default:
 				return nil, fmt.Errorf("node without a type argument at %d", start)
 			}
@@ -299,7 +346,7 @@ func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
 		return nil
 	}
 	k := &typeResolver{prog: prog}
-	if r := fromLegacy(k.resolve(t)); newFieldType(r) != nil {
+	if r := k.resolve(t); newFieldType(r) != nil {
 		return r
 	}
 	return nil
@@ -446,9 +493,9 @@ func ruleResults(rd *grammar.RuleDef) []any {
 }
 
 // fieldConforms reports whether v is a value of type t in the value model. It charges a step for
-// each list element it examines. node[string] is a string node, node every node, and error an
-// error value (an error or a Missing node); a list type takes a list value, not the node of a
-// repetition.
+// each list or tuple element it examines. node[T] is a node whose value is of type T (node[_] any
+// node with a value), and error an error value (an error or a missing token); a list or tuple type
+// takes a list or tuple value, not the node of a repetition or sequence.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	n, isNode := v.(*Node)
 	if isNode && n == nil {
@@ -493,24 +540,72 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 		return shape == shapeString
 	case ftError:
 		return shape == shapeError
+	case ftMissing:
+		return shape == shapeError && n.Type() == TypeMissing
 	case ftNamed:
 		return shape == shapeStruct && n.Type() == t.name
 	case ftList:
-		if shape != shapeListValue {
-			return false
-		}
-		if t.elem.kind == ftTop {
-			return true
-		}
-		for _, c := range n.children {
-			p.stepWork()
-			if !p.fieldConforms(t.elem, c) {
-				return false
-			}
-		}
-		return true
+		return shape == shapeListValue && p.elemsConform(t.elem, n.children)
+	case ftTuple:
+		return shape == shapeTupleValue && p.tupleConforms(t.alts, n.children)
+	case ftNodeOf:
+		return p.nodeValueConforms(t.elem, n, shape)
 	}
 	return false
+}
+
+// nodeValueConforms reports whether the value of node n, of shape shape, is of type t: a string
+// node's value is a string, and a tuple or list node's value its elements.
+func (p *parser) nodeValueConforms(t *fieldType, n *Node, shape nodeShape) bool {
+	switch t.kind {
+	case ftTop:
+		return shape == shapeString || shape == shapeTuple || shape == shapeList
+	case ftString:
+		return shape == shapeString
+	case ftList:
+		return shape == shapeList && p.elemsConform(t.elem, n.children)
+	case ftTuple:
+		return shape == shapeTuple && p.tupleConforms(t.alts, n.children)
+	case ftOptional:
+		return p.nodeValueConforms(t.elem, n, shape) // a node always has a value
+	case ftUnion:
+		for _, a := range t.alts {
+			if p.nodeValueConforms(a, n, shape) {
+				return true
+			}
+		}
+	}
+	// No node has a value of another type yet.
+	return false
+}
+
+// elemsConform reports whether every element of a list is of type t, charging a step for each.
+func (p *parser) elemsConform(t *fieldType, elems []*Node) bool {
+	if t.kind == ftTop {
+		return true
+	}
+	for _, c := range elems {
+		p.stepWork()
+		if !p.fieldConforms(t, c) {
+			return false
+		}
+	}
+	return true
+}
+
+// tupleConforms reports whether the elements of a tuple are of the types ts, charging a step for
+// each.
+func (p *parser) tupleConforms(ts []*fieldType, elems []*Node) bool {
+	if len(elems) != len(ts) {
+		return false
+	}
+	for i, c := range elems {
+		p.stepWork()
+		if !p.fieldConforms(ts[i], c) {
+			return false
+		}
+	}
+	return true
 }
 
 // castType returns the type cast t checks its value against, or nil if every value fits it.

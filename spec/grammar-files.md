@@ -7,10 +7,11 @@ the errors that make a grammar invalid.
 ## Structure
 
 A grammar file, normally written as a `.pego` file, consists of an optional
-package clause followed by Type and Rule Definition Statements in any order.
-Type definitions use Type Expressions; ordinary Rule Definition Statements
-combine a Rule Expression with an optional Value Action containing an Action
-Expression. An Operators Rule is a specialized Rule Definition Statement.
+package clause followed by a list of Declaration Statements in any order: Type
+Declaration Statements `type ...` and Rule Declaration Statements `rule ...`.
+Type Declaration Statements use Type Expressions; Rule Definitions combine a
+Rule Expression with an optional Value Action containing an Action Expression.
+An Operators Rule is a specialized Rule Definition.
 
 ```pego
 package example
@@ -19,7 +20,7 @@ rule main Number = t:([0-9]+) #atomic => Number{Text: text($t)}
 rule expr Expr = operators { ... }
 ```
 
-A hard newline separates top-level Definition Statements; a semicolon may also
+A hard newline separates top-level Declaration Statements; a semicolon may also
 separate them. Definition position and indentation do not affect parsing. The 12
 contextual grammar words are interpreted by position, so the same spellings can
 be identifiers where a name or Rule Expression is expected.
@@ -141,18 +142,18 @@ source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` and the AST embedded in a compiled grammar expose the
 normalized executable form rather than those grouping nodes.
 
-### Type Definition Statements
+### Type Declaration Statements
 
-A Type Definition Statement (`type`) declares a type name: it defines a struct
-type (`type T = {...}`) or declares an alias of a type or union
-(`type T ~ U`). The forms and their meaning are defined
-in the [Type System](types.md#type-definitions).
+A Type Declaration Statement `type ...` declares a type name. It is a Type
+Definition `type T = {...}`, which defines a new type, or a Type Alias
+`type T ~ U`, which gives another name to a type. Both are defined in the
+[Type System](types.md#type-declaration-statements).
 
-### Rule Definition Statements
+### Rule Declaration Statements
 
-An ordinary Rule Definition Statement starts with `rule` and defines a name for
-a Rule Expression. Its form is `rule <name> [<Type Expression>] =
-<Rule Expression> [=> <Action Expression>]`.
+A Rule Declaration Statement `rule ...` declares a rule. Its form is a Rule
+Definition `rule <name> [<Type Expression>] = <Rule Expression> [=> <Action
+Expression>]`, which defines the name for a Rule Expression.
 When the rule matches, it produces a single value. The 12 grammar words may be
 used as names when the surrounding syntax expects a name.
 
@@ -163,19 +164,19 @@ used as names when the surrounding syntax expects a name.
   [Rule Expressions](parser-expressions.md). An optional Value Action (`=>`)
   uses its Action Expression to build the value from the whole match; it cannot
   be attached to an individual alternative of a choice.
-- An Operators Rule is a specialized Rule Definition Statement written
+- An Operators Rule is a specialized Rule Definition written
   `rule <name> [<Type>] = operators { ... }`. It defines operands and operator
   entries rather than an ordinary Rule Expression; entries may have Value
   Actions as described in [Operators Rule](operators-rule.md). A Value Action
   after the closing brace may be omitted or use the explicit `=> ...`
   default form; any other such action is rejected at compile time.
 
-Comments may occur at top-level Definition Statement boundaries and at statement
+Comments may occur at top-level Declaration Statement boundaries and at statement
 or field boundaries inside braces. They are also permitted inside Rule
 Expressions and Action Expressions, including predicates and function arguments.
 The parser
 records comment trivia and may accept it syntactically. Semantic analysis
-rejects comments in Definition Statement and Operators Rule statement headers with a
+rejects comments in Declaration Statement and Operators Rule statement headers with a
 positioned diagnostic; affected headers include package, type, rule, level,
 infix-kind and associativity headers.
 
@@ -310,12 +311,6 @@ and exact comment tokens are omitted.
 A null field is reported by path (for example `$.statements[0].spec.fields[0]`)
 and does not cause a panic during compilation.
 
-Grammar JSON has no terminal types. The node types `TerminalSpec` and
-`TerminalConstructor`, which earlier versions wrote for them, are unknown to the
-decoders and rejected. A `TypeRef` that names `terminal`, `Match`, `Seq`, `List`,
-`Operator` or `Error` fails compilation with an error that names the type to write
-instead (see [Node Type Names](types.md#node-type-names)); a terminal type becomes
-the text struct `{ Text string }` (see [Text Structs](types.md#text-structs)).
 
 An attribute (`Attributed`, `Attribute`) holds `args`, an ordered list of integers,
 strings, booleans, null slots and expression nodes, and `kwArgs`, which maps names to

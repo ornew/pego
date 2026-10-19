@@ -103,7 +103,7 @@ stars text 42
 | union `U ~ A \| B` | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*TNode` if a member is a node type) |
 | `[]T` | a slice; an empty list is an empty slice, not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| `node[_]`, `any`, unions with basic members | `any`, holding the converted value |
+| `any`, unions with basic members | `any`, holding the converted value |
 | alias `Alias ~ T` | a Go alias to the value type of `T`; for example, `Alias ~ Word` becomes `type Alias = *Word` |
 
 ## Details
@@ -136,7 +136,7 @@ stars text 42
   invalid options return plain nil with an error. Ordinary parse failure returns the selected type's
   zero value: nil pointers and slices retain their dynamic type in `any`, while a nil interface stays
   nil. A successful rule whose value is nil also returns the selected type's zero value, with no error.
-  This includes plain nil for `any`, `node[_]` and union-interface results; legacy `ParseAST` keeps its
+  This includes plain nil for `any` and union-interface results; legacy `ParseAST` keeps its
   existing conversion mapping, which can box a nil `*Node` in an `any` result.
   Recovery and conversion follow `ParseAST`, including `Error` values in unions and nil where
   a struct is expected. Direct typed execution uses the same full grammar guard as

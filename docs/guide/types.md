@@ -10,9 +10,11 @@ chapter.
 
 A **struct type** (`type T = {...}`) is a type with named fields; an action builds its values with struct constructors
 such as `T{Field: value}`. A **union** (`type T ~ A | B`, an alias of a union) is the type of a value that is one of
-several types, much like a Go interface. A rule without an action produces a generic node, whose `Value` holds what the
-rule matched; a field that holds such a value is declared `node[T]` with the type of that value: `node[string]` for
-the text of a literal, a class or `#atomic`, or `node[_]` for a node of any value.
+several types, much like a Go interface. A rule without an action produces a node, whose `Value` holds what the rule
+matched; a field that holds such a value is declared `node[T]` with the type `T` of that value: `node[string]` for the
+text of a literal, a class or `#atomic`, `node[(A, B)]` for a sequence of two valued parts and `node[[]A]` for a
+repetition. Every value has a static type; `node[_]`, a node of any value, is a last resort for a value whose type
+cannot be written.
 
 ```pego
 // assign-ast.pego
@@ -69,7 +71,6 @@ Identifier{Text: "abc"}
 The capture `t:(...) #atomic` reads the text of the whole parenthesized expression, and the action only wraps it. PEGO
 builds exactly this form directly, without running the action, so a text type costs about as much as the plain match.
 Use the field in other actions as `$ident.Text`, and in Go as `Field("Text")` (or the `Text` field of a generated type).
-`pego fix` rewrites the earlier `type T terminal` declaration to this form.
 
 ## Optional and List Fields
 
@@ -116,11 +117,37 @@ or the action, iterating until recursive rules stop changing:
 |:--|:--|
 | `rule num = [0-9]+ #atomic` | `node[string]`: a node whose value is the matched string |
 | `rule key = [a-z]+` | `node[[]node[string]]`: a node whose value is a list with one string node per letter |
-| `rule pair = k:num "=" v:num` | `node[(node[string], node[string], node[string])]`: a node whose value is a tuple, flat, with one element per valued part |
-| `rule v = a / b` | The union of the types of `a` and `b` |
-| `rule o = a?` | `*T`, where `T` is the type of `a` |
+| `rule pair = k:num "=" v:num` | `node[(num, node[string], num)]`: a node whose value is a tuple, flat, with one element per valued part; `num` stands for the type of the rule `num` |
+| `rule v = a / b` | `A \| B`, the union of the types of `a` and `b` |
+| `rule o = a?` | `*A`, where `A` is the type of `a` |
 | `rule w = a` | The type of `a`: a rule whose body is a single rule call has that rule's type |
-| `rule u = -a "x"` | A tuple node with one element: discards, lookaheads and anchors have no value |
+| `rule u = -a "x"` | `node[(node[string],)]`, a tuple node with one element: discards, lookaheads and anchors have no value |
+
+Messages show a rule that has no declared type by its name, as `num` above, and add the captures of a node after its
+value, as in `node[(num, node[string], num), {"k": 0, "v": 2}]`.
+
+Any of these types can be written in a declaration. A field can hold a tuple node as `node[(node[string], Expr)]`, a
+tuple value as `(node[string], Expr)` and the node of a repetition as `node[[]Item]`, and an alias can name one:
+
+```pego
+// tuple-types.pego
+type Entry ~ node[(node[string], node[string], node[string])]
+type Table = { Entries []Entry }
+
+rule main Table = es:(-ws e:entry)* -ws $$ => Table{Entries: map($es, (x) => x.$e)}
+rule entry Entry = key "=" val
+rule key = [a-z]+ #atomic
+rule val = [0-9]+ #atomic
+rule ws = [ \n]*
+```
+
+```bash
+pego parse -g tuple-types.pego -f sexpr -i 'a=1 b=2'
+```
+
+```text
+Table{Entries: [("a" "=" "1") ("b" "=" "2")]}
+```
 
 Inference follows rule dependencies, so a long helper chain keeps its result type regardless of definition order.
 Recursive types that keep expanding have conservative growth budgets and may become `any`; stable helpers retain

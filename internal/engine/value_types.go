@@ -11,10 +11,9 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// This file infers the types of rule values in the value model of Record 060, in which a rule
-// produces an ordinary typed value and the syntax tree is built from one generic node[T, C]. The
-// engine still builds the reserved node kinds; these types are computed beside the current ones so
-// that the new model can be checked against every grammar before the backends move to it.
+// This file infers the types of rule values in the value model, in which a rule produces an
+// ordinary typed value and the syntax tree is built from one generic node[T, C]. These types are
+// the types the checker checks the grammar with (checkTypes).
 
 // Types of the value model, beside basicTy, namedTy, listTy and optTy.
 const (
@@ -41,12 +40,16 @@ func (t tupleTy) String() string {
 // the node's tuple, and each further index an element of the tuple in the node at the previous
 // one. A capture in a positive lookahead has no element: its value is kept beside the tuple, which
 // side records. A capture in choice alternatives of different shapes has a location for each
-// shape; the alternative that matched selects one at run time.
+// shape; the alternative that matched selects one at run time. A capture inside an optional
+// expression or in only some alternatives may not be made; maybe records that, and set is then its
+// type when it is made, while t also admits nil.
 type capIndex struct {
 	name  string
 	paths [][]int
 	side  bool
 	t     ty
+	maybe bool
+	set   ty
 }
 
 // nodeTy is node[T, C]: a node whose Value has type value, with the captures caps.
@@ -65,22 +68,29 @@ func (t nodeTy) String() string {
 	return "node[" + t.value.String() + ", " + t.capsText() + "]"
 }
 
-// capsText is the text of the captures of t, as in node[T, {"name": 0.1}].
+// capsText is the text of the captures of t, as in node[T, {"name": 0.1}]. A name captured
+// several times in one match is listed once, with the locations of all its captures.
 func (t nodeTy) capsText() string {
-	parts := make([]string, len(t.caps))
-	for i, c := range t.caps {
-		paths := make([]string, len(c.paths))
-		for j, path := range c.paths {
+	var parts []string
+	at := map[string]int{}
+	for _, c := range t.caps {
+		var paths []string
+		for _, path := range c.paths {
 			idx := make([]string, len(path))
 			for k, p := range path {
 				idx[k] = strconv.Itoa(p)
 			}
-			paths[j] = strings.Join(idx, ".")
+			paths = append(paths, strings.Join(idx, "."))
 		}
 		if c.side {
 			paths = append(paths, "-")
 		}
-		parts[i] = strconv.Quote(c.name) + ": " + strings.Join(paths, " | ")
+		if i, ok := at[c.name]; ok {
+			parts[i] += " | " + strings.Join(paths, " | ")
+			continue
+		}
+		at[c.name] = len(parts)
+		parts = append(parts, strconv.Quote(c.name)+": "+strings.Join(paths, " | "))
 	}
 	return "{" + strings.Join(parts, ", ") + "}"
 }
@@ -182,9 +192,7 @@ type valueInference struct {
 	approx map[string]ty
 	// computing holds the rules outside cycles that are being computed.
 	computing map[string]bool
-	// errs holds the errors of actions in the value model. They are not reported yet: the
-	// grammars are written for the current model, which the backends still implement. errs holds
-	// the errors of the rule being computed, and final those of computed rules.
+	// errs holds the type errors of the rule being computed, and final those of computed rules.
 	errs, final ErrorList
 	quiet       bool // while a lambda body is typed again with a wider parameter type
 	rule        *grammar.RuleDef
@@ -439,6 +447,13 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 		v.predicates(e.Expr, env)
 	case *grammar.Attributed:
 		v.predicates(e.Expr, env)
+		// An expression argument, such as the skip expression of #recover, is a scope of its own.
+		for _, a := range e.Attrs {
+			v.control.poll()
+			for _, arg := range v.control.expressionArgs(a) {
+				v.predicates(arg, &valueEnv{caps: tupleNode(v.elems(arg)).caps})
+			}
+		}
 	}
 }
 
@@ -469,7 +484,7 @@ func tupleNode(elems []valueElem) nodeTy {
 			for _, path := range c.paths {
 				paths = append(paths, append([]int{len(ts)}, path...))
 			}
-			n.caps = append(n.caps, capIndex{c.name, paths, c.side, c.t})
+			n.caps = append(n.caps, capIndex{c.name, paths, c.side, c.t, c.maybe, c.set})
 		}
 		ts = append(ts, el.t)
 	}
@@ -562,7 +577,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		var caps []capIndex
 		for _, c := range all {
 			if count[c.name] < alts {
-				c.t = vopt(c.t)
+				c = maybeCap(c)
 			}
 			caps = mergeCap(caps, c)
 		}
@@ -574,7 +589,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		}
 		el.caps = slices.Clone(el.caps)
 		for i := range el.caps {
-			el.caps[i].t = vopt(el.caps[i].t)
+			el.caps[i] = maybeCap(el.caps[i])
 		}
 		if ok {
 			el.t = vopt(el.t)
@@ -595,7 +610,8 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			if a.Name != "recover" && a.Name != "missing" {
 				continue
 			}
-			// What recovers is one element: its value or an error.
+			// What recovers is one element: its value or an error, which #missing makes a missing
+			// token.
 			el, ok := oneElem(elems, ungroupExpr(e.Expr))
 			switch {
 			case neverMatches(e.Expr):
@@ -603,7 +619,11 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			case !ok:
 				el.t = nodeTy{value: tupleTy{elems: []ty{}}}
 			}
-			el.t = vunion(el.t, tyErr)
+			if a.Name == "missing" {
+				el.t = vunion(el.t, tyMissing)
+			} else {
+				el.t = vunion(el.t, tyErr)
+			}
 			elems = []valueElem{el}
 		}
 		return elems
@@ -642,6 +662,15 @@ func neverMatches(e grammar.Expr) bool {
 	return false
 }
 
+// maybeCap returns c for a capture that may not be made.
+func maybeCap(c capIndex) capIndex {
+	if !c.maybe {
+		c.maybe, c.set = true, c.t
+	}
+	c.t = vopt(c.t)
+	return c
+}
+
 // mergeCap adds c to caps, joining the types and locations of captures of the same name.
 func mergeCap(caps []capIndex, c capIndex) []capIndex {
 	for i, o := range caps {
@@ -649,6 +678,9 @@ func mergeCap(caps []capIndex, c capIndex) []capIndex {
 			continue
 		}
 		caps[i].t = vunion(o.t, c.t)
+		if o.maybe || c.maybe {
+			caps[i].maybe, caps[i].set = true, vunion(setType(o), setType(c))
+		}
 		paths := slices.Clone(o.paths)
 		for _, p := range c.paths {
 			if !slices.ContainsFunc(paths, func(q []int) bool { return slices.Equal(p, q) }) {
@@ -660,6 +692,14 @@ func mergeCap(caps []capIndex, c capIndex) []capIndex {
 		return caps
 	}
 	return append(caps, c)
+}
+
+// setType is the type of the capture c when it is made.
+func setType(c capIndex) ty {
+	if c.maybe {
+		return c.set
+	}
+	return c.t
 }
 
 // operatorsRule is the union of the operand values and of the values of the operator lines: an
@@ -736,9 +776,9 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 	return v.declared(rd, vunion(ts...))
 }
 
-// fromLegacy maps a type of the current model to the value model: reserved node kinds become
-// nodes and the recovery kinds error. any stays any: it is
-// assignable to every type, and its values are checked at run time.
+// fromLegacy maps a legacy type (types.go) to the value model: reserved node kinds become nodes
+// and the recovery kinds error. any stays any: it is assignable to every type, and its values are
+// checked at run time.
 func fromLegacy(t ty) ty {
 	switch t := t.(type) {
 	case nil:

@@ -1,6 +1,6 @@
 # Rule Expressions
 
-A Rule Expression is the right-hand side of a Rule Definition Statement. It
+A Rule Expression is the right-hand side of a Rule Declaration Statement. It
 matches a prefix of the input at the current position and either succeeds,
 possibly consuming input and producing a value, or fails.
 

@@ -48,9 +48,7 @@ Captures are referred to by name only: an element is labeled (`label:expr`) to
 be used in an action. A capture is a name for an element of the rule's tuple, so
 its value is the value of that element: a string node for a literal or class, a
 list node for a repetition, a tuple node for a parenthesized group with several
-valued elements. A `$` followed by a digit, the positional reference of
-earlier versions, is a syntax error; `pego fix` labels the element it referred
-to and rewrites the reference.
+valued elements. A `$` followed by a digit is a syntax error.
 
 Captures are visible only in their enclosing grammar-expression scope. A
 capture that did not match has value `nil`.
@@ -98,7 +96,7 @@ recursively, and an unknown element Type is an error even when the target is a
 concrete node list. An empty literal such as `[]NameNode{}` has Type
 `[]NameNode`. Nil is accepted only when the element Type is optional, as in
 `[]*NameNode{nil}`. Elements are evaluated once, left to right; no element is
-dropped implicitly. Primitive-valued lists such as `[]int` are unsupported.
+dropped implicitly. The elements may be of any type, as in `[]int{1, 2}`.
 
 
 A struct field value whose Type the checker does not know, such as a variable,
@@ -109,12 +107,15 @@ evaluated:
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
 - an optional Type `*T` admits `nil` and the values `T` admits;
 - a union admits the values any of its alternatives admits;
-- a struct Type admits only nodes of that Type, `node[_]` admits every node, and
-  `node[string]` every string node;
-- `[]T` admits a list node or list value whose every element `T` admits; `[]_`
-  and `[]any` admit every list;
-- Error values from error recovery and `Missing` nodes stand for every node Type
-  and, as an empty list, for every list Type.
+- a struct Type admits only values of that Type;
+- `node[T]` admits a node whose value `T` admits: `node[string]` every string
+  node, `node[(A, B)]` a tuple node of two elements and `node[[]A]` a list
+  node; `node[_]` admits every node;
+- `(A, B, ...)` admits a tuple value of as many elements, each admitted by its
+  Type;
+- `[]T` admits a list value whose every element `T` admits; `[]_` and `[]any`
+  admit every list;
+- `error` admits error values from error recovery and `missing` values.
 
 A mismatch aborts a Value Action with an error such as
 `cannot use node[string] as Ident in field Name of Decl`; inside a Predicate Action it
@@ -126,8 +127,7 @@ typed grammars cost nothing extra.
 `NoTypeCheck` deliberately skips assignability checks for typed-list elements,
 and instead checks every struct field whose declared
 Type is not `_` or `any` at run time as described above, and every rule value as
-described in [Types and Errors](#types-and-errors). It does not add runtime
-support for primitive-valued lists.
+described in [Types and Errors](#types-and-errors).
 
 In the public source AST, parentheses around an action expression are retained
 as `TermGroup{Term}`. The group is semantically transparent: it affects
@@ -148,10 +148,9 @@ runtime error; an explicitly optional receiver type is rejected by type checking
 The built-in members `.Start`, `.End` and `.Value` are available on every node
 that has a range, that is, a string, tuple or list node. `.Start` and `.End` are
 the `int` range of the node in the parse's selected position unit. `.Value` is the
-string of a string node, and the list of elements of a tuple or list node, as in
-`$xs.Value[0]`; an element is a value or `nil`. The members `startPos`, `endPos`
-and `children` and the positional reference `$1` are not accepted; `pego fix`
-rewrites them to `.Start`, `.End`, `.Value` and a labeled capture. A struct value
+value of the node, of type `T` for a `node[T]`: the string of a string node, the
+tuple of elements of a tuple node and the list of elements of a list node, as in
+`$xs.Value[0]`; an element is a value or `nil`. A struct value
 has no range members: `.Start` on a struct is a compile-time error.
 
 `x.$y` reads capture `y` of node `x`, such as an element of a repetition
@@ -160,16 +159,15 @@ has no range members: `.Start` on a struct is a compile-time error.
 `y`, and the result type is the join of their capture types; an unmatched
 capture reads as `nil`. A struct value has no captures, so `x.$y` on one is a
 compile-time error, or a runtime action error for a dynamically typed
-receiver. A captured sequence does not yet carry the captures inside it, so
-`$x.$y` for `x:(y:a b)` is rejected; write `$y`.
+receiver. A captured sequence carries the captures inside it, so `$x.$y` for
+`x:(y:a b)` reads the same node as `$y`.
 
 Field names begin with an uppercase letter, so `x.y` with any other name, except
-the `expected` and `message` fields of `Missing`, is an
-error in PEGO source that asks for `x.$y`; `pego fix` rewrites it. A grammar in
-JSON or a compiled grammar may still read a capture with `x.y`, which reads the
-same capture as `x.$y` at run time. Its type check is looser: `x.y` on a union
-some of whose node types lack `y` has an optional type. After `pego fix`, such a
-read is an error until every alternative captures `y`.
+the `expected` and `message` fields of `missing`, is an
+error in PEGO source that asks for `x.$y`. A grammar in JSON or a compiled
+grammar may read a capture with `x.y`, which reads the same capture as `x.$y` at
+run time. Its type check is looser: `x.y` on a union some of whose node types
+lack `y` has an optional type.
 
 ## Casts
 
@@ -182,8 +180,10 @@ Type `T` checks a dynamically typed value (see
 [Values and Constructors](#values-and-constructors)), with the same execution
 steps. A cast is a compile-time error unless the static type of `x` or one of
 its alternatives is assignable to `T` or one of its alternatives, or the other
-way around, so `$x.(int)` on a capture is rejected while `$x.(Number)` on a
-`node[_]` value is accepted.
+way around, so `$x.(int)` on a capture of type `node[string]` is rejected while
+`$x.(node[string])` on a `node[_]` value and `$x.(Number)` on a `_` value are
+accepted. A struct is not a node, so `$x.(Number)` on a `node[_]` value is
+rejected.
 
 ## Operators and Functions
 
@@ -196,7 +196,7 @@ lambda body refers to a parameter by its bare name, and the name hides a
 parser variable of the same name inside the body. A name followed by `(` or
 `{` is still a function or a type, and `true`, `false` and `nil` cannot name a
 parameter. `$name` in a lambda body always refers to a capture, and naming a
-parameter there is an error that `pego fix` rewrites.
+parameter there is an error.
 
 ### Operator Precedence and Types
 
@@ -257,7 +257,7 @@ An optional list value contributes no elements when it is `nil`. An error
 value produced by `#recover` also contributes no elements to list-consuming
 functions. The checker accepts a union of list types and combines their
 possible element types. At runtime the functions consume the elements of a
-list node, list value or tuple node; a broad `node[_]` type can therefore supply
+list node, list value or tuple node, so a value of type `node[_]` can supply
 that node's elements.
 
 #### `len`

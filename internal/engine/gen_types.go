@@ -43,6 +43,8 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	var b, entries, named strings.Builder
 	t.decls(&b)
 	t.valueMethods(&b)
+	for helpers := 0; t.backHelpers(&b, &helpers); {
+	}
 	doc := `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
@@ -296,8 +298,9 @@ type typedGen struct {
 	tupleSizes map[int]bool // the sizes of the tuple types used
 	unitUsed   bool
 	// nhelpers, dhelpers and chelpers are the helpers converting value-model values from nodes,
-	// from values of the typed runtime, and cloning them for Documents.
-	nhelpers, dhelpers, chelpers vhelpers
+	// from values of the typed runtime, and cloning them for Documents; bhelpers convert them back
+	// into values of the typed runtime (back).
+	nhelpers, dhelpers, chelpers, bhelpers vhelpers
 }
 
 type listConv struct {
@@ -481,8 +484,11 @@ func (t *typedGen) conv(x ty, v string) string {
 		}
 		return "a." + t.vconvHelper(x) + "(" + v + ")"
 	case nodeTy:
-		if x.value == tyTop || x.value == tyAny {
+		switch {
+		case x.value == tyTop || x.value == tyAny:
 			return "a.toNode(astNode(" + v + "))"
+		case x.value == tyString && len(x.caps) == 0:
+			return "a.toMatch(astNode(" + v + "))"
 		}
 		return "a." + t.vconvHelper(x) + "(" + v + ")"
 	case namedTy:
@@ -877,7 +883,14 @@ func (t *typedGen) representable(x ty) bool {
 		}
 		return true
 	case nodeTy:
-		return t.representable(x.value)
+		// The value of a node is its text, a tuple or a list.
+		switch v := x.value.(type) {
+		case basicTy:
+			return v == tyString || v == tyTop || v == tyAny
+		case tupleTy, listTy:
+			return t.representable(v)
+		}
+		return false
 	case listTy:
 		return t.representable(x.elem)
 	case optTy:
@@ -953,9 +966,19 @@ func (t *typedGen) back(x ty, v string) string {
 		return "tback(" + v + ")"
 	case recordTy, unionTy:
 		return "tback(" + v + ")"
+	case nodeTy:
+		if x.value == tyString || x.value == tyTop || x.value == tyAny {
+			return "tback(" + v + ")"
+		}
+		return t.backHelper(x) + "(" + v + ")"
+	case tupleTy, vrule:
+		return t.backHelper(x) + "(" + v + ")"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "tderef(" + v + ")"
+		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return t.backHelper(x) + "(" + v + ")"
 		}
 		return t.back(x.elem, v)
 	case listTy:
@@ -972,6 +995,9 @@ func (t *typedGen) backWork(x ty, v string) string {
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return t.back(x, v)
+		}
+		if _, ok := x.elem.(tupleTy); ok {
+			return t.back(x, v) // a pointer to a tuple, which back's helper dereferences
 		}
 		return t.backWork(x.elem, v)
 	}
@@ -1003,8 +1029,11 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		}
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case nodeTy:
-		if x.value == tyTop || x.value == tyAny {
+		switch {
+		case x.value == tyTop || x.value == tyAny:
 			return "tpubNode(" + v + ")"
+		case x.value == tyString && len(x.caps) == 0:
+			return "tpubMatch(" + v + ")"
 		}
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case recordTy:

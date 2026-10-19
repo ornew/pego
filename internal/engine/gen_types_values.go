@@ -59,6 +59,8 @@ func vague(x ty) bool {
 	switch x := x.(type) {
 	case basicTy:
 		return x == tyNode
+	case nodeTy:
+		return anyNode(x) // node[_] leaves the value open
 	case recordTy:
 		return true
 	case namedTy:
@@ -348,4 +350,59 @@ func streamValue(p *Program, rd *grammar.RuleDef) (ty, bool) {
 		v.rules[r.Name] = r
 	}
 	return v.scopeValue(rep.Expr), true
+}
+
+// backHelper returns the name of the function converting a value of the value-model type x (a
+// vrule, tuple, node or optional tuple) into a value of the typed runtime.
+func (t *typedGen) backHelper(x ty) string {
+	key := t.goType(x)
+	if r, ok := x.(vrule); ok {
+		key = "rule " + r.name
+	}
+	return t.bhelpers.get("tb", key, x)
+}
+
+// backHelpers writes the pending helpers of back, and reports whether it wrote any.
+func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
+	wrote := false
+	for ; *done < len(t.bhelpers.order); *done++ {
+		wrote = true
+		h := t.bhelpers.order[*done]
+		fmt.Fprintf(b, "func %s(v %s) any {\n", h.name, t.goType(h.x))
+		elems := func(x tupleTy, v string) string {
+			kids := make([]string, len(x.elems))
+			for i, e := range x.elems {
+				kids[i] = t.back(e, fmt.Sprintf("%s.E%d", v, i))
+			}
+			return "[]any{" + strings.Join(kids, ", ") + "}"
+		}
+		switch x := h.x.(type) {
+		case vrule:
+			fmt.Fprintf(b, "\treturn %s\n", t.back(t.vres[x.name], "v"))
+		case optTy:
+			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.elem, "(*v)"))
+		case tupleTy:
+			if len(x.elems) == 0 {
+				b.WriteString("\treturn &tnode{typ: typeTupleValue}\n")
+			} else {
+				fmt.Fprintf(b, "\treturn &tnode{typ: typeTupleValue, kids: %s}\n", elems(x, "v"))
+			}
+		case nodeTy:
+			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
+			switch value := x.value.(type) {
+			case listTy:
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &tnode{%[2]s: v.%[2]s, typ: \"list\", kids: kids}\n", t.back(value.elem, "x"), t.span)
+			case tupleTy:
+				if len(value.elems) == 0 {
+					fmt.Fprintf(b, "\treturn &tnode{%[1]s: v.%[1]s, typ: \"tuple\"}\n", t.span)
+				} else {
+					fmt.Fprintf(b, "\treturn &tnode{%[1]s: v.%[1]s, typ: \"tuple\", kids: %[2]s}\n", t.span, elems(value, "v.Value"))
+				}
+			default:
+				b.WriteString("\treturn nil\n")
+			}
+		}
+		b.WriteString("}\n\n")
+	}
+	return wrote
 }

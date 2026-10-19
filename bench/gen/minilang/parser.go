@@ -7224,7 +7224,7 @@ type While struct {
 // Expr is the union type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// Stmt is the union type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error | Missing. Error (left by #recover) also implements it.
+// Stmt is the union type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
 func (*ArrayLit) isExpr() {}
@@ -7246,7 +7246,6 @@ func (*Member) isExpr()   {}
 func (*Number) isExpr()   {}
 func (*Return) isStmt()   {}
 func (*String) isExpr()   {}
-func (*TNode[T]) isStmt() {}
 func (*Unary) isExpr()    {}
 func (*While) isStmt()    {}
 
@@ -8478,7 +8477,7 @@ func tv4(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 
 func tv5(a *tslabs, v any) *TNode[string] {
 	a.stepWork()
-	return tv15(a, v)
+	return tpubMatch(v)
 }
 
 func tv6(a *tslabs, v any) *String {
@@ -8518,7 +8517,7 @@ func tv12(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 
 func tv13(a *tslabs, v any) *TNode[[]any] {
 	a.stepWork()
-	return tv16(a, v)
+	return tv15(a, v)
 }
 
 func tv14(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
@@ -8529,7 +8528,7 @@ func tv14(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 			return nil
 		}
 		out := &TNode[Tuple1[*TNode[string]]]{Span: x.Span}
-		out.Value = tv17(a, x)
+		out.Value = tv16(a, x)
 		return out
 	case *terror:
 		return nil
@@ -8541,38 +8540,13 @@ func tv14(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple1[*TNode[string]]]{Span: Span{s, e}}
-		out.Value = tv17(a, text)
+		out.Value = tv16(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv15(a *tslabs, v any) *TNode[string] {
-	a.stepWork()
-	switch x := v.(type) {
-	case *tnode:
-		if x.typ == typeTupleValue || x.typ == typeListValue {
-			return nil
-		}
-		out := &TNode[string]{Span: x.Span}
-		return out
-	case *terror:
-		return nil
-	case tval:
-		if x.tstruct() {
-			return nil
-		}
-		s, e := x.tspan()
-		text, _ := x.ttext()
-		_ = text
-		out := &TNode[string]{Span: Span{s, e}}
-		out.Value = astString(text)
-		return out
-	}
-	return nil
-}
-
-func tv16(a *tslabs, v any) *TNode[[]any] {
+func tv15(a *tslabs, v any) *TNode[[]any] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -8598,14 +8572,14 @@ func tv16(a *tslabs, v any) *TNode[[]any] {
 	return nil
 }
 
-func tv17(a *tslabs, v any) Tuple1[*TNode[string]] {
+func tv16(a *tslabs, v any) Tuple1[*TNode[string]] {
 	a.stepWork()
 	var out Tuple1[*TNode[string]]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv15(a, tkid(x.kids, 0))
+	out.E0 = tpubMatch(tkid(x.kids, 0))
 	return out
 }
 

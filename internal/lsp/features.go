@@ -461,7 +461,7 @@ func (a *analysis) checkNewNameControlled(kind symKind, old, name string, contro
 	if r, _ := utf8.DecodeRuneInString(name); !unicode.IsUpper(r) {
 		return fail("type %s must start with an uppercase letter", name)
 	}
-	if findBuiltin(builtinTypes, name) != nil {
+	if findBuiltin(builtinTypes, name) != nil || formerTypeNames[name] {
 		return fail("type %s is reserved", name)
 	}
 	if a.types[name] != nil {

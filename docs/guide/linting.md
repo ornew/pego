@@ -369,7 +369,7 @@ suppressions do not outlive what they excused. Grammars without comments (JSON, 
 ## What the Linter Does Not Find
 
 - Mistakes it cannot prove: a choice between alternatives whose first characters overlap (`"ab" / "ac"`) is fine;
-  shadowing through predicates, Operators Rule Definition Statements, level-restricted calls and left-recursive rules is not analyzed.
+  shadowing through predicates, Operators Rule Declaration Statements, level-restricted calls and left-recursive rules is not analyzed.
 - Mistakes the compiler already rejects: undefined rules and captures, captures inside `!`, `@` or `-`, type errors
   in actions, unknown escapes.
 - Anchors across rules: `rule a = "x" $$` called as `a "y"` is not reported.

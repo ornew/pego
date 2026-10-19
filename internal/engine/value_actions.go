@@ -2,15 +2,15 @@ package engine
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
 )
 
-// This file checks actions in the value model of Record 060: a capture has the value type of what
-// it captured, a node exposes .Start, .End and .Value, and .$y reads a capture of a node. Since
-// the grammars are written for the current model, the errors are collected but not reported.
+// This file checks actions in the value model: a capture has the value type of what it captured,
+// a node exposes .Start, .End and .Value, and .$y reads a capture of a node.
 //
 // tyAny stands for a value the value model does not know yet, such as a variable of a predicate
 // or the value of an inline action; it fits everywhere without an error. tyTop is the type _,
@@ -48,7 +48,7 @@ func (v *valueInference) errorf(pos grammar.Pos, format string, args ...any) {
 // resolve maps a type expression of the grammar to the value model.
 func (v *valueInference) resolve(t grammar.TypeExpr) ty {
 	k := &typeResolver{prog: v.prog}
-	return fromLegacy(k.resolve(t))
+	return k.resolve(t)
 }
 
 // uncertain reports whether a value of type t may be one the value types do not know yet (tyAny),
@@ -90,16 +90,15 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
-// type. A declared node keeps the inferred type arguments.
+// type. A declared node[_] keeps the inferred type arguments, and another declared node keeps the
+// inferred captures, which a type expression cannot write.
 func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if rd.Type == nil {
 		return t
 	}
-	k := &typeResolver{prog: v.prog}
-	legacy := k.resolve(rd.Type)
-	d := fromLegacy(legacy)
+	d := v.resolve(rd.Type)
 	if !v.assignable(t, d) {
-		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, t, d)
+		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
 		return d
 	}
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
@@ -108,29 +107,46 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if anyNode(d) {
 		return t
 	}
+	if dn, ok := d.(nodeTy); ok && len(dn.caps) == 0 {
+		if tn, ok := v.expand(t).(nodeTy); ok {
+			return nodeTy{value: dn.value, caps: tn.caps}
+		}
+	}
 	return d
 }
 
 // expand returns t with rule types replaced by the rules' value types, at the top level and in
 // the arguments of unions and optional types.
 func (v *valueInference) expand(t ty) ty {
-	for range 64 {
+	return v.expandSeen(t, nil)
+}
+
+// expandSeen is expand inside the rules seen. A chain of rules that only refer to each other has
+// no value.
+func (v *valueInference) expandSeen(t ty, seen map[string]bool) ty {
+	for {
 		switch u := t.(type) {
 		case ruleTy:
+			if seen[u.name] {
+				return tyBottom
+			}
+			if seen == nil {
+				seen = map[string]bool{}
+			}
+			seen[u.name] = true
 			t = v.ruleValue(u.name)
 			continue
 		case unionTy:
 			alts := make([]ty, len(u.alts))
 			for i, a := range u.alts {
-				alts[i] = v.expand(a)
+				alts[i] = v.expandSeen(a, maps.Clone(seen))
 			}
 			return vunion(alts...)
 		case optTy:
-			return vopt(v.expand(u.elem))
+			return vopt(v.expandSeen(u.elem, seen))
 		}
 		return t
 	}
-	return tyAny
 }
 
 // alts returns the arguments of the expanded union t, or t itself.
@@ -161,7 +177,7 @@ func (v *valueInference) everyAlt(t ty, ok func(ty) bool) bool {
 // assignable reports whether a value of type s fits a location of type d. Subtyping is minimal:
 // _|_ <= T <= _, T <= *T, nil <= *T, a union argument is below its union, lists, optional types
 // and nodes are covariant, tuples are covariant element-wise, and structs compare by identity.
-// node without arguments is every node, and nodes whose captures differ are distinct.
+// node[_] is every node, and nodes whose captures differ are distinct.
 func (v *valueInference) assignable(s, d ty) bool {
 	s = v.expand(s)
 	if s == tyAny || d == tyAny || d == tyTop || s == tyBottom {
@@ -215,12 +231,16 @@ func (v *valueInference) assignable(s, d ty) bool {
 		if anyNode(d) {
 			return true
 		}
-		return sameCaps(sn.caps, d.caps) && v.assignable(sn.value, d.value)
+		// A node type written in the grammar has no captures and takes nodes with any.
+		return (len(d.caps) == 0 || sameCaps(sn.caps, d.caps)) && v.assignable(sn.value, d.value)
+	}
+	if d == tyErr && s == tyMissing {
+		return true // a missing token is an error value
 	}
 	return s == d
 }
 
-// anyNode reports whether t is node without type arguments, the type of every node.
+// anyNode reports whether t is node[_], the type of every node.
 func anyNode(t ty) bool {
 	n, ok := t.(nodeTy)
 	return ok && n.value == tyTop && len(n.caps) == 0
@@ -250,10 +270,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 		if lt, ok := env.locals[t.Name]; ok {
 			return lt
 		}
-		for _, c := range env.caps {
-			if c.name == t.Name {
-				return c.t
-			}
+		if ct, ok := capType(env.caps, t.Name); ok {
+			return ct
 		}
 		// Undefined captures were reported when names were resolved; this one has no value.
 		v.errorf(t.Diagnostic(), "$%s has no value in its scope", t.Name)
@@ -271,7 +289,7 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 				if ft := v.resolve(f.Type); ft == tyBottom {
 					// A field without values is reported where it is declared.
 				} else if !v.assignable(vt, ft) {
-					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
+					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", v.expand(vt), ft, fi.Name, t.Type)
 				} else if v.checks != nil && !v.quiet && v.uncertain(vt) {
 					if newFieldType(ft) != nil {
 						v.checks.fields[fi] = ft
@@ -290,7 +308,7 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 			if elem != tyAny && v.unknown(it) {
 				v.errorf(termPos(item, t.Diagnostic()), "cannot use statically unknown %s as %s in list constructor", v.expand(it), elem)
 			} else if !v.assignable(it, elem) {
-				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", it, elem)
+				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", v.expand(it), elem)
 			}
 		}
 		return listTy{elem}
@@ -319,7 +337,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 		return v.binary(t, env)
 	}
 	// Positional captures are rejected when names are resolved; variables have no static type,
-	// assignments are checked with the predicates that make them, and blocks by the current model.
+	// assignments are checked with the predicates that make them, and statement blocks are
+	// rejected when the program is compiled.
 	return tyAny
 }
 
@@ -388,7 +407,16 @@ func (v *valueInference) index(x, i ty, t *grammar.Binary) ty {
 			}
 			return true
 		case nodeTy:
+			// A node indexes the elements of its tuple or list value.
 			for _, b := range v.alts(a.value) {
+				switch b.(type) {
+				case listTy, tupleTy:
+				default:
+					if b != tyAny && b != tyBottom {
+						v.errorf(t.Diagnostic(), "cannot index %s", a)
+						return false
+					}
+				}
 				if !elems(b) {
 					return false
 				}
@@ -425,7 +453,7 @@ func ungroupTerm(t grammar.Term) grammar.Term {
 }
 
 // member returns the type of x.Name. A member that only some arguments of a union have is nil for
-// the others, as for struct fields in the current model; .$y needs every argument to capture y.
+// the others; .$y needs every argument to capture y.
 func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	x = v.expand(x)
 	if x == tyAny || x == tyBottom {
@@ -453,7 +481,7 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	alts := v.alts(x)
 	v.noteMember(m, !slices.ContainsFunc(alts, func(a ty) bool {
 		_, node := a.(nodeTy)
-		return !node && a != tyErr && a != tyBottom
+		return !node && a != tyErr && a != tyMissing && a != tyBottom
 	}))
 	var found []ty
 	for _, a := range alts {
@@ -473,6 +501,9 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 				found = append(found, tyInt)
 			}
 		case namedTy:
+			if a == tyMissing && (m.Name == "Start" || m.Name == "End") {
+				found = append(found, tyInt)
+			}
 			if st, ok := v.prog.types[a.name].(*grammar.StructSpec); ok {
 				if f := fieldOf(st, m.Name); f != nil {
 					found = append(found, v.resolve(f.Type))
@@ -518,18 +549,37 @@ func (v *valueInference) captureAccess(x ty, name string, m *grammar.Member) ty 
 		if a == tyBottom {
 			continue
 		}
-		n, ok := a.(nodeTy)
-		i := -1
-		if ok {
-			i = slices.IndexFunc(n.caps, func(c capIndex) bool { return c.name == name })
-		}
-		if i < 0 {
+		n, _ := a.(nodeTy)
+		ct, ok := capType(n.caps, name)
+		if !ok {
 			v.errorf(m.Diagnostic(), "%s has no capture %s", a, name)
 			return tyAny
 		}
-		found = append(found, n.caps[i].t)
+		found = append(found, ct)
 	}
 	return vunion(found...)
+}
+
+// capType returns the type of the capture name in caps. A name captured several times in one
+// match holds the last capture that matched, which may be any of them, so its type is the join of
+// their types; it is not nil if one of them always matches.
+func capType(caps []capIndex, name string) (ty, bool) {
+	var ts, sets []ty
+	always := false // some capture of the name is always made, so the name is always set
+	for _, c := range caps {
+		if c.name == name {
+			ts = append(ts, c.t)
+			sets = append(sets, setType(c))
+			always = always || !c.maybe
+		}
+	}
+	if len(ts) == 0 {
+		return nil, false
+	}
+	if always {
+		return vunion(sets...), true
+	}
+	return vunion(ts...), true
 }
 
 // elemOf returns the type of the elements that list functions read from x: the elements of a
@@ -653,7 +703,7 @@ func (v *valueInference) overlaps(a, b ty, depth int) bool {
 
 func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 	if n, ok := builtins[t.Func]; !ok || n >= 0 && n != len(t.Args) {
-		return tyAny // reported by the current model
+		return tyAny // reported when the action is compiled
 	}
 	arg := func(i int) ty { return v.term(t.Args[i], env) }
 	switch t.Func {

@@ -21,10 +21,11 @@ func topBottomCases() []genCase {
 		{"top primitive", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", []string{"12", "a"}},
 		{"top cast", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, []string{"1", "a"}},
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
-		{"meet field", "type T = { A (Num | int) & node[_] }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
+		// A struct is not a node, so the meet is node[string].
+		{"meet field", "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, []string{"a", "1"}},
 		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "1a"}},
 		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "a"}},
-		{"meet list", "type T = { A []Num & []node[_] }\nrule main = xs:n+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"1", ""}},
+		{"meet list", "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"ab", ""}},
 	}
 }
 
@@ -57,8 +58,13 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type T = { A node[string] & []node[string] }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A []node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A *[]node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
-		// A meet is the type assignable to both: here Match, which an int is not.
+		// A meet is the type assignable to both: here node[string], which an int is not.
 		{"type T = { A (node[string] | int) & node[_] }\nrule main = \"a\" => T{A: 1}", "cannot use int as node[string]"},
+		// Nodes meet in their values, and tuples element by element.
+		{"type T = { A node[string | []node[string]] & node[string | int] }\nrule main = \"a\" => T{A: 1}", "cannot use int as node[string]"},
+		{"type T = { A (node[string] | int, node[string]) & (node[string] | bool, node[string]) }\nrule main = \"a\" => T{A: 1}", "cannot use int as (node[string], node[string])"},
+		{"type T = { A (node[string], int) & (node[string], bool) }\nrule main = \"a\"", "field A of T has type _|_"},
+		{"type T = { A (node[string],) & (node[string], node[string]) }\nrule main = \"a\"", "field A of T has type _|_"},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {

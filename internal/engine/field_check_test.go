@@ -218,7 +218,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 					}
 				}
 				name := fieldCheckValueName(value)
-				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, fromLegacy(checked.typed.fields["S"][0].t))
+				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
 				switch {
 				case in[1] == '!' && accepted:
 					if !strings.Contains(want, yes) {

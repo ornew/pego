@@ -65,8 +65,9 @@ rule constant = "(" growing ")" => P{}`
 			t.Errorf("%s type = %s; want P", name, got)
 		}
 	}
-	if got, _ := inferredType(p, "growing"); got != "any" {
-		t.Errorf("growing type = %s; want bounded inference to use any", got)
+	// A recursive type refers to the rule by name.
+	if got, _ := inferredType(p, "growing"); got != "[]*growing" {
+		t.Errorf("growing type = %s; want []*growing", got)
 	}
 }
 
@@ -79,7 +80,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 	src.WriteString("")
 	p := compile(t, src.String())
 	want, _ := inferredType(p, "huge")
-	if len(want) <= maxInferredType {
+	if len(want) <= 2048 {
 		t.Fatalf("test type is only %d bytes", len(want))
 	}
 	for _, name := range []string{"main", "recursive"} {
@@ -97,8 +98,8 @@ rule expression = operators {
     level { postfix "!" => list($lhs) }
 }
 rule constant = "a" => P{}`)
-	if got, _ := inferredType(p, "expression"); got != "any" {
-		t.Errorf("recursive OperatorsRule operator type = %s; want bounded inference to use any", got)
+	if got, _ := inferredType(p, "expression"); got != "node[string] | []expression" {
+		t.Errorf("recursive OperatorsRule operator type = %s; want node[string] | []expression", got)
 	}
 	if got, _ := inferredType(p, "constant"); got != "P" {
 		t.Errorf("constant type = %s; want P", got)
@@ -169,8 +170,8 @@ func TestInferenceFiniteUnionCycle(t *testing.T) {
 	}
 	p := compile(t, src.String())
 	for i := range count {
-		// The inferred type of the checker; RuleType shows the rules in a cycle by name.
-		got := p.typed.rules[fmt.Sprint("r", i)].String()
+		// RuleType shows the rules in a cycle by name.
+		got, _ := inferredType(p, fmt.Sprint("r", i))
 		members := strings.Split(got, " | ")
 		if len(members) != count {
 			t.Errorf("r%d type has %d members; want %d: %s", i, len(members), count, got)
@@ -213,33 +214,6 @@ func TestInferenceChainSavedValues(t *testing.T) {
 	}
 }
 
-func TestInferenceCanonicalTypes(t *testing.T) {
-	p := namedTy{"P", 's'}
-	a := recordTy{map[string]ty{"field": listTy{unionTy{[]ty{tyMatch, p}}}}}
-	b := recordTy{map[string]ty{"field": listTy{unionTy{[]ty{p, tyMatch}}}}}
-	if a.String() == b.String() {
-		t.Fatal("test needs different public union orders")
-	}
-	if inferredShape(a).key != inferredShape(b).key {
-		t.Fatal("equivalent nested unions have different keys")
-	}
-	duplicate := unionTy{[]ty{a, b}}
-	if inferredShape(duplicate).key != inferredShape(a).key {
-		t.Fatal("equivalent union members are not deduplicated")
-	}
-	for _, value := range []ty{a, b, duplicate, listTy{duplicate}, optTy{duplicate}} {
-		if got := inferredShape(value).size; got != len(value.String()) {
-			t.Errorf("written size of %s = %d, want %d", value, got, len(value.String()))
-		}
-	}
-	if inferredShape(tyMatch).key == inferredShape(namedTy{"Match", 't'}).key {
-		t.Fatal("distinct named kinds collide")
-	}
-	if inferredShape(recordTy{map[string]ty{"a": namedTy{"b:c", 's'}}}).key == inferredShape(recordTy{map[string]ty{"a:b": namedTy{"c", 's'}}}).key {
-		t.Fatal("unframed field/type names collide")
-	}
-}
-
 func TestInferenceChainFieldMismatch(t *testing.T) {
 	src := "type Holder = { Value node[string] }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
 	g, err := syntax.Parse(src)
@@ -252,12 +226,33 @@ func TestInferenceChainFieldMismatch(t *testing.T) {
 	}
 }
 
-// inferredType returns the type the checker infers for the rule name. RuleType shows the value
-// type instead, in which a rule without a declared type is referred to by name.
+// inferredType returns the value type the checker infers for the rule name, with the rules it
+// refers to replaced by their values at the top level and in unions and optional types. RuleType
+// refers to a rule without a declared type by name instead.
 func inferredType(p *Program, name string) (string, bool) {
-	t, ok := p.typed.rules[name]
+	t, ok := p.typed.values[name]
 	if !ok {
 		return "", false
 	}
-	return t.String(), true
+	v := &valueInference{prog: p, out: p.typed.values}
+	return v.expand(t).String(), true
+}
+
+// captureType returns the type of the capture cap in the value of the rule name, after checkTypes:
+// the union of the types of all captures of that name.
+func captureType(p *Program, name, cap string) (string, bool) {
+	t, ok := p.typed.values[name]
+	if !ok {
+		return "", false
+	}
+	v := &valueInference{prog: p, out: p.typed.values}
+	n, ok := v.expand(t).(nodeTy)
+	if !ok {
+		return "", false
+	}
+	ct, ok := capType(n.caps, cap)
+	if !ok {
+		return "", false
+	}
+	return ct.String(), true
 }

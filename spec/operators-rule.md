@@ -1,6 +1,6 @@
 # Operators Rule
 
-An Operators Rule Definition Statement defines a rule body that parses
+An Operators Rule Declaration Statement defines a rule body that parses
 expressions by declaring operator parts at binding levels, each with a
 precedence and an associativity. Operand and operator shapes are ordinary Rule Expressions.
 Their combination follows a parsing algorithm inspired by Pratt parsing.
@@ -69,7 +69,7 @@ rule <name> [<Type Expression>] = operators {
 - A rule-level Value Action after the closing `}` may be omitted or use the
   explicit `=> ...` default form. Any other rule-level Value Action is a
   compile-time error.
-- Semicolons separate Definition Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
+- Semicolons separate Declaration Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
 - An Operators Rule has at most one `skip`, at least one `operand`, and any
   number of `level`s. A `level` contains any number of operators.
 - An **operator part** is an arbitrary Rule Expression. It MAY call other
@@ -227,8 +227,12 @@ operand (or of the postfix operator).
 
 If the rule is declared with type `T`, the values of all `operand` items and of
 all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
-An operator without an action produces a tuple node, so when `T` does not
-accept `node[_]`, every operator needs an action.
+An operator without an action produces a tuple node of its operands and its
+operator part: `node[(T, O, T)]` for an infix operator and `node[(O, T)]` for a
+prefix operator, where `O` is the type of the operator part, with the captures
+`lhs`, `op` and `rhs`. When `T` does not accept these nodes, every operator
+needs an action; a recursive alias cannot name them, so a union that accepts
+them includes `node[_]`.
 
 If the rule has no declared type, its type is the union of the types of all
 `operand` items and operators.

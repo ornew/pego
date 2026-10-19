@@ -43,17 +43,17 @@ additional constraints are checked outside this source grammar.
 - **Character class ranges.** In `lo-hi`, `hi` MUST NOT be less than `lo`, and a
   class MUST contain at least one item.
 - **Repetition bounds.** In `a #repeat(n,m)`, `m` MUST NOT be less than `n`.
-- **Statement boundaries.** Newlines and semicolons separate Definition Statements and
+- **Statement boundaries.** Newlines and semicolons separate Declaration Statements and
   Operators Rule items. Struct fields use semicolons or newlines. An expression may
   cross a newline only within its own open delimiter; statement-list braces do
   not enable continuation of every nested expression. Indentation is not syntax.
 - **Attribute arguments.** Positional arguments follow the generic value
   forms and precede named arguments; repeated named keys are rejected. The
   grammar models argument shape and ordering, not key uniqueness.
-- **Contextual words.** Definition Statement and Operators Rule item introducers
+- **Contextual words.** Declaration Statement and Operators Rule item introducers
   have their syntactic meaning only at those statement positions. They remain identifiers elsewhere.
-- **Where constructs may appear.** An Operators Rule MUST be a complete Rule Definition Statement; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
-  `#stream` MUST be at the top level of a rule body. A comment in a Definition Statement
+- **Where constructs may appear.** An Operators Rule MUST be a complete Rule Declaration Statement; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
+  `#stream` MUST be at the top level of a rule body. A comment in a Declaration Statement
   or Operators Rule statement header is rejected by semantic analysis with a
   positioned diagnostic. These checks follow parsing.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
@@ -62,7 +62,7 @@ additional constraints are checked outside this source grammar.
   grammar and represented in the AST, but compilation rejects it. Runtime
   execution is not implemented.
 - **Attribute placement.** Attributes are postfix Rule Expression annotations;
-  Definition Statement prefixes are not supported.
+  Declaration Statement prefixes are not supported.
 
 ## Operators
 

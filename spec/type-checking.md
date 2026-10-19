@@ -12,20 +12,30 @@ reports. The types themselves and the relation "assignable" are defined in the
 | Rule Expression | Type |
 |:--|:--|
 | Literal, character class, `.`, `a #atomic`, `_` | `node[string]` |
-| `a b` | A tuple node of the types of the elements, a `node[_]`; if the sequence has captures, a tuple node with the corresponding fields |
-| `a / b` | The union of the types of `a` and `b` |
-| `a*`, `a+`, `a #repeat(...)` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a tuple node with the corresponding fields |
-| `a?` | `*T`, where `T` is the type of `a` |
-| Rule call | The type of the called rule |
+| `a b` | `node[(A, B)]`, a tuple node of the types of the elements; the elements of a group that is not captured are elements of the enclosing sequence |
+| `a / b` | `A \| B`, the join of the types of `a` and `b` |
+| `a*`, `a+`, `a #repeat(...)` | `node[[]A]`, a list node of the type of the element |
+| `a?` | `*A`, where `A` is the type of `a` |
+| `&a`, `!a` | `node[()]`, a node of the empty tuple |
+| Rule call | The declared type of the called rule, or its inferred type |
+
+A node type also records the captures made in the node, which
+[`x.$y`](actions.md#field-access) reads; diagnostics show them after the
+value, as in `node[(node[string], num), {"k": 1}]`.
 
 ### Types of Captures
 
 The type of a capture `name:a` is the type of `a`. If the capture is made only
 in some alternatives of a choice, or inside an optional expression, it may not
-match, and its type is `*T` instead.
+match, and its type is `*T` instead. A name captured more than once in a match
+has the join of the types of its captures, since the last capture that matches
+gives its value; when at least one of those captures is always made, the join is
+taken without nil, and otherwise each capture that may not be made contributes nil,
+so the type is optional, `*T`.
 
 ```pego
 rule r = x:"a"? y:("b" / z:"c") // $x: *node[string], $y: node[string], $z: *node[string]
+rule s = k:num "=" k:("x" "y")  // $k: num | node[(node[string], node[string])]
 ```
 
 ## Action Expression Types
@@ -36,7 +46,7 @@ have the following types.
 | Action Expression | Type |
 |:--|:--|
 | Integer literal, `len(x)`, `x.Start`, `x.End` | `int` |
-| `x.Value` | `string` for a string node; the list of the element types for a tuple or list node |
+| `x.Value` | `T` for a node of type `node[T]`: `string` for a string node, `(A, B)` for a tuple node and `[]A` for a list node |
 | String literal, `text(x)` | `string` |
 | `true`, `false`, a comparison, `&&`, `\|\|`, `!` | `bool` |
 | `nil` | `nil`, assignable to any optional type |
@@ -45,7 +55,7 @@ have the following types.
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
 | `x.$y` | The join of the types of capture `y` of the node types `x` may have |
-| `x[i]` | The element type of the list `x`; `i` MUST be an `int` |
+| `x[i]` | The element type of `x`, which MUST be a list, a tuple, or a node whose value is a list or a tuple; `i` MUST be an `int`, and a constant index into a tuple selects that element's type |
 | `x.(T)` | `T`; the type of `x` or one of its alternatives MUST be assignable to `T` or one of its alternatives, or the other way around |
 | `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
 | `map(l, f)` | `[]T`, where `T` is the type of `f`'s result |
@@ -62,8 +72,7 @@ including unknown values nested in a typed list. An empty literal still has
 the declared `[]T` Type. Nil is allowed only if `T` permits nil.
 
 The internal compiler option `NoTypeCheck` deliberately bypasses assignability
-checks. It does not add primitive-valued list storage or change the rules for
-checked compilation.
+checks. It does not change the rules for checked compilation.
 
 A struct field value whose Type is unknown (`any`, a variable, or a list with
 elements of unknown Type) is not reported. The checker records the field, and
@@ -78,18 +87,23 @@ declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
 Without type checking, every rule value is checked against a declared Type other
 than `any`, except the tuple node of an operator line without an action.
 
-Diagnostics print the shape of a value type as `node[string]` for a string node,
-`(node[string], node[string])` for a tuple of two and `[]node[string]` for a list.
-A node whose value is not known statically is `node[_]`, and a tuple node with
-captures `node{k: T, ...}`. Run-time errors name a value the same way, writing
-`_` for elements they do not examine: `node[(_, _)]` for a tuple node of two
-elements, `node[[]_]` for a list node and `error` for an error value.
+Diagnostics print a type as written in a grammar: `node[string]` for a string
+node, `node[(node[string], node[string])]` for a tuple node of two string nodes,
+`(node[string], node[string])` for its value and `[]node[string]` for a list
+value. A reference to a rule without a declared type prints the rule's name,
+also where a recursive type refers to itself, as in `[]*expr`. Run-time errors
+name a value the same way, writing `_` for elements they do not examine:
+`node[(_, _)]` for a tuple node of two elements, `node[[]_]` for a list node
+and `error` for an error value.
 
-A run-time check tests a value as the value types describe it. `node[string]`
-takes a string node; `node[_]` takes every node; a list Type takes a list value, such as one an
-action builds, and not the node of a repetition, whose list is its `Value`;
-`[]_` and `[]any` take every list value; and an error value from recovery fits
-only a Type that admits `error`. Predicates are checked like actions, and a
+A run-time check tests a value as the value types describe it. `node[T]` takes
+a node whose value `T` takes, so `node[string]` takes a string node,
+`node[(A, B)]` a tuple node of two elements of types `A` and `B`, and
+`node[[]A]` a list node of elements of type `A`; `node[_]` takes every node; a
+tuple Type takes a tuple value of as many elements; a list Type takes a list
+value, such as one an action builds, and not the node of a repetition, whose
+list is its `Value`; `[]_` and `[]any` take every list value; and an error
+value from recovery fits only a Type that admits `error`. Predicates are checked like actions, and a
 value that fails its check makes the predicate fail.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
@@ -118,7 +132,7 @@ types when precise checking is required.
 
 ```pego
 rule num = [0-9]+ #atomic // node[string]
-rule pair = k:num "=" v:num // a tuple node of three string nodes, with captures k and v; diagnostics print node{k: node[string], v: node[string]}
+rule pair = k:num "=" v:num // node[(num, node[string], num), {"k": 0, "v": 2}]
 ```
 
 The type of the accumulator of `foldl` and `foldr` is widened to the union of
@@ -133,7 +147,6 @@ The type checker reports the following errors:
   and a field value that is not assignable to the type of the field;
 - a typed-list element that is unknown or not assignable to its explicit element Type;
 - a rule whose value is not assignable to its declared type;
-- a rule or an action whose value is not a node;
 - a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an
   invalid type;

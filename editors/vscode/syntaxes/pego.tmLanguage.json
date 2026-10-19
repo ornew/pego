@@ -157,7 +157,7 @@
           "name": "support.type.builtin.pego"
         },
         {
-          "match": "\\b(int|string|bool|node|error|Missing)\\b",
+          "match": "\\b(int|string|bool|node|error|missing)\\b",
           "name": "support.type.builtin.pego"
         },
         {

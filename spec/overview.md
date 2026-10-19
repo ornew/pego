@@ -6,10 +6,10 @@ define every part precisely; each part named here links to its chapter.
 ## What a Grammar Describes
 
 A grammar file contains an optional package clause followed by Type and Rule
-Definition Statements. Type definitions use Type Expressions; ordinary Rule
-Definition Statements combine a Rule Expression with an optional Value Action
+Declaration Statements. Type definitions use Type Expressions; ordinary Rule
+Declaration Statements combine a Rule Expression with an optional Value Action
 containing an Action Expression. An Operators Rule is a specialized Rule
-Definition Statement. Rule Expressions use PEG choice and repetition, along with
+Declaration Statement. Rule Expressions use PEG choice and repetition, along with
 PEGO-specific constructs. A parse starts at a **start rule** and has to match
 the whole input (see [Parsing](parsing.md)).
 

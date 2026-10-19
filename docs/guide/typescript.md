@@ -284,10 +284,10 @@ String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `
 | `int` | `number \| bigint`, preserving signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; absent nonoptional scalar fields use `""` and `false` (`int` uses `0`) |
 | declared aliases | complete target type, preserving optional, list and node representations |
-| `node[T]` | `TNode<T>`; text is a `StringNode`, a `TNode<string>` |
+| `node[T]` | `TNode<T'>` with `T'` the TypeScript type of `T`; text is a `StringNode`, a `TNode<string>`, and `node[_]` is `TNode<unknown>` |
+| tuple `(A, B, ...)` | `readonly [A', B', ...]` |
 | canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
-| mixed/open or undeclared union, `any`, `node[_]` | conservative `TypedValue`, following Go's any-conversion semantics |
-| tuple, list node, `Node` | existing `Node` |
+| mixed/open or undeclared union, `any` | conservative `TypedValue`, following Go's any-conversion semantics |
 
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted
 Error even when the normal rule produces no value.

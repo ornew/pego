@@ -285,7 +285,7 @@ func TestMissingTokensValidationAndRepresentations(t *testing.T) {
 rule main = "a"`); !strings.Contains(message, "type Missing is reserved") {
 		t.Fatal(message)
 	}
-	const source = `type Item ~ node[string] | Missing
+	const source = `type Item ~ node[string] | missing
 type Root = { Token Item }
 rule main Root = x:(";" #missing) => Root{Token: $x}`
 	prog := compile(t, source)
@@ -494,7 +494,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 }
 
 func TestMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
-	prog := compile(t, `type Item ~ Missing
+	prog := compile(t, `type Item ~ missing
 rule main = "a"`)
 	if n, err := prog.Parse("main", "a"); n == nil || err != nil {
 		t.Fatal(n, err)
@@ -507,5 +507,20 @@ rule main = "a"`)
 	}
 	if _, err := Generate(prog.Grammar, GenOptions{Package: "example", Start: "main"}); err == nil {
 		t.Fatal("generated unsupported Missing type")
+	}
+}
+
+// TestMissingTypeChecked checks that a missing at run time takes only a missing token: an error
+// value of recovery is an error but not a missing.
+func TestMissingTypeChecked(t *testing.T) {
+	o := ParseOptions{MissingTokens: 8}
+	inserted := compile(t, "type P = { M missing }\nrule main = \"a\" m:(\";\" #missing) $$ => P{M: $m.(_).(missing)}")
+	n, err := inserted.ParseWith("main", "a", o)
+	if n == nil || err == nil || strings.Contains(err.Error(), "cannot") {
+		t.Fatalf("inserted: %v %v", n, err) // the tree, with the insertion's syntax error
+	}
+	recovered := compile(t, "rule main = \"a\" m:inner \"b\" $$ => $m.(_).(missing)\nrule inner = \"c\" #recover(skip=[x-y]*)")
+	if _, err := recovered.ParseWith("main", "axyb", o); err == nil || !strings.Contains(err.Error(), "cannot cast error to missing") {
+		t.Fatalf("recovered: %v", err)
 	}
 }

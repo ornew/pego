@@ -35,7 +35,7 @@ including, the line terminator. `/*` starts a nested block comment, which ends
 at its matching `*/`. Comment markers inside strings or character data are
 ordinary content. The parser records comment trivia and may accept it as
 syntactic trivia; semantic analysis reports a positioned error when a comment
-occurs in a Definition Statement or Operators Rule statement header. Comments are
+occurs in a Declaration Statement or Operators Rule statement header. Comments are
 allowed at top-level statement boundaries, at statement and field boundaries
 inside braces, and freely inside Rule Expressions and Action Expressions, including
 predicates and function arguments.
@@ -58,7 +58,7 @@ case-sensitive and have no length limit. Identifier syntax is ASCII-only:
 non-ASCII letters and digits do not continue an identifier. Unicode remains
 available in string literals, character classes, comments, and parsed input.
 Names beginning with `_` are reserved and MUST NOT be used as identifiers,
-including Definition Statement names, references, captures, variables, level names,
+including Declaration Statement names, references, captures, variables, level names,
 attribute names, or named arguments. Parsing preserves these names in the
 source AST; semantic validation rejects their use before compilation. The
 standalone primary Rule Expression form `_` is the
@@ -74,9 +74,9 @@ for type and field names; see [Names](types.md#names).
 The words `infix`, `level`, `operand`, `operators`, `package`, `postfix`,
 `prefix`, `rule`, `skip`, `struct`, `terminal`, and `type` are contextual
 words, not globally reserved identifiers. They are interpreted as syntax only
-where the grammar expects a Definition Statement or Operators Rule item. In a name
+where the grammar expects a Declaration Statement or Operators Rule item. In a name
 position, rule reference, capture, field, variable, or expression, they remain
-ordinary identifiers. No Definition Statement name is excluded solely because it is
+ordinary identifiers. No Declaration Statement name is excluded solely because it is
 one of these words.
 
 The following identifiers are also contextual:
@@ -145,10 +145,10 @@ _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 |:--|:--|
 | `_|_`, `^^`, `$$`, `^`, `$`, `.` | Bottom, anchors and any character in Rule Expressions |
 | `--` | Reserved: rejected with a diagnostic that names `#cut`, the cut syntax |
-| `/`, `*`, `+`, `?`, `&`, `!`, `@`, `-`, `:`, `(`, `)`, `{`, `}`, `,`, `;` | Rule Expression operators, repetition, captures, annotations, and Definition Statement separators |
+| `/`, `*`, `+`, `?`, `&`, `!`, `@`, `-`, `:`, `(`, `)`, `{`, `}`, `,`, `;` | Rule Expression operators, repetition, captures, annotations, and Declaration Statement separators |
 | `{`, `}` | Predicate delimiters where a primary Rule Expression form is expected; they also delimit source action blocks in their respective contexts |
 | `//`, `/*`, `*/` | Line and nested block comments |
-| `=>` | Whole-rule or Operators Rule action in those Definition Statement positions; lambda arrow inside an action |
+| `=>` | Whole-rule or Operators Rule action in those Declaration Statement positions; lambda arrow inside an action |
 | `:=` | Predicate variable definition |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `+`, `-`, `*`, `/`, `%` | Action and predicate operators |
 | `=`, `~`, `|`, `[]`, `*` | Type definitions, aliases and type forms (`type A = {...}`, `type A ~ B | C`, `[]T`, `*T`) |

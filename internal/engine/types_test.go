@@ -41,8 +41,8 @@ rule main = n:"1" #atomic => P{N: $n}`, `cannot use node[string] as Num in field
 rule main = x:"a"? => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
 		{`type P = { X node[string] }
 rule main = x:"a" / "b" => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
-		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *node[_]: the value may be nil`},
-		{`rule main = xs:(k:"a")* => $xs.$k`, `[]node{k: node[string]} has no capture k`},
+		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *node[(node[string], node[string]), {"y": 1}]: the value may be nil`},
+		{`rule main = xs:(k:"a")* => $xs.$k`, `node[[]node[(node[string],), {"k": 0}]] has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
 		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},

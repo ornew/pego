@@ -342,13 +342,13 @@ func TestSuccessfulNil(t *testing.T) {
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,name:=range []string{"nilAny","nilNode","nilUnion"} {
    n,err:=p.ParseRule(name,"",p.WithUnit(unit));if err!=nil||n!=nil {t.Fatalf("%s generic nil success: %v %v",name,n,err)}
-   v,err:=p.ParseRuleAST(name,"",p.WithUnit(unit));if err!=nil||v!=nil {t.Fatalf("%s typed nil success: %T %v %v",name,v,v,err)}
+   v,err:=p.ParseRuleAST(name,"",p.WithUnit(unit));if name=="nilNode" {if x,ok:=v.(*p.TNode[any]);err!=nil||!ok||x!=nil {t.Fatalf("%s typed nil success: %T %v %v",name,v,v,err)}} else if err!=nil||v!=nil {t.Fatalf("%s typed nil success: %T %v %v",name,v,v,err)}
    v,err=p.ParseRuleAST(name,"é",p.WithUnit(unit));if err!=nil {t.Fatal(err)};if name=="nilNode" {if v==nil {t.Fatalf("%s nonnil result changed: %T %v",name,v,v)}} else {x,ok:=v.(*p.T);if !ok||x.Text!="é" {t.Fatalf("%s nonnil result changed: %T %v",name,v,v)}}
   }
   legacy,err:=p.ParseAST("",p.WithUnit(unit));if err!=nil {t.Fatal(err)}
   boxed:=any(legacy)
   if START_UNION {if boxed!=nil {t.Fatalf("legacy union nil changed: %T %v",boxed,boxed)}} else {
-   if boxed!=nil {t.Fatalf("any/node nil mapping changed: %T %v",boxed,boxed)}
+   if legacy!=nil {t.Fatalf("any/node nil mapping changed: %T %v",legacy,legacy)}
   }
  }
 }

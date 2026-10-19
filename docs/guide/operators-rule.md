@@ -75,7 +75,7 @@ Binary{Left: "2", Op: "^", Right: Unary{Op: "-", X: "1"}}
 Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "*", Right: "3"}
 ```
 
-Here is how to read an Operators Rule Definition Statement.
+Here is how to read an Operators Rule Declaration Statement.
 
 - **`skip ws`** is inserted, with its result discarded, before every operand and every operator. It is how a grammar
   without a scanner says "tokens may be separated by whitespace". Without a `skip`, nothing is inserted.
@@ -638,7 +638,7 @@ A rule of thumb:
   languages, and what the larger grammars (`examples/minilang`, `parsers/golang`, `parsers/python`) use.
 - **Use left-recursive rules** when the recursion is not an operator table: member chains (`a.b.c`), a handful of
   levels in an otherwise ordinary grammar, constructs such as `list = list "," item / item`, or a grammar ported from a
-  notation that already uses left recursion. They also work with Operators Rule Definition Statements in the same grammar.
+  notation that already uses left recursion. They also work with Operators Rule Declaration Statements in the same grammar.
 - **Use the chain** when you need plain PEG that other tools can read, or for a one- or two-level expression where a
   fold is the shortest thing to write.
 
@@ -768,7 +768,7 @@ operator part with a negative lookahead, and exclude the keywords from identifie
 
 ```pego
 // words.pego
-type Bin = { L E; Op node[_]; R E }
+type Bin = { L E; Op node[(node[string],)]; R E }
 type Not = { X E }
 type E ~ node[string] | Bin | Not
 
@@ -802,7 +802,7 @@ quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 
 ```pego
 // cut.pego
-type Bin = { L E; Op node[_]; R E }
+type Bin = { L E; Op node[(node[string],)]; R E }
 type E ~ node[string] | Bin
 
 rule plain E = operators {

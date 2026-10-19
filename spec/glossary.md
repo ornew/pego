@@ -17,16 +17,16 @@ definition and the place where the term is defined.
 | code point | A Unicode code point; the unit in which the input is matched. See [Input and positions](parsing.md#input-and-positions). |
 | compiled grammar | A grammar saved as a `.pegoc` file, with or without its grammar AST, that loads without parsing grammar source. See [Compiled Grammars](compiled-grammars.md). |
 | concrete syntax tree (CST) | The tree of nodes that Rule Expressions produce when no action is involved: string nodes, tuples for sequences and lists for repetitions. See [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree). |
-| contextual word | A grammar word interpreted as syntax only in a Definition Statement or Operators Rule position; the same spelling may be an identifier elsewhere. See [Contextual Words](lexical.md#contextual-words). |
+| contextual word | A grammar word interpreted as syntax only in a Declaration Statement or Operators Rule position; the same spelling may be an identifier elsewhere. See [Contextual Words](lexical.md#contextual-words). |
 | cut | `#cut`: commits the enclosing choice to the current alternative. See [Cut](parser-expressions.md#cut). |
-| Definition Statement | A Type Definition Statement or Rule Definition Statement in a `.pego` file. See [Grammar Files](grammar-files.md#structure). |
+| Declaration Statement | A Type Declaration Statement or Rule Declaration Statement in a `.pego` file. See [Grammar Files](grammar-files.md#structure). |
 | discard | `-a`: matches `a` and has no value. See [Discard](parser-expressions.md#discard). |
 | Document | A mutable text together with its parse result, updated by edits and reparsed incrementally. See [Incremental Documents](documents.md). |
 | edit | The replacement of a range of a Document's text; the next parse reuses the results that the edit did not affect. See [Edits](documents.md#edits). |
 | expectation | An item that a syntax error lists as expected at a position: a literal, a character class, `any character` or an anchor. See [Syntax errors](parsing.md#syntax-errors). |
 | farthest failure | The farthest position at which parsing failed, with the items expected there; the syntax error reports it. See [Syntax errors](parsing.md#syntax-errors). |
 | generated parser | A standalone Go or TypeScript parser written for one grammar by `pego gen`. See [Generated Parsers](generated-parsers.md). |
-| grammar | An optional package clause followed by Type and Rule Definition Statements, normally written in a `.pego` file. See [Grammar Files](grammar-files.md). |
+| grammar | An optional package clause followed by Type and Rule Declaration Statements, normally written in a `.pego` file. See [Grammar Files](grammar-files.md). |
 | left recursion | A rule that calls itself at the position where it started. It is evaluated by growing a seed. See [Left recursion](parser-expressions.md#left-recursion). |
 | lookahead | `&a` and `!a`: tests the input that follows without consuming it. See [Lookahead](parser-expressions.md#lookahead). |
 | memoization | Caching the result of a rule at an input position so that the rule is not evaluated twice at that position (packrat parsing). See [Memoization](parsing.md#memoization). |
@@ -42,8 +42,9 @@ definition and the place where the term is defined.
 | range | The pair of positions `[start, end)` that a node covers. See [Nodes and Values](nodes.md#node-model). |
 | recognition | A parse that only tells whether the input matches, without building a tree. See [Modes](parsing.md#modes). |
 | recovery | `#recover`: after a failure in an element, skips input to a synchronization point, keeps an error value and continues. See [`#recover`](pragmas.md#recover). |
-| rule | A named Rule Expression, defined with `rule <name> [<Type Expression>] = <Rule Expression>`. A rule produces a single value when it matches. See [Rule Definition Statements](grammar-files.md#rule-definition-statements). |
-| Rule Definition Statement | A statement that defines an ordinary rule or an Operators Rule. See [Rule Definition Statements](grammar-files.md#rule-definition-statements). |
+| rule | A named Rule Expression, defined with `rule <name> [<Type Expression>] = <Rule Expression>`. A rule produces a single value when it matches. See [Rule Declaration Statements](grammar-files.md#rule-declaration-statements). |
+| Rule Declaration Statement | A statement `rule ...` that declares a rule: a Rule Definition. See [Rule Declaration Statements](grammar-files.md#rule-declaration-statements). |
+| Rule Definition | `rule a = b`: defines the rule `a` by a Rule Expression or an Operators Rule. See [Rule Declaration Statements](grammar-files.md#rule-declaration-statements). |
 | Rule Expression | An expression that matches input; the body of an ordinary rule. See [Rule Expressions](parser-expressions.md). |
 | scope | The place where captures are visible: a rule body or one iteration of a repetition. See [Capture](parser-expressions.md#capture). |
 | source information | An opt-in record of the rule that produced each node and of the names of captures. See [Source Information](nodes.md#source-information). |
@@ -53,12 +54,13 @@ definition and the place where the term is defined.
 | struct type | A user-defined type of values with named fields, which an action builds. See [Struct types](types.md#struct-types). |
 | string node | A node whose value is the matched input text: the node of a literal, a character class, `.` or an atomic expression. Its type is `node[string]`. See [Nodes and Values](nodes.md#node-model). |
 | terminal | A string node. `Node.IsTerminal` reports it. See [Nodes and Values](nodes.md#node-model). |
-| text struct | A struct type whose only field is `Text string`, which gives a token a type of its own. See [Text Structs](types.md#text-structs). |
 | token | A lexical element of a grammar file: an identifier, a literal, a capture reference or punctuation. See [Tokens](lexical.md#tokens). |
 | tuple | The value of a sequence: the values of its elements, in order. A rule without a valued element produces the empty tuple, the unit `()`. See [Nodes and Values](nodes.md#node-model). |
-| Type Definition Statement | A statement that declares a type name in one of two forms: a struct type (`=`) or an alias (`~`), which includes a union type. See [Type Definitions](types.md#type-definitions). |
-| Type Expression | An expression that specifies a type, including the declared value type of a rule or a type alias. See [Type Definitions](types.md#type-definitions). |
-| union type | A type whose values are values of any one of its member types. See [Type aliases and union types](types.md#type-aliases-and-union-types). |
+| Type Alias | `type a ~ b`: gives the type `b` another name `a`, and defines no type. See [Type Aliases](types.md#type-aliases). |
+| Type Declaration Statement | A statement `type ...` that declares a type name: a Type Definition or a Type Alias. See [Type Declaration Statements](types.md#type-declaration-statements). |
+| Type Definition | `type a = b`: defines a new type `a`, distinct from every other type. See [Type Definitions](types.md#type-definitions). |
+| Type Expression | An expression that specifies a type, including the declared value type of a rule or the right-hand side of a Type Declaration Statement. See [Type System](types.md). |
+| union type | A type whose values are values of any one of its member types. See [Union Types](types.md#union-types). |
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, an error value, a struct, or an integer, string or boolean inside actions. See [Rule Expressions](parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | Value Action | `=> term`: the action that follows a complete Rule Expression and computes the value of the rule from its captures. See [Actions](actions.md#whole-rule-value-actions). |
 | variable | A named `int`, `string` or `bool` value defined and read by predicates. See [Variables](predicates.md#variables). |

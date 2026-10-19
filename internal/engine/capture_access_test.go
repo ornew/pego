@@ -22,6 +22,7 @@ func captureAccessCases() []genCase {
 		{"chained", `rule main = xs:(ys:(z:"a" "b")+ "c")+ $$ => $xs[0].$ys[0].$z`, []string{"abc", "ababc", "c", ""}},
 		{"indexed", `rule main = xs:(y:[a-z] [0-9])+ $$ => $xs[len($xs) - 1].$y`, []string{"a1b2", ""}},
 		{"struct field", "type Out = { Y *node[string]; Z *node[string] }\nrule main = xs:(y:\"a\"? z:\"b\")+ $$ => Out{Y: $xs[0].$y, Z: $xs[0].$z}", []string{"ab", "b", ""}},
+		{"sequence capture", `rule main = x:(y:"a" "b") $$ => $x.$y`, []string{"ab", "a", ""}},
 		{"struct list", "type Out = { Ys []node[string] }\nrule main = xs:(-\",\" y:[a-z])* $$ => Out{Ys: map($xs, (i) => i.$y)}", []string{",a,b", "", ",a,"}},
 	}
 }
@@ -115,7 +116,6 @@ func TestCaptureAccessErrors(t *testing.T) {
 		{"type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", "T has no capture A"},
 		{`rule main = x:(y:"a" "b")? => $x.$y`, "the value may be nil"},
 		{`rule main = "a" => (1).$y`, "int has no capture y"},
-		{`rule main = x:(y:"a" "b") => $x.$y`, "node[_] has no capture y"},
 		{`rule main = x:((y:"a" "b") / (z:"c" "d")) => $x.$y`, "has no capture y"},
 	} {
 		g, err := syntax.Parse(tc.src)

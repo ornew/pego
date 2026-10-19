@@ -16,11 +16,11 @@ var builtinTypes = []builtin{
 	{name: "int", doc: "An integer. Positions in the input are also `int` values."},
 	{name: "string", doc: "A string. `len` measures its length in the position unit."},
 	{name: "bool", doc: "A boolean."},
-	{name: "node", doc: "A node; it takes a type argument. `node[string]` is a string node: the node of a literal, a character class, `.` or an atomic expression. `node[_]` is any node."},
-	{name: "error", doc: "The value of error recovery: an error recovered by `#recover`, or a token inserted by `#missing`."},
+	{name: "node", doc: "`node[T]` is a node whose value `.Value` has type `T`, with its input range `.Start` and `.End`. A string node (a literal, a character class, `.` or an atomic expression) is a `node[string]`, a sequence a `node[(A, B, ...)]` and a repetition a `node[[]T]`. `node[_]` is a node whose value is not known statically."},
+	{name: "error", doc: "The value of error recovery: an error recovered by `#recover`, or a `missing` token inserted by `#missing`."},
 	{name: "_", doc: "The top type: every value. A `_` value needs a cast `x.(T)` to be used as a `T`."},
 	{name: "_|_", doc: "The bottom type: no value. A location of this type is an error."},
-	{name: "Missing", doc: "Reserved node type: an opt-in #missing literal insertion with an empty source range."},
+	{name: "missing", doc: "A missing token: the error value of an opt-in #missing literal insertion, with an empty source range. A missing is an error."},
 }
 
 var builtinFuncs = []builtin{
@@ -87,3 +87,6 @@ func findBuiltin(list []builtin, name string) *builtin {
 	}
 	return nil
 }
+
+// formerTypeNames are the names of types of earlier versions, which cannot be defined.
+var formerTypeNames = map[string]bool{"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, "Missing": true}

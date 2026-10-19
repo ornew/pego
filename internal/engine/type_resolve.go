@@ -35,49 +35,52 @@ func (k *typeResolver) errorf(pos grammar.Pos, format string, args ...any) {
 	*k.errs = append(*k.errs, &Error{Pos: pos, Msg: fmt.Sprintf(format, args...)})
 }
 
-// resolve turns a type expression into a type.
+// resolve turns a type expression into a value type.
 func (k *typeResolver) resolve(t grammar.TypeExpr) ty {
 	k.control.poll()
 	switch t := t.(type) {
 	case *grammar.TypeRef:
 		return k.resolveNamed(t.Name, t.Diagnostic())
+	case *grammar.TypeGroup:
+		return k.resolve(t.Type)
 	case *grammar.ListType:
 		// A constructor applied to _|_ is _|_.
-		if e := k.resolve(t.Elem); e != tyNever {
+		if e := k.resolve(t.Elem); e != tyBottom {
 			return listTy{e}
 		}
-		return tyNever
+		return tyBottom
 	case *grammar.OptionalType:
-		if e := k.resolve(t.Elem); e != tyNever {
-			return optional(e)
-		}
-		return tyNever
+		return vopt(k.resolve(t.Elem))
 	case *grammar.UnionType:
 		ts := make([]ty, len(t.Types))
 		for i, x := range t.Types {
 			ts[i] = k.resolve(x)
 		}
-		return union(ts...)
+		return vunion(ts...)
 	case *grammar.TupleType:
-		// Record 060 types: reserved syntax until values carry them.
-		k.unsupported(t, t.Diagnostic(), "tuple types are not supported yet")
-		return tyAny
+		elems := make([]ty, len(t.Types))
+		for i, x := range t.Types {
+			if elems[i] = k.resolve(x); elems[i] == tyBottom {
+				return tyBottom
+			}
+		}
+		return tupleTy{elems}
 	case *grammar.StructType:
 		k.unsupported(t, t.Diagnostic(), "unnamed struct types are not supported yet; define one with type T = {...}")
 		return tyAny
 	case *grammar.TypeApp:
 		if t.Name == "node" {
-			// node[string] is a string node and node[_] a node of any value. Other type arguments
-			// wait for tuple types.
-			if len(t.Args) == 1 {
-				switch k.resolve(t.Args[0]) {
-				case tyString:
-					return tyMatch
-				case tyTop:
-					return tyNode
-				}
+			if len(t.Args) != 1 {
+				// Reported like unsupported syntax: without type checking, the type would accept
+				// every value.
+				k.unsupported(t, t.Diagnostic(), "node takes one type argument, got %d", len(t.Args))
+				return tyAny
 			}
-			k.unsupported(t, t.Diagnostic(), "type arguments of node other than node[string] and node[_] are not supported yet")
+			// node[T] is a node whose value is of type T.
+			if v := k.resolve(t.Args[0]); v != tyBottom {
+				return nodeTy{value: v}
+			}
+			return tyBottom
 		} else if k.defined(t.Name) {
 			k.resolveNamed(t.Name, t.Diagnostic()) // reports an alias that refers to itself
 			k.unsupported(t, t.Diagnostic(), "type %s takes no type arguments", t.Name)
@@ -88,11 +91,88 @@ func (k *typeResolver) resolve(t grammar.TypeExpr) ty {
 	case *grammar.IntersectionType:
 		m := ty(tyTop) // the meet of no types
 		for _, x := range t.Types {
-			m = meet(m, k.resolve(x))
+			m = vmeet(m, k.resolve(x))
 		}
 		return m
 	}
 	return tyAny
+}
+
+// vmeet returns the greatest lower bound a & b of two declared types: the type of the values of
+// both a and b, or _|_ if they have none in common.
+func vmeet(a, b ty) ty {
+	var v valueInference // declared types refer to no rules
+	switch {
+	case a == tyAny:
+		return b
+	case b == tyAny:
+		return a
+	case v.assignable(a, b):
+		return a
+	case v.assignable(b, a):
+		return b
+	}
+	switch x := a.(type) {
+	case listTy:
+		if y, ok := b.(listTy); ok {
+			if e := vmeet(x.elem, y.elem); e != tyBottom {
+				return listTy{e}
+			}
+			return tyBottom
+		}
+	case nodeTy:
+		if y, ok := b.(nodeTy); ok {
+			caps := x.caps
+			if len(caps) == 0 {
+				caps = y.caps
+			} else if len(y.caps) > 0 && !sameCaps(x.caps, y.caps) {
+				return tyBottom
+			}
+			if e := vmeet(x.value, y.value); e != tyBottom {
+				return nodeTy{value: e, caps: caps}
+			}
+			return tyBottom
+		}
+	case tupleTy:
+		if y, ok := b.(tupleTy); ok {
+			if len(x.elems) != len(y.elems) {
+				return tyBottom
+			}
+			elems := make([]ty, len(x.elems))
+			for i := range elems {
+				if elems[i] = vmeet(x.elems[i], y.elems[i]); elems[i] == tyBottom {
+					return tyBottom
+				}
+			}
+			return tupleTy{elems: elems}
+		}
+	}
+	xs, ys := valueAlternatives(a), valueAlternatives(b)
+	if len(xs) == 1 && len(ys) == 1 {
+		return tyBottom // unrelated, and neither is a union or optional to split
+	}
+	var common []ty
+	for _, x := range xs {
+		for _, y := range ys {
+			common = append(common, vmeet(x, y))
+		}
+	}
+	return vunion(common...)
+}
+
+// valueAlternatives returns the types whose values make up the values of t.
+func valueAlternatives(t ty) []ty {
+	switch t := t.(type) {
+	case unionTy:
+		var alts []ty
+		for _, a := range t.alts {
+			alts = append(alts, valueAlternatives(a)...)
+		}
+		return alts
+	case optTy:
+		return append(valueAlternatives(t.elem), tyNil)
+	}
+	return []ty{t}
 }
 
 // unsupported reports type syntax t that is not supported yet (reportUnsupported), once.
@@ -125,7 +205,7 @@ func (k *typeResolver) defined(name string) bool {
 // No value has the type _|_, so a location of that type is an error.
 func (k *typeResolver) resolveLocation(t grammar.TypeExpr, pos grammar.Pos, what string) ty {
 	r := k.resolve(t)
-	if r == tyNever {
+	if r == tyBottom {
 		k.errorf(pos, "%s has type _|_, which has no values", what)
 		return tyAny
 	}
@@ -142,19 +222,18 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 	case "bool":
 		return tyBool
 	case "node":
-		// node without a type argument would accept every node where the value is known.
-		k.errorf(pos, "node takes a type argument: write node[T], or node[_] for a node of any value")
-		return tyNode
+		k.errorf(pos, "node takes a type argument: write node[T] with the type T of the node's value")
+		return nodeTy{value: tyTop}
 	case "any":
 		return tyAny
 	case "_":
 		return tyTop
 	case "_|_":
-		return tyNever
-	case TypeMissing:
-		return namedTy{name, 'c'}
+		return tyBottom
+	case TypeMissing: // an inserted missing token, one kind of error
+		return tyMissing
 	case "error": // the value of recovery: a recovered error or a missing token
-		return union(namedTy{TypeError, 'c'}, namedTy{TypeMissing, 'c'})
+		return tyErr
 	}
 	switch spec := k.prog.types[name].(type) {
 	case *grammar.StructSpec:
@@ -188,6 +267,7 @@ var retiredTypeNames = map[string]string{
 	"List":     "node[_]",
 	"Operator": "node[_]",
 	"Error":    "error",
+	"Missing":  "missing",
 }
 
 // checkTypeDefinitions reports the errors of the type definitions: duplicate fields, field names

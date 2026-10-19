@@ -30,7 +30,7 @@ rule expr Expr = operators {
 rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
 ```
 
-An Operators Rule Definition Statement defines an expression by listing its
+An Operators Rule Declaration Statement defines an expression by listing its
 parts:
 
 - `operand` is something that can stand on its own, here a number.

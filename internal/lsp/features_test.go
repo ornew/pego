@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -487,7 +488,7 @@ func TestCompletion(t *testing.T) {
 	c.open(uri, src)
 	end := func(line int) int { return len([]rune(lines[line])) }
 	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "num", "o", "p"}
-	builtinTypeNames := []string{"Missing", "_", "_|_", "bool", "error", "int", "node", "string"}
+	builtinTypeNames := []string{"_", "_|_", "bool", "error", "int", "missing", "node", "string"}
 	sorted := func(xs ...[]string) []string {
 		var out []string
 		for _, x := range xs {
@@ -719,13 +720,13 @@ func BenchmarkAnalyze(b *testing.B) {
 	}
 }
 
-// Names in type arguments, tuple types and unnamed struct types are references, although such grammars do not compile
-// yet.
+// Names in type arguments, tuple types and unnamed struct types are references, also where the
+// grammar does not compile (unnamed struct types are not supported yet).
 func TestReservedTypeReferences(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///reserved.pego"
 	d := c.open(uri, "type Num = { Text string }\ntype A ~ node[Num] | (Num, A) | { F Num }\nrule main = \"a\"\n")
-	if len(d) == 0 || !strings.Contains(d[0].Message, "not supported yet") {
+	if !slices.ContainsFunc(d, func(x Diagnostic) bool { return strings.Contains(x.Message, "not supported yet") }) {
 		t.Fatalf("diagnostics %+v", d)
 	}
 	var locs []Location

@@ -7669,7 +7669,7 @@ func tv3(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
 
 func tv4(a *tslabs, v any) *TNode[string] {
 	a.stepWork()
-	return tv10(a, v)
+	return tpubMatch(v)
 }
 
 func tv5(a *tslabs, v any) any {
@@ -7679,17 +7679,17 @@ func tv5(a *tslabs, v any) any {
 
 func tv6(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
 	a.stepWork()
-	return tv11(a, v)
+	return tv10(a, v)
 }
 
 func tv7(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]] {
 	a.stepWork()
-	return tv12(a, v)
+	return tv11(a, v)
 }
 
 func tv8(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
-	return tv13(a, v)
+	return tv12(a, v)
 }
 
 func tv9(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
@@ -7700,7 +7700,7 @@ func tv9(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
 			return nil
 		}
 		out := &TNode[Tuple2[*TNode[string], any]]{Span: x.Span}
-		out.Value = tv14(a, x)
+		out.Value = tv13(a, x)
 		return out
 	case *terror:
 		return nil
@@ -7712,38 +7712,13 @@ func tv9(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple2[*TNode[string], any]]{Span: Span{s, e}}
-		out.Value = tv14(a, text)
+		out.Value = tv13(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv10(a *tslabs, v any) *TNode[string] {
-	a.stepWork()
-	switch x := v.(type) {
-	case *tnode:
-		if x.typ == typeTupleValue || x.typ == typeListValue {
-			return nil
-		}
-		out := &TNode[string]{Span: x.Span}
-		return out
-	case *terror:
-		return nil
-	case tval:
-		if x.tstruct() {
-			return nil
-		}
-		s, e := x.tspan()
-		text, _ := x.ttext()
-		_ = text
-		out := &TNode[string]{Span: Span{s, e}}
-		out.Value = astString(text)
-		return out
-	}
-	return nil
-}
-
-func tv11(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
+func tv10(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -7751,7 +7726,7 @@ func tv11(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string
 			return nil
 		}
 		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]{Span: x.Span}
-		out.Value = tv15(a, x)
+		out.Value = tv14(a, x)
 		return out
 	case *terror:
 		return nil
@@ -7763,13 +7738,13 @@ func tv11(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]{Span: Span{s, e}}
-		out.Value = tv15(a, text)
+		out.Value = tv14(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv12(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]] {
+func tv11(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -7777,7 +7752,7 @@ func tv12(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode
 			return nil
 		}
 		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]]{Span: x.Span}
-		out.Value = tv16(a, x)
+		out.Value = tv15(a, x)
 		return out
 	case *terror:
 		return nil
@@ -7789,13 +7764,13 @@ func tv12(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]]{Span: Span{s, e}}
-		out.Value = tv16(a, text)
+		out.Value = tv15(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv13(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv12(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -7821,40 +7796,40 @@ func tv13(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	return nil
 }
 
-func tv14(a *tslabs, v any) Tuple2[*TNode[string], any] {
+func tv13(a *tslabs, v any) Tuple2[*TNode[string], any] {
 	a.stepWork()
 	var out Tuple2[*TNode[string], any]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv10(a, tkid(x.kids, 0))
+	out.E0 = tpubMatch(tkid(x.kids, 0))
 	out.E1 = tpub(tkid(x.kids, 1))
 	return out
 }
 
-func tv15(a *tslabs, v any) Tuple2[*TNode[string], *TNode[[]*TNode[string]]] {
+func tv14(a *tslabs, v any) Tuple2[*TNode[string], *TNode[[]*TNode[string]]] {
 	a.stepWork()
 	var out Tuple2[*TNode[string], *TNode[[]*TNode[string]]]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv10(a, tkid(x.kids, 0))
-	out.E1 = tv13(a, tkid(x.kids, 1))
+	out.E0 = tpubMatch(tkid(x.kids, 0))
+	out.E1 = tv12(a, tkid(x.kids, 1))
 	return out
 }
 
-func tv16(a *tslabs, v any) Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]] {
+func tv15(a *tslabs, v any) Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]] {
 	a.stepWork()
 	var out Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv10(a, tkid(x.kids, 0))
-	out.E1 = tv10(a, tkid(x.kids, 1))
-	out.E2 = tv13(a, tkid(x.kids, 2))
+	out.E0 = tpubMatch(tkid(x.kids, 0))
+	out.E1 = tpubMatch(tkid(x.kids, 1))
+	out.E2 = tv12(a, tkid(x.kids, 2))
 	return out
 }
 
@@ -7870,7 +7845,7 @@ func tl2(a *tslabs, v any) []*TNode[string] {
 	out := astSlice(&a.tl2Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
-		out[i] = tv10(a, c)
+		out[i] = tpubMatch(c)
 	}
 	return out
 }

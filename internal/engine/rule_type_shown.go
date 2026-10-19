@@ -12,7 +12,7 @@ func shownRuleTypes(prog *Program, rules []*grammar.RuleDef, values map[string]t
 	for _, rd := range rules {
 		control.poll()
 		if rd.Type != nil {
-			declared[rd.Name] = fromLegacy(k.resolve(rd.Type))
+			declared[rd.Name] = k.resolve(rd.Type)
 		}
 	}
 	var show func(t ty) ty

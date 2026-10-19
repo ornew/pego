@@ -248,8 +248,9 @@ const tsFieldCheckSource = `
 type FieldType = { kind: string; name: string; elem: FieldType | null; alts: readonly FieldType[]; text: string };
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. node[string] is a string node, node every node, and error an
-// error value; a list type takes a list value, not the node of a repetition.
+// each list or tuple element it examines. node[T] is a node whose value is of type T (node[_] any
+// node with a value), and error an error value; a list or tuple type takes a list or tuple value,
+// not the node of a repetition or sequence.
 function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
   if (v instanceof Node && nodeShape(v) === shapeBox) {
     return fieldConforms(p, t, v.box);
@@ -286,15 +287,58 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
     case "N":
       return shape === shapeStruct && v.type === t.name;
     case "l":
-      if (shape !== shapeListValue) return false;
-      if (t.elem!.kind === "_") return true;
-      for (const k of v.children) {
-        p.stepWork();
-        if (!fieldConforms(p, t.elem!, k)) return false;
-      }
-      return true;
+      return shape === shapeListValue && elemsConform(p, t.elem!, v.children);
+    case "t":
+      return shape === shapeTupleValue && tupleConforms(p, t.alts, v.children);
+    case "v":
+      return nodeValueConforms(p, t.elem!, v, shape);
   }
   return false;
+}
+
+// nodeValueConforms reports whether the value of node n, of shape shape, is of type t: a string
+// node's value is a string, and a tuple or list node's value its elements.
+function nodeValueConforms(p: Parser, t: FieldType, n: Node, shape: number): boolean {
+  switch (t.kind) {
+    case "_":
+      return shape === shapeString || shape === shapeTuple || shape === shapeList;
+    case "s":
+      return shape === shapeString;
+    case "l":
+      return shape === shapeList && elemsConform(p, t.elem!, n.children);
+    case "t":
+      return shape === shapeTuple && tupleConforms(p, t.alts, n.children);
+    case "o":
+      return nodeValueConforms(p, t.elem!, n, shape); // a node always has a value
+    case "u":
+      for (const a of t.alts) {
+        if (nodeValueConforms(p, a, n, shape)) return true;
+      }
+      return false;
+  }
+  // No node has a value of another type yet.
+  return false;
+}
+
+// elemsConform reports whether every element of a list is of type t, charging a step for each.
+function elemsConform(p: Parser, t: FieldType, elems: readonly (Node | null)[]): boolean {
+  if (t.kind === "_") return true;
+  for (const k of elems) {
+    p.stepWork();
+    if (!fieldConforms(p, t, k)) return false;
+  }
+  return true;
+}
+
+// tupleConforms reports whether the elements of a tuple are of the types ts, charging a step for
+// each.
+function tupleConforms(p: Parser, ts: readonly FieldType[], elems: readonly (Node | null)[]): boolean {
+  if (elems.length !== ts.length) return false;
+  for (let i = 0; i < elems.length; i++) {
+    p.stepWork();
+    if (!fieldConforms(p, ts[i]!, elems[i])) return false;
+  }
+  return true;
 }
 
 `

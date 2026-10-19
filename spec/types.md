@@ -10,36 +10,54 @@ offending construct.
 
 ## Built-In Types
 
-| Type | Description |
-|:--|:--|
-| `int` | An integer. Positions in the input are also `int` values (see [Positions](parsing.md#positions)). |
-| `string` | A string. `len` measures its length in the [position unit](parsing.md#positions). |
-| `bool` | A boolean. |
-| `node[string]` | A string node: the node of a literal, a character class, `.` or an atomic expression. |
-| `node[_]` | Any node: a node whose value may be of any type. |
-| `error` | The value of [error recovery](pragmas.md#recover): an error value or a `#missing` insertion. |
-| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a list node, a `node[_]` whose list is its `.Value`. |
-| `*T` | A `T` or `nil`. |
-| `T & U` | The values that are both a `T` and a `U` (see [Top, Bottom and Meet](#top-bottom-and-meet)). |
-| `_` | Every value: the top type. |
-| `_\|_` | No value: the bottom type. |
-| `T` | A user-defined type. |
+The built-in types are named by these reserved names:
 
-The value of a rule, the result of an action and an element of a list is a
-node, an `int`, a `string`, a `bool` or `nil`; a function is not a value.
-[Variables](predicates.md#variables) hold `int`, `string` and `bool` values.
+| Type | Values |
+|:--|:--|
+| `bool` | Booleans. |
+| `int` | Integers. Positions in the input are also `int` values (see [Positions](parsing.md#positions)). |
+| `string` | Strings. `len` measures a string in the [position unit](parsing.md#positions). |
+| `node[T]` | Nodes whose value has type `T`, for any type `T` (see [Node Types](#node-types)): `node[string]` for a string node, `node[(A, B)]` for the tuple node of a sequence, `node[[]A]` for the list node of a repetition. |
+| `error` | The values of [error recovery](pragmas.md#recover): a skipped range, or a `missing` token. |
+| `missing` | The tokens that [`#missing`](pragmas.md#missing) inserted. A `missing` is an `error`. |
+| `_` | Every value: the top type (see [Top, Bottom, Join and Meet](#top-bottom-join-and-meet)). |
+| `_\|_` | No value: the bottom type. |
+| `any` | Every value, like `_`, but assignable to every type; deprecated in favor of `_`. |
+
+Other types are formed from types `T`, `U`, ... by these forms, or named by
+[Type Declaration Statements](#type-declaration-statements):
+
+| Type | Values |
+|:--|:--|
+| `(T, U, ...)` | Tuples of a `T`, a `U`, ...: `()` is the unit, `(T,)` has one element (see [Tuple Types](#tuple-types)). |
+| `[]T` | Lists of `T` values. |
+| `*T` | The values of `T`, and `nil`. |
+| `T \| U` | The values of `T` and those of `U`: the join of `T` and `U` (see [Union Types](#union-types)). |
+| `T & U` | The values that are both a `T` and a `U`: the meet of `T` and `U` (see [Top, Bottom, Join and Meet](#top-bottom-join-and-meet)). |
+| `N` | The values of the type named `N`: a struct type defined by a Type Definition, or the type a Type Alias names. |
+
+Every value has a static type. The value of a rule, the result of an action, an
+element of a tuple or list and a field of a struct are nodes, tuples, lists,
+structs, `int`, `string` and `bool` values, errors or `nil`; a function is not a
+value. [Variables](predicates.md#variables) hold `int`, `string` and `bool`
+values. `node[_]` is a node whose value is not known statically: it is the
+last resort, and a precise `node[T]` is preferred wherever the value is known.
 
 A Type Expression is written with the following syntax. `[]` and `*` apply to
 the type that follows, `&` forms a meet and binds tighter than `|`, which forms
-a union (see below), and parentheses group.
+a union, parentheses with commas form a tuple, and parentheses without a comma
+group.
 
 ```pego
 type Example = {
-    Items  []Item       // a list
-    Maybe  *Item        // an Item or nil
-    Either Item | Other // a union
+    Items  []Item                       // a list
+    Maybe  *Item                        // an Item or nil
+    Either Item | Other                 // a union
     Many   [](Item | Other)
     Count  int
+    Pair   (node[string], node[string]) // a tuple
+    Call   node[(Name, []Arg)]          // the node of a sequence
+    Digits node[[]node[string]]         // the node of a repetition
 }
 
 type LongUnion ~ (
@@ -54,29 +72,61 @@ newlines. The source AST retains an explicit parenthesized type as a source-only
 wrapper transparently, so grouping does not change type meaning. See
 [Parenthesized Groups in the Public AST](grammar-files.md#parenthesized-groups-in-the-public-ast)
 for source metadata, JSON and formatter behavior. Outside such a
-group, a Type Expression follows the normal hard newline Definition Statement boundary.
+group, a Type Expression follows the normal hard newline Declaration Statement boundary.
 
-### Reserved Type Syntax
+### Node Types
 
-Three forms of Type Expression are reserved for value types that are not
-supported yet. Grammars that use them parse, format and convert to JSON, but
-do not compile, also when types are otherwise not checked:
+`node[T]` is the type of a node whose value, `.Value`, has type `T`, for any
+value type `T`. A node also has its input range `.Start` and `.End`. The nodes
+that Rule Expressions produce have these types:
 
-- A tuple type is written in parentheses with commas: `()` is the unit type,
-  `(T,)` has one element and `(T, U)` two; a trailing comma is optional after
-  two or more elements. Parentheses around a single type without a comma group
-  it.
-- A type application `T[U, ...]` applies a type to type arguments, as in
-  `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
-  takes type arguments, and of its applications only `node[string]` and
-  `node[_]` are supported; any other type takes none. `node` MUST have a type
-  argument: a bare `node` is an error, which `pego fix` rewrites to
-  `node[string]` where the grammar still type-checks, and to `node[_]` otherwise.
+| Expression | Type |
+|:--|:--|
+| a literal, a character class, `.`, `a #atomic` | `node[string]` |
+| a sequence `a b c` | `node[(A, B, C)]`, with `A`, `B` and `C` the types of the elements |
+| a repetition `a*`, `a+` | `node[[]A]`, with `A` the type of an iteration |
+| an expression without elements | `node[()]` |
+
+So `"(" items:(item ("," item)*) ")"` has a value of type
+`node[(node[string], node[(item, node[[]node[(node[string], item)]])], node[string])]`,
+where `item` stands for the type of the rule `item`: a captured group is one
+element, while the elements of a group that is not captured are elements of the
+enclosing sequence (see [Sequences](parser-expressions.md)). `node[T]` can be
+written for any `T`. The value of a node that a Rule Expression produces is a
+string, a tuple or a list, so a run-time check of a type such as `node[int]` or
+`node[Item]` admits no node.
+
+Diagnostics and `RuleType` show the captures of a node beside its value, as in
+`node[(node[string], item), {"items": 1}]`, which locates the capture `items`
+at element 1 of the tuple. A node type written in a grammar has no captures; a
+node with captures is assignable to it when their values are.
+
+`node` takes exactly one type argument: a bare `node` is an error ("node takes
+a type argument"), and `node[A, B]` is the error
+"node takes one type argument, got 2". The type argument follows `node`
+directly, without a space. No other type takes type arguments.
+
+### Tuple Types
+
+A tuple type is written in parentheses with commas: `()` is the unit type,
+`(T,)` has one element and `(T, U)` two; a trailing comma is optional after two
+or more elements. Parentheses around a single type without a comma group it.
+The value of a sequence node is a tuple, so `x.Value` of an `x` of type
+`node[(A, B)]` has type `(A, B)` and `x.Value[0]` type `A`. Tuple types may be
+used wherever a type may: in fields, aliases, rule types, casts, list
+constructors and type arguments.
+
+### Reserved Forms
+
+These forms are reserved: they parse, format and convert to JSON, but do not
+compile, also when types are otherwise not checked.
+
 - An unnamed struct type is written with the braces and fields of a struct
-  definition, as in `type T ~ { Key node[string]; Value node[string] }` or a field of type
-  `{ Line int }`. `type T = {...}` remains the way to define a struct type.
+  definition, as in `type T ~ { Key node[string]; Value node[string] }` or a
+  field of type `{ Line int }`. It is the error "unnamed struct types are not
+  supported yet"; `type T = {...}` defines a struct type.
 
-### Top, Bottom and Meet
+### Top, Bottom, Join and Meet
 
 `_` is the top type: every value is a `_`, and `_ | T` is `_`. A value of type
 `_` is assignable only to `_` and to `any`, whose values are checked where they
@@ -88,11 +138,17 @@ cast narrows them. `_|_` is the bottom type, which has no values:
 list element or a cast whose type resolves to `_|_` is an error, also when
 types are otherwise not checked.
 
+`T | U` is the join of `T` and `U`: its values are the values of either (see
+[Union Types](#union-types)). The type of a
+choice is the join of the types of its alternatives.
+
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
-one assignable to the other, `[]V & []W` is `[](V & W)`, and for unions and
-optional types it is the union of the meets of their members. A meet of unrelated types is `_|_`, so
-`(node[string] | int) & node[_]` is `node[string]` while `int & string` is an error where a
-location has that type.
+one assignable to the other, `[]V & []W` is `[](V & W)`, `node[V] & node[W]` is
+`node[V & W]`, and for unions and optional types it is the union of the meets
+of their members. A meet of unrelated types is `_|_`, so
+`(node[string] | int) & node[_]` is `node[string]`, `(Num | int) & node[_]` is
+`_|_` for a struct type `Num`, since a struct is not a node, and `int & string`
+is an error where a location has that type.
 
 ### Node Type Names
 
@@ -104,44 +160,48 @@ kind:
 | Name | Values | Type |
 |:--|:--|:--|
 | `string` | String nodes produced by literals, character classes, `.` and `a #atomic` | `node[string]` |
-| `tuple` | Tuple nodes: values of sequences, and of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node[_]` |
-| `list` | List nodes: values of repetitions | `node[_]` |
+| `tuple` | Tuple nodes: values of sequences, and of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node[(T1, T2, ...)]` |
+| `list` | List nodes: values of repetitions | `node[[]T]` |
 | `error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) | `error` |
-| `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only | `Missing` |
+| `missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only | `missing` |
 
-Diagnostics name these values by the types in the third column. The names that
-earlier versions used, `Match`, `Seq`, `List`, `Operator` and `Error`, and
-`terminal`, the former type of every string node, are not types: a Type
-Expression that names one is an error, which `pego fix` rewrites to the type of
-the value.
+The kind names in the first column are names of node kinds, not types:
+diagnostics name these values by the types in the third column, which are as
+precise as the expression that produced the value. `missing` is a kind of
+`error`: a value of type `missing` is assignable to `error`.
 
 ## Names
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
-the built-in types (`int`, `string`, `bool`, `node[T]`, `error`), and `_` and
-`_|_` name the top and bottom types. `Missing` and the former node type names
-(`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
+the built-in types (`int`, `string`, `bool`, `node[T]`, `error`, `missing`),
+and `_` and `_|_` name the top and bottom types.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).
 
+## Type Declaration Statements
+
+A Type Declaration Statement `type ...` declares a type name. Type Declaration
+Statements and [Rule Declaration Statements](grammar-files.md#rule-declaration-statements)
+are the Declaration Statements of a grammar file. A Type Declaration Statement
+is one of two distinct declarations:
+
+| Form | Declaration | Declares |
+|:--|:--|:--|
+| `type T = {...}` | [Type Definition](#type-definitions) | a new type `T`, distinct from every other type |
+| `type T ~ U` | [Type Alias](#type-aliases) | another name for the type `U`; it defines no type |
+
 ## Type Definitions
 
-The `type` keyword declares a type name in one of two forms:
-
-| Form | Declares |
-|:--|:--|
-| `type T = {...}` | a type definition: a new struct type `T` |
-| `type T ~ U` | an alias: another name for the type `U`, which creates no type |
-
-Only struct types can be defined with `=`: `type T = U` with any other
-right-hand side is an error, and an alias is written `type T ~ U`.
+A Type Definition `type T = S` defines a new type `T` from the type specification
+`S`. `S` is a struct type; `type T = U` with any other right-hand side is an
+error, and an alias is written `type T ~ U`.
 
 ### Struct Types
 
-A struct type is a type of values with named fields. `type T = {...}` defines it.
-A struct is a value that an action builds, not a node of the parse, so a struct
-type is not assignable to `node[_]`.
+A struct type is a type of values with named fields. A struct is a value that an
+action builds, not a node of the parse, so a struct type is not assignable to
+`node[_]`.
 Fields are separated by newlines
 or semicolons. Field names MUST be unique within a struct. Constructor fields
 and function arguments remain comma-separated.
@@ -154,22 +214,24 @@ type MyNode = {
 type Pair = { Key node[string]; Value node[string] }
 ```
 
-A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
+A value of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
 
 `[]T{value, ...}` constructs a list value with explicit element Type `T`,
 including an empty list. Every element must have a known static type assignable
 to `T`; `nil` requires an optional element type, and nested lists are checked
-recursively. Primitive-valued list construction is unsupported. Constructor
-fields and arguments use commas.
+recursively, so `[]int{1, 2}` and `[](node[string], Item){}` are list values.
+Constructor fields and arguments use commas.
 
-### Type Aliases and Union Types
+## Type Aliases
 
-`type T ~ U` declares `T` as another name for the type `U`. With `|`, the
+A Type Alias `type T ~ U` declares `T` as another name for the type `U`. With `|`, the
 right-hand side is a union type, whose values are the values of any of its
 members, much like an interface type in Go.
 
 ```pego
 type Node ~ Expression | Statement | Declaration
+type Entry ~ (node[string], Value)
+type Words ~ node[[]node[string]]
 ```
 
 A type alias MUST NOT refer to itself, directly or indirectly. Unions are
@@ -177,24 +239,13 @@ normalized: nested unions are flattened and duplicate members are removed (so
 `T | T` is `T`), and a union with an optional member is optional
 (`A | *B` is `*(A | B)`).
 
-An alias that resolves to a single struct type preserves that type's
-identity. A constructor accepts aliases of struct types and produces a node of
+### Union Types
+
+A union type `A | B` is written on the right-hand side of an alias or wherever
+a Type Expression is expected. An alias that resolves to a single struct type
+preserves that type's identity. A constructor accepts aliases of struct types and produces a node of
 the underlying struct type. This also applies to unions normalized to a single
 type, such as `T | T`.
-
-### Text Structs
-
-A text struct is a struct type whose only field is `Text string`. It gives a
-token a type of its own: a rule builds it from the text of an atomic match.
-
-```pego
-type Identifier = { Text string }
-rule ident Identifier = t:([a-z]+) #atomic => Identifier{Text: text($t)}
-```
-
-A text struct is an ordinary struct type. `type T terminal`, which declared a type for string nodes, is an error that
-`pego fix` rewrites to a text struct, and the rules declared with it to rules
-like the one above.
 
 ## Assignability
 
@@ -207,11 +258,18 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is a union type and `V` is assignable to one of its members.
 - `T` is `*U`, and `V` is `nil`, or `V` is `*W` with `W` assignable to `U`, or
   `V` is assignable to `U`.
-- `T` is `node[_]` and `V` is the type of a node: a string, tuple or list node.
+- `T` is `node[_]` and `V` is `node[W]` for any `W`: every node is a `node[_]`.
+- `T` is `node[U]` and `V` is `node[W]` with `W` assignable to `U`, whatever
+  captures the node has.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
+- `T` is `(U1, ..., Un)` and `V` is `(W1, ..., Wn)`, with the same number of
+  elements and each `Wi` assignable to `Ui`.
+- `T` is `error` and `V` is `missing`.
 
 An error value from [error recovery](pragmas.md#recover) is assignable only to a
-type that admits `error`, such as `T | error`.
+type that admits `error`, such as `T | error`. A struct is not a node, and a
+node is not a tuple or a list: `node[(A, B)]` is not assignable to `(A, B)`,
+whose values are the values of the node.
 
 A value of type `*T` is not assignable to a location of type `T`, and accessing
 a field of a value that may be `nil` is an error. A value of type `_` is

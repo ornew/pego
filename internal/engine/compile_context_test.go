@@ -136,11 +136,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				var diagnostics ErrorList
 				checkTypesControlled(p, &diagnostics, control)
 			case "type-inference":
-				k := &checker{typeResolver: typeResolver{prog: p, control: control}, ruleTypes: map[string]ty{}, declared: map[string]bool{}}
-				for _, rd := range g.Rules() {
-					k.ruleTypes[rd.Name] = tyNever
-				}
-				k.inferTypes(g.Rules())
+				valueTypes(p, control)
 			case "list-constructor-type":
 				// The entry poll alone cannot cancel: cancellation must be
 				// observed inside the temporary checker resolving Elem.

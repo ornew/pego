@@ -11,17 +11,31 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
+// A name captured several times in one match has the join of the types of its captures: the
+// type of the capture x in the value of main, or the type of main's value when it has an action.
 func TestDuplicateCaptureTypes(t *testing.T) {
-	for _, tc := range []struct{ name, src, want, err string }{
-		{"nested records", captureCheckSource(1024, "record"), "node{x: node{k: node[string], v: []node{y: node[string]}}}", ""},
-		{"mixed optional", captureCheckSource(32, "mixed"), "node{x: *(A | B)}", ""},
-		{"recursive", captureCheckSource(64, "recursive"), "any", ""},
-		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, "node{k: node[string], x: node[string]}", ""},
-		{"optional scope", `rule main = (x:"a" x:"b")? $$`, "node{x: *node[string]}", ""},
-		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, "[]node{x: node[string]}", ""},
-		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "node{x: nil}", ""},
-		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "node[string]", ""},
-		{"incompatible action", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use node{k: node[string], v: []node{y: node[string]}} as node[string] in field X of R"},
+	for _, tc := range []struct {
+		name, src string
+		action    bool
+		want, err string
+	}{
+		{"nested records", captureCheckSource(1024, "record"), false, "item", ""},
+		{"mixed optional", captureCheckSource(32, "mixed"), false, "*(a | b)", ""},
+		{"recursive", captureCheckSource(64, "recursive"), false, "main", ""},
+		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, false, "node[string]", ""},
+		{"optional scope", `rule main = (x:"a" x:"b")? $$`, false, "*node[string]", ""},
+		{"different types", "rule item = k:\"a\" v:(y:\"b\")*\nrule main = x:\"a\" x:item $$", false, "node[string] | item", ""},
+		// A capture that always matches leaves the name set whether or not a later one matches.
+		{"always set", `rule main = x:"a" (x:"b")? $$`, false, "node[string]", ""},
+		{"always set later", `rule main = (x:"a")? x:"b" $$`, false, "node[string]", ""},
+		{"set to nil", `rule main = x:"a" x:"b"? $$`, false, "*node[string]", ""},
+		{"never set", `rule main = (x:"a")? (x:"b")? $$`, false, "*node[string]", ""},
+		{"always set access", "type R = { X node[string] }\nrule main = x:\"a\" (x:\"b\")? $$ => R{X: $x}", true, "R", ""},
+		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, true, `node[[]node[(node[string], node[string]), {"x": 0 | 1}]]`, ""},
+		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", false, "empty", ""},
+		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, true, "node[string]", ""},
+		{"incompatible action", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", true, "R", "3:32: cannot use node[(node[string], node[[]node[(node[string],), {\"y\": 0}]]), {\"k\": 0, \"v\": 1}] as node[string] in field X of R"},
+		{"later capture", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:\"a\" x:item => R{X: $x}", true, "R", "3:31: cannot use node[string] | node[(node[string], node[[]node[(node[string],), {\"y\": 0}]]), {\"k\": 0, \"v\": 1}] as node[string] in field X of R"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, err := captureCheckProgram(tc.src)
@@ -30,7 +44,10 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 			}
 			var errs ErrorList
 			checkTypes(p, &errs)
-			got, ok := inferredType(p, "main")
+			got, ok := captureType(p, "main", "x")
+			if tc.action {
+				got, ok = inferredType(p, "main")
+			}
 			if !ok || got != tc.want {
 				t.Errorf("type: got %q, %v; want %q", got, ok, tc.want)
 			}
@@ -42,28 +59,20 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 	check(t, `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, ok("ab", `"b"`))
 }
 
-// Compare the capture merger with the general union, including values whose
-// top-level optional/union normalization must not be skipped.
+// Compare the capture merger with the union, including values whose top-level optional/union
+// normalization must not be skipped.
 func TestCaptureUnionEquivalence(t *testing.T) {
-	record := func(t ty) ty { return recordTy{map[string]ty{"x": t, "y": listTy{tyMatch}}} }
-	ts := []ty{nil, tyAny, tyNever, tyNil, tyMatch, tyInt, tyString,
-		namedTy{"A", 's'}, namedTy{"A", 't'}, listTy{tyMatch},
-		record(tyMatch), record(tyMatch), record(tyString),
-		optTy{tyMatch}, optTy{optTy{tyMatch}}, optTy{tyNever},
-		unionTy{[]ty{tyMatch, tySeq}}, unionTy{[]ty{tySeq, tyMatch}},
-		unionTy{[]ty{tyMatch, tyMatch, tyNever}}, unionTy{[]ty{tyAny, tyMatch}},
-		record(unionTy{[]ty{tyMatch, tySeq}}),
-		record(unionTy{[]ty{tySeq, tyMatch}}), listTy{optTy{tyMatch}},
-	}
+	str := tyStringNode
+	tuple := nodeTy{value: tupleTy{[]ty{str, str}}}
+	ts := []ty{tyAny, tyBottom, tyNil, str, tyInt, tyString, namedTy{"A", 's'}, listTy{str},
+		optTy{str}, optTy{optTy{str}}, unionTy{[]ty{str, tuple}}, unionTy{[]ty{tuple, str}},
+		unionTy{[]ty{str, str, tyBottom}}, unionTy{[]ty{tyAny, str}}, listTy{optTy{str}},
+		nodeTy{value: listTy{unionTy{[]ty{str, tuple}}}}}
 	for i, a := range ts {
 		for j, b := range ts {
-			for _, flags := range [][2]bool{{false, false}, {false, true}, {true, false}, {true, true}} {
-				sc := &scopeCheck{caps: caps{"x": {t: a, always: flags[0]}}}
-				(&checker{}).addCapture(sc, "x", capInfo{t: b, always: flags[1]})
-				got, want := sc.caps["x"], union(a, b)
-				if inferredShape(got.t).key != inferredShape(want).key || got.t.String() != want.String() || got.always != (flags[0] || flags[1]) {
-					t.Fatalf("pair %d/%d flags %v: got %s/%v, want %s", i, j, flags, got.t, got.always, want)
-				}
+			got := mergeCap([]capIndex{{name: "x", paths: [][]int{{0}}, t: a}}, capIndex{name: "x", paths: [][]int{{1}}, t: b})
+			if want := vunion(a, b); len(got) != 1 || got[0].t.String() != want.String() || len(got[0].paths) != 2 {
+				t.Fatalf("pair %d/%d: got %v, want %s", i, j, got, want)
 			}
 		}
 	}
@@ -75,7 +84,7 @@ func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
 			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`
 			src := "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
 			col := utf8.RuneCountInString(line[:strings.Index(line, "X:")]) + 1
-			want := fmt.Sprintf("3:%d: cannot use node{k: node[string], v: []node{y: node[string]}} as node[string] in field X of R", col)
+			want := fmt.Sprintf("3:%d: cannot use node[(node[string], node[[]node[(node[string],), {\"y\": 0}]]), {\"k\": 0, \"v\": 1}] as node[string] in field X of R", col)
 			if got := compileError(t, src); got != want {
 				t.Errorf("got %q; want %q", got, want)
 			}

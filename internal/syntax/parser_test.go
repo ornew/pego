@@ -389,11 +389,11 @@ func TestParseRejectsBareNode(t *testing.T) {
 
 func TestParseAcceptsValueTypeNames(t *testing.T) {
 	for _, src := range []string{
-		"type R = { F Missing }",
+		"type R = { F missing }",
 		"type R = { F node[string] }",
 		"type R = { F node[_] }",
 		"type R = { F error }",
-		"type R ~ Missing | node[string] | node[_] | error",
+		"type R ~ missing | node[string] | node[_] | error",
 		"type R ~ []node[string] | *error",
 		"rule r node[string] = \"x\"",
 		"rule r error = \"x\"",

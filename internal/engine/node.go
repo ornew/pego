@@ -16,7 +16,7 @@ const (
 	TypeString  = "string"  // a node whose value is its text (literal, character class, atomic, and so on)
 	TypeTuple   = "tuple"   // a sequence, or an operator of an operators rule without an action
 	TypeList    = "list"    // a repetition
-	TypeMissing = "Missing" // literal inserted at an empty source range
+	TypeMissing = "missing" // literal inserted at an empty source range
 	TypeError   = "error"   // range skipped by error recovery
 
 	// Kinds of the value model that are not nodes. Their names cannot be type names.

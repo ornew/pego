@@ -71,7 +71,7 @@ the title without a trailing qualifier.
 - **Specification.** Third person, declarative present tense. MUST, SHOULD and MAY only as the
   [specification README](../spec/README.md) declares them. No second person, no advice, no performance remarks, no
   history of the feature.
-- One name for one concept, taken from the [glossary](../spec/glossary.md): Rule Expression, Rule Definition Statement,
+- One name for one concept, taken from the [glossary](../spec/glossary.md): Rule Expression, Rule Declaration Statement,
   Operators Rule, Value Action, Predicate Action, start rule, position unit, code point, node. Defined terms are
   capitalized as the specification capitalizes them. A new term lands in the glossary before it is used in a page.
   "Operators Rule" is the only name of that construct.

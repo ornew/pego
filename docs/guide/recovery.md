@@ -363,11 +363,11 @@ Use `#missing` on a nonempty literal when an editor needs a tree even though tha
 token is absent. In a Closure whole-input parse, `pego.WithMissingTokens(n)`
 enables up to `n` insertion attempts for that call. Without the option, the
 literal remains strict. For example, `rule main = "name" ";" #missing $$`
-parses `name` with a zero-width `error` value at EOF and returns a recovered
+parses `name` with a zero-width `missing` value at EOF and returns a recovered
 `SyntaxErrors` value. The value records the expected token `;` and the
 diagnostic, and its `Text()` returns the diagnostic message. A literal with
-`#missing` has the type `A | error`, where `A` is the type of the literal, so no
-semicolon was read and the value is not a string.
+`#missing` has the type `node[string] | missing`: when no semicolon was read,
+the value is a `missing`, a kind of `error`, and not a string node.
 
 The limit counts abandoned attempts too. Exhaustion returns
 `*pego.MissingTokenLimitError` with no tree. VM backends, generated parsers,

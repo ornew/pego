@@ -121,13 +121,14 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 |:--|:--|
 | `int`, `string`, `bool` | The same |
 | Struct type `T` | `*T` with the same fields and an embedded `Span{Start, End int}` |
-| `node[string]`, a string node | `*TNode[string]`, with `Span` and `Value`, the text |
+| `node[T]` | `*TNode[T']`, with `Span` and `Value` of the Go type `T'` of `T`: `*TNode[string]` for a string node, whose `Value` is the text, and `*TNode[any]` for `node[_]` |
+| Tuple `(A, B, ...)` | `TupleN[A', B', ...]` with the fields `E0`, `E1`, ...; `Unit` for `()` |
 | `error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
 | Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | A rule whose type is not declared, or a rule without an action declared `node[_]` | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
-| `node[_]`, `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
+| `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
@@ -157,15 +158,15 @@ mapping is:
 | Grammar type | TypeScript value |
 |:--|:--|
 | Struct | An interface with `type` (the grammar name), `start`, `end` and the fields; nullable where an absent or incompatible recovered value becomes nil |
-| `node[string]`, a string node | `StringNode`, which extends `TNode<string>` (`type` is `"string"`, `start`, `end` and `value`) |
+| `node[T]` | `TNode<T'>`, with `start`, `end` and `value` of the TypeScript type `T'` of `T`; `StringNode`, which extends `TNode<string>`, for a string node, and `TNode<unknown>` for `node[_]` |
+| Tuple `(A, B, ...)` | `readonly [A', B', ...]` |
 | `[]T` | A readonly array, or null; null differs from an empty array |
 | `*T` | A nullable target |
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
 | Declared pure node union | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
-| Mixed or undeclared union, `any`, `node` | `TypedValue`, following the conversion of `any` in Go |
-| Tuple and list nodes | `Node` |
+| Mixed or undeclared union, `any` | `TypedValue`, following the conversion of `any` in Go |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by
 rule name is not available in TypeScript.

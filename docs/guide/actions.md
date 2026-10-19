@@ -4,7 +4,7 @@ An action replaces the tree of a rule with a value that you compute from its cap
 shows how to write actions, the built-in functions and lambdas, how positions of constructed nodes are assigned, and
 recipes for lists and left- and right-associative chains. The grammars run like those in [Shaping
 Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Actions](../../spec/actions.md)
-chapter. For operator expressions (`foldl` chains versus Operators Rule Definition Statements) see [Operators
+chapter. For operator expressions (`foldl` chains versus Operators Rule Declaration Statements) see [Operators
 Rule](operators-rule.md).
 
 An action is an expression after `=>` inside a rule body that computes the value of the rule from what the body matched:
@@ -33,9 +33,7 @@ pego: inline-action.pego:2:24: inline actions are not implemented
 ## Referring to Captures
 
 `$label` refers to the value captured with `label:` in this rule. Only labeled elements can be used in an action:
-label each element the action needs, as `name:name` and `value:value` in the rule of [Structs and Unions](types.md#structs-and-unions). Grammars written for
-earlier versions may refer to elements by position (`$1`, `$0`) or read `.startPos` and `.endPos`; these are rejected,
-and `pego fix` rewrites them by labeling the elements they refer to and by writing `.Start` and `.End`.
+label each element the action needs, as `name:name` and `value:value` in the rule of [Structs and Unions](types.md#structs-and-unions).
 
 Captures are visible only in the rule that made them, not in the rules it calls or that call it. A reference to an
 undefined capture is a compile-time error (`undefined capture $z`).

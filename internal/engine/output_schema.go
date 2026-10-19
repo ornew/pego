@@ -250,7 +250,7 @@ func cutPrefix(s, prefix string) (string, bool) {
 // schemaDeclared describes the type a field declares.
 func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
 	k := &typeResolver{prog: p}
-	return schemaValue(fromLegacy(k.resolve(t)))
+	return schemaValue(k.resolve(t))
 }
 
 // schemaValue describes a type of the value model.

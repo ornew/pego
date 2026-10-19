@@ -10,7 +10,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// The value types of rules follow the examples and decisions of Record 060.
+// The value types of rules follow the value model (spec/types.md).
 func TestValueTypes(t *testing.T) {
 	for _, tc := range []struct{ src, rule, want string }{
 		// The examples of the record.
@@ -44,7 +44,7 @@ func TestValueTypes(t *testing.T) {
 		// A choice with a valueless alternative is optional.
 		{`rule a = "a" / &"b"`, "a", `*node[string]`},
 		// Recovery is an explicit union; what recovers is one element.
-		{`rule a = "a" #missing`, "a", `node[string] | error`},
+		{`rule a = "a" #missing`, "a", `node[string] | missing`},
 		{"rule a = b (c d) #recover(skip=[^;]*) \";\"\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `node[(b, node[(c, d)] | error, node[string])]`},
 		// A capture in alternatives at the same position has that position.
 		{"rule a = (y:b / y:d) e\nrule b = \"b\"\nrule d = \"d\"\nrule e = \"e\"", "a", `node[(b | d, e), {"y": 0}]`},
@@ -136,9 +136,9 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 	}
 }
 
-// valueTypesOf compiles src without the current model's type check, whose rules for actions
-// differ, and returns the value types of its rules and the errors of its actions. It accepts
-// earlier syntax, which still reaches the engine from JSON grammars.
+// valueTypesOf compiles src without the type check, and returns the value types of its rules and
+// the errors of its actions. It accepts earlier syntax, which still reaches the engine from JSON
+// grammars.
 func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
 	t.Helper()
 	g, err := syntax.ParseLegacy(src)
@@ -236,8 +236,7 @@ func TestValueActionTypes(t *testing.T) {
 	}
 }
 
-// Actions written for the current model, and actions with type errors, are reported in the value
-// model.
+// Actions with type errors are reported in the value model.
 func TestValueActionErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule a = x:"x" => $x.Source`, "the source information of a node is not accessible from actions"},
@@ -250,12 +249,12 @@ func TestValueActionErrors(t *testing.T) {
 		{"rule a = x:(b / c) => $x.$y\nrule b = y:\"b\" \"1\"\nrule c = \"c\"", "node[string] has no capture y"},
 		{`rule a = x:"x"? => $x.Value`, "cannot access .Value of *node[string]: the value may be nil"},
 		{`rule a = x:"x" => $x.Value + 1`, "invalid operands string and int for +"},
-		{`rule a = x:"x" => $x[0]`, "cannot index string"},
+		{`rule a = x:"x" => $x[0]`, "cannot index node[string]"},
 		{"rule a = x:(b c) => $x[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
 		{"rule a = x:(b c) => $x.Value[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
 		{`rule a = x:"x" => map($x, (i) => i)`, "map: expected a list, got node[string]"},
 		{"type Foo = { Name string }\nrule a = x:\"x\" => Foo{Name: $x}", "cannot use node[string] as string in field Name of Foo"},
-		{"type Foo = { Name node[string] }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
+		{"type Foo = { Name node[string] }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | missing as node[string] in field Name of Foo"},
 		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
 		// The retired forms are read as the text structs they mean: a terminal rule without an
 		// action does not produce one, and a positional constructor sets the field Text.
@@ -359,8 +358,7 @@ func TestValueActionsOnDemand(t *testing.T) {
 	}
 }
 
-// The value checker reports on its own the errors of actions that do not depend on values being
-// nodes, so that they remain without the checker of the current model.
+// The value checker reports the errors of actions that do not depend on values being nodes.
 func TestValueCheckerDiagnostics(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = "a" {x := (y) => 1}`, "functions can only be passed to filter, foldl, foldr, or map"},

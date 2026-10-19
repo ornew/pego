@@ -8,7 +8,7 @@ to replace the tree with a typed AST built by [actions](../../spec/actions.md).
 The guide complements the normative chapters [Rule Expressions](../../spec/parser-expressions.md),
 [Type System](../../spec/types.md) and [Actions](../../spec/actions.md); read them for the exact rules. Here the focus
 is on how and why to use each feature. For operator expressions (`foldl` chains
-versus Operators Rule Definition Statements), see the companion guide [Operators Rule](operators-rule.md).
+versus Operators Rule Declaration Statements), see the companion guide [Operators Rule](operators-rule.md).
 
 Every grammar and output below was produced by running it. To follow along, put each grammar in the file named on its
 first line and run the command shown, using either the installed tool or `go run ./cmd/pego` from a checkout:

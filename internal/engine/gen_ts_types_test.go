@@ -324,7 +324,7 @@ func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
 		src, inferred string
 		recovered     bool
 	}{
-		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", true},
+		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "node[()] | error", true},
 		"never": {`rule main = main`, "_|_", false},
 		"nil-rule-recovery": {`rule leaf = "a" => nil
 rule main = leaf #recover(skip=.+)`, "*error", true},

@@ -146,7 +146,7 @@ rule main = name ";" #missing $$
 rule name = [a-z]+ #atomic
 ```
 
-Parsing `name` with insertion enabled produces an error value of type `Missing`
+Parsing `name` with insertion enabled produces an error value of type `missing`
 at EOF and a recovered `SyntaxErrors` entry. The value's `Start` and `End` are
 equal, and the string fields `expected` and `message` carry the expected literal
 and diagnostic; it encodes with an `expected` member. Partial literal matches are restored completely before insertion;
@@ -178,12 +178,12 @@ has fresh insertion state, including concurrent and reentrant invocations.
 Only Closure whole-input Node parsing and recognition currently support this
 pragma. Prefix parsing, Document/streams, bytecode VMs, generated Go/TypeScript
 parsers and binary serialization reject grammars containing `#missing` or
-references to `Missing`, even when insertion is disabled. Positive insertion
+references to `missing`, even when insertion is disabled. Positive insertion
 options also fail on unsupported parse entry points, including `ParsePrefix`,
 even when the grammar contains no `#missing` annotation. Zero preserves strict
 prefix matching for grammars without `#missing`. Grammar AST JSON and formatting
-preserve the annotation. `Missing` is a reserved type
-name; a preexisting user type with that name must be renamed. The annotated literal infers `node[string] | Missing`; `Missing` is assignable wherever
-an error value is admitted, as with `error`. Declare a union or keep the Node tree when
+preserve the annotation. `missing` is a built-in type, a kind of `error`: the
+annotated literal infers `node[string] | missing`, and `missing` is assignable to
+`error`. Declare a union or keep the Node tree when
 consumers need the missing-token identity. Concrete generated typed mappings and
 additional backends are outside the initial implementation.

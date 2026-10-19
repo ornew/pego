@@ -44,7 +44,7 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Completion | Rule names in rule bodies, types where a type is expected, type names and a `FieldName Type` snippet at field-name positions in struct declarations, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, node members (`Start`, `End` and `Value`), struct fields and the captures read as `x.$y` after `.`, built-in functions, and struct types in constructors; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
-White space may separate Definition Statement keywords from names; comments
+White space may separate Declaration Statement keywords from names; comments
 inside statement headers are semantic errors. Line comments use `//`, and nested block
 comments use `/* ... */`. Comments are permitted in expressions and at statement
 boundaries. Symbols, navigation, references and rename identify names even in a
@@ -181,7 +181,7 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
   syntax error is not compiled, because the definitions the parser skipped would show up as undefined everywhere.
 - While the file has syntax errors, rename is refused, and navigation and hover work for the definitions that parse.
   After an error, the parser skips to the next `rule`, `operators`, or `type`
-keyword, so one broken definition does not hide later Definition Statements.
+keyword, so one broken definition does not hide later Declaration Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
   lists the labels of the whole definition, whether or not they are in scope; lambda parameters, which are written
   without `$`, are offered with the other names inside the lambda's body.

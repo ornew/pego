@@ -38,6 +38,7 @@ func TestFix(t *testing.T) {
 		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Value, $y.Value, $z.Value)", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Text, $y.Text, $z.Value)"},
 		{"type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Value != \"\"} => list($x.Value, $y.Value, map($x, (v) => v.Value))", "type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Text != \"\"} => list($x.Text, $y.Value, map($x, (v) => v.Value))"},
 		{"type P = { A Match; B []Seq; C *List; D Operator; E Error }\nrule a = x:\"a\" => $x.(Match)", "type P = { A node[string]; B []node[_]; C *node[_]; D node[_]; E error }\nrule a = x:\"a\" => $x.(node[string])"},
+		{"type P = { M *Missing }\nrule a = \"a\"", "type P = { M *missing }\nrule a = \"a\""},
 		{"type L =[]P\ntype P = {}", "type L ~ []P\ntype P = {}"},
 		{"type P = { A int }\ntype U ~ P", "type P = { A int }\ntype U ~ P"},
 		{"rule struct_x = \"struct\" // type A struct", "rule struct_x = \"struct\" // type A struct"},
