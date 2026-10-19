@@ -56,8 +56,8 @@ func (m *Module) Disassemble() string {
 		if r.Action >= 0 {
 			fmt.Fprintf(&b, " action=%d", r.Action)
 		}
-		if r.TextType >= 0 {
-			fmt.Fprintf(&b, " text=%s", m.Strings[r.TextType])
+		if r.NodeType >= 0 {
+			fmt.Fprintf(&b, " type=%s", m.Strings[r.NodeType])
 		}
 		if r.OperatorsRule >= 0 {
 			fmt.Fprintf(&b, " operatorsRule=%d", r.OperatorsRule)
@@ -203,6 +203,11 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s fields=%s", m.Strings[a], names(m.FieldLists[bb]))
 	case ECast:
 		return strconv.Quote(m.Strings[a])
+	case ENode:
+		if bb < 0 {
+			return m.Strings[a]
+		}
+		return fmt.Sprintf("%s check=%s", m.Strings[a], strconv.Quote(m.Strings[bb]))
 	case ECheck:
 		return fmt.Sprintf("%s field=%s of=%s", strconv.Quote(m.Strings[a]), m.Strings[bb], m.Strings[c])
 	case EFunc:

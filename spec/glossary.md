@@ -30,6 +30,7 @@ definition and the place where the term is defined.
 | left recursion | A rule that calls itself at the position where it started. It is evaluated by growing a seed. See [Left recursion](parser-expressions.md#left-recursion). |
 | lookahead | `&a` and `!a`: tests the input that follows without consuming it. See [Lookahead](parser-expressions.md#lookahead). |
 | memoization | Caching the result of a rule at an input position so that the rule is not evaluated twice at that position (packrat parsing). See [Memoization](parsing.md#memoization). |
+| named node type | A Type Definition `type N = node[U]`: a type distinct from `node[U]` and from every other named node type. Its values are nodes that carry the name `N`. See [Named Node Types](types.md#named-node-types). |
 | node | A value together with the range of input that it covers: a string, a tuple or a list. See [Nodes and Values](nodes.md#node-model). |
 | operand, operator | The parts of an Operators Rule: an operand is the leading element of an expression, an operator is a prefix, infix or postfix form. See [Operators Rule](operators-rule.md). |
 | Operators Rule | A rule declaration that declares operators by precedence and associativity. See [Operators Rule](operators-rule.md). |

@@ -57,6 +57,9 @@ func renderRuleType(t ty, poll func()) string {
 		}
 		return finish("(" + joinRuleType(parts, ", ", poll) + ")")
 	case nodeTy:
+		if t.name != "" {
+			return finish(t.name)
+		}
 		if len(t.caps) == 0 && t.value == tyTop {
 			return finish("node[_]")
 		}

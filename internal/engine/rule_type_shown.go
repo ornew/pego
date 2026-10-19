@@ -41,6 +41,9 @@ func shownRuleTypes(prog *Program, rules []*grammar.RuleDef, values map[string]t
 			}
 			return tupleTy{elems}
 		case nodeTy:
+			if t.name != "" {
+				return t
+			}
 			return nodeTy{value: show(t.value), caps: t.caps}
 		}
 		return t

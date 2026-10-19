@@ -215,6 +215,20 @@ func validate(g *Grammar, control *validationControl) error {
 			if n.Max >= 0 && n.Max < n.Min {
 				return fail("max", "repetition maximum is less than minimum")
 			}
+		case *TypeDef:
+			switch t := n.Type.(type) {
+			case nil, *StructType:
+			case *TypeApp:
+				if t.Name != "node" || len(t.Args) != 1 {
+					return fail("type", "a type definition defines a struct type or node[T]")
+				}
+			default:
+				return fail("type", "a type definition defines a struct type or node[T]")
+			}
+		case *New:
+			if len(n.Args) != 0 && len(n.Fields) != 0 {
+				return fail("args", "a constructor takes named fields or one value, not both")
+			}
 		case *RuleDef:
 			if n.DefaultAction && n.Action != nil {
 				return fail("action", "default action cannot also contain an action expression")
@@ -382,6 +396,9 @@ func validate(g *Grammar, control *validationControl) error {
 		case *TermGroup:
 			push(n.Term, "term", -1, false)
 		case *New:
+			for i := len(n.Args) - 1; i >= 0; i-- {
+				push(n.Args[i], "args", i, false)
+			}
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)
 			}

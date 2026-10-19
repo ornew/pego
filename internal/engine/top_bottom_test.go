@@ -160,7 +160,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.Types()[0].(*grammar.TypeDef).Type.Fields[0].Type = &grammar.IntersectionType{}
+	g.Types()[0].(*grammar.TypeDef).Struct().Fields[0].Type = &grammar.IntersectionType{}
 	if _, err := Compile(g, Options{}); err != nil {
 		t.Fatal(err)
 	}

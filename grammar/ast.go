@@ -102,11 +102,13 @@ type RuleDecl interface {
 	ruleDecl()
 }
 
-// TypeDef is a type definition (type Name = { ... }). It defines a new struct type.
+// TypeDef is a type definition. It defines a new type: a struct type
+// (type Name = { ... }), whose Type is a *StructType, or a named node type
+// (type Name = node[T]), whose Type is a *TypeApp naming node with one argument.
 type TypeDef struct {
 	SourceInfo `json:"source,omitempty"`
-	Name       string      `json:"name"`
-	Type       *StructType `json:"type"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type"`
 
 	// Break holds the comments before the declaration. When it is nil,
 	// Format separates the declaration from the previous one with a blank
@@ -147,6 +149,31 @@ type RuleDef struct {
 func (d *TypeDef) DeclName() string   { return d.Name }
 func (d *TypeAlias) DeclName() string { return d.Name }
 func (d *RuleDef) DeclName() string   { return d.Name }
+
+// Struct returns the struct type that t defines, or nil when t defines a named
+// node type.
+func (t *TypeDef) Struct() *StructType {
+	st, _ := t.Type.(*StructType)
+	return st
+}
+
+// Fields returns the fields of the struct type that t defines, and nil when t defines a named
+// node type.
+func (t *TypeDef) Fields() []*Field {
+	if st := t.Struct(); st != nil {
+		return st.Fields
+	}
+	return nil
+}
+
+// NodeValue returns the value type T of a named node type defined as
+// node[T], or nil when t defines a struct type.
+func (t *TypeDef) NodeValue() TypeExpr {
+	if app, ok := t.Type.(*TypeApp); ok && app.Name == "node" && len(app.Args) == 1 {
+		return app.Args[0]
+	}
+	return nil
+}
 
 func (*TypeDef) decl()       {}
 func (*TypeAlias) decl()     {}
@@ -694,11 +721,15 @@ type Member struct {
 	Name       string `json:"name"`
 }
 
-// New creates a struct value: Type{Field: value, ...}.
+// New creates a value of a defined type. A struct constructor names its
+// fields: Type{Field: value, ...}. A node type constructor takes one
+// positional value, Type{value}, held in Args. A constructor uses Fields or
+// Args, never both.
 type New struct {
 	SourceInfo `json:"source,omitempty"`
 	Type       string       `json:"type"`
 	Fields     []*FieldInit `json:"fields,omitempty"`
+	Args       []Term       `json:"args,omitempty"`
 }
 
 // ListConstructor builds a node list with an explicit element type: []T{...}.

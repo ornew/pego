@@ -89,6 +89,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				}
 				term(field.Value)
 			}
+			for _, x := range t.Args {
+				term(x)
+			}
 		case *ListConstructor:
 			typ(t.Elem)
 			for _, item := range t.Items {

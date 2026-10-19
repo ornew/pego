@@ -84,7 +84,13 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 	if v.checks == nil || v.quiet || rd.Type == nil || !v.uncertain(t) {
 		return
 	}
-	if d := v.resolve(rd.Type); newFieldType(d) != nil {
+	d := v.resolve(rd.Type)
+	if dn, ok := d.(nodeTy); ok && dn.name != "" && key == any(rd) {
+		if _, converts := v.prog.ruleNodeType(rd); converts {
+			d = dn.underlying() // checked before it is converted
+		}
+	}
+	if newFieldType(d) != nil {
 		v.checks.results[key] = d
 	}
 }
@@ -97,6 +103,15 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 		return t
 	}
 	d := v.resolve(rd.Type)
+	if dn, ok := v.prog.ruleNodeType(rd); ok {
+		// The rule converts its value to its named node type.
+		if !v.convertible(t, dn) {
+			v.errorf(rd.Diagnostic(), "rule %s produces %s, which cannot be converted to %s", rd.Name, v.expand(t), dn)
+			return dn
+		}
+		v.checkResult(rd, rd, t)
+		return dn
+	}
 	if !v.assignable(t, d) {
 		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
 		return d
@@ -228,11 +243,15 @@ func (v *valueInference) assignable(s, d ty) bool {
 		if !ok {
 			return false
 		}
+		if d.name != "" {
+			// A named node type takes only its own values; others need a conversion.
+			return sn.name == d.name
+		}
 		if anyNode(d) {
 			return true
 		}
 		// A node type written in the grammar has no captures and takes nodes with any.
-		return (len(d.caps) == 0 || sameCaps(sn.caps, d.caps)) && v.assignable(sn.value, d.value)
+		return (len(d.caps) == 0 || sameCaps(sn.caps, d.caps)) && v.assignable(v.nodeValue(sn), v.nodeValue(d))
 	}
 	if d == tyErr && s == tyMissing {
 		return true // a missing token is an error value
@@ -243,7 +262,110 @@ func (v *valueInference) assignable(s, d ty) bool {
 // anyNode reports whether t is node[_], the type of every node.
 func anyNode(t ty) bool {
 	n, ok := t.(nodeTy)
-	return ok && n.value == tyTop && len(n.caps) == 0
+	return ok && n.value == tyTop && len(n.caps) == 0 && n.name == ""
+}
+
+// convertTerm returns the type of the node type constructor t, N{x}, which converts x to the
+// named node type n.
+func (v *valueInference) convertTerm(t *grammar.New, n nodeTy, env *valueEnv) ty {
+	for _, fi := range t.Fields {
+		v.term(fi.Value, env)
+	}
+	args := make([]ty, len(t.Args))
+	for i, x := range t.Args {
+		args[i] = v.term(x, env)
+	}
+	if len(t.Fields) != 0 || len(t.Args) != 1 {
+		return n // reported where the constructor is checked (compiler.checkTerm)
+	}
+	x := args[0]
+	if !v.convertible(x, n) {
+		v.errorf(t.Diagnostic(), "cannot convert %s to %s", v.expand(x), n)
+	} else if v.checks != nil && !v.quiet && v.uncertain(x) {
+		v.checks.converts[t] = n.underlying()
+	}
+	return n
+}
+
+// convertible reports whether a value of type s converts to the named node type d: every value of
+// s is a node, named or not, whose underlying node type is assignable to that of d. A value not
+// known statically is checked when it is converted.
+func (v *valueInference) convertible(s ty, d nodeTy) bool {
+	under := d.underlying()
+	for _, x := range v.alts(s) {
+		switch x := x.(type) {
+		case nodeTy:
+			if !v.assignable(nodeTy{value: v.nodeValue(x), caps: x.caps}, under) {
+				return false
+			}
+		case namedTy:
+			if x.kind != 'c' || x == tyError || x == tyMissing {
+				return false
+			}
+			if n, ok := fromLegacy(x).(nodeTy); !ok || !v.assignable(n, under) {
+				return false
+			}
+		default:
+			if x != tyAny && x != tyBottom {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// nodeValue returns the type of the value of a node of type n. The value of a named node type is
+// read from its definition, which also gives the value of the type where it occurs inside itself.
+func (v *valueInference) nodeValue(n nodeTy) ty {
+	return v.prog.nodeValueOf(n)
+}
+
+// nodeValueOf returns the type of the value of a node of type n, reading the value of a named
+// node type from its definition.
+func (prog *Program) nodeValueOf(n nodeTy) ty {
+	if n.name != "" {
+		if d, ok := prog.nodeTypeOf(n.name); ok {
+			return d.value
+		}
+	}
+	return n.value
+}
+
+// nodeTypeOf returns the named node type that the type name names, through aliases. Its value is
+// resolved once and cached.
+func (prog *Program) nodeTypeOf(name string) (nodeTy, bool) {
+	switch prog.types[name].(type) {
+	case *grammar.TypeDef, *grammar.TypeAlias:
+	default:
+		return nodeTy{}, false
+	}
+	if c, ok := prog.nodeTypeCache.Load(name); ok {
+		n, ok := c.(nodeTy)
+		return n, ok
+	}
+	k := &typeResolver{prog: prog}
+	n, ok := k.resolveNamed(name, grammar.Pos{}).(nodeTy)
+	if !ok || n.name == "" {
+		prog.nodeTypeCache.Store(name, false)
+		return nodeTy{}, false
+	}
+	prog.nodeTypeCache.Store(name, n)
+	return n, true
+}
+
+// ruleNodeType returns the named node type that the value of rule rd is converted to: its declared
+// type, through aliases, when that is exactly a named node type. An Operators Rule converts no
+// value.
+func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+	if rd.Type == nil {
+		return nodeTy{}, false
+	}
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+		return nodeTy{}, false
+	}
+	k := &typeResolver{prog: prog}
+	n, ok := k.resolve(rd.Type).(nodeTy)
+	return n, ok && n.name != ""
 }
 
 func sameCaps(a, b []capIndex) bool {
@@ -279,6 +401,12 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Member:
 		return v.member(v.term(t.X, env), t)
 	case *grammar.New:
+		if nt, ok := v.prog.nodeTypeOf(t.Type); ok {
+			return v.convertTerm(t, nt, env)
+		}
+		for _, x := range t.Args {
+			v.term(x, env)
+		}
 		name, st := v.prog.structType(t.Type)
 		for _, fi := range t.Fields {
 			vt := v.term(fi.Value, env)
@@ -408,7 +536,7 @@ func (v *valueInference) index(x, i ty, t *grammar.Binary) ty {
 			return true
 		case nodeTy:
 			// A node indexes the elements of its tuple or list value.
-			for _, b := range v.alts(a.value) {
+			for _, b := range v.alts(v.nodeValue(a)) {
 				switch b.(type) {
 				case listTy, tupleTy:
 				default:
@@ -491,7 +619,7 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 			case "Start", "End":
 				found = append(found, tyInt)
 			case "Value":
-				found = append(found, a.value)
+				found = append(found, v.nodeValue(a))
 			}
 		case basicTy:
 			switch {
@@ -598,7 +726,7 @@ func (v *valueInference) elemsOf(x ty) (ty, bool) {
 	case listTy:
 		return x.elem, true
 	case nodeTy:
-		if l, ok := v.expand(x.value).(listTy); ok {
+		if l, ok := v.expand(v.nodeValue(x)).(listTy); ok {
 			return l.elem, true
 		}
 	case optTy:
@@ -687,7 +815,7 @@ func (v *valueInference) overlaps(a, b ty, depth int) bool {
 			}
 			xn, ok1 := x.(nodeTy)
 			yn, ok2 := y.(nodeTy)
-			if ok1 && ok2 && v.overlaps(xn.value, yn.value, depth+1) {
+			if ok1 && ok2 && (xn.name == "" || yn.name == "" || xn.name == yn.name) && v.overlaps(v.nodeValue(xn), v.nodeValue(yn), depth+1) {
 				return true
 			}
 			if _, list := y.(listTy); ok1 && list && v.overlaps(xn.value, y, depth+1) {

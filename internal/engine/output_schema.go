@@ -135,8 +135,22 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 		if !ok {
 			continue // aliases name other types
 		}
+		id := "declared/" + td.DeclName()
+		if spec.Struct() == nil {
+			// A named node type has the shape of its underlying node type.
+			n, ok := p.nodeTypeOf(td.DeclName())
+			if !ok {
+				return nil, fmt.Errorf("schema type %q: unresolved node type", td.DeclName())
+			}
+			shape, err := schemaValue(n.underlying())
+			if err != nil {
+				return nil, fmt.Errorf("schema type %q: %w", td.DeclName(), err)
+			}
+			all[id] = SchemaType{id, td.DeclName(), "declared", shape}
+			continue
+		}
 		shape := SchemaShape{Kind: "struct"}
-		for _, f := range spec.Type.Fields {
+		for _, f := range defFields(spec) {
 			fieldShape, err := p.schemaDeclared(f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("schema type %q field %q: %w", td.DeclName(), f.Name, err)
@@ -144,7 +158,6 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 			shape.Fields = append(shape.Fields, SchemaField{f.Name, fieldShape})
 		}
 		sort.Slice(shape.Fields, func(i, j int) bool { return shape.Fields[i].Name < shape.Fields[j].Name })
-		id := "declared/" + td.DeclName()
 		all[id] = SchemaType{id, td.DeclName(), "declared", shape}
 	}
 	s := &OutputSchema{Format: "pego-output-schema", Version: OutputSchemaVersion, Start: start, PositionUnitIndependent: true, SourceInfo: p.sourceInfo, Types: []SchemaType{}, Rules: []SchemaRule{}}
@@ -282,6 +295,9 @@ func schemaValue(t ty) (SchemaShape, error) {
 	case ruleTy:
 		return SchemaShape{Kind: "ref", Ref: "inferred/" + t.name}, nil
 	case nodeTy:
+		if t.name != "" {
+			return SchemaShape{Kind: "ref", Ref: "declared/" + t.name}, nil
+		}
 		v, err := schemaValue(t.value)
 		if err != nil {
 			return SchemaShape{}, err

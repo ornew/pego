@@ -139,7 +139,18 @@ func writeJSONValue(w io.Writer, value any) error {
 					delete(activeNodes, value)
 					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
 				case shapeString, shapeTuple, shapeList:
-					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
+					prefix := `{"start":`
+					if value.kind.nodeType() {
+						// A node of a named node type names its type.
+						if err = out.raw(`{"type":`); err == nil {
+							err = out.encoded(value.Type())
+						}
+						prefix = `,"start":`
+					}
+					if err != nil {
+						break
+					}
+					if err = writeJSONRange(&out, value, prefix); err != nil {
 						break
 					}
 					if err = out.raw(`,"value":`); err != nil {

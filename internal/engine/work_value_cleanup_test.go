@@ -51,7 +51,7 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 	for i := range fields {
 		name := fmt.Sprintf("v%d", i)
 		fields[i] = NodeField{Name: name, Value: i}
-		st.Type.Fields = append(st.Type.Fields, &grammar.Field{Name: name})
+		st.Struct().Fields = append(st.Struct().Fields, &grammar.Field{Name: name})
 		bindings = &env{name: name, val: i, next: bindings}
 	}
 	for _, run := range []struct {

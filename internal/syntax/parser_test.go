@@ -164,8 +164,10 @@ func TestParseErrors(t *testing.T) {
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
 		{`type A = { X }`, `1:14: expected identifier, found '}'`},
 		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run pego fix to rewrite type A struct`},
-		{`type A = B`, `1:8: only struct types can be defined with =; write type A ~ <type> for an alias (pego fix rewrites type A = <type>)`},
+		{`type A = B`, `1:8: expected '{' or 'node[' after '='; write type A ~ <type> for an alias (pego fix rewrites type A = <type>)`},
 		{`type A B`, `1:8: expected '=' or '~', found 'B'`},
+		{`type A = node[string, int]`, `a node type takes one type argument: type A = node[T]`},
+		{`type A = node`, `1:8: expected '{' or 'node[' after '='`},
 		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},
 		{`rule a = x => A{X 1}`, `1:19: expected ',', found 1`},
 		{"rule a = %\nrule b = c", `1:10: expected an expression, found '%'`},
@@ -274,21 +276,21 @@ func TestParseRejectsTerminalType(t *testing.T) {
 		t.Fatalf("parseLegacy: %v", err)
 	}
 	td := g.File.Decls[0].(*grammar.TypeDef)
-	if fields := td.Type.Fields; len(fields) != 1 || fields[0].Name != "Text" || !forms.terminals[td] {
+	if fields := td.Struct().Fields; len(fields) != 1 || fields[0].Name != "Text" || !forms.terminals[td] {
 		t.Errorf("parseLegacy: spec is %#v, want the struct { Text string }", td)
 	}
 }
 
-func TestParseRejectsPositionalConstructor(t *testing.T) {
+// A positional constructor parses to New.Args; the checker accepts it only for a node type, and
+// the legacy reader still marks it for pego fix.
+func TestParsePositionalConstructor(t *testing.T) {
 	const src = "type T = { Text string }\nrule r T = \"x\" => T{\"x\"}"
-	_, err := Parse(src)
-	list, ok := err.(ErrorList)
-	if !ok || len(list) != 1 {
-		t.Fatalf("got %v, want exactly one error", err)
+	g, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
 	}
-	const want = "a constructor names its fields: write T{Text: ...} for a text struct (pego fix rewrites T{...})"
-	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 2, Col: 19}) {
-		t.Errorf("got %v, want 2:19: %s", err, want)
+	if n, ok := g.File.Decls[1].(*grammar.RuleDef).Action.(*grammar.New); !ok || len(n.Args) != 1 || len(n.Fields) != 0 {
+		t.Errorf("action is %#v, want a constructor with one argument", g.File.Decls[1].(*grammar.RuleDef).Action)
 	}
 	g, forms, err := parseLegacy(src)
 	if err != nil {
@@ -299,18 +301,22 @@ func TestParseRejectsPositionalConstructor(t *testing.T) {
 	}
 }
 
-// pego fix rewrites a positional constructor of one argument, which built a terminal; a
-// constructor of any other number of arguments was an error before.
-func TestParseRejectsPositionalConstructorArity(t *testing.T) {
-	const src = "type T = { Text string }\nrule r T = \"x\" => T{\"x\", \"y\"}"
-	_, err := Parse(src)
-	list, ok := err.(ErrorList)
-	if !ok || len(list) != 1 {
-		t.Fatalf("got %v, want exactly one error", err)
+// A constructor takes named fields or positional values, not both.
+func TestParsePositionalConstructorArity(t *testing.T) {
+	g, err := Parse("type T = node[string]\nrule r T = \"x\" => T{\"x\", \"y\"}")
+	if err != nil {
+		t.Fatal(err)
 	}
-	const want = "a constructor names its fields: write T{Text: ...} for a text struct"
-	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 2, Col: 19}) {
-		t.Errorf("got %v, want 2:19: %s", err, want)
+	if n := g.File.Decls[1].(*grammar.RuleDef).Action.(*grammar.New); len(n.Args) != 2 {
+		t.Errorf("got %d arguments, want 2", len(n.Args))
+	}
+	for _, src := range []string{
+		"type T = node[string]\nrule r T = \"x\" => T{\"x\", A: \"y\"}",
+		"type T = node[string]\nrule r T = \"x\" => T{A: \"y\", \"x\"}",
+	} {
+		if _, err := Parse(src); err == nil {
+			t.Errorf("%q: mixed constructor accepted", src)
+		}
 	}
 }
 

@@ -34,7 +34,7 @@ Other types are formed from types `T`, `U`, ... by these forms, or named by
 | `*T` | The values of `T`, and `nil`. |
 | `T \| U` | The values of `T` and those of `U`: the join of `T` and `U` (see [Union Types](#union-types)). |
 | `T & U` | The values that are both a `T` and a `U`: the meet of `T` and `U` (see [Top, Bottom, Join and Meet](#top-bottom-join-and-meet)). |
-| `N` | The values of the type named `N`: a struct type defined by a Type Definition, or the type a Type Alias names. |
+| `N` | The values of the type named `N`: a struct type or a named node type defined by a Type Definition, or the type a Type Alias names. |
 
 Every value has a static type. The value of a rule, the result of an action, an
 element of a tuple or list and a field of a struct are nodes, tuples, lists,
@@ -145,10 +145,11 @@ choice is the join of the types of its alternatives.
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
 one assignable to the other, `[]V & []W` is `[](V & W)`, `node[V] & node[W]` is
 `node[V & W]`, and for unions and optional types it is the union of the meets
-of their members. A meet of unrelated types is `_|_`, so
-`(node[string] | int) & node[_]` is `node[string]`, `(Num | int) & node[_]` is
-`_|_` for a struct type `Num`, since a struct is not a node, and `int & string`
-is an error where a location has that type.
+of their members. A meet of unrelated types is `_|_`. So `(node[string] | int) & node[_]` is
+`node[string]`, and `int & string` is an error where a location has that type.
+
+For a named node type `N`, `(N | int) & node[_]` is `N`, and `N & M` is `_|_` for a distinct named
+node type `M`. For a struct type `Num`, `(Num | int) & node[_]` is `_|_`, since a struct is not a node.
 
 ### Node Type Names
 
@@ -170,6 +171,10 @@ diagnostics name these values by the types in the third column, which are as
 precise as the expression that produced the value. `missing` is a kind of
 `error`: a value of type `missing` is assignable to `error`.
 
+A named node type `N` (see [Named Node Types](#named-node-types)) is not a kind and has no row here.
+A node converted to `N` reports the name `N` in place of its underlying kind, in `Node.Type()`, in the
+`type` member of the JSON form and in generated code.
+
 ## Names
 
 User-defined type names and field names MUST begin with an uppercase ASCII
@@ -188,14 +193,15 @@ is one of two distinct declarations:
 
 | Form | Declaration | Declares |
 |:--|:--|:--|
-| `type T = {...}` | [Type Definition](#type-definitions) | a new type `T`, distinct from every other type |
+| `type T = S` | [Type Definition](#type-definitions) | a new type `T`, distinct from every other type: a struct type `S`, or a named node type `node[U]` |
 | `type T ~ U` | [Type Alias](#type-aliases) | another name for the type `U`; it defines no type |
 
 ## Type Definitions
 
 A Type Definition `type T = S` defines a new type `T` from the type specification
-`S`. `S` is a struct type; `type T = U` with any other right-hand side is an
-error, and an alias is written `type T ~ U`.
+`S`. `S` is a struct type or a node type `node[U]`, with `U` any type, including `_` and
+`T` itself; `type T = node[U]` defines a [named node type](#named-node-types). Any other
+right-hand side is an error, and an alias is written `type T ~ U`.
 
 ### Struct Types
 
@@ -221,6 +227,55 @@ including an empty list. Every element must have a known static type assignable
 to `T`; `nil` requires an optional element type, and nested lists are checked
 recursively, so `[]int{1, 2}` and `[](node[string], Item){}` are list values.
 Constructor fields and arguments use commas.
+
+### Named Node Types
+
+A Type Definition `type N = node[U]` defines a named node type `N` whose underlying type is
+`node[U]`. Its values are nodes whose value has type `U`, and each carries the name `N` at run
+time. `U` may be any type, including `_`, as in `type N = node[_]`, and `N` itself. A named node type is not an alias: it is distinct from `node[U]` and from every other named
+node type, even one with the same underlying type. `U` may refer to `N` or to other types, as in
+a recursive definition:
+
+```pego
+type Num = node[int]
+type Ident = node[string]
+type Tree = node[[]Tree]
+```
+
+Assignability to and from a named node type `N`:
+
+- `N` is assignable to `N`, to `node[U]` whenever the underlying `node[W]` of `N` has `W`
+  assignable to `U`, and to `node[_]`. A union whose members are all assignable to a location is
+  assignable to it, as for any union.
+- Nothing else converts implicitly to `N`: a `node[U]`, a `_`, or a value of another named node type
+  `M` is not assignable to `N`. Two distinct named node types never meet implicitly.
+- A rule converts its value only when its declared Type is exactly `N`, also through aliases. A declared
+  union, even one of named node types, does not convert: its value is checked by assignability.
+
+A value becomes a value of `N` by a conversion, which has two forms:
+
+- a constructor `N{x}` with exactly one positional argument `x`;
+- a rule whose declared Type is exactly `N` (also through aliases) converts the value that the rule
+  produces, as in `rule a Num = "a"`.
+
+The conversion applies when every alternative of the static type of `x` (or of the rule's value) is a
+node, named or unnamed, whose underlying type is assignable to the underlying type of `N`. So a value of
+type `M`, whose underlying type fits, converts to `N`. Operators Rules never convert. The following are
+rejected at compile time with `cannot convert X to N` (for `N{x}`) or
+`rule r produces X, which cannot be converted to N` (for a rule): `_`, `node[_]`, `error`, `nil` and the
+scalar types. Cast first, as in `$x.(node[string])`. When type checking is off (`NoTypeCheck`), an uncertain
+argument is checked at run time instead.
+
+A conversion keeps the range and the content of the node, and the converted node has no rule name. Its
+`Node.Type()` and the `type` member of its JSON form report `N`.
+
+Constructor arity: a named node type takes exactly one positional argument, so `N{x, y}` and `N{Field: x}`
+are errors. A struct type's constructor names its fields, so a positional argument to a struct type is an
+error ("a struct constructor names its fields"). Mixing positional and named arguments in one constructor is a
+syntax error.
+
+A named node type has the members `.Start`, `.End` and `.Value`, and `len` and `text` accept it, as for its
+underlying `node[U]`. Its `.Value` has type `U`.
 
 ## Type Aliases
 
@@ -261,6 +316,11 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is `node[_]` and `V` is `node[W]` for any `W`: every node is a `node[_]`.
 - `T` is `node[U]` and `V` is `node[W]` with `W` assignable to `U`, whatever
   captures the node has.
+- `V` is a named node type `N` with underlying `node[W]`, and `T` is `node[U]` with `W` assignable to
+  `U`, whatever captures the node has.
+- `T` is a named node type `N` and `V` is any other type except `N` itself: not assignable; a conversion
+  is required (see [Named Node Types](#named-node-types)).
+- `V` and `T` are distinct named node types: not assignable.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
 - `T` is `(U1, ..., Un)` and `V` is `(W1, ..., Wn)`, with the same number of
   elements and each `Wi` assignable to `Ui`.

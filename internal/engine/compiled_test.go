@@ -7,6 +7,7 @@ import (
 	"hash/crc32"
 	"math/rand"
 	"os"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -258,7 +259,7 @@ func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 		func() {
 			defer func() {
 				if x := recover(); x != nil {
-					t.Fatalf("panic on corrupted data: %v", x)
+					t.Fatalf("panic on corrupted data: %v\n%s", x, debug.Stack())
 				}
 			}()
 			prog, start, err := LoadProgram(b, Options{})
@@ -358,7 +359,7 @@ func grammarTypes(prog *Program) string {
 			fmt.Fprintf(&b, "type %s", s.DeclName())
 			switch spec := s.(type) {
 			case *grammar.TypeDef:
-				for _, f := range spec.Type.Fields {
+				for _, f := range spec.Struct().Fields {
 					fmt.Fprintf(&b, " %s %s;", f.Name, grammar.FormatType(f.Type))
 				}
 			case *grammar.TypeAlias:

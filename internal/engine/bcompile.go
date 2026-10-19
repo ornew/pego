@@ -122,8 +122,11 @@ func (c *bcompiler) compile() {
 	for _, td := range c.prog.Grammar.Types() {
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
-			ti := TypeInfo{Name: int(c.str(td.DeclName()))}
-			for _, f := range spec.Type.Fields {
+			ti := TypeInfo{Name: int(c.str(td.DeclName())), Node: -1}
+			if n, ok := c.prog.nodeTypeOf(td.DeclName()); ok {
+				ti.Node = int(c.str(newFieldType(n.underlying()).text))
+			}
+			for _, f := range defFields(spec) {
 				ti.Fields = append(ti.Fields, int(c.str(f.Name)))
 			}
 			c.m.Types = append(c.m.Types, ti)
@@ -132,10 +135,13 @@ func (c *bcompiler) compile() {
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TextType: -1, OperatorsRule: -1, Check: -1,
+		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1, Check: -1,
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
 		if r.textType != "" {
-			ri.TextType = int(c.str(r.textType))
+			ri.NodeType = int(c.str(r.textType))
+		}
+		if r.nodeType != "" {
+			ri.NodeType = int(c.str(r.nodeType))
 		}
 		c.m.Rules = append(c.m.Rules, ri)
 	}
@@ -739,6 +745,16 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		c.term(t.X, s, locals)
 		c.eemit(EMember, c.str(t.Name), 0)
 	case *grammar.New:
+		if len(t.Args) != 0 {
+			n, _ := c.prog.nodeTypeOf(t.Type)
+			c.term(t.Args[0], s, locals)
+			check := int32(-1)
+			if ct := c.prog.convertCheckType(t); ct != nil {
+				check = c.str(newFieldType(ct).text)
+			}
+			c.eemit(ENode, c.str(n.name), check)
+			return
+		}
 		name, spec := c.prog.structType(t.Type)
 		names := make([]string, len(t.Fields))
 		for i, f := range t.Fields {

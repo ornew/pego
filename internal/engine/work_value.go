@@ -227,7 +227,7 @@ func (p *parser) hasValueField(st *grammar.TypeDef, name string) bool {
 	if !workControlsEnabled || p.control == nil {
 		return fieldOf(st, name) != nil
 	}
-	for _, f := range st.Type.Fields {
+	for _, f := range defFields(st) {
 		p.stepWork()
 		if p.valueEqual(f.Name, name) {
 			return true

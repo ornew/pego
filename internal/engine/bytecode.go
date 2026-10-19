@@ -9,7 +9,7 @@ import (
 type Module struct {
 	Strings        []string   // string table
 	Classes        []Class    // character class table
-	Types          []TypeInfo // type table (for checking struct fields)
+	Types          []TypeInfo // type table (struct fields and named node types)
 	FieldLists     [][]int    // field name lists for new (string table indices)
 	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
 	Rules          []RuleInfo // rule table
@@ -30,20 +30,26 @@ type Class struct {
 	Desc    int // expectation string (string table index)
 }
 
-// TypeInfo describes a type.
+// TypeInfo describes a type: a struct type, or a named node type.
 type TypeInfo struct {
 	Name   int   // string table index
 	Fields []int // struct field names (string table indices)
+	// Node is, for a named node type, the underlying node type (string table index of its text,
+	// as ECHECK writes types), and -1 for a struct type (instruction set 16).
+	Node int
 }
 
 // RuleInfo describes a rule.
 type RuleInfo struct {
-	Name          int // string table index
-	Entry         int // start of the body code (for a OperatorsRule expression rule, a OPERATORS_RULE instruction followed by RETURN)
-	Scope         []int
-	Action        int // start of the action's expression code (-1 if none)
-	BodyIsSeq     bool
-	TextType      int // struct type of a text struct rule (string table index, -1 if none)
+	Name      int // string table index
+	Entry     int // start of the body code (for a OperatorsRule expression rule, a OPERATORS_RULE instruction followed by RETURN)
+	Scope     []int
+	Action    int // start of the action's expression code (-1 if none)
+	BodyIsSeq bool
+	// NodeType is the declared type the rule's value is made as (string table index, -1 if none):
+	// for a struct type, the rule is a text struct rule; for a named node type, the rule's value
+	// is converted to it (instruction set 16).
+	NodeType      int
 	Memo          bool
 	Leader        bool
 	Positional    bool
@@ -276,6 +282,9 @@ const (
 	// ECAST t: fail unless the top value fits type t, the type of a cast x.(T); the value stays
 	// (ISA 12).
 	ECast
+	// ENODE t, c: pop a node and push it converted to the named node type t. If c is not -1, fail
+	// unless the value fits type c, the underlying node type of t, first (ISA 16).
+	ENode
 )
 
 // Built-in function indices
@@ -306,7 +315,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ECheck: "ECHECK", ECast: "ECAST",
+	ECheck: "ECHECK", ECast: "ECAST", ENode: "ENODE",
 }
 
 func (o Op) String() string {

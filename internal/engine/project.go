@@ -123,6 +123,10 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 				control.poll()
 				use(f.Value, shadow)
 			}
+			for _, x := range t.Args {
+				control.poll()
+				use(x, shadow)
+			}
 		case *grammar.ListConstructor:
 			for _, item := range t.Items {
 				control.poll()
@@ -201,6 +205,10 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 			for _, f := range t.Fields {
 				control.poll()
 				walk(f.Value, shadow)
+			}
+			for _, x := range t.Args {
+				control.poll()
+				walk(x, shadow)
 			}
 		case *grammar.ListConstructor:
 			for _, item := range t.Items {

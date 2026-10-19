@@ -42,6 +42,7 @@ export type NodeJSON = unknown;
 
 // ValueNodeJSON and ErrorJSON are the JSON forms of a node and of an error value.
 interface ValueNodeJSON {
+  type?: string; // a named node type
   start: number;
   end: number;
   value: unknown;
@@ -149,8 +150,12 @@ export class Node {
       case shapeString:
       case shapeTuple:
       case shapeList: {
-        // The keys in the order of the engine's JSON (objects keep the order of insertion).
-        const o: ValueNodeJSON = { start: this.start, end: this.end, value: shape === shapeString ? this.text : this.children };
+        // The keys in the order of the engine's JSON (objects keep the order of insertion). A node
+        // of a named node type names its type.
+        const o: ValueNodeJSON =
+          this instanceof TypedNode
+            ? { type: this.type, start: this.start, end: this.end, value: shape === shapeString ? this.text : this.children }
+            : { start: this.start, end: this.end, value: shape === shapeString ? this.text : this.children };
         if (this.rule !== "") {
           o.rule = this.rule;
         }
@@ -184,6 +189,36 @@ export class Node {
   }
 }
 
+/**
+ * A node of a named node type (type T = node[U]): the string, tuple or list node it was converted
+ * from, with the type name T.
+ */
+class TypedNode extends Node {
+  /** @internal The shape of the node it was converted from (shapeString, shapeTuple or shapeList). */
+  readonly base: number;
+
+  constructor(type: string, from: Node, base: number) {
+    // The node keeps what it holds now: the rule that made a fresh node may still change it.
+    super(type, "", from.start, from.end, from.text, from.fresh ? from.children.slice() : from.children, from.fields.slice(), false, from.terminal);
+    this.labeled = from.labeled;
+    this.base = base;
+  }
+}
+
+// convertNode returns the node of the named node type typ that v converts to: a copy of v with
+// the same range and content, or v itself if it already has the type. It returns null if v is not
+// a string, tuple or list node.
+function convertNode(typ: string, v: Value): Node | null {
+  if (!(v instanceof Node)) {
+    return null;
+  }
+  const shape = nodeShape(v);
+  if (shape > shapeList) {
+    return null;
+  }
+  return v.type === typ ? v : new TypedNode(typ, v, shape);
+}
+
 // Shapes of a Node: what it stands for in the value model.
 const shapeString = 0; // a node whose value is a string (text)
 const shapeTuple = 1; // a node whose value is a tuple (children)
@@ -211,6 +246,9 @@ function nodeShape(n: Node): number {
     case typeListValue:
       return shapeListValue;
   }
+  if (n instanceof TypedNode) {
+    return n.base;
+  }
   return n.terminal ? shapeString : shapeStruct;
 }
 
@@ -224,7 +262,7 @@ function isValueNode(n: Node): boolean {
     case "error":
       return true;
   }
-  return n.terminal;
+  return n.terminal || n instanceof TypedNode;
 }
 
 // unboxNode returns the value that the carrier n stands for: the box's value for a box, and n
@@ -393,7 +431,8 @@ function marshalValue(v: Value, out: (string | Pending)[]): void {
     case shapeString:
     case shapeTuple:
     case shapeList:
-      out.push('{"start":' + v.start + ',"end":' + v.end + ',"value":');
+      // A node of a named node type names its type.
+      out.push((v instanceof TypedNode ? '{"type":' + quoteJSON(v.type) + "," : "{") + '"start":' + v.start + ',"end":' + v.end + ',"value":');
       if (shape === shapeString) {
         out.push(quoteJSON(v.text));
       } else {
@@ -811,6 +850,8 @@ interface Rule {
   vars: string[];
   // check checks the rule's value against its declared type (null if it needs no check).
   check: ((p: Parser, v: Node | null) => void) | null;
+  // nodeType, if not "", is the named node type the rule's value is converted to.
+  nodeType: string;
 }
 
 // Shaper is the static shape of an expression that the runtime converts its matcher's result with,
@@ -865,6 +906,7 @@ function mkRule(
     novalue,
     vars,
     check: null,
+    nodeType: "",
   };
 }
 
@@ -2117,7 +2159,20 @@ class Parser {
     if (r.check !== null) {
       r.check(this, v);
     }
+    if (r.nodeType !== "") {
+      v = this.convertResult(r, v);
+    }
     return v;
+  }
+
+  // convertResult converts v, the value of rule r, to the rule's named node type.
+  convertResult(r: Rule, v: Node | null): Node {
+    const u = unboxNode(v);
+    const n = convertNode(r.nodeType, u);
+    if (n === null) {
+      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.nodeType} in result of rule ${r.name}`));
+    }
+    return n;
   }
 
   finishValue(r: Rule, f: Frame, v: Node | null, start: number): Node | null {
@@ -2228,7 +2283,7 @@ class Parser {
     if (n.terminal) {
       return n.text;
     }
-    return new Node(n.type === "list" ? typeListValue : typeTupleValue, "", n.start, n.end, "", n.children, noFields, false, false);
+    return new Node(nodeShape(n) === shapeList ? typeListValue : typeTupleValue, "", n.start, n.end, "", n.children, noFields, false, false);
   }
 
   // --- Terminals ---
@@ -2937,6 +2992,14 @@ class Actx {
     return evalError(`variable ${name} is not defined`);
   }
 
+  // convert evaluates a node type constructor T{v}: it converts v to the named node type typ
+  // (after convertCheck, where the value needs a check).
+  convert(typ: string, v: Value): Value {
+    const u = unboxValue(v);
+    const n = convertNode(typ, u);
+    return n === null ? evalError(`cannot convert ${typeName(u)} to ${typ}`) : n;
+  }
+
   newStruct(typ: string, ...kv: Value[]): Value {
     const n = new Node(typ, "", 0, 0, "", noNodes, noFields, false, false);
     let first = true;
@@ -3149,6 +3212,9 @@ function typeName(v: unknown): string {
     return "nil";
   }
   if (v instanceof Node) {
+    if (v instanceof TypedNode) {
+      return v.type;
+    }
     return v.type === typeBox ? typeName(v.box) : valueTypeName(nodeShape(v), v.type, v.children.length);
   }
   switch (typeof v) {

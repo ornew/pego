@@ -741,6 +741,10 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 			control.poll()
 			captureRefsControlled(fi.Value, params, refs, control)
 		}
+		for _, x := range t.Args {
+			control.poll()
+			captureRefsControlled(x, params, refs, control)
+		}
 	case *grammar.ListConstructor:
 		for _, item := range t.Items {
 			control.poll()

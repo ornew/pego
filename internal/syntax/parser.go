@@ -443,8 +443,8 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 	defer func() { p.header = false }()
 	name := p.ident()
 	info := grammar.SourceInfo{Pos: pos}
-	def := func(st *grammar.StructType) *grammar.TypeDef {
-		return &grammar.TypeDef{SourceInfo: info, Name: name.text, Type: st, Break: br}
+	def := func(t grammar.TypeExpr) *grammar.TypeDef {
+		return &grammar.TypeDef{SourceInfo: info, Name: name.text, Type: t, Break: br}
 	}
 	specStart := p.i
 	switch {
@@ -471,8 +471,18 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 		td := def(st)
 		p.legacy.terminals[td] = true
 		return td
+	case p.is("=") && p.peek(1).kind == tIdent && p.peek(1).text == "node" && p.peek(2).text == "[":
+		// A named node type: type N = node[T].
+		p.next()
+		p.header = false
+		app, _ := p.typeTerm().(*grammar.TypeApp)
+		if app == nil || len(app.Args) != 1 {
+			p.errorf("a node type takes one type argument: type %s = node[T]", name.text)
+			panic(bail{})
+		}
+		return def(app)
 	case p.is("="):
-		p.errorf("only struct types can be defined with =; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
+		p.errorf("expected '{' or 'node[' after '='; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
 		panic(bail{})
 	case p.accept("~"):
 		p.header = false
@@ -1712,14 +1722,12 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	p.expect("{")
 	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
 		args := p.constructorArgs()
-		if p.legacy == nil {
-			msg := fmt.Sprintf("a constructor names its fields: write %s{Text: ...} for a text struct", nameToken.text)
-			if len(args) == 1 {
-				msg += fmt.Sprintf(" (pego fix rewrites %s{...})", nameToken.text)
-			}
-			p.errs.add(nameToken.pos, msg)
-		}
 		n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
+		if p.legacy == nil {
+			// A positional constructor converts its value to a named node type.
+			n.Args = args
+			return n
+		}
 		// Every argument is kept, as a Text field, so that Fix still rewrites the terms inside
 		// them; only a constructor of one argument is a terminal constructor that Fix rewrites, and
 		// the compiler reports any other (pego fix leaves it as it is).

@@ -174,8 +174,12 @@ func (k *queryShapeChecker) atoms(shape *SchemaShape, out []queryAtom, active ma
 	return append(out, queryAtom{kind: "any"})
 }
 
-// typeAtom returns the atom of the values of the declared struct type t.
+// typeAtom returns the atom of the values of the declared type t: a struct type, or a named node
+// type, whose values are nodes of its underlying node type.
 func (k *queryShapeChecker) typeAtom(t *SchemaType) queryAtom {
+	if t.Shape.Kind == "node" {
+		return queryAtom{kind: "node", value: t.Shape.Value}
+	}
 	return queryAtom{kind: "struct", name: t.Name, fields: t.Shape.Fields}
 }
 

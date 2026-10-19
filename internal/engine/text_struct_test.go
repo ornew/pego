@@ -194,8 +194,8 @@ func TestTextStructModuleValidation(t *testing.T) {
 	m.Rules = append([]RuleInfo(nil), m.Rules...)
 	found := false
 	for i := range m.Rules {
-		if m.Rules[i].TextType >= 0 {
-			m.Rules[i].TextType = m.Rules[i].Name
+		if m.Rules[i].NodeType >= 0 {
+			m.Rules[i].NodeType = m.Rules[i].Name
 			found = true
 			break
 		}

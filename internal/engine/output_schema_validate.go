@@ -15,8 +15,8 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 		if t.Name == "" || (t.Origin != "declared" && t.Origin != "inferred") || t.ID != t.Origin+"/"+t.Name {
 			return fmt.Errorf("invalid output schema type identity %q", t.ID)
 		}
-		if t.Origin == "declared" && t.Shape.Kind != "struct" {
-			return fmt.Errorf("declared output schema type %q must be a struct", t.ID)
+		if t.Origin == "declared" && t.Shape.Kind != "struct" && t.Shape.Kind != "node" {
+			return fmt.Errorf("declared output schema type %q must be a struct or a node", t.ID)
 		}
 	}
 	type shapeFrame struct {

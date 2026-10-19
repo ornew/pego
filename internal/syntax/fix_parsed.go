@@ -164,7 +164,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 	var edits, last []fixEdit
 	for _, td := range g.Types() {
 		if d, ok := td.(*grammar.TypeDef); ok && forms.terminals[d] {
-			src := d.Type.Source()
+			src := d.Type.(grammar.SourceNode).Source()
 			edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "= { Text string }"})
 		}
 	}
@@ -206,10 +206,11 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 				}
 				name = r.Name
 			case *grammar.TypeDef:
-				if len(spec.Type.Fields) != 1 || spec.Type.Fields[0].Name != "Text" {
+				st := spec.Struct()
+				if st == nil || len(st.Fields) != 1 || st.Fields[0].Name != "Text" {
 					return false
 				}
-				r, ok := spec.Type.Fields[0].Type.(*grammar.TypeRef)
+				r, ok := st.Fields[0].Type.(*grammar.TypeRef)
 				return ok && r.Name == "string"
 			default:
 				return false

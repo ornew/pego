@@ -103,7 +103,7 @@ func (a *analysis) contextualItemsControlled(prev, off int, control *renderContr
 		}
 	}
 	var items []CompletionItem
-	for _, f := range st.Type.Fields {
+	for _, f := range st.Fields() {
 		control.poll()
 		if !used[f.Name] {
 			items = append(items, CompletionItem{Label: f.Name, Kind: completionKindField, Detail: control.formatType(f.Type), InsertText: f.Name + ": $1", InsertTextFormat: insertSnippet})

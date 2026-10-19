@@ -22,8 +22,10 @@ type SourceComment = { Text string }
 type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
 type Decl ~ TypeDef | TypeAlias | RuleDef | error
 type TypeDecl ~ TypeDef | TypeAlias
-type TypeDef = { Name Ident; Type StructType; Comments []Comment; SourceSpan TypeDefBody }
-type TypeDefBody = { Name Ident; Type StructType }
+type TypeDef = { Name Ident; Type DefinedType; Comments []Comment; SourceSpan TypeDefBody }
+type TypeDefBody = { Name Ident; Type DefinedType }
+// A type definition defines a struct type or a named node type.
+type DefinedType ~ StructType | TypeApp
 type TypeAlias = { Name Ident; Type Type; Comments []Comment; SourceSpan TypeAliasBody }
 type TypeAliasBody = { Name Ident; Type Type }
 type FieldSpec ~ Field | error
@@ -112,7 +114,7 @@ type FieldAccess = { X ActionExpr; Name Ident }
 type CaptureAccess = { X ActionExpr; Capture CaptureRef } // x.$y
 type Cast = { X ActionExpr; Type Type } // x.(T)
 type Call = { X ActionExpr; Args []ActionExpr }
-type Constructor = { X ActionExpr; Inits []InitField; Comments []Comment }
+type Constructor = { X ActionExpr; Inits []InitField; Args []ActionExpr; Comments []Comment }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
 type InitField = { Name Ident; Val ActionExpr; Comments []Comment }
 type ActionGroup = { Expr ActionExpr }
@@ -180,7 +182,7 @@ rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
 // Types. Union is the weakest operation; list and optional prefixes nest.
 // A type declaration is a type alias (type Name ~ Type) or a type definition
-// (type Name = { ... }).
+// (type Name = { ... } or type Name = node[T]).
 rule type_decl TypeDecl = type_alias / type_def
 rule type_alias_head = comments "type" -word_end ident -ws "~"
 rule type_alias TypeAlias = (
@@ -196,8 +198,14 @@ rule type_alias_body TypeAliasBody = (
 ) => TypeAliasBody{Name: $name, Type: $t}
 rule type_def_body TypeDefBody = (
   "type" -word_end #cut name:(ident @error(message="expected type name")) -ws
-  -(("=" -ws &"{") @error(message="expected '= {' or '~'")) t:struct_type
+  -(("=" -ws &("{" / "node[")) @error(message="expected '= {', '= node[' or '~'"))
+  t:(struct_type / node_type)
 ) => TypeDefBody{Name: $name, Type: $t}
+// The node type of a named node type takes one type argument.
+rule node_type TypeApp = (
+  &"node[" name:ident "[" {ml := true} -ws arg:type_expr -ws ","? -ws
+  -("]" @error(message="a node type takes one type argument"))
+) => TypeApp{Name: $name, Args: list($arg)}
 rule field_spec FieldSpec = !(comments "}") f:(field #recover(skip=field_sync)) => $f
 rule field Field = (
   cs:comments name:(ident @error(message="expected field name")) -ws
@@ -432,9 +440,9 @@ rule list_constructor ListConstructor = (
   items:action_args? cs:comments -("}" @error(message="expected closing brace for list constructor"))
 ) => ListConstructor{Elem: $elem, Items: concat($items), Comments: $cs}
 rule constructor Constructor = (
-  name:var_name -ws "{" {ml := true} -ws #cut fields:constructor_fields? cs:comments
+  name:var_name -ws "{" {ml := true} -ws #cut (fields:constructor_fields / args:action_args)? cs:comments
   -("}" @error(message="expected closing brace for constructor"))
-) => Constructor{X: $name, Inits: concat($fields), Comments: $cs}
+) => Constructor{X: $name, Inits: concat($fields), Args: concat($args), Comments: $cs}
 rule constructor_fields []InitField = (
   first:init_field rest:(-ws "," -ws f:init_field)* (-ws "," -ws)?
 ) => concat(list($first), map($rest, (x) => x.$f))

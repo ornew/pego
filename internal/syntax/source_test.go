@@ -141,7 +141,7 @@ rule main = operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	field := g.Types()[0].(*grammar.TypeDef).Type.Fields[0].Source()
+	field := g.Types()[0].(*grammar.TypeDef).Struct().Fields[0].Source()
 	op := g.Rules()[0].Expr.(*grammar.OperatorsRule)
 	for _, check := range []struct {
 		s    *grammar.SourceInfo

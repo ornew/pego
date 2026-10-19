@@ -23,7 +23,7 @@ const (
 	ftBool   = 'b'
 	ftNil    = 'z'
 	ftNode   = 'n'
-	ftNamed  = 'N' // a struct type
+	ftNamed  = 'N' // a struct type or a named node type
 	// ftStringNode is node[string], ftError error, the error value of recovery, and ftMissing
 	// missing, the error value of a missing token. Grammars that refer to missing run only on the
 	// Closure backend, so generated runtimes and the bytecode type text have no ftMissing.
@@ -64,8 +64,10 @@ func newFieldType(t ty) *fieldType {
 		}
 	case nodeTy:
 		// A declared type has no captures. node[_] and node[string] have their own kinds, which
-		// take one step to check.
+		// take one step to check. A named node type is checked by its name.
 		switch {
+		case t.name != "":
+			f = &fieldType{kind: ftNamed, name: t.name}
 		case len(t.caps) > 0:
 			return nil
 		case t.value == tyTop || t.value == tyAny:
@@ -301,6 +303,10 @@ type checkInfo struct {
 	// nodeMembers reports, for each member access of an action, whether it reads only node
 	// members (.Start, .End, .Value) and never a struct field.
 	nodeMembers map[*grammar.Member]bool
+	// converts holds the node type constructors whose value is checked before it is converted,
+	// with the underlying node type of the named node type. A nil type (in a loaded program)
+	// stands for that type.
+	converts map[*grammar.New]ty
 }
 
 // rekey returns the checks keyed by the nodes of the rules to instead of those of the rules from:
@@ -313,11 +319,12 @@ func (ci *checkInfo) rekey(from, to []*grammar.RuleDef) (*checkInfo, error) {
 	if len(from) != len(to) {
 		return nil, fmt.Errorf("normalization changed the number of rules from %d to %d", len(from), len(to))
 	}
-	out := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}
+	out := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
 	for i, rd := range from {
 		fields, toFields := ruleFieldInits(rd), ruleFieldInits(to[i])
 		results, toResults := ruleResults(rd), ruleResults(to[i])
-		if len(fields) != len(toFields) || len(results) != len(toResults) {
+		converts, toConverts := ruleConversions(rd), ruleConversions(to[i])
+		if len(fields) != len(toFields) || len(results) != len(toResults) || len(converts) != len(toConverts) {
 			return nil, fmt.Errorf("normalization changed the values of rule %s", rd.Name)
 		}
 		for j, f := range fields {
@@ -330,13 +337,70 @@ func (ci *checkInfo) rekey(from, to []*grammar.RuleDef) (*checkInfo, error) {
 				out.results[toResults[j]] = t
 			}
 		}
+		for j, n := range converts {
+			if t, ok := ci.converts[n]; ok {
+				out.converts[toConverts[j]] = t
+			}
+		}
 	}
 	return out, nil
 }
 
 // empty reports whether nothing is checked.
 func (ci *checkInfo) empty() bool {
-	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0
+	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0 && len(ci.converts) == 0
+}
+
+// convertCheckType returns the type the value of the node type constructor t must be checked
+// against at run time before it is converted, the underlying node type of the named node type, or
+// nil if it needs no check.
+func (prog *Program) convertCheckType(t *grammar.New) ty {
+	ci := prog.checks
+	if ci.empty() {
+		return nil
+	}
+	ct, ok := ci.converts[t]
+	if !ci.all && !ok || ct != nil {
+		return ct
+	}
+	if n, ok := prog.nodeTypeOf(t.Type); ok {
+		return n.underlying()
+	}
+	return nil
+}
+
+// convertTypeCheck is convertCheckType for the closure backend, as a check type.
+func (prog *Program) convertTypeCheck(t *grammar.New) *fieldType {
+	if prog.checks.empty() {
+		return nil
+	}
+	if v, ok := prog.fieldTypes.Load(t); ok {
+		return v.(*fieldType)
+	}
+	var ft *fieldType
+	if ct := prog.convertCheckType(t); ct != nil {
+		ft = newFieldType(ct)
+	}
+	v, _ := prog.fieldTypes.LoadOrStore(t, ft)
+	return v.(*fieldType)
+}
+
+// convertError reports a value that does not convert to the named node type typ.
+func (p *parser) convertError(v any, typ string) error {
+	return p.actionError("cannot convert ", typeName(v), " to ", typ)
+}
+
+// ruleConversions returns the node type constructors (constructors with a positional value) in
+// the predicates and actions of rule rd, in a fixed order: the order compiled grammar files number
+// them in.
+func ruleConversions(rd *grammar.RuleDef) []*grammar.New {
+	var news []*grammar.New
+	walkRuleTerms(rd, func(x grammar.Term) {
+		if n, ok := x.(*grammar.New); ok && len(n.Args) != 0 {
+			news = append(news, n)
+		}
+	})
+	return news
 }
 
 // resolveCheck resolves a declared type for a check, as a value type. It returns nil for any,
@@ -381,6 +445,15 @@ func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
 	ci := prog.checks
 	if ci.empty() {
 		return nil
+	}
+	if key == any(rd) {
+		// A rule converting its value to a named node type checks it against the underlying type.
+		if n, ok := prog.ruleNodeType(rd); ok {
+			if t, ok := ci.results[key]; !ci.all && (!ok || t != nil) {
+				return t
+			}
+			return n.underlying()
+		}
 	}
 	t, ok := ci.results[key]
 	if !ci.all {
@@ -543,7 +616,7 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	case ftMissing:
 		return shape == shapeError && n.Type() == TypeMissing
 	case ftNamed:
-		return shape == shapeStruct && n.Type() == t.name
+		return n.Type() == t.name
 	case ftList:
 		return shape == shapeListValue && p.elemsConform(t.elem, n.children)
 	case ftTuple:

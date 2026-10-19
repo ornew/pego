@@ -691,11 +691,14 @@ func (g *generator) rules() {
 			if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 				value = "shaper{}" // the lines build the rule's value
 			}
+			if r.nodeType != "" {
+				extra += fmt.Sprintf("nodeType: %q, ", r.nodeType)
+			}
 			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, textType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
 				r.id, r.name, goStrings(scopes[r].names), value, r.textType, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
-		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.textType)\n\t}\n", g.table)
+		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.textType)\n\t\tif r.nodeType != \"\" {\n\t\t\tr.nodeKinds = newNodeTypeKinds(r.nodeType)\n\t\t}\n\t}\n", g.table)
 		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	}
 	for _, r := range all {
@@ -754,18 +757,27 @@ func (g *generator) rules() {
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
 	for name, spec := range g.prog.types {
-		if _, ok := spec.(*grammar.TypeDef); ok {
+		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() != nil {
 			names = append(names, name)
 		}
 	}
 	sort.Strings(names)
 	for _, name := range names {
 		var fields []string
-		for _, f := range g.prog.types[name].(*grammar.TypeDef).Type.Fields {
+		for _, f := range defFields(g.prog.types[name].(*grammar.TypeDef)) {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
 		fmt.Fprintf(init, "\tstructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
 		fmt.Fprintf(init, "\ttypeKinds[%q] = kindOf(%q, \"\")\n", name, name)
+	}
+	// The kinds of the named node types, under their names and those of their aliases.
+	names = names[:0]
+	for name := range g.prog.nodeKinds {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		fmt.Fprintf(init, "\tnodeTypes[%q] = newNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].typ)
 	}
 }
 
@@ -1546,6 +1558,20 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %q)", g.term(t.X, s, locals), t.Name)
 	case *grammar.New:
+		if len(t.Args) != 0 {
+			// A node type constructor converts its value (see evalCtx.convert).
+			if g.table == "trules" {
+				// The typed runtime never runs a grammar with named node types (typedGen.runtimeOK).
+				return `func() any { panic("internal error: a node type constructor in the typed runtime") }()`
+			}
+			x := g.term(t.Args[0], s, locals)
+			n, _ := g.prog.nodeTypeOf(t.Type) // the type's own name, also for an alias of it
+			if ft := g.prog.convertCheckType(t); ft != nil {
+				check := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
+				x = fmt.Sprintf("c.convertCheck(%s, %s, %q)", x, check, n.name)
+			}
+			return fmt.Sprintf("c.convert(%q, %s)", n.name, x)
+		}
 		name, spec := g.prog.structType(t.Type)
 		if g.table == "trules" {
 			// The typed runtime calls the constructor of the type (tmk_T, see typedRuntime) with
@@ -1561,7 +1587,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				fmt.Fprintf(&b, "%s := %s; ", v, g.checkedField(spec, name, given, g.term(given.Value, s, locals)))
 			}
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
-			for _, f := range spec.Type.Fields {
+			for _, f := range defFields(spec) {
 				if v, ok := vars[f.Name]; ok {
 					args = append(args, v)
 				} else {

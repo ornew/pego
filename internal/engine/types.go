@@ -100,6 +100,8 @@ func isNode(t ty) bool {
 		return true
 	case basicTy:
 		return t == tyNode || t == tyAny || t == tyNever
+	case nodeTy:
+		return t.name != "" // a named node type has a Go type of its own
 	case unionTy:
 		for _, a := range t.alts {
 			if !isNode(a) {

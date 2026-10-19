@@ -21,6 +21,9 @@ type typeResolver struct {
 	sawUnsupported bool
 	// resolving holds the type aliases being resolved (for cycle detection).
 	resolving map[string]bool
+	// inNode reports that the value of a named node type is being resolved: named node types
+	// in it resolve to their names only.
+	inNode bool
 	// rule is the rule being checked, whose position stands in for a missing one.
 	rule *grammar.RuleDef
 }
@@ -122,6 +125,9 @@ func vmeet(a, b ty) ty {
 		}
 	case nodeTy:
 		if y, ok := b.(nodeTy); ok {
+			if x.name != "" || y.name != "" {
+				return tyBottom // distinct named node types, or one and a node type it is not below
+			}
 			caps := x.caps
 			if len(caps) == 0 {
 				caps = y.caps
@@ -237,7 +243,26 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 	}
 	switch spec := k.prog.types[name].(type) {
 	case *grammar.TypeDef:
-		return namedTy{name, 's'}
+		value := spec.NodeValue()
+		if value == nil {
+			return namedTy{name, 's'}
+		}
+		// Within the value of a named node type, a named node type stands for itself by its
+		// name, like a struct type: its value is read from its definition where it is needed
+		// (Program.nodeValueOf). Types that refer to each other thus resolve in linear time,
+		// and a type alias may refer to itself through a named node type.
+		if k.inNode {
+			return nodeTy{value: tyTop, name: name}
+		}
+		k.control.poll()
+		resolving := k.resolving
+		k.resolving, k.inNode = nil, true
+		v := k.resolve(value)
+		k.resolving, k.inNode = resolving, false
+		if v == tyBottom {
+			return tyBottom // node[_|_] has no values
+		}
+		return nodeTy{value: v, name: name}
 	case *grammar.TypeAlias:
 		if k.resolving == nil {
 			k.resolving = map[string]bool{}
@@ -270,6 +295,14 @@ var retiredTypeNames = map[string]string{
 	"Missing":  "missing",
 }
 
+// defFields returns the fields of the struct type that spec defines, and nil for a named node type.
+func defFields(spec *grammar.TypeDef) []*grammar.Field {
+	if st := spec.Struct(); st != nil {
+		return st.Fields
+	}
+	return nil
+}
+
 // checkTypeDefinitions reports the errors of the type definitions: duplicate fields, field names
 // that do not start with an uppercase letter, and types that do not resolve (undefined names,
 // aliases that refer to themselves, unsupported syntax and fields of type _|_).
@@ -278,8 +311,12 @@ func (k *typeResolver) checkTypeDefinitions() {
 		k.control.poll()
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
+			if value := spec.NodeValue(); value != nil {
+				k.resolveLocation(value, spec.Diagnostic(), "the value of node type "+td.DeclName())
+				continue
+			}
 			seen := map[string]bool{}
-			for _, f := range spec.Type.Fields {
+			for _, f := range defFields(spec) {
 				k.control.poll()
 				if seen[f.Name] {
 					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.DeclName())

@@ -110,6 +110,9 @@ func typeName(v any) string {
 		if v.kind == kindBox {
 			return typeName(v.box)
 		}
+		if v.kind.nodeType() {
+			return v.Type()
+		}
 		return valueTypeName(v.shape(), v.Type(), len(v.children))
 	case int:
 		return "int"
@@ -121,6 +124,29 @@ func typeName(v any) string {
 		return "function"
 	}
 	return fmt.Sprintf("%T", v)
+}
+
+// convert evaluates the node type constructor t, T{x}: it converts the value of x to the named
+// node type T, after checking it against the underlying node type where needed.
+func (c *evalCtx) convert(t *grammar.New) (any, error) {
+	x, err := c.eval(t.Args[0])
+	if err != nil {
+		return nil, err
+	}
+	p := c.p
+	ks := p.prog.nodeKinds[t.Type]
+	if ks == nil {
+		return nil, p.convertError(x, t.Type)
+	}
+	name := ks[0].typ // the type's own name, also for an alias of it
+	if check := p.prog.convertTypeCheck(t); check != nil && !p.fieldConforms(check, x) {
+		return nil, p.convertError(x, name)
+	}
+	n, ok := ks.convert(x)
+	if !ok {
+		return nil, p.convertError(x, name)
+	}
+	return n, nil
 }
 
 func (c *evalCtx) eval(t grammar.Term) (any, error) {
@@ -165,6 +191,9 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return c.member(x, t.Name)
 
 	case *grammar.New:
+		if len(t.Args) != 0 {
+			return c.convert(t)
+		}
 		// The values are kept on the expression stack (evaluations nested in them push above), and
 		// the names in a buffer filled once no evaluation is pending; newStruct retains neither.
 		p := c.p
@@ -974,9 +1003,27 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Member:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.New:
+		for _, x := range t.Args {
+			c.checkTerm(x, s, locals)
+		}
+		if _, ok := c.prog.nodeTypeOf(t.Type); ok {
+			if len(t.Fields) != 0 || len(t.Args) != 1 {
+				c.errorf(t.Diagnostic(), "a node type constructor takes one value: write %s{x}", t.Type)
+			}
+			for _, fi := range t.Fields {
+				c.checkTerm(fi.Value, s, locals)
+			}
+			return
+		}
 		_, st := c.prog.structType(t.Type)
 		if st == nil {
-			c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
+			c.errorf(t.Diagnostic(), "%s is not a struct type or a node type", t.Type)
+		} else if len(t.Args) != 0 {
+			if f := fieldOf(st, "Text"); f != nil && len(t.Args) == 1 {
+				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Text: ...} for a text struct (pego fix rewrites %s{...})", t.Type, t.Type)
+			} else {
+				c.errorf(t.Diagnostic(), "a struct constructor names its fields: write %s{Field: value}", t.Type)
+			}
 		}
 		seen := map[string]bool{}
 		for _, fi := range t.Fields {
@@ -1030,7 +1077,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 }
 
 func fieldOf(st *grammar.TypeDef, name string) *grammar.Field {
-	for _, f := range st.Type.Fields {
+	for _, f := range defFields(st) {
 		if f.Name == name {
 			return f
 		}

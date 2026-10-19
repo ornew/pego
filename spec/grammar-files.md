@@ -144,9 +144,9 @@ normalized executable form rather than those grouping nodes.
 ### Type Declaration Statements
 
 A Type Declaration Statement `type ...` declares a type name. It is a Type
-Definition `type T = {...}`, which defines a new type, or a Type Alias
-`type T ~ U`, which gives another name to a type. Both are defined in the
-[Type System](types.md#type-declaration-statements).
+Definition `type T = S`, which defines a new type from a struct type `{...}` or a
+node type `node[U]`, or a Type Alias `type T ~ U`, which gives another name to a type.
+Both are defined in the [Type System](types.md#type-declaration-statements).
 
 ### Rule Declaration Statements
 

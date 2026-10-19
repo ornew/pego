@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 15
+	isaVersion = 16
 	maxDepth   = 10000
 )
 
@@ -99,6 +99,7 @@ const (
 	tRetiredTerminalConstructor // a terminal constructor, before instruction set 14
 	tParam                      // a reference to a lambda parameter, a CaptureRef with Param set
 	tCast
+	tConvert // a node type constructor, T{x}
 )
 
 // Type and statement kinds
@@ -114,6 +115,8 @@ const (
 	kRuleDef
 	kIntersection
 	kTypeApp
+	kNode  // a named node type definition, type T = node[U]
+	kTuple // a tuple type (A, B, ...)
 )
 
 type encoder struct {
@@ -242,7 +245,8 @@ func (w *encoder) finish(out *bytes.Buffer) {
 // statements writes the statements (type and rule definitions) and the static analysis results.
 // Version 1 does not record whether a rule has a value-free twin. With checks (instruction set 9),
 // each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
-// checked constructed fields (ruleFieldInits) and of its checked results (ruleResults).
+// checked constructed fields (ruleFieldInits), of its checked results (ruleResults) and of its
+// checked node type conversions (ruleConversions).
 func (w *encoder) statements(prog *Program, version int, checks bool) {
 	w.uint(len(prog.Grammar.File.Decls))
 	ri := 0
@@ -287,7 +291,13 @@ func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
 			results = append(results, i)
 		}
 	}
-	for _, list := range [][]int{fields, results} {
+	var converts []int
+	for i, n := range ruleConversions(rd) {
+		if prog.convertCheckType(n) != nil {
+			converts = append(converts, i)
+		}
+	}
+	for _, list := range [][]int{fields, results, converts} {
 		w.uint(len(list))
 		for _, i := range list {
 			w.uint(i)
@@ -299,9 +309,14 @@ func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
 func (w *encoder) typeDecl(s grammar.TypeDecl) {
 	switch s := s.(type) {
 	case *grammar.TypeDef:
+		if s.Struct() == nil {
+			w.byte(kNode)
+			w.typeExpr(s.Type)
+			return
+		}
 		w.byte(kStruct)
-		w.uint(len(s.Type.Fields))
-		for _, f := range s.Type.Fields {
+		w.uint(len(defFields(s)))
+		for _, f := range defFields(s) {
 			w.str(f.Name)
 			w.typeExpr(f.Type)
 		}
@@ -351,11 +366,17 @@ func (w *encoder) typeExpr(t grammar.TypeExpr) {
 		for _, x := range t.Args {
 			w.typeExpr(x)
 		}
+	case *grammar.TupleType:
+		w.byte(kTuple)
+		w.uint(len(t.Types))
+		for _, x := range t.Types {
+			w.typeExpr(x)
+		}
 	case *grammar.TypeGroup:
 		// Parentheses only keep source layout, which compiled grammars do not.
 		w.typeExpr(t.Type)
 	default:
-		// Compilation rejects the other forms (tuple and unnamed struct types) for now.
+		// Compilation rejects the other forms (unnamed struct types) for now.
 		panic(fmt.Sprintf("compiled grammar: unsupported type expression %T", t))
 	}
 }
@@ -525,6 +546,12 @@ func (w *encoder) term(t grammar.Term) {
 		w.term(t.X)
 		w.str(t.Name)
 	case *grammar.New:
+		if len(t.Args) != 0 {
+			w.byte(tConvert)
+			w.str(t.Type)
+			w.terms(t.Args)
+			return
+		}
 		w.byte(tNew)
 		w.str(t.Type)
 		w.uint(len(t.Fields))
@@ -790,7 +817,7 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 	flags := []ruleFlags{}
 	var checks *checkInfo
 	if checked {
-		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}
+		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
 	}
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
@@ -834,6 +861,10 @@ func (r *decoder) checks(rd *grammar.RuleDef, ci *checkInfo) {
 	for _, i := range r.checkIndices(rd, len(results)) {
 		ci.results[results[i]] = nil
 	}
+	converts := ruleConversions(rd)
+	for _, i := range r.checkIndices(rd, len(converts)) {
+		ci.converts[converts[i]] = nil
+	}
 }
 
 // checkIndices reads a count and that many increasing indices below n.
@@ -861,6 +892,12 @@ func (r *decoder) typeDecl(name string) grammar.TypeDecl {
 			st.Fields = append(st.Fields, &grammar.Field{Name: r.str(), Type: r.typeExpr()})
 		}
 		return &grammar.TypeDef{Name: name, Type: st}
+	case kNode:
+		t := r.typeExpr()
+		if app, ok := t.(*grammar.TypeApp); !ok || app.Name != "node" || len(app.Args) != 1 {
+			r.fail("invalid node type %s", name)
+		}
+		return &grammar.TypeDef{Name: name, Type: t}
 	case kAlias:
 		return &grammar.TypeAlias{Name: name, Type: r.typeExpr()}
 	default:
@@ -895,6 +932,13 @@ func (r *decoder) typeExpr() grammar.TypeExpr {
 			m.Types = append(m.Types, r.typeExpr())
 		}
 		return m
+	case kTuple:
+		tt := &grammar.TupleType{Types: []grammar.TypeExpr{}}
+		n := r.count()
+		for i := 0; i < n && r.err == nil; i++ {
+			tt.Types = append(tt.Types, r.typeExpr())
+		}
+		return tt
 	case kTypeApp:
 		a := &grammar.TypeApp{Name: r.str()}
 		n := r.count()
@@ -1062,6 +1106,8 @@ func (r *decoder) term() grammar.Term {
 			n.Fields = append(n.Fields, &grammar.FieldInit{Name: r.str(), Value: r.term()})
 		}
 		return n
+	case tConvert:
+		return &grammar.New{Type: r.str(), Args: r.terms()}
 	case tCall:
 		return &grammar.Call{Func: r.str(), Args: r.terms()}
 	case tListConstructor:

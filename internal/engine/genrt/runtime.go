@@ -60,6 +60,15 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 type nodeKind struct {
 	typ, rule string
 	reserved  int // the index of a reserved type in reservedTypes with no rule, or -1
+	// base is the index in reservedTypes of what the nodes are: the reserved type itself, with or
+	// without a rule, or for a named node type the string, tuple or list node it converts. It is
+	// -1 for a struct.
+	base int
+}
+
+// nodeType reports whether k is the kind of a named node type.
+func (k *nodeKind) nodeType() bool {
+	return k != nil && k.base >= 0 && k.typ != reservedTypes[k.base]
 }
 
 func (k *nodeKind) typeName() string {
@@ -99,8 +108,7 @@ var (
 // isNode reports whether n is a node of the value model (a string node, a tuple or list node, or
 // an error value) rather than a struct, a box or a list or tuple value.
 func (n *Node) isNode() bool {
-	switch n.kind.typeName() {
-	case "string", "tuple", "list", "error":
+	if k := n.kind; k != nil && k.base >= 0 && k.base <= baseError {
 		return true
 	}
 	return n.terminal
@@ -132,7 +140,7 @@ func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
 		return n.text
-	case n.kind.typeName() == "list":
+	case n.kind != nil && n.kind.base == baseList:
 		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
 	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
@@ -146,16 +154,92 @@ func kindOf(typ, rule string) *nodeKind {
 	if k, ok := kinds.Load(key); ok {
 		return k.(*nodeKind)
 	}
-	k := &nodeKind{typ: typ, rule: rule, reserved: -1}
-	if rule == "" {
-		for i, t := range reservedTypes {
-			if t == typ {
+	k := &nodeKind{typ: typ, rule: rule, reserved: -1, base: -1}
+	for i, t := range reservedTypes {
+		if t == typ {
+			k.base = i
+			if rule == "" {
 				k.reserved = i
 			}
 		}
 	}
 	actual, _ := kinds.LoadOrStore(key, k)
 	return actual.(*nodeKind)
+}
+
+// The indexes in reservedTypes of the bases of node kinds.
+const (
+	baseString = iota
+	baseTuple
+	baseList
+	baseError
+)
+
+// nodeTypeKinds are the kinds of the nodes of a named node type, by the base (baseString,
+// baseTuple, baseList) of the node converted to it. They have no rule.
+type nodeTypeKinds [baseList + 1]*nodeKind
+
+// nodeTypes holds the kinds of the grammar's named node types, also under the names of the
+// aliases of them (set up by the generated code).
+var nodeTypes = map[string]*nodeTypeKinds{}
+
+// newNodeTypeKinds returns the interned kinds of the named node type typ.
+func newNodeTypeKinds(typ string) *nodeTypeKinds {
+	var ks nodeTypeKinds
+	for base := range ks {
+		// The key cannot be that of a rule, whose name has no NUL.
+		key := [2]string{typ, "\x00" + reservedTypes[base]}
+		k, ok := kinds.Load(key)
+		if !ok {
+			k, _ = kinds.LoadOrStore(key, &nodeKind{typ: typ, reserved: -1, base: base})
+		}
+		ks[base] = k.(*nodeKind)
+	}
+	return &ks
+}
+
+// convert returns the node of the named node type of ks that the value v converts to: a copy of
+// v with the same range and content, or v itself if it already has the type. It reports false if
+// v is not a string, tuple or list node.
+func (ks *nodeTypeKinds) convert(v any) (*Node, bool) {
+	n, ok := v.(*Node)
+	if !ok || n == nil || n.kind == nil || n.kind.base < 0 || n.kind.base > baseList {
+		return nil, false
+	}
+	k := ks[n.kind.base]
+	if n.kind == k {
+		return n, true
+	}
+	c := *n
+	c.kind, c.fresh = k, false
+	if n.fresh {
+		// The rule that made n may still change it; the copy keeps what it holds now.
+		c.children = append([]*Node(nil), n.children...)
+	}
+	c.fields = append(Fields(nil), n.fields...)
+	return &c, true
+}
+
+// baseNode returns the node n of a named node type as the string, tuple or list node it was
+// converted from: a copy with the kind of that node (n itself for other nodes).
+func (n *Node) baseNode() *Node {
+	if !n.kind.nodeType() {
+		return n
+	}
+	c := *n
+	c.kind = kindOf(reservedTypes[n.kind.base], "")
+	return &c
+}
+
+// convert evaluates a node type constructor T{v}: it converts v to the named node type typ (after
+// convertCheck, where the value needs a check).
+func (c *actx) convert(typ string, v any) any {
+	v = unboxValue(v)
+	n, ok := nodeTypes[typ].convert(v)
+	if !ok {
+		c.p.evalErrorf("cannot convert %s to %s", typeName(v), typ)
+	}
+	return n
 }
 
 // ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
@@ -176,10 +260,13 @@ func newRuleKinds(rule, textType string) ruleKinds {
 	return rk
 }
 
-// named returns the kind k with the rule's name.
+// named returns the kind k with the rule's name. A node of a named node type keeps no rule.
 func (rk *ruleKinds) named(k *nodeKind, rule string) *nodeKind {
 	if k.reserved >= 0 {
 		return rk.reserved[k.reserved]
+	}
+	if k.base >= 0 {
+		return k
 	}
 	return kindOf(k.typ, rule)
 }
@@ -440,22 +527,12 @@ const (
 	shapeStruct                      // a struct value (Fields)
 )
 
+// baseShapes are the shapes of the nodes of the kinds of each base (nodeKind.base).
+var baseShapes = [len(reservedTypes)]nodeShape{shapeString, shapeTuple, shapeList, shapeError, shapeBox, shapeTupleValue, shapeListValue}
+
 func (n *Node) shape() nodeShape {
-	switch n.kind.typeName() {
-	case "string":
-		return shapeString
-	case "tuple":
-		return shapeTuple
-	case "list":
-		return shapeList
-	case "error":
-		return shapeError
-	case typeBox:
-		return shapeBox
-	case typeTupleValue:
-		return shapeTupleValue
-	case typeListValue:
-		return shapeListValue
+	if k := n.kind; k != nil && k.base >= 0 {
+		return baseShapes[k.base]
 	}
 	if n.terminal {
 		return shapeString
@@ -776,6 +853,10 @@ type rule struct {
 	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
+	// nodeType, if not "", is the named node type the rule's value is converted to, whose kinds
+	// are nodeKinds.
+	nodeType  string
+	nodeKinds *nodeTypeKinds
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
 	// could never be reused.
 	memo bool
@@ -2121,7 +2202,19 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.check != nil {
 		r.check(p, v)
 	}
+	if r.nodeKinds != nil {
+		v = p.convertResult(r, v)
+	}
 	return v
+}
+
+// convertResult converts v, the value of rule r, to the rule's named node type.
+func (p *parser) convertResult(r *rule, v *Node) *Node {
+	n, ok := r.nodeKinds.convert(unboxNode(v))
+	if !ok {
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.nodeType, r.name)})
+	}
+	return n
 }
 
 func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
@@ -2610,6 +2703,9 @@ func typeName(v any) string {
 		}
 		if v.kind == kindBox {
 			return typeName(v.box)
+		}
+		if v.kind.nodeType() {
+			return v.Type()
 		}
 		return valueTypeName(v.shape(), v.Type(), len(v.children))
 	case int:
@@ -3522,7 +3618,18 @@ func writeJSONValue(w io.Writer, value any) error {
 					delete(activeNodes, value)
 					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
 				case shapeString, shapeTuple, shapeList:
-					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
+					prefix := `{"start":`
+					if value.kind.nodeType() {
+						// A node of a named node type names its type.
+						if err = out.raw(`{"type":`); err == nil {
+							err = out.encoded(value.Type())
+						}
+						prefix = `,"start":`
+					}
+					if err != nil {
+						break
+					}
+					if err = writeJSONRange(&out, value, prefix); err != nil {
 						break
 					}
 					if err = out.raw(`,"value":`); err != nil {

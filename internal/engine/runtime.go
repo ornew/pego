@@ -763,8 +763,9 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 	return v, ok
 }
 
-// finish builds the rule's value from the value of the rule body, and checks it against the
-// rule's declared type if needed. A value-free rule and a text struct rule are never checked.
+// finish builds the rule's value from the value of the rule body, checks it against the rule's
+// declared type if needed, and converts it to the rule's named node type, if any. A value-free
+// rule and a text struct rule are never checked.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
@@ -773,6 +774,9 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		v = p.runAction(r, f, nil, start, p.pos)
 		if r.resultCheck != nil {
 			p.checkResult(r.resultCheck, v, r.name)
+		}
+		if r.nodeKinds != nil {
+			v = p.convertResult(r, v)
 		}
 		return v
 	}
@@ -792,7 +796,19 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.resultCheck != nil {
 		p.checkResult(r.resultCheck, v, r.name)
 	}
+	if r.nodeKinds != nil {
+		v = p.convertResult(r, v)
+	}
 	return v
+}
+
+// convertResult converts v, the value of rule r, to the rule's named node type.
+func (p *parser) convertResult(r *rule, v *Node) *Node {
+	n, ok := r.nodeKinds.convert(unboxNode(v))
+	if !ok {
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.nodeType, r.name)
+	}
+	return n
 }
 
 // textStruct makes the value of a rule of textStructRule: the struct its action makes, whose

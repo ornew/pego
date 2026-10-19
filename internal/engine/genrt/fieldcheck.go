@@ -3,7 +3,7 @@ package genrt
 // fieldType is a declared struct field type that a constructor checks a dynamically typed value
 // against. Generated code declares one for each checked field.
 type fieldType struct {
-	kind byte // i int, s string, b bool, z nil, n node[_], S node[string], v node[elem], E error, N struct, l list, t tuple (alts), o optional, u union, _ top
+	kind byte // i int, s string, b bool, z nil, n node[_], S node[string], v node[elem], E error, N struct or named node type, l list, t tuple (alts), o optional, u union, _ top
 	name string
 	elem *fieldType
 	alts []*fieldType
@@ -15,6 +15,15 @@ type fieldType struct {
 func (c *actx) checkField(v any, t *fieldType, field, typ string) any {
 	if !c.p.fieldConforms(t, v) {
 		c.p.evalErrorf("cannot use %s as %s in field %s of %s", typeName(v), t.text, field, typ)
+	}
+	return v
+}
+
+// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
+// converted to, and raises an evaluation error otherwise.
+func (c *actx) convertCheck(v any, t *fieldType, typ string) any {
+	if !c.p.fieldConforms(t, v) {
+		c.p.evalErrorf("cannot convert %s to %s", typeName(unboxValue(v)), typ)
 	}
 	return v
 }
@@ -89,7 +98,7 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	case 'E':
 		return shape == shapeError
 	case 'N':
-		return shape == shapeStruct && n.Type() == t.name
+		return n.Type() == t.name
 	case 'l':
 		return shape == shapeListValue && p.elemsConform(t.elem, n.children)
 	case 't':

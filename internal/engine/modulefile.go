@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -51,6 +52,7 @@ func (w *encoder) module(m *Module) {
 	for _, t := range m.Types {
 		w.int(t.Name)
 		w.ints(t.Fields)
+		w.int(t.Node)
 	}
 	for _, lists := range [][][]int{m.FieldLists, m.Scopes} {
 		w.uint(len(lists))
@@ -65,7 +67,7 @@ func (w *encoder) module(m *Module) {
 		w.ints(r.Scope)
 		w.int(r.Action)
 		w.bool(r.BodyIsSeq)
-		w.int(r.TextType)
+		w.int(r.NodeType)
 		w.bool(r.Memo)
 		w.bool(r.Leader)
 		w.bool(r.Positional)
@@ -161,7 +163,7 @@ func (r *decoder) module() *Module {
 	}
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
-		m.Types = append(m.Types, TypeInfo{Name: int(r.int32()), Fields: r.ints()})
+		m.Types = append(m.Types, TypeInfo{Name: int(r.int32()), Fields: r.ints(), Node: int(r.int32())})
 	}
 	for _, lists := range []*[][]int{&m.FieldLists, &m.Scopes} {
 		n = r.count()
@@ -173,7 +175,7 @@ func (r *decoder) module() *Module {
 	for i := 0; i < n && r.err == nil; i++ {
 		ri := RuleInfo{
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
-			BodyIsSeq: r.bool(), TextType: int(r.int32()),
+			BodyIsSeq: r.bool(), NodeType: int(r.int32()),
 			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Vars: r.ints(),
 			Check: int(r.int32()),
 		}
@@ -242,6 +244,10 @@ func validateModule(m *Module) error {
 	for _, t := range m.Types {
 		str(t.Name)
 		strs(t.Fields)
+		opt("string", t.Node, len(m.Strings))
+		if err == nil && t.Node >= 0 && len(t.Fields) != 0 {
+			fail("node type %q has fields", m.Strings[t.Name])
+		}
 	}
 	for _, l := range m.FieldLists {
 		strs(l)
@@ -266,16 +272,36 @@ func validateModule(m *Module) error {
 			checkType(i, where)
 		}
 	}
-	// textStruct reports whether name is a declared type with a field Text, as a text struct rule
-	// builds it.
-	textStruct := func(name string) bool {
+	for _, t := range m.Types {
+		if t.Node >= 0 && err == nil {
+			checkType(t.Node, "in node type "+m.Strings[t.Name])
+			if err == nil && !strings.HasPrefix(m.Strings[t.Node], "node[") {
+				fail("node type %q is not over a node type", m.Strings[t.Name])
+			}
+		}
+	}
+	// ruleType reports whether name is a declared type a rule makes its value as: a named node
+	// type, or a type with a field Text, as a text struct rule builds it.
+	ruleType := func(name string) bool {
 		for _, t := range m.Types {
 			if m.Strings[t.Name] == name {
+				if t.Node >= 0 {
+					return true
+				}
 				for _, f := range t.Fields {
 					if m.Strings[f] == "Text" {
 						return true
 					}
 				}
+			}
+		}
+		return false
+	}
+	// nodeType reports whether name is a declared named node type.
+	nodeType := func(name string) bool {
+		for _, t := range m.Types {
+			if m.Strings[t.Name] == name {
+				return t.Node >= 0
 			}
 		}
 		return false
@@ -291,9 +317,9 @@ func validateModule(m *Module) error {
 		in("entry", r.Entry, len(m.Code))
 		strs(r.Scope)
 		opt("action", r.Action, len(m.Exprs))
-		opt("string", r.TextType, len(m.Strings))
-		if err == nil && r.TextType >= 0 && !textStruct(m.Strings[r.TextType]) {
-			fail("text type %q is not a declared type with a field Text", m.Strings[r.TextType])
+		opt("string", r.NodeType, len(m.Strings))
+		if err == nil && r.NodeType >= 0 && !ruleType(m.Strings[r.NodeType]) {
+			fail("type %q is not a named node type, and is not a declared type with a field Text", m.Strings[r.NodeType])
 		}
 		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
 		strs(r.Vars)
@@ -449,6 +475,15 @@ func validateModule(m *Module) error {
 		case ECast:
 			str(int(x.A))
 			checkType(int(x.A), fmt.Sprintf("at %d", ip))
+		case ENode:
+			str(int(x.A))
+			if err == nil && !nodeType(m.Strings[x.A]) {
+				fail("ENODE type %q is not a declared node type at %d", m.Strings[x.A], ip)
+			}
+			if x.B != -1 {
+				str(int(x.B))
+				checkType(int(x.B), fmt.Sprintf("at %d", ip))
+			}
 		case EAnd, EOr:
 			forward(ip, x.A, len(m.Exprs))
 		case EFunc:
@@ -512,6 +547,11 @@ func validateStreamRecovery(code []Instr) error {
 func moduleProgram(m *Module) *Program {
 	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo}
 	for _, t := range m.Types {
+		if t.Node >= 0 {
+			// The run time needs only that the type is a node type.
+			prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: &grammar.TypeApp{Name: "node", Args: []grammar.TypeExpr{&grammar.TypeRef{Name: "_"}}}}
+			continue
+		}
 		st := &grammar.StructType{}
 		for _, f := range t.Fields {
 			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})

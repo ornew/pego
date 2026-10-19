@@ -461,25 +461,37 @@ func (n *attributeNormalizer) typeDecl(td grammar.TypeDecl) grammar.TypeDecl {
 			return &v
 		}
 	case *grammar.TypeDef:
+		st := s.Struct()
+		if st == nil {
+			if s.Type == nil {
+				return td
+			}
+			if child := grammaranalysis.UngroupTypeWithPoll(s.Type, n.poll); child != s.Type {
+				v := *s
+				v.Type = child
+				return &v
+			}
+			return td
+		}
 		var fields []*grammar.Field
-		for i, f := range s.Type.Fields {
+		for i, f := range st.Fields {
 			n.control.poll()
 			child := grammaranalysis.UngroupTypeWithPoll(f.Type, n.poll)
 			if child == f.Type {
 				continue
 			}
 			if fields == nil {
-				fields = normalizationClone(s.Type.Fields, n.control)
+				fields = normalizationClone(st.Fields, n.control)
 			}
 			v := *f
 			v.Type = child
 			fields[i] = &v
 		}
 		if fields != nil {
-			st := *s.Type
-			st.Fields = fields
+			cp := *st
+			cp.Fields = fields
 			v := *s
-			v.Type = &st
+			v.Type = &cp
 			return &v
 		}
 	}

@@ -141,6 +141,8 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 		"lambda as unary operand":     `rule a = "a" => -(x) => x`,
 		"missing action":              `rule a = "a" =>`,
 		"Unicode identifier":          `rule café = "a"`,
+		"node type of two arguments":  `type N = node[a, b]`,
+		"mixed constructor":           `rule a = x:"a" => N{$x, A: 1}`,
 	} {
 		if _, err := p.Parse(src, pego.RecognizeOnly()); err == nil {
 			t.Errorf("%s: %q is accepted", name, src)
@@ -159,6 +161,7 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 		"attribute without args":     `rule a = "a" #stream`,
 		"stacked postfix operators":  `rule a = "a"*?`,
 		"carriage return":            "rule a = \"a\" // c\rrule b = a",
+		"node type definition":       "type N = node[(string, []N)]\nrule a N = x:\"a\" => N{$x}",
 	} {
 		if _, err := pego.ParseGrammar(src); err != nil {
 			t.Errorf("%s: reference parser rejects %q: %v", name, src, err)

@@ -44,7 +44,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	}
 
 	// Check the values, which also decides the run-time checks.
-	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}}
+	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}, converts: map[*grammar.New]ty{}}
 	values, valueErrs := valueTypesChecked(prog, control, checks)
 	*errs = append(*errs, valueErrs...)
 
@@ -57,7 +57,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 		control.poll()
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
-			for _, f := range spec.Type.Fields {
+			for _, f := range defFields(spec) {
 				control.poll()
 				info.fields[td.DeclName()] = append(info.fields[td.DeclName()], typedField{f.Name, k.resolve(f.Type)})
 			}
@@ -110,7 +110,7 @@ func unionMembers(t ty) ty {
 	for i, a := range u.alts {
 		n, node := a.(nodeTy)
 		switch {
-		case node && n.value == tyString && len(n.caps) == 0:
+		case node && n.name == "" && n.value == tyString && len(n.caps) == 0:
 			alts[i] = tyMatch
 		case anyNode(a):
 			alts[i] = tyNode
@@ -146,7 +146,7 @@ func checkBottomLocations(prog *Program, errs *ErrorList, control *compileContro
 	for _, td := range control.types(prog.Grammar) {
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
-			for _, f := range spec.Type.Fields {
+			for _, f := range defFields(spec) {
 				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.DeclName())
 			}
 		case *grammar.TypeAlias:

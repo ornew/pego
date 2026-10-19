@@ -291,6 +291,7 @@ type typedGen struct {
 	tlists      map[string]string
 	tlistOrder  []listConv
 	structs     []string // struct type names, sorted
+	nodeTypes   []string // named node type names, sorted
 	aliases     []string // canonical node union names, sorted
 	typeAliases []string // other declared aliases, sorted
 	// valueResolver selects the rules whose Go types come from their value types.
@@ -356,8 +357,12 @@ func (t *typedGen) name() {
 		t.names[name] = goName
 	}
 	for _, name := range all {
-		switch t.g.prog.types[name].(type) {
+		switch spec := t.g.prog.types[name].(type) {
 		case *grammar.TypeDef:
+			if spec.Struct() == nil {
+				t.nodeTypes = append(t.nodeTypes, name)
+				continue
+			}
 			t.structs = append(t.structs, name)
 			for _, f := range t.info.fields[name] {
 				used[f.name] = true
@@ -421,6 +426,9 @@ func (t *typedGen) goType(x ty) string {
 	case tupleTy:
 		return t.tupleType(x)
 	case nodeTy:
+		if x.name != "" {
+			return "*" + t.names[x.name]
+		}
 		if x.value == tyTop || x.value == tyAny {
 			return "*TNode[any]"
 		}
@@ -485,6 +493,8 @@ func (t *typedGen) conv(x ty, v string) string {
 		return "a." + t.vconvHelper(x) + "(" + v + ")"
 	case nodeTy:
 		switch {
+		case x.name != "":
+			return "a.to" + t.names[x.name] + "(astNode(" + v + "))"
 		case x.value == tyTop || x.value == tyAny:
 			return "a.toNode(astNode(" + v + "))"
 		case x.value == tyString && len(x.caps) == 0:
@@ -544,6 +554,11 @@ func (t *typedGen) decls(b *strings.Builder) {
 		}
 		b.WriteString("}\n\n")
 	}
+	for _, name := range t.nodeTypes {
+		n, _ := t.g.prog.nodeTypeOf(name)
+		fmt.Fprintf(b, "// %s is the node type %s = %s.\n", t.names[name], name, n.underlying())
+		fmt.Fprintf(b, "type %s struct{ %s }\n\n", t.names[name], strings.TrimPrefix(t.goType(n.underlying()), "*"))
+	}
 	for _, name := range t.typeAliases {
 		fmt.Fprintf(b, "// %s is the alias type %s ~ %s.\n", t.names[name], name, t.info.aliases[name])
 		fmt.Fprintf(b, "type %s = %s\n\n", t.names[name], t.goType(t.info.aliases[name]))
@@ -557,6 +572,9 @@ func (t *typedGen) decls(b *strings.Builder) {
 		fmt.Fprintf(b, "type %s interface{ is%s() }\n\n", goName, goName)
 		members := map[string]bool{"Error": true}
 		for _, a := range u.alts {
+			if n, ok := a.(nodeTy); ok && n.name != "" {
+				members[t.names[n.name]] = true
+			}
 			if n, ok := a.(namedTy); ok {
 				switch {
 				case n == tyMatch:
@@ -596,15 +614,23 @@ func (t *typedGen) decls(b *strings.Builder) {
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
-	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *TNode[string] {
+	fmt.Fprintf(b, `// toMatch converts a string node, also one of a named node type, which converts as the node it
+// was converted from. The typed value of a named node type's node is remembered by its own
+// converter, so the typed value as a plain node is not remembered.
+func (a *astConv) toMatch(n *Node) *TNode[string] {
 	a.stepWork()
-	if n == nil || n.Type() != "string" {
+	if n == nil || n.kind == nil || n.kind.base != baseString {
 		return nil
 	}
-	if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
+	named := n.kind.nodeType()
+	if !named {
+		if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
+	}
 	v := astNew(&a.match)
 	*v = TNode[string]{%[1]s: %[1]s{int(n.start), int(n.end)}, Value: n.text}
-	a.remember(n, v)
+	if !named {
+		a.remember(n, v)
+	}
 	return v
 }
 
@@ -619,7 +645,9 @@ func (a *astConv) toNode(n *Node) *TNode[any] {
 		if v, ok := v.(*TNode[any]); ok { return v }
 	}
 	v := &TNode[any]{%[1]s: %[1]s{int(n.start), int(n.end)}}
-	a.remember(n, v)
+	if !n.kind.nodeType() {
+		a.remember(n, v) // as toMatch
+	}
 	if n.IsTerminal() {
 		v.Value = n.text
 	} else {
@@ -654,10 +682,15 @@ func (a *astConv) toError(n *Node) *Error {
 `, span)
 	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n\tcase \"error\":\n\t\treturn a.toError(n)\n\tcase \"tuple\", \"list\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(unboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
-	for _, name := range t.structs {
+	for _, name := range append(append([]string(nil), t.structs...), t.nodeTypes...) {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
+	for _, name := range t.nodeTypes {
+		// A node of a named node type converts as the node it was converted from (baseNode).
+		n, _ := t.g.prog.nodeTypeOf(name)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, t.conv(n.underlying(), "n.baseNode()"))
+	}
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.start), int(n.end)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
@@ -673,6 +706,9 @@ func (a *astConv) toError(n *Node) *Error {
 		goName := t.names[name]
 		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", goName)
 		for _, m := range u.alts {
+			if m, ok := m.(nodeTy); ok && m.name != "" {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", m.name, t.names[m.name])
+			}
 			if m, ok := m.(namedTy); ok {
 				switch {
 				case m == tyMatch:
@@ -737,7 +773,7 @@ func (a *astConv) field(n *Node, name string) any {
 // result type and the field types of every struct type have Go types of their own (no CST
 // node types, node or any).
 func (t *typedGen) runtimeOK(st ty) bool {
-	if !t.representable(st) || t.readsFields() {
+	if len(t.nodeTypes) > 0 || !t.representable(st) || t.readsFields() {
 		return false
 	}
 	for _, name := range t.structs {
@@ -883,6 +919,9 @@ func (t *typedGen) representable(x ty) bool {
 		}
 		return true
 	case nodeTy:
+		if x.name != "" {
+			return false // a named node type converts from nodes only
+		}
 		// The value of a node is its text, a tuple or a list.
 		switch v := x.value.(type) {
 		case basicTy:
@@ -967,6 +1006,9 @@ func (t *typedGen) back(x ty, v string) string {
 	case recordTy, unionTy:
 		return "tback(" + v + ")"
 	case nodeTy:
+		if x.name != "" {
+			return "nil" // not representable
+		}
 		if x.value == tyString || x.value == tyTop || x.value == tyAny {
 			return "tback(" + v + ")"
 		}
@@ -1030,6 +1072,8 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case nodeTy:
 		switch {
+		case x.name != "":
+			return "nil" // not representable
 		case x.value == tyTop || x.value == tyAny:
 			return "tpubNode(" + v + ")"
 		case x.value == tyString && len(x.caps) == 0:

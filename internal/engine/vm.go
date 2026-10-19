@@ -53,6 +53,9 @@ type vmProgram struct {
 	// (nil when the module has none); typeNames are the module's type names it resolves.
 	fieldTypes []*fieldType
 	typeNames  map[string]bool
+	// nodeKinds holds the kinds of the module's named node types by the string index of their
+	// names (nil when the module has none).
+	nodeKinds []*nodeTypeKinds
 }
 
 // vmRunSite is a repetition that a Document can resume (resume.go): the REPEAT at ip, whose ITER
@@ -127,8 +130,19 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		vm.fields = append(vm.fields, vm.names(fl))
 	}
 	for _, in := range m.Exprs {
-		if in.Op == ECheck || in.Op == ECast {
+		switch {
+		case in.Op == ECheck || in.Op == ECast:
 			vm.checkType(int(in.A))
+		case in.Op == ENode && in.B >= 0:
+			vm.checkType(int(in.B))
+		}
+	}
+	for _, t := range m.Types {
+		if t.Node >= 0 {
+			if vm.nodeKinds == nil {
+				vm.nodeKinds = make([]*nodeTypeKinds, len(m.Strings))
+			}
+			vm.nodeKinds[t.Name] = newNodeTypeKinds(m.Strings[t.Name])
 		}
 	}
 	for i := range m.Rules {
@@ -137,8 +151,12 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			id: i, name: m.Strings[ri.Name], scope: vm.scope(ri.Scope),
 			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, vars: vm.names(ri.Vars),
 		}
-		if ri.TextType >= 0 {
-			r.textType = m.Strings[ri.TextType]
+		if ri.NodeType >= 0 {
+			if vm.nodeKinds != nil && vm.nodeKinds[ri.NodeType] != nil {
+				r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+			} else {
+				r.textType = m.Strings[ri.NodeType]
+			}
 		}
 		r.kinds = newRuleKinds(r.name, r.textType)
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
@@ -265,6 +283,31 @@ func (vm *vmProgram) cast(p *parser, v any, ip int) (any, error) {
 		return nil, p.castError(v, t)
 	}
 	return v, nil
+}
+
+// convert runs ENODE at ip on the value v, and returns it converted.
+//
+//go:noinline
+func (vm *vmProgram) convert(p *parser, v any, ip int) (any, error) {
+	in := &vm.m.Exprs[ip]
+	name := vm.m.Strings[in.A]
+	if in.B >= 0 {
+		if t := vm.fieldTypes[in.B]; t == nil || !p.fieldConforms(t, v) {
+			return nil, p.convertError(v, name)
+		}
+	}
+	var ks *nodeTypeKinds
+	if vm.nodeKinds != nil {
+		ks = vm.nodeKinds[in.A]
+	}
+	if ks == nil {
+		return nil, p.convertError(v, name)
+	}
+	n, ok := ks.convert(v)
+	if !ok {
+		return nil, p.convertError(v, name)
+	}
+	return n, nil
 }
 
 // checkField runs ECHECK at ip on the value v, and returns v if it fits.
@@ -1073,14 +1116,17 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
-		case ECheck, ECast:
-			// ECHECK and ECAST share the case: a case of its own slows down the whole loop.
+		case ECheck, ECast, ENode:
+			// ECHECK, ECAST and ENODE share the case: a case of its own slows down the whole loop.
 			var v any
 			var err error
-			if in.Op == ECheck {
+			switch in.Op {
+			case ECheck:
 				v, err = vm.checkField(p, pop(), ip)
-			} else {
+			case ECast:
 				v, err = vm.cast(p, pop(), ip)
+			default:
+				v, err = vm.convert(p, pop(), ip)
 			}
 			if err != nil {
 				return nil, err

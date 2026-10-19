@@ -74,7 +74,9 @@ rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 Action Expressions operate on nodes, integers, strings, booleans, `nil`, and
 restricted lambda functions. String and integer literals use the same escapes
 and decimal syntax as grammar literals. `T{Field: value, ...}` constructs a
-node of struct type `T`; unset fields read as `nil`. A typed node-list literal
+node of struct type `T`; unset fields read as `nil`. `N{value}` constructs a named node type `N`
+from exactly one positional argument, converted as described in
+[Named Node Types](types.md#named-node-types). A typed node-list literal
 `[]T{value, ...}` constructs a list value whose element Type is explicitly `T`.
 These forms never stringify or filter values implicitly.
 
@@ -110,12 +112,17 @@ evaluated:
 - a struct Type admits only values of that Type;
 - `node[T]` admits a node whose value `T` admits: `node[string]` every string
   node, `node[(A, B)]` a tuple node of two elements and `node[[]A]` a list
-  node; `node[_]` admits every node;
+  node; `node[_]` admits every node, including every named node type;
+- a named node type `N` admits only a node whose run-time type name is `N`.
 - `(A, B, ...)` admits a tuple value of as many elements, each admitted by its
   Type;
 - `[]T` admits a list value whose every element `T` admits; `[]_` and `[]any`
   admit every list;
 - `error` admits error values from error recovery and `missing` values.
+
+Conversion happens only in the two forms above. A field declared with a named node type `N`, and an element of
+`[]N{...}`, accept only values assignable to `N`, so a `node[string]` value there is an error; write `N{value}`
+instead.
 
 A mismatch aborts a Value Action with an error such as
 `cannot use node[string] as Ident in field Name of Decl`; inside a Predicate Action it
@@ -146,7 +153,9 @@ below; naming another field is a compile-time error. Accessing a field on `nil` 
 runtime error; an explicitly optional receiver type is rejected by type checking.
 
 The built-in members `.Start`, `.End` and `.Value` are available on every node
-that has a range, that is, a string, tuple or list node. `.Start` and `.End` are
+that has a range, that is, a string, tuple or list node, and on a named node type, which has the members of its
+underlying `node[U]`. The built-in functions `len` and `text` accept a named node type as they accept its
+underlying node type. `.Start` and `.End` are
 the `int` range of the node in the parse's selected position unit. `.Value` is the
 value of the node, of type `T` for a `node[T]`: the string of a string node, the
 tuple of elements of a tuple node and the list of elements of a list node, as in
@@ -184,6 +193,13 @@ way around, so `$x.(int)` on a capture of type `node[string]` is rejected while
 `$x.(node[string])` on a `node[_]` value and `$x.(Number)` on a `_` value are
 accepted. A struct is not a node, so `$x.(Number)` on a `node[_]` value is
 rejected.
+
+A cast to a named node type `N` tests the run-time type name: `$x.(N)` succeeds for a node named `N` and raises
+`cannot cast <value type> to N` otherwise. A cast to an unnamed `node[U]` admits every node whose underlying
+value fits `U`, whatever its name. Statically, a cast is a compile-time error only when no value can have both the
+static type of `x` and `T`; the check is made per alternative of a union or optional type. So `$x.(N)` on a
+`node[_]` value is accepted, and `$x.(N)` on a `node[string]` value is accepted only when the underlying type of
+`N` overlaps `node[string]`.
 
 ## Operators and Functions
 
@@ -336,6 +352,11 @@ Action expressions are type-checked when a grammar is compiled. The checker
 reports invalid operators and function arguments, unknown or undeclared
 fields, non-assignable constructor fields and rule results, and accesses that may dereference `nil`. See [Type Checking](type-checking.md)
 for the complete assignability rules and diagnostics.
+A rule whose declared Type is exactly a named node type `N` converts its value to `N` when the value is
+convertible, as specified in [Named Node Types](types.md#named-node-types).
+
+A value that cannot be converted to `N` is a compile-time error, `rule r produces X, which cannot be converted to N`,
+when its type is known. Only under `NoTypeCheck` is an uncertain value checked at run time instead.
 
 A Value Action result statically known to be a function is a compile-time
 error.

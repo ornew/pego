@@ -66,6 +66,12 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		switch spec := g.prog.types[name].(type) {
 		case *grammar.TypeDef:
 			open = append(open, t.names[name])
+			if n, ok := g.prog.nodeTypeOf(name); ok && spec.Struct() == nil {
+				under := strings.TrimSuffix(t.tsType(n.underlying()), " | null")
+				fmt.Fprintf(&b, "/** Grammar node type %s = %s. */\nexport interface %s extends %s {\n  readonly type: %s;\n}\n\n", name, n.underlying(), t.names[name], under, tsString(name))
+				t.recipe(n)
+				continue
+			}
 			fmt.Fprintf(&b, "/** Grammar struct %s. */\nexport interface %s extends Span {\n  readonly type: %s;\n", name, t.names[name], tsString(name))
 			for _, f := range t.info.fields[name] {
 				fmt.Fprintf(&b, "  readonly %s: %s;\n", tsString(f.name), t.tsType(f.t))
@@ -113,7 +119,11 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
-		if _, ok := g.prog.types[name].(*grammar.TypeDef); ok {
+		if td, ok := g.prog.types[name].(*grammar.TypeDef); ok {
+			if n, ok := g.prog.nodeTypeOf(name); ok && td.Struct() == nil {
+				fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(n))
+				continue
+			}
 			fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(namedTy{name, 's'}))
 		}
 	}
@@ -165,6 +175,9 @@ func (t *tsTypedGen) tsType(x ty) string {
 		}
 		return "readonly [" + strings.Join(elems, ", ") + "]"
 	case nodeTy:
+		if x.name != "" {
+			return t.names[x.name] + " | null"
+		}
 		if x.value == tyTop || x.value == tyAny {
 			return "TNode<unknown> | null" // the value of an open node is its text or its elements
 		}
@@ -195,6 +208,10 @@ func (t *tsTypedGen) tsType(x ty) string {
 				switch a := a.(type) {
 				case namedTy:
 					if a == tyMatch || a.kind == 's' {
+						parts = append(parts, strings.TrimSuffix(t.tsType(a), " | null"))
+					}
+				case nodeTy:
+					if a.name != "" {
 						parts = append(parts, strings.TrimSuffix(t.tsType(a), " | null"))
 					}
 				}
@@ -246,6 +263,9 @@ func (t *tsTypedGen) conversionKey(x ty) string {
 		}
 		return "tuple(" + strings.Join(keys, ",") + ")"
 	case nodeTy:
+		if x.name != "" {
+			return "tnode:named:" + x.name
+		}
 		return "tnode:" + tnodeMode(x) + ":" + t.conversionKey(x.value)
 	case namedTy:
 		if x.kind != 'c' || x == tyMatch || x == tyError {
@@ -309,6 +329,10 @@ func (t *tsTypedGen) recipe(x ty) int {
 		kind, key = "tuple", t.conversionKey(a)
 	case nodeTy:
 		kind, key = "tnode", t.conversionKey(a)
+		if a.name != "" {
+			// The type's definition gives its value, also inside the type itself.
+			x, _ = t.prog.nodeTypeOf(a.name)
+		}
 	case namedTy:
 		kind, key = "terminal", "named:"+a.name
 		if a == tyError {
@@ -361,6 +385,9 @@ func (t *tsTypedGen) recipe(x ty) int {
 	case optTy:
 		r += ", elem: " + strconv.Itoa(t.recipe(a.elem))
 	case nodeTy:
+		if a.name != "" {
+			r += ", name: " + tsString(a.name)
+		}
 		r += ", mode: " + tsString(tnodeMode(a)) + ", elem: " + strconv.Itoa(t.recipe(a.value))
 	case tupleTy:
 		elems := make([]string, len(a.elems))
@@ -373,6 +400,9 @@ func (t *tsTypedGen) recipe(x ty) int {
 			members := []string{fmt.Sprintf("[%s, %d]", tsString(TypeError), t.recipe(tyError))}
 			for _, m := range a.alts {
 				if m, ok := m.(namedTy); ok && (m == tyMatch || m.kind == 's') {
+					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))
+				}
+				if m, ok := m.(nodeTy); ok && m.name != "" {
 					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))
 				}
 			}
@@ -512,7 +542,8 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         control?.charge(0, recipe.elems!.length);
         out = new Array<unknown>(recipe.elems!.length);
       } else if (recipe.kind === "tnode") {
-        out = { type: v.type, start: v.start, end: v.end, value: null };
+        // A named node type takes only its own nodes.
+        out = recipe.name === undefined || v.type === recipe.name ? { type: v.type, start: v.start, end: v.end, value: null } : null;
       } else if (v.type === recipe.name) {
         const obj: ASTObject = { type: v.type, start: v.start, end: v.end };
         if (recipe.name === "string") obj["value"] = v.text;

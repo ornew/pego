@@ -246,15 +246,15 @@ func typeSymbolKindControlled(td grammar.TypeDecl, control *renderControl) (int,
 func (a *analysis) fieldSymbolsControlled(d *definition, st *grammar.TypeDef, control *renderControl) []DocumentSymbol {
 	control.poll()
 	var out []DocumentSymbol
-	for k, f := range st.Type.Fields {
+	for k, f := range st.Fields() {
 		control.poll()
 		i, ok := a.tokenIndex(f.Diagnostic())
 		if !ok {
 			continue
 		}
 		limit := d.end // the closing brace ends the definition
-		if k+1 < len(st.Type.Fields) {
-			limit = a.idx.pegoOffset(st.Type.Fields[k+1].Diagnostic())
+		if k+1 < len(st.Fields()) {
+			limit = a.idx.pegoOffset(st.Fields()[k+1].Diagnostic())
 		}
 		last := i
 		for j := i + 1; j < len(a.toks) && a.toks[j].end < limit; j++ {

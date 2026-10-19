@@ -327,7 +327,10 @@ func (a *analysis) collectControlled(control *renderControl) {
 			}
 			switch spec := s.(type) {
 			case *grammar.TypeDef:
-				for _, f := range spec.Type.Fields {
+				if spec.Struct() == nil && spec.Type != nil {
+					a.walkTypeControlled(spec.Type, control)
+				}
+				for _, f := range spec.Fields() {
 					control.poll()
 					a.mark(f.Diagnostic(), semProperty, modDeclaration)
 					a.walkTypeControlled(f.Type, control)
@@ -620,6 +623,10 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 			control.poll()
 			a.mark(f.Diagnostic(), semProperty, 0)
 			a.walkTermControlled(f.Value, control)
+		}
+		for _, x := range t.Args {
+			control.poll()
+			a.walkTermControlled(x, control)
 		}
 	case *grammar.Call:
 		a.mark(t.Diagnostic(), semFunction, modDefaultLibrary)

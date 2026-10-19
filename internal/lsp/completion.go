@@ -651,7 +651,7 @@ func (a *analysis) memberItemsControlled(control *renderControl) []CompletionIte
 		if !ok {
 			continue
 		}
-		for _, f := range st.Type.Fields {
+		for _, f := range st.Fields() {
 			control.poll()
 			if !seen[f.Name] {
 				seen[f.Name] = true

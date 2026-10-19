@@ -112,18 +112,20 @@ rule cast = x:"x" => $x.([]Foo | *Word).Len
 type Meet ~ []Foo & *Word | _ & _|_
 type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[Word]
 type Unnamed ~ {} | []{ A Foo; B { C Word } }
+type Num = node[string]
+rule num = x:"1" => Num{$x,}
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
 	}
-	// A positional constructor built a terminal, which grammars no longer declare.
-	const positional = "type Word = { Text string }\nrule word = \"x\" => Word{\"0\"}"
-	if _, err := pego.ParseGrammar(positional); err == nil {
-		t.Fatal("the reader accepts a positional constructor")
+	// A constructor takes named fields or positional values, not both.
+	const mixed = "type Num = node[string]\nrule num = x:\"x\" => Num{$x, Text: \"0\"}"
+	if _, err := pego.ParseGrammar(mixed); err == nil {
+		t.Fatal("the reader accepts a mixed constructor")
 	}
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-		if _, err := p.Parse(positional, pego.WithBackend(backend)); err == nil {
-			t.Fatalf("%v: the source grammar accepts a positional constructor", backend)
+		if _, err := p.Parse(mixed, pego.WithBackend(backend)); err == nil {
+			t.Fatalf("%v: the source grammar accepts a mixed constructor", backend)
 		}
 		n, err := p.Parse(src, pego.WithBackend(backend))
 		if err != nil {
@@ -200,6 +202,12 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		fields := elems(sourceField(t, sourceField(t, list, "Type"), "Fields"))
 		if len(fields) != 2 || sourceField(t, fields[1], "Type").Type() != "StructType" {
 			t.Fatal("unnamed struct fields lost")
+		}
+		if def := sourceField(t, defs[12], "Type"); def.Type() != "TypeApp" || sourceText(t, def, "Name") != "node" || len(elems(sourceField(t, def, "Args"))) != 1 {
+			t.Fatal("node type definition lost")
+		}
+		if conv := sourceField(t, defs[13], "Action"); conv.Type() != "Constructor" || len(elems(sourceField(t, conv, "Args"))) != 1 || len(elems(sourceField(t, conv, "Inits"))) != 0 {
+			t.Fatal("positional constructor lost")
 		}
 	}
 }

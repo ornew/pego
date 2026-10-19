@@ -90,6 +90,13 @@ func TestTypedNodeConstructors(t *testing.T) {
 func constructorCases() []genCase {
 	return []genCase{
 		{"typed node constructors", constructorGrammar, []string{"😀", "", "x"}},
+		{"named node types", nodeTypeGrammar, []string{"", "ab", "ab 12 c3", "<1,x>", "ab<12,y>[1]!bc", "12 ?", "[]!a", "ab 12<1,x>[3]"}},
+		{"named node type run-time conversions", `type S = node[string]
+type L = node[[]S]
+type Out = { A S; B L }
+rule main Out = x:anything xs:more* $$ => Out{A: S{$x.(node[string])}, B: L{$xs}}
+rule anything node[_] = "a" / "b" "c"
+rule more S = -"," x:[a-z] => $x`, []string{"a", "a,x,y", "bc", "bc,x", "", "a,"}},
 		{"terminal constructor root", `type Int = { Text string }
 type Alias ~ Int
 rule main Alias = "é" => Alias{Text: "0"}`, []string{"é", "", "e"}},

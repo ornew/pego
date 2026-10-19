@@ -65,6 +65,11 @@ type Program struct {
 	pkg                  string // package name when loaded from a file without the AST
 	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
 	typeKinds map[string]*nodeKind
+	// nodeKinds holds the kinds of the grammar's named node types, also under the names of the
+	// aliases of them.
+	nodeKinds map[string]*nodeTypeKinds
+	// nodeTypeCache holds the results of nodeTypeOf by type name: a nodeTy, or false.
+	nodeTypeCache sync.Map
 	// scratch holds the buffers of finished parses for later ones (*scratch).
 	scratch sync.Pool
 }
@@ -118,6 +123,10 @@ type rule struct {
 	// action, and textBody is the body that is matched instead of def.Expr.
 	textType string
 	textBody grammar.Expr
+	// nodeType, if not "", is the named node type the rule's value is converted to
+	// (Program.ruleNodeType), whose kinds are nodeKinds.
+	nodeType  string
+	nodeKinds *nodeTypeKinds
 	// resultCheck is the declared type the rule's value is checked against at run time (nil if
 	// none; see Program.resultCheckType).
 	resultCheck   *fieldType
@@ -475,8 +484,16 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
 	prog.typeKinds = map[string]*nodeKind{}
+	prog.nodeKinds = map[string]*nodeTypeKinds{}
 	for name, spec := range prog.types {
 		control.poll()
+		if n, ok := prog.nodeTypeOf(name); ok {
+			if prog.nodeKinds[n.name] == nil {
+				prog.nodeKinds[n.name] = newNodeTypeKinds(n.name)
+			}
+			prog.nodeKinds[name] = prog.nodeKinds[n.name]
+			continue
+		}
 		canonical := name
 		if _, alias := spec.(*grammar.TypeAlias); alias {
 			if resolved, concrete := prog.concreteType(&grammar.TypeRef{Name: name}); concrete != nil {
@@ -494,6 +511,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		for _, r := range rs {
 			control.poll()
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
+			if n, ok := prog.ruleNodeType(r.def); ok && !r.novalue {
+				r.nodeType, r.nodeKinds = n.name, newNodeTypeKinds(n.name)
+			}
 		}
 	}
 	switch {

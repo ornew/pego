@@ -163,9 +163,24 @@ func ungroupTerm(t grammar.Term, poll func()) grammar.Term {
 				fields[i] = &v
 			}
 		}
-		if fields != nil {
+		var args []grammar.Term
+		for i, x := range t.Args {
+			child := ungroupTerm(x, poll)
+			if child != x {
+				if args == nil {
+					args = cloneGroupItems(t.Args, poll)
+				}
+				args[i] = child
+			}
+		}
+		if fields != nil || args != nil {
 			v := *t
-			v.Fields = fields
+			if fields != nil {
+				v.Fields = fields
+			}
+			if args != nil {
+				v.Args = args
+			}
 			return &v
 		}
 	case *grammar.Call:

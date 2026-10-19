@@ -194,7 +194,11 @@ func (p *printer) typeDef(t *TypeDef) {
 	p.header("type", t.Pos)
 	p.write(" " + t.Name + " ")
 	p.write("= ")
-	st := t.Type
+	if t.Type != nil && t.Struct() == nil {
+		p.write(formatType(t.Type, p.control))
+		return
+	}
+	st := t.Struct()
 	if st == nil {
 		st = &StructType{OneLine: true}
 	}
@@ -1175,6 +1179,10 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 		for i, f := range t.Fields {
 			pollFormat(control)
 			fields[i] = formatSourceLayout(f.Layout, f.Name+": "+formatTerm(f.Value, 0, control), control)
+		}
+		for _, x := range t.Args {
+			pollFormat(control)
+			fields = append(fields, formatTerm(x, 0, control))
 		}
 		return t.Type + "{" + joinFormatParts(fields, ", ", control) + "}"
 	case *ListConstructor:

@@ -312,12 +312,23 @@ func TestDecodeJSONNullAndIntegerBounds(t *testing.T) {
 
 func TestJSONTypeDefTypeNeedsStructType(t *testing.T) {
 	bad := `{"file":{"decls":[{"@type":"TypeDef","name":"T","type":{"@type":"TypeRef","name":"int"}}]}}`
-	if _, err := UnmarshalJSON([]byte(bad)); err == nil || !strings.Contains(err.Error(), "@type") {
+	if _, err := UnmarshalJSON([]byte(bad)); err == nil || !strings.Contains(err.Error(), "struct type or node[T]") {
+		t.Errorf("got %v, want error naming the definable types", err)
+	}
+	// The defined type is a type expression, so it names its @type.
+	untagged := `{"file":{"decls":[{"@type":"TypeDef","name":"T","type":{"fields":[]}}]}}`
+	if _, err := UnmarshalJSON([]byte(untagged)); err == nil || !strings.Contains(err.Error(), "@type") {
 		t.Errorf("got %v, want error mentioning @type", err)
 	}
+	for _, app := range []string{`{"@type":"TypeApp","name":"node"}`, `{"@type":"TypeApp","name":"list","args":[{"@type":"TypeRef","name":"int"}]}`} {
+		in := `{"file":{"decls":[{"@type":"TypeDef","name":"T","type":` + app + `}]}}`
+		if _, err := UnmarshalJSON([]byte(in)); err == nil {
+			t.Errorf("%s: accepted", in)
+		}
+	}
 	for _, in := range []string{
-		`{"file":{"decls":[{"@type":"TypeDef","name":"T","type":{"fields":[]}}]}}`,
 		`{"file":{"decls":[{"@type":"TypeDef","name":"T","type":{"@type":"StructType","fields":[]}}]}}`,
+		`{"file":{"decls":[{"@type":"TypeDef","name":"T","type":{"@type":"TypeApp","name":"node","args":[{"@type":"TypeRef","name":"string"}]}}]}}`,
 	} {
 		if _, err := UnmarshalJSON([]byte(in)); err != nil {
 			t.Errorf("%s: unexpected error %v", in, err)

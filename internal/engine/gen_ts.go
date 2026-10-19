@@ -205,7 +205,7 @@ var tsPrintRuns = sync.OnceValue(func() string {
 // declares them: tsFieldCheckSource with checkField, castValue and checkResult if called.
 func (g *tsGen) fieldCheckSource() string {
 	src := tsFieldCheckSource
-	for _, f := range []string{"checkField", "castValue", "checkResult"} {
+	for _, f := range []string{"checkField", "castValue", "checkResult", "convertCheck"} {
 		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
 			src += tsCheckSources[f]
 		}
@@ -227,6 +227,14 @@ function checkField(c: Actx, v: Value, t: FieldType, field: string, typ: string)
 // castValue returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
 function castValue(c: Actx, v: Value, t: FieldType): Value {
   if (!fieldConforms(c.p, t, v)) return evalError(` + "`cannot cast ${typeName(v)} to ${t.text}`" + `);
+  return v;
+}
+`,
+	"convertCheck": `
+// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
+// converted to, and raises an evaluation error otherwise.
+function convertCheck(c: Actx, v: Value, t: FieldType, typ: string): Value {
+  if (!fieldConforms(c.p, t, v)) return evalError(` + "`cannot convert ${typeName(unboxValue(v))} to ${typ}`" + `);
   return v;
 }
 `,
@@ -285,7 +293,7 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
     case "E":
       return shape === shapeError;
     case "N":
-      return shape === shapeStruct && v.type === t.name;
+      return v.type === t.name;
     case "l":
       return shape === shapeListValue && elemsConform(p, t.elem!, v.children);
     case "t":
@@ -601,6 +609,9 @@ func (g *tsGen) rules() {
 		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
 			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.textType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
 		vars = append(vars, g.ruleVar(r))
+		if r.nodeType != "" {
+			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), tsString(r.nodeType))
+		}
 	}
 	if g.table == "rules" {
 		// The table, for parseRule (the recognizer has none).
@@ -635,14 +646,14 @@ func (g *tsGen) rules() {
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
 	for name, spec := range g.prog.types {
-		if _, ok := spec.(*grammar.TypeDef); ok {
+		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() != nil {
 			names = append(names, name)
 		}
 	}
 	sort.Strings(names)
 	for _, name := range names {
 		var fields []string
-		for _, f := range g.prog.types[name].(*grammar.TypeDef).Type.Fields {
+		for _, f := range defFields(g.prog.types[name].(*grammar.TypeDef)) {
 			fields = append(fields, f.Name)
 		}
 		fmt.Fprintf(init, "structFields.set(%s, new Set(%s));\n", tsString(name), tsStrings(fields))
@@ -1100,6 +1111,15 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), tsString(t.Name))
 	case *grammar.New:
+		if len(t.Args) != 0 {
+			// A node type constructor converts its value (see evalCtx.convert).
+			x := g.term(t.Args[0], s, locals)
+			n, _ := g.prog.nodeTypeOf(t.Type) // the type's own name, also for an alias of it
+			if ft := g.prog.convertCheckType(t); ft != nil {
+				x = fmt.Sprintf("convertCheck(c, %s, %s, %s)", x, g.fieldTypeVar(t, ft, tsFieldTypeDecl), tsString(n.name))
+			}
+			return fmt.Sprintf("c.convert(%s, %s)", tsString(n.name), x)
+		}
 		name, spec := g.prog.structType(t.Type)
 		args := []string{tsString(name)}
 		for _, f := range t.Fields {

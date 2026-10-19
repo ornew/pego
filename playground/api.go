@@ -295,9 +295,14 @@ func describeType(t grammar.TypeDecl) typeInfo {
 	ti := typeInfo{Name: t.DeclName(), Line: pos.Line, Col: pos.Col}
 	switch s := t.(type) {
 	case *grammar.TypeDef:
+		if s.Struct() == nil {
+			ti.Kind = "node"
+			ti.Spec = grammar.FormatType(s.Type)
+			break
+		}
 		ti.Kind = "struct"
-		fields := make([]string, len(s.Type.Fields))
-		for i, f := range s.Type.Fields {
+		fields := make([]string, len(s.Fields()))
+		for i, f := range s.Fields() {
 			fields[i] = f.Name + " " + grammar.FormatType(f.Type)
 		}
 		ti.Spec = "{ " + strings.Join(fields, "; ") + " }"

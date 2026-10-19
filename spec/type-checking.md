@@ -46,7 +46,7 @@ have the following types.
 | Action Expression | Type |
 |:--|:--|
 | Integer literal, `len(x)`, `x.Start`, `x.End` | `int` |
-| `x.Value` | `T` for a node of type `node[T]`: `string` for a string node, `(A, B)` for a tuple node and `[]A` for a list node |
+| `x.Value` | `T` for a node of type `node[T]` or of a named node type over it: `string` for a string node, `(A, B)` for a tuple node and `[]A` for a list node |
 | String literal, `text(x)` | `string` |
 | `true`, `false`, a comparison, `&&`, `\|\|`, `!` | `bool` |
 | `nil` | `nil`, assignable to any optional type |
@@ -95,6 +95,8 @@ also where a recursive type refers to itself, as in `[]*expr`. Run-time errors
 name a value the same way, writing `_` for elements they do not examine:
 `node[(_, _)]` for a tuple node of two elements, `node[[]_]` for a list node
 and `error` for an error value.
+
+A named node type is printed by its name, as `Num`, and `cannot convert X to N` names both types.
 
 A run-time check tests a value as the value types describe it. `node[T]` takes
 a node whose value `T` takes, so `node[string]` takes a string node,
@@ -147,6 +149,11 @@ The type checker reports the following errors:
   and a field value that is not assignable to the type of the field;
 - a typed-list element that is unknown or not assignable to its explicit element Type;
 - a rule whose value is not assignable to its declared type;
+- a constructor `N{...}` of a named node type with other than one positional argument, or a positional argument
+  to a struct type;
+- a value that cannot be converted to a named node type where a conversion is required (`N{x}` or a rule's
+  declared type), including `_`, `node[_]`, `error`, `nil` and scalars;
+- a cast to a named node type that the static types rule out (see [Casts](actions.md#casts)).
 - a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an
   invalid type;

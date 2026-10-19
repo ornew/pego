@@ -52,13 +52,24 @@ type capIndex struct {
 	set   ty
 }
 
-// nodeTy is node[T, C]: a node whose Value has type value, with the captures caps.
+// nodeTy is node[T, C]: a node whose Value has type value, with the captures caps. A named node
+// type (type N = node[T]) has the name N and no captures: it is a distinct type over node[T].
 type nodeTy struct {
 	value ty
 	caps  []capIndex // sorted by name
+	name  string
+}
+
+// underlying returns the unnamed node type of a named node type, and t itself otherwise.
+func (t nodeTy) underlying() nodeTy {
+	t.name = ""
+	return t
 }
 
 func (t nodeTy) String() string {
+	if t.name != "" {
+		return t.name
+	}
 	if t.value == tyTop && len(t.caps) == 0 {
 		return "node[_]"
 	}

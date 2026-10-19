@@ -76,7 +76,7 @@ rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
 // Types. Union is the weakest operation; list and optional prefixes nest.
 // A type declaration is a type alias (type Name ~ Type) or a type definition
-// (type Name = { ... }).
+// (type Name = { ... } or type Name = node[T]).
 rule type_decl = type_alias / type_def
 rule type_alias_head = comments "type" -word_end ident -ws "~"
 rule type_alias = &type_alias_head comments type_alias_body stmt_end
@@ -86,7 +86,13 @@ rule type_def = comments type_def_body stmt_end
 rule type_alias_body = "type" -word_end #cut ident -ws "~" -ws type_expr
 rule type_def_body = (
     "type" -word_end #cut ident -ws
-    -("=" -ws &"{") struct_type
+    -("=" -ws &("{" / "node["))
+    (struct_type / node_type)
+)
+// The node type of a named node type takes one type argument.
+rule node_type = (
+    &"node[" ident "[" {ml := true} -ws type_expr -ws ","? -ws
+    -"]"
 )
 rule field_spec = !(comments "}") field
 rule field = (
@@ -297,7 +303,7 @@ rule list_constructor = (
     action_args? comments -"}"
 )
 rule constructor = (
-    var_name -ws "{" {ml := true} -ws #cut constructor_fields? comments
+    var_name -ws "{" {ml := true} -ws #cut (constructor_fields / action_args)? comments
     -"}"
 )
 rule constructor_fields = init_field (-ws "," -ws init_field)* (-ws "," -ws)?
