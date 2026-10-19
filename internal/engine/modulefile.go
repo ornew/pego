@@ -415,7 +415,10 @@ func validateModule(m *Module) error {
 			nonneg(x.A)
 		case EBool:
 			flag(x.A, 1)
-		case EStr, EVar, EMember, EBin, EUnary, EBoolChk:
+		case EMember, EBin:
+			str(int(x.A))
+			flag(x.B, 1)
+		case EStr, EVar, EUnary, EBoolChk:
 			str(int(x.A))
 		case ECap, EItem, ELocal:
 			nonneg(x.A)

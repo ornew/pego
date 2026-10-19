@@ -1060,11 +1060,17 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			}
 			stack = append(stack, v)
 		case EMember:
-			v, err := ctx.member(pop(), m.Strings[in.A])
+			x := pop()
+			o, err := ctx.memberOperand(x, m.Strings[in.A])
 			if err != nil {
 				return nil, err
 			}
-			stack = append(stack, v)
+			if in.B != 0 && o.isStr {
+				// A pointer stored in an interface does not allocate, unlike the text.
+				stack = append(stack, (*textOperand)(x.(*Node)))
+			} else {
+				stack = append(stack, o.value())
+			}
 		case ENew:
 			names := vm.fields[in.B]
 			top := len(stack) - len(names)
@@ -1091,7 +1097,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBin:
 			r := pop()
 			l := pop()
-			v, err := p.valueBinary(m.Strings[in.A], l, r)
+			var v any
+			var err error
+			if in.B != 0 {
+				v, err = p.compareOperands(m.Strings[in.A], vmOperand(l), vmOperand(r))
+			} else {
+				v, err = p.valueBinary(m.Strings[in.A], l, r)
+			}
 			if err != nil {
 				return nil, err
 			}

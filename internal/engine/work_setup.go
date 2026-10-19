@@ -134,6 +134,8 @@ func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Progr
 		prog.workProgram, prog.workErr = build(prog.Grammar, Options{
 			recognize:          prog.workRecognize,
 			noProjections:      prog.noProjections,
+			noTextStructs:      prog.noTextStructs,
+			boxedComparisons:   prog.boxedComparisons,
 			controlledDispatch: true,
 			checks:             prog.checks,
 			SourceInfo:         prog.sourceInfo,

@@ -26,6 +26,9 @@ type Program struct {
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
+	noTextStructs bool
+	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
+	boxedComparisons bool
 	// sourceInfo reports that nodes record source information (Options.SourceInfo).
 	sourceInfo bool
 	byName     map[string]*rule
@@ -85,6 +88,8 @@ type Options struct {
 	noProjections bool
 	// noTextStructs compiles the actions that textStructRule recognizes as written, for tests.
 	noTextStructs bool
+	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
+	boxedComparisons bool
 	// eagerAttributeCopies disables copy-on-change normalization for measurements.
 	// It affects compilation only; parser execution has no corresponding branch.
 	eagerAttributeCopies bool
@@ -385,6 +390,8 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	prog.workRecognize = opts.recognize
 	prog.checks = opts.checks
 	prog.noProjections = opts.noProjections
+	prog.noTextStructs = opts.noTextStructs
+	prog.boxedComparisons = opts.boxedComparisons
 	prog.sourceInfo = opts.SourceInfo
 
 	for _, td := range control.types(g) {

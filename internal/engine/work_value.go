@@ -107,6 +107,44 @@ func (p *parser) valueEqual(l, r any) bool {
 	return equal(l, r)
 }
 
+// compareStrings applies the comparison operator op to two strings as valueBinary does, without
+// boxing them.
+func (p *parser) compareStrings(op string, l, r string) (bool, bool) {
+	switch op {
+	case "==":
+		return p.textEqual(l, r), true
+	case "!=":
+		return !p.textEqual(l, r), true
+	case "<":
+		return p.compareText(l, r) < 0, true
+	case "<=":
+		return p.compareText(l, r) <= 0, true
+	case ">":
+		return p.compareText(l, r) > 0, true
+	case ">=":
+		return p.compareText(l, r) >= 0, true
+	}
+	return false, false
+}
+
+// textEqual reports whether two strings are equal as valueEqual does.
+func (p *parser) textEqual(l, r string) bool {
+	if workControlsEnabled && p.control != nil {
+		return len(l) == len(r) && p.compareText(l, r) == 0
+	}
+	return l == r
+}
+
+// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
+// valueField looking it up in the field list {Text}.
+func (p *parser) textFieldName(name string) bool {
+	if !workControlsEnabled || p.control == nil {
+		return name == "Text"
+	}
+	p.stepWork()
+	return p.textEqual("Text", name)
+}
+
 func (p *parser) valueBinary(op string, l, r any) (any, error) {
 	if !workControlsEnabled || p.control == nil {
 		return binaryOp(op, l, r)

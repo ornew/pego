@@ -66,6 +66,7 @@ type B = { Text int }
 rule main = x:(a / b) $$ => Out{B: $x.Text == 1}
 rule a = t:[a-z]+ #atomic => A{Text: text($t)}
 rule b = [0-9]+ => B{Text: 1}`, []string{"ab", "12", ""}}, false},
+		{genCase{"text struct comparisons", textCompareGrammar, textCompareInputs}, true},
 		{genCase{"list field", `type Out = { V string; N int; B bool }
 type A = { Items node }
 rule main = x:a $$ => Out{N: len($x.Items)}

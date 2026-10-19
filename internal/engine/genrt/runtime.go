@@ -2643,7 +2643,27 @@ func (c *actx) listNode(kids []*Node) *Node {
 	return n
 }
 
+// toperand is an operand of a comparison: a string field read without boxing it (str, with
+// isStr), or any other value (v).
+type toperand struct {
+	v     any
+	str   string
+	isStr bool
+}
+
+func (o toperand) value() any {
+	if o.isStr && o.v == nil {
+		return o.str
+	}
+	return o.v
+}
+
 func (c *actx) member(x any, name string) any {
+	return c.memberOperand(x, name).value()
+}
+
+// memberOperand reads x.name, keeping the text of a text struct unboxed.
+func (c *actx) memberOperand(x any, name string) toperand {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
@@ -2651,11 +2671,11 @@ func (c *actx) member(x any, name string) any {
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return int(n.start)
+			return toperand{v: int(n.start)}
 		case "End":
-			return int(n.end)
+			return toperand{v: int(n.end)}
 		case "Value":
-			return c.p.nodeValue(n)
+			return toperand{v: c.p.nodeValue(n)}
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
@@ -2664,16 +2684,19 @@ func (c *actx) member(x any, name string) any {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return unboxValue(v)
+		return toperand{v: unboxValue(v)}
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	if n.textField && (!workControlsEnabled || c.p.control == nil) {
-		return n.field(name)
+	if n.textField {
+		if c.p.textFieldName(name) {
+			return toperand{str: n.text, isStr: true}
+		}
+		return toperand{}
 	}
-	v, _ := c.p.valueField(n.fieldList(), name)
-	return v
+	v, _ := c.p.valueField(n.fields, name)
+	return toperand{v: v}
 }
 
 func rtUnary(op string, x any) any {

@@ -265,9 +265,9 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 105 | `EITEM` | A n | Push `$n`. For n = 0, push a `List` of all items. An out-of-range n is an error. |
 | 106 | `ELOCAL` | A index | Push a local (a lambda parameter, or `$lhs`, `$rhs`, `$op`). |
 | 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
-| 108 | `EMEMBER` | A name | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
+| 108 | `EMEMBER` | A name, B text | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. With B 1 the value is an operand of the next comparison (`EBIN` with B 1): the `Text` field of a text struct may be pushed as a reference to the text, which only that comparison takes. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
-| 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. |
+| 110 | `EBIN` | A operator, B text | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. With B 1 the operator is a comparison whose operands may be text references pushed by `EMEMBER` with B 1. |
 | 111 | `EUNARY` | A operator | Pop a value and push the result of the operation. |
 | 112, 113 | `EAND` / `EOR` | A target | It is an error if the top value is not a boolean. `EAND` on false, and `EOR` on true, leave the value and jump to A. Otherwise pop the value and continue. |
 | 114 | `EBOOLCHK` | A operator | It is an error if the top value is not a boolean. |

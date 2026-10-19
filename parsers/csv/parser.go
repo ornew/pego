@@ -2554,7 +2554,27 @@ func (c *actx) listNode(kids []*Node) *Node {
 	return n
 }
 
+// toperand is an operand of a comparison: a string field read without boxing it (str, with
+// isStr), or any other value (v).
+type toperand struct {
+	v     any
+	str   string
+	isStr bool
+}
+
+func (o toperand) value() any {
+	if o.isStr && o.v == nil {
+		return o.str
+	}
+	return o.v
+}
+
 func (c *actx) member(x any, name string) any {
+	return c.memberOperand(x, name).value()
+}
+
+// memberOperand reads x.name, keeping the text of a text struct unboxed.
+func (c *actx) memberOperand(x any, name string) toperand {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
@@ -2562,11 +2582,11 @@ func (c *actx) member(x any, name string) any {
 	if n.isNode() {
 		switch name {
 		case "Start":
-			return int(n.start)
+			return toperand{v: int(n.start)}
 		case "End":
-			return int(n.end)
+			return toperand{v: int(n.end)}
 		case "Value":
-			return c.p.nodeValue(n)
+			return toperand{v: c.p.nodeValue(n)}
 		}
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
@@ -2575,16 +2595,19 @@ func (c *actx) member(x any, name string) any {
 			c.p.evalErrorf("%s has no capture %s", n.Type(), capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
-		return unboxValue(v)
+		return toperand{v: unboxValue(v)}
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
 		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	if n.textField && (!workControlsEnabled || c.p.control == nil) {
-		return n.field(name)
+	if n.textField {
+		if c.p.textFieldName(name) {
+			return toperand{str: n.text, isStr: true}
+		}
+		return toperand{}
 	}
-	v, _ := c.p.valueField(n.fieldList(), name)
-	return v
+	v, _ := c.p.valueField(n.fields, name)
+	return toperand{v: v}
 }
 
 func rtUnary(op string, x any) any {
@@ -4168,6 +4191,56 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 		return out.String(), true
 	}
 	return nil, false
+}
+
+// fieldOperand reads x.name as member does, keeping the text of a text struct unboxed.
+func (c *actx) fieldOperand(x any, name string) toperand {
+	return c.memberOperand(x, name)
+}
+
+// compare applies a comparison operator as binary does, comparing two strings without boxing them.
+func (c *actx) compare(op string, l, r toperand) any {
+	if !l.isStr {
+		l.str, l.isStr = l.v.(string)
+	}
+	if !r.isStr {
+		r.str, r.isStr = r.v.(string)
+	}
+	if l.isStr && r.isStr {
+		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
+			return v
+		}
+	}
+	return c.binary(op, l.value(), r.value())
+}
+
+// textFieldName reports whether name is Text, the field of a text struct, charging the steps of
+// valueField looking it up in the field list {Text}.
+func (p *parser) textFieldName(name string) bool {
+	if !workControlsEnabled || p.control == nil {
+		return name == "Text"
+	}
+	p.stepWork()
+	return p.textEqual("Text", name)
+}
+
+// compareStrings applies the comparison operator op to two strings as stringBinary does.
+func (p *parser) compareStrings(op string, l, r string) (bool, bool) {
+	switch op {
+	case "==":
+		return p.textEqual(l, r), true
+	case "!=":
+		return !p.textEqual(l, r), true
+	case "<":
+		return p.compareText(l, r) < 0, true
+	case "<=":
+		return p.compareText(l, r) <= 0, true
+	case ">":
+		return p.compareText(l, r) > 0, true
+	case ">=":
+		return p.compareText(l, r) >= 0, true
+	}
+	return false, false
 }
 
 func (c *actx) binary(op string, l, r any) any {
@@ -6138,14 +6211,6 @@ func (c *tctx) listNode(kids []any) *tnode {
 	return n
 }
 
-// toperand is an operand of a comparison in the typed runtime: a string field read without
-// boxing it (str, with isStr), or any other value (v).
-type toperand struct {
-	v     any
-	str   string
-	isStr bool
-}
-
 // tstrFields is implemented by the generated struct types: tstrField returns the value of a
 // string field without boxing it.
 type tstrFields interface {
@@ -6154,11 +6219,10 @@ type tstrFields interface {
 
 // fieldOperand reads x.name as member does, keeping a string field of a struct unboxed.
 func (c *tctx) fieldOperand(x any, name string) toperand {
-	if !workControlsEnabled || c.p.control == nil {
-		if n, ok := x.(tstrFields); ok {
-			if s, ok := n.tstrField(name); ok {
-				return toperand{str: s, isStr: true}
-			}
+	// A string field of a struct costs no steps to read under work controls either: see tfieldWork.
+	if n, ok := x.(tstrFields); ok {
+		if s, ok := n.tstrField(name); ok {
+			return toperand{str: s, isStr: true}
 		}
 	}
 	return toperand{v: c.member(x, name)}
@@ -6172,30 +6236,12 @@ func (c *tctx) compare(op string, l, r toperand) any {
 	if !r.isStr {
 		r.str, r.isStr = r.v.(string)
 	}
-	if l.isStr && r.isStr && (!workControlsEnabled || c.p.control == nil) {
-		switch op {
-		case "==":
-			return l.str == r.str
-		case "!=":
-			return l.str != r.str
-		case "<":
-			return l.str < r.str
-		case "<=":
-			return l.str <= r.str
-		case ">":
-			return l.str > r.str
-		case ">=":
-			return l.str >= r.str
+	if l.isStr && r.isStr {
+		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
+			return v
 		}
 	}
 	return c.binary(op, l.value(), r.value())
-}
-
-func (o toperand) value() any {
-	if o.isStr && o.v == nil {
-		return o.str
-	}
-	return o.v
 }
 
 func (c *tctx) member(x any, name string) any {

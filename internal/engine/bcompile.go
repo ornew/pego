@@ -70,6 +70,18 @@ func (c *bcompiler) eemit3(op Op, a, b, cc int32) int {
 	return len(c.m.Exprs) - 1
 }
 
+// operand compiles an operand of a comparison: a field read may push an unboxed text, which only
+// a comparison (EBIN with B 1) takes.
+func (c *bcompiler) operand(t grammar.Term, s *scope, locals []string) {
+	if !fieldRead(t) {
+		c.term(t, s, locals)
+		return
+	}
+	m := t.(*grammar.Member)
+	c.term(m.X, s, locals)
+	c.eemit(EMember, c.str(m.Name), 1)
+}
+
 // integer stores a full implementation-int value using the EINT representation.
 func (c *bcompiler) integer(value int) int32 {
 	lo := int32(value)
@@ -799,6 +811,13 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 					c.eemit(ETextEq, b2i(t.Op == "!="), 0)
 					return
 				}
+			}
+			if comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !c.prog.boxedComparisons {
+				// Keep the text of a text struct unboxed (see evalCtx.compare).
+				c.operand(t.L, s, locals)
+				c.operand(t.R, s, locals)
+				c.eemit(EBin, c.str(t.Op), 1)
+				return
 			}
 			c.term(t.L, s, locals)
 			c.term(t.R, s, locals)

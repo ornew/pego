@@ -114,6 +114,8 @@ type GenOptions struct {
 	// disableLiteralTextDispatch keeps literal text disjunctions on the general
 	// expression path for differential tests and same-generator measurements.
 	disableLiteralTextDispatch bool
+	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
+	boxedComparisons bool
 	// disableNodeFrameScratch retains per-parse Node capture frames for
 	// same-generator controls without a parser-time option.
 	disableNodeFrameScratch bool
@@ -167,7 +169,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{observability: opts.Observability, disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{observability: opts.Observability, disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -511,6 +513,7 @@ type generator struct {
 	methodKeys                    []generatedMethod
 	literalKeys                   []string
 	disableLiteralTextDispatch    bool
+	boxedComparisons              bool
 	disableTypedObjectSlabs       bool
 	disableTypedListSlabs         bool
 	disableTypedOutputBootstrap   bool
@@ -900,10 +903,10 @@ func (g *generator) pick(untyped, typed string) string {
 	return untyped
 }
 
-func (g *generator) recv() string     { return g.pick("parser", "tparser") }
-func (g *generator) valType() string  { return g.pick("*Node", "any") }
-func (g *generator) ctxType() string  { return g.pick("actx", "tctx") }
-func (g *generator) rt() string       { return g.pick("rt", "trt") }
+func (g *generator) recv() string    { return g.pick("parser", "tparser") }
+func (g *generator) valType() string { return g.pick("*Node", "any") }
+func (g *generator) ctxType() string { return g.pick("actx", "tctx") }
+func (g *generator) rt() string      { return g.pick("rt", "trt") }
 
 // comparison reports whether op compares two values.
 func comparison(op string) bool {
@@ -920,12 +923,17 @@ func fieldRead(t grammar.Term) bool {
 	return ok && !strings.HasPrefix(m.Name, "$")
 }
 
-// operand returns a typed runtime operand (toperand) of a comparison: a field read keeps a
-// string field unboxed.
+// operand returns an operand (toperand) of a comparison: a field read keeps a string field
+// unboxed.
 func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) string {
 	if fieldRead(t) {
 		m := t.(*grammar.Member)
-		return fmt.Sprintf("c.fieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
+		raw := fmt.Sprintf("c.fieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
+		if !g.goWorkControls {
+			return raw
+		}
+		// The step that term charges for the member read.
+		return "func() toperand { c.p.stepWork(); return " + raw + " }()"
 	}
 	return "toperand{v: " + g.term(t, s, locals) + "}"
 }
@@ -1639,8 +1647,8 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				return fmt.Sprintf("any(c.textStr(%s) %s c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
 			}
 		}
-		if g.table == "trules" && comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) {
-			// Compare string fields of typed values without boxing them (see tctx.compare).
+		if comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !g.boxedComparisons {
+			// Compare string fields without boxing them (see tctx.compare and actx.compare).
 			return fmt.Sprintf("c.compare(%q, %s, %s)", t.Op, g.operand(t.L, s, locals), g.operand(t.R, s, locals))
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
