@@ -11,31 +11,38 @@ type Nil = { Text string }
 type CaptureRef = { Text string }
 type VarRef = { Text string }
 
-type File = { Pkg *PkgDecl; Decls []Decl; Comments []Comment; TrailingComments []Comment; Text string }
+type File = { Pkg *PkgDecl; Decls []Decl; Comments []Comment; TrailingComments []Comment; Text string; Head SourceLead }
 type PkgDecl ~ Pkg | error
 type Pkg = { Name Ident; Comments []Comment; Source SourceMetadata }
 type PkgBody = { Name Ident }
 // Ownership is constructed at syntax boundaries; the adapter only converts spans.
-type SourceSpan ~ PkgBody | TypeDefBody | TypeAliasBody
-type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment }
+// A statement in a list cannot see the boundary before it, so it records the
+// boundary after it: its own trailing group, and the leading and detached groups
+// of the next sibling. A container records the boundary after its opening
+// delimiter in Head for the first element.
+type SourceSpan ~ PkgBody | TypeDefBody | TypeAliasBody | RuleDefBody | FieldBody | OperatorsSkipBody | OperatorsOperandBody | OperatorsLevelBody | OperatorsOperatorBody | InitFieldBody
+type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment; Next SourceLead }
+type SourceItem = { Trailing string; Next SourceLead }
+type SourceLead = { Leading string; Detached []SourceComment; HasNext bool }
 type SourceComment = { Text string }
 type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
 type Decl ~ TypeDef | TypeAlias | RuleDef | error
 type TypeDecl ~ TypeDef | TypeAlias
-type TypeDef = { Name Ident; Type DefinedType; Comments []Comment; SourceSpan TypeDefBody }
+type TypeDef = { Name Ident; Type DefinedType; Comments []Comment; SourceSpan TypeDefBody; Source SourceItem }
 type TypeDefBody = { Name Ident; Type DefinedType }
 // A type definition defines a struct type or a named node type.
 type DefinedType ~ StructType | TypeApp
-type TypeAlias = { Name Ident; Type Type; Comments []Comment; SourceSpan TypeAliasBody }
+type TypeAlias = { Name Ident; Type Type; Comments []Comment; SourceSpan TypeAliasBody; Source SourceItem }
 type TypeAliasBody = { Name Ident; Type Type }
 type FieldSpec ~ Field | error
-type Field = { Name Ident; Type Type; Comments []Comment }
+type Field = { Name Ident; Type Type; Comments []Comment; SourceSpan FieldBody; Source SourceItem }
+type FieldBody = { Name Ident; Type Type }
 type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | StructType | OptionalType | ListType | UnionType | IntersectionType | Bottom
 type TypeRef = { Name Ident }
 type TypeApp = { Name Ident; Args []Type } // T[U]
 type TypeGroup = { Type Type }
 type TupleType = { Types []Type } // (), (T,), (T, U)
-type StructType = { Fields []FieldSpec; Comments []Comment } // { A T; B U }
+type StructType = { Fields []FieldSpec; Comments []Comment; Head SourceLead } // { A T; B U }
 type OptionalType = { Type Type }
 type ListType = { Type Type }
 type UnionType = { L Type; R Type }
@@ -44,7 +51,8 @@ type IntersectionType = { L Type; R Type }
 type Comment ~ CommentGroup | InlineComment
 type CommentGroup = { Lines []node[string] }
 type InlineComment = { Start node[string]; Body node[string]; End node[string] }
-type RuleDef = { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment }
+type RuleDef = { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan RuleDefBody; Source SourceItem }
+type RuleDefBody = { Name Ident; Type *Type; Expr RuleExpr; Action *Action }
 type RuleExpr ~ (
   RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice
   | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput
@@ -89,15 +97,19 @@ type AttrSlot = { Value *AttrValue }
 type AttrNamed = { Name Ident; Value AttrValue }
 type AttrArgs = { Args []*AttrValue; KwArgs []AttrNamed }
 
-type OperatorsRule = { Items []OperatorsStmt; Comments []Comment }
+type OperatorsRule = { Items []OperatorsStmt; Comments []Comment; Head SourceLead }
 type OperatorsStmt ~ OperatorsSkip | OperatorsOperand | OperatorsLevel | error
-type OperatorsSkip = { Expr RuleExpr; Comments []Comment }
-type OperatorsOperand = { Expr RuleExpr; Action *Action; Comments []Comment }
-type OperatorsLevel = { Name *Ident; Operators []OpsOperator; Comments []Comment }
+type OperatorsSkip = { Expr RuleExpr; Comments []Comment; SourceSpan OperatorsSkipBody; Source SourceItem }
+type OperatorsSkipBody = { Expr RuleExpr }
+type OperatorsOperand = { Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan OperatorsOperandBody; Source SourceItem }
+type OperatorsOperandBody = { Expr RuleExpr; Action *Action }
+type OperatorsLevel = { Name *Ident; Operators []OpsOperator; Comments []Comment; Head SourceLead; SourceSpan OperatorsLevelBody; Source SourceItem }
+type OperatorsLevelBody = { Name *Ident; Operators []OpsOperator; Head SourceLead; Comments []Comment }
 type OpsOperator ~ Prefix | Postfix | Infix | error
-type Prefix = { Expr RuleExpr; Action *Action; Comments []Comment }
-type Postfix = { Expr RuleExpr; Action *Action; Comments []Comment }
-type Infix = { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment }
+type OperatorsOperatorBody = { Assoc string; Expr RuleExpr; Action *Action }
+type Prefix = { Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan OperatorsOperatorBody; Source SourceItem }
+type Postfix = { Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan OperatorsOperatorBody; Source SourceItem }
+type Infix = { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan OperatorsOperatorBody; Source SourceItem }
 
 type Action ~ ActionExpr | ActionBlock | DefaultAction
 type ActionStmt ~ ActionAssign | ActionExpr | error
@@ -114,9 +126,10 @@ type FieldAccess = { X ActionExpr; Name Ident }
 type CaptureAccess = { X ActionExpr; Capture CaptureRef } // x.$y
 type Cast = { X ActionExpr; Type Type } // x.(T)
 type Call = { X ActionExpr; Args []ActionExpr }
-type Constructor = { X ActionExpr; Inits []InitField; Args []ActionExpr; Comments []Comment }
+type Constructor = { X ActionExpr; Inits []InitField; Args []ActionExpr; Comments []Comment; Head SourceLead }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
-type InitField = { Name Ident; Val ActionExpr; Comments []Comment }
+type InitField = { Name Ident; Val ActionExpr; Comments []Comment; SourceSpan InitFieldBody; Source SourceItem }
+type InitFieldBody = { Name Ident; Val ActionExpr }
 type ActionTuple = { Elems []ActionExpr } // (), (x,), (x, y)
 type ActionGroup = { Expr ActionExpr }
 type Lambda = { Params []Ident; Body ActionExpr }
@@ -132,25 +145,26 @@ rule file File = (
   Comments: $cs,
   TrailingComments: $f.TrailingComments,
   Text: text($src),
+  Head: $f.Head,
 }
 rule file_contents File = (
   {ml := false}
+  &head:source_head
   pkg:package_entry?
   decls:(-empty_stmts d:decl)*
   -empty_stmts tc:comments $$
-) => File{Pkg: $pkg, Decls: map($decls, (x) => x.$d), TrailingComments: $tc}
+) => File{Pkg: $pkg, Decls: map($decls, (x) => x.$d), TrailingComments: $tc, Head: $head}
 rule empty_stmts = (";" -comments)*
 rule package_entry PkgDecl = &(comments "package" !ident_char) p:(package_stmt #recover(skip=stmt_sync)) => $p
 rule package_stmt Pkg = (
   &lead:source_remaining cs:comments
-  body:package_body &tail:source_package_tail tc:stmt_end
+  body:package_body &tail:source_item_tail tc:stmt_end
 ) => Pkg{Name: $body.Name, Comments: concat($cs, $tc), Source: SourceMetadata{
-  Span: $body, Leading: $lead.Leading, Detached: $lead.Detached, Trailing: $tail.Trailing,
+  Span: $body, Leading: $lead.Leading, Detached: $lead.Detached, Trailing: $tail.Trailing, Next: $tail.Next,
 }}
 rule package_body PkgBody = (
   "package" -word_end #cut name:(ident @error(message="expected package name"))
 ) => PkgBody{Name: $name}
-rule source_package_tail SourceBoundary = -";"? b:source_after_boundary => $b
 rule decl Decl = (
   !(comments $$)
   d:((type_decl / rule_decl / _|_ @error(message="expected type or rule declaration")) #recover(skip=stmt_sync))
@@ -187,11 +201,11 @@ rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 rule type_decl TypeDecl = type_alias / type_def
 rule type_alias_head = comments "type" -word_end ident -ws "~"
 rule type_alias TypeAlias = (
-  &type_alias_head cs:comments d:type_alias_body tc:stmt_end
-) => TypeAlias{Name: $d.Name, Type: $d.Type, Comments: concat($cs, $tc), SourceSpan: $d}
+  &type_alias_head cs:comments d:type_alias_body &tail:source_item_tail tc:stmt_end
+) => TypeAlias{Name: $d.Name, Type: $d.Type, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
 rule type_def TypeDef = (
-  cs:comments d:type_def_body tc:stmt_end
-) => TypeDef{Name: $d.Name, Type: $d.Type, Comments: concat($cs, $tc), SourceSpan: $d}
+  cs:comments d:type_def_body &tail:source_item_tail tc:stmt_end
+) => TypeDef{Name: $d.Name, Type: $d.Type, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
 // A body starts at the keyword and ends before the statement separator.
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_alias_body TypeAliasBody = (
@@ -209,9 +223,11 @@ rule node_type TypeApp = (
 ) => TypeApp{Name: $name, Args: list($arg)}
 rule field_spec FieldSpec = !(comments "}") f:(field #recover(skip=field_sync)) => $f
 rule field Field = (
-  cs:comments name:(ident @error(message="expected field name")) -ws
-  t:(type_expr @error(message="expected field type")) tc:field_end
-) => Field{Name: $name, Type: $t, Comments: concat($cs, $tc)}
+  cs:comments d:field_body &tail:source_item_tail tc:field_end
+) => Field{Name: $d.Name, Type: $d.Type, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule field_body FieldBody = (
+  name:(ident @error(message="expected field name")) -ws t:(type_expr @error(message="expected field type"))
+) => FieldBody{Name: $name, Type: $t}
 rule type_expr Type = operators {
   skip ws
   operand bottom
@@ -229,9 +245,9 @@ rule type_expr Type = operators {
 
 // An unnamed struct type has the fields of a struct definition.
 rule struct_type StructType = (
-  "{" {ml := false} fields:(f:field_spec)* cs:comments
+  "{" {ml := false} &head:source_head_open fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
-) => StructType{Fields: map($fields, (x) => x.$f), Comments: $cs}
+) => StructType{Fields: map($fields, (x) => x.$f), Comments: $cs, Head: $head}
 
 // The node type names of earlier versions, and terminal, are not types.
 rule retired_type = ("terminal" / "Match" / "Seq" / "List" / "Operator" / "Error") !ident_char
@@ -252,11 +268,16 @@ rule type_tuple TupleType = (
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_decl RuleDef = (
-  cs:comments "rule" -word_end #cut name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
+  cs:comments d:rule_def_body &tail:source_item_tail tc:stmt_end
+) => RuleDef{Name: $d.Name, Type: $d.Type, Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule rule_def_body RuleDefBody = (
+  "rule" -word_end #cut name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
   -("=" @error(message="expected '=' after rule header")) -ws x:(ops_rule_expr / rule_expr)
-  @error(message="expected rule expression") -ws a:whole_action? tc:stmt_end
-) => RuleDef{Name: $name, Type: $t, Expr: $x, Action: $a, Comments: concat($cs, $tc)}
+  @error(message="expected rule expression") a:trailing_action?
+) => RuleDefBody{Name: $name, Type: $t, Expr: $x, Action: $a}
 rule whole_action Action = "=>" -ws a:(action @error(message="expected value action after '=>'")) => $a
+// The spacing before an action belongs to the action, so a rule without one ends at its expression.
+rule trailing_action Action = -ws a:whole_action => $a
 rule rule_expr RuleExpr = operators {
   skip ws
   operand rule_group / predicate / level_call / bottom / top / begin_input / begin_line / end_input / end_line / any / cut / string / char_class / rule_ref
@@ -346,42 +367,57 @@ rule signed_int Int = t:(("-" -ws)? digit+ #atomic) #atomic => Int{Text: text($t
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr OperatorsRule = (
-  "operators" !ident_char -ws &"{" #cut "{" {ml := false} items:(-empty_stmts i:ops_stmt)* -empty_stmts
+  "operators" !ident_char -ws &"{" #cut "{" {ml := false} &head:source_head_open items:(-empty_stmts i:ops_stmt)* -empty_stmts
   cs:comments -("}" @error(message="expected closing brace for operators"))
-) => OperatorsRule{Items: map($items, (x) => x.$i), Comments: $cs}
+) => OperatorsRule{Items: map($items, (x) => x.$i), Comments: $cs, Head: $head}
 rule ops_stmt OperatorsStmt = (
   !(comments "}")
   s:((ops_skip_stmt / ops_operand_stmt / ops_level_stmt / _|_ @error(message="expected skip, operand, or level")) #recover(skip=item_sync))
 ) => $s
 rule ops_skip_stmt OperatorsSkip = (
-  cs:comments "skip" -word_end #cut x:(rule_expr @error(message="expected skip expression")) tc:item_end
-) => OperatorsSkip{Expr: $x, Comments: concat($cs, $tc)}
+  cs:comments d:ops_skip_body &tail:source_item_tail tc:item_end
+) => OperatorsSkip{Expr: $d.Expr, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule ops_skip_body OperatorsSkipBody = (
+  "skip" -word_end #cut x:(rule_expr @error(message="expected skip expression"))
+) => OperatorsSkipBody{Expr: $x}
 rule ops_operand_stmt OperatorsOperand = (
-  cs:comments "operand" -word_end #cut x:(rule_expr @error(message="expected operand expression")) -ws
-  a:whole_action? tc:item_end
-) => OperatorsOperand{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
+  cs:comments d:ops_operand_body &tail:source_item_tail tc:item_end
+) => OperatorsOperand{Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule ops_operand_body OperatorsOperandBody = (
+  "operand" -word_end #cut x:(rule_expr @error(message="expected operand expression")) a:trailing_action?
+) => OperatorsOperandBody{Expr: $x, Action: $a}
 rule ops_level_stmt OperatorsLevel = (
-  cs:comments "level" -word_end #cut name:ident? -ws
-  -("{" @error(message="expected opening brace for level")) xs:(-empty_stmts o:ops_operator)*
-  -empty_stmts tc:comments -("}" @error(message="expected closing brace for level")) end:item_end
-) => OperatorsLevel{Name: $name, Operators: map($xs, (x) => x.$o), Comments: concat($cs, $tc, $end)}
+  cs:comments d:ops_level_body &tail:source_item_tail end:item_end
+) => OperatorsLevel{Name: $d.Name, Operators: $d.Operators, Comments: concat($cs, $d.Comments, $end), Head: $d.Head, SourceSpan: $d, Source: $tail}
+rule ops_level_body OperatorsLevelBody = (
+  "level" -word_end #cut name:ident? -ws
+  -("{" @error(message="expected opening brace for level")) &head:source_head_open xs:(-empty_stmts o:ops_operator)*
+  -empty_stmts tc:comments -("}" @error(message="expected closing brace for level"))
+) => OperatorsLevelBody{Name: $name, Operators: map($xs, (x) => x.$o), Head: $head, Comments: $tc}
 rule ops_operator OpsOperator = (
   !(comments "}")
   s:((ops_prefix / ops_postfix / ops_infix / _|_ @error(message="expected prefix, postfix, or infix")) #recover(skip=item_sync))
 ) => $s
 rule ops_prefix Prefix = (
-  cs:comments "prefix" -word_end #cut x:(rule_expr @error(message="expected prefix expression")) -ws
-  a:whole_action? tc:item_end
-) => Prefix{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
+  cs:comments d:ops_prefix_body &tail:source_item_tail tc:item_end
+) => Prefix{Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule ops_prefix_body OperatorsOperatorBody = (
+  "prefix" -word_end #cut x:(rule_expr @error(message="expected prefix expression")) a:trailing_action?
+) => OperatorsOperatorBody{Assoc: "", Expr: $x, Action: $a}
 rule ops_postfix Postfix = (
-  cs:comments "postfix" -word_end #cut x:(rule_expr @error(message="expected postfix expression")) -ws
-  a:whole_action? tc:item_end
-) => Postfix{Expr: $x, Action: $a, Comments: concat($cs, $tc)}
+  cs:comments d:ops_postfix_body &tail:source_item_tail tc:item_end
+) => Postfix{Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule ops_postfix_body OperatorsOperatorBody = (
+  "postfix" -word_end #cut x:(rule_expr @error(message="expected postfix expression")) a:trailing_action?
+) => OperatorsOperatorBody{Assoc: "", Expr: $x, Action: $a}
 rule ops_infix Infix = (
-  cs:comments "infix" -word_end #cut
+  cs:comments d:ops_infix_body &tail:source_item_tail tc:item_end
+) => Infix{Assoc: $d.Assoc, Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule ops_infix_body OperatorsOperatorBody = (
+  "infix" -word_end #cut
   assoc:(("left" / "right" / "none") @error(message="expected left, right, or none associativity"))
-  -word_end x:(rule_expr @error(message="expected infix expression")) -ws a:whole_action? tc:item_end
-) => Infix{Assoc: text($assoc), Expr: $x, Action: $a, Comments: concat($cs, $tc)}
+  -word_end x:(rule_expr @error(message="expected infix expression")) a:trailing_action?
+) => OperatorsOperatorBody{Assoc: text($assoc), Expr: $x, Action: $a}
 
 // Predicate Actions and Value Actions share statement syntax. The source AST
 // retains unsupported blocks and inline actions for later compilation checks.
@@ -449,16 +485,19 @@ rule list_constructor ListConstructor = (
   items:action_args? cs:comments -("}" @error(message="expected closing brace for list constructor"))
 ) => ListConstructor{Elem: $elem, Items: concat($items), Comments: $cs}
 rule constructor Constructor = (
-  name:var_name -ws "{" {ml := true} -ws #cut (fields:constructor_fields / args:action_args)? cs:comments
+  name:var_name -ws "{" &head:source_head_open {ml := true} -ws #cut (fields:constructor_fields / args:action_args)? cs:comments
   -("}" @error(message="expected closing brace for constructor"))
-) => Constructor{X: $name, Inits: concat($fields), Args: concat($args), Comments: $cs}
+) => Constructor{X: $name, Inits: concat($fields), Args: concat($args), Comments: $cs, Head: $head}
 rule constructor_fields []InitField = (
   first:init_field rest:(-ws "," -ws f:init_field)* (-ws "," -ws)?
 ) => concat(list($first), map($rest, (x) => x.$f))
 rule init_field InitField = (
-  cs:comments name:(ident @error(message="expected initializer field name")) -ws -":" -ws
+  cs:comments d:init_field_body &tail:source_comma_tail
+) => InitField{Name: $d.Name, Val: $d.Val, Comments: $cs, SourceSpan: $d, Source: $tail}
+rule init_field_body InitFieldBody = (
+  name:(ident @error(message="expected initializer field name")) -ws -":" -ws
   x:(action_expr @error(message="expected initializer value"))
-) => InitField{Name: $name, Val: $x, Comments: $cs}
+) => InitFieldBody{Name: $name, Val: $x}
 rule int Int = t:(digit+ #atomic) => Int{Text: text($t)}
 rule true True = t:("true" !ident_char) #atomic => True{Text: text($t)}
 rule false False = t:("false" !ident_char) #atomic => False{Text: text($t)}
@@ -514,6 +553,41 @@ rule char_class_chr Char = t:(("\\" escape_char / [^\]\\\n]) #atomic) => Char{Te
 rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab0] / [^a-zA-Z0-9]
 
 // Normalized declaration ownership, independent of raw formatter comments.
+// The lookahead rules never fail, so recording ownership cannot change what a
+// statement accepts: an unrecognizable boundary has no comments and no next owner.
+rule source_head SourceLead = b:(source_remaining / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_head_open SourceLead = b:(source_after_boundary / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_empty_boundary SourceBoundary = _ => SourceBoundary{Trailing: "", Leading: "", Detached: list(), HasNext: false}
+
+// The boundary after a statement. A separator, when present, is a token of its own
+// with its own boundary after it: a trailing group there replaces the one before the
+// separator, and the next sibling's leading groups come from the boundary after it.
+rule source_item_tail SourceItem = (
+  source_tail_after_separator_trailing / source_tail_after_separator / source_tail_plain / source_tail_empty
+)
+rule source_tail_after_separator_trailing SourceItem = (
+  source_after_boundary source_semis t2:source_after_boundary_trailing
+) => SourceItem{Trailing: $t2.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+rule source_tail_after_separator SourceItem = (
+  t1:source_after_boundary source_semis t2:source_after_boundary
+) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+rule source_tail_plain SourceItem = (
+  t:source_after_boundary
+) => SourceItem{Trailing: $t.Trailing, Next: SourceLead{Leading: $t.Leading, Detached: $t.Detached, HasNext: $t.HasNext}}
+rule source_tail_empty SourceItem = _ => SourceItem{Trailing: "", Next: SourceLead{Leading: "", Detached: list(), HasNext: false}}
+rule source_semis = ";" (-source_trivia* ";")*
+rule source_trivia = source_space / source_line_comment / source_block_comment
+// Constructor fields have a comma as their separator.
+rule source_comma_tail SourceItem = (
+  source_comma_after_separator_trailing / source_comma_after_separator / source_tail_plain / source_tail_empty
+)
+rule source_comma_after_separator_trailing SourceItem = (
+  source_after_boundary "," t2:source_after_boundary_trailing
+) => SourceItem{Trailing: $t2.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+rule source_comma_after_separator SourceItem = (
+  t1:source_after_boundary "," t2:source_after_boundary
+) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+
 rule source_after_boundary SourceBoundary = (
   source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
   / source_newline_boundary / source_remaining
@@ -531,6 +605,14 @@ rule source_ambiguous_block_boundary SourceBoundary = (
 ) => SourceBoundary{Trailing: "", Leading: "", Detached: list($c), HasNext: true}
 rule source_newline_boundary SourceBoundary = (
   -source_horizontal -source_nl -source_horizontal c:(source_first_trailing / source_empty_comment) b:source_remaining
+) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+// A boundary that has a trailing group, even an empty one. After a separator it
+// replaces the trailing group found before the separator.
+rule source_after_boundary_trailing SourceBoundary = (
+  source_inline_line_boundary / source_inline_block_boundary / source_newline_trailing_boundary
+)
+rule source_newline_trailing_boundary SourceBoundary = (
+  -source_horizontal -source_nl -source_horizontal c:source_first_trailing b:source_remaining
 ) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 
 // A first standalone group can trail the previous declaration when a blank

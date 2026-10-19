@@ -70,3 +70,37 @@ func TestSetSpanPreservesOwnership(t *testing.T) {
 		t.Fatal("accepted nil destination")
 	}
 }
+
+func TestItems(t *testing.T) {
+	p := NewPositions("a b c d")
+	head := Lead{Leading: " head\n", Detached: []string{" d0\n"}, HasNext: true}
+	items := []*Item{
+		{Start: 0, End: 1, Trailing: " t0\n", Next: Lead{Leading: " l1\n", HasNext: true}},
+		{Start: 2, End: 3, Next: Lead{Leading: " unowned\n"}},
+		{Start: 4, End: 5, Next: Lead{Leading: " l3\n", HasNext: true}},
+		nil,
+		{Start: 6, End: 7},
+	}
+	got, err := p.Items(head, items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[0].LeadingComments != " head\n" || !reflect.DeepEqual(got[0].LeadingDetachedComments, []string{" d0\n"}) || got[0].TrailingComments != " t0\n" {
+		t.Fatalf("first: %+v", got[0])
+	}
+	if got[1].LeadingComments != " l1\n" || got[1].Pos.Col != 3 {
+		t.Fatalf("second: %+v", got[1])
+	}
+	if got[2].LeadingComments != "" {
+		t.Fatalf("a boundary without a next owner gives its groups away: %+v", got[2])
+	}
+	if got[3].Pos.IsValid() {
+		t.Fatalf("a nil element owns nothing: %+v", got[3])
+	}
+	if got[4].LeadingComments != "" {
+		t.Fatalf("a nil element leaves its successor without groups: %+v", got[4])
+	}
+	if _, err := p.Items(Lead{}, []*Item{{Start: 0, End: 99}}); err == nil {
+		t.Fatal("accepted invalid span")
+	}
+}

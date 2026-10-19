@@ -79,3 +79,49 @@ func (p *Positions) PackageClause(g *grammar.Grammar, name string, m Metadata) e
 	g.File.Pkg.Name, g.File.Pkg.SourceInfo = name, s
 	return nil
 }
+
+// Lead is the canonical record of the comment groups that lead the next owner
+// of a boundary: the leading group, the detached groups and whether an owner
+// follows. A boundary with no next owner leaves its groups unowned.
+type Lead struct {
+	Leading  string
+	Detached []string
+	HasNext  bool
+}
+
+// Item is a canonical list element. A statement cannot see the boundary before
+// it, so the grammar records the boundary after it: the element's own trailing
+// group and the Lead of the element that follows.
+type Item struct {
+	Start, End int
+	Trailing   string
+	Next       Lead
+}
+
+// Items converts the elements of one list to source information. An element
+// takes its leading and detached groups from the previous element's Next, and the
+// first from head, the boundary after the list's opening delimiter or the start
+// of the file. A nil element, such as a recovered error, owns nothing and leaves
+// its successor without leading groups. Comment text is copied as determined by
+// the grammar; no group moves between boundaries.
+func (p *Positions) Items(head Lead, items []*Item) ([]grammar.SourceInfo, error) {
+	out := make([]grammar.SourceInfo, len(items))
+	lead := head
+	for i, it := range items {
+		if it == nil {
+			lead = Lead{}
+			continue
+		}
+		m := Metadata{Start: it.Start, End: it.End, Trailing: it.Trailing}
+		if lead.HasNext {
+			m.Leading, m.Detached = lead.Leading, lead.Detached
+		}
+		s, err := p.Source(m)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = s
+		lead = it.Next
+	}
+	return out, nil
+}

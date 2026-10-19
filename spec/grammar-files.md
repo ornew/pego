@@ -69,6 +69,16 @@ line endings; each detached entry is one paragraph. Older JSON may omit these
 metadata objects. Comment grouping and node ownership follow
 [Comment Grouping and Ownership](#comment-grouping-and-ownership).
 
+The canonical `pego.pego` grammar assigns the same spans and owners as the
+hand-written frontend to the package clause, type and rule declarations, struct
+fields, operators skip, operand, level and operator lines, and constructor field
+initializers. Each such statement or list element records its own trailing group
+and the lead (leading group, detached groups and whether an owner follows) of the
+next element; a list's first element takes its lead from the boundary after the
+opening delimiter. Ownership of the other source forms, such as expression
+operands, closing delimiters and member markers, is not constructed by the
+canonical grammar.
+
 `SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
 comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
 the surrounding line relationship. A nil layout uses canonical formatting.

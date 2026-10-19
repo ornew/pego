@@ -232,10 +232,25 @@ operand boundaries and constructor field names. It preserves normalized
 ownership and the JSON contract while keeping comments at their parsed physical
 boundary; its scope and remaining formatter work are described under
 [JSON and Formatting](#json-and-formatting).
-Complete canonical grammar metadata construction and ownership migration for
-the other source forms before considering this design complete. The focused
-fixtures are an oracle for covered boundaries, not a substitute for grammar
-parser parity and the remaining formatter gates.
+The canonical `pego.pego` parser builds ownership for the package clause, type
+declarations, rule declarations, struct fields, operators skip/operand/level/
+operator lines and constructor field initializers. A statement cannot see the
+boundary before it, so each boundary is recorded once after the item it
+follows: the item's own trailing group (`Source`) and the `SourceLead` (leading
+group, detached groups and whether an owner follows) of the next item (`Next`).
+A list's first element takes its lead from the `Head` recorded after the
+opening delimiter, or the start of the file. The source adapter
+(`internal/sourceast`, `Positions.Items`) joins these records into
+`grammar.SourceInfo` without moving a group between boundaries. Parity with the
+hand-written frontend is tested over crafted comment cases and every grammar in
+the repository.
+
+Ownership for the other source forms is not yet constructed by the canonical
+grammar and remains before this design is complete: expression and type
+operands, member markers, closing delimiters, callee-open boundaries and the
+type-expression header. Each needs a formatter gate: byte-identical output on
+the existing format corpus and no lost comment. The focused fixtures are an
+oracle for covered boundaries, not a substitute for those gates.
 
 ## Alternatives Considered
 
@@ -312,10 +327,12 @@ and selected owner construction only. The transparent Type/Action grouping incre
 validated, including owned boundary comments, strict and permissive JSON,
 structural validation and equivalent generated code and parse results.
 The in-progress raw interior-layout formatter increment is scoped to selected
-unary/lambda value boundaries and constructor field names. Canonical metadata construction in `pego.pego`
-and ownership migration for the remaining source forms are still follow-up
-scope. Keep the overall record Proposed until those parts of the contract are
-implemented and validated.
+unary/lambda value boundaries and constructor field names. Canonical metadata
+construction in `pego.pego` covers statements and list elements and matches the
+hand-written frontend on the parity corpus. Ownership of expression and type
+operands, member markers, closing delimiters, callee-open boundaries and the
+type-expression header is still follow-up scope. Keep the overall record
+Proposed until those parts of the contract are implemented and validated.
 
 ### Parenthesized Source Groups: Incremental Cost
 

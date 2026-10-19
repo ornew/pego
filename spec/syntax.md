@@ -38,6 +38,7 @@ rule main = file
 rule file = &source_comments &.* #atomic file_contents
 rule file_contents = (
     {ml := false}
+    &source_head
     package_entry?
     (-empty_stmts decl)*
     -empty_stmts comments $$
@@ -46,10 +47,9 @@ rule empty_stmts = (";" -comments)*
 rule package_entry = &(comments "package" !ident_char) package_stmt
 rule package_stmt = (
     &source_remaining comments
-    package_body &source_package_tail stmt_end
+    package_body &source_item_tail stmt_end
 )
 rule package_body = "package" -word_end #cut ident
-rule source_package_tail = -";"? source_after_boundary
 rule decl = (
     !(comments $$)
     (type_decl / rule_decl / _|_)
@@ -79,8 +79,8 @@ rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 // (type Name = { ... } or type Name = node[T]).
 rule type_decl = type_alias / type_def
 rule type_alias_head = comments "type" -word_end ident -ws "~"
-rule type_alias = &type_alias_head comments type_alias_body stmt_end
-rule type_def = comments type_def_body stmt_end
+rule type_alias = &type_alias_head comments type_alias_body &source_item_tail stmt_end
+rule type_def = comments type_def_body &source_item_tail stmt_end
 // A body starts at the keyword and ends before the statement separator.
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_alias_body = "type" -word_end #cut ident -ws "~" -ws type_expr
@@ -95,10 +95,8 @@ rule node_type = (
     -"]"
 )
 rule field_spec = !(comments "}") field
-rule field = (
-    comments ident -ws
-    type_expr field_end
-)
+rule field = comments field_body &source_item_tail field_end
+rule field_body = ident -ws type_expr
 rule type_expr = operators {
     skip ws
     operand bottom
@@ -116,7 +114,7 @@ rule type_expr = operators {
 
 // An unnamed struct type has the fields of a struct definition.
 rule struct_type = (
-    "{" {ml := false} field_spec* comments
+    "{" {ml := false} &source_head_open field_spec* comments
     -"}"
 )
 
@@ -134,11 +132,14 @@ rule type_tuple = "(" {ml := true} -ws (type_expr -ws "," -ws)* type_expr? -ws "
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
-rule rule_decl = (
-    comments "rule" -word_end #cut ident -ws type_expr? -ws
-    -"=" -ws (ops_rule_expr / rule_expr) -ws whole_action? stmt_end
+rule rule_decl = comments rule_def_body &source_item_tail stmt_end
+rule rule_def_body = (
+    "rule" -word_end #cut ident -ws type_expr? -ws
+    -"=" -ws (ops_rule_expr / rule_expr) trailing_action?
 )
 rule whole_action = "=>" -ws action
+// The spacing before an action belongs to the action, so a rule without one ends at its expression.
+rule trailing_action = -ws whole_action
 rule rule_expr = operators {
     skip ws
     operand rule_group / predicate / level_call / bottom / top / begin_input / begin_line / end_input / end_line / any / cut / string / char_class / rule_ref
@@ -216,39 +217,36 @@ rule signed_int = (("-" -ws)? digit+ #atomic) #atomic
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr = (
-    "operators" !ident_char -ws &"{" #cut "{" {ml := false} (-empty_stmts ops_stmt)* -empty_stmts
+    "operators" !ident_char -ws &"{" #cut "{" {ml := false} &source_head_open (-empty_stmts ops_stmt)* -empty_stmts
     comments -"}"
 )
 rule ops_stmt = (
     !(comments "}")
     (ops_skip_stmt / ops_operand_stmt / ops_level_stmt / _|_)
 )
-rule ops_skip_stmt = comments "skip" -word_end #cut rule_expr item_end
-rule ops_operand_stmt = (
-    comments "operand" -word_end #cut rule_expr -ws
-    whole_action? item_end
-)
-rule ops_level_stmt = (
-    comments "level" -word_end #cut ident? -ws
-    -"{" (-empty_stmts ops_operator)*
-    -empty_stmts comments -"}" item_end
+rule ops_skip_stmt = comments ops_skip_body &source_item_tail item_end
+rule ops_skip_body = "skip" -word_end #cut rule_expr
+rule ops_operand_stmt = comments ops_operand_body &source_item_tail item_end
+rule ops_operand_body = "operand" -word_end #cut rule_expr trailing_action?
+rule ops_level_stmt = comments ops_level_body &source_item_tail item_end
+rule ops_level_body = (
+    "level" -word_end #cut ident? -ws
+    -"{" &source_head_open (-empty_stmts ops_operator)*
+    -empty_stmts comments -"}"
 )
 rule ops_operator = (
     !(comments "}")
     (ops_prefix / ops_postfix / ops_infix / _|_)
 )
-rule ops_prefix = (
-    comments "prefix" -word_end #cut rule_expr -ws
-    whole_action? item_end
-)
-rule ops_postfix = (
-    comments "postfix" -word_end #cut rule_expr -ws
-    whole_action? item_end
-)
-rule ops_infix = (
-    comments "infix" -word_end #cut
+rule ops_prefix = comments ops_prefix_body &source_item_tail item_end
+rule ops_prefix_body = "prefix" -word_end #cut rule_expr trailing_action?
+rule ops_postfix = comments ops_postfix_body &source_item_tail item_end
+rule ops_postfix_body = "postfix" -word_end #cut rule_expr trailing_action?
+rule ops_infix = comments ops_infix_body &source_item_tail item_end
+rule ops_infix_body = (
+    "infix" -word_end #cut
     ("left" / "right" / "none")
-    -word_end rule_expr -ws whole_action? item_end
+    -word_end rule_expr trailing_action?
 )
 
 // Predicate Actions and Value Actions share statement syntax. The source AST
@@ -311,12 +309,13 @@ rule list_constructor = (
     action_args? comments -"}"
 )
 rule constructor = (
-    var_name -ws "{" {ml := true} -ws #cut (constructor_fields / action_args)? comments
+    var_name -ws "{" &source_head_open {ml := true} -ws #cut (constructor_fields / action_args)? comments
     -"}"
 )
 rule constructor_fields = init_field (-ws "," -ws init_field)* (-ws "," -ws)?
-rule init_field = (
-    comments ident -ws -":" -ws
+rule init_field = comments init_field_body &source_comma_tail
+rule init_field_body = (
+    ident -ws -":" -ws
     action_expr
 )
 rule int = digit+ #atomic
@@ -368,6 +367,27 @@ rule char_class_chr = ("\\" escape_char / [^\]\\\n]) #atomic
 rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab0] / [^a-zA-Z0-9]
 
 // Normalized declaration ownership, independent of raw formatter comments.
+// The lookahead rules never fail, so recording ownership cannot change what a
+// statement accepts: an unrecognizable boundary has no comments and no next owner.
+rule source_head = source_remaining / source_empty_boundary
+rule source_head_open = source_after_boundary / source_empty_boundary
+rule source_empty_boundary = _
+
+// The boundary after a statement. A separator, when present, is a token of its own
+// with its own boundary after it: a trailing group there replaces the one before the
+// separator, and the next sibling's leading groups come from the boundary after it.
+rule source_item_tail = source_tail_after_separator_trailing / source_tail_after_separator / source_tail_plain / source_tail_empty
+rule source_tail_after_separator_trailing = source_after_boundary source_semis source_after_boundary_trailing
+rule source_tail_after_separator = source_after_boundary source_semis source_after_boundary
+rule source_tail_plain = source_after_boundary
+rule source_tail_empty = _
+rule source_semis = ";" (-source_trivia* ";")*
+rule source_trivia = source_space / source_line_comment / source_block_comment
+// Constructor fields have a comma as their separator.
+rule source_comma_tail = source_comma_after_separator_trailing / source_comma_after_separator / source_tail_plain / source_tail_empty
+rule source_comma_after_separator_trailing = source_after_boundary "," source_after_boundary_trailing
+rule source_comma_after_separator = source_after_boundary "," source_after_boundary
+
 rule source_after_boundary = (
     source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
     / source_newline_boundary / source_remaining
@@ -380,6 +400,10 @@ rule source_inline_block_boundary = (
 // One inline block ending on the next token's line is ambiguous, not trailing.
 rule source_ambiguous_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
 rule source_newline_boundary = -source_horizontal -source_nl -source_horizontal (source_first_trailing / source_empty_comment) source_remaining
+// A boundary that has a trailing group, even an empty one. After a separator it
+// replaces the trailing group found before the separator.
+rule source_after_boundary_trailing = source_inline_line_boundary / source_inline_block_boundary / source_newline_trailing_boundary
+rule source_newline_trailing_boundary = -source_horizontal -source_nl -source_horizontal source_first_trailing source_remaining
 
 // A first standalone group can trail the previous declaration when a blank
 // line, another group, or the end of a scope flushes it before the next token.

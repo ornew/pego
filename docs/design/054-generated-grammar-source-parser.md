@@ -88,10 +88,11 @@ generated source is stale.
 
 ### Incremental Source Span Construction
 
-The canonical source tree currently constructs normalized package-clause metadata
-in `Package.Source`. Top-level type declarations additionally retain a
-syntax-only `TypeDef.SourceSpan`: a typed body node from the `type` keyword
-through the completed type specification. Leading and trailing boundary comments,
+The canonical source tree constructs normalized package-clause metadata in
+`Package.Source`. Type and rule declarations, struct fields, operators lines and
+constructor field initializers each retain a syntax-only `SourceSpan` (a typed
+body node) and a `Source` boundary record. A type declaration's span runs from
+the `type` keyword through the completed type specification. Leading and trailing boundary comments,
 statement separators and following whitespace stay outside that span. Comments
 inside a continuous type specification, including nested fields and grouping,
 stay inside it. A separate typed whole-rule body production provides the parsed
@@ -102,11 +103,12 @@ construct its span. No inline action or untyped sequence-field lookup is require
 
 The internal offset adapter maps zero-based rune offsets to public one-based
 `grammar.Pos` values. Its span-only update retains existing normalized ownership,
-diagnostic token positions and formatter layout. Type declaration comment
-ownership remains a separate construction step: a completed declaration's
-boundary must explicitly supply the next declaration's leading and detached
-groups. Reclassifying a raw comment list in the adapter would duplicate or move
-ownership and is not part of this design.
+diagnostic token positions and formatter layout. A completed item's
+boundary explicitly supplies the next item's leading and detached groups
+(`Next`); a list's first item takes them from the boundary after its opening
+delimiter (`Head`). `Positions.Items` joins these records. Reclassifying a raw
+comment list in the adapter would duplicate or move ownership and is not part of
+this design.
 
 This increment is a source-span contract, not a complete public-AST adapter or a
 parser selection change. Differential span cases cover aliases, terminals,
