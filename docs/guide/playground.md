@@ -19,7 +19,7 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 |:--|:--|
 | **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Operators Rule and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
 | **Start** | The start rule (`pego parse -s`). The default is `main`, or the first rule if the grammar has no `main` (where `pego parse` without `-s` would report that `main` is not defined). A start rule that the grammar does not define, after an edit or in a shared link, stays selected and is reported as an error |
-| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree) and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `pego parse` leaves out by default). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
+| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree), **Default value** (`-default-value`: drops value actions and declared rule types, so the tree is the default node tree; predicates still run), and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `pego parse` leaves out by default). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **WASM compiler** | Go is the default. Sites built in dual mode also offer TinyGo. The selection stays in the shared URL's `compiler` query parameter; a TinyGo link on a Go-only site shows an unavailable message |
 | **Format** | Formats the grammar like `pego fmt`, keeping comments. The change can be undone |
 | **Share** | Copies a link that holds the grammar, the input and the options (see [shared links](#shared-links)) |
@@ -105,7 +105,7 @@ page or Node:
 | Method | Request | Response |
 |:--|:--|:--|
 | `compile` | `{grammar}` | `{ok, package, rules: [{name, type, line, col}], types: [{name, kind, spec, line, col}], start, diagnostics: [{line, col, message}]}` |
-| `parse` | `{grammar, input, start, unit, backend, recognize, sourceInfo, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
+| `parse` | `{grammar, input, start, unit, backend, recognize, sourceInfo, defaultValue, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
 | `format` | `{grammar}` | `{formatted, diagnostics}` |
 | `generate` | `{grammar, language, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |

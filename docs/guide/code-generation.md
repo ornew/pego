@@ -160,7 +160,7 @@ The output is exactly what the engine prints for the same grammar and input.
 ## The `pego gen` Command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth <n>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-stream] [-recognize] [-observability] [-default-value] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
@@ -176,6 +176,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](generated-go-api.md#recognition--recognize)) |
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
+| `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/actions.md#default-values)). Cannot be combined with `-types` |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
 Details:
@@ -237,7 +238,7 @@ if err != nil {
 err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithGeneratedDefaultValue()` is `-default-value`; `pego.WithoutPackageDoc()` is `-nodoc`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [Running Parsers](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.

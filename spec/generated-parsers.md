@@ -25,7 +25,7 @@ runtime, which is the same for every grammar of one generator release.
 ```text
 pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
          [-types] [-document] [-stream] [-recognize] [-observability]
-         [-source-info] [-nodoc] [-max-depth <n>]
+         [-source-info] [-default-value] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Go option | Meaning |
@@ -41,6 +41,7 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
 | `-recognize` | `WithRecognize()` | Generate recognition without a tree |
 | `-observability` | `WithGeneratedObservability()` | Generate tracing and profiling, specified in [Observability](observability.md) |
 | `-source-info` | `WithGeneratedSourceInfo()` | Make the parser record [source information](nodes.md#source-information): the rule of each node and the names of captures. Without it, `Node.Rule`, `Node.Field` and `Node.Fields` of a parsed node are empty and the outputs omit them |
+| `-default-value` | `WithGeneratedDefaultValue()` | Make the parser return default values, as [Default Values](actions.md#default-values) describes. Cannot be combined with `-types`, because the types come from the dropped actions |
 | `-nodoc` | `WithoutPackageDoc()` | Omit the package comment (Go only; rejected with `-lang ts`) |
 | `-max-depth` | `WithGeneratedMaxDepth(n)` | The default nested rule-call limit; zero selects 100,000, a positive value overrides it, a negative value fails generation. TypeScript also requires a safe integer |
 

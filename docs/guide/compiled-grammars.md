@@ -359,7 +359,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 13 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
+| Instruction-set version | 17 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
 
 The consequences:
 
@@ -369,7 +369,7 @@ The consequences:
 - **An older PEGO refuses files requiring a newer format or instruction set.**
   It reports `unsupported instruction set version` or `unsupported compiled grammar version`.
   A runtime with a narrower implementation `int` rejects repetition bounds outside its range.
-- **A file keeps its source information.** A grammar compiled with source information loads with it.
+- **A file keeps its source information and default-value flag.** A grammar compiled with source information or with default values loads with them.
 - **The same grammar can produce different bytes in a new release**, when the compiler improves. Rebuild the file when
   you upgrade PEGO, as you would regenerate [generated code](code-generation.md#keeping-generated-code-up-to-date).
   The up-to-date test above fails after such an upgrade until you do.

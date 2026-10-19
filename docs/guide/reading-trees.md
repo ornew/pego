@@ -106,6 +106,11 @@ suffixes and `name:` labels. The grammar `kv.pego` is `rule main = k:key ":" v:n
 
 The forms are defined in [Text Rendering and JSON Encoding](../../spec/nodes.md#text-rendering).
 
+Default values are also opt-in. A parser compiled with `pego.WithDefaultValue()` (the `-default-value` flag of
+`pego parse`) drops the value actions and the declared rule types before it compiles the grammar, so every rule
+returns the default node tree even when the grammar has actions. Predicates still run, and the rules whose values
+predicates read keep their actions. The exact rules are in [Default Values](../../spec/actions.md#default-values).
+
 ## Reading a Whole Tree
 
 The program below parses a left-associative sum and prints every node with its range, reading struct fields by name:

@@ -40,7 +40,7 @@ rule ws = [ \t\n]*
 
 ```bash
 pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
-           [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info]
+           [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info] [-default-value]
 ```
 
 | Flag | Default | Meaning |
@@ -53,6 +53,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-unit` | `codepoints` | Position unit |
 | `-backend` | chosen for the grammar | `closure`, `bytecode` or `bytecode-iterative` |
 | `-source-info` | off | Record the rule of each node and the names of captures, and print them |
+| `-default-value` | off | Drop value actions and declared rule types, so the parse returns the default node tree; predicates still run (see [Default Values](../../spec/actions.md#default-values)) |
 | `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
 
 ```bash
@@ -264,11 +265,11 @@ pego convert -to pego pairs.pegoc                  # recover the source of a com
 ## `compile`
 
 ```bash
-pego compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] -o <file.pegoc>
+pego compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] [-default-value] -o <file.pegoc>
 ```
 
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
-the file, `-no-ast` omits the AST, and `-source-info` makes the parser record the rule of each node and the names of captures. When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
+the file, `-no-ast` omits the AST, `-source-info` makes the parser record the rule of each node and the names of captures, and `-default-value` makes it return default values (the flag is stored in the file). When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
 AST-less input without it rather than implying that the missing AST was restored. A version 3 recognition bundle is
 preserved when re-saving with `-no-ast`. Both `-g` and `-o` are required.
 
@@ -278,13 +279,18 @@ writes no output. The option preserves bytecode-only form; it cannot restore sou
 ## `gen`
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-source-info]
-pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-source-info] [-default-value]
+pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize] [-default-value]
 ```
 
 Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript
 module (see [typescript.md](typescript.md)). `-g` is required, and `-pkg` for Go; without `-o` the code goes to
 standard output. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
+`-default-value` makes the generated parser return default values; it cannot be combined with `-types`, because the
+types come from the dropped actions.
+
+A `.pegoc` compiled without `-default-value` cannot be used with `-default-value` in `parse` or `gen`: the command
+asks you to compile it again with `-default-value`.
 
 ## `explain`, `trace` and `profile`
 

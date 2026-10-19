@@ -346,6 +346,25 @@ argument order and then element order, into one list value. A `nil` or error val
 argument contributes no elements. `concat()` returns an empty list. The
 checker combines the element types of all list arguments.
 
+## Default Values
+
+A parser compiled with **default values** (`pego.WithDefaultValue()`, `pego parse -default-value`,
+`pego compile -default-value`, or `pego gen -default-value` for a generated parser) ignores the value
+actions of the grammar. Before compilation, every value action (`=>` on a rule, and the actions of the
+operands and operators of an [Operators Rule](operators-rule.md)) and the declared type of each rule
+are dropped, so each rule produces the default value of its expression, as described in
+[Nodes and Values](nodes.md). Nothing is checked against the types that only actions would have made.
+Type declarations stay in the grammar.
+
+Predicates still run, because they decide the match. The rules called inside a capture that a predicate
+reads, and the rules that those call, keep their actions and declared types, so the values that
+predicates see are the same as without default values; the parse result holds these action values for
+those rules too. Recovery, `#stream` and captures behave as
+without actions.
+
+A parser that is compiled with default values stores the flag in its compiled form, and a loaded
+compiled grammar keeps it.
+
 ## Types and Errors
 
 Action expressions are type-checked when a grammar is compiled. The checker
