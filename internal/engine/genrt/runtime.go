@@ -2561,14 +2561,14 @@ type evalError struct{ msg string }
 
 func evalErrorf(format string, args ...any) { panic(evalError{fmt.Sprintf(format, args...)}) }
 
-// rtIndex returns the index i of a list of n elements, failing the action if i is not an int in
+// rtIndex returns the index i of a list or tuple of n elements, failing the action if i is not an int in
 // range; typeName names the type of i.
 func rtIndex(p *parser, i any, n int, typeName func(any) string) int {
 	k, ok := i.(int)
 	if !ok {
 		p.evalErrorf("index must be int, got %s", typeName(i))
 	} else if k < 0 || k >= n {
-		p.evalErrorf("index %d out of range for a list of %d elements", k, n)
+		p.evalErrorf("index %d out of range for %d elements", k, n)
 	}
 	return k
 }

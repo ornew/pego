@@ -904,7 +904,7 @@ func (p *parser) index(l, i any) (any, error) {
 		return nil, p.actionError("index must be int, got ", typeName(i))
 	}
 	if n < 0 || n >= len(items) {
-		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for a list of ", strconv.Itoa(len(items)), " elements")
+		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for ", strconv.Itoa(len(items)), " elements")
 	}
 	return unboxNode(items[n]), nil
 }

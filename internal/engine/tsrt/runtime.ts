@@ -3371,7 +3371,7 @@ function rtBinary(op: string, l: Value, r: Value): Value {
         return evalError(`index must be int, got ${typeName(r)}`);
       }
       if (r < 0 || r >= items.length) {
-        return evalError(`index ${r} out of range for a list of ${items.length} elements`);
+        return evalError(`index ${r} out of range for ${items.length} elements`);
       }
       return unboxValue(items[Number(r)] ?? null);
     }

@@ -71,7 +71,7 @@ rule item = [a-z]`)
 			t.Fatalf("%s: indexed %q", backend, node.text)
 		}
 		_, err = program.ParseWith("main", "a", ParseOptions{Backend: backend})
-		if err == nil || !strings.Contains(err.Error(), "index 1 out of range for a list of 1 elements") {
+		if err == nil || !strings.Contains(err.Error(), "index 1 out of range for 1 elements") {
 			t.Fatalf("%s: %v", backend, err)
 		}
 	}
@@ -280,7 +280,7 @@ import("fmt";"strings";"testing")
 func TestIndex(t *testing.T){
  for _,opts:=range [][]ParseOption{nil,{WithWorkLimits(WorkLimits{MaxSteps:1<<50})}}{
   n,err:=Parse("abc",opts...);if err!=nil || !strings.Contains(fmt.Sprintf("%+v",n),"b"){t.Fatal(n,err)}
-  _,err=Parse("a",opts...);if err==nil || !strings.Contains(err.Error(),"index 1 out of range for a list of 1 elements"){t.Fatal(err)}
+  _,err=Parse("a",opts...);if err==nil || !strings.Contains(err.Error(),"index 1 out of range for 1 elements"){t.Fatal(err)}
  }
 }
 `
