@@ -230,15 +230,6 @@ func isNode(t ty) bool {
 	return false
 }
 
-// isNodeOrNil reports whether every value of type t is a node or nil: the values a rule or an
-// action may produce.
-func isNodeOrNil(t ty) bool {
-	if o, ok := t.(optTy); ok {
-		return isNode(o.elem)
-	}
-	return t == tyNil || isNode(t)
-}
-
 // overlaps reports whether some value has both type a and type b, so a cast between them may hold.
 func overlaps(a, b ty) bool {
 	if assignable(a, b) || assignable(b, a) {

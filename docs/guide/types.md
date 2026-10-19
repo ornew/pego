@@ -42,8 +42,7 @@ pego parse -g assign-ast.pego -f sexpr -i 'ab = cd;'
 The `Assign` value has no `@rule` label because an action built it, not a rule without an action. Type names and field
 names start with an uppercase letter; rule names are in a separate namespace, so `rule name = . . .` is fine. `int`,
 `string`, `bool` and `node[T]` are built in, and `error` is the type of the values that [error recovery](recovery.md)
-produces. A rule's value must be a node (or `nil`), but struct fields and action expressions may also hold `int`, `string`
-and `bool`.
+produces. Rule values, list elements, struct fields and action expressions may hold `int`, `string` and `bool` as well as nodes.
 
 An alias is only another name: with `type Binding ~ Assign`, `Binding{...}` produces an `Assign`. Chained aliases and
 unions reduced to one member follow the same rule; an alias does not create a distinct type.

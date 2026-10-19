@@ -31,7 +31,7 @@ rule main = "a" => Alias{}`, `Alias is not a struct type`},
 type B ~ A
 rule main = "a" => A{}`, `A is not a struct type`},
 		{`type A = { X node[string]; X node[string] }`, `duplicate field X in A`},
-		{`rule main int = "a"`, `rule main must produce a node, but its type is int`},
+		{`rule main int = "a"`, `rule main produces node[string], which is not assignable to int`},
 		{`type P = { X node[string] }
 rule main = "a" => P{X: 1}`, `cannot use int as node[string] in field X of P`},
 		{`type Num = { Text string }
@@ -45,7 +45,6 @@ rule main = x:"a" / "b" => P{X: $x}`, `cannot use *node[string] as node[string] 
 		{`rule main = xs:(k:"a")* => $xs.$k`, `[]node{k: node[string]} has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
-		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
 		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
 		{`type Op = { X node[string] }
 rule main Op = "a"`, `rule main produces node[string], which is not assignable to Op`},
@@ -55,8 +54,7 @@ rule e E = operators {
     level { infix left "+" }
 }`, `operators of e without an action produce a tuple node, which is not assignable to E`},
 		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => a)`, `foldl: expected a list, got node[string]`},
-		{`rule main = xs:"a"* => map($xs, (x) => len(x))`, `map: the function must produce a node, got int`},
-		{`rule main = "a" => list(1)`, `list: elements must be nodes, got int`},
+		{`rule main = "a" => list((x) => x)`, `functions can only be passed to filter, foldl, foldr, or map`},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
 			if got := compileError(t, tc.src); !strings.Contains(got, tc.want) {
@@ -69,6 +67,11 @@ rule e E = operators {
 // TestWellTyped checks that well-typed grammars compile.
 func TestWellTyped(t *testing.T) {
 	for _, src := range []string{
+		// Rules, actions and list elements may produce ints, strings and bools.
+		`rule main int = d:[0-9]+ #atomic => len($d)`,
+		`rule main = "a" => 1`,
+		`rule main = xs:"a"* => map($xs, (x) => len(x))`,
+		`rule main = "a" => list(1, "s", true, nil)`,
 		// Union types and the type of the foldl accumulator
 		`type Number = { Text string }
 type Op = { Left Node; Op node[string]; Right Node }

@@ -25,9 +25,9 @@ offending construct.
 | `_\|_` | No value: the bottom type. |
 | `T` | A user-defined type. |
 
-The value of a rule, and the result of an action, MUST be a node (or `nil`);
-`int`, `string` and `bool` values occur in action expressions, in struct fields
-and in [variables](predicates.md#variables).
+The value of a rule, the result of an action and an element of a list is a
+node, an `int`, a `string`, a `bool` or `nil`; a function is not a value.
+[Variables](predicates.md#variables) hold `int`, `string` and `bool` values.
 
 A Type Expression is written with the following syntax. `[]` and `*` apply to
 the type that follows, `&` forms a meet and binds tighter than `|`, which forms

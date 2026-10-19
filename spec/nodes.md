@@ -41,7 +41,7 @@ that contains it; a capture is a name for its location and not a second copy of 
 | Error | A range skipped by `#recover`, or a `#missing` literal insertion | The range, the message and, for an insertion, the expected text |
 | Struct | `T{...}` in an action | The fields, named by the struct type; the range of the node that the action replaced |
 | Tuple value, list value | `list(...)`, `map(...)`, `[]T{...}` and the like in an action | The elements; no range |
-| Value | An `int`, `string` or `bool` that an action returns | The value; no range |
+| Value | An `int`, `string` or `bool` that an action returns, or that is an element of a list it builds | The value; no range |
 
 A rule that has only valueless elements, such as `rule a = _`, and a repetition
 iteration whose expression has no value, produce a tuple of no elements, the **unit**

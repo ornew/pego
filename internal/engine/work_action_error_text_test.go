@@ -123,7 +123,7 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 		{"unary type", func(p *parser) error { _, err := p.valueUnary("-", node); return err }},
 		{"binary type", func(p *parser) error { _, err := p.valueBinary("+", node, 1); return err }},
 		{"list name", func(p *parser) error { _, err := p.valueListItems(long, 1); return err }},
-		{"node name", func(p *parser) error { _, err := p.valueAsNode(long, 1); return err }},
+		{"element name", func(p *parser) error { _, err := (&evalCtx{p: p}).element(long, workActionFunc{}); return err }},
 		{"text type", func(p *parser) error { _, err := (&evalCtx{p: p}).textString(workActionFunc{}); return err }},
 	}
 	for _, tc := range producers {

@@ -13,7 +13,7 @@ An action is an expression after `=>` inside a rule body that computes the value
 rule <name> [<type>] = <rule expression> => <action expression>
 ```
 
-The action covers the whole right-hand side, and its result must be a node (or `nil`). Inline actions such as
+The action covers the whole right-hand side, and its result may be a node, an `int`, a `string`, a `bool` or `nil`. Inline actions such as
 `(expression => action)` are recognized by the source parser but are rejected by compilation, so they cannot yet attach
 an action to one alternative or group; give each alternative its own rule:
 
@@ -119,7 +119,7 @@ Word{From: 2, Length: 5, Long: true, Text: "hello", To: 7}
 |:--|:--|
 | `len(x)` | The length of a string or a string node in positions; the number of elements of a tuple or list node; `0` for `nil` |
 | `text(x)` | The input text that the node covers, whatever its value; `""` for `nil` |
-| `list(a, b, ...)` | A list of the arguments (nodes or `nil`) |
+| `list(a, b, ...)` | A list of the arguments |
 | `concat(l1, l2, ...)` | The concatenation of lists; a `nil` argument counts as an empty list |
 | `map(list, (x) => ...)` | The list of the results of applying the function to each element |
 | `filter(list, (x) => bool)` | Keeps the original elements whose predicate returns `true` |
@@ -128,7 +128,7 @@ Word{From: 2, Length: 5, Long: true, Text: "hello", To: 7}
 
 The function arguments are **lambdas**. They can only be written as arguments of `map`, `filter`, `foldl` and `foldr`, and
 inside them the parameters are variables, referred to by name without `$`: `acc`, `x`. A lambda can also read the captures
-of the enclosing rule with `$`. The function passed to `map` must produce a node (or `nil`) and `filter`'s predicate a
+of the enclosing rule with `$`. The function passed to `map` may produce any value and `filter`'s predicate a
 Boolean. The [specification](../../spec/actions.md#built-in-functions) defines each function exactly: element types, `nil`
 and `Error` arguments, evaluation order and what happens when a callback fails.
 

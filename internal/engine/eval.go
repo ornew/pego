@@ -741,7 +741,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 			if err != nil {
 				return err
 			}
-			n, err := c.p.valueAsNode("map", v)
+			n, err := c.element("map", v)
 			if err != nil {
 				return err
 			}
@@ -750,7 +750,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 	case "list":
 		for _, a := range args {
 			c.p.stepWork()
-			n, err := c.p.valueAsNode("list", a)
+			n, err := c.element("list", a)
 			if err != nil {
 				return err
 			}
@@ -866,21 +866,18 @@ func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {
 	return nil, fmt.Errorf("%s: expected a list, got %s", fn, typeName(v))
 }
 
-func asNode(fn string, v any) (*Node, error) {
-	return (*parser)(nil).valueAsNode(fn, v)
-}
-
-func (p *parser) valueAsNode(fn string, v any) (*Node, error) {
+// element returns v as an element of a list that the list built-in fn makes. An int, string or
+// bool travels boxed, with the range of the action's input, as the result of an action does.
+func (c *evalCtx) element(fn string, v any) (*Node, error) {
 	switch x := v.(type) {
 	case nil:
 		return nil, nil
 	case *Node:
 		return x, nil
+	case int, string, bool:
+		return c.p.newNode(Node{kind: kindBox, box: x, start: int32(c.start), end: int32(c.end)}), nil
 	}
-	if workControlsEnabled && p != nil && p.control != nil {
-		return nil, p.actionError(fn, ": list elements must be nodes, got ", typeName(v))
-	}
-	return nil, fmt.Errorf("%s: list elements must be nodes, got %s", fn, typeName(v))
+	return nil, c.p.actionError(fn, ": list elements must be values, got ", typeName(v))
 }
 
 func (f *closure) apply(x, y any) (any, error) {
@@ -1000,8 +997,8 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			// The element type is in error already.
 		} else if elem == tyNever {
 			c.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
-		} else if !nodeListElement(elem) {
-			c.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)
+		} else if !concreteListElement(elem) {
+			c.errorf(t.Diagnostic(), "list constructors require a concrete element type, got %s", elem)
 		}
 		for _, item := range t.Items {
 			c.checkTerm(item, s, locals)

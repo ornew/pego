@@ -141,9 +141,8 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 	for _, tc := range []struct{ action, message string }{
 		{`[]Int{nil}`, "cannot use"},
 		{`[]Int{Other{}}`, "cannot use"},
-		{`[]int{}`, "node element type"},
-		{`[][]string{}`, "node element type"},
-		{`[]any{}`, "node element type"},
+		{`[]any{}`, "concrete element type"},
+		{`[][]any{}`, "concrete element type"},
 		{`[]Int{x}`, "statically unknown"},
 		{`[][]Int{list(x)}`, "statically unknown"},
 		// The retired positional forms are read as the text struct constructors they mean.
@@ -164,6 +163,16 @@ rule main = {x := 1} "x" => ` + tc.action)
 				t.Fatalf("got %v; want %q", err, tc.message)
 			}
 		})
+	}
+	// Lists may hold ints, strings and bools.
+	for _, action := range []string{`[]int{}`, `[][]string{}`, `[]int{1, 2}`, `[]*bool{nil, true}`} {
+		g, err := syntax.ParseLegacy("rule main = {x := 1} \"x\" => " + action)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Compile(g, Options{}); err != nil {
+			t.Errorf("%s: %v", action, err)
+		}
 	}
 	// A terminal constructor needed exactly one positional argument; a text struct is an ordinary
 	// struct, whose constructor may leave Text unset or name it.
@@ -275,13 +284,20 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 
 func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
-	for _, action := range []string{`[]int{}`, `[][]string{}`, `Int{"a", "b"}`, `Other{"a"}`} {
+	for _, action := range []string{`[]any{}`, `Int{"a", "b"}`, `Other{"a"}`} {
 		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if _, err := Compile(g, Options{NoTypeCheck: true}); err == nil {
 			t.Fatalf("NoTypeCheck accepted unsupported constructor shape: %s", action)
+		}
+	}
+	for _, action := range []string{`[]int{}`, `[][]string{}`} {
+		if g, err := syntax.ParseLegacy(header + action); err != nil {
+			t.Fatal(err)
+		} else if _, err := Compile(g, Options{NoTypeCheck: true}); err != nil {
+			t.Errorf("NoTypeCheck rejected a list of values %s: %v", action, err)
 		}
 	}
 	if g, err := syntax.ParseLegacy(header + `Int{}`); err != nil {
@@ -300,11 +316,12 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
-			invalidValue := action == `[]Int{1}` || action == `Int{1}`
+			// Without type checking a list may hold the int 1 boxed; Int{1} still has no text.
+			invalidValue := action == `Int{1}`
 			if invalidValue != (err != nil) || invalidValue == (n != nil) {
 				t.Fatalf("%s/%s: %v / %v", action, backend, n, err)
 			}
-			if !invalidValue && (len(n.children) != 1 || (n.children[0] == nil) != (action == `[]Int{nil}`)) {
+			if !invalidValue && (len(n.children) != 1 || (n.children[0] == nil) != (action == `[]Int{nil}`) || (action == `[]Int{1}`) != (n.children[0] != nil && n.children[0].box == 1)) {
 				t.Fatal(resultJSON(n, err))
 			}
 		}

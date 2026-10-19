@@ -223,7 +223,7 @@ A leader rule is evaluated as follows:
 
 The value of the rule is built from the body value v and the start position:
 
-- **With an action:** evaluate the action with the `$n` items set to the children of v if the body is a sequence, and to [v] otherwise. If the result is a node newly created by the action, its range becomes the range of the rule. The result must be a node or nil.
+- **With an action:** evaluate the action with the `$n` items set to the children of v if the body is a sequence, and to [v] otherwise. If the result is a node newly created by the action, its range becomes the range of the rule. An `int`, `string` or `bool` result becomes a value node with the range of the rule.
 - **With a text type:** create a struct of that type whose only field, `Text`, is the text of the rule's range, with the rule's range. A compiler writes such a rule, a text struct rule, for `rule r T = t:(e) #atomic => T{Text: text($t)}` where `T`'s field `Text` is a `string`: its body is `e #atomic` and it has no action or scope, since the struct is what the action would make.
 - **Otherwise:** if the scope has captures, attach them. If v is fresh, give it the rule name if it has none, and clear its fresh mark.
 

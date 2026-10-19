@@ -1120,23 +1120,25 @@ func astKid(kids []*Node, i int) any {
 	}
 	return nil
 }
-func astInt(v any) int       { i, _ := v.(int); return i }
-func astString(v any) string { s, _ := v.(string); return s }
-func astBool(v any) bool     { x, _ := v.(bool); return x }
+
+// The value of a rule, and a list element, holds an int, string or bool in a box.
+func astInt(v any) int       { i, _ := unboxValue(v).(int); return i }
+func astString(v any) string { s, _ := unboxValue(v).(string); return s }
+func astBool(v any) bool     { x, _ := unboxValue(v).(bool); return x }
 func astPtrInt(v any) *int {
-	if i, ok := v.(int); ok {
+	if i, ok := unboxValue(v).(int); ok {
 		return &i
 	}
 	return nil
 }
 func astPtrString(v any) *string {
-	if s, ok := v.(string); ok {
+	if s, ok := unboxValue(v).(string); ok {
 		return &s
 	}
 	return nil
 }
 func astPtrBool(v any) *bool {
-	if x, ok := v.(bool); ok {
+	if x, ok := unboxValue(v).(bool); ok {
 		return &x
 	}
 	return nil

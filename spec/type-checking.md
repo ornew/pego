@@ -48,8 +48,8 @@ have the following types.
 | `x[i]` | The element type of the list `x`; `i` MUST be an `int` |
 | `x.(T)` | `T`; the type of `x` or one of its alternatives MUST be assignable to `T` or one of its alternatives, or the other way around |
 | `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
-| `map(l, f)` | `[]T`, where `T` is the type of `f`'s result, which MUST be a node or `nil` |
-| `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments, which MUST be nodes or `nil` |
+| `map(l, f)` | `[]T`, where `T` is the type of `f`'s result |
+| `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments |
 | `concat(l1, l2, ...)` | `[]T`, where `T` is the union of the element types of the arguments |
 
 The list functions treat `nil` as an empty list, which contributes no element

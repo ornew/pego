@@ -47,9 +47,7 @@ func TestTopBottomAcrossBackends(t *testing.T) {
 func TestTopBottomTypes(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		// A _ value is assignable only to _.
-		{"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A", "must produce a node, got _"},
 		{"type T = { A _ }\ntype U = { B node[string] }\nrule main = x:\"a\" => U{B: T{A: $x}.A}", "_"},
-		{"rule main _ = \"a\"", "rule main must produce a node, but its type is _"},
 		// No value has type _|_.
 		{"type T = { A _|_ }\nrule main = \"a\"", "field A of T has type _|_, which has no values"},
 		{"type B ~ []_|_\nrule main B = \"a\"", "rule main has type _|_, which has no values"},
@@ -71,6 +69,9 @@ func TestTopBottomTypes(t *testing.T) {
 		}
 	}
 	for _, src := range []string{
+		// A rule may produce a value of type _.
+		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A",
+		"rule main _ = \"a\"",
 		"type T = { A _ | node[string] }\nrule main = \"a\" => T{A: 1}",
 		"type T = { A _|_ | node[string] }\nrule main = x:\"a\" => T{A: $x}",
 		"type T = { A node[string] & _ }\nrule main = x:\"a\" => T{A: $x}\nrule other = x:\"a\" => T{A: $x}.A",

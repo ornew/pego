@@ -39,8 +39,8 @@ func TestFix(t *testing.T) {
 }
 
 func TestFixAnyTypes(t *testing.T) {
-	// V is read as a string, so it needs a cast with _ and keeps any; so do the rule type and the
-	// cast of c, since a rule must produce a node and _ is not one.
+	// V is read as a string, so it needs a cast with _ and keeps any. The rule type and the cast of c
+	// need none, since a rule may produce a value of type _.
 	const old = "type Box = { V any; L []any; O *any }\ntype Out = { S string; A any }\n" +
 		"rule main Out = b:box => Out{S: $b.V, A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
@@ -48,7 +48,7 @@ func TestFixAnyTypes(t *testing.T) {
 	const fixed = "type Box = { V any; L []_; O *_ }\ntype Out = { S string; A _ }\n" +
 		"rule main Out = b:box => Out{S: $b.V, A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
-		"rule c any = x:\"y\" => $x.(any)\n"
+		"rule c _ = x:\"y\" => $x.(_)\n"
 	if out, err := runCLI(t, old, "fix"); err != nil || out != fixed {
 		t.Errorf("got %q, %v\nwant %q", out, err, fixed)
 	}

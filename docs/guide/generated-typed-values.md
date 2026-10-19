@@ -141,7 +141,7 @@ stars text 42
   Recovery and conversion follow `ParseAST`, including `Error` values in unions and nil where
   a struct is expected. Direct typed execution uses the same full grammar guard as
   `ParseAST`; unsupported result or struct-field types and field-reading actions use Node conversion.
-  Rules still must produce nodes; scalar aliases and scalar fields do not enable scalar rule results.
+  A rule whose value is an int, string or bool returns that Go type.
   `ParseRule` continues to return `*Node`, and `ParseAST` continues to use the configured start rule.
 - **Regeneration migration.** `ParseRuleAST` is now reserved in typed generated Go. A grammar type
   named `ParseRuleAST` becomes `ParseRuleAST_`; a type already named `ParseRuleAST_` becomes

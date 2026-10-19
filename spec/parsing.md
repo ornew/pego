@@ -128,7 +128,7 @@ The result is a `PrefixResult`:
 
 | Field | Meaning |
 |:--|:--|
-| `Node` | The value of the selected rule, as for a whole-input parse (a node or `nil`) |
+| `Node` | The value of the selected rule, as for a whole-input parse (a node, a value node or `nil`) |
 | `Consumed` | The successful cursor in the parser's position unit (code points by default) |
 | `ConsumedBytes` | The endpoint in bytes of the original UTF-8 input |
 

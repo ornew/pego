@@ -105,7 +105,7 @@ func TestActionHelperErrorsAndShortCircuit(t *testing.T){
    func(){right:=func()any{called++;return true};if typed{(&tctx{p:tp}).and(tn,right)}else{(&actx{p:p}).and(n,right)}},
    func(){right:=func()any{called++;return false};if typed{(&tctx{p:tp}).or(tn,right)}else{(&actx{p:p}).or(n,right)}},
    func(){if typed{(&tctx{p:tp}).listItems(long,1)}else{(&actx{p:p}).listItems(long,1)}},
-   func(){if typed{(&tctx{p:tp}).asNode(long,1)}else{(&actx{p:p}).asNode(long,1)}},
+   func(){fn:=func(...any)any{return nil};if typed{(&tctx{p:tp}).asNode(long,fn)}else{(&actx{p:p}).asNode(long,fn)}},
   }
   for _,run:=range cases{
    p.control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}

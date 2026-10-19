@@ -310,8 +310,8 @@ Rules that the start rule never calls, directly or indirectly. A grammar with se
 
 Uses of the type `any`, which is deprecated in favor of the top type `_`. A value of type `_` must be narrowed with
 a cast such as `x.(string)` before it is used as another type, where `any` was accepted anywhere and checked at run
-time. `pego fix` rewrites the uses that need no cast; the others, and a rule type or cast that must produce a node,
-keep `any` until they are rewritten by hand.
+time. `pego fix` rewrites the uses that need no cast; the others keep `any` until they are rewritten by
+hand.
 
 ### `right-recursion`
 

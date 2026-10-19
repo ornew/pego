@@ -3100,16 +3100,32 @@ class Actx {
     this.work();
     for (const it of listItems("map", list)) {
       this.work();
-      const v = asNode("map", f(unboxValue(it)));
+      const v = this.element("map", f(unboxValue(it)));
       this.p.kidStack.push(v);
     }
+  }
+
+  // element returns v as an element of a list that the list built-in fn makes. An int, string
+  // or bool travels boxed, with the range of the action's input, as the result of an action does.
+  element(fn: string, v: Value): Node | null {
+    switch (typeof v) {
+      case "number":
+      case "bigint":
+      case "string":
+      case "boolean": {
+        const b = new Node(typeBox, "", this.start, this.end, "", noNodes, noFields, false, false);
+        b.box = v;
+        return b;
+      }
+    }
+    return asNode(fn, v);
   }
 
   pushList(...args: Value[]): void {
     this.work();
     for (const a of args) {
       this.work();
-      const v = asNode("list", a);
+      const v = this.element("list", a);
       this.p.kidStack.push(v);
     }
   }
@@ -3190,7 +3206,7 @@ function asNode(fn: string, v: Value): Node | null {
   if (v === null || v instanceof Node) {
     return v;
   }
-  return evalError(`${fn}: list elements must be nodes, got ${typeName(v)}`);
+  return evalError(`${fn}: list elements must be values, got ${typeName(v)}`);
 }
 
 function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value, control: WorkControl | null = null): Value {

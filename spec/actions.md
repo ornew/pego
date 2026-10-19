@@ -29,8 +29,8 @@ type KV = { Key node[string]; Op node[string]; Value node[string] }
 rule key_value KV = (k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic) => KV{Key: $k, Op: $op, Value: $v}
 ```
 
-A Value Action runs after the complete body succeeds. Its result must be a node
-(a string, tuple, list or struct value; see [Nodes](nodes.md#node-model)) or `nil`, and must fit the declared or inferred rule type. It applies to the
+A Value Action runs after the complete body succeeds. Its result is a value: a node
+(a string, tuple, list or struct value; see [Nodes](nodes.md#node-model)), an int, a string, a bool or `nil`, and must fit the declared or inferred rule type. It applies to the
 whole body, including every alternative. Predicate Actions use the same value
 operators and built-in functions described below, but their result controls
 whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-actions).
@@ -111,8 +111,8 @@ evaluated:
 - a union admits the values any of its alternatives admits;
 - a struct Type admits only nodes of that Type, `node[_]` admits every node, and
   `node[string]` every string node;
-- `[]T` admits a list node or list value whose every element `T` admits; list
-  elements are nodes or `nil`, so `[]_` and `[]any` admit every list;
+- `[]T` admits a list node or list value whose every element `T` admits; `[]_`
+  and `[]any` admit every list;
 - Error values from error recovery and `Missing` nodes stand for every node Type
   and, as an empty list, for every list Type.
 
@@ -149,7 +149,7 @@ The built-in members `.Start`, `.End` and `.Value` are available on every node
 that has a range, that is, a string, tuple or list node. `.Start` and `.End` are
 the `int` range of the node in the parse's selected position unit. `.Value` is the
 string of a string node, and the list of elements of a tuple or list node, as in
-`$xs.Value[0]`; an element is a node or `nil`. The members `startPos`, `endPos`
+`$xs.Value[0]`; an element is a value or `nil`. The members `startPos`, `endPos`
 and `children` and the positional reference `$1` are not accepted; `pego fix`
 rewrites them to `.Start`, `.End`, `.Value` and a labeled capture. A struct value
 has no range members: `.Start` on a struct is a compile-time error.
@@ -248,8 +248,8 @@ Strings are ordered lexicographically. Comparisons return `bool`.
 | [`len`](#len) | 1 | `int` |
 | [`text`](#text) | 1 | `string` |
 | [`foldl`](#foldl), [`foldr`](#foldr) | 3 | Initial-accumulator type, widened to include callback results |
-| [`map`](#map) | 2 | `[]T`, with `T` a node or `nil` |
-| [`list`](#list) | Any, including 0 | `[]T`, with each argument a node or `nil` |
+| [`map`](#map) | 2 | `[]T`, with `T` the type of the callback's result |
+| [`list`](#list) | Any, including 0 | `[]T`, with `T` the union of the argument types |
 | [`concat`](#concat) | Any, including 0 | A list of the union of its input element types |
 | [`filter`](#filter) | 2 | A list with the input's element Type |
 
@@ -296,7 +296,7 @@ value type and the callback result type, as for `foldl`.
 #### `map`
 
 `map(xs, f)` calls the one-parameter callback `f(element)` in input order and
-returns its results in a list value. The callback must return a node or `nil`;
+returns its results in a list value. The callback may return any value;
 `nil` remains a `nil` element. `map` does not filter elements. A `nil` or
 error-value list input is empty, and a `nil` element in a list is passed to the
 callback as `nil`.
@@ -320,7 +320,7 @@ backtracking; inside a Value Action they abort the parse.
 #### `list`
 
 `list(x, ...)` constructs a list value with its arguments in order. Each argument
-must be a node or `nil`, and `nil` values remain elements. `list()` constructs
+is an element, and `nil` values remain elements. `list()` constructs
 an empty list. Unlike `concat`, `list` does not flatten its arguments.
 
 #### `concat`
@@ -337,9 +337,8 @@ reports invalid operators and function arguments, unknown or undeclared
 fields, non-assignable constructor fields and rule results, and accesses that may dereference `nil`. See [Type Checking](type-checking.md)
 for the complete assignability rules and diagnostics.
 
-A Value Action result statically known not to be a node or `nil` is a
-compile-time error. A result whose type is not known until evaluation is also
-checked at runtime.
+A Value Action result statically known to be a function is a compile-time
+error.
 
 A rule value whose Type the checker does not know, such as an action result or
 a called rule's value of type `any`, is checked against the rule's declared Type
@@ -361,7 +360,9 @@ when it depends on the runtime value.
 
 ## Value and Range Details
 
-A rule's Value Action result must be a node or `nil`. A struct node created during
+A rule's Value Action result is a value or `nil`. An `int`, `string` or `bool`
+result, and such an element of a list that `map` or `list` makes, is carried
+by a value node. A struct node created during
 evaluation of a whole-rule Value Action and returned directly receives the
 range matched by the rule body. A node returned from a capture or rule call
 keeps its existing range. A newly constructed struct node initially has the

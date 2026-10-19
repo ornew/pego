@@ -1549,10 +1549,11 @@ func tasNode(fn string, v any) any {
 	if v == nil {
 		return nil
 	}
-	if _, ok := v.(tval); ok {
+	switch v.(type) {
+	case tval, int, string, bool:
 		return v
 	}
-	evalErrorf("%s: list elements must be nodes, got %s", fn, ttypeName(v))
+	evalErrorf("%s: list elements must be values, got %s", fn, ttypeName(v))
 	return nil
 }
 
@@ -2089,10 +2090,11 @@ func tasNodeWork(p *parser, fn string, v any) any {
 	if v == nil {
 		return nil
 	}
-	if _, ok := v.(tval); ok {
+	switch v.(type) {
+	case tval, int, string, bool:
 		return v
 	}
-	p.evalErrorf("%s: list elements must be nodes, got %s", fn, ttypeName(v))
+	p.evalErrorf("%s: list elements must be values, got %s", fn, ttypeName(v))
 	return nil
 }
 

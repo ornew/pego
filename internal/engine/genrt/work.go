@@ -1098,6 +1098,11 @@ func (c *actx) listItems(fn string, v any) []*Node {
 	return listItemsWork(c.p, fn, v)
 }
 func (c *actx) asNode(fn string, v any) *Node {
+	switch v.(type) {
+	case int, string, bool:
+		// An int, string or bool element travels boxed, as the result of an action does.
+		return c.p.newNode(Node{kind: kindBox, box: v, start: int32(c.start), end: int32(c.end)})
+	}
 	if !workControlsEnabled || c.p.control == nil {
 		return asNode(fn, v)
 	}

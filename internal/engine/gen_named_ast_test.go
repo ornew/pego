@@ -120,15 +120,32 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	}
 }
 
-func TestGeneratedNamedASTPreservesScalarRejection(t *testing.T) {
-	for _, source := range []string{`rule main int = "a"`, `rule main = "a" => 1`, `rule main = "a" => "s"`, `rule main = "a" => true`} {
-		g, err := syntax.Parse(source)
+// TestGeneratedNamedASTScalarResults checks that a rule producing an int, string or bool gets that
+// type as its typed result, and that a node rule declared as an int is still rejected.
+func TestGeneratedNamedASTScalarResults(t *testing.T) {
+	for _, tc := range []struct{ source, want string }{
+		{`rule main = "a" => 1`, "(int, error)"},
+		{`rule main = "a" => "s"`, "(string, error)"},
+		{`rule main = "a" => true`, "(bool, error)"},
+	} {
+		g, err := syntax.Parse(tc.source)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err = Generate(g, GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "must produce a node") {
-			t.Fatalf("scalar contract changed: %v", err)
+		out, err := Generate(g, GenOptions{Package: "named", Start: "main", Types: true})
+		if err != nil {
+			t.Fatalf("%q: %v", tc.source, err)
 		}
+		if want := "func ParseAST(input string, opts ...ParseOption) " + tc.want; !strings.Contains(string(out), want) {
+			t.Errorf("%q: no %q", tc.source, want)
+		}
+	}
+	g, err := syntax.Parse(`rule main int = "a"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Generate(g, GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
+		t.Fatalf("got %v", err)
 	}
 }
 

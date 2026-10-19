@@ -63,10 +63,6 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 		control.poll()
 		if rd.Type != nil {
 			t := k.resolveLocation(rd.Type, rd.Diagnostic(), "rule "+rd.Name)
-			if !isNodeOrNil(t) {
-				k.errorf(rd.Diagnostic(), "rule %s must produce a node, but its type is %s", rd.Name, t)
-				t = tyAny
-			}
 			k.ruleTypes[rd.Name] = t
 			k.declared[rd.Name] = true
 		} else {
@@ -214,25 +210,23 @@ func (prog *Program) structType(name string) (string, *grammar.StructSpec) {
 	return canonical, st
 }
 
-// nodeListElement also rejects primitive elements hidden in nested list types.
-func nodeListElement(t ty) bool {
+// concreteListElement reports whether the element type t of a list constructor, including the
+// elements of nested list types, names no any.
+func concreteListElement(t ty) bool {
 	switch t := t.(type) {
 	case listTy:
-		return nodeListElement(t.elem)
+		return concreteListElement(t.elem)
 	case optTy:
-		return nodeListElement(t.elem)
+		return concreteListElement(t.elem)
 	case unionTy:
 		for _, alt := range t.alts {
-			if !nodeListElement(alt) {
+			if !concreteListElement(alt) {
 				return false
 			}
 		}
 		return true
-	case basicTy:
-		return t != tyAny && isNode(t)
-	default:
-		return isNode(t)
 	}
+	return t != tyAny
 }
 
 // unknownListElement reports any that would hide a required concrete element
@@ -463,10 +457,6 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	var t ty
 	if rd.Action != nil {
 		t = k.term(rd.Action, &termEnv{caps: sc.caps, items: items, allowIndex: true})
-		if !isNodeOrNil(t) {
-			k.errorf(termPos(rd.Action, rd.Diagnostic()), "action of %s must produce a node, got %s", rd.Name, t)
-			t = tyAny
-		}
 	} else {
 		if bodyT == nil {
 			bodyT = tyNil
@@ -569,12 +559,7 @@ func (k *checker) lineType(e grammar.Expr, action grammar.Term, locals map[strin
 			env.items = []ty{t}
 		}
 	}
-	at := k.term(action, env)
-	if !isNodeOrNil(at) {
-		k.errorf(termPos(action, pos), "action must produce a node, got %s", at)
-		return tyAny
-	}
-	return at
+	return k.term(action, env)
 }
 
 func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
@@ -724,16 +709,13 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			// The element type is in error already.
 		} else if elem == tyNever {
 			k.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
-		} else if !nodeListElement(elem) {
-			k.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)
+		} else if !concreteListElement(elem) {
+			k.errorf(t.Diagnostic(), "list constructors require a concrete element type, got %s", elem)
 		}
 		for _, item := range t.Items {
 			value := k.term(item, env)
 			if unknownListElement(value, elem) {
 				k.errorf(termPos(item, t.Diagnostic()), "cannot use statically unknown %s as %s in list constructor", value, elem)
-			}
-			if !isNodeOrNil(value) {
-				k.errorf(termPos(item, t.Diagnostic()), "list constructor elements must be nodes, got %s", value)
 			}
 			if !assignable(value, elem) {
 				k.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", value, elem)
@@ -1038,19 +1020,11 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 		if !ok {
 			return tyAny
 		}
-		body := k.term(l.Body, env.with(l.Params, []ty{elem}))
-		if !isNodeOrNil(body) {
-			k.errorf(t.Diagnostic(), "map: the function must produce a node, got %s", body)
-		}
-		return listTy{body}
+		return listTy{k.term(l.Body, env.with(l.Params, []ty{elem}))}
 	case "list":
 		var elems []ty
 		for i := range t.Args {
-			a := argT(i)
-			if !isNode(a) && !assignable(a, optional(tyNode)) {
-				k.errorf(t.Diagnostic(), "list: elements must be nodes, got %s", a)
-			}
-			elems = append(elems, a)
+			elems = append(elems, argT(i))
 		}
 		return listTy{union(elems...)}
 	case "concat":

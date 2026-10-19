@@ -2915,7 +2915,7 @@ func asNode(fn string, v any) *Node {
 	case *Node:
 		return x
 	}
-	evalErrorf("%s: list elements must be nodes, got %s", fn, typeName(v))
+	evalErrorf("%s: list elements must be values, got %s", fn, typeName(v))
 	return nil
 }
 
@@ -3385,7 +3385,7 @@ func asNodeWork(p *parser, fn string, v any) *Node {
 	case *Node:
 		return x
 	}
-	p.evalErrorf("%s: list elements must be nodes, got %s", fn, typeName(v))
+	p.evalErrorf("%s: list elements must be values, got %s", fn, typeName(v))
 	return nil
 }
 
