@@ -306,3 +306,22 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+// TestGeneratorContext checks that yield is a yield expression in the body of every kind of
+// generator, which the parser recognizes from the asterisk token before the body.
+func TestGeneratorContext(t *testing.T) {
+	for _, src := range []string{
+		"function* g() { const a = yield; }",
+		"const f = function* () { const a = yield; };",
+		"class C { *m() { const a = yield; } }",
+		"const o = { *m() { const a = yield; } };",
+	} {
+		n, err := typescript.Parse(src)
+		if err != nil {
+			t.Fatalf("%q: %v", src, err)
+		}
+		if !strings.Contains(n.String(), "YieldExpression") {
+			t.Errorf("%q: no yield expression in %s", src, n)
+		}
+	}
+}

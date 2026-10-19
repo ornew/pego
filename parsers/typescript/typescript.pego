@@ -729,8 +729,8 @@ rule omittedExpression OmittedExpression = t:(&",") #atomic => OmittedExpression
 // async function.
 rule functionDeclaration FunctionDeclaration = (
     (&dm:defaultModifierScan)? (&am:asyncModifierScan)?
-    m:modifiers "function" !idPart (-ws s:asteriskToken)? (-ws i:bindingIdentifier)? {$i != nil || $dm != nil}
-    {ctx := ctx - ctx % 32 + len($s) + len($am) / 5 * 2}
+    m:modifiers "function" !idPart (-ws &(g:"*") s:asteriskToken)? (-ws i:bindingIdentifier)? {$i != nil || $dm != nil}
+    {ctx := ctx - ctx % 32 + len($g) + len($am) / 5 * 2}
     (-ws t:typeParameters)? -ws ps:parameterList rt:returnType? (-ws fb:block / !(-ws "{") eos)
 ) => FunctionDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $i, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
 rule defaultModifierScan = (
@@ -845,8 +845,8 @@ rule classIndexSignature IndexSignature = (
 // (parsePropertyOrMethodDeclaration).
 rule methodDeclaration MethodDeclaration = (
     (&am:asyncModifierScan)? m:classModifiers !constructorName
-    (s:asteriskToken -ws)? n:propertyName (-ws qt:questionToken)? ({$s != nil} / &(-ws [(<]))
-    {ctx := ctx - ctx % 32 + len($s) + len($am) / 5 * 2}
+    (&(g:"*") s:asteriskToken -ws)? n:propertyName (-ws qt:questionToken)? ({$s != nil} / &(-ws [(<]))
+    {ctx := ctx - ctx % 32 + len($g) + len($am) / 5 * 2}
     (-ws t:typeParameters)? -ws ps:parameterList rt:returnType? (-ws fb:block / !(-ws "{") eos)
 ) => MethodDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $n, QuestionToken: $qt, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
 // The initializer is parsed outside the yield and await contexts, with `in` allowed; "@" or "(" on the
@@ -1402,9 +1402,9 @@ rule objectSetAccessor SetAccessor = (
     {ctx := ctx - ctx % 32} (-ws t:typeParameters)? -ws ps:parameterList rt:returnType? (-ws fb:block / !(-ws "{") eos)
 ) => SetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
 rule objectMethod MethodDeclaration = (
-    (&am:asyncModifierScan)? m:modifiers (s:asteriskToken -ws)? n:propertyName
+    (&am:asyncModifierScan)? m:modifiers (&(g:"*") s:asteriskToken -ws)? n:propertyName
     (-ws qt:questionToken)? (-ws xt:exclamationToken)? ({$s != nil} / &(-ws [(<]))
-    {ctx := ctx - ctx % 32 + len($s) + len($am) / 5 * 2}
+    {ctx := ctx - ctx % 32 + len($g) + len($am) / 5 * 2}
     (-ws t:typeParameters)? -ws ps:parameterList rt:returnType? (-ws fb:block / !(-ws "{") eos)
 ) => MethodDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $n, QuestionToken: $qt, ExclamationToken: $xt, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
 // An identifier not followed by ":" is a shorthand property, with an optional = initializer.
@@ -1418,8 +1418,8 @@ rule propertyAssignment PropertyAssignment = (
 ) => PropertyAssignment{Modifiers: $m, Name: $n, QuestionToken: $qt, ExclamationToken: $xt, Initializer: $v}
 
 rule functionExpression FunctionExpression = (
-    ml:asyncFunctionModifier? "function" !idPart (-ws s:asteriskToken)?
-    {ctx := ctx - ctx % 32 + len($s) + len($ml) * 2} (-ws i:bindingIdentifier)? (-ws t:typeParameters)? -ws
+    ml:asyncFunctionModifier? "function" !idPart (-ws &(g:"*") s:asteriskToken)?
+    {ctx := ctx - ctx % 32 + len($g) + len($ml) * 2} (-ws i:bindingIdentifier)? (-ws t:typeParameters)? -ws
     ps:parameterList rt:returnType? -ws b:block
 ) => FunctionExpression{Modifiers: concat($ml), AsteriskToken: $s, Name: $i, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $b}
 rule asyncFunctionModifier = m:asyncKeywordModifier -sp &("function" !idPart) => list($m)
