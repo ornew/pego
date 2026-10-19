@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 16
+	isaVersion = 17
 	maxDepth   = 10000
 )
 
@@ -748,6 +748,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 			o := opts
 			o.checks = checks
 			o.SourceInfo = o.SourceInfo || m.SourceInfo
+			o.DefaultValue = o.DefaultValue || m.DefaultValue
 			p, err := build(g, o, flags)
 			if err != nil {
 				return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
@@ -765,6 +766,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		prog = moduleProgram(m)
 		prog.pkg = pkg
 		prog.sourceInfo = prog.sourceInfo || opts.SourceInfo
+		prog.defaultValue = prog.defaultValue || opts.DefaultValue
 	} else {
 		if n := len(prog.rules) + len(prog.twins); n != len(m.Rules) {
 			return nil, "", fmt.Errorf("invalid compiled grammar: %d rules in the module for %d rules", len(m.Rules), n)

@@ -95,6 +95,16 @@ func TestParse(t *testing.T) {
 		t.Errorf("source info json = %s", r.JSON)
 	}
 
+	// Default values drop the actions, so the tree is the default node tree.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3", DefaultValue: true})
+	if !r.Matched || r.Error != "" || r.SExpr == "" || strings.Contains(r.SExpr, "Pair{") {
+		t.Errorf("default value: %+v", r)
+	}
+	again := call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3", DefaultValue: true, SourceInfo: true})
+	if again.SExpr == "" || strings.Contains(again.SExpr, "Pair{") || again.SExpr == r.SExpr {
+		t.Errorf("default value with source info: %s", again.SExpr)
+	}
+
 	// A syntax error.
 	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=x"})
 	if r.Matched || len(r.Errors) != 1 || r.JSON != "" {

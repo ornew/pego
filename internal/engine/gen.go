@@ -63,6 +63,9 @@ type GenOptions struct {
 	// SourceInfo records source information in the values: the rule that produced each node and
 	// where its captures are (Options.SourceInfo).
 	SourceInfo bool
+	// DefaultValue drops value actions and declared rule types, so the parser returns the default
+	// node tree (Options.DefaultValue). It cannot be combined with Types.
+	DefaultValue bool
 	// Package is the package name of the generated code.
 	Package string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
@@ -143,11 +146,23 @@ type GenOptions struct {
 // other expressions become Go methods. Actions and predicates become Go expressions, and the embedded
 // runtime (genrt) behaves exactly like the engine
 // in this package. Without opts.Stream, #stream is a plain repetition.
+// validateDefaultValue rejects typed output with default values: the types come from the actions and
+// declarations that default values drop.
+func (opts GenOptions) validateDefaultValue() error {
+	if opts.DefaultValue && opts.Types {
+		return fmt.Errorf("typed output is not available with default values: the types come from the actions and declared types that default values drop")
+	}
+	return nil
+}
+
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo})
+	if err := opts.validateDefaultValue(); err != nil {
+		return nil, err
+	}
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue})
 	if err != nil {
 		return nil, err
 	}

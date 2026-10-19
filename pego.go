@@ -70,6 +70,16 @@ func WithSourceInfo() CompileOption {
 	return func(o *engine.Options) { o.SourceInfo = true }
 }
 
+// WithDefaultValue makes every rule produce the default value of its expression. Value actions
+// (=>) and the declared types of rules are dropped, so the parser returns the default node tree
+// even for grammars with actions, and nothing is checked against the types the actions would
+// have made. Predicates still run, because they decide the match, and the rules that
+// make the values predicates read keep their actions and types. It is a property of the
+// parser: a compiled grammar written from it keeps it.
+func WithDefaultValue() CompileOption {
+	return func(o *engine.Options) { o.DefaultValue = true }
+}
+
 // Compile compiles the grammar g into a parser that starts parsing at the rule start.
 func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, error) {
 	var o engine.Options
@@ -85,6 +95,9 @@ func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, 
 	}
 	return &Parser{prog: prog, start: start}, nil
 }
+
+// DefaultValue reports whether the parser produces default values (WithDefaultValue).
+func (p *Parser) DefaultValue() bool { return p.prog.DefaultValue() }
 
 // SourceInfo reports whether the parser records source information (WithSourceInfo).
 func (p *Parser) SourceInfo() bool { return p.prog.SourceInfo() }
@@ -414,6 +427,12 @@ type GenOption func(*engine.GenOptions)
 // Names colliding with runtime declarations gain underscores.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
+}
+
+// WithGeneratedDefaultValue makes the generated parser produce default values, as WithDefaultValue
+// does for a compiled parser. It cannot be combined with WithTypes.
+func WithGeneratedDefaultValue() GenOption {
+	return func(o *engine.GenOptions) { o.DefaultValue = true }
 }
 
 // WithGeneratedSourceInfo makes the generated parser record source information, as WithSourceInfo

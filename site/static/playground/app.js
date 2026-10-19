@@ -236,6 +236,7 @@ const unitSelect = $("pg-unit");
 const backendSelect = $("pg-backend");
 const recognizeBox = $("pg-recognize");
 const sourceInfoBox = $("pg-source-info");
+const defaultValueBox = $("pg-default-value");
 const exampleSelect = $("pg-example");
 const statusEl = $("pg-status");
 const errorsEl = $("pg-errors");
@@ -367,6 +368,7 @@ async function parse() {
     backend: backendSelect.value,
     recognize: recognizeBox.checked,
     sourceInfo: sourceInfoBox.checked,
+    defaultValue: defaultValueBox.checked,
   };
   const slow = setTimeout(() => n === seq && setStatus("busy", "Parsing…"), 300);
   let res;
@@ -632,7 +634,7 @@ function comparisonValue(res) {
 let compareSeq = 0;
 let comparisonKey = "";
 function comparisonRequest() {
-  return { grammar: grammarEditor.value, input: inputEditor.value, start: requestedStart, unit: unitSelect.value, recognize: recognizeBox.checked, sourceInfo: sourceInfoBox.checked };
+  return { grammar: grammarEditor.value, input: inputEditor.value, start: requestedStart, unit: unitSelect.value, recognize: recognizeBox.checked, sourceInfo: sourceInfoBox.checked, defaultValue: defaultValueBox.checked };
 }
 $("pg-compare-run").addEventListener("click", async () => {
   const n = ++compareSeq;
@@ -761,6 +763,7 @@ async function writeHash() {
   if (backendSelect.value) s.b = backendSelect.value;
   if (recognizeBox.checked) s.r = 1;
   if (sourceInfoBox.checked) s.si = 1;
+  if (defaultValueBox.checked) s.dv = 1;
   if (activeTab !== "tree") s.t = activeTab;
   s.gen = { language: $("gen-language").value || "go", package: $("gen-package").value, types: $("gen-types").checked, recognize: $("gen-recognize").checked };
   let hash;
@@ -806,10 +809,11 @@ function applyState(s) {
   const backend = ["closure", "bytecode", "bytecode-iterative"].includes(s.b) ? s.b : "";
   const recognize = !!s.r;
   const sourceInfo = !!s.si;
+  const defaultValue = !!s.dv;
   const changed = grammar !== grammarEditor.value || input !== inputEditor.value ||
     start !== requestedStart || unit !== unitSelect.value ||
     backend !== backendSelect.value || recognize !== recognizeBox.checked ||
-    sourceInfo !== sourceInfoBox.checked;
+    sourceInfo !== sourceInfoBox.checked || defaultValue !== defaultValueBox.checked;
   // Presentation-only navigation must preserve the editors' selection/scroll.
   if (grammar !== grammarEditor.value) grammarEditor.value = grammar;
   if (input !== inputEditor.value) inputEditor.value = input;
@@ -818,7 +822,8 @@ function applyState(s) {
   backendSelect.value = backend;
   recognizeBox.checked = recognize;
   sourceInfoBox.checked = sourceInfo;
-  if (s.u || s.b || s.r || s.si) document.querySelector(".pg-options").open = true;
+  defaultValueBox.checked = defaultValue;
+  if (s.u || s.b || s.r || s.si || s.dv) document.querySelector(".pg-options").open = true;
   const gen = s.gen || {};
   $("gen-language").value = gen.language === "typescript" ? "typescript" : "go";
   $("gen-package").value = typeof gen.package === "string" ? gen.package : "parser";
@@ -854,7 +859,7 @@ inputEditor.ta.addEventListener("input", () => {
   scheduleParse();
   saveState();
 });
-for (const el of [unitSelect, backendSelect, recognizeBox, sourceInfoBox]) el.addEventListener("change", () => {
+for (const el of [unitSelect, backendSelect, recognizeBox, sourceInfoBox, defaultValueBox]) el.addEventListener("change", () => {
   changeState();
   scheduleParse(0);
   saveState();

@@ -18,6 +18,8 @@ type Module struct {
 	Exprs          []Instr // expression code (actions and predicates)
 	// SourceInfo reports that the values record source information (Options.SourceInfo).
 	SourceInfo bool
+	// DefaultValue reports that value actions were dropped (Options.DefaultValue).
+	DefaultValue bool
 }
 
 // instructionSetVersion is the instruction set of every module: the value model's.

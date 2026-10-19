@@ -66,7 +66,7 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*pego.Parser, string,
 	default:
 		return nil, "", nil, fmt.Errorf("unknown backend %q", *f.backend)
 	}
-	p, err := loadParser(*f.grammar, *f.start)
+	p, err := loadParser(*f.grammar, *f.start, compileFlags{})
 	if err != nil {
 		return nil, "", nil, err
 	}

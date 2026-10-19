@@ -76,7 +76,7 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	if *format != "lines" && *format != "json" {
 		return fmt.Errorf("unknown format %q", *format)
 	}
-	p, err := loadParser(*grammarPath, *start)
+	p, err := loadParser(*grammarPath, *start, compileFlags{})
 	if err != nil {
 		return err
 	}

@@ -39,6 +39,7 @@ func (w *encoder) line(l *LineInfo) {
 func (w *encoder) module(m *Module) {
 	w.uint(len(m.Strings))
 	w.bool(m.SourceInfo)
+	w.bool(m.DefaultValue)
 	w.uint(len(m.Classes))
 	for _, c := range m.Classes {
 		w.bool(c.Negated)
@@ -152,6 +153,7 @@ func (r *decoder) module() *Module {
 	}
 	m.Strings = r.strs[:n]
 	m.SourceInfo = r.bool()
+	m.DefaultValue = r.bool()
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		c := Class{Negated: r.bool(), Desc: int(r.int32())}
@@ -545,7 +547,7 @@ func validateStreamRecovery(code []Instr) error {
 
 // moduleProgram builds a program without an AST (it can only be run by the bytecode backend).
 func moduleProgram(m *Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo}
+	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
 	for _, t := range m.Types {
 		if t.Node >= 0 {
 			// The run time needs only that the type is a node type.

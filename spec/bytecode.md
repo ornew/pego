@@ -311,7 +311,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module: 16. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, or had no named node types; a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 17. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, or had no default-value flag; a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -324,12 +324,13 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 
 1. The number of module strings, unsigned (this many strings from the start of the string table form the module's string table).
 2. Source information, a boolean: whether the values a parse returns carry the rule names and capture names of the grammar. A loaded program keeps it, and the load options can also request it.
-3. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
-4. Type table: a list of (name, list of field names, underlying node type). The underlying node type is a string index, or -1 for a struct type.
-5. Field-list table, then scope table: each a list of lists of string indices.
-6. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
-7. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
-8. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
+3. Default value, a boolean: whether the program was compiled with default values, which drop value actions and the declared types of rules (except for the rules that make values read by predicates) before compilation. A loaded program keeps it, and the load options can also request it.
+4. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
+5. Type table: a list of (name, list of field names, underlying node type). The underlying node type is a string index, or -1 for a struct type.
+6. Field-list table, then scope table: each a list of lists of string indices.
+7. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
+8. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
+9. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
 ### Load-Time Validation
 

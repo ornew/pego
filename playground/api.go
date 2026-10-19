@@ -77,6 +77,9 @@ type parseRequest struct {
 	// SourceInfo adds the rule of each node and the names of captures to the tree, as
 	// pego parse -source-info does.
 	SourceInfo bool `json:"sourceInfo,omitempty"`
+	// DefaultValue drops value actions and declared rule types, so the tree is the default node
+	// tree, as pego parse -default-value does. Predicates still run.
+	DefaultValue bool `json:"defaultValue,omitempty"`
 	// MaxDepth limits the nesting of rule calls (pego.WithMaxDepth); 0 selects the playground's
 	// limit, maxDepth, for the backends that nest rule calls on the stack.
 	MaxDepth int `json:"maxDepth,omitempty"`
@@ -216,20 +219,34 @@ type compiled struct {
 	g      *grammar.Grammar
 	info   compileResult
 	parser *pego.Parser // nil if the grammar has errors
-	// sourceInfo is the parser compiled with source information, compiled when first requested.
-	sourceInfo *pego.Parser
+	// variants are the parsers compiled with options, compiled when first requested.
+	variants map[compileVariant]*pego.Parser
 }
 
-// sourceInfoParser returns the parser of c compiled with source information.
-func (c *compiled) sourceInfoParser() (*pego.Parser, error) {
-	if c.sourceInfo == nil {
-		p, err := pego.Compile(c.g, c.info.Start, pego.WithSourceInfo())
-		if err != nil {
-			return nil, err
-		}
-		c.sourceInfo = p
+// compileVariant is the set of compile options a parse request can ask for.
+type compileVariant struct{ sourceInfo, defaultValue bool }
+
+// variantParser returns the parser of c compiled with the options of v.
+func (c *compiled) variantParser(v compileVariant) (*pego.Parser, error) {
+	if p := c.variants[v]; p != nil {
+		return p, nil
 	}
-	return c.sourceInfo, nil
+	var opts []pego.CompileOption
+	if v.sourceInfo {
+		opts = append(opts, pego.WithSourceInfo())
+	}
+	if v.defaultValue {
+		opts = append(opts, pego.WithDefaultValue())
+	}
+	p, err := pego.Compile(c.g, c.info.Start, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if c.variants == nil {
+		c.variants = map[compileVariant]*pego.Parser{}
+	}
+	c.variants[v] = p
+	return p, nil
 }
 
 var last *compiled
@@ -375,9 +392,9 @@ func parse(req parseRequest) parseResult {
 		opts = append(opts, pego.WithMaxDepth(maxDepth))
 	}
 	p := c.parser
-	if req.SourceInfo {
+	if req.SourceInfo || req.DefaultValue {
 		var err error
-		if p, err = c.sourceInfoParser(); err != nil {
+		if p, err = c.variantParser(compileVariant{req.SourceInfo, req.DefaultValue}); err != nil {
 			res.Error = err.Error()
 			return res
 		}

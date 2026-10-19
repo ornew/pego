@@ -45,7 +45,10 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err := opts.validateMaxDepth(true); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo})
+	if err := opts.validateDefaultValue(); err != nil {
+		return nil, err
+	}
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue})
 	if err != nil {
 		return nil, err
 	}

@@ -31,8 +31,11 @@ type Program struct {
 	boxedComparisons bool
 	// sourceInfo reports that nodes record source information (Options.SourceInfo).
 	sourceInfo bool
-	byName     map[string]*rule
-	types      map[string]grammar.TypeDecl
+	// defaultValue reports that value actions and declared rule types were dropped
+	// (Options.DefaultValue).
+	defaultValue bool
+	byName       map[string]*rule
+	types        map[string]grammar.TypeDecl
 	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
 	// and the types of casts (castType).
 	fieldTypes sync.Map
@@ -83,6 +86,12 @@ type Options struct {
 	// SourceInfo records source information in the values: the rule that produced each node and
 	// where its captures are.
 	SourceInfo bool
+	// DefaultValue makes every rule produce the default value of its expression: value actions
+	// (=>) and the declared types of rules are dropped before compilation, so the parser returns
+	// the default node tree even for grammars with actions. Predicates still run, because they
+	// decide the match, and the rules that make the values predicates read keep their actions and
+	// types (defaultValueGrammar).
+	DefaultValue bool
 	// controlledDispatch builds only the metered closure graph for lazy work setup.
 	controlledDispatch bool
 	// recognize builds a program that only checks whether the input conforms to the grammar, without
@@ -295,6 +304,10 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 
 func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
 	control.check()
+	if opts.DefaultValue {
+		g = defaultValueGrammar(g, control)
+		control.check()
+	}
 	var validationError error
 	if control == nil {
 		validationError = grammar.Validate(g)
@@ -401,6 +414,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	prog.noTextStructs = opts.noTextStructs
 	prog.boxedComparisons = opts.boxedComparisons
 	prog.sourceInfo = opts.SourceInfo
+	prog.defaultValue = opts.DefaultValue
 
 	for _, td := range control.types(g) {
 		control.poll()
@@ -1538,3 +1552,6 @@ func hasCaptures(e grammar.Expr) bool { return hasCapturesControlled(e, nil) }
 // SourceInfo reports whether the program records source information in its results
 // (Options.SourceInfo).
 func (p *Program) SourceInfo() bool { return p.sourceInfo }
+
+// DefaultValue reports whether the program was compiled to make default values (Options.DefaultValue).
+func (p *Program) DefaultValue() bool { return p.defaultValue }

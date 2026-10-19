@@ -2,13 +2,13 @@
 //
 // Usage:
 //
-//	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info]
+//	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info] [-default-value]
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth n] [-source-info]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-document] [-stream] [-recognize] [-observability] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
-//	pego compile -g grammar.pego [-s main] [-no-ast] [-source-info] -o grammar.pegoc
+//	pego compile -g grammar.pego [-s main] [-no-ast] [-source-info] [-default-value] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
@@ -45,9 +45,12 @@ Commands:
 
   parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
         [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info]
+        [-default-value]
       Parse the input with a grammar and print the syntax tree. Without -i,
       the input is read from standard input. -source-info also prints the
-      rule of each node and the names of captures.
+      rule of each node and the names of captures. -default-value drops
+      value actions and declared rule types (predicates still run) and
+      prints the default node tree.
 
   test -f <suite.json> [-format text|json] [-backend <names>] [-equivalence] [-update]
       Run a versioned JSON fixture suite. Outcomes distinguish accepted,
@@ -73,8 +76,8 @@ Commands:
       other format of the input and is required for compiled grammars.
 
   gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-document] [-stream] [-recognize] [-observability]
-        [-max-depth <n>] [-nodoc] [-source-info]
-  gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize] [-observability] [-max-depth <n>] [-source-info]
+        [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
+  gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize] [-observability] [-max-depth <n>] [-source-info] [-default-value]
       Generate a Go parser (or, with -lang ts, a TypeScript module) from a
       grammar. Without -o, the code is written to standard output. With
       -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
@@ -93,14 +96,18 @@ Commands:
       of the Go code, for a package documented in another file. -max-depth
       sets the generated default nested rule-call limit (0 selects 100000).
       -source-info makes the parser record the rule of each node and the
-      names of captures.
+      names of captures. -default-value drops value actions and declared
+      rule types, so the parser returns the default node tree; it cannot be
+      combined with -types.
 
-  compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] -o <file.pegoc>
+  compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] [-default-value] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
       by the other commands. With -no-ast, the grammar AST is omitted; the
       result then runs only on the bytecode backends and cannot be
       converted back to a grammar. With -source-info, its parses record
-      the rule of each node and the names of captures.
+      the rule of each node and the names of captures. With -default-value,
+      value actions and declared rule types are dropped (predicates still
+      run), so its parses return the default node tree.
 
   trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>]
         [-failures] [-f text|json] [-unit u] [-backend b]
@@ -614,6 +621,7 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	check := fs.Bool("check", false, "only check that the input matches the grammar, without building a tree, and print ok if it does")
 	backendName := fs.String("backend", "", "execution backend: closure, bytecode, or bytecode-iterative (default: chosen for the grammar)")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures, and print them")
+	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, and print the default node tree (predicates still run)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -623,7 +631,7 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	if *grammarPath == "" {
 		return fmt.Errorf("-g is required")
 	}
-	p, err := loadParser(*grammarPath, *start, sourceInfoOption(*sourceInfo)...)
+	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
 	if err != nil {
 		return err
 	}
@@ -702,12 +710,21 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	return perr
 }
 
-// sourceInfoOption returns the compile options of the -source-info flag.
-func sourceInfoOption(on bool) []pego.CompileOption {
-	if on {
-		return []pego.CompileOption{pego.WithSourceInfo()}
+// compileFlags are the flags that choose how a grammar is compiled.
+type compileFlags struct {
+	sourceInfo, defaultValue bool
+}
+
+// options returns the compile options of the flags.
+func (f compileFlags) options() []pego.CompileOption {
+	var opts []pego.CompileOption
+	if f.sourceInfo {
+		opts = append(opts, pego.WithSourceInfo())
 	}
-	return nil
+	if f.defaultValue {
+		opts = append(opts, pego.WithDefaultValue())
+	}
+	return opts
 }
 
 func isFlagSet(fs *flag.FlagSet, name string) bool {
@@ -731,6 +748,7 @@ func gen(args []string, stdout io.Writer) error {
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
 	sourceInfo := fs.Bool("source-info", false, "make the generated parser record the rule of each node and the names of captures")
+	defaultValue := fs.Bool("default-value", false, "make the generated parser drop value actions and declared rule types and return the default node tree (incompatible with -types)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -778,6 +796,9 @@ func gen(args []string, stdout io.Writer) error {
 	if *sourceInfo {
 		opts = append(opts, pego.WithGeneratedSourceInfo())
 	}
+	if *defaultValue {
+		opts = append(opts, pego.WithGeneratedDefaultValue())
+	}
 	var code []byte
 	if *lang == "ts" {
 		code, err = pego.GenerateTypeScript(g, *start, opts...)
@@ -798,7 +819,7 @@ func gen(args []string, stdout io.Writer) error {
 // the rule start. A compiled grammar is loaded as is, without being
 // compiled again; if start is empty, it keeps the start rule saved in it,
 // and other grammars start at main.
-func loadParser(path, start string, opts ...pego.CompileOption) (*pego.Parser, error) {
+func loadParser(path, start string, flags compileFlags) (*pego.Parser, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -808,8 +829,11 @@ func loadParser(path, start string, opts ...pego.CompileOption) (*pego.Parser, e
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
-		if len(opts) > 0 && !p.SourceInfo() {
+		if flags.sourceInfo && !p.SourceInfo() {
 			return nil, fmt.Errorf("%s: the compiled grammar has no source information; compile it with -source-info", path)
+		}
+		if flags.defaultValue && !p.DefaultValue() {
+			return nil, fmt.Errorf("%s: the compiled grammar does not produce default values; compile it with -default-value", path)
 		}
 		if start == "" {
 			return p, nil
@@ -820,7 +844,7 @@ func loadParser(path, start string, opts ...pego.CompileOption) (*pego.Parser, e
 	if err != nil {
 		return nil, err
 	}
-	p, err := pego.Compile(g, cmp.Or(start, "main"), opts...)
+	p, err := pego.Compile(g, cmp.Or(start, "main"), flags.options()...)
 	if err != nil {
 		return nil, fileError(path, err)
 	}
@@ -834,13 +858,14 @@ func compileCmd(args []string) error {
 	output := fs.String("o", "", "output file (.pegoc)")
 	noAST := fs.Bool("no-ast", false, "omit the grammar AST (the result runs only on the bytecode backends)")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures in parse results")
+	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, so parses return the default node tree")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *grammarPath == "" || *output == "" {
 		return fmt.Errorf("-g and -o are required")
 	}
-	p, err := loadParser(*grammarPath, *start, sourceInfoOption(*sourceInfo)...)
+	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ func (prog *Program) Module() *Module {
 		panic(missingUnsupported("bytecode module construction"))
 	}
 	prog.moduleOnce.Do(func() {
-		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo}, strs: map[string]int{}}
+		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, strs: map[string]int{}}
 		c.compile()
 		prog.module = c.m
 	})
