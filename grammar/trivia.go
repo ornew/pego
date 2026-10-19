@@ -94,10 +94,6 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			for _, item := range t.Items {
 				term(item)
 			}
-		case *TerminalConstructor:
-			for _, arg := range t.Args {
-				term(arg)
-			}
 		case *Call:
 			for _, arg := range t.Args {
 				term(arg)

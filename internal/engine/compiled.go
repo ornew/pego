@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 13
+	isaVersion = 14
 	maxDepth   = 10000
 )
 
@@ -96,8 +96,8 @@ const (
 	tUnary
 	tAssign
 	tListConstructor
-	tTerminalConstructor
-	tParam // a reference to a lambda parameter, a CaptureRef with Param set
+	tRetiredTerminalConstructor // a terminal constructor, before instruction set 14
+	tParam                      // a reference to a lambda parameter, a CaptureRef with Param set
 	tCast
 )
 
@@ -109,7 +109,7 @@ const (
 	kUnion
 	kStruct
 	kAlias
-	kTerminal
+	kRetiredTerminal // a terminal type, before instruction set 14
 	kTypeDef
 	kRuleDef
 	kIntersection
@@ -307,8 +307,6 @@ func (w *encoder) typeSpec(s grammar.TypeSpec) {
 	case *grammar.AliasSpec:
 		w.byte(kAlias)
 		w.typeExpr(s.Type)
-	case *grammar.TerminalSpec:
-		w.byte(kTerminal)
 	}
 }
 
@@ -541,10 +539,6 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tListConstructor)
 		w.typeExpr(t.Elem)
 		w.terms(t.Items)
-	case *grammar.TerminalConstructor:
-		w.byte(tTerminalConstructor)
-		w.str(t.Type)
-		w.terms(t.Args)
 	case *grammar.Lambda:
 		w.byte(tLambda)
 		w.uint(len(t.Params))
@@ -867,11 +861,9 @@ func (r *decoder) typeSpec() grammar.TypeSpec {
 		return st
 	case kAlias:
 		return &grammar.AliasSpec{Type: r.typeExpr()}
-	case kTerminal:
-		return &grammar.TerminalSpec{}
 	default:
 		r.fail("invalid type spec %d", k)
-		return &grammar.TerminalSpec{}
+		return &grammar.StructSpec{}
 	}
 }
 
@@ -1072,8 +1064,6 @@ func (r *decoder) term() grammar.Term {
 		return &grammar.Call{Func: r.str(), Args: r.terms()}
 	case tListConstructor:
 		return &grammar.ListConstructor{Elem: r.typeExpr(), Items: r.terms()}
-	case tTerminalConstructor:
-		return &grammar.TerminalConstructor{Type: r.str(), Args: r.terms()}
 	case tLambda:
 		l := &grammar.Lambda{}
 		m := r.count()

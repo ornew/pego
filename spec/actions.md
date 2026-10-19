@@ -100,16 +100,6 @@ concrete node list. An empty literal such as `[]NameNode{}` has Type
 `[]*NameNode{nil}`. Elements are evaluated once, left to right; no element is
 dropped implicitly. Primitive-valued lists such as `[]int` are unsupported.
 
-In a grammar AST that declares a terminal type (see
-[Grammar JSON](grammar-files.md#grammar-json)), a terminal constructor
-`T{stringValue}` builds a string node of the terminal type `T`. It requires
-exactly one string-valued argument. Wrong arity or a statically known
-non-string argument is a compile-time error; `T{}` is rejected if `T` resolves
-to a terminal. The provided string becomes the terminal text without being
-parsed again. Its source range follows the ordinary newly constructed node
-rule. A dynamically typed `any` argument uses the ordinary runtime string
-check. A mismatch aborts a Value Action; inside a Predicate Action it makes the
-predicate fail and permits the existing backtracking behavior.
 
 A struct field value whose Type the checker does not know, such as a variable,
 a result of type `any`, or a list with elements of unknown Type, is checked
@@ -133,8 +123,8 @@ makes the predicate fail. Each examined list element counts as one execution ste
 Type the checker proved assignable are not checked, so constructors in fully
 typed grammars cost nothing extra.
 
-`NoTypeCheck` deliberately skips assignability checks for typed-list elements
-and terminal arguments, and instead checks every struct field whose declared
+`NoTypeCheck` deliberately skips assignability checks for typed-list elements,
+and instead checks every struct field whose declared
 Type is not `_` or `any` at run time as described above, and every rule value as
 described in [Types and Errors](#types-and-errors). It does not add runtime
 support for primitive-valued lists.
@@ -360,9 +350,7 @@ The check admits the values a field of that Type admits (see
 [Values and Constructors](#values-and-constructors)), with the same execution
 steps. A mismatch causes the parse to fail with an error such as
 `cannot use List as Expr in result of rule term`, including when the rule was
-called for a predicate's value. A rule declared with a terminal Type and without
-an action converts its value instead, and neither it nor, for an Operators
-Rule, its lines are checked. A runtime error while evaluating a Value Action—such as
+called for a predicate's value. A runtime error while evaluating a Value Action—such as
 division by zero,
 undefined variable lookup, or access to a concrete node that lacks a field—
 causes the parse to fail. It is not a PEG syntax mismatch and is not backtracked

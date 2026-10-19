@@ -235,8 +235,6 @@ func typeSymbolKindControlled(td *grammar.TypeDef, control *renderControl) (int,
 	switch spec := td.Spec.(type) {
 	case *grammar.StructSpec:
 		return symbolKindStruct, "struct"
-	case *grammar.TerminalSpec:
-		return symbolKindString, "terminal"
 	case *grammar.AliasSpec:
 		return symbolKindInterface, "~ " + control.formatType(spec.Type)
 	}

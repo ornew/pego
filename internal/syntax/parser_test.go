@@ -269,12 +269,14 @@ func TestParseRejectsTerminalType(t *testing.T) {
 	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: 8}) {
 		t.Errorf("got %v, want 1:8: %s", err, want)
 	}
-	g, err := ParseLegacy(src)
+	g, forms, err := parseLegacy(src)
 	if err != nil {
-		t.Fatalf("ParseLegacy: %v", err)
+		t.Fatalf("parseLegacy: %v", err)
 	}
-	if _, ok := g.Statements[0].(*grammar.TypeDef).Spec.(*grammar.TerminalSpec); !ok {
-		t.Errorf("ParseLegacy: spec is %T, want *grammar.TerminalSpec", g.Statements[0].(*grammar.TypeDef).Spec)
+	td := g.Statements[0].(*grammar.TypeDef)
+	spec, ok := td.Spec.(*grammar.StructSpec)
+	if !ok || len(spec.Fields) != 1 || spec.Fields[0].Name != "Text" || !forms.terminals[td] {
+		t.Errorf("parseLegacy: spec is %#v, want the struct { Text string }", td.Spec)
 	}
 }
 
@@ -289,12 +291,12 @@ func TestParseRejectsPositionalConstructor(t *testing.T) {
 	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 2, Col: 19}) {
 		t.Errorf("got %v, want 2:19: %s", err, want)
 	}
-	g, err := ParseLegacy(src)
+	g, forms, err := parseLegacy(src)
 	if err != nil {
-		t.Fatalf("ParseLegacy: %v", err)
+		t.Fatalf("parseLegacy: %v", err)
 	}
-	if _, ok := g.Statements[1].(*grammar.RuleDef).Action.(*grammar.TerminalConstructor); !ok {
-		t.Errorf("ParseLegacy: action is %T, want *grammar.TerminalConstructor", g.Statements[1].(*grammar.RuleDef).Action)
+	if n, ok := g.Statements[1].(*grammar.RuleDef).Action.(*grammar.New); !ok || !forms.positional[n] {
+		t.Errorf("parseLegacy: action is %#v, want a positional constructor", g.Statements[1].(*grammar.RuleDef).Action)
 	}
 }
 
@@ -346,8 +348,8 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 				if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: col}) {
 					t.Errorf("got %v, want 1:%d: %s", err, col, want)
 				}
-				if _, err := ParseLegacy(src); err != nil {
-					t.Errorf("ParseLegacy: %v", err)
+				if _, _, err := parseLegacy(src); err != nil {
+					t.Errorf("parseLegacy: %v", err)
 				}
 			})
 		}

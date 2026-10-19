@@ -172,7 +172,7 @@ func validate(g *Grammar, control *validationControl) error {
 		// Leaf nodes need no cycle tracking. Non-leaf nodes stay active until
 		// their exit frame, distinguishing a pointer cycle from a shared child.
 		switch n := f.node.(type) {
-		case *TypeRef, *TerminalSpec, *Ref, *Literal, *Any,
+		case *TypeRef, *Ref, *Literal, *Any,
 			*Cut, *Top, *Bottom, *BeginInput, *EndInput, *BeginLine, *EndLine,
 			*IntLit, *StringLit, *BoolLit, *NilLit, *CaptureRef, *VarRef:
 			path = path[:len(path)-1]
@@ -394,10 +394,6 @@ func validate(g *Grammar, control *validationControl) error {
 				push(n.Items[i], "items", i, false)
 			}
 			push(n.Elem, "elem", -1, false)
-		case *TerminalConstructor:
-			for i := len(n.Args) - 1; i >= 0; i-- {
-				push(n.Args[i], "args", i, false)
-			}
 		case *FieldInit:
 			push(n.Value, "value", -1, false)
 		case *Call:
@@ -485,8 +481,6 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		// x.$y names the capture y.
 		field, name = "name", strings.TrimPrefix(n.Name, "$")
 	case *New:
-		field, name = "type", n.Type
-	case *TerminalConstructor:
 		field, name = "type", n.Type
 	case *FieldInit:
 		field, name = "name", n.Name

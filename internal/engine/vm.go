@@ -131,22 +131,16 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			vm.checkType(int(in.A))
 		}
 	}
-	terminal := map[int]bool{}
-	for _, t := range m.Types {
-		terminal[t.Name] = t.Terminal
-	}
 	for i := range m.Rules {
 		ri := &m.Rules[i]
 		r := &rule{
 			id: i, name: m.Strings[ri.Name], scope: vm.scope(ri.Scope),
 			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, vars: vm.names(ri.Vars),
 		}
-		if ri.TerminalType >= 0 {
-			r.terminalType = m.Strings[ri.TerminalType]
-			// A struct type stands for the rules of textStructRule.
-			r.textStruct = !terminal[ri.TerminalType]
+		if ri.TextType >= 0 {
+			r.textType = m.Strings[ri.TextType]
 		}
-		r.kinds = newRuleKinds(r.name, r.terminalType)
+		r.kinds = newRuleKinds(r.name, r.textType)
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
@@ -1079,16 +1073,14 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
-		case ETerminal, ECheck, ECast:
+		case ECheck, ECast:
 			// ECHECK and ECAST share the case: a case of its own slows down the whole loop.
 			var v any
 			var err error
 			if in.Op == ECheck {
 				v, err = vm.checkField(p, pop(), ip)
-			} else if in.Op == ECast {
-				v, err = vm.cast(p, pop(), ip)
 			} else {
-				v, err = ctx.newTerminal(m.Strings[in.A], pop())
+				v, err = vm.cast(p, pop(), ip)
 			}
 			if err != nil {
 				return nil, err

@@ -11,8 +11,11 @@ import (
 func TestLintMetadataCollectionCancellation(t *testing.T) {
 	g := &grammar.Grammar{EndBreak: &grammar.LineBreak{}}
 	a := &grammar.Attribute{Name: "error"}
+	var rules []*grammar.RuleDef
 	for range 1024 {
-		g.Statements = append(g.Statements, &grammar.TypeDef{Name: "T"}, &grammar.RuleDef{Name: "a"})
+		r := &grammar.RuleDef{Name: "a", Expr: &grammar.Literal{Value: "a"}}
+		rules = append(rules, r)
+		g.Statements = append(g.Statements, &grammar.TypeDef{Name: "T"}, r)
 		g.EndBreak.Comments = append(g.EndBreak.Comments, &grammar.Comment{})
 		a.Args = append(a.Args, "label")
 	}
@@ -27,7 +30,7 @@ func TestLintMetadataCollectionCancellation(t *testing.T) {
 		{"comments", func(c *lintControl) { c.comments(g) }, 2},
 		{"arguments", func(c *lintControl) { c.expressionArgs(a) }, 2},
 		{"call-walk", func(c *lintControl) { callsControlled(expr, c) }, 2},
-		{"unused-capture-types", func(c *lintControl) { (&linter{control: c, an: &analysis{g: g}}).unusedCaptures() }, 2},
+		{"unused-capture-rules", func(c *lintControl) { (&linter{control: c, an: &analysis{g: g, order: rules}}).unusedCaptures() }, 2},
 		// With no statements, two Err calls finish rule enumeration; the next
 		// collection must stop inside the large comment copy, before reporting.
 		{"suppression-comments", func(c *lintControl) { (&linter{control: c}).suppress(&grammar.Grammar{EndBreak: g.EndBreak}) }, 4},

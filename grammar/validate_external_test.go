@@ -23,7 +23,7 @@ type wrappedType struct {
 	Data []int
 }
 type wrappedSpec struct {
-	*grammar.TerminalSpec
+	*grammar.StructSpec
 	Data []int
 }
 type wrappedTerm struct {

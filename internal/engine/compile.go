@@ -105,20 +105,19 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds        ruleKinds
-	id           int
-	name         string
-	def          *grammar.RuleDef
-	scope        *scope
-	body         func(p *parser, min int) (*Node, bool)
-	action       grammar.Term
-	bodyIsSeq    bool
-	terminalType string
-	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
-	// is the matched text, made without the rule's action (textStructRule); textBody is then the
-	// body that is matched instead of def.Expr.
-	textStruct bool
-	textBody   grammar.Expr
+	kinds     ruleKinds
+	id        int
+	name      string
+	def       *grammar.RuleDef
+	scope     *scope
+	body      func(p *parser, min int) (*Node, bool)
+	action    grammar.Term
+	bodyIsSeq bool
+	// textType, if not "", is the struct type of a text struct rule (textStructRule): the rule's
+	// value is a struct of that type whose field Text is the matched text, made without the rule's
+	// action, and textBody is the body that is matched instead of def.Expr.
+	textType string
+	textBody grammar.Expr
 	// resultCheck is the declared type the rule's value is checked against at run time (nil if
 	// none; see Program.resultCheckType).
 	resultCheck   *fieldType
@@ -137,7 +136,7 @@ type rule struct {
 	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
 	entry int
 	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
-	// value-free bodies). It is created for rules that return a CST (no action and no terminal type)
+	// value-free bodies). It is created for rules that return a CST (no action and no text type)
 	// and are not part of a left-recursion cycle (twinOK), when such a call exists. It matches the
 	// same input in the same way, but keeps a separate memo (ids from len(rules) on).
 	twin   *rule
@@ -160,7 +159,7 @@ type rule struct {
 	// captures referenced by predicates (other captures build no values). It is nil for ordinary
 	// rules.
 	predCaps map[string]bool
-	// lean reports that the body's value is unused (a terminal type, or an action that does not use
+	// lean reports that the body's value is unused (a text struct rule, or an action that does not use
 	// $n), so the body runs value-free. Captures still build values.
 	lean bool
 }
@@ -223,7 +222,7 @@ func (l ErrorList) Error() string {
 // Reserved type names.
 var builtinTypes = map[string]bool{
 	"int": true, "string": true, "bool": true, "node": true, "terminal": true,
-	TypeMatch: true, TypeSeq: true, TypeList: true, TypeOperator: true, TypeError: true, TypeMissing: true,
+	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, TypeMissing: true,
 }
 
 type compiler struct {
@@ -439,17 +438,12 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}
 		r.transient = transient[r.name]
 		r.vars = vars[r.name]
-		if name, spec := prog.concreteType(r.def.Type); spec != nil {
-			if _, isTerm := spec.(*grammar.TerminalSpec); isTerm {
-				r.terminalType = name
-			}
-		}
-		if typ, body, ok := prog.textStructRule(r.def); ok && r.terminalType == "" && !opts.noTextStructs {
-			r.terminalType, r.textStruct, r.textBody, r.action = typ, true, body, nil
+		if typ, body, ok := prog.textStructRule(r.def); ok && !opts.noTextStructs {
+			r.textType, r.textBody, r.action = typ, body, nil
 		}
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
-			twin = r.action == nil && r.terminalType == "" && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
+			twin = r.action == nil && r.textType == "" && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
 		}
 		r.twinOK = twin
 	}
@@ -460,7 +454,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		for _, r := range prog.rules {
 			control.poll()
 			if !needed[r.name] {
-				r.novalue, r.action, r.terminalType, r.textStruct, r.twinOK = true, nil, "", false, false
+				r.novalue, r.action, r.textType, r.twinOK = true, nil, "", false
 				r.predCaps = predicateCapturesControlled(r.def.Expr, control)
 			}
 		}
@@ -531,7 +525,7 @@ func (c *compiler) compileRule(r *rule) {
 	control := c.control
 	c.control.poll()
 	c.rule = r
-	r.kinds = newRuleKinds(r.name, r.terminalType)
+	r.kinds = newRuleKinds(r.name, r.textType)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 		// The lines build the rule's value.
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
@@ -565,7 +559,7 @@ func (c *compiler) compileRule(r *rule) {
 //
 // where T is a struct whose field Text is a string, and returns T and the body e #atomic. The
 // rule's value is the struct its action makes, a T whose Text is the matched text with the
-// rule's range, so it can be made directly, as a terminal conversion is, without the capture and
+// rule's range, so it can be made directly from the matched range, without the capture and
 // the action.
 func (prog *Program) textStructRule(rd *grammar.RuleDef) (string, grammar.Expr, bool) {
 	n, ok := rd.Action.(*grammar.New)
@@ -613,13 +607,13 @@ func (r *rule) bodyExpr() grammar.Expr {
 }
 
 // leanBody reports whether the value of the rule body is unused. It is unused when there is an
-// action, which reads captures only, or a terminal type, provided the rule has no #stream. Every backend and the code generator
+// action, which reads captures only, or a text type, provided the rule has no #stream. Every backend and the code generator
 // use this test to compile the body value-free.
 func leanBody(r *rule) bool {
 	if r.stream {
 		return false
 	}
-	return r.action != nil || r.terminalType != ""
+	return r.action != nil || r.textType != ""
 }
 
 // twinOf returns the value-free twin of rule r (creating it if needed; it is assembled later).

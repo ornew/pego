@@ -1056,10 +1056,6 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 		for _, item := range t.Items {
 			f(item)
 		}
-	case *grammar.TerminalConstructor:
-		for _, arg := range t.Args {
-			f(arg)
-		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			f(a)
@@ -1274,8 +1270,8 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		// After finish, whose errors (a result that is not a node) also name the rule.
 		d.line("p.where = %s", d.rd(prevWhere))
 		return true, true
-	case r.terminalType != "":
-		d.line("v = trules[%d].term(p, start, p.pos, p.text(start, p.pos))", r.id)
+	case r.textType != "":
+		d.line("v = trules[%d].text(p, start, p.pos, p.text(start, p.pos))", r.id)
 		return true, false
 	default:
 		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))

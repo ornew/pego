@@ -160,22 +160,20 @@ func kindOf(typ, rule string) *nodeKind {
 	return actual.(*nodeKind)
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and its
-// terminal type with and without it.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
+// struct of a text struct rule.
 type ruleKinds struct {
-	reserved  [len(reservedTypes)]*nodeKind
-	term      *nodeKind
-	termValue *nodeKind
+	reserved [len(reservedTypes)]*nodeKind
+	text     *nodeKind
 }
 
-func newRuleKinds(rule, terminalType string) ruleKinds {
+func newRuleKinds(rule, textType string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
 	}
-	if terminalType != "" {
-		rk.term = kindOf(terminalType, rule)
-		rk.termValue = kindOf(terminalType, "")
+	if textType != "" {
+		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -737,17 +735,17 @@ func (l SyntaxErrors) Error() string {
 // --- Rules ---
 
 type rule struct {
-	kinds        ruleKinds // the node kinds the rule makes (set by setKinds)
-	id           int
-	name         string
-	scope        []string // capture names of the rule body, in slot order
-	body         func(p *parser, min int) (*Node, bool)
-	action       func(c *actx) any
-	value        shaper // makes the rule's value from the value of its body, without an action
-	terminalType string
-	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
-	// is the matched text: the struct the rule's action makes, made without it.
-	textStruct bool
+	kinds  ruleKinds // the node kinds the rule makes (set by setKinds)
+	id     int
+	name   string
+	scope  []string // capture names of the rule body, in slot order
+	body   func(p *parser, min int) (*Node, bool)
+	action func(c *actx) any
+	value  shaper // makes the rule's value from the value of its body, without an action
+	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
+	// of that type whose field Text is the matched text, the struct the rule's action makes, made
+	// without it.
+	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
@@ -2032,15 +2030,8 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.terminalType != "" {
-		if r.textStruct {
-			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-		}
-		kind := r.kinds.termValue
-		if sourceInfo {
-			kind = r.kinds.term
-		}
-		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
+	if r.textType != "" {
+		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -2535,20 +2526,6 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	if first {
 		n.start, n.end = int32(c.start), int32(c.end)
 	}
-	c.p.created = append(c.p.created, n)
-	return n
-}
-
-func (c *actx) newTerminal(typ string, value any) any {
-	text, ok := value.(string)
-	if !ok {
-		evalErrorf("terminal constructor requires a string, got %s", typeName(value))
-	}
-	k := typeKinds[typ]
-	if k == nil {
-		k = kindOf(typ, "")
-	}
-	n := c.p.newNode(Node{kind: k, terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n
 }
@@ -4937,8 +4914,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 
 // The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
-// instead of Node trees: the value of an expression is an any holding a pointer to a struct or
-// terminal type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
+// instead of Node trees: the value of an expression is an any holding a pointer to a struct
+// type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
 // or a *tnode: a tuple node (Seq), a list node (List), or a tuple or list value. Values other than
 // nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
@@ -5012,13 +4989,6 @@ func tpubNode(v any) *TNode[any] {
 		if n, ok := tpub(x).(*TNode[any]); ok {
 			return n
 		}
-	case *terror:
-	case tval:
-		// A value of a terminal type is a string node.
-		if text, ok := x.ttext(); ok {
-			start, end := x.tspan()
-			return &TNode[any]{Span{start, end}, text}
-		}
 	}
 	return nil
 }
@@ -5037,13 +5007,13 @@ func tpubError(v any) *Error {
 	return nil
 }
 
-// tval is a node value of the typed runtime: a value of a struct or terminal type, *tmatch,
+// tval is a node value of the typed runtime: a value of a struct type, *tmatch,
 // *terror or *tnode.
 type tval interface {
 	tspan() (int, int)
 	tsetSpan(start, end int)
 	tname() string                  // type name
-	ttext() (string, bool)          // text of a terminal
+	ttext() (string, bool)          // text of a string node or an error value
 	tkids() []any                   // children of a CST node
 	tfield(name string) (any, bool) // field value, and whether the type has the field (structs)
 	tstruct() bool                  // a struct type
@@ -5153,8 +5123,8 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// term makes the value of a rule of a terminal type.
-	term func(p *tparser, start, end int, text string) tval
+	// text makes the value of a text struct rule from the rule's range and text.
+	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -5179,7 +5149,7 @@ func tptr[T any](p *T) any {
 }
 
 // tback returns the value of a field of an open type (a string node, a tuple or list node, an
-// error value, a union, node, terminal or any) as a value of the typed runtime: the inverse of
+// error value, a union, node or any) as a value of the typed runtime: the inverse of
 // tpub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
 func tback(v any) any {
 	switch x := v.(type) {
@@ -5835,8 +5805,8 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.terminalType != "" {
-		return r.term(p, start, p.pos, p.text(start, p.pos))
+	if r.textType != "" {
+		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -7385,8 +7355,8 @@ type Tuple2[E0, E1 any] struct {
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
-// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
-// terminal type is expected becomes nil.
+// from errors, the result is returned together with SyntaxErrors; an Error node where a struct
+// type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) ([]*Item, error) {
 	a := &tslabs{}
@@ -7447,19 +7417,19 @@ var scope15 = []string{}
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"items"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 1, name: "block", scope: []string{"v1"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
-		{id: 2, name: "item", scope: []string{"s", "text", "cs"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 3, name: "children", scope: []string{"s", "b"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
-		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 8, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 9, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"items"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 1, name: "block", scope: []string{"v1"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indent"}},
+		{id: 2, name: "item", scope: []string{"s", "text", "cs"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 3, name: "children", scope: []string{"s", "b"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indent"}},
+		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 8, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 9, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range rules {
-		r.kinds = newRuleKinds(r.name, r.terminalType)
+		r.kinds = newRuleKinds(r.name, r.textType)
 	}
 	nseen = 1
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e1() }
@@ -7489,17 +7459,17 @@ func init() {
 	structFields["Item"] = map[string]bool{"Text": true, "Children": true}
 	typeKinds["Item"] = kindOf("Item", "")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 1, name: "block", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{"indent"}},
-		{id: 2, name: "item", scope: []string{"s"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 3, name: "children", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
-		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 1, name: "block", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{"indent"}},
+		{id: 2, name: "item", scope: []string{"s"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 3, name: "children", scope: []string{"s"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indent"}},
+		{id: 4, name: "spaces", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "line", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "eol", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "blank", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
-		r.kinds = newRuleKinds(r.name, r.terminalType)
+		r.kinds = newRuleKinds(r.name, r.textType)
 	}
 	recNseen = 1
 	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e14() }

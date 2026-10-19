@@ -29,8 +29,8 @@ node and the labels of its captures. Rule constraints need it.
   types that their output shapes reference. `WithAllSchemaRules()` also includes
   unreachable rules and all declared types. `WithStart` changes the default root.
 - A type entry is either a declared struct type, with ID `declared/<Name>`, or the
-  inferred value of a rule, with ID `inferred/<rule>`. Aliases and terminal types are
-  not entries: their shapes appear where they are used.
+  inferred value of a rule, with ID `inferred/<rule>`. Aliases are not
+  entries: their shapes appear where they are used.
 - `sourceInfo` records whether the parser was compiled with source information.
 - Entries, fields, union alternatives and captures have a stable order, so repeated
   exports of one checked grammar encode to identical JSON bytes.

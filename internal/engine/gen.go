@@ -437,9 +437,6 @@ func goFieldType(t *fieldType) string {
 	if t.name != "" {
 		fmt.Fprintf(&b, ", name: %q", t.name)
 	}
-	if t.terminal {
-		b.WriteString(", terminal: true")
-	}
 	if t.elem != nil {
 		b.WriteString(", elem: " + goFieldType(t.elem))
 	}
@@ -520,12 +517,11 @@ type generator struct {
 	enableTypedOutputSweep        bool
 	enableBoundedTypedOutputSweep bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
-	nodeScopes           map[*rule][]string
-	typedSpan            string          // generated helper name, avoiding grammar type and field names
-	terminalConstructors map[string]bool // terminal helpers actually used by typed actions
-	prog                 *Program
-	table                string // the rule table being generated: rules, or recRules for Recognize
-	cur                  *rule  // the rule being generated
+	nodeScopes map[*rule][]string
+	typedSpan  string // generated helper name, avoiding grammar type and field names
+	prog       *Program
+	table      string // the rule table being generated: rules, or recRules for Recognize
+	cur        *rule  // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -695,15 +691,11 @@ func (g *generator) rules() {
 			if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 				value = "shaper{}" // the lines build the rule's value
 			}
-			if r.textStruct && g.table != "trules" {
-				// The typed runtime makes the struct with trules[i].term.
-				extra += "textStruct: true, "
-			}
-			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, terminalType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
-				r.id, r.name, goStrings(scopes[r].names), value, r.terminalType, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
+			fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, value: %s, textType: %q, memo: %v, leader: %v, %sseen: %d, novalue: %v, vars: %s},\n",
+				r.id, r.name, goStrings(scopes[r].names), value, r.textType, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
-		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.terminalType)\n\t}\n", g.table)
+		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.textType)\n\t}\n", g.table)
 		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	}
 	for _, r := range all {
@@ -806,8 +798,8 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		case r.action != nil:
 			fmt.Fprintf(m, "\t\tc := p.useCtx(tctx{p: p, f: %s, start: start, end: p.pos, cbase: len(p.created)})\n", frame)
 			fmt.Fprintf(m, "\t\tv = c.result(ta%d, %q)\n", r.id, r.name)
-		case r.terminalType != "":
-			fmt.Fprintf(m, "\t\tv = trules[%d].term(p, start, p.pos, p.text(start, p.pos))\n", r.id)
+		case r.textType != "":
+			fmt.Fprintf(m, "\t\tv = trules[%d].text(p, start, p.pos, p.text(start, p.pos))\n", r.id)
 		default:
 			fmt.Fprintf(m, "\t\tv = p.scopeValue(trules[%d].value, v, start)\n", r.id)
 			if len(s.names) > 0 {
@@ -1586,16 +1578,6 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:
 		return g.term(&grammar.Call{Func: "list", Args: t.Items}, s, locals)
-	case *grammar.TerminalConstructor:
-		name := g.prog.terminalConstructorType(t.Type)
-		if g.table == "trules" {
-			if g.terminalConstructors == nil {
-				g.terminalConstructors = map[string]bool{}
-			}
-			g.terminalConstructors[name] = true
-			return "tmk_" + name + "(c, " + strconv.FormatBool(grammar.Term(t) == g.final) + ", " + g.term(t.Args[0], s, locals) + ")"
-		}
-		return "c.newTerminal(" + strconv.Quote(name) + ", " + g.term(t.Args[0], s, locals) + ")"
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and

@@ -90,27 +90,19 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 		return
 	}
 	legacy := v.legacy(rd.Type)
-	if n, ok := legacy.(namedTy); ok && n.kind == 't' && rd.Action == nil {
-		// A rule of a terminal type without an action converts its value.
-		return
-	}
 	if newFieldType(legacy) != nil {
 		v.checks.results[key] = legacy
 	}
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
-// type. A declared node keeps the inferred type arguments, and a rule of a terminal type without
-// an action converts its value to a string node.
+// type. A declared node keeps the inferred type arguments.
 func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if rd.Type == nil {
 		return t
 	}
 	k := &checker{prog: v.prog, resolving: map[string]bool{}}
 	legacy := k.resolve(rd.Type)
-	if n, ok := legacy.(namedTy); ok && n.kind == 't' && rd.Action == nil {
-		return tyStringNode
-	}
 	d := fromLegacy(legacy)
 	if !v.assignable(t, d) {
 		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, t, d)
@@ -305,15 +297,6 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 			}
 		}
 		return listTy{elem}
-	case *grammar.TerminalConstructor:
-		// Terminal types and their constructors remain until the value model retires them; a
-		// terminal value is a string node.
-		for _, arg := range t.Args {
-			if a := v.term(arg, env); !v.assignable(a, tyString) {
-				v.errorf(termPos(arg, t.Diagnostic()), "terminal constructor requires a string, got %s", a)
-			}
-		}
-		return tyStringNode
 	case *grammar.Call:
 		return v.call(t, env)
 	case *grammar.Cast:

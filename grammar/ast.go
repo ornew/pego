@@ -140,14 +140,8 @@ type AliasSpec struct {
 	Type       TypeExpr `json:"type"`
 }
 
-// TerminalSpec is a terminal type.
-type TerminalSpec struct {
-	SourceInfo `json:"source,omitempty"`
-}
-
-func (*StructSpec) typeSpec()   {}
-func (*AliasSpec) typeSpec()    {}
-func (*TerminalSpec) typeSpec() {}
+func (*StructSpec) typeSpec() {}
+func (*AliasSpec) typeSpec()  {}
 
 // TypeExpr is a reference to a type.
 type TypeExpr interface{ typeExpr() }
@@ -691,14 +685,6 @@ type ListConstructor struct {
 	Items      []Term   `json:"items"`
 }
 
-// TerminalConstructor builds a declared terminal from a positional string:
-// T{"text"}. Compilation requires exactly one string-valued argument.
-type TerminalConstructor struct {
-	SourceInfo `json:"source,omitempty"`
-	Type       string `json:"type"`
-	Args       []Term `json:"args"`
-}
-
 // FieldInit initializes a field of a struct value.
 type FieldInit struct {
 	SourceInfo `json:"source,omitempty"`
@@ -763,20 +749,19 @@ type Block struct {
 
 func (*Block) term() {}
 
-func (*IntLit) term()              {}
-func (*StringLit) term()           {}
-func (*BoolLit) term()             {}
-func (*NilLit) term()              {}
-func (*CaptureRef) term()          {}
-func (*IndexRef) term()            {}
-func (*VarRef) term()              {}
-func (*Member) term()              {}
-func (*New) term()                 {}
-func (*ListConstructor) term()     {}
-func (*TerminalConstructor) term() {}
-func (*Call) term()                {}
-func (*Lambda) term()              {}
-func (*Binary) term()              {}
-func (*Unary) term()               {}
-func (*Cast) term()                {}
-func (*Assign) term()              {}
+func (*IntLit) term()          {}
+func (*StringLit) term()       {}
+func (*BoolLit) term()         {}
+func (*NilLit) term()          {}
+func (*CaptureRef) term()      {}
+func (*IndexRef) term()        {}
+func (*VarRef) term()          {}
+func (*Member) term()          {}
+func (*New) term()             {}
+func (*ListConstructor) term() {}
+func (*Call) term()            {}
+func (*Lambda) term()          {}
+func (*Binary) term()          {}
+func (*Unary) term()           {}
+func (*Cast) term()            {}
+func (*Assign) term()          {}

@@ -75,12 +75,9 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		panic("unrepresentable typed Document clone")
 	}
 	publication := clone(result, "value")
-	// Terminals are copied whole: a string node (method Match, type TNode[string]), Error and the
-	// terminal types.
+	// Values that hold text are copied whole: a string node (method Match, type TNode[string]) and
+	// Error.
 	terminals := []struct{ name, goType, chunk string }{{"Match", "TNode[string]", "match"}, {"Error", "Error", "error"}}
-	for _, name := range t.terms {
-		terminals = append(terminals, struct{ name, goType, chunk string }{t.names[name], t.names[name], "t" + t.names[name]})
-	}
 	for _, terminal := range terminals {
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[3]s) *%[3]s {
  c.step(1)
@@ -182,7 +179,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
  case *Error: return c.toError(v)
  case []any: return c.toElems(v)
 `)
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(&methods, " case *%[1]s: return c.to%[1]s(v)\n", t.names[name])
 	}
 	methods.WriteString(` }
@@ -256,10 +253,10 @@ type typedDocumentClone struct {
  match astChunk[TNode[string]]
  error astChunk[Error]
 `)
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, " t%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
-	for _, name := range append([]string{"Match", "Error"}, append(t.terms, t.structs...)...) {
+	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
 		goType := name
 		if g, ok := t.names[name]; ok {
 			name, goType = g, g
@@ -298,7 +295,7 @@ func (c *typedDocumentClone) finish() {
 func (c *typedDocumentClone) release() {
  c.control, c.values, c.slices, c.tasks = nil, nil, nil, nil
 `)
-	for _, name := range append([]string{"Match", "Error"}, append(t.terms, t.structs...)...) {
+	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
 		if g, ok := t.names[name]; ok {
 			name = g
 		}

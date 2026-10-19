@@ -197,14 +197,13 @@ func TestValueActionTypes(t *testing.T) {
 		{`rule a = x:"x" y:"1" => list($x.Value, $y.Start)`, "a", `[](string | int)`},
 		{`rule a = x:"x" => list($x, nil)`, "a", `[]*node[string]`},
 		// Struct fields and constructors use the declared types, with Match a string node.
-		{"type Foo = { Name Match }\nrule a = x:\"x\" => Foo{Name: $x}", "a", `Foo`},
-		{"type Foo = { Items []Match }\nrule a = x:\"x\"* => Foo{Items: $x.Value}", "a", `Foo`},
+		{"type Foo = { Name node[string] }\nrule a = x:\"x\" => Foo{Name: $x}", "a", `Foo`},
+		{"type Foo = { Items []node[string] }\nrule a = x:\"x\"* => Foo{Items: $x.Value}", "a", `Foo`},
 		// Operators Rule actions see $lhs, $op and $rhs.
 		{"rule e = operators {\n    operand n:[0-9]+ => $n.Value\n    level { infix left \"+\" => $op }\n}", "e", `[]node[string] | node[string]`},
 		// A declared type is the rule's type; a declared node keeps the inferred arguments.
 		{"type Foo = {}\nrule a Foo = _ => Foo{}", "a", `Foo`},
 		{`rule a node = x:"x" => $x`, "a", `node[string]`},
-		{"type Word terminal\nrule a Word = [a-z]+", "a", `node[string]`},
 		{"type Word = { Text string }\nrule a Word = t:([a-z]+) #atomic => Word{Text: text($t)}", "a", `Word`},
 		// A rule whose action depends on its own value sees it as not known.
 		{"rule a = \"(\" x:b \")\" => $x.Value\nrule b = a / \"y\"", "a", `any`},
@@ -256,9 +255,12 @@ func TestValueActionErrors(t *testing.T) {
 		{"rule a = x:(b c) => $x.Value[2]\nrule b = \"b\"\nrule c = \"c\"", "index 2 is out of range for (b, c)"},
 		{`rule a = x:"x" => map($x, (i) => i)`, "map: expected a list, got node[string]"},
 		{"type Foo = { Name string }\nrule a = x:\"x\" => Foo{Name: $x}", "cannot use node[string] as string in field Name of Foo"},
-		{"type Foo = { Name Match }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
+		{"type Foo = { Name node[string] }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
 		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
-		{"type Word terminal\nrule a = _ => Word{1}", `terminal constructor requires a string, got int`},
+		// The retired forms are read as the text structs they mean: a terminal rule without an
+		// action does not produce one, and a positional constructor sets the field Text.
+		{"type Word terminal\nrule a Word = [a-z]+", "rule a produces node[[]node[string]], which is not assignable to Word"},
+		{"type Word terminal\nrule a = _ => Word{1}", `cannot use int as string in field Text of Word`},
 		{"type Word = { Text string }\nrule a = _ => Word{Text: 1}", `cannot use int as string in field Text of Word`},
 		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
 		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},

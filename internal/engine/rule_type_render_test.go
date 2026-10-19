@@ -8,7 +8,7 @@ import (
 
 func TestRuleTypeWithPollParity(t *testing.T) {
 	record := recordTy{fields: map[string]ty{"z": listTy{unionTy{alts: []ty{tyMatch, tyNil}}}, "a": optTy{tyString}}}
-	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyTerminal, tyMatch, listTy{tyMatch}, optTy{tyMatch}, unionTy{}, unionTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record}}
+	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyMatch, listTy{tyMatch}, optTy{tyMatch}, unionTy{}, unionTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record}}
 	for _, typ := range cases {
 		p := &Program{typed: &typeInfo{rules: map[string]ty{"main": typ}}}
 		want, known := p.RuleType("main")

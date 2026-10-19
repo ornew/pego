@@ -12,11 +12,9 @@ import (
 type fieldType struct {
 	kind byte // see the ft constants
 	name string
-	// terminal reports a named terminal type, whose values are string nodes.
-	terminal bool
-	elem     *fieldType
-	alts     []*fieldType
-	text     string
+	elem *fieldType
+	alts []*fieldType
+	text string
 }
 
 const (
@@ -25,7 +23,6 @@ const (
 	ftBool     = 'b'
 	ftNil      = 'z'
 	ftNode     = 'n'
-	ftTerminal = 't'
 	ftNamed    = 'N'
 	ftList     = 'l'
 	ftOptional = 'o'
@@ -50,13 +47,11 @@ func newFieldType(t ty) *fieldType {
 			f = &fieldType{kind: ftNil}
 		case tyNode:
 			f = &fieldType{kind: ftNode}
-		case tyTerminal:
-			f = &fieldType{kind: ftTerminal}
 		default:
 			return nil
 		}
 	case namedTy:
-		f = &fieldType{kind: ftNamed, name: t.name, terminal: t.kind == 't'}
+		f = &fieldType{kind: ftNamed, name: t.name}
 	case listTy:
 		e := newFieldType(t.elem)
 		if e == nil {
@@ -88,7 +83,7 @@ func newFieldType(t ty) *fieldType {
 }
 
 // parseFieldType reads the text of a type as ty.String writes it, resolving names against the
-// declared types (types, which maps each name to whether it is a terminal type) and the reserved
+// declared types (types, the set of their names) and the reserved
 // node types. Bytecode carries field types this way.
 func parseFieldType(text string, types map[string]bool) (*fieldType, error) {
 	r := fieldTypeReader{text: text, types: types}
@@ -180,31 +175,27 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 			t = &fieldType{kind: ftNil}
 		case "node":
 			t = &fieldType{kind: ftNode}
-		case "terminal":
-			t = &fieldType{kind: ftTerminal}
 		case "_", "any":
 			t = &fieldType{kind: ftTop}
 		case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
 			t = &fieldType{kind: ftNamed, name: name}
 		default:
-			terminal, ok := r.types[name]
-			if !ok {
+			if !r.types[name] {
 				return nil, fmt.Errorf("unknown type %q at %d", name, start)
 			}
-			t = &fieldType{kind: ftNamed, name: name, terminal: terminal}
+			t = &fieldType{kind: ftNamed, name: name}
 		}
 	}
 	t.text = r.text[start:r.pos]
 	return t, nil
 }
 
-// moduleTypeNames returns the names of a module's declared types, each mapped to whether it is a
-// terminal type.
+// moduleTypeNames returns the set of the names of a module's declared types.
 func moduleTypeNames(m *Module) map[string]bool {
 	names := make(map[string]bool, len(m.Types))
 	for _, t := range m.Types {
 		if t.Name >= 0 && t.Name < len(m.Strings) {
-			names[m.Strings[t.Name]] = t.Terminal
+			names[m.Strings[t.Name]] = true
 		}
 	}
 	return names
@@ -216,7 +207,7 @@ func moduleTypeNames(m *Module) map[string]bool {
 type checkInfo struct {
 	// all reports a program compiled without type checking. It checks every constructed field and
 	// every result whose declared type is not any, except the values of Operators Rule operators
-	// without an action and terminal conversions.
+	// without an action.
 	all bool
 	// fields holds the checked constructed fields. A nil type (in a loaded program) stands for
 	// the declared type of the field.
@@ -314,13 +305,6 @@ func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
 			return t
 		}
 		return prog.resolveCheck(declared)
-	}
-	if rd.Action == nil {
-		if _, spec := prog.concreteType(declared); spec != nil {
-			if _, ok := spec.(*grammar.TerminalSpec); ok {
-				return nil // a conversion, of the rule or of an Operators Rule's lines
-			}
-		}
 	}
 	switch key := key.(type) {
 	case *grammar.RuleDef:
@@ -426,7 +410,7 @@ func ruleResults(rd *grammar.RuleDef) []any {
 }
 
 // fieldConforms reports whether v is a value of type t in the value model. It charges a step for
-// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// each list element it examines. Match is a string node, Seq, List, Operator
 // and node every node, and Error and Missing (the type error) error values; a list type takes a
 // list value, not the node of a repetition.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
@@ -469,8 +453,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	switch t.kind {
 	case ftNode:
 		return valueNode
-	case ftTerminal:
-		return shape == shapeString
 	case ftNamed:
 		switch t.name {
 		case TypeMatch:
@@ -479,9 +461,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 			return valueNode
 		case TypeError, TypeMissing:
 			return shape == shapeError
-		}
-		if t.terminal {
-			return shape == shapeString
 		}
 		return shape == shapeStruct && n.Type() == t.name
 	case ftList:

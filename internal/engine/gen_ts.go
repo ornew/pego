@@ -245,11 +245,10 @@ function checkResult(p: Parser, v: Node | null, t: FieldType, rule: string): voi
 const tsFieldCheckSource = `
 // --- Run-time type checks ---
 
-// A FieldType of kind N with terminal set is a named terminal type, whose values are string nodes.
-type FieldType = { kind: string; name: string; terminal: boolean; elem: FieldType | null; alts: readonly FieldType[]; text: string };
+type FieldType = { kind: string; name: string; elem: FieldType | null; alts: readonly FieldType[]; text: string };
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// each list element it examines. Match is a string node, Seq, List, Operator
 // and node every node, and Error error values; a list type takes a list value, not the node of a
 // repetition.
 function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
@@ -281,8 +280,6 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
   switch (t.kind) {
     case "n":
       return valueNode;
-    case "t":
-      return shape === shapeString;
     case "N":
       switch (t.name) {
         case "Match":
@@ -295,7 +292,6 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
         case "Missing":
           return shape === shapeError;
       }
-      if (t.terminal) return shape === shapeString;
       return shape === shapeStruct && v.type === t.name;
     case "l":
       if (shape !== shapeListValue) return false;
@@ -351,7 +347,7 @@ func tsFieldType(t *fieldType) string {
 	for i, a := range t.alts {
 		alts[i] = tsFieldType(a)
 	}
-	return fmt.Sprintf("{ kind: %s, name: %s, terminal: %v, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.kind))), tsString(t.name), t.terminal, elem, strings.Join(alts, ", "), tsString(t.text))
+	return fmt.Sprintf("{ kind: %s, name: %s, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.kind))), tsString(t.name), elem, strings.Join(alts, ", "), tsString(t.text))
 }
 
 // tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
@@ -566,12 +562,8 @@ func (g *tsGen) rules() {
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			value = 0 // the lines build the rule's value
 		}
-		textStruct := ""
-		if r.textStruct {
-			textStruct = ", true"
-		}
-		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s%s);\n", g.ruleVar(r),
-			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.terminalType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars), textStruct)
+		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %s, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
+			r.id, tsString(r.name), tsStrings(scopes[r].names), value, tsString(r.textType), r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
 		vars = append(vars, g.ruleVar(r))
 	}
 	if g.table == "rules" {
@@ -1080,8 +1072,6 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:
 		return g.term(&grammar.Call{Func: "list", Args: t.Items}, s, locals)
-	case *grammar.TerminalConstructor:
-		return "c.newTerminal(" + tsString(g.prog.terminalConstructorType(t.Type)) + ", " + g.term(t.Args[0], s, locals) + ")"
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and

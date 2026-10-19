@@ -14,7 +14,7 @@ func sampleGrammar() *Grammar {
 	return &Grammar{
 		Package: "calc",
 		Statements: []Statement{
-			&TypeDef{Name: "Number", Spec: &TerminalSpec{}},
+			&TypeDef{Name: "Number", Spec: &StructSpec{Fields: []*Field{{Name: "Text", Type: &TypeRef{Name: "string"}}}}},
 			&TypeDef{Name: "Op", Spec: &StructSpec{Fields: []*Field{
 				{Name: "Left", Type: &TypeRef{Name: "Node"}},
 				{Name: "Args", Type: &ListType{Elem: &OptionalType{Elem: &TypeRef{Name: "Node"}}}},

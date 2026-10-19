@@ -47,18 +47,23 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 	}
 }
 
-// A value of a terminal type is a string node, with the members of a node. The terminal type still
-// reaches the engine from JSON grammars, so it is read with syntax.ParseLegacy.
+// A value of a terminal type was a string node, with the members of a node. pego fix rewrites the
+// terminal type to a text struct, which has only its field Text, so the compiler reports the node
+// members that the action still reads.
 func TestNodeMembersOfTerminalTypes(t *testing.T) {
-	program := compileLegacy(t, `type Num terminal
+	fixed, err := syntax.Fix(`type Num terminal
 type Out = { S int; E int; V string }
 rule main = "-" n:num $$ => Out{S: $n.Start, E: $n.End, V: $n.Value}
 rule num Num = [0-9]+ #atomic`)
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
-		if err != nil || n.String() != `Out{E: 3, S: 1, V: "12"}` {
-			t.Fatalf("%s: %v %v", backend, n, err)
-		}
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := syntax.Parse(fixed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "Num has no field Start") {
+		t.Fatalf("got %v\n%s", err, fixed)
 	}
 }
 

@@ -27,15 +27,15 @@ func TestCompiledRoundTrip(t *testing.T) {
 	}
 }
 
-// The terminal type still reaches the engine from JSON grammars: its constructors are read with
-// syntax.ParseLegacy, and check their values without a field check.
+// The retired terminal constructors are read with syntax.ParseLegacy as the text struct
+// constructors they mean, whose field checks the version 1 format does not keep.
 func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
 	for name, src := range map[string]string{
 		"value error":     "type Int terminal\nrule main = {value := 1} \"x\" => Int{value}",
 		"predicate error": "type Int terminal\nrule main = {value := 1} {Int{value} != nil} \"x\" / \"x\"",
 	} {
 		t.Run(name, func(t *testing.T) {
-			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""}, false)
+			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""}, true)
 		})
 	}
 }

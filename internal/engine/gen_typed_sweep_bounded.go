@@ -55,7 +55,7 @@ func (t *typedGen) outputBoundedSweep(b *strings.Builder, direct, conversion boo
 			if !m.canPush() { break }
 			m.push(x.fields)
 `)
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n", t.names[name])
 		for _, f := range t.info.fields[name] {
 			if !outputLeaf(f.t) {
@@ -107,7 +107,7 @@ func (t *typedGen) outputBoundedHolder(b *strings.Builder, holder string, lists 
 	if !direct {
 		fields = append(fields, "match", "error")
 	}
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fields = append(fields, "t"+t.names[name])
 	}
 	for _, list := range lists {

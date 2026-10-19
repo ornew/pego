@@ -633,14 +633,6 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 			control.poll()
 			a.walkTermControlled(item, control)
 		}
-	case *grammar.TerminalConstructor:
-		if i, ok := a.tokenIndex(t.Diagnostic()); ok {
-			a.refToken(kindType, t.Type, i)
-		}
-		for _, arg := range t.Args {
-			control.poll()
-			a.walkTermControlled(arg, control)
-		}
 	case *grammar.Lambda:
 		a.walkTermControlled(t.Body, control)
 	case *grammar.Binary:

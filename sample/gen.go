@@ -920,8 +920,6 @@ func ruleValue(ri *ruleInfo, v val, start, end int, hadCaps bool) val {
 	switch {
 	case ri.def.Action != nil || ri.operatorsRule != nil:
 		return val{kind: vUnknown, start: start, end: end}
-	case ri.terminal:
-		return val{kind: vText, start: start, end: end}
 	case hadCaps:
 		return val{kind: vNode, start: start, end: end}
 	}

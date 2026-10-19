@@ -264,7 +264,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - A predicate that reads a capture makes the capture's rules build values even in recognition mode, and with them
   every rule they call: in `parsers/cue`, one predicate reading a capture that contained an expression made nearly
   the whole grammar build values in `Recognize`. Keep captures that predicates read small (a name, a token).
-- Prefer terminal types (`type Name terminal`) or `(...) #atomic` for tokens: their bodies are matched without building
-  values.
+- Prefer text structs (`rule name Name = t:(...) #atomic => Name{Text: text($t)}` with `type Name = { Text string }`)
+  or `(...) #atomic` for tokens: their bodies are matched without building values.
 - Write actions that use captures rather than `$n` where possible; a body whose action does not use `$n` is matched
   without building its CST.

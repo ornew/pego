@@ -795,10 +795,9 @@ interface Rule {
   body: (p: Parser, min: number) => R;
   action: Action | null;
   value: Shaper; // makes the value of a body without an action (see scopeValue)
-  terminalType: string;
-  // textStruct means the rule's value is a struct of type terminalType whose field Text is the
+  // textType, if not "", means the rule's value is a struct of that type whose field Text is the
   // matched text: the struct the rule's action makes, made without it.
-  textStruct: boolean;
+  textType: string;
   // memo means the rule's results are memoized. It is false for transient rules, whose entries
   // could never be reused.
   memo: boolean;
@@ -846,13 +845,12 @@ function mkRule(
   name: string,
   scope: string[],
   value: Shaper,
-  terminalType: string,
+  textType: string,
   memo: boolean,
   leader: boolean,
   seen: number,
   novalue: boolean,
   vars: string[],
-  textStruct = false,
 ): Rule {
   return {
     id,
@@ -861,8 +859,7 @@ function mkRule(
     body: failBody,
     action: null,
     value,
-    terminalType,
-    textStruct,
+    textType,
     memo,
     leader,
     seen,
@@ -2133,11 +2130,8 @@ class Parser {
       const c = this.useCtx(f, start, this.pos, null, null, null);
       return c.result(r.action, r.name);
     }
-    if (r.terminalType !== "") {
-      if (r.textStruct) {
-        return new Node(r.terminalType, "", start, this.pos, "", noNodes, [{ name: "Text", value: this.text(start, this.pos) }], false, false);
-      }
-      return new Node(r.terminalType, sourceInfo ? r.name : "", start, this.pos, this.text(start, this.pos), noNodes, noFields, false, true);
+    if (r.textType !== "") {
+      return new Node(r.textType, "", start, this.pos, "", noNodes, [{ name: "Text", value: this.text(start, this.pos) }], false, false);
     }
     v = this.scopeValue(r.value, v, start);
     if (r.scope.length > 0) {
@@ -2972,13 +2966,6 @@ class Actx {
 
   newList(items: readonly (Node | null)[]): Node {
     return this.listNode(this.p.control === null ? items.slice() : copyNodesWork(items, 0, items.length, this.p.control));
-  }
-
-  newTerminal(typ: string, value: Value): Value {
-    if (typeof value !== "string") return evalError(`terminal constructor requires a string, got ${typeName(value)}`);
-    const n = new Node(typ, "", this.start, this.end, value, noNodes, noFields, false, true);
-    this.p.created.push(n);
-    return n;
   }
 
   // listNode returns a list value with the child list kids (which it takes over). Its range, which

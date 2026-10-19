@@ -48,6 +48,8 @@ type lintCase struct {
 	// legacy parses src with syntax.ParseLegacy, for grammars that reach the engine as JSON in
 	// the retired syntax.
 	legacy bool
+	// fix rewrites src with syntax.Fix before parsing it, for grammars written in a removed syntax.
+	fix bool
 }
 
 func runCases(t *testing.T, cases []lintCase) {
@@ -57,6 +59,15 @@ func runCases(t *testing.T, cases []lintCase) {
 			parse := syntax.Parse
 			if tc.legacy {
 				parse = syntax.ParseLegacy
+			}
+			if tc.fix {
+				parse = func(src string) (*grammar.Grammar, error) {
+					fixed, err := syntax.Fix(src)
+					if err != nil {
+						return nil, err
+					}
+					return syntax.Parse(fixed)
+				}
 			}
 			got, fs := lintSourceWith(t, parse, tc.src, Options{})
 			if !slices.Equal(got, tc.want) {
@@ -213,8 +224,10 @@ func TestUnusedCapture(t *testing.T) {
 		{name: "repetition element read by its predicate", src: `rule main = (x:"a" {len($x) > 0})* => nil`},
 		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => x.$x)`,
 			want: []string{"1:24 warning unused-capture"}},
-		{name: "terminal type", src: "type T terminal\nrule main T = a:\"x\"", want: []string{"2:15 warning unused-capture"},
-			msg: "terminal of type T", legacy: true},
+		// pego fix wraps the body of a terminal rule in a capture of its own, which leaves the
+		// capture the terminal discarded unused.
+		{name: "terminal type", src: "type T terminal\nrule main T = a:\"x\"", want: []string{"2:18 warning unused-capture"},
+			msg: "the action does not refer to it", fix: true},
 		{name: "text struct", src: "type T = { Text string }\nrule main T = t:(a:\"x\") => T{Text: text($t)}", want: []string{"2:18 warning unused-capture"},
 			msg: "the action does not refer to it"},
 		{name: "operatorsRule operator action", src: "rule main = operators {\n    operand [0-9]\n    level { infix left o:\"+\" => $lhs }\n}",

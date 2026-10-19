@@ -121,7 +121,6 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 |:--|:--|
 | `int`, `string`, `bool` | The same |
 | Struct type `T` | `*T` with the same fields and an embedded `Span{Start, End int}` |
-| Terminal type `T` of a grammar AST ([Grammar JSON](grammar-files.md#grammar-json)) | `*T` with `Span` and `Text` |
 | `node[string]`, a string node | `*TNode[string]`, with `Span` and `Value`, the text |
 | `error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
 | Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
@@ -139,7 +138,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
   underscore. Names are assigned in sorted order, so `Node` becomes `Node_` and an
   existing `Node_` becomes `Node__`. Every declared alias is exported.
 - After `#recover`, an error value in a list of a union type stays in the list as
-  `*Error`; where a struct or terminal type is expected it becomes `nil`.
+  `*Error`; where a struct type is expected it becomes `nil`.
 - `ParseRuleAST` consumes the whole input, applies options once before it looks up
   the name, and returns the selected rule's typed value as `any`. Unknown names and
   invalid options return `nil` with an error. A parse failure returns the zero value
@@ -148,7 +147,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
   that `Parse` returns when every value has a Go type of its own; the result is the
   same either way.
 
-Typed TypeScript output (`-types`) exports an interface for every struct, terminal
+Typed TypeScript output (`-types`) exports an interface for every struct
 and alias and the functions `parseAST` and `parseASTWithOptions`, which parse the
 configured start rule and convert the node result. They return `{ value, error }`:
 a successful nil result has a null value and a null error; a failure has a null
@@ -157,7 +156,7 @@ mapping is:
 
 | Grammar type | TypeScript value |
 |:--|:--|
-| Struct, terminal | An interface with `type` (the grammar name), `start`, `end` and the fields; terminals also have `text`; nullable where an absent or incompatible recovered value becomes nil |
+| Struct | An interface with `type` (the grammar name), `start`, `end` and the fields; nullable where an absent or incompatible recovered value becomes nil |
 | `node[string]`, a string node | `Match`, which extends `TNode<string>` (`type`, `start`, `end` and `value`) |
 | `[]T` | A readonly array, or null; null differs from an empty array |
 | `*T` | A nullable target |

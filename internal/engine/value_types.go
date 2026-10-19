@@ -706,7 +706,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 }
 
 // fromLegacy maps a type of the current model to the value model: reserved node kinds become
-// nodes, terminal types string nodes, and the recovery kinds error. any stays any: it is
+// nodes and the recovery kinds error. any stays any: it is
 // assignable to every type, and its values are checked at run time.
 func fromLegacy(t ty) ty {
 	switch t := t.(type) {
@@ -718,8 +718,6 @@ func fromLegacy(t ty) ty {
 			return tyBottom
 		case tyNode:
 			return nodeTy{value: tyTop}
-		case tyTerminal:
-			return tyStringNode
 		}
 		return t
 	case namedTy:
@@ -728,8 +726,6 @@ func fromLegacy(t ty) ty {
 			return tyStringNode
 		case t == tyError || t == tyMissing:
 			return tyErr
-		case t.kind == 't':
-			return tyStringNode
 		case t.kind == 'c':
 			return nodeTy{value: tyTop}
 		}

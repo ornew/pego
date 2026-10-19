@@ -7,10 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// A shared AST leaf is first compiled value-free for a terminal rule, then
+// A shared AST leaf is first compiled value-free for a text struct rule, then
 // value-building for an ordinary rule. It must preserve both modes, rule
 // names, captures and active accounting in either dispatch graph.
 func TestWorkPrimitiveASTAliases(t *testing.T) {
@@ -21,16 +22,14 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 		{"any", `.`, "é"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			source := fmt.Sprintf("type Token terminal\nrule token Token = %s\nrule value = %s\nrule main = a:value b:token c:value $$", tc.expr, tc.expr)
-			// The terminal type still reaches the engine from JSON grammars, read here with
-			// syntax.ParseLegacy.
-			reference := compileLegacy(t, source)
-			g, err := syntax.ParseLegacy(source)
+			source := fmt.Sprintf("type Token = { Text string }\nrule token Token = t:(%s) #atomic => Token{Text: text($t)}\nrule value = %s\nrule main = a:value b:token c:value $$", tc.expr, tc.expr)
+			reference := compile(t, source)
+			g, err := syntax.Parse(source)
 			if err != nil {
 				t.Fatal(err)
 			}
 			rules := g.Rules()
-			rules[1].Expr = rules[0].Expr
+			rules[1].Expr = primitiveOf(rules[0].Expr)
 			shared, err := Compile(g, Options{SourceInfo: true})
 			if err != nil {
 				t.Fatal(err)
@@ -47,12 +46,19 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 				}
 				for i, name := range []string{"a", "b", "c"} {
 					value, ok := n.Field(name).(*Node)
-					if !ok || value == nil || !value.IsTerminal() || value.text != tc.text || value.start != int32(i)*width || value.end != int32(i+1)*width {
+					text := ""
+					if value != nil && name == "b" {
+						text, _ = value.Field("Text").(string)
+					} else if value != nil && value.IsTerminal() {
+						text = value.text
+					}
+					if !ok || value == nil || text != tc.text || value.start != int32(i)*width || value.end != int32(i+1)*width {
 						t.Fatalf("unit=%v capture=%s lost value or span: %v", unit, name, value)
 					}
+					// A text struct value carries no rule name.
 					wantType, wantRule := TypeMatch, "value"
 					if name == "b" {
-						wantType, wantRule = "Token", "token"
+						wantType, wantRule = "Token", ""
 					}
 					if value.Type() != wantType || value.Rule() != wantRule {
 						t.Fatalf("unit=%v capture=%s type/rule=%s/%s", unit, name, value.Type(), value.Rule())
@@ -74,5 +80,24 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// primitiveOf returns the leaf expression under the capture, group and #atomic of a text struct
+// rule body.
+func primitiveOf(e grammar.Expr) grammar.Expr {
+	for {
+		switch x := e.(type) {
+		case *grammar.Capture:
+			e = x.Expr
+		case *grammar.Group:
+			e = x.Expr
+		case *grammar.Atomic:
+			e = x.Expr
+		case *grammar.Attributed:
+			e = x.Expr
+		default:
+			return e
+		}
 	}
 }

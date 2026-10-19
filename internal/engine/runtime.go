@@ -764,7 +764,7 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 }
 
 // finish builds the rule's value from the value of the rule body, and checks it against the
-// rule's declared type if needed. A value-free rule and a terminal conversion are never checked.
+// rule's declared type if needed. A value-free rule and a text struct rule are never checked.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
@@ -776,15 +776,8 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		}
 		return v
 	}
-	if r.terminalType != "" {
-		if r.textStruct {
-			return p.textStruct(r, start)
-		}
-		kind := r.kinds.termValue
-		if p.prog.sourceInfo {
-			kind = r.kinds.term
-		}
-		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
+	if r.textType != "" {
+		return p.textStruct(r, start)
 	}
 	v = r.value(p, v, start)
 	if len(r.scope.names) > 0 {
@@ -806,7 +799,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 // field Text is the matched text, with the rule's range. The node keeps the text unboxed
 // (textField).
 func (p *parser) textStruct(r *rule, start int) *Node {
-	return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
+	return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are

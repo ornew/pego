@@ -45,7 +45,7 @@ The AST lives in the `grammar` package (`grammar/ast.go`). The interface types a
 | Interface | Implementations |
 |:--|:--|
 | `Statement` | `TypeDef`, `RuleDef` |
-| `TypeSpec` | `StructSpec`, `AliasSpec`, `TerminalSpec` |
+| `TypeSpec` | `StructSpec`, `AliasSpec` |
 | `TypeExpr` | `TypeRef`, `ListType`, `OptionalType`, `UnionType` |
 | `Expr` (parser expressions) | `Ref`, `Literal`, `CharClass`, `Any`, `Seq`, `Choice`, `Repeat`, `Optional`, `And`, `Not`, `Atomic`, `Discard`, `Capture`, `Cut`, `Top`, `Bottom`, `BeginInput`, `EndInput`, `BeginLine`, `EndLine`, `Predicate`, `Attributed`, `Recovery`, `Stream`, `InlineAction`, `OperatorsRule` |
 | `Term` (action and predicate expressions) | `IntLit`, `StringLit`, `BoolLit`, `NilLit`, `CaptureRef`, `IndexRef`, `VarRef`, `Member`, `New`, `Call`, `Lambda`, `Binary`, `Unary`, `Assign` |

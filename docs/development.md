@@ -172,8 +172,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Status | Category | Feature |
 |:--|:--|:--|
 | Done | Type system | Type definitions (`type`) |
-| Done | | Terminal types (`terminal`) |
-| Done | | Structs (`struct`) |
+| Done | | Structs (`T = { ... }`), including text structs (`T = { Text string }`) for tokens |
 | Done | | Union types (`T \| U`) |
 | Done | | Type checking |
 | Done | | Type inference |
@@ -201,7 +200,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Predicate variables (`{x}`, `{x := 1}`) |
 | Done | | Capture references (`$label`) |
 | Done | | Built-in functions (`foldl`, `len`, `text`, and others) |
-| Done | | Struct constructors (`Type{Field: value}`), typed node-list constructors (`[]Type{...}`), and positional terminal constructors (`Type{"text"}`) |
+| Done | | Struct constructors (`Type{Field: value}`), and typed node-list constructors (`[]Type{...}`) |
 | Done | Advanced | Left recursion |
 | Done | | Parsing PEGO source (`.pego`) |
 | Done | | Operators Rule declarations |

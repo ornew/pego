@@ -159,22 +159,20 @@ func kindOf(typ, rule string) *nodeKind {
 	return actual.(*nodeKind)
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and its
-// terminal type with and without it.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
+// struct of a text struct rule.
 type ruleKinds struct {
-	reserved  [len(reservedTypes)]*nodeKind
-	term      *nodeKind
-	termValue *nodeKind
+	reserved [len(reservedTypes)]*nodeKind
+	text     *nodeKind
 }
 
-func newRuleKinds(rule, terminalType string) ruleKinds {
+func newRuleKinds(rule, textType string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
 	}
-	if terminalType != "" {
-		rk.term = kindOf(terminalType, rule)
-		rk.termValue = kindOf(terminalType, "")
+	if textType != "" {
+		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -736,17 +734,17 @@ func (l SyntaxErrors) Error() string {
 // --- Rules ---
 
 type rule struct {
-	kinds        ruleKinds // the node kinds the rule makes (set by setKinds)
-	id           int
-	name         string
-	scope        []string // capture names of the rule body, in slot order
-	body         func(p *parser, min int) (*Node, bool)
-	action       func(c *actx) any
-	value        shaper // makes the rule's value from the value of its body, without an action
-	terminalType string
-	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
-	// is the matched text: the struct the rule's action makes, made without it.
-	textStruct bool
+	kinds  ruleKinds // the node kinds the rule makes (set by setKinds)
+	id     int
+	name   string
+	scope  []string // capture names of the rule body, in slot order
+	body   func(p *parser, min int) (*Node, bool)
+	action func(c *actx) any
+	value  shaper // makes the rule's value from the value of its body, without an action
+	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
+	// of that type whose field Text is the matched text, the struct the rule's action makes, made
+	// without it.
+	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
@@ -2105,15 +2103,8 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.terminalType != "" {
-		if r.textStruct {
-			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-		}
-		kind := r.kinds.termValue
-		if sourceInfo {
-			kind = r.kinds.term
-		}
-		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
+	if r.textType != "" {
+		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -2623,20 +2614,6 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	if first {
 		n.start, n.end = int32(c.start), int32(c.end)
 	}
-	c.p.created = append(c.p.created, n)
-	return n
-}
-
-func (c *actx) newTerminal(typ string, value any) any {
-	text, ok := value.(string)
-	if !ok {
-		evalErrorf("terminal constructor requires a string, got %s", typeName(value))
-	}
-	k := typeKinds[typ]
-	if k == nil {
-		k = kindOf(typ, "")
-	}
-	n := c.p.newNode(Node{kind: k, terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n
 }

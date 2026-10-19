@@ -14,17 +14,16 @@ import (
 // function ParseAST that parses like Parse and converts the resulting tree into those types:
 //
 //   - a struct type T becomes a struct T with the same fields and an embedded Span (its range);
-//   - a terminal type T becomes a struct T{Span; Text string}, a string node (Match) a
-//     TNode[string] and an error value Error;
+//   - a string node (Match) becomes a TNode[string] and an error value Error;
 //   - a union type U = A | B becomes an interface U that A, B and Error implement (and TNode, if
 //     the union has other node members);
 //   - []T becomes a slice, *T a pointer (or the nil value of an interface), and int, string and
 //     bool stay as they are;
 //   - tuple and list nodes (Seq, List, Operator) become TNode[any], whose Value is a []any of the
-//     elements, and node, terminal and any become any (holding the converted value, with tuple
+//     elements, and node and any become any (holding the converted value, with tuple
 //     and list values as []any).
 //
-// An Error node (left by #recover) where a struct or terminal type is expected becomes nil; it is
+// An Error node (left by #recover) where a struct type is expected becomes nil; it is
 // reported among the SyntaxErrors anyway.
 
 // typedGo returns the Go source of the typed values for a parser starting at rule start, and
@@ -45,8 +44,8 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	t.decls(&b)
 	t.valueMethods(&b)
 	doc := `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
-// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
-// terminal type is expected becomes nil.
+// from errors, the result is returned together with SyntaxErrors; an Error node where a struct
+// type is expected becomes nil.
 `
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
@@ -294,7 +293,6 @@ type typedGen struct {
 	tlists      map[string]string
 	tlistOrder  []listConv
 	structs     []string // struct type names, sorted
-	terms       []string // terminal type names, sorted
 	aliases     []string // canonical node union names, sorted
 	typeAliases []string // other declared aliases, sorted
 	// valueResolver selects the rules whose Go types come from their value types.
@@ -365,8 +363,6 @@ func (t *typedGen) name() {
 			for _, f := range t.info.fields[name] {
 				used[f.name] = true
 			}
-		case *grammar.TerminalSpec:
-			t.terms = append(t.terms, name)
 		case *grammar.AliasSpec:
 			if u, ok := t.info.aliases[name].(unionTy); ok && t.nodeUnion(u) {
 				if _, dup := t.unions[u.String()]; !dup {
@@ -538,10 +534,6 @@ func (t *typedGen) conv(x ty, v string) string {
 func (t *typedGen) decls(b *strings.Builder) {
 	span := t.span
 	b.WriteString("// --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---\n\n")
-	for _, name := range t.terms {
-		fmt.Fprintf(b, "// %s is the terminal type %s.\n", t.names[name], name)
-		fmt.Fprintf(b, "type %s struct {\n\t%s\n\tText string\n}\n\n", t.names[name], span)
-	}
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "// %s is the struct type %s.\n", t.names[name], name)
 		fmt.Fprintf(b, "type %s struct {\n\t%s\n", t.names[name], span)
@@ -567,7 +559,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 				switch {
 				case n == tyMatch:
 					members["TNode"] = true
-				case n.kind == 's' || n.kind == 't':
+				case n.kind == 's':
 					members[t.names[n.name]] = true
 				}
 			}
@@ -660,13 +652,10 @@ func (a *astConv) toError(n *Node) *Error {
 `, span)
 	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n\tcase \"Seq\", \"List\", \"Operator\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(unboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
-	for _, name := range t.terms {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.start), int(n.end)}, Text: n.text}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, span)
-	}
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.start), int(n.end)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
@@ -686,7 +675,7 @@ func (a *astConv) toError(n *Node) *Error {
 				switch {
 				case m == tyMatch:
 					b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n")
-				case m.kind == 's' || m.kind == 't':
+				case m.kind == 's':
 					fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", m.name, t.names[m.name])
 				}
 			}
@@ -715,7 +704,7 @@ func (a *astConv) toError(n *Node) *Error {
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
 	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tvalues map[*Node]any // preserve aliases when one node appears in multiple fields or lists\n\tmatch astChunk[TNode[string]]\n\terror astChunk[Error]\n")
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, l := range t.listOrder {
@@ -744,7 +733,7 @@ func (a *astConv) field(n *Node, name string) any {
 
 // runtimeOK reports whether the typed runtime can build every value an entry point may return: the
 // result type and the field types of every struct type have Go types of their own (no CST
-// node types, node, terminal or any).
+// node types, node or any).
 func (t *typedGen) runtimeOK(st ty) bool {
 	if !t.representable(st) || t.readsFields() {
 		return false
@@ -878,7 +867,7 @@ func (t *typedGen) representable(x ty) bool {
 	switch x := x.(type) {
 	case basicTy:
 		switch x {
-		case tyInt, tyString, tyBool, tyNode, tyTerminal, tyAny, tyErr, tyTop:
+		case tyInt, tyString, tyBool, tyNode, tyAny, tyErr, tyTop:
 			return true
 		}
 		return false
@@ -908,15 +897,9 @@ func (t *typedGen) representable(x ty) bool {
 	return false
 }
 
-// valueMethods writes the methods that make the struct and terminal types values of the typed
+// valueMethods writes the methods that make the struct types values of the typed
 // runtime (tval).
 func (t *typedGen) valueMethods(b *strings.Builder) {
-	for _, name := range t.terms {
-		g := t.names[name]
-		fmt.Fprintf(b, "func (v *%[1]s) tname() string { return %[2]q }\nfunc (v *%[1]s) ttext() (string, bool) { return v.Text, true }\n", g, name)
-		fmt.Fprintf(b, "func (v *%[1]s) tkids() []any { return nil }\nfunc (v *%[1]s) tfield(string) (any, bool) { return nil, true }\n", g)
-		fmt.Fprintf(b, "func (v *%[1]s) tstruct() bool { return false }\nfunc (v *%[1]s) tfresh() bool { return false }\nfunc (v *%[1]s) tsetFresh(bool) {}\n\n", g)
-	}
 	for _, name := range t.structs {
 		g := t.names[name]
 		fmt.Fprintf(b, "func (v *%[1]s) tname() string { return %[2]q }\nfunc (v *%[1]s) ttext() (string, bool) { return \"\", false }\n", g, name)
@@ -968,7 +951,7 @@ func (t *typedGen) back(x ty, v string) string {
 		}
 		return "tback(" + v + ")"
 	case namedTy:
-		if x.kind == 's' || x.kind == 't' {
+		if x.kind == 's' {
 			return "tptr(" + v + ")"
 		}
 		return "tback(" + v + ")"
@@ -1069,26 +1052,19 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 	return "nil"
 }
 
-// typedRuntime writes the constructors of the struct and terminal types and the list converters
+// typedRuntime writes the constructors of the struct types and the list converters
 // of the typed runtime, and the chunks they allocate from.
 func (t *typedGen) typedRuntime(b *strings.Builder) {
 	span := t.span
 	var reg strings.Builder
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
-		if r.terminalType == "" {
+		if r.textType == "" {
 			continue
 		}
-		g := t.names[r.terminalType]
-		fmt.Fprintf(&reg, "\ttrules[%d].term = func(p *tparser, start, end int, text string) tval {\n\t\tp.stepWork()\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
+		g := t.names[r.textType]
+		fmt.Fprintf(&reg, "\ttrules[%d].text = func(p *tparser, start, end int, text string) tval {\n\t\tp.stepWork()\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
 	}
 	var cons strings.Builder
-	for _, name := range t.terms {
-		if !t.g.terminalConstructors[name] {
-			continue
-		}
-		g := t.names[name]
-		fmt.Fprintf(&cons, "// tmk_%s constructs a terminal with supplied text.\nfunc tmk_%s(c *tctx, final bool, raw any) any {\n\ttext, ok := raw.(string)\n\tif !ok { evalErrorf(\"terminal constructor requires a string, got %%s\", ttypeName(raw)) }\n\ta := c.p.ext.(*tslabs)\n\tv := astNew(&a.t%s)\n\t*v = %s{%s: %s{c.start, c.end}, Text: text}\n\tif final { return v }\n\treturn c.made(v, true, 0, 0)\n}\n\n", name, name, g, g, span, span)
-	}
 	for _, name := range t.structs {
 		g := t.names[name]
 		fields := t.info.fields[name]
@@ -1124,7 +1100,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	b.WriteString(cons.String())
 	b.WriteString(convs.String())
 	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n\tcontrol *workControl\n")
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, l := range t.tlistOrder {

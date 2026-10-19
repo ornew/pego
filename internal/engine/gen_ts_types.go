@@ -73,10 +73,6 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 			}
 			b.WriteString("}\n\n")
 			t.recipe(namedTy{name, 's'})
-		case *grammar.TerminalSpec:
-			open = append(open, t.names[name])
-			fmt.Fprintf(&b, "/** Grammar terminal %s. */\nexport interface %s extends Span { readonly type: %s; readonly text: string }\n\n", name, t.names[name], tsString(name))
-			t.recipe(namedTy{name, 't'})
 		case *grammar.AliasSpec:
 			fmt.Fprintf(&b, "/** Grammar alias %s = %s. */\nexport type %s = %s;\n\n", name, grammar.FormatType(spec.Type), t.names[name], t.tsType(t.info.aliases[name]))
 			t.recipe(t.info.aliases[name])
@@ -117,11 +113,8 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
-		switch g.prog.types[name].(type) {
-		case *grammar.StructSpec:
+		if _, ok := g.prog.types[name].(*grammar.StructSpec); ok {
 			fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(namedTy{name, 's'}))
-		case *grammar.TerminalSpec:
-			fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(namedTy{name, 't'}))
 		}
 	}
 	b.WriteString("]);\n\n")
@@ -201,7 +194,7 @@ func (t *tsTypedGen) tsType(x ty) string {
 			for _, a := range x.alts {
 				switch a := a.(type) {
 				case namedTy:
-					if a == tyMatch || a.kind == 's' || a.kind == 't' {
+					if a == tyMatch || a.kind == 's' {
 						parts = append(parts, strings.TrimSuffix(t.tsType(a), " | null"))
 					}
 				}
@@ -379,7 +372,7 @@ func (t *tsTypedGen) recipe(x ty) int {
 		if kind == "union" {
 			members := []string{fmt.Sprintf("[%s, %d]", tsString("Error"), t.recipe(tyError))}
 			for _, m := range a.alts {
-				if m, ok := m.(namedTy); ok && (m == tyMatch || m.kind == 's' || m.kind == 't') {
+				if m, ok := m.(namedTy); ok && (m == tyMatch || m.kind == 's') {
 					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))
 				}
 			}

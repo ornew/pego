@@ -195,8 +195,6 @@ func (p *printer) typeDef(t *TypeDef) {
 		p.structSpec(spec, "")
 	case *AliasSpec:
 		p.write("~ " + formatType(spec.Type, p.control))
-	case *TerminalSpec:
-		p.write("terminal")
 	}
 }
 
@@ -1183,13 +1181,6 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 			items[i] = formatTerm(item, 0, control)
 		}
 		return "[]" + formatTypeTerm(t.Elem, control) + "{" + joinFormatParts(items, ", ", control) + "}"
-	case *TerminalConstructor:
-		args := make([]string, len(t.Args))
-		for i, arg := range t.Args {
-			pollFormat(control)
-			args[i] = formatTerm(arg, 0, control)
-		}
-		return t.Type + "{" + joinFormatParts(args, ", ", control) + "}"
 	case *Call:
 		args := make([]string, len(t.Args))
 		for i, a := range t.Args {
@@ -1207,7 +1198,7 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 		if t.Op == "[]" {
 			l := formatTerm(t.L, 7, control)
 			switch t.L.(type) {
-			case *IntLit, *StringLit, *IndexRef, *New, *ListConstructor, *TerminalConstructor, *Lambda:
+			case *IntLit, *StringLit, *IndexRef, *New, *ListConstructor, *Lambda:
 				// "[" is an index only directly after a name, a capture, ")" or "]".
 				l = "(" + l + ")"
 			}

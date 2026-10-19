@@ -191,12 +191,6 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return n, err
 	case *grammar.ListConstructor:
 		return c.evalList(t.Items)
-	case *grammar.TerminalConstructor:
-		text, err := c.eval(t.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		return c.newTerminal(t.Type, text)
 
 	case *grammar.Call:
 		if c.p.prog.projected[t] {
@@ -359,17 +353,6 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 	if first {
 		n.start, n.end = int32(c.start), int32(c.end)
 	}
-	c.p.created = append(c.p.created, n)
-	return n, nil
-}
-
-// newTerminal stores supplied text; its range is the action's matched input.
-func (c *evalCtx) newTerminal(typ string, value any) (*Node, error) {
-	text, ok := value.(string)
-	if !ok {
-		return nil, fmt.Errorf("terminal constructor requires a string, got %s", typeName(value))
-	}
-	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n, nil
 }
@@ -988,11 +971,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.New:
 		_, st := c.prog.structType(t.Type)
 		if st == nil {
-			if c.prog.terminalConstructorType(t.Type) != "" {
-				c.errorf(t.Diagnostic(), "terminal constructor requires one positional string argument")
-			} else {
-				c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
-			}
+			c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
 		}
 		seen := map[string]bool{}
 		for _, fi := range t.Fields {
@@ -1018,16 +997,6 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		}
 		for _, item := range t.Items {
 			c.checkTerm(item, s, locals)
-		}
-	case *grammar.TerminalConstructor:
-		if c.prog.terminalConstructorType(t.Type) == "" {
-			c.errorf(t.Diagnostic(), "%s is not a declared terminal type", t.Type)
-		}
-		if len(t.Args) != 1 {
-			c.errorf(t.Diagnostic(), "terminal constructor requires one argument, got %d", len(t.Args))
-		}
-		for _, arg := range t.Args {
-			c.checkTerm(arg, s, locals)
 		}
 	case *grammar.Call:
 		n, ok := builtins[t.Func]

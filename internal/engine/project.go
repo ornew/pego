@@ -128,11 +128,6 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 				control.poll()
 				use(item, shadow)
 			}
-		case *grammar.TerminalConstructor:
-			for _, arg := range t.Args {
-				control.poll()
-				use(arg, shadow)
-			}
 		case *grammar.Binary:
 			use(t.L, shadow)
 			use(t.R, shadow)
@@ -212,11 +207,6 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 				control.poll()
 				walk(item, shadow)
 			}
-		case *grammar.TerminalConstructor:
-			for _, arg := range t.Args {
-				control.poll()
-				walk(arg, shadow)
-			}
 		case *grammar.Binary:
 			walk(t.L, shadow)
 			walk(t.R, shadow)
@@ -277,7 +267,7 @@ func directCaptureControlled(e grammar.Expr, name string, control *compileContro
 }
 
 // nonNil reports whether the value of e, built as a capture builds it, is never nil. A rule's
-// value is never nil when it has a terminal type, when its action makes a struct or returns a
+// value is never nil when its action makes a struct or returns a
 // capture whose value is never nil, or when it has no action and its body's value is never nil
 // (without the type checker's results, which the engine computes after compiling).
 func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, control *compileControl) bool {
@@ -309,7 +299,7 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 		}
 		seen[e.Name] = true
 		defer delete(seen, e.Name)
-		if r.terminalType != "" {
+		if r.textType != "" {
 			return true
 		}
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
@@ -342,7 +332,7 @@ func lineNonNilControlled(prog *Program, e grammar.Expr, t grammar.Term, operato
 	switch t := t.(type) {
 	case nil:
 		return nonNilControlled(prog, e, seen, control)
-	case *grammar.New, *grammar.ListConstructor, *grammar.TerminalConstructor:
+	case *grammar.New, *grammar.ListConstructor:
 		return true
 	case *grammar.CaptureRef:
 		if operator && (t.Name == "lhs" || t.Name == "rhs" || t.Name == "op") {

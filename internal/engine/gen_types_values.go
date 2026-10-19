@@ -53,12 +53,12 @@ func (h *vhelpers) get(prefix, key string, x ty) string {
 	return name
 }
 
-// vague reports whether a legacy type leaves the shape of a value open: a CST node type, node,
-// terminal or a record.
+// vague reports whether a legacy type leaves the shape of a value open: a CST node type, node
+// or a record.
 func vague(x ty) bool {
 	switch x := x.(type) {
 	case basicTy:
-		return x == tyNode || x == tyTerminal
+		return x == tyNode
 	case recordTy:
 		return true
 	case namedTy:

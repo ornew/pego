@@ -582,13 +582,6 @@ func (l *linter) unusedCaptures() {
 	control := l.control
 	control.poll()
 
-	terminal := map[string]bool{}
-	for _, t := range control.types(l.an.g) {
-		control.poll()
-		if _, ok := t.Spec.(*grammar.TerminalSpec); ok {
-			terminal[t.Name] = true
-		}
-	}
 	l.eachRule(func(r *grammar.RuleDef) {
 		control.poll()
 		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
@@ -609,11 +602,8 @@ func (l *linter) unusedCaptures() {
 			}
 			return
 		}
-		switch t, _ := ungroupTypeControlled(r.Type, control).(*grammar.TypeRef); {
-		case r.Action != nil:
+		if r.Action != nil {
 			l.scopeCaptures(r.Expr, r.Action, usesIndexControlled(r.Action, control), "the action does not refer to it")
-		case t != nil && terminal[t.Name]:
-			l.scopeCaptures(r.Expr, nil, false, fmt.Sprintf("the rule produces a terminal of type %s, which keeps no captures", t.Name))
 		}
 	})
 }
@@ -755,11 +745,6 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 		for _, item := range t.Items {
 			control.poll()
 			captureRefsControlled(item, params, refs, control)
-		}
-	case *grammar.TerminalConstructor:
-		for _, arg := range t.Args {
-			control.poll()
-			captureRefsControlled(arg, params, refs, control)
 		}
 	case *grammar.Call:
 		for _, a := range t.Args {

@@ -64,7 +64,7 @@ func (t *typedGen) outputSweep(b *strings.Builder, direct, conversion bool) {
 	b.WriteString(astOutputSweepHelpers)
 	b.WriteString("func (m *astOutputMark) run(root any, err error) {\n\tm.todo = append(m.todo, root, err)\n\tfor len(m.todo) != 0 && !m.keepAll {\n\t\ti := len(m.todo)-1\n\t\tv := m.todo[i]\n\t\tm.todo[i] = nil\n\t\tm.todo = m.todo[:i]\n\t\tswitch x := v.(type) {\n")
 	b.WriteString("\t\tcase nil, int, string, bool:\n\t\tcase *int:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *string:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *bool:\n\t\t\tif x != nil { m.scalarRefs = true; m.mark(x) }\n\t\tcase *TNode[string]:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *TNode[any]:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tm.todo = append(m.todo, x.Value)\n\t\tcase *Error:\n\t\t\tif x != nil { m.mark(x) }\n\t\tcase *SyntaxError:\n\t\t\t// Diagnostic fields contain only positions and strings.\n\t\tcase SyntaxErrors:\n\t\t\tastMarkCells(m, x)\n\t\tcase Fields:\n\t\t\tfor i := range x[:cap(x)] { if m.mark(&x[:cap(x)][i]) { m.todo = append(m.todo, x[:cap(x)][i].Value) } }\n\t\tcase *Node:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tastMarkCells(m, x.children)\n\t\t\tm.todo = append(m.todo, x.fields)\n")
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n", t.names[name])
 		for _, f := range t.info.fields[name] {
 			if !outputLeaf(f.t) {
@@ -116,7 +116,7 @@ func (t *typedGen) outputHolder(b *strings.Builder, holder string, lists []listC
 	if !direct {
 		fields = append(fields, "match", "error")
 	}
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fields = append(fields, "t"+t.names[name])
 	}
 	for _, list := range lists {
@@ -153,18 +153,11 @@ func (t *typedGen) outputOwnerPromotion(b *strings.Builder, holder string, direc
 		emit("a.match.blocks", "&block[i]", append(append([]string{}, span...), "Value"))
 		emit("a.error.blocks", "&block[i]", append(append([]string{}, span...), "Text", "Message"))
 	}
-	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+	for _, name := range t.structs {
 		fields := append([]string{}, span...)
 		for _, f := range t.info.fields[name] {
 			if outputLeaf(f.t) {
 				fields = append(fields, f.name)
-			}
-		}
-		// Terminal Text is implicit rather than a grammar struct field.
-		for _, term := range t.terms {
-			if term == name {
-				fields = append(fields, "Text")
-				break
 			}
 		}
 		emit("a.t"+t.names[name]+".blocks", "&block[i]", fields)

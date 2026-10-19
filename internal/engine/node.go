@@ -122,8 +122,7 @@ var (
 	kindListValue  = kindOf(typeListValue, "")
 )
 
-// isNode reports whether n is a node of the value model (a string node, including one of a
-// terminal type, a tuple or list node, or an error value) rather than a struct, a box or a list or
+// isNode reports whether n is a node of the value model (a string node, a tuple or list node, or an error value) rather than a struct, a box or a list or
 // tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
@@ -195,22 +194,19 @@ func (prog *Program) typeKind(typ string) *nodeKind {
 }
 
 // ruleKinds are the kinds of a rule's nodes: those of the reserved types, which the rule gives its
-// name to (finish), and of its terminal type.
+// name to (finish), and of the struct of a text struct rule.
 type ruleKinds struct {
 	reserved [len(reservedTypes)]*nodeKind
-	term     *nodeKind
-	// termValue is the kind of the terminal type without the rule name (no source information).
-	termValue *nodeKind
+	text     *nodeKind
 }
 
-func newRuleKinds(rule, terminalType string) ruleKinds {
+func newRuleKinds(rule, textType string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
 	}
-	if terminalType != "" {
-		rk.term = kindOf(terminalType, rule)
-		rk.termValue = kindOf(terminalType, "")
+	if textType != "" {
+		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -315,7 +311,7 @@ func cloneNode(n *Node, seen map[*Node]*Node) *Node {
 	return c
 }
 
-// IsTerminal reports whether the node is a terminal (Match or a terminal type).
+// IsTerminal reports whether the node holds text: a string node (Match) or an error value.
 func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
 
 // Kind is what a Node stands for in the value model.

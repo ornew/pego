@@ -19,8 +19,8 @@ type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []
 rule main Values = v1:"😀" => Values{Items: []Int{Int{Text: "0"}, Alias{Text: text($v1)}}, Nested: [][]Int{[]Int{}, []Int{Int{Text: "1"}}}, Maybe: []*Int{nil, Int{Text: "2"}}, Default: Int{Text: "0"}, Empty: []Int{}}
 `
 
-// legacyConstructorGrammar is constructorGrammar in the retired terminal type syntax, which
-// grammars that reach the engine as JSON ASTs may still use; it is read with syntax.ParseLegacy.
+// legacyConstructorGrammar is constructorGrammar in the retired terminal type syntax, read with
+// syntax.ParseLegacy as the text structs that pego fix writes for it.
 const legacyConstructorGrammar = `type Int terminal
 type Alias ~ Int
 type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
@@ -60,7 +60,7 @@ func TestTypedNodeConstructors(t *testing.T) {
 					t.Fatalf("%s/%s differs: %s / %s", backend, unit, got, want)
 				}
 				items := n.Field("Items").(*Node)
-				if len(items.children) != 2 || !items.children[0].IsTerminal() || items.children[0].text != "0" || items.children[1].text != "😀" || items.children[1].Type() != "Int" {
+				if len(items.children) != 2 || items.children[0].Kind() != KindStruct || items.children[0].Field("Text") != "0" || items.children[1].Field("Text") != "😀" || items.children[1].Type() != "Int" {
 					t.Fatal(got)
 				}
 				end := int32(1)
@@ -146,12 +146,11 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 		{`[]any{}`, "node element type"},
 		{`[]Int{x}`, "statically unknown"},
 		{`[][]Int{list(x)}`, "statically unknown"},
-		{`Int{1}`, "requires a string"},
-		{`Int{nil}`, "requires a string"},
-		{`Int{}`, "one positional"},
-		{`Int{"a", "b"}`, "one argument"},
-		{`Int{Text: "0"}`, "one positional"},
-		{`Other{"x"}`, "declared terminal type"},
+		// The retired positional forms are read as the text struct constructors they mean.
+		{`Int{1}`, "cannot use int as string in field Text of Int"},
+		{`Int{nil}`, "cannot use nil as string in field Text of Int"},
+		{`Int{"a", "b"}`, "duplicate field Text"},
+		{`Other{"x"}`, "Other has no field Text"},
 	} {
 		t.Run(tc.action, func(t *testing.T) {
 			g, err := syntax.ParseLegacy(`type Int terminal
@@ -165,6 +164,17 @@ rule main = {x := 1} "x" => ` + tc.action)
 				t.Fatalf("got %v; want %q", err, tc.message)
 			}
 		})
+	}
+	// A terminal constructor needed exactly one positional argument; a text struct is an ordinary
+	// struct, whose constructor may leave Text unset or name it.
+	for _, action := range []string{`Int{}`, `Int{Text: "0"}`} {
+		g, err := syntax.ParseLegacy("type Int terminal\nrule main = \"x\" => " + action)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Compile(g, Options{}); err != nil {
+			t.Errorf("%s: %v", action, err)
+		}
 	}
 }
 
@@ -186,7 +196,7 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
 			if strings.Contains(source, "=>") {
-				if n != nil || err == nil || !strings.Contains(err.Error(), "requires a string") {
+				if n != nil || err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
 					t.Fatalf("%s: %v / %v", backend, n, err)
 				}
 			} else if n == nil || err != nil {
@@ -224,7 +234,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 		p := compileLegacy(t, legacyConstructorGrammar)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
 		if err != nil || data[len(compiledMagic)+1] != isaVersion {
-			t.Fatalf("terminal ISA: %v", err)
+			t.Fatalf("constructor ISA: %v", err)
 		}
 		loaded, _, err := LoadProgram(data, Options{})
 		if err != nil {
@@ -245,13 +255,13 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 		}
 		module := p.Module()
 		for i := range module.Exprs {
-			if module.Exprs[i].Op == ETerminal {
-				module.Exprs[i].A = -1
+			if module.Exprs[i].Op == ENew {
+				module.Exprs[i].B = -1
 				break
 			}
 		}
 		if err := validateModule(module); err == nil {
-			t.Fatal("invalid terminal type accepted")
+			t.Fatal("invalid constructor field list accepted")
 		}
 	}
 	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []node[string]{$v1}`} {
@@ -265,7 +275,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 
 func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
-	for _, action := range []string{`[]int{}`, `[][]string{}`, `Int{}`, `Int{"a", "b"}`, `Other{"a"}`} {
+	for _, action := range []string{`[]int{}`, `[][]string{}`, `Int{"a", "b"}`, `Other{"a"}`} {
 		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
@@ -273,6 +283,11 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		if _, err := Compile(g, Options{NoTypeCheck: true}); err == nil {
 			t.Fatalf("NoTypeCheck accepted unsupported constructor shape: %s", action)
 		}
+	}
+	if g, err := syntax.ParseLegacy(header + `Int{}`); err != nil {
+		t.Fatal(err)
+	} else if _, err := Compile(g, Options{NoTypeCheck: true}); err != nil {
+		t.Fatalf("Int{} is a text struct with no field set: %v", err)
 	}
 	for _, action := range []string{`[]Int{nil}`, `[]Int{Other{}}`, `[]Int{1}`, `Int{1}`} {
 		g, err := syntax.ParseLegacy(header + action)

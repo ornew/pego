@@ -325,12 +325,10 @@ func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeSpec)
 		switch spec := prog.types[ref.Name].(type) {
 		case *grammar.StructSpec:
 			return ref.Name, spec
-		case *grammar.TerminalSpec:
-			return ref.Name, spec
 		}
 	}
 	k := &checker{prog: prog, resolving: map[string]bool{}}
-	if n, ok := k.resolve(t).(namedTy); ok && (n.kind == 's' || n.kind == 't') {
+	if n, ok := k.resolve(t).(namedTy); ok && n.kind == 's' {
 		return n.name, prog.types[n.name]
 	}
 	return "", nil
@@ -348,14 +346,6 @@ func (prog *Program) structType(name string) (string, *grammar.StructSpec) {
 	canonical, spec := prog.concreteType(&grammar.TypeRef{Name: name})
 	st, _ := spec.(*grammar.StructSpec)
 	return canonical, st
-}
-
-func (prog *Program) terminalConstructorType(name string) string {
-	canonical, spec := prog.concreteType(&grammar.TypeRef{Name: name})
-	if _, ok := spec.(*grammar.TerminalSpec); ok {
-		return canonical
-	}
-	return ""
 }
 
 // nodeListElement also rejects primitive elements hidden in nested list types.
@@ -434,15 +424,13 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyBool
 	case "node":
 		return tyNode
-	case "terminal":
-		return tyTerminal
 	case "any":
 		return tyAny
 	case "_":
 		return tyTop
 	case "_|_":
 		return tyNever
-	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
+	case TypeMissing:
 		return namedTy{name, 'c'}
 	case "error": // the value of recovery: a recovered error or a missing token
 		return union(namedTy{TypeError, 'c'}, namedTy{TypeMissing, 'c'})
@@ -450,8 +438,6 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 	switch spec := k.prog.types[name].(type) {
 	case *grammar.StructSpec:
 		return namedTy{name, 's'}
-	case *grammar.TerminalSpec:
-		return namedTy{name, 't'}
 	case *grammar.AliasSpec:
 		if k.resolving[name] {
 			k.errorf(pos, "type %s refers to itself", name)
@@ -461,8 +447,23 @@ func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 		defer delete(k.resolving, name)
 		return k.resolve(spec.Type)
 	}
+	if to, ok := retiredTypeNames[name]; ok {
+		k.errorf(pos, "%s is not a type; write %s", name, to)
+		return tyAny
+	}
 	k.errorf(pos, "undefined type %s", name)
 	return tyAny
+}
+
+// retiredTypeNames maps the names of the former terminal and concrete syntax tree types to the
+// types that replace them.
+var retiredTypeNames = map[string]string{
+	"terminal": "node[string]",
+	"Match":    "node[string]",
+	"Seq":      "node",
+	"List":     "node",
+	"Operator": "node",
+	"Error":    "error",
 }
 
 // capInfo is the type of a capture in a scope. If always is false, the capture may not match
@@ -661,11 +662,6 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 		if len(sc.caps) > 0 {
 			t = sc.caps.record()
 		}
-		if declared != nil {
-			if n, ok := declared.(namedTy); ok && n.kind == 't' {
-				return declared // conversion to a terminal type
-			}
-		}
 	}
 	if declared != nil {
 		if !assignable(t, declared) {
@@ -716,9 +712,6 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 		}
 	}
 	if declared != nil {
-		// Without an action, a rule of a terminal type converts its value, so its lines need no check.
-		n, isNamed := declared.(namedTy)
-		converts := rd.Action == nil && isNamed && n.kind == 't'
 		for i, t := range ts {
 			if !assignable(t, declared) {
 				if t == tyOperator {
@@ -726,7 +719,7 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 				} else {
 					k.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 				}
-			} else if !converts {
+			} else {
 				k.checkResult(keys[i], t, declared)
 			}
 		}
@@ -828,8 +821,6 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 	case *grammar.New:
 		return t.Diagnostic()
 	case *grammar.ListConstructor:
-		return t.Diagnostic()
-	case *grammar.TerminalConstructor:
 		return t.Diagnostic()
 	case *grammar.Call:
 		return t.Diagnostic()
@@ -936,17 +927,6 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			}
 		}
 		return listTy{elem}
-	case *grammar.TerminalConstructor:
-		for _, arg := range t.Args {
-			value := k.term(arg, env)
-			if !assignable(value, tyString) {
-				k.errorf(termPos(arg, t.Diagnostic()), "terminal constructor requires a string, got %s", value)
-			}
-		}
-		if name := k.prog.terminalConstructorType(t.Type); name != "" {
-			return namedTy{name, 't'}
-		}
-		return tyAny
 	case *grammar.Lambda:
 		k.errorf(grammar.Pos{}, "functions can only be passed to filter, foldl, foldr, or map")
 		return tyAny

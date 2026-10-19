@@ -12,14 +12,13 @@ type ty interface{ String() string }
 type basicTy string
 
 const (
-	tyAny      basicTy = "any" // type not known statically (compatible with every type)
-	tyNever    basicTy = "_|_" // no value, and the initial value for inference
-	tyInt      basicTy = "int"
-	tyString   basicTy = "string"
-	tyBool     basicTy = "bool"
-	tyNil      basicTy = "nil"
-	tyNode     basicTy = "node"     // any node
-	tyTerminal basicTy = "terminal" // any terminal
+	tyAny    basicTy = "any" // type not known statically (compatible with every type)
+	tyNever  basicTy = "_|_" // no value, and the initial value for inference
+	tyInt    basicTy = "int"
+	tyString basicTy = "string"
+	tyBool   basicTy = "bool"
+	tyNil    basicTy = "nil"
+	tyNode   basicTy = "node" // any node
 )
 
 func (t basicTy) String() string { return string(t) }
@@ -27,7 +26,7 @@ func (t basicTy) String() string { return string(t) }
 // namedTy is a named node type.
 type namedTy struct {
 	name string
-	kind byte // 's': struct, 't': terminal type, 'c': reserved CST node type
+	kind byte // 's': struct, 'c': reserved CST node type
 }
 
 func (t namedTy) String() string { return t.name }
@@ -207,7 +206,7 @@ func isNode(t ty) bool {
 	case namedTy, listTy, recordTy:
 		return true
 	case basicTy:
-		return t == tyNode || t == tyTerminal || t == tyAny || t == tyNever
+		return t == tyNode || t == tyAny || t == tyNever
 	case unionTy:
 		for _, a := range t.alts {
 			if !isNode(a) {
@@ -340,9 +339,6 @@ func assignable(s, d ty) bool {
 		switch d {
 		case tyNode:
 			return isNode(s)
-		case tyTerminal:
-			n, ok := s.(namedTy)
-			return ok && (n.kind == 't' || n == tyMatch) || s == tyTerminal
 		}
 		return false
 	case namedTy:

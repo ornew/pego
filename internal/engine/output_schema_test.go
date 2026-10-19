@@ -170,7 +170,7 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 }
 
 func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
-	p := &Program{types: map[string]grammar.TypeSpec{"Known": &grammar.TerminalSpec{}}}
+	p := &Program{types: map[string]grammar.TypeSpec{"Known": &grammar.StructSpec{}}}
 	// The checker reports undefined names, which resolve to _ so that checking can go on; a
 	// checked program has none. *_ is _, since _ includes nil.
 	for _, expr := range []grammar.TypeExpr{

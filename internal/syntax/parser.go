@@ -70,18 +70,29 @@ func Parse(src string) (*grammar.Grammar, error) {
 	return g, nil
 }
 
-// ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
-// positional captures, lambda parameters written $x, terminal types and the retired names of
-// concrete syntax tree types. It serves Fix and tests of grammars that still reach the engine
-// in that form through JSON.
-func ParseLegacy(src string) (*grammar.Grammar, error) {
+// legacyForms locates the removed forms that parseLegacy represents in the current syntax tree.
+type legacyForms struct {
+	// terminals are the definitions written type T terminal, parsed as T = { Text string }. The
+	// source of a definition's spec is the word terminal.
+	terminals map[*grammar.TypeDef]bool
+	// positional are the constructors written T{x}, parsed as T{Text: x}.
+	positional map[*grammar.New]bool
+}
+
+// parseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
+// positional captures, lambda parameters written $x, terminal types, positional constructors
+// and the retired names of concrete syntax tree types. Terminal types and positional
+// constructors are parsed as the text structs that replace them, and located in the returned
+// legacyForms.
+func parseLegacy(src string) (*grammar.Grammar, *legacyForms, error) {
 	errs := &errorList{}
-	p := &parser{toks: lex(src, errs), errs: errs, legacy: true}
+	forms := &legacyForms{terminals: map[*grammar.TypeDef]bool{}, positional: map[*grammar.New]bool{}}
+	p := &parser{toks: lex(src, errs), errs: errs, legacy: forms}
 	g := p.file()
 	if len(errs.list) > 0 {
-		return nil, errs.list
+		return nil, nil, errs.list
 	}
-	return g, nil
+	return g, forms, nil
 }
 
 // ParseExpr parses a single parser expression. It is intended for tests.
@@ -110,9 +121,9 @@ type parser struct {
 	toks []token
 	i    int
 	errs *errorList
-	// legacy accepts the removed syntax that pego fix rewrites: positional captures and lambda
-	// parameters written $x.
-	legacy bool
+	// legacy, if not nil, accepts the removed syntax that pego fix rewrites (see parseLegacy) and
+	// records where it is.
+	legacy *legacyForms
 	// params holds the parameters of the lambdas whose bodies are being parsed, innermost last.
 	params []string
 	ctx    context.Context
@@ -445,13 +456,14 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		st.Fields, st.CloseBreak, st.OneLine = p.structFields()
 		td.Spec = st
 	case p.is("terminal"):
-		if !p.legacy {
+		if p.legacy == nil {
 			p.errorf("a terminal type is the struct type %s = { Text string }; run pego fix to rewrite type %s terminal", name.text, name.text)
 			panic(bail{})
 		}
 		p.next()
 		p.header = false
-		td.Spec = &grammar.TerminalSpec{}
+		td.Spec = &grammar.StructSpec{Fields: []*grammar.Field{{Name: "Text", Type: &grammar.TypeRef{Name: "string"}}}}
+		p.legacy.terminals[td] = true
 	case p.is("="):
 		p.errorf("only struct types can be defined with =; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
 		panic(bail{})
@@ -563,7 +575,7 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	}
 	name := p.ident()
-	if replacement, ok := valueTypeNames[name.text]; ok && !p.legacy {
+	if replacement, ok := valueTypeNames[name.text]; ok && p.legacy == nil {
 		p.errs.add(name.pos, fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name.text, replacement))
 	}
 	if p.is("[") {
@@ -1475,7 +1487,7 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	}
 	layout = p.takeTermLayout()
 	for range k + 2 {
-		if t := p.tok(); !p.legacy && t.kind == tIdent && (t.text == "true" || t.text == "false" || t.text == "nil") {
+		if t := p.tok(); p.legacy == nil && t.kind == tIdent && (t.text == "true" || t.text == "false" || t.text == "nil") {
 			p.errs.addRange(t.pos, t.end, fmt.Sprintf("%s cannot name a lambda parameter", t.text))
 		}
 		p.next()
@@ -1576,7 +1588,7 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 			continue
 		}
 		name := p.ident()
-		if !p.legacy && captureMember(name.text) {
+		if p.legacy == nil && captureMember(name.text) {
 			p.errs.addRange(name.pos, name.end, fmt.Sprintf("a capture is read with .$%s; run pego fix to rewrite .%s", name.text, name.text))
 		}
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
@@ -1615,13 +1627,13 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		return &grammar.StringLit{Value: t.text}
 	case tCapture:
 		p.next()
-		if !p.legacy && slices.Contains(p.params, t.text) {
+		if p.legacy == nil && slices.Contains(p.params, t.text) {
 			p.errs.addRange(t.pos, t.end, fmt.Sprintf("lambda parameters are written without $: write %s; run pego fix to rewrite $%s", t.text, t.text))
 		}
 		return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tIndex:
 		p.next()
-		if !p.legacy {
+		if p.legacy == nil {
 			p.errs.addRange(t.pos, t.end, fmt.Sprintf("positional captures are removed: label the element (x:...) and write $x; run pego fix to rewrite $%d", t.num))
 		}
 		return &grammar.IndexRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Index: t.num}
@@ -1692,15 +1704,25 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	nameToken := p.ident()
 	p.expect("{")
 	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
-		c := &grammar.TerminalConstructor{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text, Args: p.constructorArgs()}
-		if !p.legacy {
+		args := p.constructorArgs()
+		if p.legacy == nil {
 			msg := fmt.Sprintf("a constructor names its fields: write %s{Text: ...} for a text struct", nameToken.text)
-			if len(c.Args) == 1 {
+			if len(args) == 1 {
 				msg += fmt.Sprintf(" (pego fix rewrites %s{...})", nameToken.text)
 			}
 			p.errs.add(nameToken.pos, msg)
 		}
-		return c
+		n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
+		// Every argument is kept, as a Text field, so that Fix still rewrites the terms inside
+		// them; only a constructor of one argument is a terminal constructor that Fix rewrites, and
+		// the compiler reports any other (pego fix leaves it as it is).
+		for _, arg := range args {
+			n.Fields = append(n.Fields, &grammar.FieldInit{Name: "Text", Value: arg})
+		}
+		if p.legacy != nil && len(args) == 1 {
+			p.legacy.positional[n] = true
+		}
+		return n
 	}
 	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	for !p.accept("}") {
@@ -1730,4 +1752,12 @@ func (p *parser) constructorArgs() []grammar.Term {
 		}
 	}
 	return args
+}
+
+// ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites, with
+// the meaning Fix gives it. Grammar ASTs decoded from JSON may still hold some of these forms,
+// such as positional captures, which the engine reports; ParseLegacy builds such ASTs from source.
+func ParseLegacy(src string) (*grammar.Grammar, error) {
+	g, _, err := parseLegacy(src)
+	return g, err
 }

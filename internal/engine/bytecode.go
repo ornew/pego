@@ -9,7 +9,7 @@ import (
 type Module struct {
 	Strings        []string   // string table
 	Classes        []Class    // character class table
-	Types          []TypeInfo // type table (for checking struct fields, and terminal types)
+	Types          []TypeInfo // type table (for checking struct fields)
 	FieldLists     [][]int    // field name lists for new (string table indices)
 	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
 	Rules          []RuleInfo // rule table
@@ -32,9 +32,8 @@ type Class struct {
 
 // TypeInfo describes a type.
 type TypeInfo struct {
-	Name     int   // string table index
-	Terminal bool  // whether it is a terminal type (a struct if false)
-	Fields   []int // struct field names (string table indices)
+	Name   int   // string table index
+	Fields []int // struct field names (string table indices)
 }
 
 // RuleInfo describes a rule.
@@ -44,7 +43,7 @@ type RuleInfo struct {
 	Scope         []int
 	Action        int // start of the action's expression code (-1 if none)
 	BodyIsSeq     bool
-	TerminalType  int // name of the terminal type (string table index, -1 if none)
+	TextType      int // struct type of a text struct rule (string table index, -1 if none)
 	Memo          bool
 	Leader        bool
 	Positional    bool
@@ -269,8 +268,8 @@ const (
 	// ELISTEND: push a list of the elements gathered since the matching ELISTBEGIN
 	// (instruction set 2).
 	EListEnd
-	// ETERMINAL t: pop a string and build a terminal of declared type t (ISA 5).
-	ETerminal
+	// eRetired124 was ETERMINAL, which built a terminal of a declared type (ISA 5 to 13).
+	eRetired124
 	// ECHECK t, f, s: fail unless the top value fits type t, the declared type of field f of
 	// struct s; the value stays (ISA 9).
 	ECheck
@@ -307,7 +306,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ETerminal: "ETERMINAL", ECheck: "ECHECK", ECast: "ECAST",
+	ECheck: "ECHECK", ECast: "ECAST",
 }
 
 func (o Op) String() string {

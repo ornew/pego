@@ -136,7 +136,7 @@ function classifyPegoTokens(code, tokens) {
         t.cls = "keyword";
         frame.header = text;
         frame.name = text === "rule" ? "rule" : text === "type" ? "type" : null;
-      } else if (frame.header === "type" && ["struct", "terminal"].includes(text)) {
+      } else if (frame.header === "type" && text === "struct") {
         t.cls = "keyword";
       } else if (frame.kind === "operators" && frame.start && ["skip", "operand", "level", "prefix", "postfix", "infix"].includes(text)) {
         t.cls = "keyword";

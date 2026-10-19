@@ -159,22 +159,20 @@ func kindOf(typ, rule string) *nodeKind {
 	return actual.(*nodeKind)
 }
 
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and its
-// terminal type with and without it.
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and the
+// struct of a text struct rule.
 type ruleKinds struct {
-	reserved  [len(reservedTypes)]*nodeKind
-	term      *nodeKind
-	termValue *nodeKind
+	reserved [len(reservedTypes)]*nodeKind
+	text     *nodeKind
 }
 
-func newRuleKinds(rule, terminalType string) ruleKinds {
+func newRuleKinds(rule, textType string) ruleKinds {
 	var rk ruleKinds
 	for i, t := range reservedTypes {
 		rk.reserved[i] = kindOf(t, rule)
 	}
-	if terminalType != "" {
-		rk.term = kindOf(terminalType, rule)
-		rk.termValue = kindOf(terminalType, "")
+	if textType != "" {
+		rk.text = kindOf(textType, "")
 	}
 	return rk
 }
@@ -736,17 +734,17 @@ func (l SyntaxErrors) Error() string {
 // --- Rules ---
 
 type rule struct {
-	kinds        ruleKinds // the node kinds the rule makes (set by setKinds)
-	id           int
-	name         string
-	scope        []string // capture names of the rule body, in slot order
-	body         func(p *parser, min int) (*Node, bool)
-	action       func(c *actx) any
-	value        shaper // makes the rule's value from the value of its body, without an action
-	terminalType string
-	// textStruct reports that the rule's value is a struct of type terminalType whose field Text
-	// is the matched text: the struct the rule's action makes, made without it.
-	textStruct bool
+	kinds  ruleKinds // the node kinds the rule makes (set by setKinds)
+	id     int
+	name   string
+	scope  []string // capture names of the rule body, in slot order
+	body   func(p *parser, min int) (*Node, bool)
+	action func(c *actx) any
+	value  shaper // makes the rule's value from the value of its body, without an action
+	// textType, if not "", is the struct type of a text struct rule: the rule's value is a struct
+	// of that type whose field Text is the matched text, the struct the rule's action makes, made
+	// without it.
+	textType string
 	// check checks the rule's value against its declared type (nil if it needs no check).
 	check func(p *parser, v *Node)
 	// memo means the rule's results are memoized. It is false for transient rules, whose entries
@@ -2031,15 +2029,8 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.terminalType != "" {
-		if r.textStruct {
-			return p.newNode(Node{kind: r.kinds.termValue, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
-		}
-		kind := r.kinds.termValue
-		if sourceInfo {
-			kind = r.kinds.term
-		}
-		return p.newNode(Node{kind: kind, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true})
+	if r.textType != "" {
+		return p.newNode(Node{kind: r.kinds.text, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), textField: true})
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -2534,20 +2525,6 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	if first {
 		n.start, n.end = int32(c.start), int32(c.end)
 	}
-	c.p.created = append(c.p.created, n)
-	return n
-}
-
-func (c *actx) newTerminal(typ string, value any) any {
-	text, ok := value.(string)
-	if !ok {
-		evalErrorf("terminal constructor requires a string, got %s", typeName(value))
-	}
-	k := typeKinds[typ]
-	if k == nil {
-		k = kindOf(typ, "")
-	}
-	n := c.p.newNode(Node{kind: k, terminal: true, text: text, start: int32(c.start), end: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n
 }
@@ -4936,8 +4913,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 
 // The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
-// instead of Node trees: the value of an expression is an any holding a pointer to a struct or
-// terminal type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
+// instead of Node trees: the value of an expression is an any holding a pointer to a struct
+// type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
 // or a *tnode: a tuple node (Seq), a list node (List), or a tuple or list value. Values other than
 // nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
@@ -5011,13 +4988,6 @@ func tpubNode(v any) *TNode[any] {
 		if n, ok := tpub(x).(*TNode[any]); ok {
 			return n
 		}
-	case *terror:
-	case tval:
-		// A value of a terminal type is a string node.
-		if text, ok := x.ttext(); ok {
-			start, end := x.tspan()
-			return &TNode[any]{Span{start, end}, text}
-		}
 	}
 	return nil
 }
@@ -5036,13 +5006,13 @@ func tpubError(v any) *Error {
 	return nil
 }
 
-// tval is a node value of the typed runtime: a value of a struct or terminal type, *tmatch,
+// tval is a node value of the typed runtime: a value of a struct type, *tmatch,
 // *terror or *tnode.
 type tval interface {
 	tspan() (int, int)
 	tsetSpan(start, end int)
 	tname() string                  // type name
-	ttext() (string, bool)          // text of a terminal
+	ttext() (string, bool)          // text of a string node or an error value
 	tkids() []any                   // children of a CST node
 	tfield(name string) (any, bool) // field value, and whether the type has the field (structs)
 	tstruct() bool                  // a struct type
@@ -5152,8 +5122,8 @@ type trule struct {
 	operatorsRule *toperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
 	tcheck func(p *tparser, v any)
-	// term makes the value of a rule of a terminal type.
-	term func(p *tparser, start, end int, text string) tval
+	// text makes the value of a text struct rule from the rule's range and text.
+	text func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -5178,7 +5148,7 @@ func tptr[T any](p *T) any {
 }
 
 // tback returns the value of a field of an open type (a string node, a tuple or list node, an
-// error value, a union, node, terminal or any) as a value of the typed runtime: the inverse of
+// error value, a union, node or any) as a value of the typed runtime: the inverse of
 // tpub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
 func tback(v any) any {
 	switch x := v.(type) {
@@ -5834,8 +5804,8 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		return c.result(r.action, r.name)
 	}
-	if r.terminalType != "" {
-		return r.term(p, start, p.pos, p.text(start, p.pos))
+	if r.textType != "" {
+		return r.text(p, start, p.pos, p.text(start, p.pos))
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
@@ -8686,157 +8656,157 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
-	trules[5].term = func(p *tparser, start, end int, text string) tval {
+	trules[5].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tVersion)
 		*v = Version{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[7].term = func(p *tparser, start, end int, text string) tval {
+	trules[7].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tEncName)
 		*v = EncName{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[9].term = func(p *tparser, start, end int, text string) tval {
+	trules[9].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tYesNo)
 		*v = YesNo{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[12].term = func(p *tparser, start, end int, text string) tval {
+	trules[12].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tComment)
 		*v = Comment{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[14].term = func(p *tparser, start, end int, text string) tval {
+	trules[14].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tPIData)
 		*v = PIData{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[18].term = func(p *tparser, start, end int, text string) tval {
+	trules[18].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tPERef)
 		*v = PERef{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[23].term = func(p *tparser, start, end int, text string) tval {
+	trules[23].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tSystemLiteral)
 		*v = SystemLiteral{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[24].term = func(p *tparser, start, end int, text string) tval {
+	trules[24].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tSystemLiteral)
 		*v = SystemLiteral{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[26].term = func(p *tparser, start, end int, text string) tval {
+	trules[26].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tPubidLiteral)
 		*v = PubidLiteral{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[27].term = func(p *tparser, start, end int, text string) tval {
+	trules[27].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tPubidLiteral)
 		*v = PubidLiteral{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[30].term = func(p *tparser, start, end int, text string) tval {
+	trules[30].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tKeyword)
 		*v = Keyword{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[31].term = func(p *tparser, start, end int, text string) tval {
+	trules[31].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tKeyword)
 		*v = Keyword{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[37].term = func(p *tparser, start, end int, text string) tval {
+	trules[37].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tOccurrence)
 		*v = Occurrence{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[40].term = func(p *tparser, start, end int, text string) tval {
+	trules[40].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tKeyword)
 		*v = Keyword{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[41].term = func(p *tparser, start, end int, text string) tval {
+	trules[41].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tKeyword)
 		*v = Keyword{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[43].term = func(p *tparser, start, end int, text string) tval {
+	trules[43].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tKeyword)
 		*v = Keyword{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[50].term = func(p *tparser, start, end int, text string) tval {
+	trules[50].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tEntityValue)
 		*v = EntityValue{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[51].term = func(p *tparser, start, end int, text string) tval {
+	trules[51].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tEntityValue)
 		*v = EntityValue{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[58].term = func(p *tparser, start, end int, text string) tval {
+	trules[58].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tAttValue)
 		*v = AttValue{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[59].term = func(p *tparser, start, end int, text string) tval {
+	trules[59].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tAttValue)
 		*v = AttValue{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[63].term = func(p *tparser, start, end int, text string) tval {
+	trules[63].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tCharData)
 		*v = CharData{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[65].term = func(p *tparser, start, end int, text string) tval {
+	trules[65].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tCDSect)
 		*v = CDSect{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[67].term = func(p *tparser, start, end int, text string) tval {
+	trules[67].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tCharRef)
 		*v = CharRef{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[68].term = func(p *tparser, start, end int, text string) tval {
+	trules[68].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tEntityRef)
 		*v = EntityRef{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[69].term = func(p *tparser, start, end int, text string) tval {
+	trules[69].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tName)
 		*v = Name{Span: Span{start, end}, Text: text}
 		return v
 	}
-	trules[71].term = func(p *tparser, start, end int, text string) tval {
+	trules[71].text = func(p *tparser, start, end int, text string) tval {
 		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tNmtoken)
 		*v = Nmtoken{Span: Span{start, end}, Text: text}
@@ -9924,8 +9894,8 @@ type Tuple3[E0, E1, E2 any] struct {
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
-// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
-// terminal type is expected becomes nil.
+// from errors, the result is returned together with SyntaxErrors; an Error node where a struct
+// type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (*Document, error) {
 	a := &tslabs{}
@@ -10250,13 +10220,11 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 // fieldType is a declared struct field type that a constructor checks a dynamically typed value
 // against. Generated code declares one for each checked field.
 type fieldType struct {
-	kind byte // i int, s string, b bool, z nil, n node, t terminal, N named, l list, o optional, u union, _ top
+	kind byte // i int, s string, b bool, z nil, n node, N named, l list, o optional, u union, _ top
 	name string
-	// terminal reports a named terminal type, whose values are string nodes.
-	terminal bool
-	elem     *fieldType
-	alts     []*fieldType
-	text     string
+	elem *fieldType
+	alts []*fieldType
+	text string
 }
 
 // checkField returns v if it fits t, the type of field field of struct typ, and raises an
@@ -10290,7 +10258,7 @@ type resultError string
 func (e resultError) Error() string { return string(e) }
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// each list element it examines. Match is a string node, Seq, List, Operator
 // and node every node, and Error error values; a list type takes a list value, not the node of a
 // repetition.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
@@ -10333,8 +10301,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
-	case 't':
-		return shape == shapeString
 	case 'N':
 		switch t.name {
 		case "Match":
@@ -10343,9 +10309,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 			return valueNode
 		case "Error", "Missing":
 			return shape == shapeError
-		}
-		if t.terminal {
-			return shape == shapeString
 		}
 		return shape == shapeStruct && n.Type() == t.name
 	case 'l':
@@ -10447,8 +10410,6 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
-	case 't':
-		return shape == shapeString
 	case 'N':
 		switch t.name {
 		case "Match":
@@ -10457,9 +10418,6 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 			return valueNode
 		case "Error", "Missing":
 			return shape == shapeError
-		}
-		if t.terminal {
-			return shape == shapeString
 		}
 		return shape == shapeStruct && n.tname() == t.name
 	case 'l':
@@ -10573,88 +10531,88 @@ var scope257 = []string{"n"}
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"d", "p1", "dt", "p2", "r", "e"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 1, name: "misc_list", scope: []string{"ms"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
-		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 3, name: "xml_decl", scope: []string{"v", "e", "sd"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 4, name: "version_info", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Version", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 6, name: "encoding_decl", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EncName", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 8, name: "sd_decl", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "YesNo", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
-		{id: 11, name: "comment", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
-		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Comment", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 13, name: "pi", scope: []string{"t", "d"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
-		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PIData", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 15, name: "doctype", scope: []string{"n", "x", "ds"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 16, name: "int_subset", scope: []string{"ds"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PERef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
-		{id: 20, name: "system_id", scope: []string{"l"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
-		{id: 21, name: "public_id", scope: []string{"p", "l"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 22, name: "system_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
-		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "SystemLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 25, name: "pubid_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
-		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "PubidLiteral", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 28, name: "element_decl", scope: []string{"n", "c"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 33, name: "choice", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
-		{id: 34, name: "sequence", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
-		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
-		{id: 36, name: "name_particle", scope: []string{"n", "o"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Occurrence", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 38, name: "attlist_decl", scope: []string{"n", "ds"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 39, name: "att_def", scope: []string{"n", "t", "k", "v"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Keyword", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 44, name: "notation_type", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 45, name: "enumeration", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 47, name: "ge_decl", scope: []string{"n", "v", "x", "nd"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 48, name: "pe_decl", scope: []string{"n", "v", "x"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 49, name: "entity_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
-		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 52, name: "notation_decl", scope: []string{"n", "x"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 54, name: "public_notation", scope: []string{"p", "l"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 55, name: "element", scope: []string{"n", "as", "cs", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
-		{id: 56, name: "attribute", scope: []string{"n", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 57, name: "att_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
-		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "AttValue", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 62, name: "markup", scope: []string{"c"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharData", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 64, name: "cdsect", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CDSect", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{}},
-		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "CharRef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "EntityRef", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Name", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Nmtoken", memo: true, leader: false, textStruct: true, seen: 15, novalue: false, vars: []string{}},
-		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 75, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 76, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 16, novalue: true, vars: []string{}},
-		{id: 77, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 17, novalue: true, vars: []string{}},
-		{id: 78, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"d", "p1", "dt", "p2", "r", "e"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 1, name: "misc_list", scope: []string{"ms"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
+		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 3, name: "xml_decl", scope: []string{"v", "e", "sd"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 4, name: "version_info", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Version", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "encoding_decl", scope: []string{"e"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EncName", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 8, name: "sd_decl", scope: []string{"v"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "YesNo", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
+		{id: 11, name: "comment", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
+		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Comment", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 13, name: "pi", scope: []string{"t", "d"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
+		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PIData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 15, name: "doctype", scope: []string{"n", "x", "ds"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 16, name: "int_subset", scope: []string{"ds"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PERef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
+		{id: 20, name: "system_id", scope: []string{"l"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{}},
+		{id: 21, name: "public_id", scope: []string{"p", "l"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 22, name: "system_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{}},
+		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "SystemLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 25, name: "pubid_literal", scope: []string{"l"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{}},
+		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "PubidLiteral", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 28, name: "element_decl", scope: []string{"n", "c"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 33, name: "choice", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 8, novalue: false, vars: []string{}},
+		{id: 34, name: "sequence", scope: []string{"f", "rs", "o"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 9, novalue: false, vars: []string{}},
+		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{}},
+		{id: 36, name: "name_particle", scope: []string{"n", "o"}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Occurrence", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 38, name: "attlist_decl", scope: []string{"n", "ds"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 39, name: "att_def", scope: []string{"n", "t", "k", "v"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Keyword", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 44, name: "notation_type", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 45, name: "enumeration", scope: []string{"f", "rs"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 47, name: "ge_decl", scope: []string{"n", "v", "x", "nd"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 48, name: "pe_decl", scope: []string{"n", "v", "x"}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 49, name: "entity_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{}},
+		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 52, name: "notation_decl", scope: []string{"n", "x"}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 54, name: "public_notation", scope: []string{"p", "l"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 55, name: "element", scope: []string{"n", "as", "cs", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{}},
+		{id: 56, name: "attribute", scope: []string{"n", "v"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 57, name: "att_value", scope: []string{"v"}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{}},
+		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "AttValue", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 62, name: "markup", scope: []string{"c"}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CharData", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 64, name: "cdsect", scope: []string{"c"}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CDSect", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{}},
+		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "CharRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "EntityRef", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Nmtoken", memo: true, leader: false, seen: 15, novalue: false, vars: []string{}},
+		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 75, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 76, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 16, novalue: true, vars: []string{}},
+		{id: 77, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 17, novalue: true, vars: []string{}},
+		{id: 78, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range rules {
-		r.kinds = newRuleKinds(r.name, r.terminalType)
+		r.kinds = newRuleKinds(r.name, r.textType)
 	}
 	nseen = 18
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e2() }
@@ -11006,84 +10964,84 @@ func init() {
 	structFields["YesNo"] = map[string]bool{"Text": true}
 	typeKinds["YesNo"] = kindOf("YesNo", "")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 1, name: "misc_list", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
-		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 3, name: "xml_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 4, name: "version_info", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 6, name: "encoding_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 8, name: "sd_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
-		{id: 11, name: "comment", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 2, novalue: true, vars: []string{}},
-		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 13, name: "pi", scope: []string{"t"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
-		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 15, name: "doctype", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 16, name: "int_subset", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
-		{id: 20, name: "system_id", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
-		{id: 21, name: "public_id", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 22, name: "system_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
-		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 25, name: "pubid_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
-		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 28, name: "element_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 33, name: "choice", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 8, novalue: true, vars: []string{}},
-		{id: 34, name: "sequence", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
-		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 10, novalue: true, vars: []string{}},
-		{id: 36, name: "name_particle", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 38, name: "attlist_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 39, name: "att_def", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 44, name: "notation_type", scope: []string{}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 45, name: "enumeration", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 47, name: "ge_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 48, name: "pe_decl", scope: []string{}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 49, name: "entity_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 11, novalue: true, vars: []string{}},
-		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 52, name: "notation_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 54, name: "public_notation", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 55, name: "element", scope: []string{"n", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, terminalType: "", memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
-		{id: 56, name: "attribute", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 57, name: "att_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, terminalType: "", memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
-		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 62, name: "markup", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 64, name: "cdsect", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 14, novalue: true, vars: []string{}},
-		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "Name", memo: false, leader: false, textStruct: true, seen: -1, novalue: false, vars: []string{}},
-		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: true, leader: false, seen: 15, novalue: true, vars: []string{}},
-		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 1, name: "misc_list", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
+		{id: 2, name: "misc", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 3, name: "xml_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 4, name: "version_info", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 5, name: "version_num", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "encoding_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 7, name: "enc_name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 8, name: "sd_decl", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 9, name: "yes_no", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 10, name: "eq", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
+		{id: 11, name: "comment", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 2, novalue: true, vars: []string{}},
+		{id: 12, name: "comment_text", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 13, name: "pi", scope: []string{"t"}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
+		{id: 14, name: "pi_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 15, name: "doctype", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 16, name: "int_subset", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 17, name: "decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 18, name: "pe_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 19, name: "external_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
+		{id: 20, name: "system_id", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
+		{id: 21, name: "public_id", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 22, name: "system_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
+		{id: 23, name: "system_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 24, name: "system_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 25, name: "pubid_literal", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
+		{id: 26, name: "pubid_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 27, name: "pubid_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 28, name: "element_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 29, name: "content_spec", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 30, name: "kw_empty", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 31, name: "kw_any", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 32, name: "mixed", scope: []string{"ns"}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 33, name: "choice", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 8, novalue: true, vars: []string{}},
+		{id: 34, name: "sequence", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 9, novalue: true, vars: []string{}},
+		{id: 35, name: "cp", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 10, novalue: true, vars: []string{}},
+		{id: 36, name: "name_particle", scope: []string{}, value: shaper{elems: true, k: 2, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 37, name: "occurrence", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 38, name: "attlist_decl", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 39, name: "att_def", scope: []string{}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 40, name: "kw_required", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 41, name: "kw_fixed", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 42, name: "att_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 43, name: "kw_type", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 44, name: "notation_type", scope: []string{}, value: shaper{elems: true, k: 8, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 45, name: "enumeration", scope: []string{}, value: shaper{elems: true, k: 6, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 46, name: "entity_decl", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 47, name: "ge_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 48, name: "pe_decl", scope: []string{}, value: shaper{elems: true, k: 9, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 49, name: "entity_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 11, novalue: true, vars: []string{}},
+		{id: 50, name: "entity_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 51, name: "entity_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 52, name: "notation_decl", scope: []string{}, value: shaper{elems: true, k: 7, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 53, name: "notation_id", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 54, name: "public_notation", scope: []string{}, value: shaper{elems: true, k: 4, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 55, name: "element", scope: []string{"n", "e"}, value: shaper{elems: true, k: 5, mode: 2, tuple: true}, textType: "", memo: true, leader: false, seen: 12, novalue: true, vars: []string{}},
+		{id: 56, name: "attribute", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 57, name: "att_value", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: true}, textType: "", memo: true, leader: false, seen: 13, novalue: true, vars: []string{}},
+		{id: 58, name: "att_dq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 59, name: "att_sq", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 60, name: "content", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 61, name: "content_item", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 62, name: "markup", scope: []string{}, value: shaper{elems: true, k: 1, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 63, name: "char_data", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 64, name: "cdsect", scope: []string{}, value: shaper{elems: true, k: 3, mode: 2, tuple: true}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 65, name: "cdata", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 66, name: "reference", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 14, novalue: true, vars: []string{}},
+		{id: 67, name: "char_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 68, name: "entity_ref", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 69, name: "name", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "Name", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 70, name: "name_char", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 71, name: "nmtoken", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: true, leader: false, seen: 15, novalue: true, vars: []string{}},
+		{id: 72, name: "s", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 73, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 74, name: "ws", scope: []string{}, value: shaper{elems: false, k: 1, mode: 1, tuple: false}, textType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
 	for _, r := range recRules {
-		r.kinds = newRuleKinds(r.name, r.terminalType)
+		r.kinds = newRuleKinds(r.name, r.textType)
 	}
 	recNseen = 16
 	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e164() }
@@ -41313,7 +41271,7 @@ func (p *tparser) s5() (any, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[5].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[5].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -41365,7 +41323,7 @@ func (p *tparser) s5() (any, bool) {
 	if x1 < 1 {
 		goto fail
 	}
-	v = trules[5].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[5].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -41687,7 +41645,7 @@ func (p *tparser) s7() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[7].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[7].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -41739,7 +41697,7 @@ func (p *tparser) s7() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[7].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[7].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -42077,7 +42035,7 @@ func (p *tparser) s9() (any, bool) {
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
-		v = trules[9].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[9].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -42144,7 +42102,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = trules[9].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[9].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -42617,7 +42575,7 @@ func (p *tparser) s12() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[12].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[12].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -42720,7 +42678,7 @@ func (p *tparser) s12() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[12].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[12].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -43233,7 +43191,7 @@ func (p *tparser) s14() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[14].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[14].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -43343,7 +43301,7 @@ func (p *tparser) s14() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[14].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[14].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -44125,7 +44083,7 @@ func (p *tparser) s18() (any, bool) {
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[18].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[18].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -44165,7 +44123,7 @@ func (p *tparser) s18() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	v = trules[18].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[18].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -45036,7 +44994,7 @@ func (p *tparser) s23() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[23].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[23].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -45069,7 +45027,7 @@ func (p *tparser) s23() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[23].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[23].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -45104,7 +45062,7 @@ func (p *tparser) s24() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[24].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[24].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -45137,7 +45095,7 @@ func (p *tparser) s24() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[24].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[24].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -45422,7 +45380,7 @@ func (p *tparser) s26() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[26].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[26].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -45455,7 +45413,7 @@ func (p *tparser) s26() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[26].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[26].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -45490,7 +45448,7 @@ func (p *tparser) s27() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[27].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[27].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -45523,7 +45481,7 @@ func (p *tparser) s27() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[27].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[27].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -45955,7 +45913,7 @@ func (p *tparser) s30() (any, bool) {
 		if _, ok = p.parser.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[30].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[30].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -45982,7 +45940,7 @@ func (p *tparser) s30() (any, bool) {
 	if _, ok = p.parser.matchLiteral(lit66, "EMPTY", 43, false); !ok {
 		goto fail
 	}
-	v = trules[30].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[30].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -46013,7 +45971,7 @@ func (p *tparser) s31() (any, bool) {
 		} else if _, ok = p.parser.matchLiteral(lit68, "ANY", 44, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[31].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[31].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -46042,7 +46000,7 @@ func (p *tparser) s31() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit68, "ANY", 44, false); !ok {
 		goto fail
 	}
-	v = trules[31].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[31].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -47618,7 +47576,7 @@ func (p *tparser) s37() (any, bool) {
 			goto fail_ordinary
 		}
 		p.pos += size
-		v = trules[37].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[37].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -47655,7 +47613,7 @@ func (p *tparser) s37() (any, bool) {
 		goto fail
 	}
 	p.pos += size
-	v = trules[37].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[37].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -48258,7 +48216,7 @@ func (p *tparser) s40() (any, bool) {
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
-		v = trules[40].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[40].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48321,7 +48279,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = trules[40].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[40].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -48350,7 +48308,7 @@ func (p *tparser) s41() (any, bool) {
 		if _, ok = p.parser.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[41].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[41].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48377,7 +48335,7 @@ func (p *tparser) s41() (any, bool) {
 	if _, ok = p.parser.matchLiteral(lit93, "#FIXED", 55, false); !ok {
 		goto fail
 	}
-	v = trules[41].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[41].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -48685,7 +48643,7 @@ func (p *tparser) s43() (any, bool) {
 	L20_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
-		v = trules[43].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[43].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -48828,7 +48786,7 @@ L21:
 L20:
 	goto fail
 L3:
-	v = trules[43].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[43].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -50477,7 +50435,7 @@ func (p *tparser) s50() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[50].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[50].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -50552,7 +50510,7 @@ func (p *tparser) s50() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[50].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[50].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -50629,7 +50587,7 @@ func (p *tparser) s51() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[51].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[51].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -50704,7 +50662,7 @@ func (p *tparser) s51() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[51].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[51].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -52144,7 +52102,7 @@ func (p *tparser) s58() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[58].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[58].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -52219,7 +52177,7 @@ func (p *tparser) s58() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[58].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[58].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -52296,7 +52254,7 @@ func (p *tparser) s59() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[59].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[59].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -52371,7 +52329,7 @@ func (p *tparser) s59() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[59].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[59].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -52993,7 +52951,7 @@ func (p *tparser) s63() (any, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[63].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[63].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -53112,7 +53070,7 @@ func (p *tparser) s63() (any, bool) {
 	if x1 < 1 {
 		goto fail
 	}
-	v = trules[63].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[63].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -53347,7 +53305,7 @@ func (p *tparser) s65() (any, bool) {
 			p.recovered = p.recovered[:x3]
 			break
 		}
-		v = trules[65].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[65].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	}
@@ -53457,7 +53415,7 @@ func (p *tparser) s65() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	v = trules[65].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[65].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 }
@@ -53850,7 +53808,7 @@ func (p *tparser) s67() (any, bool) {
 	L9_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
-		v = trules[67].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[67].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -53973,7 +53931,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = trules[67].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[67].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -54014,7 +53972,7 @@ func (p *tparser) s68() (any, bool) {
 		} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 			goto fail_ordinary
 		}
-		v = trules[68].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[68].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54054,7 +54012,7 @@ func (p *tparser) s68() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit46, ";", 36, false); !ok {
 		goto fail
 	}
-	v = trules[68].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[68].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -54107,7 +54065,7 @@ func (p *tparser) s69() (any, bool) {
 			}
 			p.pos += size
 		}
-		v = trules[69].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[69].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54159,7 +54117,7 @@ func (p *tparser) s69() (any, bool) {
 		}
 		p.pos += size
 	}
-	v = trules[69].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[69].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -54313,7 +54271,7 @@ func (p *tparser) v71() (any, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[71].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54361,7 +54319,7 @@ func (p *tparser) v71() (any, bool) {
 	if x1 < 1 {
 		goto fail
 	}
-	v = trules[71].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:
@@ -54410,7 +54368,7 @@ func (p *tparser) i71() (any, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		v = trules[71].term(p, start, p.pos, p.text(start, p.pos))
+		v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -54455,7 +54413,7 @@ func (p *tparser) i71() (any, bool) {
 	if x1 < 1 {
 		goto fail
 	}
-	v = trules[71].term(p, start, p.pos, p.text(start, p.pos))
+	v = trules[71].text(p, start, p.pos, p.text(start, p.pos))
 	p.depth--
 	return v, true
 fail:

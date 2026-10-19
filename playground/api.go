@@ -306,9 +306,6 @@ func describeType(t *grammar.TypeDef) typeInfo {
 	case *grammar.AliasSpec:
 		ti.Kind = "alias"
 		ti.Spec = grammar.FormatType(s.Type)
-	case *grammar.TerminalSpec:
-		ti.Kind = "terminal"
-		ti.Spec = "terminal"
 	}
 	return ti
 }

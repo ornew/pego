@@ -38,7 +38,6 @@ type ruleInfo struct {
 	index         int
 	operatorsRule *grammar.OperatorsRule
 	levels        map[string]int // level name -> index in operatorsRule.Levels
-	terminal      bool           // the rule is declared with a terminal type
 	height        int            // minimal derivation height: nested rule calls needed to match it
 	length        int            // minimal length in bytes of a match
 	reach         bitset         // targets that generating the rule can exercise, its own included
@@ -83,12 +82,6 @@ func analyze(g *grammar.Grammar, start string) *info {
 		captures:  map[grammar.Expr]bool{},
 		classes:   map[*grammar.CharClass][]grammar.CharRange{},
 	}
-	terminals := map[string]bool{}
-	for _, t := range g.Types() {
-		if _, ok := t.Spec.(*grammar.TerminalSpec); ok {
-			terminals[t.Name] = true
-		}
-	}
 	for i, r := range g.Rules() {
 		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]*operatorsRuleStop{}}
 		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
@@ -99,9 +92,6 @@ func analyze(g *grammar.Grammar, start string) *info {
 					ri.levels[l.Name] = j
 				}
 			}
-		}
-		if t, ok := r.Type.(*grammar.TypeRef); ok && terminals[t.Name] {
-			ri.terminal = true
 		}
 		in.rules[r.Name] = ri
 		in.order = append(in.order, ri)

@@ -133,7 +133,7 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	for _, td := range p.Grammar.Types() {
 		spec, ok := td.Spec.(*grammar.StructSpec)
 		if !ok {
-			continue // aliases name other types, and terminal types are string nodes
+			continue // aliases name other types
 		}
 		shape := SchemaShape{Kind: "struct"}
 		for _, f := range spec.Fields {

@@ -310,15 +310,12 @@ and exact comment tokens are omitted.
 A null field is reported by path (for example `$.statements[0].spec.fields[0]`)
 and does not cause a panic during compilation.
 
-A grammar AST can hold two type forms that PEGO source no longer accepts and that
-`pego fix` rewrites, so that grammar JSON written for earlier versions still
-compiles. A `TerminalSpec` (`"@type": "TerminalSpec"`) declares a terminal type: a
-type of string nodes, and a rule declared with it and without an action produces a
-string node of that type holding the matched text. A `TypeRef` may name
-`terminal` or `Match`, which stand for string nodes, `Seq`, `List` or `Operator`,
-which stand for the nodes of that shape (see
-[Node Type Names](types.md#node-type-names)), or `Error`. `grammar.Format` writes
-these forms as they are, so its output is accepted only by `pego fix`.
+Grammar JSON has no terminal types. The node types `TerminalSpec` and
+`TerminalConstructor`, which earlier versions wrote for them, are unknown to the
+decoders and rejected. A `TypeRef` that names `terminal`, `Match`, `Seq`, `List`,
+`Operator` or `Error` fails compilation with an error that names the type to write
+instead (see [Node Type Names](types.md#node-type-names)); a terminal type becomes
+the text struct `{ Text string }` (see [Text Structs](types.md#text-structs)).
 
 An attribute (`Attributed`, `Attribute`) holds `args`, an ordered list of integers,
 strings, booleans, null slots and expression nodes, and `kwArgs`, which maps names to

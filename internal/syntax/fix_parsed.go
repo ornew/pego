@@ -18,7 +18,7 @@ import (
 // rule's name when that name is free, and anything else with v1, v2, .... $0 becomes
 // list($a, $b, ...) of every element with a value.
 func fixParsed(src string, positional bool) (string, error) {
-	g, err := ParseLegacy(src)
+	g, forms, err := parseLegacy(src)
 	if err != nil {
 		if !positional {
 			return src, nil
@@ -100,7 +100,7 @@ func fixParsed(src string, positional bool) (string, error) {
 			edits = append(edits, fixEdit{start, start + len(m.Name), "End"})
 		}
 	})
-	types, err := typeEdits(o, src, g)
+	types, err := typeEdits(o, src, g, forms)
 	if err != nil {
 		return "", err
 	}
@@ -126,18 +126,21 @@ var valueTypeNames = map[string]string{
 // syntax tree types with value types. A terminal type T becomes the struct { Text string }; a
 // rule declared with it and without an action, which produced a terminal holding its matched
 // text, builds the struct from that text instead; and T{s} becomes T{Text: s}.
-func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error) {
+func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms) ([]fixEdit, error) {
 	defs := map[string]grammar.TypeSpec{}
+	terminals := map[string]bool{}
 	for _, td := range g.Types() {
 		defs[td.Name] = td.Spec
+		terminals[td.Name] = forms.terminals[td]
 	}
 	// terminal returns the terminal type that name stands for, through aliases, or "".
 	terminal := func(name string) string {
 		for seen := map[string]bool{}; !seen[name]; {
 			seen[name] = true
-			switch spec := defs[name].(type) {
-			case *grammar.TerminalSpec:
+			if terminals[name] {
 				return name
+			}
+			switch spec := defs[name].(type) {
 			case *grammar.AliasSpec:
 				r, ok := spec.Type.(*grammar.TypeRef)
 				if !ok {
@@ -152,8 +155,8 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error)
 	}
 	var edits, last []fixEdit
 	for _, td := range g.Types() {
-		if spec, ok := td.Spec.(*grammar.TerminalSpec); ok {
-			src := spec.Source()
+		if forms.terminals[td] {
+			src := td.Spec.(grammar.SourceNode).Source()
 			edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "= { Text string }"})
 		}
 	}
@@ -163,8 +166,8 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error)
 		}
 	}
 	inspectAST(g, func(n any) {
-		if c, ok := n.(*grammar.TerminalConstructor); ok && len(c.Args) == 1 {
-			start := o.at(c.Args[0].(grammar.SourceNode).Source().Pos)
+		if c, ok := n.(*grammar.New); ok && forms.positional[c] {
+			start := o.at(c.Fields[0].Value.(grammar.SourceNode).Source().Pos)
 			edits = append(edits, fixEdit{start, start, "Text: "})
 		}
 	})

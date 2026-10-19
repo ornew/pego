@@ -22,12 +22,12 @@ The reference implementation is the Go package `internal/engine` (`bytecode.go`,
 
 | Value | Description |
 |:--|:--|
-| Node | Type name, rule name (optional), range `[start, end)`, terminal text, list of children, and fields (name → value). A node also carries a flag that marks it as a terminal. |
+| Node | Type name, rule name (optional), range `[start, end)`, text, list of children, and fields (name → value). A node also carries a flag that marks it as holding text: a `Match` or an `Error`. |
 | Integer, string, boolean | Used by Value Actions and Predicate Actions |
 | nil | The absence of a value |
 | Function | A lambda: the start of its expression code, its number of parameters, and the locals captured when it was created |
 
-The reserved bytecode node types are `Match` (terminal), `Seq`, `List`, `Operator` and `Error`.
+The reserved bytecode node types are `Match` (a string node), `Seq`, `List`, `Operator` and `Error`.
 The Closure-only `#missing` pragma and `Missing` type have no bytecode encoding;
 VM parsing, binary serialization and module construction reject those grammars.
 A node is *fresh* only while the body of the rule that created it is executing ([Rule completion](#rule-completion)).
@@ -45,7 +45,7 @@ A module consists of the following tables and code sequences.
 |:--|:--|
 | String table | Strings. All other tables and instructions refer to strings by index. |
 | Character class table | A list of ranges (pairs of lower and upper bounds), a negation flag, and an expectation string |
-| Type table | Type name, whether the type is a terminal type, and the field names of a struct type |
+| Type table | Type name and the field names of a struct type |
 | Field-list table | Lists of field names used by `ENEW` |
 | Scope table | The capture names of a repetition element, in slot order |
 | Rule table | See [Rule table](#rule-table) |
@@ -75,7 +75,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Scope | The capture names of the body, in slot order |
 | Action | Start of the action in the expression code, or -1 if there is none |
 | Body is a sequence | Whether the body's value is a tuple; used to interpret `$n` |
-| Terminal type | Name of the terminal type, or of the struct type of a text struct rule (see Rule Completion), or -1 if there is none |
+| Text type | Name of the struct type of a text struct rule (see Rule Completion), or -1 if the rule is not one |
 | Memoize, left-recursion leader, position-dependent | Results of static analysis |
 | Operators Rule | Index into the Operators Rule table, or -1 if there is none |
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
@@ -85,7 +85,7 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 
 **Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`#atomic`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
 
-**Value-free bodies.** The body of a terminal-type rule, and the body of a rule whose action does not refer to `$n`, are compiled without building values. Capture targets still build their values.
+**Value-free bodies.** The body of a text struct rule, and the body of a rule whose action does not refer to `$n`, are compiled without building values. Capture targets still build their values.
 
 ### Operators Rule Table
 
@@ -224,8 +224,7 @@ A leader rule is evaluated as follows:
 The value of the rule is built from the body value v and the start position:
 
 - **With an action:** evaluate the action with the `$n` items set to the children of v if the body is a sequence, and to [v] otherwise. If the result is a node newly created by the action, its range becomes the range of the rule. The result must be a node or nil.
-- **With a terminal type:** create a terminal of that type whose text is the text of the rule's range, and give it the rule name.
-- **With a struct type in the terminal type entry:** create a struct of that type whose only field, `Text`, is the text of the rule's range, with the rule's range. A compiler writes such a rule, a text struct rule, for `rule r T = t:(e) #atomic => T{Text: text($t)}` where `T`'s field `Text` is a `string`: its body is `e #atomic` and it has no action or scope, since the struct is what the action would make.
+- **With a text type:** create a struct of that type whose only field, `Text`, is the text of the rule's range, with the rule's range. A compiler writes such a rule, a text struct rule, for `rule r T = t:(e) #atomic => T{Text: text($t)}` where `T`'s field `Text` is a `string`: its body is `e #atomic` and it has no action or scope, since the struct is what the action would make.
 - **Otherwise:** if the scope has captures, attach them. If v is fresh, give it the rule name if it has none, and clear its fresh mark.
 
 **Attaching captures:** if no capture is non-nil, do nothing. If v is nil, is not fresh, or is itself one of the captures, wrap v in a `Seq` whose only child is v, whose range runs from the start position to the current position, and which is fresh. Then add each non-nil capture as a field under its name.
@@ -280,16 +279,15 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. |
 | 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. |
 | 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. |
-| 124 | `ETERMINAL` | A type | Pop a string and construct a terminal of the declared type with that text and the enclosing action range. A non-string raises an evaluation error. The type is a string-table index naming a terminal in the type table. |
+| 124 | | | Not used. Instruction sets before 14 used it to construct terminals, which the type system no longer has. |
 | 125 | `ECHECK` | A type, B field, C struct | Check that the value on top of the stack, which stays there, fits the declared field type A, as a struct constructor checks a dynamically typed field value (see [Values and Constructors](actions.md#values-and-constructors)); a mismatch raises the evaluation error `cannot use <value type> as <A> in field <B> of <C>`. Each list element examined is one execution step. A is the type as written in the source after alias resolution (`*Ident`, `[]*(Ident \| Number)`, `int \| string`); B and C name the field and the struct type. The compiler emits it after a field value only when the type checker could not prove the value assignable, and never for fields of type `any`. |
 | 126 | `ECAST` | A type | Check that the value on top of the stack, which stays there, fits type A, as `ECHECK` does, for a cast `x.(T)` (see [Casts](actions.md#casts)); a mismatch raises the evaluation error `cannot cast <value type> to <A>`. A is written like the type of `ECHECK`. The compiler omits it when every value fits the type, such as `any` or a type containing `any`. |
 
-Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`, `ETERMINAL`) are string-table indices.
+Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
 
 Typed list constructors use `ECALL` with the `list` built-in; their element
 types are checked at compilation and require no additional VM instruction or
-per-element concrete-type guard. Terminal aliases use their canonical type
-name in `ETERMINAL`.
+per-element concrete-type guard.
 
 Calling a function evaluates its code from its start, with the locals captured at creation followed by the arguments as its locals.
 
@@ -310,7 +308,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module: 13. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model; a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 14. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, or held terminal types; a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -324,9 +322,9 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 1. The number of module strings, unsigned (this many strings from the start of the string table form the module's string table).
 2. Source information, a boolean: whether the values a parse returns carry the rule names and capture names of the grammar. A loaded program keeps it, and the load options can also request it.
 3. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
-4. Type table: a list of (name, terminal, list of field names).
+4. Type table: a list of (name, list of field names).
 5. Field-list table, then scope table: each a list of lists of string indices.
-6. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
+6. Rule table: a list of (name, body, scope, action, body is a sequence, text type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
 7. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
 8. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
@@ -337,9 +335,9 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
 - Every opcode is known, and every flag operand is within its range.
+- The text type of a rule names a declared type with a field `Text`.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum.
-- `ETERMINAL` references a declared terminal type.
-- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil`, `node` or `terminal`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&`, `_` or `_|_`.
+- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, CST node types and `int`, `string`, `bool`, `nil` or `node`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&`, `_` or `_|_`.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

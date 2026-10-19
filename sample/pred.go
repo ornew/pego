@@ -10,7 +10,7 @@ import (
 const (
 	vNone    = iota // no value: lookahead, discard, anchors, predicates
 	vNil            // an optional expression or a capture that did not match
-	vText           // a terminal
+	vText           // a string
 	vList           // a repetition
 	vNode           // another node (Seq, ...)
 	vUnknown        // the result of an action, or of a OperatorsRule expression

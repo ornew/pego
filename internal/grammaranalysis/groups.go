@@ -150,13 +150,6 @@ func ungroupTerm(t grammar.Term, poll func()) grammar.Term {
 			}
 			return &v
 		}
-	case *grammar.TerminalConstructor:
-		args := ungroupTerms(t.Args, poll)
-		if args != nil {
-			v := *t
-			v.Args = args
-			return &v
-		}
 	case *grammar.New:
 		var fields []*grammar.FieldInit
 		for i, f := range t.Fields {

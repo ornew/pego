@@ -145,8 +145,8 @@ func resultChecked(prog *Program, route byte) bool {
 // without type checking, and that the values it accepts give the same results as when the rules
 // are declared any.
 func TestRuleResultChecks(t *testing.T) {
-	// The terminal type still reaches the engine from JSON grammars: its model is read with
-	// syntax.ParseLegacy.
+	// The terminal model is the same grammar in the retired terminal type syntax, which
+	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
 	for _, model := range []struct {
 		name    string
 		grammar func(typ, rt string) string
@@ -154,7 +154,7 @@ func TestRuleResultChecks(t *testing.T) {
 		fields  map[string]string
 	}{
 		{"text struct", resultCheckGrammar, syntax.Parse, fieldCheckFields},
-		{"terminal", resultCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFieldsLegacy},
+		{"terminal", resultCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
 			for _, typ := range resultCheckTypesOf(model.fields) {
@@ -470,8 +470,8 @@ func TestOperatorResultChecks(t *testing.T) {
 }
 
 // terminalOperatorsRuleGrammar has an Operators Rule of a terminal type without an action, which
-// converts its value to the terminal like any such rule, so its dynamically typed lines are not
-// checked.
+// converted its value to the terminal like any such rule. A text struct has no such conversion, so
+// pego fix asks for an action instead of rewriting it.
 const terminalOperatorsRuleGrammar = `type Int terminal
 type S = { F Int }
 rule main = v:e => S{F: $v}
@@ -496,20 +496,21 @@ rule val Int = t:"m" #atomic => Int{Text: text($t)}
 
 var terminalOperatorsRuleInputs = []string{"m", "m+m", "m+", ""}
 
-func TestTerminalOperatorsRuleIsNotChecked(t *testing.T) {
-	prog := compileLegacy(t, terminalOperatorsRuleGrammar)
-	if prog.checks != nil && len(prog.checks.results) != 0 {
-		t.Fatalf("checked lines: %d", len(prog.checks.results))
-	}
-	unchecked := compileLegacy(t, terminalOperatorsRuleGrammar, Options{NoTypeCheck: true})
-	// Without type checking, operators without actions are allowed too.
-	plain := compileLegacy(t, `type Num terminal
+func TestTerminalOperatorsRuleNeedsAction(t *testing.T) {
+	for _, src := range []string{terminalOperatorsRuleGrammar, `type Num terminal
 rule main = e
 rule e Num = operators {
     operand [0-9]+
     level { infix left "+" }
 }
-`, Options{NoTypeCheck: true})
+`} {
+		if _, err := syntax.Fix(src); err == nil || !strings.Contains(err.Error(), "is an operators rule; give it an action before running pego fix") {
+			t.Errorf("Fix: %v\n%s", err, src)
+		}
+	}
+	// The text struct counterpart builds the struct in its actions, with or without type checking.
+	prog := compile(t, textStructOperatorsRuleGrammar)
+	unchecked := compile(t, textStructOperatorsRuleGrammar, Options{NoTypeCheck: true})
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		o := ParseOptions{Backend: b}
 		for _, in := range terminalOperatorsRuleInputs {
@@ -524,12 +525,6 @@ rule e Num = operators {
 				t.Errorf("%q unchecked %s: %s\nwant %s", in, b, got, want)
 			}
 		}
-		if got := resultWith(plain, "1+2", o); !strings.Contains(got, `"1+2"@e`) {
-			t.Errorf("%s: %s", b, got)
-		}
-	}
-	if d := prog.Module().Disassemble(); strings.Contains(d, "check=") {
-		t.Fatalf("disassembly:\n%s", d)
 	}
 }
 

@@ -42,7 +42,6 @@ have the following types.
 | `nil` | `nil`, assignable to any optional type |
 | `$label` | The type of the capture (see above) |
 | `T{Field: value, ...}` | Struct Type `T` |
-| `T{stringValue}` | Terminal Type `T` of a grammar AST ([Grammar JSON](grammar-files.md#grammar-json)); exactly one string-valued argument is required |
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
 | `x.$y` | The join of the types of capture `y` of the node types `x` may have |
@@ -60,9 +59,7 @@ assignable to every list Type.
 For `[]T{...}`, the checker validates every element against the explicit element
 Type `T`. It reports non-assignable elements and elements whose Type is unknown,
 including unknown values nested in a typed list. An empty literal still has
-the declared `[]T` Type. Nil is allowed only if `T` permits nil. A terminal
-constructor is checked after alias resolution: its target must be a terminal
-Type, it must have exactly one argument, and that argument must be a string.
+the declared `[]T` Type. Nil is allowed only if `T` permits nil.
 
 The internal compiler option `NoTypeCheck` deliberately bypasses assignability
 checks. It does not add primitive-valued list storage or change the rules for
@@ -79,9 +76,7 @@ Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is not reported; the rule checks the value against its
 declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
 Without type checking, every rule value is checked against a declared Type other
-than `any`, except the terminal a rule with a terminal Type and no action
-produces, the lines of such a rule when it is an Operators Rule, and the
-`Operator` value of an operator line without an action.
+than `any`, except the `Operator` value of an operator line without an action.
 
 Diagnostics print the shape of a value type as `node[string]` for a string node,
 `(node[string], node[string])` for a tuple of two and `[]node[string]` for a list;
@@ -89,7 +84,7 @@ the [node type names](types.md#node-type-names) `Match`, `Seq` and `List` that
 some diagnostics print describe the same values.
 
 A run-time check tests a value as the value types describe it. `node[string]`
-and a terminal Type take a string node; `node` takes every node; a list Type takes a list value, such as one an
+takes a string node; `node` takes every node; a list Type takes a list value, such as one an
 action builds, and not the node of a repetition, whose list is its `Value`;
 `[]_` and `[]any` take every list value; and an error value from recovery fits
 only a Type that admits `error`. Predicates are checked like actions, and a
@@ -135,10 +130,7 @@ The type checker reports the following errors:
 - a field that the struct type does not declare, in a struct constructor or a field access,
   and a field value that is not assignable to the type of the field;
 - a typed-list element that is unknown or not assignable to its explicit element Type;
-- a terminal constructor with a non-terminal target, wrong arity or non-string argument;
-- a rule whose value is not assignable to its declared type (except that a rule
-  declared with a terminal type and without an action always produces a
-  terminal of that type);
+- a rule whose value is not assignable to its declared type;
 - a rule or an action whose value is not a node;
 - a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an

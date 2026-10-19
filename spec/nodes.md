@@ -111,9 +111,9 @@ func (n *Node) WriteJSON(w io.Writer) error
 | `n.Value()` | The value of a `KindValue` node and the string of a `KindString` node; nil for other kinds and for nil |
 | `n.Field(name)` | The value of the struct field, or, with source information, the capture `name` of a node; nil if there is none or `n` is nil. A field value is a `*Node`, an `int`, a `string`, a `bool` or nil |
 | `n.Fields()` | The fields of a struct in the order that the action wrote them and, with source information, the captures of a node |
-| `n.Type()` | The name of the struct type or terminal type of the node. For other nodes it is the name of the built-in node type: `Match`, `Seq`, `List`, `Operator`, `Error` or `Missing` |
+| `n.Type()` | The name of the struct type of the node. For other nodes it is the name of the built-in node type: `Match`, `Seq`, `List`, `Operator`, `Error` or `Missing` |
 | `n.Rule()` | The rule name with source information, or the empty string |
-| `n.IsTerminal()` | True for a string node, including one of a terminal type, and for an error value from `#recover`; false for nil |
+| `n.IsTerminal()` | True for a string node and for an error value from `#recover`; false for nil |
 | `n.Clone()` | A deep copy; subtrees shared within the tree stay shared in the copy. A `Document` moves the nodes that it reuses after an edit, which changes trees that its earlier parses returned; a clone keeps a tree as it was |
 
 `Start` and `End` delimit the input that the node covers as a half-open range in the

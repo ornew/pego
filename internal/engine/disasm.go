@@ -56,8 +56,8 @@ func (m *Module) Disassemble() string {
 		if r.Action >= 0 {
 			fmt.Fprintf(&b, " action=%d", r.Action)
 		}
-		if r.TerminalType >= 0 {
-			fmt.Fprintf(&b, " terminal=%s", m.Strings[r.TerminalType])
+		if r.TextType >= 0 {
+			fmt.Fprintf(&b, " text=%s", m.Strings[r.TextType])
 		}
 		if r.OperatorsRule >= 0 {
 			fmt.Fprintf(&b, " operatorsRule=%d", r.OperatorsRule)
@@ -186,7 +186,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 			return str(a) + " text"
 		}
 		return str(a)
-	case EStr, EVar, EUnary, EBoolChk, ETerminal:
+	case EStr, EVar, EUnary, EBoolChk:
 		return str(a)
 	case EInt:
 		return strconv.FormatInt(int64(a)+int64(bb)<<32, 10)

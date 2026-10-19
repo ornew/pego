@@ -12,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -86,9 +85,6 @@ rule main = leaf #recover(skip=.+)`, []string{"!", ""}})
 		meta.name()
 		for name, exported := range meta.names {
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d.%s", i, exported), name)
-			if _, ok := prog.types[name].(*grammar.TerminalSpec); ok {
-				fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d.%s", i, exported))
-			}
 		}
 		fmt.Fprintf(&terminalNames, "%q:true,\n%q:true,\n", fmt.Sprintf("replay/g%d.Match", i), fmt.Sprintf("replay/g%d.Error", i))
 		write(fmt.Sprintf("g%d/parser.go", i), string(goCode))

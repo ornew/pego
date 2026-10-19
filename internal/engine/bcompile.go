@@ -127,17 +127,15 @@ func (c *bcompiler) compile() {
 				ti.Fields = append(ti.Fields, int(c.str(f.Name)))
 			}
 			c.m.Types = append(c.m.Types, ti)
-		case *grammar.TerminalSpec:
-			c.m.Types = append(c.m.Types, TypeInfo{Name: int(c.str(td.Name)), Terminal: true})
 		}
 	}
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TerminalType: -1, OperatorsRule: -1, Check: -1,
+		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TextType: -1, OperatorsRule: -1, Check: -1,
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
-		if r.terminalType != "" {
-			ri.TerminalType = int(c.str(r.terminalType))
+		if r.textType != "" {
+			ri.TextType = int(c.str(r.textType))
 		}
 		c.m.Rules = append(c.m.Rules, ri)
 	}
@@ -757,9 +755,6 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 			c.term(item, s, locals)
 		}
 		c.eemit(ECall, bList, int32(len(t.Items)))
-	case *grammar.TerminalConstructor:
-		c.term(t.Args[0], s, locals)
-		c.eemit(ETerminal, c.str(c.prog.terminalConstructorType(t.Type)), 0)
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Gather the elements of list, map and concat arguments directly (see fusable).

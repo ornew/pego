@@ -3,13 +3,11 @@ package genrt
 // fieldType is a declared struct field type that a constructor checks a dynamically typed value
 // against. Generated code declares one for each checked field.
 type fieldType struct {
-	kind byte // i int, s string, b bool, z nil, n node, t terminal, N named, l list, o optional, u union, _ top
+	kind byte // i int, s string, b bool, z nil, n node, N named, l list, o optional, u union, _ top
 	name string
-	// terminal reports a named terminal type, whose values are string nodes.
-	terminal bool
-	elem     *fieldType
-	alts     []*fieldType
-	text     string
+	elem *fieldType
+	alts []*fieldType
+	text string
 }
 
 // checkField returns v if it fits t, the type of field field of struct typ, and raises an
@@ -43,7 +41,7 @@ type resultError string
 func (e resultError) Error() string { return string(e) }
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. Match and terminal types are string nodes, Seq, List, Operator
+// each list element it examines. Match is a string node, Seq, List, Operator
 // and node every node, and Error error values; a list type takes a list value, not the node of a
 // repetition.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
@@ -86,8 +84,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
-	case 't':
-		return shape == shapeString
 	case 'N':
 		switch t.name {
 		case "Match":
@@ -96,9 +92,6 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 			return valueNode
 		case "Error", "Missing":
 			return shape == shapeError
-		}
-		if t.terminal {
-			return shape == shapeString
 		}
 		return shape == shapeStruct && n.Type() == t.name
 	case 'l':
@@ -202,8 +195,6 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
-	case 't':
-		return shape == shapeString
 	case 'N':
 		switch t.name {
 		case "Match":
@@ -212,9 +203,6 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 			return valueNode
 		case "Error", "Missing":
 			return shape == shapeError
-		}
-		if t.terminal {
-			return shape == shapeString
 		}
 		return shape == shapeStruct && n.tname() == t.name
 	case 'l':

@@ -46,29 +46,6 @@ var fieldCheckFields = map[string]string{
 	"[](node[string] | error)": "kn",
 }
 
-// fieldCheckFieldsLegacy is fieldCheckFields for fieldCheckGrammarLegacy, where a terminal value is a
-// string node like a match.
-var fieldCheckFieldsLegacy = map[string]string{
-	"Alias":             "mt",
-	"*Int":              "mtz",
-	"[]Int":             "lkn",
-	"[]*Int":            "lknep",
-	"Int | string":      "mts",
-	"int":               "i",
-	"string":            "s",
-	"bool":              "b",
-	"any":               "mtlkenq?wpzisb",
-	"node":              "mt",
-	"terminal":          "mt",
-	"[][]Int":           "wn",
-	"*(Box | bool)":     "qzb",
-	"Match":             "mt",
-	"List":              "mt",
-	"*[]*Int":           "lknepz",
-	"Int | error":       "mt?",
-	"[](Match | error)": "lkn",
-}
-
 // fieldCheckGrammar gives S a field F of type typ. Constructing S succeeds with an accepted value
 // (input "<value>.") and is an action error otherwise; in a predicate (input "<value>!") the
 // rejected value makes the predicate fail, so the rule no matches instead.
@@ -151,8 +128,8 @@ func fieldCheckInputs() []string {
 // TestConstructedFieldChecks checks which dynamically typed values each declared field type
 // accepts, on every backend, with and without type checking, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
-	// The terminal type still reaches the engine from JSON grammars: its model is read with
-	// syntax.ParseLegacy.
+	// The terminal model is the same grammar in the retired terminal type syntax, which
+	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
 	for _, model := range []struct {
 		name    string
 		grammar func(string) string
@@ -160,7 +137,7 @@ func TestConstructedFieldChecks(t *testing.T) {
 		fields  map[string]string
 	}{
 		{"text struct", fieldCheckGrammar, syntax.Parse, fieldCheckFields},
-		{"terminal", fieldCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFieldsLegacy},
+		{"terminal", fieldCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
 			for _, typ := range fieldCheckTypesOf(model.fields) {
@@ -171,11 +148,7 @@ func TestConstructedFieldChecks(t *testing.T) {
 }
 
 func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string) (*grammar.Grammar, error), fields map[string]string) {
-	// A text struct value shows its field where a terminal value shows its text.
 	yes, no := `"Text":"yes"`, `"Text":"no"`
-	if strings.Contains(src, "type Int terminal") {
-		yes, no = `"value":"yes"`, `"value":"no"`
-	}
 	{
 		{
 			g, err := parse(src)
@@ -342,7 +315,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	if err := validateModule(&m); err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", ""} {
+	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", "", "terminal"} {
 		m.Strings = append(append([]string(nil), prog.Module().Strings...), text)
 		m.Exprs = append([]Instr(nil), prog.Module().Exprs...)
 		for i := range m.Exprs {
@@ -354,7 +327,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}
-	for _, text := range []string{"Int", "*Int", "[]*(Int | Match)", "*(Box | bool)", "[][]Int", "int | string", "Error", "node", "terminal"} {
+	for _, text := range []string{"Int", "*Int", "[]*(Int | Match)", "*(Box | bool)", "[][]Int", "int | string", "Error", "node"} {
 		if _, err := parseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}

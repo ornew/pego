@@ -7,26 +7,15 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// A terminal type rewritten by pego fix holds the text the terminal held.
+// A terminal type rewritten by pego fix holds the text the terminal held: want is the text of
+// the terminal that the grammar produced before.
 func TestFixTerminalTypes(t *testing.T) {
-	for _, tc := range []struct{ src, input string }{
-		{"type N terminal\nrule main N = \"-\"? [0-9]+", "-12"},
-		{"type N terminal\ntype A ~ N\nrule main A = d:[0-9] [0-9]* {text($d) != \"0\"}", "12"},
-		{"type N terminal\nrule main N = n => ...\nrule n N = [a-z]+", "ab"},
-		{"type N terminal\nrule main N = x:n y:n {text($x) == text($y)} => N{text($x)}\nrule n N = [a-z]", "aa"},
+	for _, tc := range []struct{ src, input, want string }{
+		{"type N terminal\nrule main N = \"-\"? [0-9]+", "-12", "-12"},
+		{"type N terminal\ntype A ~ N\nrule main A = d:[0-9] [0-9]* {text($d) != \"0\"}", "12", "12"},
+		{"type N terminal\nrule main N = n => ...\nrule n N = [a-z]+", "ab", "ab"},
+		{"type N terminal\nrule main N = x:n y:n {text($x) == text($y)} => N{text($x)}\nrule n N = [a-z]", "aa", "a"},
 	} {
-		old, err := syntax.ParseLegacy(tc.src)
-		if err != nil {
-			t.Fatalf("%q: %v", tc.src, err)
-		}
-		p, err := Compile(old, Options{})
-		if err != nil {
-			t.Fatalf("%q: %v", tc.src, err)
-		}
-		want, err := p.Parse("main", tc.input)
-		if err != nil {
-			t.Fatalf("%q: %v", tc.src, err)
-		}
 		fixed, err := syntax.Fix(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
@@ -44,8 +33,8 @@ func TestFixTerminalTypes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%q: %v", fixed, err)
 			}
-			if text := fmt.Sprint(got.Field("Text")); text != want.Text() {
-				t.Errorf("%q: Text is %q, want %q", fixed, text, want.Text())
+			if text := fmt.Sprint(got.Field("Text")); text != tc.want {
+				t.Errorf("%q: Text is %q, want %q", fixed, text, tc.want)
 			}
 		}
 	}

@@ -7,7 +7,7 @@ tree without changing valued calls.
 ## Mechanism and Invariants
 
 `twinOf` creates an alternative compiled rule for CST rules without actions or
-terminal types. Calls in discarded, atomic or eligible body contexts select it.
+text types. Calls in discarded, atomic or eligible body contexts select it.
 The twin has its own rule and memo identity; its nil result cannot contaminate
 valued memo entries. Rules in left-recursion cycles are excluded because mixed
 valued/value-free seed growth would change semantics. A callee's action is not

@@ -43,8 +43,8 @@ rule h = t:("x") #atomic {true} => Name{Text: text($t)}
 rule main = a / b / c / d / e / f / g / h`, Options{NoTypeCheck: true})
 	want := map[string]bool{"a": true, "b": true, "f": true, "g": true}
 	for _, r := range prog.rules {
-		if r.textStruct != want[r.name] {
-			t.Errorf("rule %s: textStruct %t, want %t", r.name, r.textStruct, want[r.name])
+		if (r.textType != "") != want[r.name] {
+			t.Errorf("rule %s: text type %q, want a text struct rule: %t", r.name, r.textType, want[r.name])
 		}
 	}
 }
@@ -56,7 +56,7 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 		prog := compileBare(t, textStructGrammar, Options{SourceInfo: sourceInfo, NoTypeCheck: true})
 		fast := 0
 		for _, r := range prog.rules {
-			if r.textStruct {
+			if r.textType != "" {
 				fast++
 			}
 		}
@@ -182,4 +182,28 @@ func viewValue(v any) string {
 		return fmt.Sprintf("%s[%d,%d)", n, n.Start(), n.End())
 	}
 	return fmt.Sprintf("%#v", v)
+}
+
+// A module whose rule names a text type that is not a declared type with a field Text is rejected.
+func TestTextStructModuleValidation(t *testing.T) {
+	prog := compileBare(t, textStructGrammar, Options{NoTypeCheck: true})
+	m := *prog.Module()
+	if err := validateModule(&m); err != nil {
+		t.Fatal(err)
+	}
+	m.Rules = append([]RuleInfo(nil), m.Rules...)
+	found := false
+	for i := range m.Rules {
+		if m.Rules[i].TextType >= 0 {
+			m.Rules[i].TextType = m.Rules[i].Name
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("no text struct rule")
+	}
+	if err := validateModule(&m); err == nil || !strings.Contains(err.Error(), "is not a declared type with a field Text") {
+		t.Fatalf("got %v", err)
+	}
 }
