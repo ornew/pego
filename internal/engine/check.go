@@ -55,28 +55,8 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	defer dropRepeatedErrors(errs, len(*errs))
 	k := &checker{typeResolver: typeResolver{control: control, prog: prog, errs: errs}, ruleTypes: map[string]ty{}, declared: map[string]bool{}, streams: map[string]ty{}, checks: &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}}
 
-	// Check references in type definitions.
 	k.report = true
-	for _, td := range control.types(prog.Grammar) {
-		control.poll()
-		switch spec := td.Spec.(type) {
-		case *grammar.StructSpec:
-			seen := map[string]bool{}
-			for _, f := range spec.Fields {
-				control.poll()
-				if seen[f.Name] {
-					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.Name)
-				}
-				if !startsUpper(f.Name) {
-					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.Name)
-				}
-				seen[f.Name] = true
-				k.resolveLocation(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
-			}
-		case *grammar.AliasSpec:
-			k.resolveNamed(td.Name, td.Diagnostic())
-		}
-	}
+	k.checkTypeDefinitions()
 
 	rules := control.rules(prog.Grammar)
 	for _, rd := range rules {

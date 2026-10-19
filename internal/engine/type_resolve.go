@@ -187,3 +187,29 @@ var retiredTypeNames = map[string]string{
 	"Operator": "node",
 	"Error":    "error",
 }
+
+// checkTypeDefinitions reports the errors of the type definitions: duplicate fields, field names
+// that do not start with an uppercase letter, and types that do not resolve (undefined names,
+// aliases that refer to themselves, unsupported syntax and fields of type _|_).
+func (k *typeResolver) checkTypeDefinitions() {
+	for _, td := range k.control.types(k.prog.Grammar) {
+		k.control.poll()
+		switch spec := td.Spec.(type) {
+		case *grammar.StructSpec:
+			seen := map[string]bool{}
+			for _, f := range spec.Fields {
+				k.control.poll()
+				if seen[f.Name] {
+					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.Name)
+				}
+				if !startsUpper(f.Name) {
+					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.Name)
+				}
+				seen[f.Name] = true
+				k.resolveLocation(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
+			}
+		case *grammar.AliasSpec:
+			k.resolveNamed(td.Name, td.Diagnostic())
+		}
+	}
+}
