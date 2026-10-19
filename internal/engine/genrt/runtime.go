@@ -3793,9 +3793,13 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			fields := x.fieldList().sorted()
-			for i := len(fields) - 1; i >= 0; i-- {
-				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
+			// Only the public fields: the captures of a node without source information are not
+			// part of the tree, and an operator node's captures share its operands.
+			if x.fieldsVisible() {
+				fields := x.fieldList().sorted()
+				for i := len(fields) - 1; i >= 0; i-- {
+					push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
+				}
 			}
 			for i := len(x.children) - 1; i >= 0; i-- {
 				push(x.children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})

@@ -136,6 +136,8 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
 
 - The root is visited first. Then the elements of a node are visited in order, its
   fields in sorted name order, and elements of a nested `[]any` value in index order.
+  The fields are those that `Fields` returns: the captures of a node parsed without
+  source information are not visited.
   Scalar and nil values are visited. Other containers are leaves.
 - A shared node or list is visited once for each incoming edge. Only a cycle on
   the active traversal path is an error: `Walk` returns `*pego.CycleError`, which
