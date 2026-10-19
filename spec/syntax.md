@@ -43,7 +43,7 @@ rule file_contents = (
     (-empty_stmts decl)*
     -empty_stmts comments $$
 )
-rule empty_stmts = (";" -comments)*
+rule empty_stmts = (-comments ";" -comments)*
 rule package_entry = &(comments "package" !ident_char) package_stmt
 rule package_stmt = (
     &source_remaining comments

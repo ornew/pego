@@ -488,6 +488,9 @@ func TestSourceGrammarTrivia(t *testing.T) {
 		"rule main = \"a\rb\"; rule class = [a\rb]",
 		`rule main = "x" #atomic #repeat(-0) @meta(- 1)`,
 		`rule main = "x" @name ("y")`,
+		// A comment may sit between two statement semicolons.
+		"rule a = \"x\" ;/* x */; // after\nrule b = \"y\"",
+		"rule a = \"x\" ;/* x */;\n// lead\nrule b = \"y\"",
 	} {
 		if _, err := pego.ParseGrammar(src); err != nil {
 			t.Fatalf("reference rejects %q: %v", src, err)

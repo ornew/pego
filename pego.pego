@@ -154,7 +154,7 @@ rule file_contents File = (
   decls:(-empty_stmts d:decl)*
   -empty_stmts tc:comments $$
 ) => File{Pkg: $pkg, Decls: map($decls, (x) => x.$d), TrailingComments: $tc, Head: $head}
-rule empty_stmts = (";" -comments)*
+rule empty_stmts = (-comments ";" -comments)*
 rule package_entry PkgDecl = &(comments "package" !ident_char) p:(package_stmt #recover(skip=stmt_sync)) => $p
 rule package_stmt Pkg = (
   &lead:source_remaining cs:comments
