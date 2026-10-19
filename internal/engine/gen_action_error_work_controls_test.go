@@ -96,7 +96,7 @@ func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  p.control=newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
- long:=strings.Repeat("Kind",2048);n:=&Node{kind:kindOf(long,"")};tn:=&tnode{typ:long}
+ long:=strings.Repeat("Kind",2048);n:=&Node{kind:kindOf(long,"")};tn:=&tnode{typ:"tuple",kids:make([]any,2048)}
  for _,typed:=range []bool{false,true}{
   p:=&parser{};tp:=&tparser{parser:p};called:=0
   cases:=[]func(){

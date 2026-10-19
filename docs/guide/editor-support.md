@@ -70,7 +70,7 @@ A blank line between the comments and the definition ends the documentation.
 Hover shows the type of every rule, also the rules without a declared type:
 
 ```pego
-rule digits = [0-9]+ // hover: rule digits []Match (inferred)
+rule digits = [0-9]+ // hover: rule digits []node[string] (inferred)
 rule pair = a:digits "," b:digits => list($a, $b)
 ```
 

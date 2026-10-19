@@ -76,12 +76,14 @@ Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is not reported; the rule checks the value against its
 declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
 Without type checking, every rule value is checked against a declared Type other
-than `any`, except the `Operator` value of an operator line without an action.
+than `any`, except the tuple node of an operator line without an action.
 
 Diagnostics print the shape of a value type as `node[string]` for a string node,
-`(node[string], node[string])` for a tuple of two and `[]node[string]` for a list;
-the [node type names](types.md#node-type-names) `Match`, `Seq` and `List` that
-some diagnostics print describe the same values.
+`(node[string], node[string])` for a tuple of two and `[]node[string]` for a list.
+A node whose value is not known statically is `node`, and a tuple node with
+captures `node{k: T, ...}`. Run-time errors name a value the same way, writing
+`_` for elements they do not examine: `node[(_, _)]` for a tuple node of two
+elements, `node[[]_]` for a list node and `error` for an error value.
 
 A run-time check tests a value as the value types describe it. `node[string]`
 takes a string node; `node` takes every node; a list Type takes a list value, such as one an
@@ -116,7 +118,7 @@ types when precise checking is required.
 
 ```pego
 rule num = [0-9]+ #atomic // node[string]
-rule pair = k:num "=" v:num // a tuple node of three string nodes, with captures k and v; diagnostics print Seq{k: Match, v: Match}
+rule pair = k:num "=" v:num // a tuple node of three string nodes, with captures k and v; diagnostics print node{k: node[string], v: node[string]}
 ```
 
 The type of the accumulator of `foldl` and `foldr` is widened to the union of

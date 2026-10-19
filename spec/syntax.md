@@ -114,7 +114,7 @@ rule struct_type = (
     -"}"
 )
 
-// The names of node types other than Missing, and terminal, are not types.
+// The node type names of earlier versions, and terminal, are not types.
 rule retired_type = ("terminal" / "Match" / "Seq" / "List" / "Operator" / "Error") !ident_char
 
 // The brackets of type arguments follow the name directly.

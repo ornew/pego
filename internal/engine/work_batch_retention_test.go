@@ -85,7 +85,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 						}
 						var before []byte
 						if node != nil {
-							if node.Type() != "Seq" || len(node.children) != 3 || node.children[1].Type() != "Entry" {
+							if node.Type() != "tuple" || len(node.children) != 3 || node.children[1].Type() != "Entry" {
 								t.Fatalf("unexpected result: %s", batchRetentionJSON(t, node))
 							}
 							entry := node.children[1]

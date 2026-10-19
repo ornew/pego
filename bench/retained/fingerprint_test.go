@@ -25,7 +25,7 @@ func TestFingerprintTerminalFlag(t *testing.T) {
 	}
 	// These explicit records specify the encoding contract independently of
 	// fingerprint's node-header construction. Only Terminal differs.
-	record := `{"ID":0,"Kind":"string","Type":"Match","Rule":"","Start":0,"End":1,"Text":"x","Elems":0,"Fields":0,"Terminal":true}`
+	record := `{"ID":0,"Kind":"string","Type":"string","Rule":"","Start":0,"End":1,"Text":"x","Elems":0,"Fields":0,"Terminal":true}`
 	reference := func(header string) string {
 		h := sha256.New()
 		for _, item := range []string{fingerprintFormat, "node", header} {

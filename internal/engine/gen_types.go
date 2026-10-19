@@ -14,12 +14,12 @@ import (
 // function ParseAST that parses like Parse and converts the resulting tree into those types:
 //
 //   - a struct type T becomes a struct T with the same fields and an embedded Span (its range);
-//   - a string node (Match) becomes a TNode[string] and an error value Error;
+//   - a string node becomes a TNode[string] and an error value Error;
 //   - a union type U = A | B becomes an interface U that A, B and Error implement (and TNode, if
 //     the union has other node members);
 //   - []T becomes a slice, *T a pointer (or the nil value of an interface), and int, string and
 //     bool stay as they are;
-//   - tuple and list nodes (Seq, List, Operator) become TNode[any], whose Value is a []any of the
+//   - tuple and list nodes become TNode[any], whose Value is a []any of the
 //     elements, and node and any become any (holding the converted value, with tuple
 //     and list values as []any).
 //
@@ -314,7 +314,7 @@ var runtimeNames = map[string]bool{
 	"WalkTree": true, "WalkAction": true, "WalkContinue": true, "WalkSkip": true, "WalkStop": true,
 	"WalkVisit": true, "WalkEdge": true, "WalkEdgeKind": true, "WalkRoot": true, "WalkChild": true, "WalkField": true, "WalkListElement": true, "CycleError": true, "Cursor": true,
 	"Node": true, "NodeField": true, "Fields": true, "NodeKind": true, "KindString": true, "KindTuple": true, "KindList": true, "KindError": true, "KindStruct": true, "KindTupleValue": true, "KindListValue": true, "KindValue": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true, "PositionUnit": true,
-	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true, "TNode": true,
+	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Error": true, "TNode": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
@@ -596,7 +596,7 @@ func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *TNode[string] {
 	a.stepWork()
-	if n == nil || n.Type() != "Match" {
+	if n == nil || n.Type() != "string" {
 		return nil
 	}
 	if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
@@ -610,7 +610,7 @@ func (t *typedGen) converters(b *strings.Builder) {
 // and a []any of the converted elements of a tuple or list node.
 func (a *astConv) toNode(n *Node) *TNode[any] {
 	a.stepWork()
-	if n == nil || n.Type() == "Error" {
+	if n == nil || n.Type() == "error" {
 		return nil
 	}
 	if v, ok := a.values[n]; ok {
@@ -638,7 +638,7 @@ func (a *astConv) elems(n *Node) []any {
 
 func (a *astConv) toError(n *Node) *Error {
 	a.stepWork()
-	if n == nil || n.Type() != "Error" {
+	if n == nil || n.Type() != "error" {
 		return nil
 	}
 	if v, ok := a.values[n]; ok { return v.(*Error) }
@@ -651,7 +651,7 @@ func (a *astConv) toError(n *Node) *Error {
 
 `, span)
 	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
-	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n\tcase \"Seq\", \"List\", \"Operator\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(unboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
+	b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n\tcase \"error\":\n\t\treturn a.toError(n)\n\tcase \"tuple\", \"list\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(unboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
@@ -669,12 +669,12 @@ func (a *astConv) toError(n *Node) *Error {
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(unionTy)
 		goName := t.names[name]
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"Error\":\n\t\treturn a.toError(n)\n", goName)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", goName)
 		for _, m := range u.alts {
 			if m, ok := m.(namedTy); ok {
 				switch {
 				case m == tyMatch:
-					b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n")
+					b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n")
 				case m.kind == 's':
 					fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", m.name, t.names[m.name])
 				}

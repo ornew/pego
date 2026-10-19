@@ -23,6 +23,20 @@ var fieldCheckValues = map[string]string{
 	"q": "Box", "?": "Error", "w": "[][]Int", "p": "[]*Int", "z": "nil", "i": "int", "s": "string", "b": "bool",
 }
 
+// fieldCheckValueName names a value of fieldCheckValues as messages do, in the terms of the value
+// model: lists built by actions are list values, whose elements messages do not examine.
+func fieldCheckValueName(value string) string {
+	switch {
+	case strings.HasPrefix(value, "[]") || strings.HasPrefix(value, "empty "):
+		return "[]_"
+	case value == "Match":
+		return "node[string]"
+	case value == "Error":
+		return "error"
+	}
+	return value
+}
+
 // fieldCheckFields maps the declared types of fieldCheckGrammar's field F to the values they
 // accept. A match is a string node and a value of the text struct Int is a node of its own type,
 // lists built by actions are list values, which are not nodes, and an error value fits only a type
@@ -203,11 +217,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 						}
 					}
 				}
-				name := value
-				if strings.HasPrefix(value, "[]") || strings.HasPrefix(value, "empty ") {
-					// Lists built by actions are list values.
-					name = typeListValue
-				}
+				name := fieldCheckValueName(value)
 				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
 				switch {
 				case in[1] == '!' && accepted:
@@ -263,7 +273,7 @@ rule item Int = "i" => Int{Text: "i"}
 	if v := plain.Module().instructionSetVersion(); v != isaVersion {
 		t.Fatalf("unchecked module instruction set %d", v)
 	}
-	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use "+typeListValue+" as Int in field Dynamic of S") {
+	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use []_ as Int in field Dynamic of S") {
 		t.Fatalf("dynamic list: %s", got)
 	}
 	// The recognizer, built without type checking, checks the same fields as its program.
@@ -327,7 +337,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}
-	for _, text := range []string{"Int", "*Int", "[]*(Int | Match)", "*(Box | bool)", "[][]Int", "int | string", "Error", "node"} {
+	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "Missing", "node", "node[string] | error"} {
 		if _, err := parseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}

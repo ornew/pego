@@ -159,7 +159,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 				continue
 			}
 			if seen[goType] {
-				continue // Seq, List and Operator are all *TNode[any]
+				continue // tuple and list nodes are all *TNode[any]
 			}
 			seen[goType] = true
 			fmt.Fprintf(&methods, " case %s: return %s\n", goType, clone(alternative, "v"))

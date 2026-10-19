@@ -39,7 +39,7 @@ type Node struct {
 	box       any  // the value carried by a box
 }
 
-// Type returns the node's type name: Match, Seq, List, Operator or Error for the kinds of nodes,
+// Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
 // or the name of a type of the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
@@ -83,14 +83,13 @@ const (
 	typeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
 )
 
-var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error", typeBox, typeTupleValue, typeListValue}
+var reservedTypes = [...]string{"string", "tuple", "list", "error", typeBox, typeTupleValue, typeListValue}
 
 var (
-	kindMatch    = kindOf("Match", "")
-	kindSeq      = kindOf("Seq", "")
-	kindList     = kindOf("List", "")
-	kindOperator = kindOf("Operator", "")
-	kindError    = kindOf("Error", "")
+	kindMatch = kindOf("string", "")
+	kindSeq   = kindOf("tuple", "")
+	kindList  = kindOf("list", "")
+	kindError = kindOf("error", "")
 
 	kindBox        = kindOf(typeBox, "")
 	kindTupleValue = kindOf(typeTupleValue, "")
@@ -101,7 +100,7 @@ var (
 // an error value) rather than a struct, a box or a list or tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
-	case "Match", "Seq", "List", "Operator", "Error":
+	case "string", "tuple", "list", "error":
 		return true
 	}
 	return n.terminal
@@ -133,7 +132,7 @@ func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
 		return n.text
-	case n.kind.typeName() == "List":
+	case n.kind.typeName() == "list":
 		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
 	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
@@ -443,13 +442,13 @@ const (
 
 func (n *Node) shape() nodeShape {
 	switch n.kind.typeName() {
-	case "Match":
+	case "string":
 		return shapeString
-	case "Seq", "Operator":
+	case "tuple":
 		return shapeTuple
-	case "List":
+	case "list":
 		return shapeList
-	case "Error":
+	case "error":
 		return shapeError
 	case typeBox:
 		return shapeBox
@@ -462,6 +461,36 @@ func (n *Node) shape() nodeShape {
 		return shapeString
 	}
 	return shapeStruct
+}
+
+// valueTypeName names the type of a value of the given shape in messages, in the terms of the
+// value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
+// nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
+// values, and name for a struct.
+func valueTypeName(shape nodeShape, name string, elems int) string {
+	switch shape {
+	case shapeString:
+		return "node[string]"
+	case shapeTuple:
+		return "node[" + tupleTerm(elems) + "]"
+	case shapeList:
+		return "node[[]_]"
+	case shapeError:
+		return "error"
+	case shapeTupleValue:
+		return tupleTerm(elems)
+	case shapeListValue:
+		return "[]_"
+	}
+	return name
+}
+
+// tupleTerm is the type term of a tuple of n elements of unknown types.
+func tupleTerm(n int) string {
+	if n == 1 {
+		return "(_,)"
+	}
+	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
 }
 
 // captureLocation is where a capture of a node is: a path of tuple indexes into the node's
@@ -2123,7 +2152,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 }
 
 // attachCaptures attaches the non-nil captures as fields of the node. A node of another rule, or
-// one that is itself captured, is first wrapped in a Seq node.
+// one that is itself captured, is first wrapped in a tuple node.
 func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end int) *Node {
 	found := false
 	wrap := v == nil || !v.fresh
@@ -2579,7 +2608,10 @@ func typeName(v any) string {
 		if v == nil {
 			return "nil"
 		}
-		return v.Type()
+		if v.kind == kindBox {
+			return typeName(v.box)
+		}
+		return valueTypeName(v.shape(), v.Type(), len(v.children))
 	case int:
 		return "int"
 	case string:

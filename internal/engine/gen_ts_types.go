@@ -61,7 +61,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	var b strings.Builder
 	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
 	b.WriteString(tsTypedDeclarations)
-	open := []string{"Node", "Match", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
+	open := []string{"Node", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
 	for _, name := range t.all {
 		switch spec := g.prog.types[name].(type) {
 		case *grammar.StructSpec:
@@ -106,7 +106,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(n.name), t.recipe(n))
 	}
 	// Open values: tuple and list nodes become TNode<unknown>, and tuple and list values arrays.
-	for _, name := range []string{TypeSeq, TypeList, TypeOperator} {
+	for _, name := range []string{TypeTuple, TypeList} {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), openID)
 	}
 	for _, name := range []string{typeTupleValue, typeListValue} {
@@ -172,7 +172,7 @@ func (t *tsTypedGen) tsType(x ty) string {
 	case namedTy:
 		switch {
 		case x == tyMatch:
-			return "Match | null"
+			return "StringNode | null"
 		case x == tyError:
 			return "RecoveredError | null"
 		case x.kind == 'c':
@@ -370,7 +370,7 @@ func (t *tsTypedGen) recipe(x ty) int {
 		r += ", elems: [" + strings.Join(elems, ", ") + "]"
 	case unionTy:
 		if kind == "union" {
-			members := []string{fmt.Sprintf("[%s, %d]", tsString("Error"), t.recipe(tyError))}
+			members := []string{fmt.Sprintf("[%s, %d]", tsString(TypeError), t.recipe(tyError))}
 			for _, m := range a.alts {
 				if m, ok := m.(namedTy); ok && (m == tyMatch || m.kind == 's') {
 					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))
@@ -391,9 +391,9 @@ func (t *tsTypedGen) recipe(x ty) int {
 const tsTypedDeclarations = `export interface Span { readonly start: number; readonly end: number }
 /** A node with the value T: a string node has its text, other nodes their elements. */
 export interface TNode<T> extends Span { readonly type: string; readonly value: T }
-export interface Match extends TNode<string> { readonly type: "Match" }
+export interface StringNode extends TNode<string> { readonly type: "string" }
 export interface RecoveredError extends Span {
-  readonly type: "Error";
+  readonly type: "error";
   readonly text: string;
   readonly message: string;
 }
@@ -497,7 +497,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         control?.charge(0, recipe.elems!.length);
         return recipe.elems!.map(e => get(null, e));
       }
-      if (recipe.kind === "tnode" && (v.type === "Error" || v.type === typeTupleValue || v.type === typeListValue)) return null;
+      if (recipe.kind === "tnode" && (v.type === "error" || v.type === typeTupleValue || v.type === typeListValue)) return null;
       let reps = cache.get(v);
       if (reps === undefined) {
         reps = new Map<number, unknown>();
@@ -515,7 +515,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         out = { type: v.type, start: v.start, end: v.end, value: null };
       } else if (v.type === recipe.name) {
         const obj: ASTObject = { type: v.type, start: v.start, end: v.end };
-        if (recipe.name === "Match") obj["value"] = v.text;
+        if (recipe.name === "string") obj["value"] = v.text;
         else if (recipe.kind !== "struct") obj["text"] = v.text;
         if (recipe.kind === "error") {
           const msg = getFieldWork(v, "message", control);

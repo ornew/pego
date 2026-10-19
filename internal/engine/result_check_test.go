@@ -278,11 +278,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 				case rec != "nil":
 					t.Errorf("%q recognized: %s", in, rec)
 				}
-				name := value
-				if strings.HasPrefix(value, "[]") || strings.HasPrefix(value, "empty ") {
-					// Lists built by actions are list values.
-					name = typeListValue
-				}
+				name := fieldCheckValueName(value)
 				msg := fmt.Sprintf("cannot use %s as %s in result of rule %s", name, declared, rule)
 				switch {
 				case !resultChecked(checked, in[1]):

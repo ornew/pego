@@ -18,15 +18,18 @@ type fieldType struct {
 }
 
 const (
-	ftInt      = 'i'
-	ftString   = 's'
-	ftBool     = 'b'
-	ftNil      = 'z'
-	ftNode     = 'n'
-	ftNamed    = 'N'
-	ftList     = 'l'
-	ftOptional = 'o'
-	ftUnion    = 'u'
+	ftInt    = 'i'
+	ftString = 's'
+	ftBool   = 'b'
+	ftNil    = 'z'
+	ftNode   = 'n'
+	ftNamed  = 'N' // a struct type
+	// ftStringNode is node[string], and ftError error, the error value of recovery.
+	ftStringNode = 'S'
+	ftError      = 'E'
+	ftList       = 'l'
+	ftOptional   = 'o'
+	ftUnion      = 'u'
 	// ftTop is the element type _ or any of a list type, which every value fits.
 	ftTop = '_'
 )
@@ -51,7 +54,16 @@ func newFieldType(t ty) *fieldType {
 			return nil
 		}
 	case namedTy:
-		f = &fieldType{kind: ftNamed, name: t.name}
+		switch {
+		case t == tyMatch:
+			f = &fieldType{kind: ftStringNode}
+		case t == tyError || t == tyMissing:
+			f = &fieldType{kind: ftError}
+		case t.kind == 'c':
+			f = &fieldType{kind: ftNode}
+		default:
+			f = &fieldType{kind: ftNamed, name: t.name}
+		}
 	case listTy:
 		e := newFieldType(t.elem)
 		if e == nil {
@@ -83,8 +95,8 @@ func newFieldType(t ty) *fieldType {
 }
 
 // parseFieldType reads the text of a type as ty.String writes it, resolving names against the
-// declared types (types, the set of their names) and the reserved
-// node types. Bytecode carries field types this way.
+// declared types (types, the set of their names); node[string], node and error name the kinds of
+// node. Bytecode carries field types this way.
 func parseFieldType(text string, types map[string]bool) (*fieldType, error) {
 	r := fieldTypeReader{text: text, types: types}
 	t, err := r.union()
@@ -175,10 +187,14 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 			t = &fieldType{kind: ftNil}
 		case "node":
 			t = &fieldType{kind: ftNode}
+			if strings.HasPrefix(r.text[r.pos:], "[string]") {
+				r.pos += len("[string]")
+				t = &fieldType{kind: ftStringNode}
+			}
+		case "error", TypeMissing:
+			t = &fieldType{kind: ftError}
 		case "_", "any":
 			t = &fieldType{kind: ftTop}
-		case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
-			t = &fieldType{kind: ftNamed, name: name}
 		default:
 			if !r.types[name] {
 				return nil, fmt.Errorf("unknown type %q at %d", name, start)
@@ -313,7 +329,7 @@ func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
 		}
 	case *grammar.OperatorsRuleOperator:
 		if key.Action == nil {
-			return nil // an Operator value
+			return nil // the tuple node of an operator
 		}
 	}
 	return prog.resolveCheck(declared)
@@ -410,9 +426,9 @@ func ruleResults(rd *grammar.RuleDef) []any {
 }
 
 // fieldConforms reports whether v is a value of type t in the value model. It charges a step for
-// each list element it examines. Match is a string node, Seq, List, Operator
-// and node every node, and Error and Missing (the type error) error values; a list type takes a
-// list value, not the node of a repetition.
+// each list element it examines. node[string] is a string node, node every node, and error an
+// error value (an error or a Missing node); a list type takes a list value, not the node of a
+// repetition.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	n, isNode := v.(*Node)
 	if isNode && n == nil {
@@ -453,15 +469,11 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	switch t.kind {
 	case ftNode:
 		return valueNode
+	case ftStringNode:
+		return shape == shapeString
+	case ftError:
+		return shape == shapeError
 	case ftNamed:
-		switch t.name {
-		case TypeMatch:
-			return shape == shapeString
-		case TypeSeq, TypeList, TypeOperator:
-			return valueNode
-		case TypeError, TypeMissing:
-			return shape == shapeError
-		}
 		return shape == shapeStruct && n.Type() == t.name
 	case ftList:
 		if shape != shapeListValue {

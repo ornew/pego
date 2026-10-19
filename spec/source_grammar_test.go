@@ -346,7 +346,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 				}
 				if tc.name == "field" {
 					fs := elems(sourceField(t, sourceField(t, ds[0], "Spec"), "Fields"))
-					if len(fs) != 2 || fs[0].Type() != "Error" || sourceText(t, fs[1], "Name") != "Good" {
+					if len(fs) != 2 || fs[0].Type() != "error" || sourceText(t, fs[1], "Name") != "Good" {
 						t.Fatalf("field recovery: %v", fs)
 					}
 				}
@@ -500,7 +500,7 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
 				t.Fatalf("%v: %v", backend, err)
 			}
-			if sourceField(t, n, "Package").Type() != "Error" {
+			if sourceField(t, n, "Package").Type() != "error" {
 				t.Fatal("package error lost")
 			}
 			ds := sourceDefs(t, n)

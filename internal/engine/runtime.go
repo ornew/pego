@@ -803,7 +803,7 @@ func (p *parser) textStruct(r *rule, start int) *Node {
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are
-// not attached. If the node belongs to another rule, it is wrapped in a Seq first.
+// not attached. If the node belongs to another rule, it is wrapped in a tuple node first.
 func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *Node {
 	found := false
 	wrap := v == nil || !v.fresh

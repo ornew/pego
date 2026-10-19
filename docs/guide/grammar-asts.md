@@ -56,7 +56,7 @@ rule. Compile and generation derive matching data without rewriting the caller's
 serialization preserves the original literal value. JSON strings follow `encoding/json`'s UTF-8
 replacement behavior. String constants in actions are separate from matching literals.
 
-Match text follows the input: byte positions preserve consumed source bytes, while code-point
+The text of a string node follows the input: byte positions preserve consumed source bytes, while code-point
 positions return decoded text. For example, the same raw-invalid-byte literal can match either
 valid U+FFFD or an invalid input byte, but byte-mode `text($capture)` distinguishes their spellings.
 Rebuild generated parsers from older invalid-byte ASTs to update their embedded matching data;

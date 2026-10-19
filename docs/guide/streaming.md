@@ -149,7 +149,7 @@ The example assumes `p`, `reader` and `consume` are in scope. Repeated calls to 
 
 ## What Is Emitted, and When
 
-- **One element per iteration.** The element is the value one iteration of the repetition contributes to the `List` of
+- **One element per iteration.** The element is the value one iteration of the repetition contributes to the list node of
   an ordinary parse: a struct if the element is a rule with an action, a node of the element's value (a tuple, a list, a
   string, ...) otherwise. If the element has no value (for example `(-"a")* #stream`) your function receives a node whose
   value is the empty tuple `()`, so check `Len()` if your elements can be value-free.
@@ -157,7 +157,7 @@ The example assumes `p`, `reader` and `consume` are in scope. Repeated calls to 
   A slow callback slows the parse, and it also stops reading: nothing is read from the `io.Reader` while your function
   runs.
 - **Only the elements.** `ParseStream` returns just an `error`: there is no tree, and the elements are not collected
-  into the repetition's `List`. The values of whatever comes before or after the repetition (a header, a footer) are
+  into the repetition's list node. The values of whatever comes before or after the repetition (a header, a footer) are
   parsed and checked, but thrown away. To see a header, make it an element of the
   repetition and tell the kinds of element apart by the `Kind()` and `Type()` of the node in the callback.
 - **An element is final.** Once the callback has seen an element, the parser never goes back before it. This is why the

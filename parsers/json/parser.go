@@ -39,7 +39,7 @@ type Node struct {
 	box       any  // the value carried by a box
 }
 
-// Type returns the node's type name: Match, Seq, List, Operator or Error for the kinds of nodes,
+// Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
 // or the name of a type of the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
@@ -83,14 +83,13 @@ const (
 	typeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
 )
 
-var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error", typeBox, typeTupleValue, typeListValue}
+var reservedTypes = [...]string{"string", "tuple", "list", "error", typeBox, typeTupleValue, typeListValue}
 
 var (
-	kindMatch    = kindOf("Match", "")
-	kindSeq      = kindOf("Seq", "")
-	kindList     = kindOf("List", "")
-	kindOperator = kindOf("Operator", "")
-	kindError    = kindOf("Error", "")
+	kindMatch = kindOf("string", "")
+	kindSeq   = kindOf("tuple", "")
+	kindList  = kindOf("list", "")
+	kindError = kindOf("error", "")
 
 	kindBox        = kindOf(typeBox, "")
 	kindTupleValue = kindOf(typeTupleValue, "")
@@ -101,7 +100,7 @@ var (
 // an error value) rather than a struct, a box or a list or tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
-	case "Match", "Seq", "List", "Operator", "Error":
+	case "string", "tuple", "list", "error":
 		return true
 	}
 	return n.terminal
@@ -133,7 +132,7 @@ func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
 		return n.text
-	case n.kind.typeName() == "List":
+	case n.kind.typeName() == "list":
 		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
 	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
@@ -443,13 +442,13 @@ const (
 
 func (n *Node) shape() nodeShape {
 	switch n.kind.typeName() {
-	case "Match":
+	case "string":
 		return shapeString
-	case "Seq", "Operator":
+	case "tuple":
 		return shapeTuple
-	case "List":
+	case "list":
 		return shapeList
-	case "Error":
+	case "error":
 		return shapeError
 	case typeBox:
 		return shapeBox
@@ -462,6 +461,36 @@ func (n *Node) shape() nodeShape {
 		return shapeString
 	}
 	return shapeStruct
+}
+
+// valueTypeName names the type of a value of the given shape in messages, in the terms of the
+// value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
+// nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
+// values, and name for a struct.
+func valueTypeName(shape nodeShape, name string, elems int) string {
+	switch shape {
+	case shapeString:
+		return "node[string]"
+	case shapeTuple:
+		return "node[" + tupleTerm(elems) + "]"
+	case shapeList:
+		return "node[[]_]"
+	case shapeError:
+		return "error"
+	case shapeTupleValue:
+		return tupleTerm(elems)
+	case shapeListValue:
+		return "[]_"
+	}
+	return name
+}
+
+// tupleTerm is the type term of a tuple of n elements of unknown types.
+func tupleTerm(n int) string {
+	if n == 1 {
+		return "(_,)"
+	}
+	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
 }
 
 // captureLocation is where a capture of a node is: a path of tuple indexes into the node's
@@ -2049,7 +2078,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 }
 
 // attachCaptures attaches the non-nil captures as fields of the node. A node of another rule, or
-// one that is itself captured, is first wrapped in a Seq node.
+// one that is itself captured, is first wrapped in a tuple node.
 func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end int) *Node {
 	found := false
 	wrap := v == nil || !v.fresh
@@ -2490,7 +2519,10 @@ func typeName(v any) string {
 		if v == nil {
 			return "nil"
 		}
-		return v.Type()
+		if v.kind == kindBox {
+			return typeName(v.box)
+		}
+		return valueTypeName(v.shape(), v.Type(), len(v.children))
 	case int:
 		return "int"
 	case string:
@@ -4915,7 +4947,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
 // instead of Node trees: the value of an expression is an any holding a pointer to a struct
 // type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
-// or a *tnode: a tuple node (Seq), a list node (List), or a tuple or list value. Values other than
+// or a *tnode: a tuple node, a list node, or a tuple or list value. Values other than
 // nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
 //
@@ -5020,14 +5052,14 @@ type tval interface {
 	tsetFresh(bool)
 }
 
-func (m *tmatch) tname() string             { return "Match" }
+func (m *tmatch) tname() string             { return "string" }
 func (m *tmatch) ttext() (string, bool)     { return m.Value, true }
 func (m *tmatch) tkids() []any              { return nil }
 func (m *tmatch) tfield(string) (any, bool) { return nil, true }
 func (m *tmatch) tstruct() bool             { return false }
 func (m *tmatch) tfresh() bool              { return m.fresh }
 func (m *tmatch) tsetFresh(f bool)          { m.fresh = f }
-func (e *terror) tname() string             { return "Error" }
+func (e *terror) tname() string             { return "error" }
 func (e *terror) ttext() (string, bool)     { return e.Text, true }
 func (e *terror) tkids() []any              { return nil }
 func (e *terror) tstruct() bool             { return false }
@@ -5040,7 +5072,7 @@ func (e *terror) tfield(name string) (any, bool) {
 	return nil, true
 }
 
-// tnode is a tuple node (Seq), a list node (List), a tuple value (typeTupleValue) or a list value
+// tnode is a tuple node, a list node, a tuple value (typeTupleValue) or a list value
 // (typeListValue) of the typed runtime. A tuple node's fields are its captures.
 type tnode struct {
 	Span
@@ -5080,6 +5112,28 @@ func (n *tnode) set(name string, v any) {
 	n.fields = append(n.fields, tfield{name, v})
 }
 
+// tshape is Node.shape for the values of the typed runtime that are tval.
+func tshape(n tval) nodeShape {
+	switch x := n.(type) {
+	case *terror:
+		return shapeError
+	case *tnode:
+		switch x.typ {
+		case "list":
+			return shapeList
+		case typeTupleValue:
+			return shapeTupleValue
+		case typeListValue:
+			return shapeListValue
+		}
+		return shapeTuple
+	}
+	if n.tstruct() {
+		return shapeStruct
+	}
+	return shapeString
+}
+
 // asTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
 // untyped nil.
 func asTval(v any) tval {
@@ -5091,7 +5145,7 @@ func asTval(v any) tval {
 // or an error value) rather than a struct or a list or tuple value; see Node.isNode.
 func tisNode(n tval) bool {
 	if t, ok := n.(*tnode); ok {
-		return t.typ == "Seq" || t.typ == "List" || t.typ == "Operator"
+		return t.typ == "tuple" || t.typ == "list"
 	}
 	return !n.tstruct()
 }
@@ -5104,7 +5158,7 @@ func (p *tparser) nodeValue(n tval) any {
 	}
 	s, e := n.tspan()
 	typ := typeTupleValue
-	if n.tname() == "List" {
+	if n.tname() == "list" {
 		typ = typeListValue
 	}
 	v := p.newNode(typ, s, e, n.tkids())
@@ -5170,7 +5224,7 @@ func tback(v any) any {
 		case string:
 			return &tmatch{TNode: TNode[string]{x.Span, y}}
 		case []any:
-			return &tnode{Span: x.Span, typ: "Seq", kids: tbackAll(y)}
+			return &tnode{Span: x.Span, typ: "tuple", kids: tbackAll(y)}
 		}
 		return nil
 	case []any:
@@ -5190,7 +5244,7 @@ func tkid(kids []any, i int) any {
 // tnodeValue returns the Value of a tuple or list node as a tuple or list value.
 func tnodeValue(n *tnode) any {
 	typ := typeTupleValue
-	if n.typ == "List" {
+	if n.typ == "list" {
 		typ = typeListValue
 	}
 	return &tnode{Span: n.Span, typ: typ, kids: n.kids}
@@ -5820,7 +5874,7 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 }
 
 // attachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
-// node), first wrapping it in a Seq node unless it is a fresh one that is not itself captured.
+// node), first wrapping it in a tuple node unless it is a fresh one that is not itself captured.
 func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end int) any {
 	n := asTval(v)
 	found := false
@@ -5841,7 +5895,7 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 	if wrap || !isNode {
 		kids := p.newVals(1)
 		kids[0] = v
-		t = p.newNode("Seq", start, end, kids)
+		t = p.newNode("tuple", start, end, kids)
 	}
 	if t.fields == nil {
 		t.fields = p.tfields(len(names))
@@ -5867,7 +5921,7 @@ func (p *tparser) shapeTuple(s shaper, v any, start int) any {
 		kids = p.newVals(1)
 		kids[0] = v
 	}
-	return p.newNode("Seq", start, p.pos, kids)
+	return p.newNode("tuple", start, p.pos, kids)
 }
 
 // tone returns the one element of the result v.
@@ -5899,7 +5953,7 @@ func (p *tparser) shapeSingle(s shaper, v any, start int) (any, bool) {
 func (p *tparser) shapeCapture(s shaper, v any, start int) any {
 	v, ok := p.shapeSingle(s, v, start)
 	if !ok {
-		v = p.newNode("Seq", start, p.pos, nil)
+		v = p.newNode("tuple", start, p.pos, nil)
 	}
 	return v
 }
@@ -6140,7 +6194,7 @@ func ttypeName(v any) string {
 		return "bool"
 	}
 	if t, ok := v.(tval); ok {
-		return t.tname()
+		return valueTypeName(tshape(t), t.tname(), len(t.tkids()))
 	}
 	return fmt.Sprintf("%T", v)
 }
@@ -6742,7 +6796,7 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 	// captures.
 	opv, ok := p.shapeSingle(l.value, a.v, a.start)
 	if !ok {
-		opv = p.newNode("Seq", a.start, a.end, nil)
+		opv = p.newNode("tuple", a.start, a.end, nil)
 	}
 	if l.value.mode == singleTuple && len(l.scope) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
@@ -6777,7 +6831,7 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 		fields = []tfield{{"lhs", lhs}, {"op", opv}, {"rhs", rhs}}
 	}
-	n := p.newNode("Seq", start, end, kids)
+	n := p.newNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
 	return n
@@ -16502,7 +16556,7 @@ func (p *tparser) i3() (any, bool) {
 			p.recovered = p.recovered[:x9]
 			break
 		}
-		v14 = p.newNodeOrdinary("List", x5, p.pos, p.kids(x6))
+		v14 = p.newNodeOrdinary("list", x5, p.pos, p.kids(x6))
 		k4 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -16602,7 +16656,7 @@ func (p *tparser) i3() (any, bool) {
 		p.recovered = p.recovered[:x9]
 		break
 	}
-	v14 = p.newNode("List", x5, p.pos, p.kids(x6))
+	v14 = p.newNode("list", x5, p.pos, p.kids(x6))
 	k4 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -17059,7 +17113,7 @@ func (p *tparser) i6() (any, bool) {
 			p.recovered = p.recovered[:x9]
 			break
 		}
-		v14 = p.newNodeOrdinary("List", x5, p.pos, p.kids(x6))
+		v14 = p.newNodeOrdinary("list", x5, p.pos, p.kids(x6))
 		k4 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -17159,7 +17213,7 @@ func (p *tparser) i6() (any, bool) {
 		p.recovered = p.recovered[:x9]
 		break
 	}
-	v14 = p.newNode("List", x5, p.pos, p.kids(x6))
+	v14 = p.newNode("list", x5, p.pos, p.kids(x6))
 	k4 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -17608,7 +17662,7 @@ func (p *tparser) s9() (any, bool) {
 			goto L16_ordinary
 		}
 		x18 = append(x18, v24)
-		v25 = p.newNodeOrdinary("Seq", x17, p.pos, x18)
+		v25 = p.newNodeOrdinary("tuple", x17, p.pos, x18)
 		v26, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v25, x5)
 		v7 = v26
 		goto L8_ordinary
@@ -17619,7 +17673,7 @@ func (p *tparser) s9() (any, bool) {
 		goto fail_ordinary
 	L8_ordinary:
 		x2 = append(x2, v7)
-		v27 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v27 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -17749,7 +17803,7 @@ L11:
 		goto L16
 	}
 	x18 = append(x18, v24)
-	v25 = p.newNode("Seq", x17, p.pos, x18)
+	v25 = p.newNode("tuple", x17, p.pos, x18)
 	v26, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v25, x5)
 	v7 = v26
 	goto L8
@@ -17760,7 +17814,7 @@ L15:
 	goto fail
 L8:
 	x2 = append(x2, v7)
-	v27 = p.newNode("Seq", x1, p.pos, x2)
+	v27 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -18121,9 +18175,9 @@ func (p *tparser) s12() (any, bool) {
 			p.recovered = p.recovered[:x21]
 			break
 		}
-		v26 = p.newNodeOrdinary("List", x17, p.pos, p.kids(x18))
+		v26 = p.newNodeOrdinary("list", x17, p.pos, p.kids(x18))
 		x14 = append(x14, v26)
-		v27 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
+		v27 = p.newNodeOrdinary("tuple", x13, p.pos, x14)
 		v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1)
 		v3 = v28
 		goto L4_ordinary
@@ -18262,9 +18316,9 @@ L7:
 		p.recovered = p.recovered[:x21]
 		break
 	}
-	v26 = p.newNode("List", x17, p.pos, p.kids(x18))
+	v26 = p.newNode("list", x17, p.pos, p.kids(x18))
 	x14 = append(x14, v26)
-	v27 = p.newNode("Seq", x13, p.pos, x14)
+	v27 = p.newNode("tuple", x13, p.pos, x14)
 	v28, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v27, x1)
 	v3 = v28
 	goto L4
@@ -18366,9 +18420,9 @@ func (p *tparser) s13() (any, bool) {
 			p.dropKids(x6)
 			goto fail_ordinary
 		}
-		v14 = p.newNodeOrdinary("List", x5, p.pos, p.kids(x6))
+		v14 = p.newNodeOrdinary("list", x5, p.pos, p.kids(x6))
 		x2 = append(x2, v14)
-		v15 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v15 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -18458,9 +18512,9 @@ func (p *tparser) s13() (any, bool) {
 		p.dropKids(x6)
 		goto fail
 	}
-	v14 = p.newNode("List", x5, p.pos, p.kids(x6))
+	v14 = p.newNode("list", x5, p.pos, p.kids(x6))
 	x2 = append(x2, v14)
-	v15 = p.newNode("Seq", x1, p.pos, x2)
+	v15 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v15, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -18588,9 +18642,9 @@ func (p *tparser) s14() (any, bool) {
 			p.dropKids(x13)
 			goto fail_ordinary
 		}
-		v21 = p.newNodeOrdinary("List", x12, p.pos, p.kids(x13))
+		v21 = p.newNodeOrdinary("list", x12, p.pos, p.kids(x13))
 		x2 = append(x2, v21)
-		v22 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v22 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v22, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -18715,9 +18769,9 @@ L9:
 		p.dropKids(x13)
 		goto fail
 	}
-	v21 = p.newNode("List", x12, p.pos, p.kids(x13))
+	v21 = p.newNode("list", x12, p.pos, p.kids(x13))
 	x2 = append(x2, v21)
-	v22 = p.newNode("Seq", x1, p.pos, x2)
+	v22 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v22, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -18980,7 +19034,7 @@ func (p *tparser) s17() (any, bool) {
 			p.recovered = p.recovered[:x5]
 			break
 		}
-		v10 = p.newNodeOrdinary("List", x1, p.pos, p.kids(x2))
+		v10 = p.newNodeOrdinary("list", x1, p.pos, p.kids(x2))
 		v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v10, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -19043,7 +19097,7 @@ func (p *tparser) s17() (any, bool) {
 		p.recovered = p.recovered[:x5]
 		break
 	}
-	v10 = p.newNode("List", x1, p.pos, p.kids(x2))
+	v10 = p.newNode("list", x1, p.pos, p.kids(x2))
 	v = p.scopeValue(shaper{elems: false, k: 1, mode: 1, tuple: false}, v10, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)

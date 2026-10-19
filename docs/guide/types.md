@@ -73,7 +73,7 @@ Use the field in other actions as `$ident.Text`, and in Go as `Field("Text")` (o
 
 ## Optional and List Fields
 
-A field type can be `*T` (a `T` or `nil`) or `[]T` (a `List` whose elements are `T`). Both are checked at compile time:
+A field type can be `*T` (a `T` or `nil`) or `[]T` (a list whose elements are `T`). Both are checked at compile time:
 a value that may be `nil` cannot go into a plain `T` field.
 
 ```pego
@@ -142,7 +142,7 @@ pego parse -g field-type.pego -s pair -i 'a=1'
 ```
 
 ```text
-pego: field-type.pego:3:53: cannot use Match as int in field Value of Pair
+pego: field-type.pego:3:53: cannot use node[string] as int in field Value of Pair
 ```
 
 The fix is to declare the field `node`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.

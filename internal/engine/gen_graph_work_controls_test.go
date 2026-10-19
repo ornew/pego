@@ -81,7 +81,7 @@ func graphKids()([]*Node,[]any){
  return nodes,values
 }
 func TestGraphFields(t *testing.T){
- nodes,_:=graphKids();fs:=make(Fields,300);tn:=&tnode{typ:"Seq",fields:make([]tfield,300)}
+ nodes,_:=graphKids();fs:=make(Fields,300);tn:=&tnode{typ:"tuple",fields:make([]tfield,300)}
  for i:=range fs{name:=fmt.Sprintf("field%d",i);fs[i]=NodeField{name,i};tn.fields[i]=tfield{name,i}}
  for _,typed:=range []bool{false,true}{
   p:=graphParser(32);tp:=&tparser{parser:p};node:=&Node{fields:fs}
@@ -146,10 +146,10 @@ func TestGraphFoldOrderAndBudget(t *testing.T){
  for _,typed:=range []bool{false,true}{for _,right:=range []bool{false,true}{
   p:=graphParser(32);tp:=&tparser{parser:p};visits:=0
   f:=func(acc,item any)any{visits++;return item}
-  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}})
+  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"list",kids:values},f)}else{(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}})
   if !reference && visits!=32{t.Fatal("fold advanced past budget",visits)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});visits=0
-  var got any;if typed{got=(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"List",kids:values},f)}else{got=(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}
+  var got any;if typed{got=(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"list",kids:values},f)}else{got=(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}
   index:=299;if right{index=0};want:=any(nodes[index]);if typed{want=values[index]};if visits!=300 || got!=want{t.Fatal("fold order changed",visits)}
  }}
 }

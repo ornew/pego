@@ -39,7 +39,7 @@ type Node struct {
 	box       any  // the value carried by a box
 }
 
-// Type returns the node's type name: Match, Seq, List, Operator or Error for the kinds of nodes,
+// Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
 // or the name of a type of the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
@@ -83,14 +83,13 @@ const (
 	typeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
 )
 
-var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error", typeBox, typeTupleValue, typeListValue}
+var reservedTypes = [...]string{"string", "tuple", "list", "error", typeBox, typeTupleValue, typeListValue}
 
 var (
-	kindMatch    = kindOf("Match", "")
-	kindSeq      = kindOf("Seq", "")
-	kindList     = kindOf("List", "")
-	kindOperator = kindOf("Operator", "")
-	kindError    = kindOf("Error", "")
+	kindMatch = kindOf("string", "")
+	kindSeq   = kindOf("tuple", "")
+	kindList  = kindOf("list", "")
+	kindError = kindOf("error", "")
 
 	kindBox        = kindOf(typeBox, "")
 	kindTupleValue = kindOf(typeTupleValue, "")
@@ -101,7 +100,7 @@ var (
 // an error value) rather than a struct, a box or a list or tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
-	case "Match", "Seq", "List", "Operator", "Error":
+	case "string", "tuple", "list", "error":
 		return true
 	}
 	return n.terminal
@@ -133,7 +132,7 @@ func (p *parser) nodeValue(n *Node) any {
 	switch {
 	case n.terminal:
 		return n.text
-	case n.kind.typeName() == "List":
+	case n.kind.typeName() == "list":
 		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
 	}
 	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
@@ -443,13 +442,13 @@ const (
 
 func (n *Node) shape() nodeShape {
 	switch n.kind.typeName() {
-	case "Match":
+	case "string":
 		return shapeString
-	case "Seq", "Operator":
+	case "tuple":
 		return shapeTuple
-	case "List":
+	case "list":
 		return shapeList
-	case "Error":
+	case "error":
 		return shapeError
 	case typeBox:
 		return shapeBox
@@ -462,6 +461,36 @@ func (n *Node) shape() nodeShape {
 		return shapeString
 	}
 	return shapeStruct
+}
+
+// valueTypeName names the type of a value of the given shape in messages, in the terms of the
+// value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
+// nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
+// values, and name for a struct.
+func valueTypeName(shape nodeShape, name string, elems int) string {
+	switch shape {
+	case shapeString:
+		return "node[string]"
+	case shapeTuple:
+		return "node[" + tupleTerm(elems) + "]"
+	case shapeList:
+		return "node[[]_]"
+	case shapeError:
+		return "error"
+	case shapeTupleValue:
+		return tupleTerm(elems)
+	case shapeListValue:
+		return "[]_"
+	}
+	return name
+}
+
+// tupleTerm is the type term of a tuple of n elements of unknown types.
+func tupleTerm(n int) string {
+	if n == 1 {
+		return "(_,)"
+	}
+	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
 }
 
 // captureLocation is where a capture of a node is: a path of tuple indexes into the node's
@@ -2049,7 +2078,7 @@ func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
 }
 
 // attachCaptures attaches the non-nil captures as fields of the node. A node of another rule, or
-// one that is itself captured, is first wrapped in a Seq node.
+// one that is itself captured, is first wrapped in a tuple node.
 func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end int) *Node {
 	found := false
 	wrap := v == nil || !v.fresh
@@ -2490,7 +2519,10 @@ func typeName(v any) string {
 		if v == nil {
 			return "nil"
 		}
-		return v.Type()
+		if v.kind == kindBox {
+			return typeName(v.box)
+		}
+		return valueTypeName(v.shape(), v.Type(), len(v.children))
 	case int:
 		return "int"
 	case string:
@@ -4915,7 +4947,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
 // instead of Node trees: the value of an expression is an any holding a pointer to a struct
 // type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
-// or a *tnode: a tuple node (Seq), a list node (List), or a tuple or list value. Values other than
+// or a *tnode: a tuple node, a list node, or a tuple or list value. Values other than
 // nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
 //
@@ -5020,14 +5052,14 @@ type tval interface {
 	tsetFresh(bool)
 }
 
-func (m *tmatch) tname() string             { return "Match" }
+func (m *tmatch) tname() string             { return "string" }
 func (m *tmatch) ttext() (string, bool)     { return m.Value, true }
 func (m *tmatch) tkids() []any              { return nil }
 func (m *tmatch) tfield(string) (any, bool) { return nil, true }
 func (m *tmatch) tstruct() bool             { return false }
 func (m *tmatch) tfresh() bool              { return m.fresh }
 func (m *tmatch) tsetFresh(f bool)          { m.fresh = f }
-func (e *terror) tname() string             { return "Error" }
+func (e *terror) tname() string             { return "error" }
 func (e *terror) ttext() (string, bool)     { return e.Text, true }
 func (e *terror) tkids() []any              { return nil }
 func (e *terror) tstruct() bool             { return false }
@@ -5040,7 +5072,7 @@ func (e *terror) tfield(name string) (any, bool) {
 	return nil, true
 }
 
-// tnode is a tuple node (Seq), a list node (List), a tuple value (typeTupleValue) or a list value
+// tnode is a tuple node, a list node, a tuple value (typeTupleValue) or a list value
 // (typeListValue) of the typed runtime. A tuple node's fields are its captures.
 type tnode struct {
 	Span
@@ -5080,6 +5112,28 @@ func (n *tnode) set(name string, v any) {
 	n.fields = append(n.fields, tfield{name, v})
 }
 
+// tshape is Node.shape for the values of the typed runtime that are tval.
+func tshape(n tval) nodeShape {
+	switch x := n.(type) {
+	case *terror:
+		return shapeError
+	case *tnode:
+		switch x.typ {
+		case "list":
+			return shapeList
+		case typeTupleValue:
+			return shapeTupleValue
+		case typeListValue:
+			return shapeListValue
+		}
+		return shapeTuple
+	}
+	if n.tstruct() {
+		return shapeStruct
+	}
+	return shapeString
+}
+
 // asTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
 // untyped nil.
 func asTval(v any) tval {
@@ -5091,7 +5145,7 @@ func asTval(v any) tval {
 // or an error value) rather than a struct or a list or tuple value; see Node.isNode.
 func tisNode(n tval) bool {
 	if t, ok := n.(*tnode); ok {
-		return t.typ == "Seq" || t.typ == "List" || t.typ == "Operator"
+		return t.typ == "tuple" || t.typ == "list"
 	}
 	return !n.tstruct()
 }
@@ -5104,7 +5158,7 @@ func (p *tparser) nodeValue(n tval) any {
 	}
 	s, e := n.tspan()
 	typ := typeTupleValue
-	if n.tname() == "List" {
+	if n.tname() == "list" {
 		typ = typeListValue
 	}
 	v := p.newNode(typ, s, e, n.tkids())
@@ -5170,7 +5224,7 @@ func tback(v any) any {
 		case string:
 			return &tmatch{TNode: TNode[string]{x.Span, y}}
 		case []any:
-			return &tnode{Span: x.Span, typ: "Seq", kids: tbackAll(y)}
+			return &tnode{Span: x.Span, typ: "tuple", kids: tbackAll(y)}
 		}
 		return nil
 	case []any:
@@ -5190,7 +5244,7 @@ func tkid(kids []any, i int) any {
 // tnodeValue returns the Value of a tuple or list node as a tuple or list value.
 func tnodeValue(n *tnode) any {
 	typ := typeTupleValue
-	if n.typ == "List" {
+	if n.typ == "list" {
 		typ = typeListValue
 	}
 	return &tnode{Span: n.Span, typ: typ, kids: n.kids}
@@ -5820,7 +5874,7 @@ func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
 }
 
 // attachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
-// node), first wrapping it in a Seq node unless it is a fresh one that is not itself captured.
+// node), first wrapping it in a tuple node unless it is a fresh one that is not itself captured.
 func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end int) any {
 	n := asTval(v)
 	found := false
@@ -5841,7 +5895,7 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 	if wrap || !isNode {
 		kids := p.newVals(1)
 		kids[0] = v
-		t = p.newNode("Seq", start, end, kids)
+		t = p.newNode("tuple", start, end, kids)
 	}
 	if t.fields == nil {
 		t.fields = p.tfields(len(names))
@@ -5867,7 +5921,7 @@ func (p *tparser) shapeTuple(s shaper, v any, start int) any {
 		kids = p.newVals(1)
 		kids[0] = v
 	}
-	return p.newNode("Seq", start, p.pos, kids)
+	return p.newNode("tuple", start, p.pos, kids)
 }
 
 // tone returns the one element of the result v.
@@ -5899,7 +5953,7 @@ func (p *tparser) shapeSingle(s shaper, v any, start int) (any, bool) {
 func (p *tparser) shapeCapture(s shaper, v any, start int) any {
 	v, ok := p.shapeSingle(s, v, start)
 	if !ok {
-		v = p.newNode("Seq", start, p.pos, nil)
+		v = p.newNode("tuple", start, p.pos, nil)
 	}
 	return v
 }
@@ -6140,7 +6194,7 @@ func ttypeName(v any) string {
 		return "bool"
 	}
 	if t, ok := v.(tval); ok {
-		return t.tname()
+		return valueTypeName(tshape(t), t.tname(), len(t.tkids()))
 	}
 	return fmt.Sprintf("%T", v)
 }
@@ -6742,7 +6796,7 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 	// captures.
 	opv, ok := p.shapeSingle(l.value, a.v, a.start)
 	if !ok {
-		opv = p.newNode("Seq", a.start, a.end, nil)
+		opv = p.newNode("tuple", a.start, a.end, nil)
 	}
 	if l.value.mode == singleTuple && len(l.scope) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
@@ -6777,7 +6831,7 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 		fields = []tfield{{"lhs", lhs}, {"op", opv}, {"rhs", rhs}}
 	}
-	n := p.newNode("Seq", start, end, kids)
+	n := p.newNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
 	return n
@@ -51118,7 +51172,7 @@ func (p *tparser) e303() (any, bool) {
 		}
 		v10 = p.newMatchOrdinary(x9, p.pos, ":", true)
 		x2 = append(x2, v10)
-		v11 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v11 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -51179,7 +51233,7 @@ func (p *tparser) e303() (any, bool) {
 	}
 	v10 = p.newMatch(x9, p.pos, ":", true)
 	x2 = append(x2, v10)
-	v11 = p.newNode("Seq", x1, p.pos, x2)
+	v11 = p.newNode("tuple", x1, p.pos, x2)
 	return v11, true
 fail:
 	return nil, false
@@ -52134,7 +52188,7 @@ func (p *tparser) i3() (any, bool) {
 			if _, ok = p.s49(); !ok {
 				goto L9_ordinary
 			}
-			v15 = p.newNodeOrdinary("Seq", x10, p.pos, x11)
+			v15 = p.newNodeOrdinary("tuple", x10, p.pos, x11)
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x6)
 			v17 = p.attachCaptures(v16, scope266, []any{k8}, x6, p.pos)
 			x5++
@@ -52152,7 +52206,7 @@ func (p *tparser) i3() (any, bool) {
 			p.dropKids(x4)
 			goto fail_ordinary
 		}
-		v18 = p.newNodeOrdinary("List", x3, p.pos, p.kids(x4))
+		v18 = p.newNodeOrdinary("list", x3, p.pos, p.kids(x4))
 		k1 = v18
 
 		x20 = p.pos
@@ -52250,7 +52304,7 @@ func (p *tparser) i3() (any, bool) {
 		if _, ok = p.s49(); !ok {
 			goto L9
 		}
-		v15 = p.newNode("Seq", x10, p.pos, x11)
+		v15 = p.newNode("tuple", x10, p.pos, x11)
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x6)
 		v17 = p.attachCaptures(v16, scope266, []any{k8}, x6, p.pos)
 		x5++
@@ -52268,7 +52322,7 @@ func (p *tparser) i3() (any, bool) {
 		p.dropKids(x4)
 		goto fail
 	}
-	v18 = p.newNode("List", x3, p.pos, p.kids(x4))
+	v18 = p.newNode("list", x3, p.pos, p.kids(x4))
 	k1 = v18
 	p.stepWork()
 	x20 = p.pos
@@ -52388,7 +52442,7 @@ func (p *tparser) i4() (any, bool) {
 			if _, ok = p.s49(); !ok {
 				goto L9_ordinary
 			}
-			v15 = p.newNodeOrdinary("Seq", x10, p.pos, x11)
+			v15 = p.newNodeOrdinary("tuple", x10, p.pos, x11)
 			v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x6)
 			v17 = p.attachCaptures(v16, scope271, []any{k8}, x6, p.pos)
 			x5++
@@ -52406,7 +52460,7 @@ func (p *tparser) i4() (any, bool) {
 			p.dropKids(x4)
 			goto fail_ordinary
 		}
-		v18 = p.newNodeOrdinary("List", x3, p.pos, p.kids(x4))
+		v18 = p.newNodeOrdinary("list", x3, p.pos, p.kids(x4))
 		k1 = v18
 
 		x20 = p.pos
@@ -52504,7 +52558,7 @@ func (p *tparser) i4() (any, bool) {
 		if _, ok = p.s49(); !ok {
 			goto L9
 		}
-		v15 = p.newNode("Seq", x10, p.pos, x11)
+		v15 = p.newNode("tuple", x10, p.pos, x11)
 		v16 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v15, x6)
 		v17 = p.attachCaptures(v16, scope271, []any{k8}, x6, p.pos)
 		x5++
@@ -52522,7 +52576,7 @@ func (p *tparser) i4() (any, bool) {
 		p.dropKids(x4)
 		goto fail
 	}
-	v18 = p.newNode("List", x3, p.pos, p.kids(x4))
+	v18 = p.newNode("list", x3, p.pos, p.kids(x4))
 	k1 = v18
 	p.stepWork()
 	x20 = p.pos
@@ -52659,7 +52713,7 @@ func (p *tparser) e328() (any, bool) {
 		}
 		p.setCaptureOrdinary(1, v15)
 		x2 = append(x2, v15)
-		v16 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v16 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		return v16, true
 	fail_ordinary:
 		return nil, false
@@ -52734,7 +52788,7 @@ L10:
 	}
 	p.setCapture(1, v15)
 	x2 = append(x2, v15)
-	v16 = p.newNode("Seq", x1, p.pos, x2)
+	v16 = p.newNode("tuple", x1, p.pos, x2)
 	return v16, true
 fail:
 	return nil, false
@@ -52841,7 +52895,7 @@ func (p *tparser) e332() (any, bool) {
 		}
 		v20 = p.newMatchOrdinary(x19, p.pos, ")", true)
 		x2 = append(x2, v20)
-		v21 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v21 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		return v21, true
 	fail_ordinary:
 		return nil, false
@@ -52945,7 +52999,7 @@ L16:
 	}
 	v20 = p.newMatch(x19, p.pos, ")", true)
 	x2 = append(x2, v20)
-	v21 = p.newNode("Seq", x1, p.pos, x2)
+	v21 = p.newNode("tuple", x1, p.pos, x2)
 	return v21, true
 fail:
 	return nil, false
@@ -53040,7 +53094,7 @@ func (p *tparser) e336() (any, bool) {
 		}
 		v18 = p.newMatchOrdinary(x17, p.pos, "]", true)
 		x2 = append(x2, v18)
-		v19 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v19 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		return v19, true
 	fail_ordinary:
 		return nil, false
@@ -53132,7 +53186,7 @@ L10:
 	}
 	v18 = p.newMatch(x17, p.pos, "]", true)
 	x2 = append(x2, v18)
-	v19 = p.newNode("Seq", x1, p.pos, x2)
+	v19 = p.newNode("tuple", x1, p.pos, x2)
 	return v19, true
 fail:
 	return nil, false
@@ -55709,7 +55763,7 @@ func (p *tparser) i13() (any, bool) {
 			}
 			k11 = v16
 			x14 = append(x14, v16)
-			v17 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
+			v17 = p.newNodeOrdinary("tuple", x13, p.pos, x14)
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
 			v19 = p.attachCaptures(v18, scope280, []any{k11}, x9, p.pos)
 			x8++
@@ -55723,7 +55777,7 @@ func (p *tparser) i13() (any, bool) {
 			p.recovered = p.recovered[:x10]
 			break
 		}
-		v20 = p.newNodeOrdinary("List", x6, p.pos, p.kids(x7))
+		v20 = p.newNodeOrdinary("list", x6, p.pos, p.kids(x7))
 		k4 = v20
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -55826,7 +55880,7 @@ func (p *tparser) i13() (any, bool) {
 		}
 		k11 = v16
 		x14 = append(x14, v16)
-		v17 = p.newNode("Seq", x13, p.pos, x14)
+		v17 = p.newNode("tuple", x13, p.pos, x14)
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
 		v19 = p.attachCaptures(v18, scope280, []any{k11}, x9, p.pos)
 		x8++
@@ -55840,7 +55894,7 @@ func (p *tparser) i13() (any, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	v20 = p.newNode("List", x6, p.pos, p.kids(x7))
+	v20 = p.newNode("list", x6, p.pos, p.kids(x7))
 	k4 = v20
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -56174,7 +56228,7 @@ func (p *tparser) i15() (any, bool) {
 			}
 			k11 = v16
 			x14 = append(x14, v16)
-			v17 = p.newNodeOrdinary("Seq", x13, p.pos, x14)
+			v17 = p.newNodeOrdinary("tuple", x13, p.pos, x14)
 			v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
 			v19 = p.attachCaptures(v18, scope283, []any{k11}, x9, p.pos)
 			x8++
@@ -56188,7 +56242,7 @@ func (p *tparser) i15() (any, bool) {
 			p.recovered = p.recovered[:x10]
 			break
 		}
-		v20 = p.newNodeOrdinary("List", x6, p.pos, p.kids(x7))
+		v20 = p.newNodeOrdinary("list", x6, p.pos, p.kids(x7))
 		k4 = v20
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -56291,7 +56345,7 @@ func (p *tparser) i15() (any, bool) {
 		}
 		k11 = v16
 		x14 = append(x14, v16)
-		v17 = p.newNode("Seq", x13, p.pos, x14)
+		v17 = p.newNode("tuple", x13, p.pos, x14)
 		v18 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v17, x9)
 		v19 = p.attachCaptures(v18, scope283, []any{k11}, x9, p.pos)
 		x8++
@@ -56305,7 +56359,7 @@ func (p *tparser) i15() (any, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	v20 = p.newNode("List", x6, p.pos, p.kids(x7))
+	v20 = p.newNode("list", x6, p.pos, p.kids(x7))
 	k4 = v20
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -57035,7 +57089,7 @@ func (p *tparser) i19() (any, bool) {
 			p.recovered = p.recovered[:x9]
 			break
 		}
-		v14 = p.newNodeOrdinary("List", x5, p.pos, p.kids(x6))
+		v14 = p.newNodeOrdinary("list", x5, p.pos, p.kids(x6))
 		k4 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -57135,7 +57189,7 @@ func (p *tparser) i19() (any, bool) {
 		p.recovered = p.recovered[:x9]
 		break
 	}
-	v14 = p.newNode("List", x5, p.pos, p.kids(x6))
+	v14 = p.newNode("list", x5, p.pos, p.kids(x6))
 	k4 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -58542,7 +58596,7 @@ func (p *tparser) i25() (any, bool) {
 			p.recovered = p.recovered[:x9]
 			break
 		}
-		v14 = p.newNodeOrdinary("List", x5, p.pos, p.kids(x6))
+		v14 = p.newNodeOrdinary("list", x5, p.pos, p.kids(x6))
 		k4 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		w = p.where
@@ -58642,7 +58696,7 @@ func (p *tparser) i25() (any, bool) {
 		p.recovered = p.recovered[:x9]
 		break
 	}
-	v14 = p.newNode("List", x5, p.pos, p.kids(x6))
+	v14 = p.newNode("list", x5, p.pos, p.kids(x6))
 	k4 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	w = p.where
@@ -59780,7 +59834,7 @@ func (p *tparser) v32() (any, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v5)
-		v6 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v6 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v6, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -59829,7 +59883,7 @@ func (p *tparser) v32() (any, bool) {
 		goto fail
 	}
 	x2 = append(x2, v5)
-	v6 = p.newNode("Seq", x1, p.pos, x2)
+	v6 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v6, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -59880,7 +59934,7 @@ func (p *tparser) i32() (any, bool) {
 			goto fail_ordinary
 		}
 		x2 = append(x2, v5)
-		v6 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v6 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v6, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -59926,7 +59980,7 @@ func (p *tparser) i32() (any, bool) {
 		goto fail
 	}
 	x2 = append(x2, v5)
-	v6 = p.newNode("Seq", x1, p.pos, x2)
+	v6 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v6, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -60837,9 +60891,9 @@ func (p *tparser) s34() (any, bool) {
 			p.dropKids(x13)
 			goto fail_ordinary
 		}
-		v21 = p.newNodeOrdinary("List", x12, p.pos, p.kids(x13))
+		v21 = p.newNodeOrdinary("list", x12, p.pos, p.kids(x13))
 		x2 = append(x2, v21)
-		v22 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v22 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v22, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -60964,9 +61018,9 @@ L9:
 		p.dropKids(x13)
 		goto fail
 	}
-	v21 = p.newNode("List", x12, p.pos, p.kids(x13))
+	v21 = p.newNode("list", x12, p.pos, p.kids(x13))
 	x2 = append(x2, v21)
-	v22 = p.newNode("Seq", x1, p.pos, x2)
+	v22 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v22, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -62549,7 +62603,7 @@ func (p *tparser) s39() (any, bool) {
 			p.pos += size
 			v25 = p.newMatchOrdinary(x24, p.pos, p.text(x24, p.pos), true)
 			x20 = append(x20, v25)
-			v26 = p.newNodeOrdinary("Seq", x19, p.pos, x20)
+			v26 = p.newNodeOrdinary("tuple", x19, p.pos, x20)
 			v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x16)
 			x15++
 			p.pushKid(v27)
@@ -62562,7 +62616,7 @@ func (p *tparser) s39() (any, bool) {
 			p.recovered = p.recovered[:x17]
 			break
 		}
-		v28 = p.newNodeOrdinary("List", x13, p.pos, p.kids(x14))
+		v28 = p.newNodeOrdinary("list", x13, p.pos, p.kids(x14))
 		x10 = append(x10, v28)
 
 		x29 = p.pos
@@ -62573,7 +62627,7 @@ func (p *tparser) s39() (any, bool) {
 		}
 		v30 = p.newMatchOrdinary(x29, p.pos, "\"\"\"", true)
 		x10 = append(x10, v30)
-		v31 = p.newNodeOrdinary("Seq", x9, p.pos, x10)
+		v31 = p.newNodeOrdinary("tuple", x9, p.pos, x10)
 		v32, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v31, x1)
 		v3 = v32
 		goto L4_ordinary
@@ -62637,7 +62691,7 @@ func (p *tparser) s39() (any, bool) {
 			p.pos += size
 			v51 = p.newMatchOrdinary(x50, p.pos, p.text(x50, p.pos), true)
 			x46 = append(x46, v51)
-			v52 = p.newNodeOrdinary("Seq", x45, p.pos, x46)
+			v52 = p.newNodeOrdinary("tuple", x45, p.pos, x46)
 			v53 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v52, x42)
 			x41++
 			p.pushKid(v53)
@@ -62650,7 +62704,7 @@ func (p *tparser) s39() (any, bool) {
 			p.recovered = p.recovered[:x43]
 			break
 		}
-		v54 = p.newNodeOrdinary("List", x39, p.pos, p.kids(x40))
+		v54 = p.newNodeOrdinary("list", x39, p.pos, p.kids(x40))
 		x36 = append(x36, v54)
 
 		x55 = p.pos
@@ -62661,7 +62715,7 @@ func (p *tparser) s39() (any, bool) {
 		}
 		v56 = p.newMatchOrdinary(x55, p.pos, "'''", true)
 		x36 = append(x36, v56)
-		v57 = p.newNodeOrdinary("Seq", x35, p.pos, x36)
+		v57 = p.newNodeOrdinary("tuple", x35, p.pos, x36)
 		v58, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v57, x1)
 		v3 = v58
 		goto L4_ordinary
@@ -62716,7 +62770,7 @@ func (p *tparser) s39() (any, bool) {
 			p.recovered = p.recovered[:x69]
 			break
 		}
-		v74 = p.newNodeOrdinary("List", x65, p.pos, p.kids(x66))
+		v74 = p.newNodeOrdinary("list", x65, p.pos, p.kids(x66))
 		x62 = append(x62, v74)
 
 		x75 = p.pos
@@ -62727,7 +62781,7 @@ func (p *tparser) s39() (any, bool) {
 		}
 		v76 = p.newMatchOrdinary(x75, p.pos, "\"", true)
 		x62 = append(x62, v76)
-		v77 = p.newNodeOrdinary("Seq", x61, p.pos, x62)
+		v77 = p.newNodeOrdinary("tuple", x61, p.pos, x62)
 		v78, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v77, x1)
 		v3 = v78
 		goto L4_ordinary
@@ -62782,7 +62836,7 @@ func (p *tparser) s39() (any, bool) {
 			p.recovered = p.recovered[:x89]
 			break
 		}
-		v94 = p.newNodeOrdinary("List", x85, p.pos, p.kids(x86))
+		v94 = p.newNodeOrdinary("list", x85, p.pos, p.kids(x86))
 		x82 = append(x82, v94)
 
 		x95 = p.pos
@@ -62793,7 +62847,7 @@ func (p *tparser) s39() (any, bool) {
 		}
 		v96 = p.newMatchOrdinary(x95, p.pos, "'", true)
 		x82 = append(x82, v96)
-		v97 = p.newNodeOrdinary("Seq", x81, p.pos, x82)
+		v97 = p.newNodeOrdinary("tuple", x81, p.pos, x82)
 		v98, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v97, x1)
 		v3 = v98
 		goto L4_ordinary
@@ -62978,7 +63032,7 @@ func (p *tparser) s39() (any, bool) {
 		p.pos += size
 		v25 = p.newMatch(x24, p.pos, p.text(x24, p.pos), true)
 		x20 = append(x20, v25)
-		v26 = p.newNode("Seq", x19, p.pos, x20)
+		v26 = p.newNode("tuple", x19, p.pos, x20)
 		v27 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v26, x16)
 		x15++
 		p.pushKid(v27)
@@ -62991,7 +63045,7 @@ func (p *tparser) s39() (any, bool) {
 		p.recovered = p.recovered[:x17]
 		break
 	}
-	v28 = p.newNode("List", x13, p.pos, p.kids(x14))
+	v28 = p.newNode("list", x13, p.pos, p.kids(x14))
 	x10 = append(x10, v28)
 	p.stepWork()
 	x29 = p.pos
@@ -63002,7 +63056,7 @@ func (p *tparser) s39() (any, bool) {
 	}
 	v30 = p.newMatch(x29, p.pos, "\"\"\"", true)
 	x10 = append(x10, v30)
-	v31 = p.newNode("Seq", x9, p.pos, x10)
+	v31 = p.newNode("tuple", x9, p.pos, x10)
 	v32, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v31, x1)
 	v3 = v32
 	goto L4
@@ -63066,7 +63120,7 @@ L7:
 		p.pos += size
 		v51 = p.newMatch(x50, p.pos, p.text(x50, p.pos), true)
 		x46 = append(x46, v51)
-		v52 = p.newNode("Seq", x45, p.pos, x46)
+		v52 = p.newNode("tuple", x45, p.pos, x46)
 		v53 = p.scopeValue(shaper{elems: true, k: 1, mode: 2, tuple: true}, v52, x42)
 		x41++
 		p.pushKid(v53)
@@ -63079,7 +63133,7 @@ L7:
 		p.recovered = p.recovered[:x43]
 		break
 	}
-	v54 = p.newNode("List", x39, p.pos, p.kids(x40))
+	v54 = p.newNode("list", x39, p.pos, p.kids(x40))
 	x36 = append(x36, v54)
 	p.stepWork()
 	x55 = p.pos
@@ -63090,7 +63144,7 @@ L7:
 	}
 	v56 = p.newMatch(x55, p.pos, "'''", true)
 	x36 = append(x36, v56)
-	v57 = p.newNode("Seq", x35, p.pos, x36)
+	v57 = p.newNode("tuple", x35, p.pos, x36)
 	v58, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v57, x1)
 	v3 = v58
 	goto L4
@@ -63145,7 +63199,7 @@ L33:
 		p.recovered = p.recovered[:x69]
 		break
 	}
-	v74 = p.newNode("List", x65, p.pos, p.kids(x66))
+	v74 = p.newNode("list", x65, p.pos, p.kids(x66))
 	x62 = append(x62, v74)
 	p.stepWork()
 	x75 = p.pos
@@ -63156,7 +63210,7 @@ L33:
 	}
 	v76 = p.newMatch(x75, p.pos, "\"", true)
 	x62 = append(x62, v76)
-	v77 = p.newNode("Seq", x61, p.pos, x62)
+	v77 = p.newNode("tuple", x61, p.pos, x62)
 	v78, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v77, x1)
 	v3 = v78
 	goto L4
@@ -63211,7 +63265,7 @@ L59:
 		p.recovered = p.recovered[:x89]
 		break
 	}
-	v94 = p.newNode("List", x85, p.pos, p.kids(x86))
+	v94 = p.newNode("list", x85, p.pos, p.kids(x86))
 	x82 = append(x82, v94)
 	p.stepWork()
 	x95 = p.pos
@@ -63222,7 +63276,7 @@ L59:
 	}
 	v96 = p.newMatch(x95, p.pos, "'", true)
 	x82 = append(x82, v96)
-	v97 = p.newNode("Seq", x81, p.pos, x82)
+	v97 = p.newNode("tuple", x81, p.pos, x82)
 	v98, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v97, x1)
 	v3 = v98
 	goto L4
@@ -63517,7 +63571,7 @@ func (p *tparser) s40() (any, bool) {
 				p.dropKids(x39)
 				goto L37_ordinary
 			}
-			v47 = p.newNodeOrdinary("List", x38, p.pos, p.kids(x39))
+			v47 = p.newNodeOrdinary("list", x38, p.pos, p.kids(x39))
 			v33 = v47
 			goto L34_ordinary
 		L37_ordinary:
@@ -63562,7 +63616,7 @@ func (p *tparser) s40() (any, bool) {
 			p.silent--
 			p.pos = x56
 			p.recovered = p.recovered[:x57]
-			v59 = p.newNodeOrdinary("Seq", x52, p.pos, x53)
+			v59 = p.newNodeOrdinary("tuple", x52, p.pos, x53)
 			v60, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v59, x31)
 			v33 = v60
 			goto L34_ordinary
@@ -63584,7 +63638,7 @@ func (p *tparser) s40() (any, bool) {
 			p.recovered = p.recovered[:x29]
 			break
 		}
-		v62 = p.newNodeOrdinary("List", x25, p.pos, p.kids(x26))
+		v62 = p.newNodeOrdinary("list", x25, p.pos, p.kids(x26))
 		x22 = append(x22, v62)
 
 		x63 = p.pos
@@ -63595,7 +63649,7 @@ func (p *tparser) s40() (any, bool) {
 		}
 		v64 = p.newMatchOrdinary(x63, p.pos, "\"\"\"", true)
 		x22 = append(x22, v64)
-		v65 = p.newNodeOrdinary("Seq", x21, p.pos, x22)
+		v65 = p.newNodeOrdinary("tuple", x21, p.pos, x22)
 		v66, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v65, x13)
 		v15 = v66
 		goto L16_ordinary
@@ -63657,7 +63711,7 @@ func (p *tparser) s40() (any, bool) {
 				p.dropKids(x84)
 				goto L82_ordinary
 			}
-			v92 = p.newNodeOrdinary("List", x83, p.pos, p.kids(x84))
+			v92 = p.newNodeOrdinary("list", x83, p.pos, p.kids(x84))
 			v78 = v92
 			goto L79_ordinary
 		L82_ordinary:
@@ -63677,7 +63731,7 @@ func (p *tparser) s40() (any, bool) {
 			p.recovered = p.recovered[:x74]
 			break
 		}
-		v94 = p.newNodeOrdinary("List", x70, p.pos, p.kids(x71))
+		v94 = p.newNodeOrdinary("list", x70, p.pos, p.kids(x71))
 		x69 = append(x69, v94)
 
 		x95 = p.pos
@@ -63688,7 +63742,7 @@ func (p *tparser) s40() (any, bool) {
 		}
 		v96 = p.newMatchOrdinary(x95, p.pos, "\"", true)
 		x69 = append(x69, v96)
-		v97 = p.newNodeOrdinary("Seq", x68, p.pos, x69)
+		v97 = p.newNodeOrdinary("tuple", x68, p.pos, x69)
 		v98, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v97, x13)
 		v15 = v98
 		goto L16_ordinary
@@ -63698,7 +63752,7 @@ func (p *tparser) s40() (any, bool) {
 		goto L8_ordinary
 	L16_ordinary:
 		x10 = append(x10, v15)
-		v99 = p.newNodeOrdinary("Seq", x9, p.pos, x10)
+		v99 = p.newNodeOrdinary("tuple", x9, p.pos, x10)
 		v100, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v99, x1)
 		v3 = v100
 		goto L4_ordinary
@@ -63797,7 +63851,7 @@ func (p *tparser) s40() (any, bool) {
 				p.dropKids(x133)
 				goto L131_ordinary
 			}
-			v141 = p.newNodeOrdinary("List", x132, p.pos, p.kids(x133))
+			v141 = p.newNodeOrdinary("list", x132, p.pos, p.kids(x133))
 			v127 = v141
 			goto L128_ordinary
 		L131_ordinary:
@@ -63842,7 +63896,7 @@ func (p *tparser) s40() (any, bool) {
 			p.silent--
 			p.pos = x150
 			p.recovered = p.recovered[:x151]
-			v153 = p.newNodeOrdinary("Seq", x146, p.pos, x147)
+			v153 = p.newNodeOrdinary("tuple", x146, p.pos, x147)
 			v154, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v153, x125)
 			v127 = v154
 			goto L128_ordinary
@@ -63864,7 +63918,7 @@ func (p *tparser) s40() (any, bool) {
 			p.recovered = p.recovered[:x123]
 			break
 		}
-		v156 = p.newNodeOrdinary("List", x119, p.pos, p.kids(x120))
+		v156 = p.newNodeOrdinary("list", x119, p.pos, p.kids(x120))
 		x116 = append(x116, v156)
 
 		x157 = p.pos
@@ -63875,7 +63929,7 @@ func (p *tparser) s40() (any, bool) {
 		}
 		v158 = p.newMatchOrdinary(x157, p.pos, "'''", true)
 		x116 = append(x116, v158)
-		v159 = p.newNodeOrdinary("Seq", x115, p.pos, x116)
+		v159 = p.newNodeOrdinary("tuple", x115, p.pos, x116)
 		v160, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v159, x107)
 		v109 = v160
 		goto L110_ordinary
@@ -63937,7 +63991,7 @@ func (p *tparser) s40() (any, bool) {
 				p.dropKids(x178)
 				goto L176_ordinary
 			}
-			v186 = p.newNodeOrdinary("List", x177, p.pos, p.kids(x178))
+			v186 = p.newNodeOrdinary("list", x177, p.pos, p.kids(x178))
 			v172 = v186
 			goto L173_ordinary
 		L176_ordinary:
@@ -63957,7 +64011,7 @@ func (p *tparser) s40() (any, bool) {
 			p.recovered = p.recovered[:x168]
 			break
 		}
-		v188 = p.newNodeOrdinary("List", x164, p.pos, p.kids(x165))
+		v188 = p.newNodeOrdinary("list", x164, p.pos, p.kids(x165))
 		x163 = append(x163, v188)
 
 		x189 = p.pos
@@ -63968,7 +64022,7 @@ func (p *tparser) s40() (any, bool) {
 		}
 		v190 = p.newMatchOrdinary(x189, p.pos, "'", true)
 		x163 = append(x163, v190)
-		v191 = p.newNodeOrdinary("Seq", x162, p.pos, x163)
+		v191 = p.newNodeOrdinary("tuple", x162, p.pos, x163)
 		v192, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v191, x107)
 		v109 = v192
 		goto L110_ordinary
@@ -63978,7 +64032,7 @@ func (p *tparser) s40() (any, bool) {
 		goto L102_ordinary
 	L110_ordinary:
 		x104 = append(x104, v109)
-		v193 = p.newNodeOrdinary("Seq", x103, p.pos, x104)
+		v193 = p.newNodeOrdinary("tuple", x103, p.pos, x104)
 		v194, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v193, x1)
 		v3 = v194
 		goto L4_ordinary
@@ -64270,7 +64324,7 @@ func (p *tparser) s40() (any, bool) {
 			p.dropKids(x39)
 			goto L37
 		}
-		v47 = p.newNode("List", x38, p.pos, p.kids(x39))
+		v47 = p.newNode("list", x38, p.pos, p.kids(x39))
 		v33 = v47
 		goto L34
 	L37:
@@ -64315,7 +64369,7 @@ func (p *tparser) s40() (any, bool) {
 		p.silent--
 		p.pos = x56
 		p.recovered = p.recovered[:x57]
-		v59 = p.newNode("Seq", x52, p.pos, x53)
+		v59 = p.newNode("tuple", x52, p.pos, x53)
 		v60, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v59, x31)
 		v33 = v60
 		goto L34
@@ -64337,7 +64391,7 @@ func (p *tparser) s40() (any, bool) {
 		p.recovered = p.recovered[:x29]
 		break
 	}
-	v62 = p.newNode("List", x25, p.pos, p.kids(x26))
+	v62 = p.newNode("list", x25, p.pos, p.kids(x26))
 	x22 = append(x22, v62)
 	p.stepWork()
 	x63 = p.pos
@@ -64348,7 +64402,7 @@ func (p *tparser) s40() (any, bool) {
 	}
 	v64 = p.newMatch(x63, p.pos, "\"\"\"", true)
 	x22 = append(x22, v64)
-	v65 = p.newNode("Seq", x21, p.pos, x22)
+	v65 = p.newNode("tuple", x21, p.pos, x22)
 	v66, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v65, x13)
 	v15 = v66
 	goto L16
@@ -64410,7 +64464,7 @@ L19:
 			p.dropKids(x84)
 			goto L82
 		}
-		v92 = p.newNode("List", x83, p.pos, p.kids(x84))
+		v92 = p.newNode("list", x83, p.pos, p.kids(x84))
 		v78 = v92
 		goto L79
 	L82:
@@ -64430,7 +64484,7 @@ L19:
 		p.recovered = p.recovered[:x74]
 		break
 	}
-	v94 = p.newNode("List", x70, p.pos, p.kids(x71))
+	v94 = p.newNode("list", x70, p.pos, p.kids(x71))
 	x69 = append(x69, v94)
 	p.stepWork()
 	x95 = p.pos
@@ -64441,7 +64495,7 @@ L19:
 	}
 	v96 = p.newMatch(x95, p.pos, "\"", true)
 	x69 = append(x69, v96)
-	v97 = p.newNode("Seq", x68, p.pos, x69)
+	v97 = p.newNode("tuple", x68, p.pos, x69)
 	v98, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v97, x13)
 	v15 = v98
 	goto L16
@@ -64451,7 +64505,7 @@ L67:
 	goto L8
 L16:
 	x10 = append(x10, v15)
-	v99 = p.newNode("Seq", x9, p.pos, x10)
+	v99 = p.newNode("tuple", x9, p.pos, x10)
 	v100, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v99, x1)
 	v3 = v100
 	goto L4
@@ -64550,7 +64604,7 @@ L7:
 			p.dropKids(x133)
 			goto L131
 		}
-		v141 = p.newNode("List", x132, p.pos, p.kids(x133))
+		v141 = p.newNode("list", x132, p.pos, p.kids(x133))
 		v127 = v141
 		goto L128
 	L131:
@@ -64595,7 +64649,7 @@ L7:
 		p.silent--
 		p.pos = x150
 		p.recovered = p.recovered[:x151]
-		v153 = p.newNode("Seq", x146, p.pos, x147)
+		v153 = p.newNode("tuple", x146, p.pos, x147)
 		v154, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v153, x125)
 		v127 = v154
 		goto L128
@@ -64617,7 +64671,7 @@ L7:
 		p.recovered = p.recovered[:x123]
 		break
 	}
-	v156 = p.newNode("List", x119, p.pos, p.kids(x120))
+	v156 = p.newNode("list", x119, p.pos, p.kids(x120))
 	x116 = append(x116, v156)
 	p.stepWork()
 	x157 = p.pos
@@ -64628,7 +64682,7 @@ L7:
 	}
 	v158 = p.newMatch(x157, p.pos, "'''", true)
 	x116 = append(x116, v158)
-	v159 = p.newNode("Seq", x115, p.pos, x116)
+	v159 = p.newNode("tuple", x115, p.pos, x116)
 	v160, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v159, x107)
 	v109 = v160
 	goto L110
@@ -64690,7 +64744,7 @@ L113:
 			p.dropKids(x178)
 			goto L176
 		}
-		v186 = p.newNode("List", x177, p.pos, p.kids(x178))
+		v186 = p.newNode("list", x177, p.pos, p.kids(x178))
 		v172 = v186
 		goto L173
 	L176:
@@ -64710,7 +64764,7 @@ L113:
 		p.recovered = p.recovered[:x168]
 		break
 	}
-	v188 = p.newNode("List", x164, p.pos, p.kids(x165))
+	v188 = p.newNode("list", x164, p.pos, p.kids(x165))
 	x163 = append(x163, v188)
 	p.stepWork()
 	x189 = p.pos
@@ -64721,7 +64775,7 @@ L113:
 	}
 	v190 = p.newMatch(x189, p.pos, "'", true)
 	x163 = append(x163, v190)
-	v191 = p.newNode("Seq", x162, p.pos, x163)
+	v191 = p.newNode("tuple", x162, p.pos, x163)
 	v192, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v191, x107)
 	v109 = v192
 	goto L110
@@ -64731,7 +64785,7 @@ L161:
 	goto L102
 L110:
 	x104 = append(x104, v109)
-	v193 = p.newNode("Seq", x103, p.pos, x104)
+	v193 = p.newNode("tuple", x103, p.pos, x104)
 	v194, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v193, x1)
 	v3 = v194
 	goto L4
@@ -65041,7 +65095,7 @@ func (p *tparser) s41() (any, bool) {
 				p.dropKids(x42)
 				goto L40_ordinary
 			}
-			v50 = p.newNodeOrdinary("List", x41, p.pos, p.kids(x42))
+			v50 = p.newNodeOrdinary("list", x41, p.pos, p.kids(x42))
 			v33 = v50
 			goto L34_ordinary
 		L40_ordinary:
@@ -65080,7 +65134,7 @@ func (p *tparser) s41() (any, bool) {
 			p.silent--
 			p.pos = x57
 			p.recovered = p.recovered[:x58]
-			v60 = p.newNodeOrdinary("Seq", x53, p.pos, x54)
+			v60 = p.newNodeOrdinary("tuple", x53, p.pos, x54)
 			v61, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v60, x31)
 			v33 = v61
 			goto L34_ordinary
@@ -65102,7 +65156,7 @@ func (p *tparser) s41() (any, bool) {
 			p.recovered = p.recovered[:x29]
 			break
 		}
-		v63 = p.newNodeOrdinary("List", x25, p.pos, p.kids(x26))
+		v63 = p.newNodeOrdinary("list", x25, p.pos, p.kids(x26))
 		x22 = append(x22, v63)
 
 		x64 = p.pos
@@ -65113,7 +65167,7 @@ func (p *tparser) s41() (any, bool) {
 		}
 		v65 = p.newMatchOrdinary(x64, p.pos, "\"\"\"", true)
 		x22 = append(x22, v65)
-		v66 = p.newNodeOrdinary("Seq", x21, p.pos, x22)
+		v66 = p.newNodeOrdinary("tuple", x21, p.pos, x22)
 		v67, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v66, x13)
 		v15 = v67
 		goto L16_ordinary
@@ -65186,7 +65240,7 @@ func (p *tparser) s41() (any, bool) {
 				p.dropKids(x88)
 				goto L86_ordinary
 			}
-			v96 = p.newNodeOrdinary("List", x87, p.pos, p.kids(x88))
+			v96 = p.newNodeOrdinary("list", x87, p.pos, p.kids(x88))
 			v79 = v96
 			goto L80_ordinary
 		L86_ordinary:
@@ -65206,7 +65260,7 @@ func (p *tparser) s41() (any, bool) {
 			p.recovered = p.recovered[:x75]
 			break
 		}
-		v98 = p.newNodeOrdinary("List", x71, p.pos, p.kids(x72))
+		v98 = p.newNodeOrdinary("list", x71, p.pos, p.kids(x72))
 		x70 = append(x70, v98)
 
 		x99 = p.pos
@@ -65217,7 +65271,7 @@ func (p *tparser) s41() (any, bool) {
 		}
 		v100 = p.newMatchOrdinary(x99, p.pos, "\"", true)
 		x70 = append(x70, v100)
-		v101 = p.newNodeOrdinary("Seq", x69, p.pos, x70)
+		v101 = p.newNodeOrdinary("tuple", x69, p.pos, x70)
 		v102, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v101, x13)
 		v15 = v102
 		goto L16_ordinary
@@ -65227,7 +65281,7 @@ func (p *tparser) s41() (any, bool) {
 		goto L8_ordinary
 	L16_ordinary:
 		x10 = append(x10, v15)
-		v103 = p.newNodeOrdinary("Seq", x9, p.pos, x10)
+		v103 = p.newNodeOrdinary("tuple", x9, p.pos, x10)
 		v104, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v103, x1)
 		v3 = v104
 		goto L4_ordinary
@@ -65337,7 +65391,7 @@ func (p *tparser) s41() (any, bool) {
 				p.dropKids(x140)
 				goto L138_ordinary
 			}
-			v148 = p.newNodeOrdinary("List", x139, p.pos, p.kids(x140))
+			v148 = p.newNodeOrdinary("list", x139, p.pos, p.kids(x140))
 			v131 = v148
 			goto L132_ordinary
 		L138_ordinary:
@@ -65376,7 +65430,7 @@ func (p *tparser) s41() (any, bool) {
 			p.silent--
 			p.pos = x155
 			p.recovered = p.recovered[:x156]
-			v158 = p.newNodeOrdinary("Seq", x151, p.pos, x152)
+			v158 = p.newNodeOrdinary("tuple", x151, p.pos, x152)
 			v159, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v158, x129)
 			v131 = v159
 			goto L132_ordinary
@@ -65398,7 +65452,7 @@ func (p *tparser) s41() (any, bool) {
 			p.recovered = p.recovered[:x127]
 			break
 		}
-		v161 = p.newNodeOrdinary("List", x123, p.pos, p.kids(x124))
+		v161 = p.newNodeOrdinary("list", x123, p.pos, p.kids(x124))
 		x120 = append(x120, v161)
 
 		x162 = p.pos
@@ -65409,7 +65463,7 @@ func (p *tparser) s41() (any, bool) {
 		}
 		v163 = p.newMatchOrdinary(x162, p.pos, "'''", true)
 		x120 = append(x120, v163)
-		v164 = p.newNodeOrdinary("Seq", x119, p.pos, x120)
+		v164 = p.newNodeOrdinary("tuple", x119, p.pos, x120)
 		v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x111)
 		v113 = v165
 		goto L114_ordinary
@@ -65482,7 +65536,7 @@ func (p *tparser) s41() (any, bool) {
 				p.dropKids(x186)
 				goto L184_ordinary
 			}
-			v194 = p.newNodeOrdinary("List", x185, p.pos, p.kids(x186))
+			v194 = p.newNodeOrdinary("list", x185, p.pos, p.kids(x186))
 			v177 = v194
 			goto L178_ordinary
 		L184_ordinary:
@@ -65502,7 +65556,7 @@ func (p *tparser) s41() (any, bool) {
 			p.recovered = p.recovered[:x173]
 			break
 		}
-		v196 = p.newNodeOrdinary("List", x169, p.pos, p.kids(x170))
+		v196 = p.newNodeOrdinary("list", x169, p.pos, p.kids(x170))
 		x168 = append(x168, v196)
 
 		x197 = p.pos
@@ -65513,7 +65567,7 @@ func (p *tparser) s41() (any, bool) {
 		}
 		v198 = p.newMatchOrdinary(x197, p.pos, "'", true)
 		x168 = append(x168, v198)
-		v199 = p.newNodeOrdinary("Seq", x167, p.pos, x168)
+		v199 = p.newNodeOrdinary("tuple", x167, p.pos, x168)
 		v200, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v199, x111)
 		v113 = v200
 		goto L114_ordinary
@@ -65523,7 +65577,7 @@ func (p *tparser) s41() (any, bool) {
 		goto L106_ordinary
 	L114_ordinary:
 		x108 = append(x108, v113)
-		v201 = p.newNodeOrdinary("Seq", x107, p.pos, x108)
+		v201 = p.newNodeOrdinary("tuple", x107, p.pos, x108)
 		v202, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v201, x1)
 		v3 = v202
 		goto L4_ordinary
@@ -65830,7 +65884,7 @@ func (p *tparser) s41() (any, bool) {
 			p.dropKids(x42)
 			goto L40
 		}
-		v50 = p.newNode("List", x41, p.pos, p.kids(x42))
+		v50 = p.newNode("list", x41, p.pos, p.kids(x42))
 		v33 = v50
 		goto L34
 	L40:
@@ -65869,7 +65923,7 @@ func (p *tparser) s41() (any, bool) {
 		p.silent--
 		p.pos = x57
 		p.recovered = p.recovered[:x58]
-		v60 = p.newNode("Seq", x53, p.pos, x54)
+		v60 = p.newNode("tuple", x53, p.pos, x54)
 		v61, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v60, x31)
 		v33 = v61
 		goto L34
@@ -65891,7 +65945,7 @@ func (p *tparser) s41() (any, bool) {
 		p.recovered = p.recovered[:x29]
 		break
 	}
-	v63 = p.newNode("List", x25, p.pos, p.kids(x26))
+	v63 = p.newNode("list", x25, p.pos, p.kids(x26))
 	x22 = append(x22, v63)
 	p.stepWork()
 	x64 = p.pos
@@ -65902,7 +65956,7 @@ func (p *tparser) s41() (any, bool) {
 	}
 	v65 = p.newMatch(x64, p.pos, "\"\"\"", true)
 	x22 = append(x22, v65)
-	v66 = p.newNode("Seq", x21, p.pos, x22)
+	v66 = p.newNode("tuple", x21, p.pos, x22)
 	v67, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v66, x13)
 	v15 = v67
 	goto L16
@@ -65975,7 +66029,7 @@ L19:
 			p.dropKids(x88)
 			goto L86
 		}
-		v96 = p.newNode("List", x87, p.pos, p.kids(x88))
+		v96 = p.newNode("list", x87, p.pos, p.kids(x88))
 		v79 = v96
 		goto L80
 	L86:
@@ -65995,7 +66049,7 @@ L19:
 		p.recovered = p.recovered[:x75]
 		break
 	}
-	v98 = p.newNode("List", x71, p.pos, p.kids(x72))
+	v98 = p.newNode("list", x71, p.pos, p.kids(x72))
 	x70 = append(x70, v98)
 	p.stepWork()
 	x99 = p.pos
@@ -66006,7 +66060,7 @@ L19:
 	}
 	v100 = p.newMatch(x99, p.pos, "\"", true)
 	x70 = append(x70, v100)
-	v101 = p.newNode("Seq", x69, p.pos, x70)
+	v101 = p.newNode("tuple", x69, p.pos, x70)
 	v102, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v101, x13)
 	v15 = v102
 	goto L16
@@ -66016,7 +66070,7 @@ L68:
 	goto L8
 L16:
 	x10 = append(x10, v15)
-	v103 = p.newNode("Seq", x9, p.pos, x10)
+	v103 = p.newNode("tuple", x9, p.pos, x10)
 	v104, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v103, x1)
 	v3 = v104
 	goto L4
@@ -66126,7 +66180,7 @@ L7:
 			p.dropKids(x140)
 			goto L138
 		}
-		v148 = p.newNode("List", x139, p.pos, p.kids(x140))
+		v148 = p.newNode("list", x139, p.pos, p.kids(x140))
 		v131 = v148
 		goto L132
 	L138:
@@ -66165,7 +66219,7 @@ L7:
 		p.silent--
 		p.pos = x155
 		p.recovered = p.recovered[:x156]
-		v158 = p.newNode("Seq", x151, p.pos, x152)
+		v158 = p.newNode("tuple", x151, p.pos, x152)
 		v159, _ = p.shapeSingle(shaper{elems: true, k: 1, mode: 2, tuple: true}, v158, x129)
 		v131 = v159
 		goto L132
@@ -66187,7 +66241,7 @@ L7:
 		p.recovered = p.recovered[:x127]
 		break
 	}
-	v161 = p.newNode("List", x123, p.pos, p.kids(x124))
+	v161 = p.newNode("list", x123, p.pos, p.kids(x124))
 	x120 = append(x120, v161)
 	p.stepWork()
 	x162 = p.pos
@@ -66198,7 +66252,7 @@ L7:
 	}
 	v163 = p.newMatch(x162, p.pos, "'''", true)
 	x120 = append(x120, v163)
-	v164 = p.newNode("Seq", x119, p.pos, x120)
+	v164 = p.newNode("tuple", x119, p.pos, x120)
 	v165, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v164, x111)
 	v113 = v165
 	goto L114
@@ -66271,7 +66325,7 @@ L117:
 			p.dropKids(x186)
 			goto L184
 		}
-		v194 = p.newNode("List", x185, p.pos, p.kids(x186))
+		v194 = p.newNode("list", x185, p.pos, p.kids(x186))
 		v177 = v194
 		goto L178
 	L184:
@@ -66291,7 +66345,7 @@ L117:
 		p.recovered = p.recovered[:x173]
 		break
 	}
-	v196 = p.newNode("List", x169, p.pos, p.kids(x170))
+	v196 = p.newNode("list", x169, p.pos, p.kids(x170))
 	x168 = append(x168, v196)
 	p.stepWork()
 	x197 = p.pos
@@ -66302,7 +66356,7 @@ L117:
 	}
 	v198 = p.newMatch(x197, p.pos, "'", true)
 	x168 = append(x168, v198)
-	v199 = p.newNode("Seq", x167, p.pos, x168)
+	v199 = p.newNode("tuple", x167, p.pos, x168)
 	v200, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v199, x111)
 	v113 = v200
 	goto L114
@@ -66312,7 +66366,7 @@ L166:
 	goto L106
 L114:
 	x108 = append(x108, v113)
-	v201 = p.newNode("Seq", x107, p.pos, x108)
+	v201 = p.newNode("tuple", x107, p.pos, x108)
 	v202, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v201, x1)
 	v3 = v202
 	goto L4
@@ -66493,7 +66547,7 @@ func (p *tparser) v42() (any, bool) {
 		p.pos += size
 		v24 = p.newMatchOrdinary(x23, p.pos, p.text(x23, p.pos), true)
 		x18 = append(x18, v24)
-		v25 = p.newNodeOrdinary("Seq", x17, p.pos, x18)
+		v25 = p.newNodeOrdinary("tuple", x17, p.pos, x18)
 		v26, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v25, x5)
 		v7 = v26
 		goto L8_ordinary
@@ -66533,7 +66587,7 @@ func (p *tparser) v42() (any, bool) {
 			goto L28_ordinary
 		}
 		x30 = append(x30, v34)
-		v35 = p.newNodeOrdinary("Seq", x29, p.pos, x30)
+		v35 = p.newNodeOrdinary("tuple", x29, p.pos, x30)
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x5)
 		v7 = v36
 		goto L8_ordinary
@@ -66544,7 +66598,7 @@ func (p *tparser) v42() (any, bool) {
 		goto fail_ordinary
 	L8_ordinary:
 		x2 = append(x2, v7)
-		v37 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v37 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v37, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -66698,7 +66752,7 @@ L11:
 	p.pos += size
 	v24 = p.newMatch(x23, p.pos, p.text(x23, p.pos), true)
 	x18 = append(x18, v24)
-	v25 = p.newNode("Seq", x17, p.pos, x18)
+	v25 = p.newNode("tuple", x17, p.pos, x18)
 	v26, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v25, x5)
 	v7 = v26
 	goto L8
@@ -66738,7 +66792,7 @@ L15:
 		goto L28
 	}
 	x30 = append(x30, v34)
-	v35 = p.newNode("Seq", x29, p.pos, x30)
+	v35 = p.newNode("tuple", x29, p.pos, x30)
 	v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x5)
 	v7 = v36
 	goto L8
@@ -66749,7 +66803,7 @@ L27:
 	goto fail
 L8:
 	x2 = append(x2, v7)
-	v37 = p.newNode("Seq", x1, p.pos, x2)
+	v37 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v37, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -66905,7 +66959,7 @@ func (p *tparser) i42() (any, bool) {
 		p.pos += size
 		v24 = p.newMatchOrdinary(x23, p.pos, p.text(x23, p.pos), true)
 		x18 = append(x18, v24)
-		v25 = p.newNodeOrdinary("Seq", x17, p.pos, x18)
+		v25 = p.newNodeOrdinary("tuple", x17, p.pos, x18)
 		v26, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v25, x5)
 		v7 = v26
 		goto L8_ordinary
@@ -66945,7 +66999,7 @@ func (p *tparser) i42() (any, bool) {
 			goto L28_ordinary
 		}
 		x30 = append(x30, v34)
-		v35 = p.newNodeOrdinary("Seq", x29, p.pos, x30)
+		v35 = p.newNodeOrdinary("tuple", x29, p.pos, x30)
 		v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x5)
 		v7 = v36
 		goto L8_ordinary
@@ -66956,7 +67010,7 @@ func (p *tparser) i42() (any, bool) {
 		goto fail_ordinary
 	L8_ordinary:
 		x2 = append(x2, v7)
-		v37 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v37 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v37, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -67107,7 +67161,7 @@ L11:
 	p.pos += size
 	v24 = p.newMatch(x23, p.pos, p.text(x23, p.pos), true)
 	x18 = append(x18, v24)
-	v25 = p.newNode("Seq", x17, p.pos, x18)
+	v25 = p.newNode("tuple", x17, p.pos, x18)
 	v26, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v25, x5)
 	v7 = v26
 	goto L8
@@ -67147,7 +67201,7 @@ L15:
 		goto L28
 	}
 	x30 = append(x30, v34)
-	v35 = p.newNode("Seq", x29, p.pos, x30)
+	v35 = p.newNode("tuple", x29, p.pos, x30)
 	v36, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v35, x5)
 	v7 = v36
 	goto L8
@@ -67158,7 +67212,7 @@ L27:
 	goto fail
 L8:
 	x2 = append(x2, v7)
-	v37 = p.newNode("Seq", x1, p.pos, x2)
+	v37 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v37, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -67359,7 +67413,7 @@ func (p *tparser) v43() (any, bool) {
 			goto L11_ordinary
 		}
 		x13 = append(x13, v22)
-		v23 = p.newNodeOrdinary("Seq", x12, p.pos, x13)
+		v23 = p.newNodeOrdinary("tuple", x12, p.pos, x13)
 		v24, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v23, x1)
 		v3 = v24
 		goto L4_ordinary
@@ -67482,9 +67536,9 @@ func (p *tparser) v43() (any, bool) {
 			p.dropKids(x49)
 			goto L43_ordinary
 		}
-		v57 = p.newNodeOrdinary("List", x48, p.pos, p.kids(x49))
+		v57 = p.newNodeOrdinary("list", x48, p.pos, p.kids(x49))
 		x45 = append(x45, v57)
-		v58 = p.newNodeOrdinary("Seq", x44, p.pos, x45)
+		v58 = p.newNodeOrdinary("tuple", x44, p.pos, x45)
 		v59, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v58, x36)
 		v38 = v59
 		goto L39_ordinary
@@ -67533,9 +67587,9 @@ func (p *tparser) v43() (any, bool) {
 			p.dropKids(x67)
 			goto L61_ordinary
 		}
-		v75 = p.newNodeOrdinary("List", x66, p.pos, p.kids(x67))
+		v75 = p.newNodeOrdinary("list", x66, p.pos, p.kids(x67))
 		x63 = append(x63, v75)
-		v76 = p.newNodeOrdinary("Seq", x62, p.pos, x63)
+		v76 = p.newNodeOrdinary("tuple", x62, p.pos, x63)
 		v77, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v76, x36)
 		v38 = v77
 		goto L39_ordinary
@@ -67546,7 +67600,7 @@ func (p *tparser) v43() (any, bool) {
 		goto L26_ordinary
 	L39_ordinary:
 		x28 = append(x28, v38)
-		v78 = p.newNodeOrdinary("Seq", x27, p.pos, x28)
+		v78 = p.newNodeOrdinary("tuple", x27, p.pos, x28)
 		v79, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v78, x1)
 		v3 = v79
 		goto L4_ordinary
@@ -67741,7 +67795,7 @@ L18:
 		goto L11
 	}
 	x13 = append(x13, v22)
-	v23 = p.newNode("Seq", x12, p.pos, x13)
+	v23 = p.newNode("tuple", x12, p.pos, x13)
 	v24, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v23, x1)
 	v3 = v24
 	goto L4
@@ -67865,9 +67919,9 @@ L33:
 		p.dropKids(x49)
 		goto L43
 	}
-	v57 = p.newNode("List", x48, p.pos, p.kids(x49))
+	v57 = p.newNode("list", x48, p.pos, p.kids(x49))
 	x45 = append(x45, v57)
-	v58 = p.newNode("Seq", x44, p.pos, x45)
+	v58 = p.newNode("tuple", x44, p.pos, x45)
 	v59, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v58, x36)
 	v38 = v59
 	goto L39
@@ -67916,9 +67970,9 @@ L42:
 		p.dropKids(x67)
 		goto L61
 	}
-	v75 = p.newNode("List", x66, p.pos, p.kids(x67))
+	v75 = p.newNode("list", x66, p.pos, p.kids(x67))
 	x63 = append(x63, v75)
-	v76 = p.newNode("Seq", x62, p.pos, x63)
+	v76 = p.newNode("tuple", x62, p.pos, x63)
 	v77, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v76, x36)
 	v38 = v77
 	goto L39
@@ -67929,7 +67983,7 @@ L60:
 	goto L26
 L39:
 	x28 = append(x28, v38)
-	v78 = p.newNode("Seq", x27, p.pos, x28)
+	v78 = p.newNode("tuple", x27, p.pos, x28)
 	v79, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v78, x1)
 	v3 = v79
 	goto L4
@@ -68125,7 +68179,7 @@ func (p *tparser) i43() (any, bool) {
 			goto L11_ordinary
 		}
 		x13 = append(x13, v22)
-		v23 = p.newNodeOrdinary("Seq", x12, p.pos, x13)
+		v23 = p.newNodeOrdinary("tuple", x12, p.pos, x13)
 		v24, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v23, x1)
 		v3 = v24
 		goto L4_ordinary
@@ -68248,9 +68302,9 @@ func (p *tparser) i43() (any, bool) {
 			p.dropKids(x49)
 			goto L43_ordinary
 		}
-		v57 = p.newNodeOrdinary("List", x48, p.pos, p.kids(x49))
+		v57 = p.newNodeOrdinary("list", x48, p.pos, p.kids(x49))
 		x45 = append(x45, v57)
-		v58 = p.newNodeOrdinary("Seq", x44, p.pos, x45)
+		v58 = p.newNodeOrdinary("tuple", x44, p.pos, x45)
 		v59, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v58, x36)
 		v38 = v59
 		goto L39_ordinary
@@ -68299,9 +68353,9 @@ func (p *tparser) i43() (any, bool) {
 			p.dropKids(x67)
 			goto L61_ordinary
 		}
-		v75 = p.newNodeOrdinary("List", x66, p.pos, p.kids(x67))
+		v75 = p.newNodeOrdinary("list", x66, p.pos, p.kids(x67))
 		x63 = append(x63, v75)
-		v76 = p.newNodeOrdinary("Seq", x62, p.pos, x63)
+		v76 = p.newNodeOrdinary("tuple", x62, p.pos, x63)
 		v77, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v76, x36)
 		v38 = v77
 		goto L39_ordinary
@@ -68312,7 +68366,7 @@ func (p *tparser) i43() (any, bool) {
 		goto L26_ordinary
 	L39_ordinary:
 		x28 = append(x28, v38)
-		v78 = p.newNodeOrdinary("Seq", x27, p.pos, x28)
+		v78 = p.newNodeOrdinary("tuple", x27, p.pos, x28)
 		v79, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v78, x1)
 		v3 = v79
 		goto L4_ordinary
@@ -68504,7 +68558,7 @@ L18:
 		goto L11
 	}
 	x13 = append(x13, v22)
-	v23 = p.newNode("Seq", x12, p.pos, x13)
+	v23 = p.newNode("tuple", x12, p.pos, x13)
 	v24, _ = p.shapeSingle(shaper{elems: true, k: 5, mode: 2, tuple: true}, v23, x1)
 	v3 = v24
 	goto L4
@@ -68628,9 +68682,9 @@ L33:
 		p.dropKids(x49)
 		goto L43
 	}
-	v57 = p.newNode("List", x48, p.pos, p.kids(x49))
+	v57 = p.newNode("list", x48, p.pos, p.kids(x49))
 	x45 = append(x45, v57)
-	v58 = p.newNode("Seq", x44, p.pos, x45)
+	v58 = p.newNode("tuple", x44, p.pos, x45)
 	v59, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v58, x36)
 	v38 = v59
 	goto L39
@@ -68679,9 +68733,9 @@ L42:
 		p.dropKids(x67)
 		goto L61
 	}
-	v75 = p.newNode("List", x66, p.pos, p.kids(x67))
+	v75 = p.newNode("list", x66, p.pos, p.kids(x67))
 	x63 = append(x63, v75)
-	v76 = p.newNode("Seq", x62, p.pos, x63)
+	v76 = p.newNode("tuple", x62, p.pos, x63)
 	v77, _ = p.shapeSingle(shaper{elems: true, k: 2, mode: 2, tuple: true}, v76, x36)
 	v38 = v77
 	goto L39
@@ -68692,7 +68746,7 @@ L60:
 	goto L26
 L39:
 	x28 = append(x28, v38)
-	v78 = p.newNode("Seq", x27, p.pos, x28)
+	v78 = p.newNode("tuple", x27, p.pos, x28)
 	v79, _ = p.shapeSingle(shaper{elems: true, k: 3, mode: 2, tuple: true}, v78, x1)
 	v3 = v79
 	goto L4
@@ -69556,9 +69610,9 @@ func (p *tparser) s46() (any, bool) {
 			p.recovered = p.recovered[:x62]
 			break
 		}
-		v67 = p.newNodeOrdinary("List", x58, p.pos, p.kids(x59))
+		v67 = p.newNodeOrdinary("list", x58, p.pos, p.kids(x59))
 		x2 = append(x2, v67)
-		v68 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v68 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v68, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -69998,9 +70052,9 @@ L5:
 		p.recovered = p.recovered[:x62]
 		break
 	}
-	v67 = p.newNode("List", x58, p.pos, p.kids(x59))
+	v67 = p.newNode("list", x58, p.pos, p.kids(x59))
 	x2 = append(x2, v67)
-	v68 = p.newNode("Seq", x1, p.pos, x2)
+	v68 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v68, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -70474,7 +70528,7 @@ func (p *tparser) s48() (any, bool) {
 			p.recovered = p.recovered[:x7]
 			break
 		}
-		v12 = p.newNodeOrdinary("List", x3, p.pos, p.kids(x4))
+		v12 = p.newNodeOrdinary("list", x3, p.pos, p.kids(x4))
 		x2 = append(x2, v12)
 
 		x13, x14 = p.pos, len(p.kidStack)
@@ -70524,7 +70578,7 @@ func (p *tparser) s48() (any, bool) {
 				p.recovered = p.recovered[:x27]
 				break
 			}
-			v32 = p.newNodeOrdinary("List", x23, p.pos, p.kids(x24))
+			v32 = p.newNodeOrdinary("list", x23, p.pos, p.kids(x24))
 			x20 = append(x20, v32)
 
 			x33, x34 = p.pos, len(p.kidStack)
@@ -70557,9 +70611,9 @@ func (p *tparser) s48() (any, bool) {
 				p.recovered = p.recovered[:x37]
 				break
 			}
-			v42 = p.newNodeOrdinary("List", x33, p.pos, p.kids(x34))
+			v42 = p.newNodeOrdinary("list", x33, p.pos, p.kids(x34))
 			x20 = append(x20, v42)
-			v43 = p.newNodeOrdinary("Seq", x19, p.pos, x20)
+			v43 = p.newNodeOrdinary("tuple", x19, p.pos, x20)
 			v44 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v43, x16)
 			x15++
 			p.pushKid(v44)
@@ -70572,9 +70626,9 @@ func (p *tparser) s48() (any, bool) {
 			p.recovered = p.recovered[:x17]
 			break
 		}
-		v45 = p.newNodeOrdinary("List", x13, p.pos, p.kids(x14))
+		v45 = p.newNodeOrdinary("list", x13, p.pos, p.kids(x14))
 		x2 = append(x2, v45)
-		v46 = p.newNodeOrdinary("Seq", x1, p.pos, x2)
+		v46 = p.newNodeOrdinary("tuple", x1, p.pos, x2)
 		v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v46, start)
 		if n := asTval(v); n != nil {
 			n.tsetFresh(false)
@@ -70673,7 +70727,7 @@ func (p *tparser) s48() (any, bool) {
 		p.recovered = p.recovered[:x7]
 		break
 	}
-	v12 = p.newNode("List", x3, p.pos, p.kids(x4))
+	v12 = p.newNode("list", x3, p.pos, p.kids(x4))
 	x2 = append(x2, v12)
 	p.stepWork()
 	x13, x14 = p.pos, len(p.kidStack)
@@ -70723,7 +70777,7 @@ func (p *tparser) s48() (any, bool) {
 			p.recovered = p.recovered[:x27]
 			break
 		}
-		v32 = p.newNode("List", x23, p.pos, p.kids(x24))
+		v32 = p.newNode("list", x23, p.pos, p.kids(x24))
 		x20 = append(x20, v32)
 		p.stepWork()
 		x33, x34 = p.pos, len(p.kidStack)
@@ -70756,9 +70810,9 @@ func (p *tparser) s48() (any, bool) {
 			p.recovered = p.recovered[:x37]
 			break
 		}
-		v42 = p.newNode("List", x33, p.pos, p.kids(x34))
+		v42 = p.newNode("list", x33, p.pos, p.kids(x34))
 		x20 = append(x20, v42)
-		v43 = p.newNode("Seq", x19, p.pos, x20)
+		v43 = p.newNode("tuple", x19, p.pos, x20)
 		v44 = p.scopeValue(shaper{elems: true, k: 3, mode: 2, tuple: true}, v43, x16)
 		x15++
 		p.pushKid(v44)
@@ -70771,9 +70825,9 @@ func (p *tparser) s48() (any, bool) {
 		p.recovered = p.recovered[:x17]
 		break
 	}
-	v45 = p.newNode("List", x13, p.pos, p.kids(x14))
+	v45 = p.newNode("list", x13, p.pos, p.kids(x14))
 	x2 = append(x2, v45)
-	v46 = p.newNode("Seq", x1, p.pos, x2)
+	v46 = p.newNode("tuple", x1, p.pos, x2)
 	v = p.scopeValue(shaper{elems: true, k: 2, mode: 2, tuple: true}, v46, start)
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)

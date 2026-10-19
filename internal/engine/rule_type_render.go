@@ -58,7 +58,7 @@ func renderRuleType(t ty, poll func()) string {
 			poll()
 			parts[i] = name + ": " + renderRuleType(t.fields[name], poll)
 		}
-		return finish("Seq{" + joinRuleType(parts, ", ", poll) + "}")
+		return finish("node{" + joinRuleType(parts, ", ", poll) + "}")
 	default:
 		return finish(t.String())
 	}

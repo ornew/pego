@@ -122,13 +122,13 @@ type Op uint8
 // Matching instructions
 const (
 	// STR s, d, b: match string s of the string table. On failure, record string d as the
-	// expectation. If b is 1, push a Match.
+	// expectation. If b is 1, push a string node.
 	OpStr Op = iota + 1
 	// CLASS c, d, b: match one character of character class c of the character class table.
 	OpClass
 	// ANY b: match any one character.
 	OpAny
-	// TOP b: empty match. If b is 1, push an empty Match.
+	// TOP b: empty match. If b is 1, push an empty string node.
 	OpTop
 	// FAIL: fail.
 	OpFail
@@ -143,13 +143,13 @@ const (
 	OpCommit
 	// CUT: mark the current choice entry as cut.
 	OpCut
-	// PUSHPOS: push the current position (start of Seq, List, @).
+	// PUSHPOS: push the current position (start of a tuple, a list, @).
 	OpPushPos
 	// PUSHNIL: push nil.
 	OpPushNil
-	// SEQ n: pop n values and the position below them, and push a Seq.
+	// SEQ n: pop n values and the position below them, and push a tuple node.
 	OpSeq
-	// ATOMIC b: pop a position and push the Match from there to the current position (nothing is
+	// ATOMIC b: pop a position and push the string node from there to the current position (nothing is
 	// pushed if b is 0).
 	OpAtomic
 	// CAPTURE s, b: write the top value to slot s of the current frame. If b is 1, pop the value

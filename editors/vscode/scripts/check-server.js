@@ -64,7 +64,7 @@ async function main() {
   await nextDiagnostics();
 
   const hover = await conn.sendRequest('textDocument/hover', { textDocument: { uri }, position: { line: 1, character: 5 } });
-  if (!hover || !hover.contents.value.includes('rule num []Match')) fail('hover: ' + JSON.stringify(hover));
+  if (!hover || !hover.contents.value.includes('rule num []node[string]')) fail('hover: ' + JSON.stringify(hover));
 
   const completion = await conn.sendRequest('textDocument/completion', {
     textDocument: { uri },

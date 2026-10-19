@@ -183,7 +183,7 @@ options also fail on unsupported parse entry points, including `ParsePrefix`,
 even when the grammar contains no `#missing` annotation. Zero preserves strict
 prefix matching for grammars without `#missing`. Grammar AST JSON and formatting
 preserve the annotation. `Missing` is a reserved type
-name; a preexisting user type with that name must be renamed. The annotated literal infers `Match | Missing`; `Missing` is assignable wherever
-an error value is admitted, as with `Error`. Declare a union or keep the Node tree when
+name; a preexisting user type with that name must be renamed. The annotated literal infers `node[string] | Missing`; `Missing` is assignable wherever
+an error value is admitted, as with `error`. Declare a union or keep the Node tree when
 consumers need the missing-token identity. Concrete generated typed mappings and
 additional backends are outside the initial implementation.

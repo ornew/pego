@@ -88,7 +88,7 @@ rule item = [a-z]`, Options{NoTypeCheck: true})
 func TestIndexTypeErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = xs:"a"+ => $xs["0"]`, "index must be int, got string"},
-		{`rule main = x:"a" => $x[0]`, "cannot index Match"},
+		{`rule main = x:"a" => $x[0]`, "cannot index node[string]"},
 		{`rule main = "a" => (1)[0]`, "cannot index int"},
 	} {
 		g, err := syntax.Parse(tc.src)

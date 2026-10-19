@@ -21,7 +21,11 @@ func (d *dgen) node(typ, start, kids string) string {
 	if d.g.table == "trules" {
 		return fmt.Sprintf("p.newNode(%q, %s, p.pos, %s)", typ, start, kids)
 	}
-	return fmt.Sprintf("p.newNode(Node{kind: kind%s, start: int32(%s), end: int32(p.pos), children: %s, fresh: true})", typ, start, kids)
+	kind := "kindSeq"
+	if typ == TypeList {
+		kind = "kindList"
+	}
+	return fmt.Sprintf("p.newNode(Node{kind: %s, start: int32(%s), end: int32(p.pos), children: %s, fresh: true})", kind, start, kids)
 }
 
 func (d *dgen) frameScope(s *dscope) *scope {
@@ -163,7 +167,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 		return "nil"
 	}
 	list := d.decl("v", d.g.valType())
-	d.line("%s = %s", list, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return list
 }
 

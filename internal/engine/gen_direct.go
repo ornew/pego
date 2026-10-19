@@ -464,7 +464,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			return "nil"
 		}
 		v := d.decl("v", d.g.valType())
-		d.line("%s = %s", v, d.node("Seq", d.rd(start), d.rd(kids)))
+		d.line("%s = %s", v, d.node("tuple", d.rd(start), d.rd(kids)))
 		return v
 	case *grammar.Choice:
 		return d.choice(e, s, build, fail)
@@ -803,7 +803,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 		return "nil"
 	}
 	list := d.decl("v", d.g.valType())
-	d.line("%s = %s", list, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return list
 }
 
@@ -933,7 +933,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 		d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
 	}
 	v := d.decl("v", d.g.valType())
-	d.line("%s = %s", v, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", v, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return v
 }
 

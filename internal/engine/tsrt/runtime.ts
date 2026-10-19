@@ -67,7 +67,7 @@ const typeListValue = "(list)"; // a list value: the Value of a list node, or a 
  * with the members start, end and value, and, with source information, rule and captures.
  */
 export class Node {
-  /** The type name: Match, Seq, List, Operator or Error for the kinds of nodes, or a type of the grammar. */
+  /** The type name: string, tuple, list or error for the kinds of nodes, or a type of the grammar. */
   type: string;
   /** The name of the rule that produced the node, with source information. */
   rule: string;
@@ -196,14 +196,13 @@ const shapeStruct = 7; // a struct value (fields)
 
 function nodeShape(n: Node): number {
   switch (n.type) {
-    case "Match":
+    case "string":
       return shapeString;
-    case "Seq":
-    case "Operator":
+    case "tuple":
       return shapeTuple;
-    case "List":
+    case "list":
       return shapeList;
-    case "Error":
+    case "error":
       return shapeError;
     case typeBox:
       return shapeBox;
@@ -219,11 +218,10 @@ function nodeShape(n: Node): number {
 // or an error value) rather than a struct, a box or a list or tuple value.
 function isValueNode(n: Node): boolean {
   switch (n.type) {
-    case "Match":
-    case "Seq":
-    case "List":
-    case "Operator":
-    case "Error":
+    case "string":
+    case "tuple":
+    case "list":
+    case "error":
       return true;
   }
   return n.terminal;
@@ -2150,7 +2148,7 @@ class Parser {
   }
 
   // attachCaptures attaches the non-null captures as fields of the node. A node of another rule, or
-  // one that is itself captured, is first wrapped in a Seq node.
+  // one that is itself captured, is first wrapped in a tuple node.
   attachCaptures(v: Node | null, names: string[], f: Frame, start: number, end: number): Node | null {
     let found = false;
     let wrap = v === null || !v.fresh;
@@ -2168,7 +2166,7 @@ class Parser {
     }
     let n = v as Node;
     if (wrap) {
-      n = new Node("Seq", "", start, end, "", [v], noFields, true, false);
+      n = new Node("tuple", "", start, end, "", [v], noFields, true, false);
     }
     n.labeled = sourceInfo;
     for (let i = 0; i < names.length; i++) {
@@ -2192,7 +2190,7 @@ class Parser {
     if ((s & shaperElems) !== 0) {
       return v as Node;
     }
-    return new Node("Seq", "", start, this.pos, "", s >> 4 === 1 ? [v] : [], noFields, true, false);
+    return new Node("tuple", "", start, this.pos, "", s >> 4 === 1 ? [v] : [], noFields, true, false);
   }
 
   // shapeSingle returns the value of the result v where the expression takes one element, or null
@@ -2211,7 +2209,7 @@ class Parser {
   // node of the range matched when the expression has no value.
   shapeCapture(s: Shaper, v: Node | null, start: number): Node | null {
     if (((s >> 2) & 3) === singleNone) {
-      return new Node("Seq", "", start, this.pos, "", [], noFields, true, false);
+      return new Node("tuple", "", start, this.pos, "", [], noFields, true, false);
     }
     return this.shapeSingle(s, v, start);
   }
@@ -2230,7 +2228,7 @@ class Parser {
     if (n.terminal) {
       return n.text;
     }
-    return new Node(n.type === "List" ? typeListValue : typeTupleValue, "", n.start, n.end, "", n.children, noFields, false, false);
+    return new Node(n.type === "list" ? typeListValue : typeTupleValue, "", n.start, n.end, "", n.children, noFields, false, false);
   }
 
   // --- Terminals ---
@@ -2263,7 +2261,7 @@ class Parser {
     if (!build) {
       return null;
     }
-    return new Node("Match", "", start, this.pos, lit.text, noNodes, noFields, true, true);
+    return new Node("string", "", start, this.pos, lit.text, noNodes, noFields, true, true);
   }
 
   // Keep replacement decoding off the successful byte-comparison path.
@@ -2292,7 +2290,7 @@ class Parser {
     if (!build) {
       return null;
     }
-    return new Node("Match", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
+    return new Node("string", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
   }
 
   matchAny(build: boolean): R {
@@ -2310,7 +2308,7 @@ class Parser {
     if (!build) {
       return null;
     }
-    return new Node("Match", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
+    return new Node("string", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
   }
 
   anchor(ok: boolean, desc: number): R {
@@ -2427,7 +2425,7 @@ class Parser {
     if (!build) {
       return null;
     }
-    return new Node("Error", "", m0pos, this.pos, this.text(m0pos, this.pos), noNodes, [{ name: "message", value: e.message }], true, true);
+    return new Node("error", "", m0pos, this.pos, this.text(m0pos, this.pos), noNodes, [{ name: "message", value: e.message }], true, true);
   }
 
   // --- Actions and predicates ---
@@ -2781,7 +2779,7 @@ class Parser {
     // captures.
     let opv: Node | null;
     if (((l.value >> 2) & 3) === singleNone) {
-      opv = new Node("Seq", "", a.start, a.end, "", [], noFields, false, false);
+      opv = new Node("tuple", "", a.start, a.end, "", [], noFields, false, false);
     } else {
       opv = this.shapeSingle(l.value, a.v, a.start);
     }
@@ -2816,7 +2814,7 @@ class Parser {
         kids = [lhs, opv, rhs];
         fields = [{ name: "lhs", value: lhs }, { name: "op", value: opv }, { name: "rhs", value: rhs }];
     }
-    const n = new Node("Seq", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
+    const n = new Node("tuple", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
     n.labeled = sourceInfo;
     return n;
   }
@@ -3135,7 +3133,7 @@ function typeName(v: unknown): string {
     return "nil";
   }
   if (v instanceof Node) {
-    return v.type;
+    return v.type === typeBox ? typeName(v.box) : valueTypeName(nodeShape(v), v.type, v.children.length);
   }
   switch (typeof v) {
     case "number":
@@ -3149,6 +3147,33 @@ function typeName(v: unknown): string {
       return "func";
   }
   return typeof v;
+}
+
+// valueTypeName names the type of a value of the given shape in messages, in the terms of the value
+// model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list nodes (a
+// tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list values,
+// and name for a struct.
+function valueTypeName(shape: number, name: string, elems: number): string {
+  switch (shape) {
+    case shapeString:
+      return "node[string]";
+    case shapeTuple:
+      return `node[${tupleTerm(elems)}]`;
+    case shapeList:
+      return "node[[]_]";
+    case shapeError:
+      return "error";
+    case shapeTupleValue:
+      return tupleTerm(elems);
+    case shapeListValue:
+      return "[]_";
+  }
+  return name;
+}
+
+// tupleTerm is the type term of a tuple of n elements of unknown types.
+function tupleTerm(n: number): string {
+  return n === 1 ? "(_,)" : `(${Array<string>(n).fill("_").join(", ")})`;
 }
 
 function listItems(fn: string, v: Value): readonly (Node | null)[] {

@@ -26,18 +26,24 @@ func (t basicTy) String() string { return string(t) }
 // namedTy is a named node type.
 type namedTy struct {
 	name string
-	kind byte // 's': struct, 'c': reserved CST node type
+	kind byte // 's': struct, 'c': reserved node kind
 }
 
-func (t namedTy) String() string { return t.name }
+// String returns the name of a struct or Missing, and the value-model term of another reserved
+// node kind (node[string], node, error), so that diagnostics name the types a grammar can write.
+func (t namedTy) String() string {
+	if t.kind == 'c' && t != tyMissing {
+		return fromLegacy(t).String()
+	}
+	return t.name
+}
 
 var (
-	tyMatch    = namedTy{TypeMatch, 'c'}
-	tySeq      = namedTy{TypeSeq, 'c'}
-	tyList     = namedTy{TypeList, 'c'}
-	tyOperator = namedTy{TypeOperator, 'c'}
-	tyError    = namedTy{TypeError, 'c'}
-	tyMissing  = namedTy{TypeMissing, 'c'}
+	tyMatch   = namedTy{TypeString, 'c'}
+	tySeq     = namedTy{TypeTuple, 'c'}
+	tyList    = namedTy{TypeList, 'c'}
+	tyError   = namedTy{TypeError, 'c'}
+	tyMissing = namedTy{TypeMissing, 'c'}
 )
 
 type listTy struct{ elem ty }
@@ -58,7 +64,8 @@ func (t unionTy) String() string {
 	return strings.Join(parts, " | ")
 }
 
-// recordTy is the type of a Seq node whose fields are its captures.
+// recordTy is the type of a tuple node whose fields are its captures. Diagnostics print it as
+// node{k: T, ...}.
 type recordTy struct{ fields map[string]ty }
 
 func (t recordTy) String() string {
@@ -71,7 +78,7 @@ func (t recordTy) String() string {
 	for i, n := range names {
 		parts[i] = n + ": " + t.fields[n].String()
 	}
-	return "Seq{" + strings.Join(parts, ", ") + "}"
+	return "node{" + strings.Join(parts, ", ") + "}"
 }
 
 func typeTerm(t ty) string {

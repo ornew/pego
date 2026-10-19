@@ -905,7 +905,7 @@ func (cl *Class) has(ch rune) bool {
 	return cl.Negated
 }
 
-// single advances one character (size units) and pushes a Match if b is set.
+// single advances one character (size units) and pushes a string node if b is set.
 func (p *parser) single(size int, b bool) {
 	start := p.pos
 	p.pos += size

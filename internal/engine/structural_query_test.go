@@ -11,7 +11,7 @@ import (
 )
 
 func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
-	leaf := &Node{kind: kindOf(TypeMatch, "identifier"), terminal: true, text: "hello"}
+	leaf := &Node{kind: kindOf(TypeString, "identifier"), terminal: true, text: "hello"}
 	tuple := &Node{kind: kindTupleValue, children: []*Node{leaf}}
 	list := &Node{kind: kindListValue, children: []*Node{nil, leaf}}
 	root := &Node{kind: kindOf("Pair", ""), fields: Fields{{"z", list}, {"a", leaf}, {"t", tuple}}}

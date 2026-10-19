@@ -584,8 +584,8 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 ```
 
 ```text
-pego: raw-typed.pego:3:1: operatorsRule t produces Match, which is not assignable to Bin
-raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Bin
+pego: raw-typed.pego:3:1: operatorsRule t produces node[string], which is not assignable to Bin
+raw-typed.pego:3:1: operators of t without an action produce a tuple node, which is not assignable to Bin
 ```
 
 ### Captures and Operators

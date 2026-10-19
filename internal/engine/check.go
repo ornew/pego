@@ -177,7 +177,7 @@ type typeInfo struct {
 }
 
 // RuleType returns the type of the rule name, declared or inferred, as written in a grammar (for
-// example "[]Expr | *Match"). It reports false if the program has no such rule or its types were
+// example "[]Expr | *node[string]"). It reports false if the program has no such rule or its types were
 // not checked (Options.NoTypeCheck, or a program loaded from a compiled grammar).
 func (p *Program) RuleType(name string) (string, bool) {
 	if p.typed == nil {
@@ -697,7 +697,7 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 		for _, op := range l.Operators {
 			keys = append(keys, op)
 			if op.Action == nil {
-				ts = append(ts, tyOperator)
+				ts = append(ts, tySeq)
 				k.lineType(op.Expr, nil, nil, op.Diagnostic())
 				continue
 			}
@@ -714,8 +714,8 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 	if declared != nil {
 		for i, t := range ts {
 			if !assignable(t, declared) {
-				if t == tyOperator {
-					k.errorf(rd.Diagnostic(), "operators of %s without an action produce Operator, which is not assignable to %s", rd.Name, declared)
+				if t == tySeq {
+					k.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which is not assignable to %s", rd.Name, declared)
 				} else {
 					k.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 				}
@@ -1154,7 +1154,7 @@ func (k *checker) elemType(fn string, t ty, pos grammar.Pos) ty {
 		return tyNever
 	case tyAny, tyNode:
 		return tyAny
-	case tyList, tySeq, tyOperator:
+	case tyList, tySeq:
 		return optional(tyNode)
 	}
 	k.errorf(pos, "%s: expected a list, got %s", fn, t)

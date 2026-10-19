@@ -30,7 +30,7 @@ func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
 	}
 	s := &Snapshot{graph: g}
 	n := s.Root()
-	if !n.Valid() || n.Type() != TypeSeq || n.Start() != 1 || n.End() != 4 || n.ChildCount() != 3 {
+	if !n.Valid() || n.Type() != TypeTuple || n.Start() != 1 || n.End() != 4 || n.ChildCount() != 3 {
 		t.Fatal("metadata")
 	}
 	if n.Child(0) != n.Child(2) || n.Child(1).Valid() || n.Child(0).Rule() != "leaf" || !n.Child(0).IsTerminal() {

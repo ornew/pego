@@ -10,8 +10,7 @@ import (
 
 // Typed values of rules in the value model.
 //
-// A rule whose declared or inferred type is a CST node type (Seq, List, Operator, node, terminal or
-// a record), or a rule without a declared type and without an action, has the Go type of its value
+// A rule whose declared or inferred type is a node kind (a tuple or list node, node, or a record), or a rule without a declared type and without an action, has the Go type of its value
 // in the value model (Program.valueTypes) instead:
 //
 //   - node[T] becomes *TNode[T'], with T' the Go type of T (TNode[any] for an unknown T);
@@ -62,7 +61,7 @@ func vague(x ty) bool {
 	case recordTy:
 		return true
 	case namedTy:
-		return x == tySeq || x == tyList || x == tyOperator
+		return x == tySeq || x == tyList
 	case listTy:
 		return vague(x.elem)
 	case optTy:
@@ -267,7 +266,7 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
-			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"Error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.start), int(n.end)}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.start), int(n.end)}}\n", g[1:], t.span, t.span)
 			switch value := x.value.(type) {
 			case basicTy:
 				if value == tyString {

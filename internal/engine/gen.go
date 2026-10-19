@@ -1047,7 +1047,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	b.WriteString("\t\tif p.pos == m0.pos {\n\t\t\tbreak\n\t\t}\n\t}\n")
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.dropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
 	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true\n",
-		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
+		"\treturn p.newNode(\"list\", start, p.pos, p.kids(base)), true\n"))
 }
 
 func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
@@ -1086,7 +1086,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		}
 		if build {
 			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true\n",
-				"\treturn p.newNode(\"Seq\", start, p.pos, kids), true\n"))
+				"\treturn p.newNode(\"tuple\", start, p.pos, kids), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
 		}
@@ -1301,7 +1301,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		return
 	}
 	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true\n",
-		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
+		"\treturn p.newNode(\"list\", start, p.pos, p.kids(base)), true\n"))
 }
 
 // scanRepeat generates a value-free repetition of a single-character expression (a character

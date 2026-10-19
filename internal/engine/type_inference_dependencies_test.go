@@ -39,7 +39,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 					t.Fatal(err)
 				}
 				_, err = Compile(g, Options{})
-				if err == nil || !strings.Contains(err.Error(), "produces P, which is not assignable to Match") {
+				if err == nil || !strings.Contains(err.Error(), "produces P, which is not assignable to node[string]") {
 					t.Errorf("long-chain type mismatch: %v", err)
 				}
 				p := compile(t, inferredChain(depth, reverse, ""))
@@ -132,8 +132,8 @@ func TestInferenceFiniteRecursiveChains(t *testing.T) {
 	}
 	p := compile(t, src.String())
 	for i := range 128 {
-		if got, _ := p.RuleType(fmt.Sprint("r", i)); got != "Match" {
-			t.Errorf("r%d type = %s; want Match", i, got)
+		if got, _ := p.RuleType(fmt.Sprint("r", i)); got != "node[string]" {
+			t.Errorf("r%d type = %s; want node[string]", i, got)
 		}
 	}
 }
@@ -246,7 +246,7 @@ func TestInferenceChainFieldMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = Compile(g, Options{})
-	if err == nil || !strings.Contains(err.Error(), "cannot use P as Match in field Value of Holder") {
+	if err == nil || !strings.Contains(err.Error(), "cannot use P as node[string] in field Value of Holder") {
 		t.Errorf("long-chain field mismatch: %v", err)
 	}
 }

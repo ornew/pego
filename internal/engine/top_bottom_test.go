@@ -60,7 +60,7 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type T = { A []node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A *[]node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		// A meet is the type assignable to both: here Match, which an int is not.
-		{"type T = { A (node[string] | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as Match"},
+		{"type T = { A (node[string] | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as node[string]"},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {
@@ -123,7 +123,7 @@ func TestTopBottomListCheck(t *testing.T) {
 							t.Fatalf("%s %s %s: %v", tc.field, start, backend, err)
 						}
 					}
-					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use Match as []_ in result of rule bad") {
+					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use node[string] as []_ in result of rule bad") {
 						t.Fatalf("%s bad %s: %v", tc.field, backend, err)
 					}
 				}

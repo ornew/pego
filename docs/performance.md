@@ -116,7 +116,7 @@ Notes:
 ### Generated Typed-Output Retention
 
 `internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
-and checks escaped terminal, Match, shared-structure and returned-list values
+and checks escaped terminal, string-node, shared-structure and returned-list values
 in both position units. It exports `slabs`, `legacy`, `objects`, `slices` and
 `individual` subdirectories. `slabs` uses the first-three-object/first-nonempty-
 list bootstrap followed by slabs; `legacy` disables that bootstrap while
@@ -151,11 +151,12 @@ to measure the mechanisms independently. Reference controls preserve values,
 sharing, spans, non-nil empty lists and append isolation; they are internal
 measurement tools rather than public parser options.
 
-The `match` fixture discards a large public Match before returning a small
-one from the same typed-runtime Match block. Object/list reference controls
-do not change that block: treat Match ownership as a separate domain when
-evaluating a cleanup strategy. Clone the returned Match text just like
-terminal text, and retain the manual Match control in both position units.
+The `match` fixture discards a large public string node (`TNode[string]`)
+before returning a small one from the same typed-runtime string-node block.
+Object/list reference controls do not change that block: treat string-node
+ownership as a separate domain when evaluating a cleanup strategy. Clone the
+returned string-node text just like terminal text, and retain the manual
+string-node control in both position units.
 
 ### Benchmark Workloads
 

@@ -95,32 +95,31 @@ location has that type.
 ### Node Type Names
 
 The values that Rule Expressions produce have the shapes defined in
-[Nodes and Values](nodes.md#node-model). `Node.Type()` returns the following
-names for nodes that are not structs, and type-checking diagnostics use them
-for the inferred types of such values. Except for `Missing`, they are not
-types of the grammar language: a Type Expression that names one is an error,
-which `pego fix` rewrites to the type in the second column.
+[Nodes and Values](nodes.md#node-model). `Node.Type()`, the `type` member of
+the JSON form and generated code name the nodes that are not structs by their
+kind:
 
 | Name | Values | Type |
 |:--|:--|:--|
-| `Match` | String nodes produced by literals, character classes, `.` and `a #atomic` | `node[string]` |
-| `Seq` | Tuple nodes: values of sequences | `node` |
-| `List` | List nodes: values of repetitions | `node` |
-| `Operator` | Tuple nodes of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node` |
-| `Error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) | `error` |
+| `string` | String nodes produced by literals, character classes, `.` and `a #atomic` | `node[string]` |
+| `tuple` | Tuple nodes: values of sequences, and of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node` |
+| `list` | List nodes: values of repetitions | `node` |
+| `error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) | `error` |
 | `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only | `Missing` |
 
-`terminal`, the former type of every string node, is likewise an error that
-`pego fix` rewrites to `node[string]`.
+Diagnostics name these values by the types in the third column. The names that
+earlier versions used, `Match`, `Seq`, `List`, `Operator` and `Error`, and
+`terminal`, the former type of every string node, are not types: a Type
+Expression that names one is an error, which `pego fix` rewrites to the type of
+the value.
 
 ## Names
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
 the built-in types (`int`, `string`, `bool`, `node`, `error`), and `_` and
-`_|_` name the top and bottom types. The [node type names](#node-type-names)
-(`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) MUST NOT
-be defined.
+`_|_` name the top and bottom types. `Missing` and the former node type names
+(`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).
 

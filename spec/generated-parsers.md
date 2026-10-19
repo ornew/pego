@@ -133,7 +133,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
   and `Unit` is `struct{}`. A missing element of a tuple is `nil`. A list node's `Value` is a slice.
 - A grammar type whose name collides with a name that the generated code reserves
-  (`Node`, `TNode`, `Match`, `Error`, `Parse`, `Unit`, `Span`, `ParseOption`, `ParseRuleAST`
+  (`Node`, `TNode`, `Error`, `Parse`, `Unit`, `Span`, `ParseOption`, `ParseRuleAST`
   and the other exported names of the generated runtime) gets a trailing
   underscore. Names are assigned in sorted order, so `Node` becomes `Node_` and an
   existing `Node_` becomes `Node__`. Every declared alias is exported.
@@ -157,7 +157,7 @@ mapping is:
 | Grammar type | TypeScript value |
 |:--|:--|
 | Struct | An interface with `type` (the grammar name), `start`, `end` and the fields; nullable where an absent or incompatible recovered value becomes nil |
-| `node[string]`, a string node | `Match`, which extends `TNode<string>` (`type`, `start`, `end` and `value`) |
+| `node[string]`, a string node | `StringNode`, which extends `TNode<string>` (`type` is `"string"`, `start`, `end` and `value`) |
 | `[]T` | A readonly array, or null; null differs from an empty array |
 | `*T` | A nullable target |
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |

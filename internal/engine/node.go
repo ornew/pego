@@ -13,12 +13,11 @@ import (
 
 // Names of the reserved node types.
 const (
-	TypeMatch    = "Match"    // terminal (literal, character class, atomic, and so on)
-	TypeSeq      = "Seq"      // sequence
-	TypeList     = "List"     // repetition
-	TypeOperator = "Operator" // application of a OperatorsRule operator without an action
-	TypeMissing  = "Missing"  // literal inserted at an empty source range
-	TypeError    = "Error"    // range skipped by error recovery
+	TypeString  = "string"  // a node whose value is its text (literal, character class, atomic, and so on)
+	TypeTuple   = "tuple"   // a sequence, or an operator of an operators rule without an action
+	TypeList    = "list"    // a repetition
+	TypeMissing = "Missing" // literal inserted at an empty source range
+	TypeError   = "error"   // range skipped by error recovery
 
 	// Kinds of the value model that are not nodes. Their names cannot be type names.
 	typeBox        = "(box)"   // a value other than a node, carried where a node pointer is expected
@@ -57,8 +56,8 @@ type Node struct {
 	box any
 }
 
-// Type returns the node's type name: a reserved type (Match, Seq, List, Operator, Error, Missing) for CST
-// nodes, or otherwise the name of a type defined in the grammar.
+// Type returns the node's type name: the kind of a node of the value model (string, tuple, list,
+// error, or Missing for an inserted literal), or otherwise the name of a type defined in the grammar.
 func (n *Node) Type() string { return n.kind.typeName() }
 
 // Rule returns the name of the rule that produced the node, if it was produced by a rule without
@@ -106,16 +105,15 @@ func (k *nodeKind) ruleName() string {
 	return k.rule
 }
 
-var reservedTypes = [...]string{TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing, typeBox, typeTupleValue, typeListValue}
+var reservedTypes = [...]string{TypeString, TypeTuple, TypeList, TypeError, TypeMissing, typeBox, typeTupleValue, typeListValue}
 
 // Kinds of the reserved types without a rule.
 var (
-	kindMatch    = kindOf(TypeMatch, "")
-	kindSeq      = kindOf(TypeSeq, "")
-	kindList     = kindOf(TypeList, "")
-	kindOperator = kindOf(TypeOperator, "")
-	kindError    = kindOf(TypeError, "")
-	kindMissing  = kindOf(TypeMissing, "")
+	kindMatch   = kindOf(TypeString, "")
+	kindSeq     = kindOf(TypeTuple, "")
+	kindList    = kindOf(TypeList, "")
+	kindError   = kindOf(TypeError, "")
+	kindMissing = kindOf(TypeMissing, "")
 
 	kindBox        = kindOf(typeBox, "")
 	kindTupleValue = kindOf(typeTupleValue, "")
@@ -126,7 +124,7 @@ var (
 // tuple value.
 func (n *Node) isNode() bool {
 	switch n.kind.typeName() {
-	case TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError, TypeMissing:
+	case TypeString, TypeTuple, TypeList, TypeError, TypeMissing:
 		return true
 	}
 	return n.terminal
@@ -311,7 +309,7 @@ func cloneNode(n *Node, seen map[*Node]*Node) *Node {
 	return c
 }
 
-// IsTerminal reports whether the node holds text: a string node (Match) or an error value.
+// IsTerminal reports whether the node holds text: a string node or an error value.
 func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
 
 // Kind is what a Node stands for in the value model.
@@ -520,9 +518,9 @@ const (
 
 func (n *Node) shape() nodeShape {
 	switch n.kind.typeName() {
-	case TypeMatch:
+	case TypeString:
 		return shapeString
-	case TypeSeq, TypeOperator:
+	case TypeTuple:
 		return shapeTuple
 	case TypeList:
 		return shapeList
@@ -539,6 +537,36 @@ func (n *Node) shape() nodeShape {
 		return shapeString
 	}
 	return shapeStruct
+}
+
+// valueTypeName names the type of a value of the given shape in messages, in the terms of the
+// value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
+// nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
+// values, and name for a struct.
+func valueTypeName(shape nodeShape, name string, elems int) string {
+	switch shape {
+	case shapeString:
+		return "node[string]"
+	case shapeTuple:
+		return "node[" + tupleTerm(elems) + "]"
+	case shapeList:
+		return "node[[]_]"
+	case shapeError:
+		return "error"
+	case shapeTupleValue:
+		return tupleTerm(elems)
+	case shapeListValue:
+		return "[]_"
+	}
+	return name
+}
+
+// tupleTerm is the type term of a tuple of n elements of unknown types.
+func tupleTerm(n int) string {
+	if n == 1 {
+		return "(_,)"
+	}
+	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
 }
 
 // captureLocation is where a capture of a node is: a path of tuple indexes into the node's

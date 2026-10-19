@@ -117,7 +117,7 @@ evaluated:
   and, as an empty list, for every list Type.
 
 A mismatch aborts a Value Action with an error such as
-`cannot use Match as Ident in field Name of Decl`; inside a Predicate Action it
+`cannot use node[string] as Ident in field Name of Decl`; inside a Predicate Action it
 makes the predicate fail. Each examined list element counts as one execution step for
 [work limits](parsing.md#cancellation-and-work-limits). Fields declared `_` or `any` and values whose
 Type the checker proved assignable are not checked, so constructors in fully

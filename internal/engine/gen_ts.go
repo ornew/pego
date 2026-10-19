@@ -248,9 +248,8 @@ const tsFieldCheckSource = `
 type FieldType = { kind: string; name: string; elem: FieldType | null; alts: readonly FieldType[]; text: string };
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. Match is a string node, Seq, List, Operator
-// and node every node, and Error error values; a list type takes a list value, not the node of a
-// repetition.
+// each list element it examines. node[string] is a string node, node every node, and error an
+// error value; a list type takes a list value, not the node of a repetition.
 function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
   if (v instanceof Node && nodeShape(v) === shapeBox) {
     return fieldConforms(p, t, v.box);
@@ -280,18 +279,11 @@ function fieldConforms(p: Parser, t: FieldType, v: Value | undefined): boolean {
   switch (t.kind) {
     case "n":
       return valueNode;
+    case "S":
+      return shape === shapeString;
+    case "E":
+      return shape === shapeError;
     case "N":
-      switch (t.name) {
-        case "Match":
-          return shape === shapeString;
-        case "Seq":
-        case "List":
-        case "Operator":
-          return valueNode;
-        case "Error":
-        case "Missing":
-          return shape === shapeError;
-      }
       return shape === shapeStruct && v.type === t.name;
     case "l":
       if (shape !== shapeListValue) return false;
@@ -670,7 +662,7 @@ func (g *tsGen) projectRepeat(b *strings.Builder, e *grammar.Repeat, field strin
 	fmt.Fprintf(b, "    count++;\n    p.kidStack.push(f[%d]!);\n", slot)
 	b.WriteString("    if (p.pos === m0pos) {\n      break;\n    }\n  }\n")
 	fmt.Fprintf(b, "  if (count < %d) {\n    p.dropKids(base);\n    return undefined;\n  }\n", e.Min)
-	b.WriteString("  return new Node(\"List\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
+	b.WriteString("  return new Node(\"list\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
 }
 
 // expr returns a TypeScript call expression of type R that matches e. Most expressions become a
@@ -737,7 +729,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 			}
 		}
 		if build {
-			b.WriteString("  return new Node(\"Seq\", \"\", start, p.pos, \"\", kids, noFields, true, false);\n")
+			b.WriteString("  return new Node(\"tuple\", \"\", start, p.pos, \"\", kids, noFields, true, false);\n")
 		} else {
 			b.WriteString("  return null;\n")
 		}
@@ -783,7 +775,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		m := g.expr(e.Expr, s, false)
 		if build {
 			fmt.Fprintf(&b, "  const start = p.pos;\n  if (%s === undefined) {\n    return undefined;\n  }\n", m)
-			b.WriteString("  return new Node(\"Match\", \"\", start, p.pos, p.text(start, p.pos), noNodes, noFields, true, true);\n")
+			b.WriteString("  return new Node(\"string\", \"\", start, p.pos, p.text(start, p.pos), noNodes, noFields, true, true);\n")
 		} else {
 			fmt.Fprintf(&b, "  return %s === undefined ? undefined : null;\n", m)
 		}
@@ -923,7 +915,7 @@ func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bo
 		b.WriteString("  return null;\n")
 		return
 	}
-	b.WriteString("  return new Node(\"List\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
+	b.WriteString("  return new Node(\"list\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
 }
 
 // scanRepeat generates a value-free repetition of a single-character expression (a character

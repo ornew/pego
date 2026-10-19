@@ -115,7 +115,7 @@ const types: [W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, Cho
 check(types.length === 12 && v.W?.type === "Word" && v.W.Text === "😀あ", "exported types/text struct");
 check(v.Items?.length === 0 && v.Empty?.length === 0 && v.Missing === null && v.Optional === null && v.O === null, "nil/empty/optionals");
 check(v.I === -3 && v.Big === 9223372036854775807n && v.M === 9007199254740992n && v.S === "😀あ" && v.B, "scalar representation");
-check(v.Raw !== null && !(v.Raw instanceof Node) && (v.Raw as {type?: string}).type === "Seq" && v.Any === v.Raw, "CST types convert to shared TNode values");
+check(v.Raw !== null && !(v.Raw instanceof Node) && (v.Raw as {type?: string}).type === "tuple" && v.Any === v.Raw, "CST types convert to shared TNode values");
 check(v.Items !== v.OpenItems, "list representations stay distinct");
 check(v.start === 0 && v.end === 4 && v.W.end === 2, "code point spans");
 const b = parseASTWithOptions("😀あ!?", {unit: Bytes, maxDepth: 0});
@@ -141,11 +141,11 @@ v.I = 1;
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
-	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value"}
+	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "RecoveredError", "StringNode", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value"}
 	var src, imports, vals strings.Builder
 	for i, name := range names {
-		// Match and Error are reserved grammar types, so aliases test the other
-		// runtime declarations; reserved grammar names remain rejected unchanged.
+		// Match and Error are retired node type names, which grammars cannot declare, so aliases
+		// test the other runtime declarations.
 		if name == "Match" || name == "Error" {
 			continue
 		}
@@ -176,14 +176,14 @@ for (const unit of [CodePoints, Bytes]) {
   const r = parseAST("1;abc;2;", unit), n = parse("1;abc;2;", unit);
   check(r.error instanceof SyntaxErrors && n.error instanceof SyntaxErrors && r.error.message === n.error.message, "same recovery diagnostics");
   const v = r.value; check(v !== null, "recovered result");
-  check(v.Specific?.type === "Error" && v.U?.type === "Error", "recovered Error " + stable(v));
-  check(typeof v.M === "object" && v.M !== null && !Array.isArray(v.M) && v.M.type === "Error", "mixed recovery");
-  check(typeof v.A === "object" && v.A !== null && !Array.isArray(v.A) && v.A.type === "Error", "any recovery");
+  check(v.Specific?.type === "error" && v.U?.type === "error", "recovered Error " + stable(v));
+  check(typeof v.M === "object" && v.M !== null && !Array.isArray(v.M) && v.M.type === "error", "mixed recovery");
+  check(typeof v.A === "object" && v.A !== null && !Array.isArray(v.A) && v.A.type === "error", "any recovery");
   check(v.M === v.A && v.M === v.U && v.Specific === v.U, "equivalent representations share converted Error");
   const first = v.Items?.[0];
-  check(v.Items?.length === 2 && first != null && "Text" in first && first.Text === "abc;" && v.Items[1]?.type === "Error", "list recovery Error element");
+  check(v.Items?.length === 2 && first != null && "Text" in first && first.Text === "abc;" && v.Items[1]?.type === "error", "list recovery Error element");
   check(v.OpenItems !== v.Items && v.OpenItems?.[0] === v.Items?.[0], "list recipes/cache sharing");
-  const openError = v.OpenItems?.[1]; check(typeof openError === "object" && openError !== null && !Array.isArray(openError) && openError?.type === "Error", "open list retains Error");
+  const openError = v.OpenItems?.[1]; check(typeof openError === "object" && openError !== null && !Array.isArray(openError) && openError?.type === "error", "open list retains Error");
   const before = stable(v); parseAST("abc;"); check(stable(v) === before, "recovery ownership");
 }
 `
@@ -300,7 +300,7 @@ rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings
   check(r.error?.message === n.error?.message && r.value !== null && n.node !== null, "workload parity");
   check(parseASTWithOptions(input, {unit,maxDepth:0}).error?.message === r.error?.message, "options control");
   if (Array.isArray(r.value)) check(r.value.length === n.node.children.length, "list count");
-  else check(stable(r.value).includes("Match"), "terminal value");
+  else check(stable(r.value).includes('"type":"string"'), "string node value");
 }`
 			keep := ""
 			if dir := os.Getenv("PEGO_TS_TYPED_DIR"); dir != "" {
@@ -327,9 +327,9 @@ func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
 		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", true},
 		"never": {`rule main = main`, "_|_", false},
 		"nil-rule-recovery": {`rule leaf = "a" => nil
-rule main = leaf #recover(skip=.+)`, "*Error", true},
+rule main = leaf #recover(skip=.+)`, "*error", true},
 		"never-rule-recovery": {`rule leaf = leaf
-rule main = leaf #recover(skip=.+)`, "Error", true},
+rule main = leaf #recover(skip=.+)`, "error", true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			prog := compile(t, c.src)
@@ -344,7 +344,7 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
  // Narrow the actual entry point's type, not just the widened annotation.
  const v = parseAST("!",unit).value;
  if (typeof v === "object" && v !== null && !(v instanceof Node) && !Array.isArray(v)) {
-   check(v.type === "Error" && v.start === 0 && v.end === 1, "inferred recovered value");
+   check(v.type === "error" && v.start === 0 && v.end === 1, "inferred recovered value");
  }
  const bad = parseAST("",unit); check(bad.value === null && bad.error !== null, "unrecoverable empty input");
  check(stable(r.value) === stable(parseAST("!",unit).value), "repeat value");
@@ -357,7 +357,7 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
 			switch name {
 			case "nil":
 				// The group of a dropped expression is a node whose value is the empty tuple.
-				consumer += `const success = parseAST("a"); check(stable(success.value) === '{"type":"Seq","start":0,"end":1,"value":[]}' && success.error === null, "normal empty tuple success " + stable(success.value));`
+				consumer += `const success = parseAST("a"); check(stable(success.value) === '{"type":"tuple","start":0,"end":1,"value":[]}' && success.error === null, "normal empty tuple success " + stable(success.value));`
 			case "nil-rule-recovery":
 				consumer += `const success = parseAST("a"); check(success.value === null && success.error === null, "normal inferred nil success");`
 			}

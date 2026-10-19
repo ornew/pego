@@ -355,7 +355,7 @@ pego parse -g args-optional.pego -s call -i 'f(a)'
 ```
 
 ```text
-pego: args-optional.pego:3:63: cannot use *[]Match as []node in field Args of Call
+pego: args-optional.pego:3:63: cannot use *[]node[string] as []node in field Args of Call
 ```
 
 ### Keeping Only the AST You Need

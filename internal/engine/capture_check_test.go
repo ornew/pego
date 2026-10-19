@@ -13,15 +13,15 @@ import (
 
 func TestDuplicateCaptureTypes(t *testing.T) {
 	for _, tc := range []struct{ name, src, want, err string }{
-		{"nested records", captureCheckSource(1024, "record"), "Seq{x: Seq{k: Match, v: []Seq{y: Match}}}", ""},
-		{"mixed optional", captureCheckSource(32, "mixed"), "Seq{x: *(A | B)}", ""},
+		{"nested records", captureCheckSource(1024, "record"), "node{x: node{k: node[string], v: []node{y: node[string]}}}", ""},
+		{"mixed optional", captureCheckSource(32, "mixed"), "node{x: *(A | B)}", ""},
 		{"recursive", captureCheckSource(64, "recursive"), "any", ""},
-		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, "Seq{k: Match, x: Match}", ""},
-		{"optional scope", `rule main = (x:"a" x:"b")? $$`, "Seq{x: *Match}", ""},
-		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, "[]Seq{x: Match}", ""},
-		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "Seq{x: nil}", ""},
-		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "Match", ""},
-		{"incompatible action", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},
+		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, "node{k: node[string], x: node[string]}", ""},
+		{"optional scope", `rule main = (x:"a" x:"b")? $$`, "node{x: *node[string]}", ""},
+		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, "[]node{x: node[string]}", ""},
+		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "node{x: nil}", ""},
+		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "node[string]", ""},
+		{"incompatible action", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use node{k: node[string], v: []node{y: node[string]}} as node[string] in field X of R"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, err := captureCheckProgram(tc.src)
@@ -75,7 +75,7 @@ func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
 			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`
 			src := "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
 			col := utf8.RuneCountInString(line[:strings.Index(line, "X:")]) + 1
-			want := fmt.Sprintf("3:%d: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R", col)
+			want := fmt.Sprintf("3:%d: cannot use node{k: node[string], v: []node{y: node[string]}} as node[string] in field X of R", col)
 			if got := compileError(t, src); got != want {
 				t.Errorf("got %q; want %q", got, want)
 			}

@@ -3,7 +3,7 @@ package genrt
 // fieldType is a declared struct field type that a constructor checks a dynamically typed value
 // against. Generated code declares one for each checked field.
 type fieldType struct {
-	kind byte // i int, s string, b bool, z nil, n node, N named, l list, o optional, u union, _ top
+	kind byte // i int, s string, b bool, z nil, n node, S string node, E error, N struct, l list, o optional, u union, _ top
 	name string
 	elem *fieldType
 	alts []*fieldType
@@ -41,9 +41,8 @@ type resultError string
 func (e resultError) Error() string { return string(e) }
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list element it examines. Match is a string node, Seq, List, Operator
-// and node every node, and Error error values; a list type takes a list value, not the node of a
-// repetition.
+// each list element it examines. node[string] is a string node, node every node, and error an
+// error value; a list type takes a list value, not the node of a repetition.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	n, isNode := v.(*Node)
 	if isNode && n == nil {
@@ -84,15 +83,11 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
+	case 'S':
+		return shape == shapeString
+	case 'E':
+		return shape == shapeError
 	case 'N':
-		switch t.name {
-		case "Match":
-			return shape == shapeString
-		case "Seq", "List", "Operator":
-			return valueNode
-		case "Error", "Missing":
-			return shape == shapeError
-		}
 		return shape == shapeStruct && n.Type() == t.name
 	case 'l':
 		if shape != shapeListValue {
@@ -138,28 +133,6 @@ func (p *tparser) tcheckResult(v any, t *fieldType, rule string) {
 	}
 }
 
-// tshape is Node.shape for the values of the typed runtime that are tval.
-func tshape(n tval) nodeShape {
-	switch x := n.(type) {
-	case *terror:
-		return shapeError
-	case *tnode:
-		switch x.typ {
-		case "List":
-			return shapeList
-		case typeTupleValue:
-			return shapeTupleValue
-		case typeListValue:
-			return shapeListValue
-		}
-		return shapeTuple
-	}
-	if n.tstruct() {
-		return shapeStruct
-	}
-	return shapeString
-}
-
 // tfieldConforms is fieldConforms for the values of the typed runtime.
 func tfieldConforms(p *parser, t *fieldType, v any) bool {
 	switch t.kind {
@@ -195,15 +168,11 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 	switch t.kind {
 	case 'n':
 		return valueNode
+	case 'S':
+		return shape == shapeString
+	case 'E':
+		return shape == shapeError
 	case 'N':
-		switch t.name {
-		case "Match":
-			return shape == shapeString
-		case "Seq", "List", "Operator":
-			return valueNode
-		case "Error", "Missing":
-			return shape == shapeError
-		}
 		return shape == shapeStruct && n.tname() == t.name
 	case 'l':
 		if shape != shapeListValue {

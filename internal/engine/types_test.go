@@ -16,7 +16,7 @@ type B ~ A
 rule main = "a"`, `type A refers to itself`},
 		{`type P = { X node[string] }
 type Alias ~ P
-rule main = "a" => Alias{X: 1}`, `cannot use int as Match in field X of Alias`},
+rule main = "a" => Alias{X: 1}`, `cannot use int as node[string] in field X of Alias`},
 		{`type P = { X node[string] }
 type Alias ~ P
 rule main = v1:"a" => Alias{Y: $v1}`, `Alias has no field Y`},
@@ -33,28 +33,28 @@ rule main = "a" => A{}`, `A is not a struct type`},
 		{`type A = { X node[string]; X node[string] }`, `duplicate field X in A`},
 		{`rule main int = "a"`, `rule main must produce a node, but its type is int`},
 		{`type P = { X node[string] }
-rule main = "a" => P{X: 1}`, `cannot use int as Match in field X of P`},
+rule main = "a" => P{X: 1}`, `cannot use int as node[string] in field X of P`},
 		{`type Num = { Text string }
 type P = { N Num }
-rule main = n:"1" #atomic => P{N: $n}`, `cannot use Match as Num in field N of P`},
+rule main = n:"1" #atomic => P{N: $n}`, `cannot use node[string] as Num in field N of P`},
 		{`type P = { X node[string] }
-rule main = x:"a"? => P{X: $x}`, `cannot use *Match as Match in field X of P`},
+rule main = x:"a"? => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
 		{`type P = { X node[string] }
-rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of P`},
-		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *Seq: the value may be nil`},
-		{`rule main = xs:(k:"a")* => $xs.$k`, `[]Seq{k: Match} has no capture k`},
+rule main = x:"a" / "b" => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
+		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *node: the value may be nil`},
+		{`rule main = xs:(k:"a")* => $xs.$k`, `[]node{k: node[string]} has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
 		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
 		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
 		{`type Op = { X node[string] }
-rule main Op = "a"`, `rule main produces Match, which is not assignable to Op`},
+rule main Op = "a"`, `rule main produces node[string], which is not assignable to Op`},
 		{`type E = { X node[string] }
 rule e E = operators {
     operand v1:"1" => E{X: $v1}
     level { infix left "+" }
-}`, `operators of e without an action produce Operator, which is not assignable to E`},
-		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => a)`, `foldl: expected a list, got Match`},
+}`, `operators of e without an action produce a tuple node, which is not assignable to E`},
+		{`rule main = v1:"a" => foldl($v1, $v1, (a, b) => a)`, `foldl: expected a list, got node[string]`},
 		{`rule main = xs:"a"* => map($xs, (x) => len(x))`, `map: the function must produce a node, got int`},
 		{`rule main = "a" => list(1)`, `list: elements must be nodes, got int`},
 	} {
@@ -96,7 +96,7 @@ rule p = x:"a"? #atomic ";"`,
 rule main = l:list => $l`,
 		// Predicates and variables
 		`rule main = {n := 0} s:" "* #atomic {len($s) > n && text($s) != "x"} "a"`,
-		// concat over a union of list types (foldl widens []never with []Match) and over a recovered Error
+		// concat over a union of list types (foldl widens []never with []node[string]) and over a recovered error
 		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat(acc, list(x))))
 rule item = "a" #atomic`,
 		`type S = { X node[string] }
@@ -148,7 +148,7 @@ rule ps = p*
 rule opt = "a"?
 rule main = ps $$`)
 	for name, want := range map[string]string{
-		"n": "N", "p": "P", "ps": "[]P", "opt": "*Match", "main": "Seq",
+		"n": "N", "p": "P", "ps": "[]P", "opt": "*node[string]", "main": "node",
 	} {
 		if got, ok := prog.RuleType(name); !ok || got != want {
 			t.Errorf("RuleType(%s) = %q, %v; want %q", name, got, ok, want)

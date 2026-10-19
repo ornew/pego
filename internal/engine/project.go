@@ -9,7 +9,7 @@ import (
 // Projected repetitions.
 //
 // first:x rest:(-"," r:x)* -> concat(list($first), map($rest, (e) => e.r)) is how lists are
-// written: the repetition builds a record (a Seq node with the field r) per element, only for the
+// written: the repetition builds a record (a tuple node with the field r) per element, only for the
 // action to take r out of each. When the action reads the capture only that way, every backend
 // compiles the repetition to gather the values of r directly, and the map call to take the list
 // as it is (both produce a list of the same values; the list the repetition makes is visible to the
@@ -315,7 +315,7 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 				for _, op := range l.Operators {
 					control.poll()
 					if op.Action != nil && !lineNonNilControlled(prog, op.Expr, op.Action, true, seen, control) {
-						return false // (an operator without an action makes an Operator node)
+						return false // (an operator without an action makes a tuple node)
 					}
 				}
 			}

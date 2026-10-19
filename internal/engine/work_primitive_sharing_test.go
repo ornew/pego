@@ -56,7 +56,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 						t.Fatalf("unit=%v capture=%s lost value or span: %v", unit, name, value)
 					}
 					// A text struct value carries no rule name.
-					wantType, wantRule := TypeMatch, "value"
+					wantType, wantRule := TypeString, "value"
 					if name == "b" {
 						wantType, wantRule = "Token", ""
 					}

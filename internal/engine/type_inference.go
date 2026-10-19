@@ -155,7 +155,7 @@ func inferredShape(t ty) inferredTypeShape {
 	case basicTy:
 		return inferredTypeShape{typeKey("b", string(t)), len(t), 1}
 	case namedTy:
-		return inferredTypeShape{typeKey("n"+string(t.kind), t.name), len(t.name), 1}
+		return inferredTypeShape{typeKey("n"+string(t.kind), t.name), len(t.String()), 1}
 	case listTy:
 		s := inferredShape(t.elem)
 		if _, ok := t.elem.(unionTy); ok {
@@ -191,7 +191,7 @@ func inferredShape(t ty) inferredTypeShape {
 		}
 		slices.Sort(names)
 		var parts []string
-		size, depth := len("Seq{}"), 0
+		size, depth := len("node{}"), 0
 		for i, name := range names {
 			s := inferredShape(t.fields[name])
 			parts = append(parts, name, s.key)

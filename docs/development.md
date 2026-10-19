@@ -97,7 +97,7 @@ Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reade
 call counts with the engine across chunkings, units, controls, observability and Document generation; changes to
 the stream runtime should keep it and the bounded-memory consumer in `TestGeneratedStreamAPI` passing.
 
-Generated Go typed-output cleanup has private full-sweep and bounded generation controls, both disabled by default. They cover typed `ParseAST`/`ParseRuleAST` publication, including conversion and returned `Match` values; Node parsing, recognition and TypeScript are unchanged. Unknown ownership falls back to keeping all cells. See [design 034](design/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
+Generated Go typed-output cleanup has private full-sweep and bounded generation controls, both disabled by default. They cover typed `ParseAST`/`ParseRuleAST` publication, including conversion and returned string nodes (`TNode[string]`); Node parsing, recognition and TypeScript are unchanged. Unknown ownership falls back to keeping all cells. See [design 034](design/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
 
 ## Testing
 

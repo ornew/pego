@@ -273,7 +273,7 @@ are read and validated once; zero `maxDepth` selects the generated default.
 
 Converted values are plain objects with readonly fields, lowercase `type`
 discriminators and `start`/`end` spans. Grammar field spelling is unchanged.
-String nodes (`Match`, a `TNode<string>`) have `value`; recovered errors have `text` and `message`.
+String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `value`; recovered errors have `text` and `message`.
 `readonly` is a type-checking contract; the objects are not frozen.
 
 | Grammar type | Generated value |
@@ -284,7 +284,7 @@ String nodes (`Match`, a `TNode<string>`) have `value`; recovered errors have `t
 | `int` | `number \| bigint`, preserving signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; absent nonoptional scalar fields use `""` and `false` (`int` uses `0`) |
 | declared aliases | complete target type, preserving optional, list and node representations |
-| `node[T]` | `TNode<T>`; text is a `Match`, a `TNode<string>` |
+| `node[T]` | `TNode<T>`; text is a `StringNode`, a `TNode<string>` |
 | canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
 | mixed/open or undeclared union, `any`, `node` | conservative `TypedValue`, following Go's any-conversion semantics |
 | tuple, list node, `Node` | existing `Node` |
@@ -292,7 +292,7 @@ String nodes (`Match`, a `TNode<string>`) have `value`; recovered errors have `t
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted
 Error even when the normal rule produces no value.
 
-The broad `TypedValue` union covers converted declarations, `Match`,
+The broad `TypedValue` union covers converted declarations, `StringNode`,
 `RecoveredError`, Node and action scalars/null. Mixed unions can preserve
 recovered or dynamically typed values beyond their written members, so they
 are not exported with an unsound narrow type. In dynamically typed conversion,
@@ -305,7 +305,7 @@ rejected by the existing type checker; scalar fields and aliases are supported.
 Grammar names are allocated in sorted order. Every top-level runtime and
 generated declaration is reserved, including private `Parser`, `Actx`, `Rule`,
 `OperatorsRuleLine`, generated symbols such as `R0`, globals used by the runtime, and
-new helpers `Span`, `Match`, `RecoveredError`, `TypedValue`, `TypedParseResult`.
+new helpers `Span`, `StringNode`, `RecoveredError`, `TypedValue`, `TypedParseResult`.
 Collisions append underscores until the name is free: grammar `Parser` exports
 `Parser_`; `R0` and `R0_` can export `R0_` and `R0__`. Discriminators retain the
 original grammar name. Regeneration can therefore change a collision cascade

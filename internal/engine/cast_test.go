@@ -53,8 +53,8 @@ func TestCastAcrossBackends(t *testing.T) {
 func TestCastValues(t *testing.T) {
 	for _, tc := range []struct{ src, input, want string }{
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","fields":{"Text":"12"}`},
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast List to Num"},
-		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast List to []Num"},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast node[[]_] to Num"},
+		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast node[[]_] to []Num"},
 		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
 		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","fields":{"Text":"1"}`},
 		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
@@ -70,7 +70,7 @@ func TestCastValues(t *testing.T) {
 
 func TestCastErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
-		{`rule main = x:"a" => $x.(int)`, "cannot cast Match to int"},
+		{`rule main = x:"a" => $x.(int)`, "cannot cast node[string] to int"},
 		{`rule main = x:"a" => $x.(Nope)`, "Nope"},
 		{"rule main = x:n => $x.(P)\n" + castRules, "cannot cast Num to P"},
 		{"rule main = x:n => $x.(Num).N\n" + castRules, "N"},
