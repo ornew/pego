@@ -820,12 +820,22 @@ func (g *generator) nodeTypeIndex(name string) int {
 }
 
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's
-// named node type in the typed runtime (what finish does), or "" if r has none.
-func (g *generator) typedResultConversion(r *rule, v string) string {
+// named node type in the typed runtime (what finish does), or "" if r has none. body, if not "",
+// holds the fresh node of the rule's body (tfreshNode), which converts in place.
+func (g *generator) typedResultConversion(r *rule, v, body string) string {
 	if r.nodeType == "" {
 		return ""
 	}
+	if body != "" {
+		return fmt.Sprintf("%s = p.tconvertResultOwned(trules[%d], %s, %s)", v, r.id, v, body)
+	}
 	return fmt.Sprintf("%s = p.tconvertResult(trules[%d], %s)", v, r.id, v)
+}
+
+// ownsBody reports whether finishing the value of rule r in the typed runtime converts the fresh
+// node of its body in place: the rule has a named node type and returns its body's value.
+func (g *generator) ownsBody(r *rule) bool {
+	return r.nodeType != "" && !r.novalue && r.action == nil && r.textType == ""
 }
 
 // typedCall writes the methods that call the rule r in the typed runtime: s<id> for a rule never
@@ -851,6 +861,11 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		ncaps = len(r.scope.names)
 	}
 	finish := func(frame string) {
+		body := ""
+		if g.ownsBody(r) {
+			body = "body"
+			m.WriteString("\t\tbody := tfreshNode(v)\n")
+		}
 		switch {
 		case r.novalue:
 			m.WriteString("\t\tv = nil\n")
@@ -869,7 +884,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		if check := g.resultCheck(r, r.def, "v"); check != "" {
 			fmt.Fprintf(m, "\t\t%s\n", check)
 		}
-		if conv := g.typedResultConversion(r, "v"); conv != "" {
+		if conv := g.typedResultConversion(r, "v", body); conv != "" {
 			fmt.Fprintf(m, "\t\t%s\n", conv)
 		}
 	}

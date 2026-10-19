@@ -951,14 +951,53 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 // finish makes the rule's value from the value of its body, and checks it against the rule's
 // declared type if needed.
 func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
+	var body any
+	if r.nt != 0 && r.action == nil && r.textType == "" {
+		body = tfreshNode(v)
+	}
 	v = p.finishValue(r, f, v, start)
 	if r.tcheck != nil {
 		r.tcheck(p, v)
 	}
 	if r.nt != 0 {
-		v = p.tconvertResult(r, v)
+		v = p.tconvertResultOwned(r, v, body)
 	}
 	return v
+}
+
+// tfreshNode returns v if it is a fresh string, tuple or list node, and otherwise nil. Taken from
+// the value of a rule's body before the rule finishes it, it is the node the body made and nothing
+// else holds yet (see tconvertResultOwned).
+func tfreshNode(v any) any {
+	switch x := v.(type) {
+	case *tmatch:
+		if x.fresh {
+			return x
+		}
+	case *tnode:
+		if x.fresh && (x.typ == "tuple" || x.typ == "list") {
+			return x
+		}
+	}
+	return nil
+}
+
+// tconvertResultOwned converts v, the value of rule r, to the rule's named node type, like
+// tconvertResult. If v is body, the fresh node of the rule's body (tfreshNode), the rule returns
+// the node it made itself, which nothing else holds, so it gets the type in place instead of
+// being copied: the copy tconvert makes keeps a node that others hold as it is.
+func (p *tparser) tconvertResultOwned(r *trule, v, body any) any {
+	if body != nil && v == body {
+		switch x := v.(type) {
+		case *tmatch:
+			x.nt = r.nt
+			return x
+		case *tnode:
+			x.nt = r.nt
+			return x
+		}
+	}
+	return p.tconvertResult(r, v)
 }
 
 // tnamed reports whether n is a node of a named node type.

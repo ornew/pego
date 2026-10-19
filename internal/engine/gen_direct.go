@@ -1220,11 +1220,19 @@ func (g *generator) directRule(r *rule) *direct {
 // finish writes what finish does for the rule r with the body's value body and the captures s,
 // leaving the rule's value in v. It reports whether the value uses start and the context c.
 func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
+	owned := ""
+	if d.g.table == "trules" && d.g.ownsBody(r) {
+		owned = d.shared("bv", "any")
+		d.line("%s = tfreshNode(%s)", owned, d.rd(body))
+	}
 	start, ctx = d.finishValue(r, s, body)
 	if check := d.g.resultCheck(r, r.def, "v"); check != "" && !d.bad {
 		d.line("%s", check)
 	}
-	if conv := d.g.typedResultConversion(r, "v"); conv != "" && d.g.table == "trules" && !d.bad {
+	if owned != "" {
+		owned = d.rd(owned)
+	}
+	if conv := d.g.typedResultConversion(r, "v", owned); conv != "" && d.g.table == "trules" && !d.bad {
 		d.line("%s", conv)
 	}
 	return start, ctx
