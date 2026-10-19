@@ -159,6 +159,66 @@ func TestNilAndRecovery(t *testing.T) {
 	}
 }
 
+// A union with an open member, such as node, has a Go interface of its own that the open
+// values implement; a Document clones them through that interface.
+func TestGenerateTypedDocumentOpenUnion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds a standalone generated parser")
+	}
+	g, err := syntax.Parse(`type S = { A node[string] }
+type Mixed ~ S | node
+type First ~ node | S
+type Out = { M []Mixed; F []First }
+rule main Out = m:item* ";" f:first* => Out{M: concat($m), F: concat($f)}
+rule item Mixed = s / c
+rule first First = c / s
+rule s S = a:"s" => S{A: $a}
+rule c = "c" "d"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := Generate(g, GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	for name, content := range map[string]string{
+		"go.mod":    "module openunion\n\ngo 1.27.1\n",
+		"parser.go": string(code),
+		"open_union_test.go": `package openunion
+import (
+ "reflect"
+ "testing"
+)
+func TestOpenUnion(t *testing.T) {
+ d, err := NewDocument("scds;cdscd")
+ if err != nil { t.Fatal(err) }
+ for _, edit := range []struct{ start, end int; text string }{{0, 0, ""}, {1, 1, "s"}, {6, 6, "cd"}, {0, 1, "cd"}} {
+  if err := d.Edit(edit.start, edit.end, edit.text); err != nil { t.Fatal(err) }
+  got, gotErr := d.ParseAST()
+  want, wantErr := ParseAST(d.Text())
+  if gotErr != nil || wantErr != nil || !reflect.DeepEqual(got, want) { t.Fatalf("%q: %#v / %#v, %v / %v", d.Text(), got, want, gotErr, wantErr) }
+  for _, v := range append(append([]any{}, anys(got.M)...), anysF(got.F)...) {
+   if v == nil { t.Fatalf("%q: a nil element", d.Text()) }
+  }
+ }
+}
+func anys(xs []Mixed) []any { out := []any{}; for _, x := range xs { out = append(out, x) }; return out }
+func anysF(xs []First) []any { out := []any{}; for _, x := range xs { out = append(out, x) }; return out }
+`,
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command("go", "test", "./...")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated typed Document with an open union: %v\n%s", err, out)
+	}
+}
+
 func TestGenerateTypedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")

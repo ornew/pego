@@ -152,13 +152,23 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		}
 		fmt.Fprintf(&methods, "func (c *typedDocumentClone) to%s(v %s) %s {\n c.step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", t.names[name], t.names[name], t.names[name])
 		seen := map[string]bool{"*Error": true}
+		open := false
 		for _, alternative := range u.alts {
 			goType := t.goType(alternative)
+			if goType == "any" {
+				// An open member, such as node, takes every other value of the union. A case
+				// for it would hide the cases after it, and its clone is an any.
+				open = true
+				continue
+			}
 			if seen[goType] {
 				continue // Seq, List and Operator are all *TNode[any]
 			}
 			seen[goType] = true
 			fmt.Fprintf(&methods, " case %s: return %s\n", goType, clone(alternative, "v"))
+		}
+		if open {
+			fmt.Fprintf(&methods, " case nil:\n default: out, _ := c.toOpen(v).(%s); return out\n", t.names[name])
 		}
 		methods.WriteString(" }\n return nil\n}\n")
 	}
