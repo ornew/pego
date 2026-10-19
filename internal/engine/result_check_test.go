@@ -204,7 +204,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 				t.Fatal(err)
 			}
 			limits := WorkLimits{MaxSteps: 1 << 30}
-			declared := checked.typed.fields["S"][0].t.String()
+			declared := fromLegacy(checked.typed.fields["S"][0].t).String() // as the value checker resolves it
 			for _, in := range resultCheckInputs() {
 				value := fieldCheckValues[in[:1]]
 				rule := resultCheckRoutes[in[1]]

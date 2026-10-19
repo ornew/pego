@@ -218,7 +218,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 					}
 				}
 				name := fieldCheckValueName(value)
-				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
+				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, fromLegacy(checked.typed.fields["S"][0].t))
 				switch {
 				case in[1] == '!' && accepted:
 					if !strings.Contains(want, yes) {
@@ -325,7 +325,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	if err := validateModule(&m); err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", "", "terminal"} {
+	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", "", "terminal", "Missing"} {
 		m.Strings = append(append([]string(nil), prog.Module().Strings...), text)
 		m.Exprs = append([]Instr(nil), prog.Module().Exprs...)
 		for i := range m.Exprs {
@@ -337,7 +337,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}
-	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "Missing", "node[_]", "node[string] | error"} {
+	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "node[_]", "node[string] | error"} {
 		if _, err := parseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}

@@ -50,6 +50,20 @@ func newFieldType(t ty) *fieldType {
 			f = &fieldType{kind: ftNil}
 		case tyNode:
 			f = &fieldType{kind: ftNode}
+		case tyErr:
+			f = &fieldType{kind: ftError}
+		default:
+			return nil
+		}
+	case nodeTy:
+		// A declared type names node[string] or node[_], without captures.
+		switch {
+		case len(t.caps) > 0:
+			return nil
+		case t.value == tyTop:
+			f = &fieldType{kind: ftNode}
+		case t.value == tyString:
+			f = &fieldType{kind: ftStringNode}
 		default:
 			return nil
 		}
@@ -196,7 +210,7 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 			default:
 				return nil, fmt.Errorf("node without a type argument at %d", start)
 			}
-		case "error", TypeMissing:
+		case "error":
 			t = &fieldType{kind: ftError}
 		case "_", "any":
 			t = &fieldType{kind: ftTop}
@@ -278,13 +292,14 @@ func (ci *checkInfo) empty() bool {
 	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0
 }
 
-// resolveCheck resolves a declared type for a check. It returns nil for any, which every value fits.
+// resolveCheck resolves a declared type for a check, as a value type. It returns nil for any,
+// which every value fits.
 func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
 	if t == nil {
 		return nil
 	}
 	k := &typeResolver{prog: prog}
-	if r := k.resolve(t); newFieldType(r) != nil {
+	if r := fromLegacy(k.resolve(t)); newFieldType(r) != nil {
 		return r
 	}
 	return nil

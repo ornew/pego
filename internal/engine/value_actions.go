@@ -47,13 +47,8 @@ func (v *valueInference) errorf(pos grammar.Pos, format string, args ...any) {
 
 // resolve maps a type expression of the grammar to the value model.
 func (v *valueInference) resolve(t grammar.TypeExpr) ty {
-	return fromLegacy(v.legacy(t))
-}
-
-// legacy resolves a type expression of the grammar as run-time checks write it.
-func (v *valueInference) legacy(t grammar.TypeExpr) ty {
 	k := &typeResolver{prog: v.prog}
-	return k.resolve(t)
+	return fromLegacy(k.resolve(t))
 }
 
 // uncertain reports whether a value of type t may be one the value types do not know yet (tyAny),
@@ -89,9 +84,8 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 	if v.checks == nil || v.quiet || rd.Type == nil || !v.uncertain(t) {
 		return
 	}
-	legacy := v.legacy(rd.Type)
-	if newFieldType(legacy) != nil {
-		v.checks.results[key] = legacy
+	if d := v.resolve(rd.Type); newFieldType(d) != nil {
+		v.checks.results[key] = d
 	}
 }
 
@@ -279,8 +273,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 				} else if !v.assignable(vt, ft) {
 					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
 				} else if v.checks != nil && !v.quiet && v.uncertain(vt) {
-					if legacy := v.legacy(f.Type); newFieldType(legacy) != nil {
-						v.checks.fields[fi] = legacy
+					if newFieldType(ft) != nil {
+						v.checks.fields[fi] = ft
 					}
 				}
 			}
