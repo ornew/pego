@@ -326,6 +326,7 @@ function renderPage(id) {
   const target = id === "pg-go" ? $(id).firstElementChild : $(id);
   if (state.language === "go") target.innerHTML = highlight(text, "go");
   else if (state.language === "json") target.innerHTML = highlightJSON(text);
+  else if (state.language === "sexpr") target.innerHTML = highlight(text, "sexpr");
   else target.textContent = text;
   $(id + "-page").textContent = `Page ${state.page + 1} of ${pages}`;
   $(id + "-prev").disabled = state.page === 0;
@@ -430,7 +431,7 @@ function apply(res, req) {
   const { status, empty } = describeResult(res, req);
   tree.set(tree0, empty);
   pagedText("pg-json", res.json || "", "json");
-  pagedText("pg-sexpr", res.sexpr || "");
+  pagedText("pg-sexpr", res.sexpr || "", "sexpr");
   updateInputMarks();
   setStatus(status.kind, escapeHTML(status.text));
   const errs = res.errors ?? [];

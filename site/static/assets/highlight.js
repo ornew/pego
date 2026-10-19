@@ -1,4 +1,4 @@
-// A small syntax highlighter for the languages of the documentation: pego, Go, TypeScript, JSON and shell.
+// A small syntax highlighter for the languages of the documentation: pego, Go, TypeScript, JSON, S-expressions and shell.
 // tokenize returns non-overlapping tokens {from, to, cls}; highlight returns HTML.
 
 const GO_KEYWORDS = new Set([
@@ -25,6 +25,9 @@ const TS_TYPES = new Set([
   "Exclude", "Extract", "NonNullable", "ReturnType", "Parameters", "InstanceType", "any", "boolean", "never",
   "number", "object", "string", "symbol", "undefined", "unknown", "void",
 ]);
+
+// Words of S-expressions: nil and the booleans, and error values, written error(...).
+const SEXPR_KEYWORDS = new Set(["nil", "true", "false", "error"]);
 
 const rules = {
   pego: [
@@ -54,6 +57,15 @@ const rules = {
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
     ["number", /-?\d[\d.eE+-]*/y],
     ["keyword", /\b(?:true|false|null)\b/y],
+  ],
+  // The S-expressions of pego parse -f sexpr: tuples (...), lists [...], structs Type{...} with
+  // field labels, quoted strings, numbers, rule suffixes @rule and captures &name:.
+  sexpr: [
+    ["string", /"(?:[^"\\\n]|\\.)*"?/y],
+    ["rule", /@[A-Za-z_][A-Za-z0-9_]*/y],
+    ["number", /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/y],
+    ["ident", /[A-Za-z_][A-Za-z0-9_]*/y],
+    ["punct", /[()[\]{},&:]/y],
   ],
   bash: [
     ["comment", /(?:^|(?<=\s))#[^\n]*/y],
@@ -174,6 +186,12 @@ function classifyIdent(lang, word, code, end, prev) {
     if (GO_KEYWORDS.has(word)) return "keyword";
     if (GO_TYPES.has(word)) return "type";
     if (code[end] === "(") return "rule";
+    return null;
+  }
+  if (lang === "sexpr") {
+    if (SEXPR_KEYWORDS.has(word)) return "keyword";
+    if (code[end] === "{") return "type"; // a struct's type name
+    if (code[end] === ":") return "label"; // a field or capture name
     return null;
   }
   if (lang === "typescript") {

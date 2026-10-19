@@ -180,3 +180,19 @@ test("PEGO words are contextual and action braces restore PEG context", () => {
   const levels = tokenize(call,"pego").filter((t) => call.slice(t.from,t.to) === "level");
   assert.equal(levels[0].cls,"keyword");
 });
+
+test("S-expression highlighting marks types, labels, rules, keywords and escapes the text", () => {
+  const source = '[Pair{Key: "a<b", Value: "12"@value} (&n:1 nil) error("bad")]';
+  const tokens = tokenize(source, "sexpr");
+  const words = (cls) => tokens.filter((t) => t.cls === cls).map((t) => source.slice(t.from, t.to));
+  assert.deepEqual(words("type"), ["Pair"]);
+  assert.deepEqual(words("label"), ["Key", "Value", "n"]);
+  assert.deepEqual(words("rule"), ["@value"]);
+  assert.deepEqual(words("number"), ["1"]);
+  assert.deepEqual(words("keyword"), ["nil", "error"]);
+  assert.deepEqual(words("string"), ['"a<b"', '"12"', '"bad"']);
+  const html = highlight(source, "sexpr");
+  assert.ok(html.includes('<span class="tok-type">Pair</span>'));
+  assert.ok(html.includes("a&lt;b"));
+  assert.ok(!html.includes("a<b"), "input text is escaped");
+});
