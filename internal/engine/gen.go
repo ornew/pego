@@ -235,6 +235,10 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if opts.Stream {
 		rt = strings.Replace(rt, "\"bytes\"", "\"bufio\"\n\t\"bytes\"", 1)
 	}
+	if opts.Types {
+		// The typed runtime publishes string nodes of named node types with unsafe (tmatchAs).
+		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"unsafe\"", 1)
+	}
 	if opts.Observability {
 		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
 		rt, err = generatedTraceRuntime(rt)

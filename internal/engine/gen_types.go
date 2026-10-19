@@ -1198,9 +1198,17 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
-	if len(t.nodeTypes) > 0 {
-		b.WriteString("\t// named holds the public forms of the nodes of named node types by their values.\n\tnamed map[any]any\n")
-		for _, name := range t.nodeTypes {
+	// The public forms of tuple and list nodes of named node types are made from chunks and
+	// remembered by their values; string nodes are their own public forms (tmatchAs).
+	var remembered []string
+	for _, name := range t.nodeTypes {
+		if n, _ := t.g.prog.nodeTypeOf(name); n.value != tyString {
+			remembered = append(remembered, name)
+		}
+	}
+	if len(remembered) > 0 {
+		b.WriteString("\t// named holds the public forms of the tuple and list nodes of named node types by their values.\n\tnamed map[any]any\n")
+		for _, name := range remembered {
 			fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 		}
 	}

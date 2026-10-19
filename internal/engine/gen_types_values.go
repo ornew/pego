@@ -286,9 +286,16 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
+			if x.name != "" && x.value == tyString {
+				// A string node of a named node type is its own public value (tmatchAs).
+				g := t.names[x.name]
+				fmt.Fprintf(b, "\tconst _ = -(unsafe.Sizeof(%s{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)\n", g)
+				fmt.Fprintf(b, "\tx, _ := v.(*tmatch)\n\tif x == nil || x.nt != %d {\n\t\treturn nil\n\t}\n\treturn tmatchAs[%s](x)\n", t.g.nodeTypeIndex(x.name), g)
+				break
+			}
 			if x.name != "" {
-				// A node of a named node type, as the node it was converted from, remembered so
-				// that the node converts to one value everywhere (as astConv does).
+				// A tuple or list node of a named node type, as the node it was converted from,
+				// remembered so that the node converts to one value everywhere (as astConv does).
 				g := t.names[x.name]
 				fmt.Fprintf(b, "\tx := asTval(v)\n\tif x == nil || x.tname() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
 				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), g)

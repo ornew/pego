@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
@@ -5115,6 +5116,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 		}
 	}
 	return nil
+}
+
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
 }
 
 func tpubMatch(v any) *TNode[string] {
@@ -18540,24 +18549,12 @@ func tv0(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[Tuple1[*TNode[Tuple1[*T
 
 func tv1(a *tslabs, v any) *EndOfFileToken {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "EndOfFileToken" {
+	const _ = -(unsafe.Sizeof(EndOfFileToken{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 5 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*EndOfFileToken)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tEndOfFileToken)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[EndOfFileToken](x)
 }
 
 func tv2(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
@@ -18582,24 +18579,12 @@ func tv5(a *tslabs, v any) *TNode[string] {
 
 func tv6(a *tslabs, v any) *EmptyStatement {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "EmptyStatement" {
+	const _ = -(unsafe.Sizeof(EmptyStatement{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 4 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*EmptyStatement)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tEmptyStatement)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[EmptyStatement](x)
 }
 
 func tv7(a *tslabs, v any) any {
@@ -18619,24 +18604,12 @@ func tv9(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[Tuple1[any]]], any]] {
 
 func tv10(a *tslabs, v any) *Token {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Token" {
+	const _ = -(unsafe.Sizeof(Token{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 29 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Token)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tToken)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Token](x)
 }
 
 func tv11(a *tslabs, v any) any {
@@ -18646,46 +18619,22 @@ func tv11(a *tslabs, v any) any {
 
 func tv12(a *tslabs, v any) *Identifier {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Identifier" {
+	const _ = -(unsafe.Sizeof(Identifier{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 6 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Identifier)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tIdentifier)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Identifier](x)
 }
 
 func tv13(a *tslabs, v any) *DebuggerStatement {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "DebuggerStatement" {
+	const _ = -(unsafe.Sizeof(DebuggerStatement{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 3 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*DebuggerStatement)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tDebuggerStatement)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[DebuggerStatement](x)
 }
 
 func tv14(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
@@ -18730,24 +18679,12 @@ func tv21(a *tslabs, v any) TypeNode {
 
 func tv22(a *tslabs, v any) *OmittedExpression {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "OmittedExpression" {
+	const _ = -(unsafe.Sizeof(OmittedExpression{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 18 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*OmittedExpression)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tOmittedExpression)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[OmittedExpression](x)
 }
 
 func tv23(a *tslabs, v any) *TNode[string] {
@@ -18827,24 +18764,12 @@ func tv37(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 
 func tv38(a *tslabs, v any) *SemicolonClassElement {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "SemicolonClassElement" {
+	const _ = -(unsafe.Sizeof(SemicolonClassElement{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 21 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*SemicolonClassElement)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tSemicolonClassElement)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[SemicolonClassElement](x)
 }
 
 func tv39(a *tslabs, v any) any {
@@ -18859,24 +18784,12 @@ func tv40(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 
 func tv41(a *tslabs, v any) *KeywordTypeNode {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "KeywordTypeNode" {
+	const _ = -(unsafe.Sizeof(KeywordTypeNode{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 13 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*KeywordTypeNode)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tKeywordTypeNode)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[KeywordTypeNode](x)
 }
 
 func tv42(a *tslabs, v any) *TNode[string] {
@@ -18916,24 +18829,12 @@ func tv48(a *tslabs, v any) []*Modifier {
 
 func tv49(a *tslabs, v any) *Modifier {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Modifier" {
+	const _ = -(unsafe.Sizeof(Modifier{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 14 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Modifier)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tModifier)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Modifier](x)
 }
 
 func tv50(a *tslabs, v any) any {
@@ -19053,112 +18954,52 @@ func tv72(a *tslabs, v any) []Expression {
 
 func tv73(a *tslabs, v any) *SuperExpression {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "SuperExpression" {
+	const _ = -(unsafe.Sizeof(SuperExpression{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 23 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*SuperExpression)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tSuperExpression)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[SuperExpression](x)
 }
 
 func tv74(a *tslabs, v any) *ImportExpression {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "ImportExpression" {
+	const _ = -(unsafe.Sizeof(ImportExpression{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 7 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*ImportExpression)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tImportExpression)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[ImportExpression](x)
 }
 
 func tv75(a *tslabs, v any) *ThisExpression {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "ThisExpression" {
+	const _ = -(unsafe.Sizeof(ThisExpression{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 27 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*ThisExpression)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tThisExpression)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[ThisExpression](x)
 }
 
 func tv76(a *tslabs, v any) *NullLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "NullLiteral" {
+	const _ = -(unsafe.Sizeof(NullLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 16 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*NullLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNullLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[NullLiteral](x)
 }
 
 func tv77(a *tslabs, v any) *BooleanLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "BooleanLiteral" {
+	const _ = -(unsafe.Sizeof(BooleanLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 2 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*BooleanLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tBooleanLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[BooleanLiteral](x)
 }
 
 func tv78(a *tslabs, v any) any {
@@ -19183,90 +19024,42 @@ func tv81(a *tslabs, v any) []*TemplateSpan {
 
 func tv82(a *tslabs, v any) *JsxOpeningFragment {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "JsxOpeningFragment" {
+	const _ = -(unsafe.Sizeof(JsxOpeningFragment{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 11 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*JsxOpeningFragment)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tJsxOpeningFragment)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[JsxOpeningFragment](x)
 }
 
 func tv83(a *tslabs, v any) *JsxClosingFragment {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "JsxClosingFragment" {
+	const _ = -(unsafe.Sizeof(JsxClosingFragment{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 10 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*JsxClosingFragment)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tJsxClosingFragment)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[JsxClosingFragment](x)
 }
 
 func tv84(a *tslabs, v any) *StringLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "StringLiteral" {
+	const _ = -(unsafe.Sizeof(StringLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 22 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*StringLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tStringLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[StringLiteral](x)
 }
 
 func tv85(a *tslabs, v any) *JsxText {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "JsxText" {
+	const _ = -(unsafe.Sizeof(JsxText{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 12 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*JsxText)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tJsxText)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[JsxText](x)
 }
 
 func tv86(a *tslabs, v any) []*Modifier {
@@ -19276,24 +19069,12 @@ func tv86(a *tslabs, v any) []*Modifier {
 
 func tv87(a *tslabs, v any) *ThisTypeNode {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "ThisTypeNode" {
+	const _ = -(unsafe.Sizeof(ThisTypeNode{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 28 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*ThisTypeNode)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tThisTypeNode)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[ThisTypeNode](x)
 }
 
 func tv88(a *tslabs, v any) any {
@@ -19313,46 +19094,22 @@ func tv90(a *tslabs, v any) []*TemplateLiteralTypeSpan {
 
 func tv91(a *tslabs, v any) *JSDocAllType {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "JSDocAllType" {
+	const _ = -(unsafe.Sizeof(JSDocAllType{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 8 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*JSDocAllType)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tJSDocAllType)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[JSDocAllType](x)
 }
 
 func tv92(a *tslabs, v any) *JSDocUnknownType {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "JSDocUnknownType" {
+	const _ = -(unsafe.Sizeof(JSDocUnknownType{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 9 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*JSDocUnknownType)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tJSDocUnknownType)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[JSDocUnknownType](x)
 }
 
 func tv93(a *tslabs, v any) any {
@@ -19417,24 +19174,12 @@ func tv104(a *tslabs, v any) any {
 
 func tv105(a *tslabs, v any) *PrivateIdentifier {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "PrivateIdentifier" {
+	const _ = -(unsafe.Sizeof(PrivateIdentifier{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 19 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*PrivateIdentifier)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tPrivateIdentifier)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[PrivateIdentifier](x)
 }
 
 func tv106(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
@@ -19509,46 +19254,22 @@ func tv119(a *tslabs, v any) *TNode[string] {
 
 func tv120(a *tslabs, v any) *NumericLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "NumericLiteral" {
+	const _ = -(unsafe.Sizeof(NumericLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 17 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*NumericLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNumericLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[NumericLiteral](x)
 }
 
 func tv121(a *tslabs, v any) *BigIntLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "BigIntLiteral" {
+	const _ = -(unsafe.Sizeof(BigIntLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 1 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*BigIntLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tBigIntLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[BigIntLiteral](x)
 }
 
 func tv122(a *tslabs, v any) any {
@@ -19593,90 +19314,42 @@ func tv129(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
 
 func tv130(a *tslabs, v any) *NoSubstitutionTemplateLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "NoSubstitutionTemplateLiteral" {
+	const _ = -(unsafe.Sizeof(NoSubstitutionTemplateLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 15 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*NoSubstitutionTemplateLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNoSubstitutionTemplateLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[NoSubstitutionTemplateLiteral](x)
 }
 
 func tv131(a *tslabs, v any) *TemplateHead {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "TemplateHead" {
+	const _ = -(unsafe.Sizeof(TemplateHead{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 24 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*TemplateHead)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tTemplateHead)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[TemplateHead](x)
 }
 
 func tv132(a *tslabs, v any) *TemplateMiddle {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "TemplateMiddle" {
+	const _ = -(unsafe.Sizeof(TemplateMiddle{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 25 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*TemplateMiddle)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tTemplateMiddle)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[TemplateMiddle](x)
 }
 
 func tv133(a *tslabs, v any) *TemplateTail {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "TemplateTail" {
+	const _ = -(unsafe.Sizeof(TemplateTail{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 26 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*TemplateTail)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tTemplateTail)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[TemplateTail](x)
 }
 
 func tv134(a *tslabs, v any) *TNode[[]any] {
@@ -19691,24 +19364,12 @@ func tv135(a *tslabs, v any) *TNode[[]any] {
 
 func tv136(a *tslabs, v any) *RegularExpressionLiteral {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "RegularExpressionLiteral" {
+	const _ = -(unsafe.Sizeof(RegularExpressionLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 20 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*RegularExpressionLiteral)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tRegularExpressionLiteral)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[RegularExpressionLiteral](x)
 }
 
 func tv137(a *tslabs, v any) *TNode[[]*TNode[Tuple1[any]]] {
@@ -20798,68 +20459,37 @@ type tslabs struct {
 	tWhileStatement              astChunk[WhileStatement]
 	tWithStatement               astChunk[WithStatement]
 	tYieldExpression             astChunk[YieldExpression]
-	// named holds the public forms of the nodes of named node types by their values.
-	named                          map[any]any
-	tBigIntLiteral                 astChunk[BigIntLiteral]
-	tBooleanLiteral                astChunk[BooleanLiteral]
-	tDebuggerStatement             astChunk[DebuggerStatement]
-	tEmptyStatement                astChunk[EmptyStatement]
-	tEndOfFileToken                astChunk[EndOfFileToken]
-	tIdentifier                    astChunk[Identifier]
-	tImportExpression              astChunk[ImportExpression]
-	tJSDocAllType                  astChunk[JSDocAllType]
-	tJSDocUnknownType              astChunk[JSDocUnknownType]
-	tJsxClosingFragment            astChunk[JsxClosingFragment]
-	tJsxOpeningFragment            astChunk[JsxOpeningFragment]
-	tJsxText                       astChunk[JsxText]
-	tKeywordTypeNode               astChunk[KeywordTypeNode]
-	tModifier                      astChunk[Modifier]
-	tNoSubstitutionTemplateLiteral astChunk[NoSubstitutionTemplateLiteral]
-	tNullLiteral                   astChunk[NullLiteral]
-	tNumericLiteral                astChunk[NumericLiteral]
-	tOmittedExpression             astChunk[OmittedExpression]
-	tPrivateIdentifier             astChunk[PrivateIdentifier]
-	tRegularExpressionLiteral      astChunk[RegularExpressionLiteral]
-	tSemicolonClassElement         astChunk[SemicolonClassElement]
-	tStringLiteral                 astChunk[StringLiteral]
-	tSuperExpression               astChunk[SuperExpression]
-	tTemplateHead                  astChunk[TemplateHead]
-	tTemplateMiddle                astChunk[TemplateMiddle]
-	tTemplateTail                  astChunk[TemplateTail]
-	tThisExpression                astChunk[ThisExpression]
-	tThisTypeNode                  astChunk[ThisTypeNode]
-	tToken                         astChunk[Token]
-	tl0Chunk                       astChunk[ArrayBindingElement]
-	tl1Chunk                       astChunk[Expression]
-	tl2Chunk                       astChunk[ModifierLike]
-	tl3Chunk                       astChunk[*TypeParameter]
-	tl4Chunk                       astChunk[*Parameter]
-	tl5Chunk                       astChunk[Statement]
-	tl6Chunk                       astChunk[TypeNode]
-	tl7Chunk                       astChunk[CaseOrDefaultClause]
-	tl8Chunk                       astChunk[*HeritageClause]
-	tl9Chunk                       astChunk[ClassElement]
-	tl10Chunk                      astChunk[*EnumMember]
-	tl11Chunk                      astChunk[*ExpressionWithTypeArguments]
-	tl12Chunk                      astChunk[*ImportAttribute]
-	tl13Chunk                      astChunk[TypeElement]
-	tl14Chunk                      astChunk[JsxAttributeLike]
-	tl15Chunk                      astChunk[JsxChild]
-	tl16Chunk                      astChunk[*ExportSpecifier]
-	tl17Chunk                      astChunk[*ImportSpecifier]
-	tl18Chunk                      astChunk[*BindingElement]
-	tl19Chunk                      astChunk[ObjectLiteralElement]
-	tl20Chunk                      astChunk[*TemplateSpan]
-	tl21Chunk                      astChunk[*TemplateLiteralTypeSpan]
-	tl22Chunk                      astChunk[*VariableDeclaration]
-	tl23Chunk                      astChunk[*Decorator]
-	tl24Chunk                      astChunk[*Modifier]
-	tl25Chunk                      astChunk[any]
-	tl26Chunk                      astChunk[*TNode[Tuple1[any]]]
-	tl27Chunk                      astChunk[*TNode[Tuple1[*TNode[Tuple1[*TNode[string]]]]]]
-	tl28Chunk                      astChunk[*TNode[string]]
-	tl29Chunk                      astChunk[*TNode[Tuple2[any, *TNode[[]*TNode[string]]]]]
-	tl30Chunk                      astChunk[*TNode[Tuple2[*TNode[string], *TNode[string]]]]
+	tl0Chunk                     astChunk[ArrayBindingElement]
+	tl1Chunk                     astChunk[Expression]
+	tl2Chunk                     astChunk[ModifierLike]
+	tl3Chunk                     astChunk[*TypeParameter]
+	tl4Chunk                     astChunk[*Parameter]
+	tl5Chunk                     astChunk[Statement]
+	tl6Chunk                     astChunk[TypeNode]
+	tl7Chunk                     astChunk[CaseOrDefaultClause]
+	tl8Chunk                     astChunk[*HeritageClause]
+	tl9Chunk                     astChunk[ClassElement]
+	tl10Chunk                    astChunk[*EnumMember]
+	tl11Chunk                    astChunk[*ExpressionWithTypeArguments]
+	tl12Chunk                    astChunk[*ImportAttribute]
+	tl13Chunk                    astChunk[TypeElement]
+	tl14Chunk                    astChunk[JsxAttributeLike]
+	tl15Chunk                    astChunk[JsxChild]
+	tl16Chunk                    astChunk[*ExportSpecifier]
+	tl17Chunk                    astChunk[*ImportSpecifier]
+	tl18Chunk                    astChunk[*BindingElement]
+	tl19Chunk                    astChunk[ObjectLiteralElement]
+	tl20Chunk                    astChunk[*TemplateSpan]
+	tl21Chunk                    astChunk[*TemplateLiteralTypeSpan]
+	tl22Chunk                    astChunk[*VariableDeclaration]
+	tl23Chunk                    astChunk[*Decorator]
+	tl24Chunk                    astChunk[*Modifier]
+	tl25Chunk                    astChunk[any]
+	tl26Chunk                    astChunk[*TNode[Tuple1[any]]]
+	tl27Chunk                    astChunk[*TNode[Tuple1[*TNode[Tuple1[*TNode[string]]]]]]
+	tl28Chunk                    astChunk[*TNode[string]]
+	tl29Chunk                    astChunk[*TNode[Tuple2[any, *TNode[[]*TNode[string]]]]]
+	tl30Chunk                    astChunk[*TNode[Tuple2[*TNode[string], *TNode[string]]]]
 }
 
 func (a *tslabs) setWorkControl(c *workControl) { a.control = c }

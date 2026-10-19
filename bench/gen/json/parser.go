@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
@@ -5118,6 +5119,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 	return nil
 }
 
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
+}
+
 func tpubMatch(v any) *TNode[string] {
 	if x, ok := v.(*tmatch); ok {
 		return &x.TNode
@@ -7692,24 +7701,12 @@ func tv2(a *tslabs, v any) *String {
 
 func tv3(a *tslabs, v any) *String {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "String" {
+	const _ = -(unsafe.Sizeof(String{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 4 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*String)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tString)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[String](x)
 }
 
 func tv4(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
@@ -7724,24 +7721,12 @@ func tv5(a *tslabs, v any) *TNode[string] {
 
 func tv6(a *tslabs, v any) *Number {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Number" {
+	const _ = -(unsafe.Sizeof(Number{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 3 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Number)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNumber)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Number](x)
 }
 
 func tv7(a *tslabs, v any) any {
@@ -7761,46 +7746,22 @@ func tv9(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[
 
 func tv10(a *tslabs, v any) *Bool {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Bool" {
+	const _ = -(unsafe.Sizeof(Bool{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 1 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Bool)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tBool)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Bool](x)
 }
 
 func tv11(a *tslabs, v any) *Null {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Null" {
+	const _ = -(unsafe.Sizeof(Null{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 2 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Null)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNull)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Null](x)
 }
 
 func tv12(a *tslabs, v any) *TNode[[]*TNode[string]] {
@@ -7968,16 +7929,10 @@ func tl2(a *tslabs, v any) []*TNode[string] {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control *workControl
-	tArray  astChunk[Array]
-	tMember astChunk[Member]
-	tObject astChunk[Object]
-	// named holds the public forms of the nodes of named node types by their values.
-	named    map[any]any
-	tBool    astChunk[Bool]
-	tNull    astChunk[Null]
-	tNumber  astChunk[Number]
-	tString  astChunk[String]
+	control  *workControl
+	tArray   astChunk[Array]
+	tMember  astChunk[Member]
+	tObject  astChunk[Object]
 	tl0Chunk astChunk[Value]
 	tl1Chunk astChunk[*Member]
 	tl2Chunk astChunk[*TNode[string]]

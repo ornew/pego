@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
@@ -5118,6 +5119,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 	return nil
 }
 
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
+}
+
 func tpubMatch(v any) *TNode[string] {
 	if x, ok := v.(*tmatch); ok {
 		return &x.TNode
@@ -7550,24 +7559,12 @@ func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 
 func tv0(a *tslabs, v any) *Number {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Number" {
+	const _ = -(unsafe.Sizeof(Number{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 1 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Number)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNumber)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Number](x)
 }
 
 func tv1(a *tslabs, v any) *TNode[[]*TNode[string]] {
@@ -7620,12 +7617,9 @@ func tl0(a *tslabs, v any) []*TNode[string] {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control *workControl
-	tBinary astChunk[Binary]
-	tUnary  astChunk[Unary]
-	// named holds the public forms of the nodes of named node types by their values.
-	named    map[any]any
-	tNumber  astChunk[Number]
+	control  *workControl
+	tBinary  astChunk[Binary]
+	tUnary   astChunk[Unary]
 	tl0Chunk astChunk[*TNode[string]]
 }
 

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
@@ -5117,6 +5118,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 	return nil
 }
 
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
+}
+
 func tpubMatch(v any) *TNode[string] {
 	if x, ok := v.(*tmatch); ok {
 		return &x.TNode
@@ -8371,46 +8380,22 @@ func tl2(a *tslabs, v any) []*Field {
 
 func tv0(a *tslabs, v any) *IntLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "IntLit" {
+	const _ = -(unsafe.Sizeof(IntLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 5 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*IntLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tIntLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[IntLit](x)
 }
 
 func tv1(a *tslabs, v any) *Ident {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Ident" {
+	const _ = -(unsafe.Sizeof(Ident{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 4 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Ident)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tIdent)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Ident](x)
 }
 
 func tv2(a *tslabs, v any) []Expr {
@@ -8435,46 +8420,22 @@ func tv5(a *tslabs, v any) []*Field {
 
 func tv6(a *tslabs, v any) *BoolLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "BoolLit" {
+	const _ = -(unsafe.Sizeof(BoolLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 1 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*BoolLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tBoolLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[BoolLit](x)
 }
 
 func tv7(a *tslabs, v any) *NullLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "NullLit" {
+	const _ = -(unsafe.Sizeof(NullLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 7 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*NullLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tNullLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[NullLit](x)
 }
 
 func tv8(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[[]*TNode[string]]]]]]]]] {
@@ -8484,24 +8445,12 @@ func tv8(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple2[*TNode[[]
 
 func tv9(a *tslabs, v any) *DoubleLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "DoubleLit" {
+	const _ = -(unsafe.Sizeof(DoubleLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 3 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*DoubleLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tDoubleLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[DoubleLit](x)
 }
 
 func tv10(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[string]]]] {
@@ -8511,68 +8460,32 @@ func tv10(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode
 
 func tv11(a *tslabs, v any) *UintLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "UintLit" {
+	const _ = -(unsafe.Sizeof(UintLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 9 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*UintLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tUintLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[UintLit](x)
 }
 
 func tv12(a *tslabs, v any) *StringLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "StringLit" {
+	const _ = -(unsafe.Sizeof(StringLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 8 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*StringLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tStringLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[StringLit](x)
 }
 
 func tv13(a *tslabs, v any) *BytesLit {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "BytesLit" {
+	const _ = -(unsafe.Sizeof(BytesLit{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 2 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*BytesLit)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tBytesLit)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[BytesLit](x)
 }
 
 func tv14(a *tslabs, v any) any {
@@ -8612,24 +8525,12 @@ func tv20(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string
 
 func tv21(a *tslabs, v any) *Name {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Name" {
+	const _ = -(unsafe.Sizeof(Name{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 6 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Name)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tName)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Name](x)
 }
 
 func tv22(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[[]*TNode[string]]]]]]] {
@@ -8969,22 +8870,11 @@ type tslabs struct {
 	tParen       astChunk[Paren]
 	tSelect      astChunk[Select]
 	tUnary       astChunk[Unary]
-	// named holds the public forms of the nodes of named node types by their values.
-	named      map[any]any
-	tBoolLit   astChunk[BoolLit]
-	tBytesLit  astChunk[BytesLit]
-	tDoubleLit astChunk[DoubleLit]
-	tIdent     astChunk[Ident]
-	tIntLit    astChunk[IntLit]
-	tName      astChunk[Name]
-	tNullLit   astChunk[NullLit]
-	tStringLit astChunk[StringLit]
-	tUintLit   astChunk[UintLit]
-	tl0Chunk   astChunk[Expr]
-	tl1Chunk   astChunk[*Entry]
-	tl2Chunk   astChunk[*Field]
-	tl3Chunk   astChunk[*TNode[string]]
-	tl4Chunk   astChunk[*TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[[]*TNode[string]]]]]
+	tl0Chunk     astChunk[Expr]
+	tl1Chunk     astChunk[*Entry]
+	tl2Chunk     astChunk[*Field]
+	tl3Chunk     astChunk[*TNode[string]]
+	tl4Chunk     astChunk[*TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[[]*TNode[string]]]]]
 }
 
 func (a *tslabs) setWorkControl(c *workControl) { a.control = c }

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
@@ -5117,6 +5118,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 	return nil
 }
 
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
+}
+
 func tpubMatch(v any) *TNode[string] {
 	if x, ok := v.(*tmatch); ok {
 		return &x.TNode
@@ -8168,24 +8177,12 @@ func tv1(a *tslabs, v any) *TNode[Tuple2[*Marker, any]] {
 
 func tv2(a *tslabs, v any) *Marker {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Marker" {
+	const _ = -(unsafe.Sizeof(Marker{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 3 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Marker)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tMarker)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Marker](x)
 }
 
 func tv3(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
@@ -8195,46 +8192,22 @@ func tv3(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
 
 func tv4(a *tslabs, v any) *Word {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Word" {
+	const _ = -(unsafe.Sizeof(Word{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 5 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Word)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tWord)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Word](x)
 }
 
 func tv5(a *tslabs, v any) *Tag {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Tag" {
+	const _ = -(unsafe.Sizeof(Tag{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 4 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Tag)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tTag)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Tag](x)
 }
 
 func tv6(a *tslabs, v any) any {
@@ -8244,46 +8217,22 @@ func tv6(a *tslabs, v any) any {
 
 func tv7(a *tslabs, v any) *Anchor {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Anchor" {
+	const _ = -(unsafe.Sizeof(Anchor{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 2 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Anchor)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tAnchor)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Anchor](x)
 }
 
 func tv8(a *tslabs, v any) *Alias {
 	a.stepWork()
-	x := asTval(v)
-	if x == nil || x.tname() != "Alias" {
+	const _ = -(unsafe.Sizeof(Alias{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	x, _ := v.(*tmatch)
+	if x == nil || x.nt != 1 {
 		return nil
 	}
-	if out, ok := a.named[x]; ok {
-		return out.(*Alias)
-	}
-	u := tpubMatch(v)
-	if u == nil {
-		return nil
-	}
-	out := astNew(&a.tAlias)
-	out.TNode = *u
-	if a.named == nil {
-		a.named = map[any]any{}
-	}
-	a.named[x] = out
-	return out
+	return tmatchAs[Alias](x)
 }
 
 func tv9(a *tslabs, v any) *TNode[string] {
@@ -9942,27 +9891,20 @@ type tslabs struct {
 	tScalar     astChunk[Scalar]
 	tSequence   astChunk[Sequence]
 	tStream     astChunk[Stream]
-	// named holds the public forms of the nodes of named node types by their values.
-	named     map[any]any
-	tAlias    astChunk[Alias]
-	tAnchor   astChunk[Anchor]
-	tMarker   astChunk[Marker]
-	tTag      astChunk[Tag]
-	tWord     astChunk[Word]
-	tl0Chunk  astChunk[*Word]
-	tl1Chunk  astChunk[*Directive]
-	tl2Chunk  astChunk[*Pair]
-	tl3Chunk  astChunk[Value]
-	tl4Chunk  astChunk[*Document]
-	tl5Chunk  astChunk[any]
-	tl6Chunk  astChunk[*TNode[string]]
-	tl7Chunk  astChunk[*TNode[Tuple2[*TNode[string], *TNode[string]]]]
-	tl8Chunk  astChunk[*TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]]]
-	tl9Chunk  astChunk[*TNode[Tuple3[*TNode[Tuple4[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]]], any, *TNode[[]any]]]]
-	tl10Chunk astChunk[*TNode[Tuple2[any, *TNode[Tuple2[any, *TNode[[]any]]]]]]
-	tl11Chunk astChunk[*TNode[Tuple2[*TNode[Tuple4[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]]], *TNode[Tuple2[*TNode[string], *TNode[[]any]]]]]]
-	tl12Chunk astChunk[*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]]
-	tl13Chunk astChunk[*TNode[Tuple2[*TNode[string], *TNode[Tuple4[*TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]], *TNode[string], *TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]]
+	tl0Chunk    astChunk[*Word]
+	tl1Chunk    astChunk[*Directive]
+	tl2Chunk    astChunk[*Pair]
+	tl3Chunk    astChunk[Value]
+	tl4Chunk    astChunk[*Document]
+	tl5Chunk    astChunk[any]
+	tl6Chunk    astChunk[*TNode[string]]
+	tl7Chunk    astChunk[*TNode[Tuple2[*TNode[string], *TNode[string]]]]
+	tl8Chunk    astChunk[*TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]]]
+	tl9Chunk    astChunk[*TNode[Tuple3[*TNode[Tuple4[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]]], any, *TNode[[]any]]]]
+	tl10Chunk   astChunk[*TNode[Tuple2[any, *TNode[Tuple2[any, *TNode[[]any]]]]]]
+	tl11Chunk   astChunk[*TNode[Tuple2[*TNode[Tuple4[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]]], *TNode[Tuple2[*TNode[string], *TNode[[]any]]]]]]
+	tl12Chunk   astChunk[*TNode[Tuple3[*TNode[string], *TNode[Tuple1[*TNode[[]*TNode[string]]]], *TNode[string]]]]
+	tl13Chunk   astChunk[*TNode[Tuple2[*TNode[string], *TNode[Tuple4[*TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]], *TNode[string], *TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]]
 }
 
 func (a *tslabs) setWorkControl(c *workControl) { a.control = c }

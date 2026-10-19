@@ -3,6 +3,7 @@ package genrt
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 )
 
 // The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
@@ -115,6 +116,14 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 		}
 	}
 	return nil
+}
+
+// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
+// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// value wherever it appears, as a plain string node does, without allocating or remembering it.
+func tmatchAs[N any](x *tmatch) *N {
+	return (*N)(unsafe.Pointer(&x.TNode))
 }
 
 func tpubMatch(v any) *TNode[string] {

@@ -73,7 +73,13 @@ func (t *typedGen) outputSweep(b *strings.Builder, direct, conversion bool) {
 		}
 	}
 	for _, name := range t.nodeTypes {
-		// A node of a named node type: its value may hold owned values.
+		if n, _ := t.g.prog.nodeTypeOf(name); n.value == tyString {
+			// A string node of a named node type is the TNode of its tmatch (tmatchAs), which
+			// the sweep of the match blocks looks up as a *TNode[string].
+			fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x != nil { m.mark(&x.TNode) }\n", t.names[name])
+			continue
+		}
+		// A tuple or list node of a named node type: its value may hold owned values.
 		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tm.todo = append(m.todo, x.Value)\n", t.names[name])
 	}
 	// Conversion discovery includes nested lists; Go representations are the
