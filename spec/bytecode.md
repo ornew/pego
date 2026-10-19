@@ -311,7 +311,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module: 18. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, or had no tuple values; a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 19. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, or carried text struct node types and the text flag of `EMEMBER` and `EBIN`; a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |

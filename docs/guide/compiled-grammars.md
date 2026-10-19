@@ -359,7 +359,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 18 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
+| Instruction-set version | 19 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
 
 The consequences:
 

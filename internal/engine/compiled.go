@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 18
+	isaVersion = 19
 	maxDepth   = 10000
 )
 
