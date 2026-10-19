@@ -34,6 +34,9 @@ func TestFix(t *testing.T) {
 		{"type N terminal\nrule n N = x:[0-9]+ => N{text($x)}\nrule m terminal = \"m\"", "type N = { Text string }\nrule n N = x:[0-9]+ => N{Text: text($x)}\nrule m node[string] = \"m\""},
 		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / \"y\") {len($x) > 1} => list(len($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / \"y\") {len($x.Text) > 1} => list(len($y))"},
 		{"type N terminal\nrule n N = [0-9]+\nrule m = x:(n / n) {text($x) != \"0\"} y:(n / \"y\") => list(text($x), text($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:(n / n) {$x.Text != \"0\"} y:(n / \"y\") => list($x.Text, text($y))"},
+		// The member Value of a terminal read its text, which the struct holds in Text.
+		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Value, $y.Value, $z.Value)", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / n) z:(n / \"z\") => list($x.Text, $y.Text, $z.Value)"},
+		{"type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Value != \"\"} => list($x.Value, $y.Value, map($x, (v) => v.Value))", "type N = { Text string }\ntype A ~ N\ntype P = { Text string; B int }\nrule n A = t:[0-9]+ => N{Text: text($t)}\nrule p P = \"p\" => P{Text: \"p\", B: 1}\nrule m = x:n y:p {$x.Text != \"\"} => list($x.Text, $y.Value, map($x, (v) => v.Value))"},
 		{"type P = { A Match; B []Seq; C *List; D Operator; E Error }\nrule a = x:\"a\" => $x.(Match)", "type P = { A node[string]; B []node; C *node; D node; E error }\nrule a = x:\"a\" => $x.(node[string])"},
 		{"type L =[]P\ntype P = {}", "type L ~ []P\ntype P = {}"},
 		{"type P = { A int }\ntype U ~ P", "type P = { A int }\ntype U ~ P"},

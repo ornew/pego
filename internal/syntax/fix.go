@@ -26,8 +26,9 @@ import (
 //   - a terminal type "type T terminal" becomes the struct "type T = { Text string }". A rule
 //     declared with it and without an action, "rule r T = e", becomes
 //     "rule r T = t:(e) #atomic => T{Text: text($t)}", without #atomic when e is atomic already
-//     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) becomes $x.Text where x
-//     captures a call of a rule of a terminal type;
+//     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) and $x.Value become $x.Text
+//     where x captures a call of a rule of a terminal type. $x.Value also becomes $x.Text where
+//     x captures a call of a rule of a text struct { Text string };
 //   - the type names terminal and Match become node[string], Seq, List and Operator become
 //     node, and Error becomes error.
 //

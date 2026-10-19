@@ -214,8 +214,10 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
 - a terminal type `type T terminal` to the struct `type T = { Text string }`. A rule declared with it and without an
   action, `rule r T = e`, which produced the text it matched, becomes `rule r T = t:(e) #atomic => T{Text: text($t)}`
   (without `#atomic` when `e` is atomic already or has captures, which `#atomic` would ignore); `T{s}` becomes `T{Text: s}`; and `text($x)`
-  becomes `$x.Text`, and `len($x)` becomes `len($x.Text)`, where `x` captures a call of such a rule. A capture that may be absent needs a cast,
-  `$x.(T).Text`, or a test for `nil`, which the type checker asks for;
+  and `$x.Value` become `$x.Text`, and `len($x)` becomes `len($x.Text)`, where `x` captures a call of such a rule;
+  `$x.Value` also becomes `$x.Text` where the rule is declared with a struct `{ Text string }`. A capture that may be
+  absent needs a cast, `$x.(T).Text`, or a test for `nil`, which the type checker asks for. A struct has no range, so
+  `$x.Start` and `$x.End` on such a capture are reported by the type checker and need rewriting by hand;
 - the type names `terminal` and `Match` to `node[string]`, `Seq`, `List` and `Operator` to `node`, and `Error` to
   `error`.
 

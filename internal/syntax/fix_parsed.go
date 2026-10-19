@@ -171,26 +171,54 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			edits = append(edits, fixEdit{start, start, "Text: "})
 		}
 	})
-	// ruleTerminal returns the terminal type a rule is declared with, or "".
-	ruleTerminal := map[string]string{}
+	// textStruct reports whether name is, through aliases, the struct { Text string } that a
+	// terminal type became.
+	textStruct := func(name string) bool {
+		for seen := map[string]bool{}; !seen[name]; {
+			seen[name] = true
+			switch spec := defs[name].(type) {
+			case *grammar.AliasSpec:
+				r, ok := spec.Type.(*grammar.TypeRef)
+				if !ok {
+					return false
+				}
+				name = r.Name
+			case *grammar.StructSpec:
+				if len(spec.Fields) != 1 || spec.Fields[0].Name != "Text" {
+					return false
+				}
+				r, ok := spec.Fields[0].Type.(*grammar.TypeRef)
+				return ok && r.Name == "string"
+			default:
+				return false
+			}
+		}
+		return false
+	}
+	// ruleTerminal returns the terminal type a rule is declared with, or "". ruleText holds the
+	// rules declared with a terminal type or a text struct.
+	ruleTerminal, ruleText := map[string]string{}, map[string]bool{}
 	for _, s := range g.Statements {
 		if rd, ok := s.(*grammar.RuleDef); ok {
 			if ref, ok := rd.Type.(*grammar.TypeRef); ok {
 				ruleTerminal[rd.Name] = terminal(ref.Name)
+				ruleText[rd.Name] = ruleTerminal[rd.Name] != "" || textStruct(ref.Name)
 			}
 		}
 	}
-	// A terminal of a rule held its matched text, which text and len read; the struct holds it
-	// in Text. text($x) becomes $x.Text and len($x) becomes len($x.Text) where every capture x
-	// in the rule is a call of a rule of a terminal type, or a choice of such calls.
-	var terminalCall func(e grammar.Expr) bool
-	terminalCall = func(e grammar.Expr) bool {
+	// A terminal of a rule held its matched text, which text, len and the member Value read; the
+	// struct holds it in Text. text($x) becomes $x.Text, len($x) becomes len($x.Text) and $x.Value
+	// becomes $x.Text where every capture x in the rule is a call of a rule of a terminal type,
+	// or a choice of such calls. $x.Value also becomes $x.Text where the rules are declared with
+	// text structs, which have no member Value, so source rewritten before keeps working.
+	var calls func(e grammar.Expr, rule func(string) bool) bool
+	calls = func(e grammar.Expr, rule func(string) bool) bool {
 		switch e := ungroup(e).(type) {
 		case *grammar.Ref:
-			return e.Level == "" && ruleTerminal[e.Name] != ""
+			return e.Level == "" && rule(e.Name)
 		case *grammar.Choice:
 			for _, alt := range e.Alts {
-				if !terminalCall(alt) {
+				if !calls(alt, rule) {
 					return false
 				}
 			}
@@ -198,19 +226,29 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 		}
 		return false
 	}
+	terminalCall := func(e grammar.Expr) bool { return calls(e, func(r string) bool { return ruleTerminal[r] != "" }) }
+	textCall := func(e grammar.Expr) bool { return calls(e, func(r string) bool { return ruleText[r] }) }
 	for _, s := range g.Statements {
 		rd, ok := s.(*grammar.RuleDef)
 		if !ok {
 			continue
 		}
-		terminalCapture := map[string]bool{}
+		terminalCapture, textCapture := map[string]bool{}, map[string]bool{}
 		inspectAST(rd, func(n any) {
 			if c, ok := n.(*grammar.Capture); ok {
 				ok, seen := terminalCapture[c.Name]
 				terminalCapture[c.Name] = (ok || !seen) && terminalCall(c.Expr)
+				ok, seen = textCapture[c.Name]
+				textCapture[c.Name] = (ok || !seen) && textCall(c.Expr)
 			}
 		})
 		inspectAST(rd, func(n any) {
+			if m, ok := n.(*grammar.Member); ok && m.Name == "Value" {
+				if r, ok := m.X.(*grammar.CaptureRef); ok && !r.Param && textCapture[r.Name] {
+					start := o.at(m.Diagnostic())
+					edits = append(edits, fixEdit{start, start + len(m.Name), "Text"})
+				}
+			}
 			c, ok := n.(*grammar.Call)
 			if !ok || (c.Func != "text" && c.Func != "len") || len(c.Args) != 1 {
 				return
