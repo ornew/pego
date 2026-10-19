@@ -52,7 +52,7 @@ func (v *valueInference) resolve(t grammar.TypeExpr) ty {
 
 // legacy resolves a type expression of the grammar as run-time checks write it.
 func (v *valueInference) legacy(t grammar.TypeExpr) ty {
-	k := &checker{prog: v.prog, resolving: map[string]bool{}}
+	k := &typeResolver{prog: v.prog}
 	return k.resolve(t)
 }
 
@@ -101,7 +101,7 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if rd.Type == nil {
 		return t
 	}
-	k := &checker{prog: v.prog, resolving: map[string]bool{}}
+	k := &typeResolver{prog: v.prog}
 	legacy := k.resolve(rd.Type)
 	d := fromLegacy(legacy)
 	if !v.assignable(t, d) {

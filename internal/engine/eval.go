@@ -993,7 +993,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			c.checkTerm(fi.Value, s, locals)
 		}
 	case *grammar.ListConstructor:
-		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		k := &typeResolver{control: c.control, prog: c.prog, errs: &c.errs, report: true}
 		reported := len(c.errs)
 		elem := k.resolve(t.Elem)
 		if len(c.errs) > reported || k.sawUnsupported {
@@ -1024,7 +1024,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Unary:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Cast:
-		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		k := &typeResolver{control: c.control, prog: c.prog, errs: &c.errs, report: true}
 		k.resolveLocation(t.Type, t.Diagnostic(), "the cast")
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Assign:

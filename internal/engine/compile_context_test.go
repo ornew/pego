@@ -136,7 +136,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				var diagnostics ErrorList
 				checkTypesControlled(p, &diagnostics, control)
 			case "type-inference":
-				k := &checker{prog: p, control: control, ruleTypes: map[string]ty{}, declared: map[string]bool{}}
+				k := &checker{typeResolver: typeResolver{prog: p, control: control}, ruleTypes: map[string]ty{}, declared: map[string]bool{}}
 				for _, rd := range g.Rules() {
 					k.ruleTypes[rd.Name] = tyNever
 				}

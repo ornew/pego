@@ -24,7 +24,9 @@ func TestCompileMetadataCollectionCancellation(t *testing.T) {
 		{"types", func(c *compileControl) { c.types(g) }},
 		{"arguments", func(c *compileControl) { c.expressionArgs(a) }},
 		{"call-walk", func(c *compileControl) { allCallsControlled(expr, nil, c) }},
-		{"type-check-arguments", func(c *compileControl) { (&checker{control: c}).attributed(expr, &scopeCheck{caps: caps{}}) }},
+		{"type-check-arguments", func(c *compileControl) {
+			(&checker{typeResolver: typeResolver{control: c}}).attributed(expr, &scopeCheck{caps: caps{}})
+		}},
 		{"stream-walk", func(c *compileControl) { (&compiler{control: c}).checkStream(expr) }},
 	} {
 		t.Run(phase.name, func(t *testing.T) {
@@ -85,5 +87,5 @@ func TestTypeCheckEmptyAttributeCancellation(t *testing.T) {
 			t.Fatalf("empty attribute rows did not stop: %v", failure)
 		}
 	}()
-	(&checker{control: control}).attributed(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: attrs}, &scopeCheck{caps: caps{}})
+	(&checker{typeResolver: typeResolver{control: control}}).attributed(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: attrs}, &scopeCheck{caps: caps{}})
 }

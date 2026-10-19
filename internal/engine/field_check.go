@@ -278,7 +278,7 @@ func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
 	if t == nil {
 		return nil
 	}
-	k := &checker{prog: prog, resolving: map[string]bool{}}
+	k := &typeResolver{prog: prog}
 	if r := k.resolve(t); newFieldType(r) != nil {
 		return r
 	}
