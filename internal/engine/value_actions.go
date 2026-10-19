@@ -292,7 +292,10 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.ListConstructor:
 		elem := v.resolve(t.Elem)
 		for _, item := range t.Items {
-			if it := v.term(item, env); !v.assignable(it, elem) {
+			it := v.term(item, env)
+			if elem != tyAny && v.unknown(it) {
+				v.errorf(termPos(item, t.Diagnostic()), "cannot use statically unknown %s as %s in list constructor", v.expand(it), elem)
+			} else if !v.assignable(it, elem) {
 				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", it, elem)
 			}
 		}
@@ -300,8 +303,14 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Call:
 		return v.call(t, env)
 	case *grammar.Cast:
-		v.term(t.X, env)
-		return v.resolve(t.Type)
+		x, to := v.term(t.X, env), v.resolve(t.Type)
+		if to != tyBottom && !v.overlaps(x, to, 0) { // a cast to _|_ is reported where names are resolved
+			v.errorf(t.Diagnostic(), "cannot cast %s to %s", v.expand(x), to)
+		}
+		return to
+	case *grammar.Lambda:
+		v.errorf(grammar.Pos{}, "functions can only be passed to filter, foldl, foldr, or map")
+		return tyAny
 	case *grammar.Unary:
 		x := v.term(t.X, env)
 		want := tyInt
@@ -315,8 +324,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Binary:
 		return v.binary(t, env)
 	}
-	// Positional captures are rejected when names are resolved; variables, assignments, lambdas
-	// outside calls and blocks are checked by the current model.
+	// Positional captures are rejected when names are resolved; variables have no static type,
+	// assignments are checked with the predicates that make them, and blocks by the current model.
 	return tyAny
 }
 
@@ -571,10 +580,81 @@ func (v *valueInference) elemsOf(x ty) (ty, bool) {
 	return nil, false
 }
 
-// lambda returns the function argument of a call with n parameters.
-func (v *valueInference) lambda(t grammar.Term, n int) (*grammar.Lambda, bool) {
-	l, ok := t.(*grammar.Lambda)
-	return l, ok && len(l.Params) == n
+// lambda returns the function argument of the call t with n parameters.
+func (v *valueInference) lambda(t *grammar.Call, arg, n int) (*grammar.Lambda, bool) {
+	l, ok := t.Args[arg].(*grammar.Lambda)
+	if !ok || len(l.Params) != n {
+		v.errorf(t.Diagnostic(), "%s: expected a function of %d parameters", t.Func, n)
+		return nil, false
+	}
+	return l, true
+}
+
+// unknown reports whether a value of type t may be one the value types do not know (tyAny), as
+// itself or as an element of a list, an optional value or a union. A node is known to be a node.
+func (v *valueInference) unknown(t ty) bool {
+	for range 32 {
+		switch u := v.expand(t).(type) {
+		case basicTy:
+			return u == tyAny
+		case listTy:
+			t = u.elem
+			continue
+		case optTy:
+			t = u.elem
+			continue
+		case unionTy:
+			return slices.ContainsFunc(u.alts, v.unknown)
+		}
+		return false
+	}
+	return true
+}
+
+// overlaps reports whether some value has both type a and type b, so that a cast from one to the
+// other can succeed. Nodes overlap when their values may: the captures of a node are static and do
+// not decide what a cast accepts. Lists overlap when their elements may, since an empty list has
+// every list type, and a list node is cast to a list type through its list.
+func (v *valueInference) overlaps(a, b ty, depth int) bool {
+	if depth > 16 || v.assignable(a, b) || v.assignable(b, a) {
+		return true
+	}
+	split := func(t ty) []ty {
+		var out []ty
+		for _, x := range v.alts(t) {
+			if o, ok := x.(optTy); ok {
+				out = append(out, v.alts(o.elem)...)
+				out = append(out, tyNil)
+			} else {
+				out = append(out, x)
+			}
+		}
+		return out
+	}
+	for _, x := range split(a) {
+		for _, y := range split(b) {
+			if v.assignable(x, y) || v.assignable(y, x) {
+				return true
+			}
+			_, okx := x.(listTy)
+			_, oky := y.(listTy)
+			if okx && oky {
+				return true // both admit the empty list
+			}
+			xn, ok1 := x.(nodeTy)
+			yn, ok2 := y.(nodeTy)
+			if ok1 && ok2 && v.overlaps(xn.value, yn.value, depth+1) {
+				return true
+			}
+			if _, list := y.(listTy); ok1 && list && v.overlaps(xn.value, y, depth+1) {
+				return true
+			}
+			if _, list := x.(listTy); ok2 && list && v.overlaps(x, yn.value, depth+1) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
@@ -608,7 +688,7 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 	case "foldl", "foldr":
 		acc := arg(0)
 		elem := v.elemOf(t.Func, arg(1), t.Diagnostic())
-		l, ok := v.lambda(t.Args[2], 2)
+		l, ok := v.lambda(t, 2, 2)
 		if !ok {
 			return tyAny
 		}
@@ -627,7 +707,7 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 		return acc
 	case "filter":
 		elem := v.elemOf("filter", arg(0), t.Diagnostic())
-		l, ok := v.lambda(t.Args[1], 1)
+		l, ok := v.lambda(t, 1, 1)
 		if !ok {
 			return tyAny
 		}
@@ -637,7 +717,7 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 		return listTy{elem}
 	case "map":
 		elem := v.elemOf("map", arg(0), t.Diagnostic())
-		l, ok := v.lambda(t.Args[1], 1)
+		l, ok := v.lambda(t, 1, 1)
 		if !ok {
 			return tyAny
 		}

@@ -390,7 +390,13 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 	}
 	switch e := e.(type) {
 	case *grammar.Predicate:
-		v.term(e.Term, env)
+		if a, ok := e.Term.(*grammar.Assign); ok {
+			if t := v.term(a.Value, env); !v.assignable(t, vunion(tyInt, tyString, tyBool)) {
+				v.errorf(a.Diagnostic(), "variable %s must be int, string, or bool, got %s", a.Name, v.expand(t))
+			}
+		} else {
+			v.term(e.Term, env)
+		}
 	case *grammar.Repeat:
 		if elementScopedControlled(e.Expr, v.control) {
 			v.predicates(e.Expr, inner(e.Expr))
@@ -657,6 +663,7 @@ func mergeCap(caps []capIndex, c capIndex) []capIndex {
 func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.OperatorsRule) ty {
 	self := ruleTy{rd.Name}
 	var ts []ty
+	tuples := map[int]bool{} // the lines whose value is the tuple node of an operator without an action
 	if pr.Skip != nil {
 		v.predicates(pr.Skip, &valueEnv{})
 	}
@@ -699,7 +706,26 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			default:
 				elems = []valueElem{{t: self, caps: []capIndex{{name: "lhs", paths: [][]int{{}}, t: self}}}, {t: op.t, caps: []capIndex{{name: "op", paths: [][]int{{}}, t: op.t}}}, {t: self, caps: []capIndex{{name: "rhs", paths: [][]int{{}}, t: self}}}}
 			}
+			tuples[len(ts)] = true
 			ts = append(ts, tupleNode(elems))
+		}
+	}
+	if rd.Type != nil {
+		// Each line that does not fit is reported on its own.
+		d, bad := v.resolve(rd.Type), false
+		for i, t := range ts {
+			if v.assignable(t, d) {
+				continue
+			}
+			bad = true
+			if tuples[i] {
+				v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which is not assignable to %s", rd.Name, d)
+			} else {
+				v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
+			}
+		}
+		if bad {
+			return d
 		}
 	}
 	return v.declared(rd, vunion(ts...))
