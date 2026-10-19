@@ -241,6 +241,16 @@ func (ks *nodeTypeKinds) convert(v any) (*Node, bool) {
 	return &c, true
 }
 
+// convertOwned gives n, a node that nothing else holds, the named node type of ks in place. It
+// reports false if n is not a string, tuple or list node.
+func (ks *nodeTypeKinds) convertOwned(n *Node) bool {
+	if n == nil || n.kind == nil || n.kind.base < 0 || n.kind.base > baseList {
+		return false
+	}
+	n.kind = ks[n.kind.base]
+	return true
+}
+
 // typeKind returns the kind of nodes of the grammar's type typ without a rule.
 func (prog *Program) typeKind(typ string) *nodeKind {
 	if k := prog.typeKinds[typ]; k != nil {

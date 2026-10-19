@@ -784,7 +784,8 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
-	if v != nil && v.fresh {
+	owned := v != nil && v.fresh
+	if owned {
 		if p.prog.sourceInfo && v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
@@ -794,6 +795,9 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		p.checkResult(r.resultCheck, v, r.name)
 	}
 	if r.nodeKinds != nil {
+		if owned && r.nodeKinds.convertOwned(v) {
+			return v
+		}
 		v = p.convertResult(r, v)
 	}
 	return v

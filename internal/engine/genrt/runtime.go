@@ -219,6 +219,16 @@ func (ks *nodeTypeKinds) convert(v any) (*Node, bool) {
 	return &c, true
 }
 
+// convertOwned gives n, a node that nothing else holds, the named node type of ks in place. It
+// reports false if n is not a string, tuple or list node.
+func (ks *nodeTypeKinds) convertOwned(n *Node) bool {
+	if n == nil || n.kind == nil || n.kind.base < 0 || n.kind.base > baseList {
+		return false
+	}
+	n.kind = ks[n.kind.base]
+	return true
+}
+
 // baseNode returns the node n of a named node type as the string, tuple or list node it was
 // converted from: a copy with the kind of that node (n itself for other nodes).
 func (n *Node) baseNode() *Node {
@@ -2167,11 +2177,14 @@ func (p *parser) tooDeep() {
 // finish makes the rule's value from the value of its body, and checks it against the rule's
 // declared type if needed.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
-	v = p.finishValue(r, f, v, start)
+	v, owned := p.finishValue(r, f, v, start)
 	if r.check != nil {
 		r.check(p, v)
 	}
 	if r.nodeKinds != nil {
+		if owned && r.nodeKinds.convertOwned(v) {
+			return v
+		}
 		v = p.convertResult(r, v)
 	}
 	return v
@@ -2186,28 +2199,29 @@ func (p *parser) convertResult(r *rule, v *Node) *Node {
 	return n
 }
 
-func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) *Node {
+func (p *parser) finishValue(r *rule, f *frame, v *Node, start int) (*Node, bool) {
 	if r.novalue {
-		return nil
+		return nil, false
 	}
 	if r.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		return c.result(r.action, r.name)
+		return c.result(r.action, r.name), false
 	}
 	v = p.scopeValue(r.value, v, start)
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
 	if v == nil {
-		return nil
+		return nil, false
 	}
-	if v.fresh {
+	owned := v.fresh
+	if owned {
 		if sourceInfo && v.kind.rule == "" {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
 	}
-	return v
+	return v, owned
 }
 
 // attachCaptures attaches the non-nil captures as fields of the node. A node of another rule, or
