@@ -126,8 +126,8 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| A rule without an action whose type is not declared, or is declared `node` | The Go type of its value: `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
-| `node`, `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
+| A rule whose type is not declared, or a rule without an action declared `node[_]` | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
+| `node[_]`, `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`

@@ -122,7 +122,12 @@ func TestGeneratedTypedOutputSweep(t *testing.T) {
 					if sweep && (grammar.name != "open" || conversion) {
 						whitebox := grammar.whitebox
 						if grammar.name == "closed" && !conversion {
-							whitebox += typedSweepDirectWhitebox
+							// Every rule of the closed grammar runs on the typed runtime, so it has no
+							// conversion owners; the conversion variant inspects those.
+							if strings.Contains(string(code), "type astConv struct {") {
+								t.Fatal("closed grammar fell back to Node conversion")
+							}
+							whitebox = "import \"testing\"\n" + typedSweepDirectWhitebox
 						}
 						files["whitebox_test.go"] = []byte("package sweepfixture\n" + whitebox)
 					}

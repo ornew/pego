@@ -111,15 +111,11 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 		// emits, each with a converter of its own, so that typed values
 		// share nothing with later elements.
 		needNodes = true
-		et, ok := info.streams[r.name]
+		v, ok := streamValue(g.prog, r.def)
 		if !ok {
 			return "", "", fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.name)
 		}
-		if _, ok := t.ruleType(r).(vrule); ok {
-			if v, ok := streamValue(g.prog, r.def); ok {
-				et = t.resolveValue(v)
-			}
-		}
+		et := t.resolveValue(v)
 		result := t.conv(et, "n")
 		newConv := ""
 		if strings.Contains(result, "a.") {

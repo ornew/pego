@@ -58,9 +58,11 @@ func TestGeneratedBoundedTypedOutputSweep(t *testing.T) {
 					whitebox = "import \"testing\"\n" // the open whitebox inspects conversion owners
 				}
 				if grammar.name == "closed" {
-					whitebox += boundedSweepOwnerWhitebox(t, string(code), false)
-					if !conversion {
-						whitebox += typedSweepDirectWhitebox + boundedSweepOwnerWhitebox(t, string(code), true)
+					if conversion {
+						whitebox += boundedSweepOwnerWhitebox(t, string(code), false)
+					} else {
+						// Every rule runs on the typed runtime, so there are no conversion owners.
+						whitebox = "import \"testing\"\n" + typedSweepDirectWhitebox + boundedSweepOwnerWhitebox(t, string(code), true)
 					}
 				}
 				whitebox = strings.Replace(whitebox, "import \"testing\"", "import (\"reflect\"; \"testing\")", 1)

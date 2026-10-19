@@ -20,8 +20,6 @@ type checker struct {
 	// ruleTypes holds the type of each rule (declared, or being inferred).
 	ruleTypes map[string]ty
 	declared  map[string]bool
-	// streams holds the element type of the #stream repetition of each rule that has one.
-	streams map[string]ty
 	// checks holds the values that need a run-time check (typeInfo.checks).
 	checks *checkInfo
 }
@@ -53,7 +51,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 
 func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
 	defer dropRepeatedErrors(errs, len(*errs))
-	k := &checker{typeResolver: typeResolver{control: control, prog: prog, errs: errs}, ruleTypes: map[string]ty{}, declared: map[string]bool{}, streams: map[string]ty{}, checks: &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}}
+	k := &checker{typeResolver: typeResolver{control: control, prog: prog, errs: errs}, ruleTypes: map[string]ty{}, declared: map[string]bool{}, checks: &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}}}
 
 	k.report = true
 	k.checkTypeDefinitions()
@@ -97,7 +95,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	}
 
 	// Keep the types for code generation (typedGo).
-	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, streams: k.streams, checks: checks, values: values, valueErrs: valueErrs}
+	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}, checks: checks, values: values, valueErrs: valueErrs}
 	info.valuesOnce.Do(func() {})
 	info.shown = shownRuleTypes(prog, control.rules(prog.Grammar), values, control)
 	for _, td := range control.types(prog.Grammar) {
@@ -117,7 +115,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 // typeInfo holds the types found by the type checker, for code generation.
 type typeInfo struct {
-	rules map[string]ty // the type of each rule
+	rules map[string]ty // the type the old checker infers for each rule (tests compare inference)
 	// values holds the type of each rule's value in the value model (Program.valueTypes).
 	values     map[string]ty
 	valueErrs  ErrorList     // the errors of actions in the value model
@@ -125,7 +123,6 @@ type typeInfo struct {
 	valuesOnce sync.Once
 	fields     map[string][]typedField // the fields of each struct type, in declaration order
 	aliases    map[string]ty           // the type each alias stands for
-	streams    map[string]ty           // the element type of the #stream repetition of each rule with one
 	// checks holds the declared types that values must be checked against at run time: those
 	// not statically known to fit (Program.fieldCheckType, Program.resultCheckType).
 	checks *checkInfo
@@ -579,10 +576,6 @@ func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
 		}
 		if a.Name == "missing" && t != nil {
 			t = union(t, tyMissing)
-		}
-		// The checking pass, which follows inference, records the final element type.
-		if l, ok := t.(listTy); ok && a.Name == "stream" && k.rule != nil {
-			k.streams[k.rule.Name] = l.elem
 		}
 	}
 	return t

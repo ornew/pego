@@ -8006,7 +8006,7 @@ func tmk_ArrayLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArrayLit)
 	c.p.stepWork()
-	v.Elems = tl2(a, f0)
+	v.Elems = tl0(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8069,7 +8069,7 @@ func tmk_Block(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBlock)
 	c.p.stepWork()
-	v.Body = tl0(a, f0)
+	v.Body = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8105,7 +8105,7 @@ func tmk_Call(c *tctx, final bool, f0 any, f1 any) any {
 	c.p.stepWork()
 	v.Fn = tAs[Expr](tpub(f0))
 	c.p.stepWork()
-	v.Args = tl2(a, f1)
+	v.Args = tl0(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8168,7 +8168,7 @@ func tmk_Func(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	c.p.stepWork()
 	v.Name = tAs[*Ident](f0)
 	c.p.stepWork()
-	v.Params = tl1(a, f1)
+	v.Params = tl2(a, f1)
 	c.p.stepWork()
 	v.Body = tAs[*Block](f2)
 	if final {
@@ -8313,7 +8313,7 @@ func tmk_Program(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tProgram)
 	c.p.stepWork()
-	v.Body = tl0(a, f0)
+	v.Body = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -8400,41 +8400,7 @@ func tmk_While(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []Stmt {
-	a.stepWork()
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Stmt{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.kids))
-	for i, c := range n.kids {
-		a.stepWork()
-		out[i] = tAs[Stmt](tpub(c))
-	}
-	return out
-}
-
-func tl1(a *tslabs, v any) []*Ident {
-	a.stepWork()
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Ident{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
-	for i, c := range n.kids {
-		a.stepWork()
-		out[i] = tAs[*Ident](c)
-	}
-	return out
-}
-
-func tl2(a *tslabs, v any) []Expr {
+func tl0(a *tslabs, v any) []Expr {
 	a.stepWork()
 	if v == nil {
 		return nil
@@ -8443,7 +8409,7 @@ func tl2(a *tslabs, v any) []Expr {
 	if n == nil {
 		return []Expr{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl2Chunk, len(n.kids))
+	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
 		a.stepWork()
 		out[i] = tAs[Expr](tpub(c))
@@ -8451,52 +8417,111 @@ func tl2(a *tslabs, v any) []Expr {
 	return out
 }
 
-func tv0(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tl1(a *tslabs, v any) []Stmt {
 	a.stepWork()
-	return tv9(a, v)
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Stmt{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl1Chunk, len(n.kids))
+	for i, c := range n.kids {
+		a.stepWork()
+		out[i] = tAs[Stmt](tpub(c))
+	}
+	return out
 }
 
-func tv1(a *tslabs, v any) *TNode[string] {
+func tl2(a *tslabs, v any) []*Ident {
 	a.stepWork()
-	return tv10(a, v)
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Ident{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl2Chunk, len(n.kids))
+	for i, c := range n.kids {
+		a.stepWork()
+		out[i] = tAs[*Ident](c)
+	}
+	return out
 }
 
-func tv2(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv0(a *tslabs, v any) []Stmt {
 	a.stepWork()
-	return tv9(a, v)
+	return tl1(a, v)
 }
 
-func tv3(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv1(a *tslabs, v any) any {
 	a.stepWork()
-	return tv9(a, v)
+	return tpub(v)
+}
+
+func tv2(a *tslabs, v any) []*Ident {
+	a.stepWork()
+	return tl2(a, v)
+}
+
+func tv3(a *tslabs, v any) []Expr {
+	a.stepWork()
+	return tl0(a, v)
 }
 
 func tv4(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 	a.stepWork()
-	return tv9(a, v)
+	return tv14(a, v)
 }
 
-func tv5(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv5(a *tslabs, v any) *TNode[string] {
 	a.stepWork()
-	return tv9(a, v)
+	return tv15(a, v)
 }
 
-func tv6(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv6(a *tslabs, v any) *String {
 	a.stepWork()
-	return tv9(a, v)
+	return tAs[*String](v)
 }
 
 func tv7(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 	a.stepWork()
-	return tv9(a, v)
+	return tv14(a, v)
 }
 
-func tv8(a *tslabs, v any) *TNode[[]any] {
+func tv8(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 	a.stepWork()
-	return tv11(a, v)
+	return tv14(a, v)
 }
 
 func tv9(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+	a.stepWork()
+	return tv14(a, v)
+}
+
+func tv10(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+	a.stepWork()
+	return tv14(a, v)
+}
+
+func tv11(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+	a.stepWork()
+	return tv14(a, v)
+}
+
+func tv12(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+	a.stepWork()
+	return tv14(a, v)
+}
+
+func tv13(a *tslabs, v any) *TNode[[]any] {
+	a.stepWork()
+	return tv16(a, v)
+}
+
+func tv14(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -8504,7 +8529,7 @@ func tv9(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 			return nil
 		}
 		out := &TNode[Tuple1[*TNode[string]]]{Span: x.Span}
-		out.Value = tv12(a, x)
+		out.Value = tv17(a, x)
 		return out
 	case *terror:
 		return nil
@@ -8516,13 +8541,13 @@ func tv9(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 		text, _ := x.ttext()
 		_ = text
 		out := &TNode[Tuple1[*TNode[string]]]{Span: Span{s, e}}
-		out.Value = tv12(a, text)
+		out.Value = tv17(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv10(a *tslabs, v any) *TNode[string] {
+func tv15(a *tslabs, v any) *TNode[string] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -8547,7 +8572,7 @@ func tv10(a *tslabs, v any) *TNode[string] {
 	return nil
 }
 
-func tv11(a *tslabs, v any) *TNode[[]any] {
+func tv16(a *tslabs, v any) *TNode[[]any] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *tnode:
@@ -8573,14 +8598,14 @@ func tv11(a *tslabs, v any) *TNode[[]any] {
 	return nil
 }
 
-func tv12(a *tslabs, v any) Tuple1[*TNode[string]] {
+func tv17(a *tslabs, v any) Tuple1[*TNode[string]] {
 	a.stepWork()
 	var out Tuple1[*TNode[string]]
 	x, _ := v.(*tnode)
 	if x == nil {
 		return out
 	}
-	out.E0 = tv10(a, tkid(x.kids, 0))
+	out.E0 = tv15(a, tkid(x.kids, 0))
 	return out
 }
 
@@ -8624,9 +8649,9 @@ type tslabs struct {
 	tString   astChunk[String]
 	tUnary    astChunk[Unary]
 	tWhile    astChunk[While]
-	tl0Chunk  astChunk[Stmt]
-	tl1Chunk  astChunk[*Ident]
-	tl2Chunk  astChunk[Expr]
+	tl0Chunk  astChunk[Expr]
+	tl1Chunk  astChunk[Stmt]
+	tl2Chunk  astChunk[*Ident]
 	tl3Chunk  astChunk[any]
 }
 
@@ -8697,7 +8722,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[0], input, o, a, func(v any) *Program { return tAs[*Program](v) })
 	case "stmts":
 		a := &tslabs{}
-		return tparseResolved(trules[1], input, o, a, func(v any) []Stmt { return tl0(a, v) })
+		return tparseResolved(trules[1], input, o, a, func(v any) []Stmt { return tv0(a, v) })
 	case "block":
 		a := &tslabs{}
 		return tparseResolved(trules[2], input, o, a, func(v any) *Block { return tAs[*Block](v) })
@@ -8715,7 +8740,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[6], input, o, a, func(v any) *If { return tAs[*If](v) })
 	case "else":
 		a := &tslabs{}
-		return tparseResolved(trules[7], input, o, a, func(v any) any { return tpub(v) })
+		return tparseResolved(trules[7], input, o, a, func(v any) any { return tv1(a, v) })
 	case "while":
 		a := &tslabs{}
 		return tparseResolved(trules[8], input, o, a, func(v any) *While { return tAs[*While](v) })
@@ -8727,7 +8752,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[10], input, o, a, func(v any) *Func { return tAs[*Func](v) })
 	case "params":
 		a := &tslabs{}
-		return tparseResolved(trules[11], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+		return tparseResolved(trules[11], input, o, a, func(v any) []*Ident { return tv2(a, v) })
 	case "exprStmt":
 		a := &tslabs{}
 		return tparseResolved(trules[12], input, o, a, func(v any) *ExprStmt { return tAs[*ExprStmt](v) })
@@ -8739,7 +8764,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[14], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
 	case "args":
 		a := &tslabs{}
-		return tparseResolved(trules[15], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return tparseResolved(trules[15], input, o, a, func(v any) []Expr { return tv3(a, v) })
 	case "ident":
 		a := &tslabs{}
 		return tparseResolved(trules[16], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
@@ -8748,16 +8773,16 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[17], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
 	case "keyword":
 		a := &tslabs{}
-		return tparseResolved(trules[18], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv0(a, v) })
+		return tparseResolved(trules[18], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv4(a, v) })
 	case "idchar":
 		a := &tslabs{}
-		return tparseResolved(trules[19], input, o, a, func(v any) *TNode[string] { return tv1(a, v) })
+		return tparseResolved(trules[19], input, o, a, func(v any) *TNode[string] { return tv5(a, v) })
 	case "number":
 		a := &tslabs{}
 		return tparseResolved(trules[20], input, o, a, func(v any) *Number { return tAs[*Number](v) })
 	case "string":
 		a := &tslabs{}
-		return tparseResolved(trules[21], input, o, a, func(v any) *String { return tAs[*String](v) })
+		return tparseResolved(trules[21], input, o, a, func(v any) *String { return tv6(a, v) })
 	case "strchars":
 		a := &tslabs{}
 		return tparseResolved(trules[22], input, o, a, func(v any) *String { return tAs[*String](v) })
@@ -8766,25 +8791,25 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		return tparseResolved(trules[23], input, o, a, func(v any) *Bool { return tAs[*Bool](v) })
 	case "kw_let":
 		a := &tslabs{}
-		return tparseResolved(trules[24], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv2(a, v) })
+		return tparseResolved(trules[24], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv7(a, v) })
 	case "kw_fn":
 		a := &tslabs{}
-		return tparseResolved(trules[25], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv3(a, v) })
+		return tparseResolved(trules[25], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv8(a, v) })
 	case "kw_if":
 		a := &tslabs{}
-		return tparseResolved(trules[26], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv4(a, v) })
+		return tparseResolved(trules[26], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv9(a, v) })
 	case "kw_else":
 		a := &tslabs{}
-		return tparseResolved(trules[27], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv5(a, v) })
+		return tparseResolved(trules[27], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv10(a, v) })
 	case "kw_while":
 		a := &tslabs{}
-		return tparseResolved(trules[28], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv6(a, v) })
+		return tparseResolved(trules[28], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv11(a, v) })
 	case "kw_return":
 		a := &tslabs{}
-		return tparseResolved(trules[29], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv7(a, v) })
+		return tparseResolved(trules[29], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv12(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return tparseResolved(trules[30], input, o, a, func(v any) *TNode[[]any] { return tv8(a, v) })
+		return tparseResolved(trules[30], input, o, a, func(v any) *TNode[[]any] { return tv13(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}

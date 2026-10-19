@@ -10,8 +10,9 @@ import (
 
 // Typed values of rules in the value model.
 //
-// A rule whose declared or inferred type is a node kind (a tuple or list node, node, or a record), or a rule without a declared type and without an action, has the Go type of its value
-// in the value model (Program.valueTypes) instead:
+// A rule without a declared type, and a rule without an action whose declared type is a node kind
+// (node[_]), has the Go type of its value in the value model (Program.valueTypes); a rule with a
+// declared type otherwise has the Go type of its declared type:
 //
 //   - node[T] becomes *TNode[T'], with T' the Go type of T (TNode[any] for an unknown T);
 //   - a tuple (A, B, ...) becomes TupleN[A', B', ...], a generic struct with the fields E0, E1, ...,
@@ -78,6 +79,7 @@ func vague(x ty) bool {
 
 // valueResolver resolves the value types of the rules whose typed values come from them.
 type valueResolver struct {
+	prog *Program
 	info *typeInfo
 	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
 	// resolved value types of the rules whose typed values come from them, and resolving the rules
@@ -91,23 +93,23 @@ type valueResolver struct {
 }
 
 func newValueResolver(p *Program, ownType func(ty) bool) valueResolver {
-	r := valueResolver{info: p.typed, values: p.valueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]ty{}, resolving: map[string]bool{}, ownType: ownType}
+	r := valueResolver{prog: p, info: p.typed, values: p.valueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]ty{}, resolving: map[string]bool{}, ownType: ownType}
 	for _, rl := range p.rules {
 		r.ruleDefs[rl.name] = rl.def
 	}
 	return r
 }
 
-// ruleType returns the type that selects the Go type of the values of rule r: its legacy type, or a
-// vrule for a rule whose Go type comes from its value type.
+// ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
+// a vrule for a rule whose Go type comes from its value type.
 func (t *typedGen) ruleType(r *rule) ty {
 	return t.ruleRef(r.name)
 }
 
 func (t *valueResolver) ruleRef(name string) ty {
-	legacy := t.info.rules[name]
-	if legacy == nil {
-		legacy = tyAny
+	var legacy ty = tyAny
+	if def := t.ruleDefs[name]; def != nil && def.Type != nil {
+		legacy = (&typeResolver{prog: t.prog}).resolve(def.Type)
 	}
 	if !t.usesValue(name, legacy) {
 		return legacy
@@ -125,15 +127,18 @@ func (t *valueResolver) ruleRef(name string) ty {
 	return vrule{name}
 }
 
-// A rule has the Go type of its value if it has no action and either no declared type or a declared
-// type that leaves the shape open, unless its type is a union with a Go type of its own.
+// A rule has the Go type of its value if it has no declared type, or no action and a declared type
+// that leaves the shape open, unless its declared type is a union with a Go type of its own.
 func (t *valueResolver) usesValue(name string, legacy ty) bool {
 	v, ok := t.values[name]
 	def := t.ruleDefs[name]
-	if !ok || v == nil || v == tyAny || def == nil || def.Action != nil {
+	if !ok || v == nil || v == tyAny || def == nil {
 		return false
 	}
-	if _, operators := def.Expr.(*grammar.OperatorsRule); operators {
+	if def.Type != nil && def.Action != nil {
+		return false // the action's value has the declared type
+	}
+	if _, operators := def.Expr.(*grammar.OperatorsRule); operators && def.Type != nil {
 		return false
 	}
 	if t.ownType(legacy) {

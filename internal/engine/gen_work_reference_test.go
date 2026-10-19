@@ -46,7 +46,6 @@ rule seq = "a" "é"?
 
 rule ptrnil *node[_] = t:seq? => $t
 
-// A nil result is converted from nodes, so the reference also covers the converter.
 rule converted = "a" => nil`)
 	if err != nil {
 		t.Fatal(err)
@@ -80,8 +79,12 @@ rule converted = "a" => nil`)
 			typed := ""
 			if opts.Types {
 				typed = layoutTypedState
+				// The direct typed runtime needs no converter, and a converting parser no typed
+				// runtime.
 				if opts.convertTypes {
 					typed = strings.ReplaceAll(typed, ",reflect.TypeOf(tslabs{})", "")
+				} else {
+					typed = strings.ReplaceAll(typed, "reflect.TypeOf(astConv{}),", "")
 				}
 			}
 			fixture := strings.NewReplacer("PACKAGE", pkg, "REFERENCE", fmt.Sprint(reference), "TYPED_STATE", typed).Replace(layoutStateConsumer)
@@ -179,7 +182,6 @@ rule main Word = t:("a") #atomic => Word{Text: text($t)}
 
 rule other any = "a" => nil
 
-// A nil result is converted from nodes, so the reference also covers the converter.
 rule converted = "a" => nil`)
 	if err != nil {
 		t.Fatal(err)
@@ -187,6 +189,17 @@ rule converted = "a" => nil`)
 	source, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, referenceWorkControls: true})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// The direct typed runtime (tslabs) has no converter; a converting parser has astConv.
+	converting, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, convertTypes: true, referenceWorkControls: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceOf := func(name string) []byte {
+		if name == "astConv" {
+			return converting
+		}
+		return source
 	}
 	mutations := map[string]func(*testing.T, *goast.File){
 		"missing constant": func(t *testing.T, f *goast.File) {
@@ -219,7 +232,9 @@ rule converted = "a" => nil`)
 	for _, name := range []string{"WithContext", "WithWorkLimits", "prepareOptions", "resolveOptions"} {
 		mutations["missing function "+name] = func(t *testing.T, f *goast.File) { workReferenceFunction(t, f, name).Name.Name = "changed" }
 	}
+	sources := map[string][]byte{}
 	for _, name := range []string{"parser", "parseOptions", "astConv", "tslabs"} {
+		sources["missing control "+name] = sourceOf(name)
 		mutations["missing control "+name] = func(t *testing.T, f *goast.File) {
 			s := workReferenceStruct(t, f, name)
 			for _, field := range s.Fields.List {
@@ -245,23 +260,39 @@ rule converted = "a" => nil`)
 	}
 	for name, mutate := range mutations {
 		t.Run(name, func(t *testing.T) {
-			f, err := goparser.ParseFile(token.NewFileSet(), "reference.go", source, goparser.SkipObjectResolution)
+			src, ok := sources[name]
+			if !ok {
+				src = source
+			}
+			f, err := goparser.ParseFile(token.NewFileSet(), "reference.go", src, goparser.SkipObjectResolution)
 			if err != nil {
 				t.Fatal(err)
 			}
 			mutate(t, f)
-			src := []byte(workAnchorText(f))
-			if result, err := removeGeneratedWorkState(src); err == nil || result != nil {
+			if result, err := removeGeneratedWorkState([]byte(workAnchorText(f))); err == nil || result != nil {
 				t.Fatalf("accepted drift: %v", err)
 			}
 		})
 	}
-	t.Run("grouped fields preserve other names", func(t *testing.T) {
+	for _, c := range []struct {
+		src   []byte
+		names []string
+	}{{source, []string{"parser", "tslabs"}}, {converting, []string{"parser", "astConv"}}} {
+		t.Run("grouped fields preserve other names", func(t *testing.T) {
+			groupedFieldsPreserveOtherNames(t, c.src, c.names)
+		})
+	}
+}
+
+// groupedFieldsPreserveOtherNames checks that removing the control field of the structs names
+// keeps a field declared in the same group.
+func groupedFieldsPreserveOtherNames(t *testing.T, source []byte, names []string) {
+	{
 		f, err := goparser.ParseFile(token.NewFileSet(), "reference.go", source, goparser.SkipObjectResolution)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, name := range []string{"parser", "astConv", "tslabs"} {
+		for _, name := range names {
 			for _, field := range workReferenceStruct(t, f, name).Fields.List {
 				for _, n := range field.Names {
 					if n.Name == "control" {
@@ -279,7 +310,7 @@ rule converted = "a" => nil`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, name := range []string{"parser", "astConv", "tslabs"} {
+		for _, name := range names {
 			found := false
 			for _, field := range workReferenceStruct(t, f, name).Fields.List {
 				for _, n := range field.Names {
@@ -292,7 +323,7 @@ rule converted = "a" => nil`)
 				t.Fatal("removed unrelated field", name)
 			}
 		}
-	})
+	}
 }
 
 func workReferenceStruct(t *testing.T, f *goast.File, name string) *goast.StructType {
