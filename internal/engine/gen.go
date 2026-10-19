@@ -796,6 +796,38 @@ func (g *generator) rules() {
 	}
 }
 
+// nodeTypeNames returns the names of the grammar's named node types, sorted: the typed runtime's
+// tnodeTypeNames after the empty name at index 0.
+func (g *generator) nodeTypeNames() []string {
+	var names []string
+	for name, spec := range g.prog.types {
+		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() == nil {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+// nodeTypeIndex returns the index in the typed runtime's tnodeTypeNames of the named node type
+// name (nt in tmatch and tnode).
+func (g *generator) nodeTypeIndex(name string) int {
+	n, ok := g.prog.nodeTypeOf(name)
+	if !ok {
+		panic("internal error: " + name + " is not a named node type")
+	}
+	return sort.SearchStrings(g.nodeTypeNames(), n.name) + 1
+}
+
+// typedResultConversion returns the statement that converts the value v of rule r to the rule's
+// named node type in the typed runtime (what finish does), or "" if r has none.
+func (g *generator) typedResultConversion(r *rule, v string) string {
+	if r.nodeType == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s = p.tconvertResult(trules[%d], %s)", v, r.id, v)
+}
+
 // typedCall writes the methods that call the rule r in the typed runtime: s<id> for a rule never
 // memoized and without captures (what invokePlain does), and otherwise u<id> (what call does, the
 // memo kept by callMemo) and i<id> (what invoke does). Each calls the body's method and the action
@@ -836,6 +868,9 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		}
 		if check := g.resultCheck(r, r.def, "v"); check != "" {
 			fmt.Fprintf(m, "\t\t%s\n", check)
+		}
+		if conv := g.typedResultConversion(r, "v"); conv != "" {
+			fmt.Fprintf(m, "\t\t%s\n", conv)
 		}
 	}
 	plain := func(name string) {
@@ -1575,15 +1610,15 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 	case *grammar.New:
 		if len(t.Args) != 0 {
 			// A node type constructor converts its value (see evalCtx.convert).
-			if g.table == "trules" {
-				// The typed runtime never runs a grammar with named node types (typedGen.runtimeOK).
-				return `func() any { panic("internal error: a node type constructor in the typed runtime") }()`
-			}
 			x := g.term(t.Args[0], s, locals)
 			n, _ := g.prog.nodeTypeOf(t.Type) // the type's own name, also for an alias of it
 			if ft := g.prog.convertCheckType(t); ft != nil {
 				check := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
 				x = fmt.Sprintf("c.convertCheck(%s, %s, %q)", x, check, n.name)
+			}
+			if g.table == "trules" {
+				// The typed runtime names the type by its index in tnodeTypeNames.
+				return fmt.Sprintf("c.convert(%d, %s)", g.nodeTypeIndex(n.name), x)
 			}
 			return fmt.Sprintf("c.convert(%q, %s)", n.name, x)
 		}

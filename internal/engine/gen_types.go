@@ -773,7 +773,7 @@ func (a *astConv) field(n *Node, name string) any {
 // result type and the field types of every struct type have Go types of their own (no CST
 // node types, node or any).
 func (t *typedGen) runtimeOK(st ty) bool {
-	if len(t.nodeTypes) > 0 || !t.representable(st) || t.readsFields() {
+	if !t.representable(st) || t.readsFields() {
 		return false
 	}
 	for _, name := range t.structs {
@@ -920,7 +920,7 @@ func (t *typedGen) representable(x ty) bool {
 		return true
 	case nodeTy:
 		if x.name != "" {
-			return false // a named node type converts from nodes only
+			return t.representable(x.underlying())
 		}
 		// The value of a node is its text, a tuple or a list.
 		switch v := x.value.(type) {
@@ -1007,7 +1007,7 @@ func (t *typedGen) back(x ty, v string) string {
 		return "tback(" + v + ")"
 	case nodeTy:
 		if x.name != "" {
-			return "nil" // not representable
+			return t.backHelper(x) + "(" + v + ")"
 		}
 		if x.value == tyString || x.value == tyTop || x.value == tyAny {
 			return "tback(" + v + ")"
@@ -1061,7 +1061,7 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		case tyErr:
 			return "tpubError(" + v + ")"
 		}
-		return "tpub(" + v + ")"
+		return t.tpub(v, a)
 	case vrule:
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case tupleTy:
@@ -1073,15 +1073,15 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 	case nodeTy:
 		switch {
 		case x.name != "":
-			return "nil" // not representable
+			// A node of a named node type, made from the chunks and remembered (typedHelpers).
 		case x.value == tyTop || x.value == tyAny:
-			return "tpubNode(" + v + ")"
+			return t.tpubNode(v, a)
 		case x.value == tyString && len(x.caps) == 0:
 			return "tpubMatch(" + v + ")"
 		}
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case recordTy:
-		return "tpubNode(" + v + ")"
+		return t.tpubNode(v, a)
 	case namedTy:
 		switch {
 		case x == tyMatch:
@@ -1089,7 +1089,7 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		case x == tyError:
 			return "tpubError(" + v + ")"
 		case x.kind == 'c':
-			return "tpubNode(" + v + ")"
+			return t.tpubNode(v, a)
 		}
 		return "tAs[" + t.goType(x) + "](" + v + ")"
 	case unionTy:
@@ -1097,9 +1097,9 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 			if _, ok := t.unionGoType(x); ok {
 				return t.dconv(x.alts[0], v, a)
 			}
-			return "tpub(" + v + ")"
+			return t.tpub(v, a)
 		}
-		return "tAs[" + t.goType(x) + "](tpub(" + v + "))"
+		return "tAs[" + t.goType(x) + "](" + t.tpub(v, a) + ")"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "astPtr" + strings.ToUpper(string(b)[:1]) + string(b)[1:] + "(" + v + ")"
@@ -1121,12 +1121,43 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 	return "nil"
 }
 
+// tpub returns a Go expression converting v, a value of the typed runtime, into its public form
+// (the runtime's tpub). With named node types, the public forms of their nodes are made from the
+// chunks a and remembered there (tpubIn), so that a node converts to one value everywhere.
+func (t *typedGen) tpub(v, a string) string {
+	if len(t.nodeTypes) == 0 {
+		return "tpub(" + v + ")"
+	}
+	return "tpubIn(" + a + ", " + v + ")"
+}
+
+// tpubNode is tpub for the runtime's tpubNode.
+func (t *typedGen) tpubNode(v, a string) string {
+	if len(t.nodeTypes) == 0 {
+		return "tpubNode(" + v + ")"
+	}
+	return "tpubNodeIn(" + a + ", " + v + ")"
+}
+
 // typedRuntime writes the constructors of the struct types and the list converters
 // of the typed runtime, and the chunks they allocate from.
 func (t *typedGen) typedRuntime(b *strings.Builder) {
 	span := t.span
 	var reg strings.Builder
+	if len(t.nodeTypes) > 0 {
+		// The named node types by index (nt), and the public forms of their nodes.
+		fmt.Fprintf(&reg, "\ttnodeTypeNames = %s\n", goStrings(append([]string{""}, t.nodeTypes...)))
+		reg.WriteString("\ttnamedPub = func(a any, x tval) any {\n\ts, _ := a.(*tslabs)\n\tif s == nil {\n\t\ts = &tslabs{}\n\t}\n\tswitch x.tname() {\n")
+		for _, name := range t.nodeTypes {
+			n, _ := t.g.prog.nodeTypeOf(name)
+			fmt.Fprintf(&reg, "\tcase %q:\n\t\treturn %s\n", name, t.dconv(n, "x", "s"))
+		}
+		reg.WriteString("\t}\n\treturn nil\n\t}\n")
+	}
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
+		if r.nodeType != "" {
+			fmt.Fprintf(&reg, "\ttrules[%d].nt = %d\n", r.id, t.g.nodeTypeIndex(r.nodeType))
+		}
 		if r.textType == "" {
 			continue
 		}
@@ -1171,6 +1202,12 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n\tcontrol *workControl\n")
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
+	}
+	if len(t.nodeTypes) > 0 {
+		b.WriteString("\t// named holds the public forms of the nodes of named node types by their values.\n\tnamed map[any]any\n")
+		for _, name := range t.nodeTypes {
+			fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
+		}
 	}
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))

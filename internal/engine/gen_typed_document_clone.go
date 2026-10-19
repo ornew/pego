@@ -30,7 +30,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			}
 			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
 		case nodeTy:
-			if x.value == tyTop || x.value == tyAny {
+			if x.name == "" && (x.value == tyTop || x.value == tyAny) {
 				return "c.toNode(" + value + ")"
 			}
 			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
@@ -182,6 +182,10 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 	for _, name := range t.structs {
 		fmt.Fprintf(&methods, " case *%[1]s: return c.to%[1]s(v)\n", t.names[name])
 	}
+	for _, name := range t.nodeTypes {
+		n, _ := t.g.prog.nodeTypeOf(name)
+		fmt.Fprintf(&methods, " case *%s: return %s\n", t.names[name], clone(n, "v"))
+	}
 	methods.WriteString(` }
  return v
 }
@@ -220,6 +224,11 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 				}
 				methods.WriteString(" return out\n")
 			case nodeTy:
+				if x.name != "" {
+					// A node of a named node type clones the node it embeds.
+					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.values[v]; ok { return old.(%s) }\n out := &%s{}\n c.remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.underlying(), "&v.TNode"))
+					break
+				}
 				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.values[v]; ok { return old.(%s) }\n out := &%s{%s: v.%s}\n c.remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], t.span, t.span, clone(x.value, "v.Value"))
 			}
 			methods.WriteString("}\n")

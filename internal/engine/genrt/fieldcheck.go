@@ -174,6 +174,15 @@ func (c *tctx) checkField(v any, t *fieldType, field, typ string) any {
 	return v
 }
 
+// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
+// converted to, and raises an evaluation error otherwise.
+func (c *tctx) convertCheck(v any, t *fieldType, typ string) any {
+	if !tfieldConforms(c.p.parser, t, v) {
+		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), typ)
+	}
+	return v
+}
+
 // cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
 func (c *tctx) cast(v any, t *fieldType) any {
 	if !tfieldConforms(c.p.parser, t, v) {
@@ -229,7 +238,7 @@ func tfieldConforms(p *parser, t *fieldType, v any) bool {
 	case 'E':
 		return shape == shapeError
 	case 'N':
-		return shape == shapeStruct && n.tname() == t.name
+		return n.tname() == t.name
 	case 'l':
 		return shape == shapeListValue && telemsConform(p, t.elem, n.tkids())
 	case 't':

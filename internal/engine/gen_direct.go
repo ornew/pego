@@ -1224,6 +1224,9 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 	if check := d.g.resultCheck(r, r.def, "v"); check != "" && !d.bad {
 		d.line("%s", check)
 	}
+	if conv := d.g.typedResultConversion(r, "v"); conv != "" && d.g.table == "trules" && !d.bad {
+		d.line("%s", conv)
+	}
 	return start, ctx
 }
 

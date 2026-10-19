@@ -313,6 +313,14 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
+			if x.name != "" {
+				// A node of a named node type, as the node it was converted from, remembered so
+				// that the node converts to one value everywhere (as astConv does).
+				g := t.names[x.name]
+				fmt.Fprintf(b, "\tx := asTval(v)\n\tif x == nil || x.tname() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
+				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), g)
+				break
+			}
 			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *tnode:\n\t\tif x.typ == typeTupleValue || x.typ == typeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{%s: x.%s}\n", g[1:], t.span, t.span)
 			switch value := x.value.(type) {
 			case tupleTy, listTy:
@@ -389,6 +397,10 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			}
 		case nodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
+			if x.name != "" {
+				fmt.Fprintf(b, "\treturn tsetNodeType(%s, %d)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeIndex(x.name))
+				continue
+			}
 			switch value := x.value.(type) {
 			case listTy:
 				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &tnode{%[2]s: v.%[2]s, typ: \"list\", kids: kids}\n", t.back(value.elem, "x"), t.span)

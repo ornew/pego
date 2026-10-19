@@ -72,6 +72,10 @@ func (t *typedGen) outputSweep(b *strings.Builder, direct, conversion bool) {
 			}
 		}
 	}
+	for _, name := range t.nodeTypes {
+		// A node of a named node type: its value may hold owned values.
+		fmt.Fprintf(b, "\t\tcase *%s:\n\t\t\tif x == nil || !m.mark(x) { continue }\n\t\t\tm.todo = append(m.todo, x.Value)\n", t.names[name])
+	}
 	// Conversion discovery includes nested lists; Go representations are the
 	// dispatch keys, so grammar aliases do not create duplicate cases.
 	lists := map[string]bool{"[]any": false, "[]*Node": false, "[]*SyntaxError": false,

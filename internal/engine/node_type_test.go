@@ -461,3 +461,181 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 		t.Errorf("%d mutually recursive node types compiled in %v", n, d)
 	}
 }
+
+// TestGeneratedNamedNodeDynamicTypes checks the dynamic types of values of named node types in
+// open fields, unions and lists of typed Go values, and that a node converts to one value.
+func TestGeneratedNamedNodeDynamicTypes(t *testing.T) {
+	const src = `type N = node[string]
+type M = node[string]
+type T = node[(N, M)]
+type U ~ N | M
+type Out = { L []U; A any; B any; C node[_]; D any; Same bool }
+rule main Out = xs:u* "," t:pair $$ => Out{L: $xs.Value, A: $xs.Value[0], B: $t, C: $t, D: $xs, Same: $xs.Value[0] == $xs.Value[0]}
+rule u U = n / m
+rule pair T = n m
+rule n N = "n"
+rule m M = "m"
+`
+	runGeneratedNamedNodeProgram(t, src, `func main() {
+	out, err := p.ParseAST("mnn,nm")
+	if err != nil {
+		panic(err)
+	}
+	for _, x := range out.L {
+		fmt.Printf("%T ", x)
+	}
+	fmt.Printf("\n%T %T %T %T %v\n", out.A, out.B, out.C, out.D, out.A == any(out.L[0]))
+	b := out.B.(*p.T)
+	fmt.Printf("%T %T %s%s\n", b.Value.E0, b.Value.E1, b.Value.E0.Value, b.Value.E1.Value)
+	for _, x := range out.D.(*p.TNode[any]).Value.([]any) {
+		fmt.Printf("%T ", x)
+	}
+	fmt.Println()
+}
+`, "*p.M *p.N *p.N \n*p.M *p.T *p.TNode[interface {}] *p.TNode[interface {}] true\n*p.N *p.M nm\n*p.M *p.N *p.N \n")
+}
+
+// namedNodeTypeCases are grammars with named node types over string, tuple, list and open nodes,
+// converted by rules and constructors, in unions, cast, and read by actions.
+func namedNodeTypeCases() []genCase {
+	return []genCase{
+		{"named node types", nodeTypeGrammar, []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a", "ab 12<1,x>[3]!bc"}},
+		{"named nodes as plain nodes", `type Num = node[string]
+type Nums = node[[]Num]
+type P = node[(Num, Num)]
+type O = { C *node[string]; D []node[string]; E *Nums; F node[(node[string], node[string])]; G []Num; H *P; I node[_]; J any }
+rule main O = ns:nums p:pair $$ => O{C: $ns.Value[0], D: $ns.Value, E: $ns, F: $p, G: $ns.Value, H: $p, I: $ns, J: $p}
+rule nums Nums = "[" ns:num* "]" => Nums{$ns}
+rule num Num = [0-9] #atomic
+rule pair P = "<" t:(num num) ">" => P{$t}`, []string{"[12]<34>", "[1]<34>", "[]<12>", "[1", ""}},
+		{"named node casts", `type N = node[string]
+type M = node[string]
+type U ~ N | M
+type Out = { X M; L []U; A any; T string; Y *U }
+rule main Out = xs:u* $$ => Out{X: $xs.Value[0].(M), L: $xs.Value, A: $xs.Value[0], T: text($xs), Y: $xs.Value[len($xs.Value) - 1]}
+rule u U = n / m
+rule n N = "n"
+rule m M = "m"`, []string{"m", "mn", "mnm", "n", "", "x"}},
+		{"named node rule conversions", `type N = node[string]
+type M = node[string]
+type T = node[(N, M)]
+type A = node[_]
+type Out = { T T; A A; B A; C N; D *N }
+rule main Out = t:pair a:open b:word c:conv d:conv? $$ => Out{T: $t, A: $a, B: $b, C: $c, D: $d}
+rule pair T = n m
+rule open A = "x" "y"
+rule word A = "w"
+rule conv N = m
+rule n N = "n"
+rule m M = "m"`, []string{"nmxywm", "nmxywmm", "nmxyw", "nmxy", "mm"}},
+		{"named node roots", `type N = node[string]
+rule main N = x:[a-z]+ #atomic => N{$x}`, []string{"abc", "", "1"}},
+		{"named list root", `type Tree = node[[]Tree]
+rule main Tree = "(" ts:main* ")" => Tree{$ts}`, []string{"()", "(()(()))", "(()", ""}},
+		{"named node memo", `type N = node[string]
+type Out = { A N; B N; Same bool }
+rule main Out = &(x:n) y:n $$ => Out{A: $x, B: $y, Same: $x == $y}
+rule n N = [a-z] #atomic`, []string{"a", "", "ab"}},
+		{"named node predicates", `type N = node[string]
+type Out = { L []N; S int }
+rule main Out = xs:long* $$ => Out{L: $xs.Value, S: foldl(0, $xs, (s, x) => s + x.End - x.Start)}
+rule long N = x:n {len($x.Value) > 1 && text($x) != "zz"} => $x
+rule n N = -" "* t:[a-z]+ #atomic => N{$t}`, []string{"ab cd", "", "abc d"}},
+	}
+}
+
+// TestGeneratedNamedNodeTypesTypedRuntime checks that generated typed Go builds the values of
+// named node types directly in the typed runtime, giving what the conversion of the nodes of
+// Parse gives, and that the generated Node parsers give what the engine does.
+func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	if _, err := os.Stat(goBin); err != nil {
+		t.Skip("go command not found")
+	}
+	cases := namedNodeTypeCases()
+	for _, c := range cases {
+		g, err := syntax.Parse(c.src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if !strings.Contains(string(code), "return tparse(trules[") || strings.Contains(string(code), "parseConverted(") {
+			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
+		}
+	}
+	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	// The output sweep marks the values of named node types.
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{enableTypedOutputSweep: true}, len(cases))
+}
+
+// TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
+// types against the conversion of the Document's nodes, across edits.
+func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds standalone generated parsers")
+	}
+	dir := t.TempDir()
+	write := func(name, text string) {
+		t.Helper()
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module directtypeddocument\n\ngo 1.27.1\n")
+	for i, c := range []struct {
+		grammar string
+		inputs  []string
+	}{
+		{`type A = node[string]
+type B = node[string]
+type P = node[(A, B)]
+type L = node[[]A]
+type U ~ A | B
+type Out = { Items []U; Pairs []P; Any any; List *L }
+rule main Out = xs:item* ps:pair* l:list? $$ => Out{Items: $xs.Value, Pairs: $ps.Value, Any: $xs, List: $l}
+rule item U = a / b
+rule a A = [aé] #atomic
+rule b B = t:"b" => B{$t}
+rule pair P = -"+" a b
+rule list L = ";" xs:a* => L{$xs}`, []string{"", "abé", "ab+ab+éb", "a;aé", "b+ab;a", "+"}},
+	} {
+		pkg := fmt.Sprintf("case%d", i)
+		g, err := syntax.Parse(c.grammar)
+		if err != nil {
+			t.Fatalf("%s: %v", pkg, err)
+		}
+		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		if err != nil {
+			t.Fatalf("%s: %v", pkg, err)
+		}
+		if !strings.Contains(string(code), "return typedDocumentParse(") {
+			t.Fatalf("%s uses conversion instead of direct matching", pkg)
+		}
+		write(pkg+"/parser.go", string(code))
+		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, disableDirectTypedDocument: true, convertTypes: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		write(pkg+"/reference/parser.go", string(reference))
+		test := strings.ReplaceAll(directTypedDocumentTests, "PACKAGE", pkg)
+		test = strings.ReplaceAll(test, "INPUTS", fmt.Sprintf("%#v", c.inputs))
+		write(pkg+"/parser_test.go", test)
+	}
+	cmd := exec.Command("go", "test", "./...")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("direct typed Document: %v\n%s", err, out)
+	}
+}

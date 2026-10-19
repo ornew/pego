@@ -40,11 +40,22 @@ type Error struct {
 
 // tmatch and terror are a string node and an Error while the typed runtime handles them: whether
 // the value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
-// result holds pointers to the embedded TNode[string] and Error (tpub).
+// result holds pointers to the embedded TNode[string] and Error (tpub). A string node of a named
+// node type has nt, the type's index in tnodeTypeNames (0 for a plain string node).
 type tmatch struct {
 	TNode[string]
 	fresh bool
+	nt    uint16
 }
+
+// tnodeTypeNames are the names of the grammar's named node types by their index (nt) in tmatch
+// and tnode; index 0 is no named node type. The generated code sets them up.
+var tnodeTypeNames = []string{""}
+
+// tnamedPub returns the public form of a value x of a named node type (nt != 0), with the
+// generated code's chunks a (a *tslabs, or nil). The generated code sets it up when the grammar
+// has named node types.
+var tnamedPub func(a any, x tval) any
 
 type terror struct {
 	Error
@@ -54,32 +65,52 @@ type terror struct {
 // tpub returns the public form of a value: *TNode[string] and *Error for tmatch and terror, a
 // *TNode[any] for a tuple or list node and a []any for a tuple or list value, with the public
 // forms of their elements.
-func tpub(v any) any {
+func tpub(v any) any { return tpubIn(nil, v) }
+
+// tpubIn is tpub with the generated code's chunks a (a *tslabs, or nil), which the public forms of
+// values of named node types (tnamedPub) are made from and remembered in.
+func tpubIn(a any, v any) any {
 	switch x := v.(type) {
 	case *tmatch:
+		if x.nt != 0 {
+			return tnamedPub(a, x)
+		}
 		return &x.TNode
 	case *terror:
 		return &x.Error
 	case *tnode:
-		elems := make([]any, len(x.kids))
-		for i, k := range x.kids {
-			elems[i] = tpub(k)
+		if x.nt != 0 {
+			return tnamedPub(a, x)
 		}
-		if x.typ == typeTupleValue || x.typ == typeListValue {
-			return elems
-		}
-		return &TNode[any]{x.Span, elems}
+		return tpubElems(a, x)
 	}
 	return v
 }
 
-// tpubNode returns the public form of a node of a statically unknown value.
-func tpubNode(v any) *TNode[any] {
+// tpubElems returns the public form of a tuple or list node, or a tuple or list value, x as a
+// plain node or value (also for a node of a named node type).
+func tpubElems(a any, x *tnode) any {
+	elems := make([]any, len(x.kids))
+	for i, k := range x.kids {
+		elems[i] = tpubIn(a, k)
+	}
+	if x.typ == typeTupleValue || x.typ == typeListValue {
+		return elems
+	}
+	return &TNode[any]{x.Span, elems}
+}
+
+// tpubNode returns the public form of a node of a statically unknown value: a TNode[any], also for
+// a node of a named node type, as the node it was converted from.
+func tpubNode(v any) *TNode[any] { return tpubNodeIn(nil, v) }
+
+// tpubNodeIn is tpubNode with the chunks a (see tpubIn).
+func tpubNodeIn(a any, v any) *TNode[any] {
 	switch x := v.(type) {
 	case *tmatch:
 		return &TNode[any]{x.Span, x.Value}
 	case *tnode:
-		if n, ok := tpub(x).(*TNode[any]); ok {
+		if n, ok := tpubElems(a, x).(*TNode[any]); ok {
 			return n
 		}
 	}
@@ -114,7 +145,12 @@ type tval interface {
 	tsetFresh(bool)
 }
 
-func (m *tmatch) tname() string             { return "string" }
+func (m *tmatch) tname() string {
+	if m.nt != 0 {
+		return tnodeTypeNames[m.nt]
+	}
+	return "string"
+}
 func (m *tmatch) ttext() (string, bool)     { return m.Value, true }
 func (m *tmatch) tkids() []any              { return nil }
 func (m *tmatch) tfield(string) (any, bool) { return nil, true }
@@ -135,13 +171,15 @@ func (e *terror) tfield(name string) (any, bool) {
 }
 
 // tnode is a tuple node, a list node, a tuple value (typeTupleValue) or a list value
-// (typeListValue) of the typed runtime. A tuple node's fields are its captures.
+// (typeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
+// node of a named node type has nt, as tmatch does; typ stays "tuple" or "list".
 type tnode struct {
 	Span
 	typ    string
 	kids   []any
 	fields []tfield
 	fresh  bool
+	nt     uint16
 }
 
 type tfield struct {
@@ -149,7 +187,12 @@ type tfield struct {
 	val  any
 }
 
-func (n *tnode) tname() string         { return n.typ }
+func (n *tnode) tname() string {
+	if n.nt != 0 {
+		return tnodeTypeNames[n.nt]
+	}
+	return n.typ
+}
 func (n *tnode) ttext() (string, bool) { return "", false }
 func (n *tnode) tkids() []any          { return n.kids }
 func (n *tnode) tstruct() bool         { return false }
@@ -220,7 +263,7 @@ func (p *tparser) nodeValue(n tval) any {
 	}
 	s, e := n.tspan()
 	typ := typeTupleValue
-	if n.tname() == "list" {
+	if t, ok := n.(*tnode); ok && t.typ == "list" {
 		typ = typeListValue
 	}
 	v := p.newNode(typ, s, e, n.tkids())
@@ -244,6 +287,9 @@ type trule struct {
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
 	entry func(p *tparser) (any, bool)
+	// nt is the index in tnodeTypeNames of the named node type the rule's value is converted to
+	// (rule.nodeType), or 0.
+	nt uint16
 }
 
 // trules is the typed rule table set up by the generated code.
@@ -591,7 +637,7 @@ func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = tmatch{TNode[string]{Span{start, end}, text}, fresh}
+	*m = tmatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
 	return m
 }
 
@@ -908,6 +954,81 @@ func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	v = p.finishValue(r, f, v, start)
 	if r.tcheck != nil {
 		r.tcheck(p, v)
+	}
+	if r.nt != 0 {
+		v = p.tconvertResult(r, v)
+	}
+	return v
+}
+
+// tnamed reports whether n is a node of a named node type.
+func tnamed(n tval) bool {
+	switch x := n.(type) {
+	case *tmatch:
+		return x.nt != 0
+	case *tnode:
+		return x.nt != 0
+	}
+	return false
+}
+
+// tconvert is nodeTypeKinds.convert for the values of the typed runtime: it returns the node of
+// the named node type nt that v converts to (a copy of v with the same range and content, or v
+// itself if it already has the type), and reports false if v is not a string, tuple or list node.
+func (p *tparser) tconvert(nt uint16, v any) (any, bool) {
+	switch x := v.(type) {
+	case *tmatch:
+		if x.nt == nt {
+			return x, true
+		}
+		m := &tmatch{TNode: x.TNode, nt: nt}
+		return m, true
+	case *tnode:
+		if x.typ != "tuple" && x.typ != "list" {
+			return nil, false
+		}
+		if x.nt == nt {
+			return x, true
+		}
+		c := p.nodes.one()
+		*c = *x
+		c.nt, c.fresh = nt, false
+		if x.fresh {
+			// The rule that made x may still change it; the copy keeps what it holds now.
+			c.kids = append([]any(nil), x.kids...)
+		}
+		c.fields = append([]tfield(nil), x.fields...)
+		return c, true
+	}
+	return nil, false
+}
+
+// tconvertResult converts v, the value of rule r, to the rule's named node type.
+func (p *tparser) tconvertResult(r *trule, v any) any {
+	n, ok := p.tconvert(r.nt, v)
+	if !ok {
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.nodeType, r.name)})
+	}
+	return n
+}
+
+// convert evaluates a node type constructor T{v} (actx.convert): it converts v to the named node
+// type with the index nt (after convertCheck, where the value needs a check).
+func (c *tctx) convert(nt uint16, v any) any {
+	n, ok := c.p.tconvert(nt, v)
+	if !ok {
+		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeNames[nt])
+	}
+	return n
+}
+
+// tsetNodeType gives v, a string, tuple or list node that back made, the named node type nt.
+func tsetNodeType(v any, nt uint16) any {
+	switch x := v.(type) {
+	case *tmatch:
+		x.nt = nt
+	case *tnode:
+		x.nt = nt
 	}
 	return v
 }
@@ -1256,6 +1377,9 @@ func ttypeName(v any) string {
 		return "bool"
 	}
 	if t, ok := v.(tval); ok {
+		if tnamed(t) {
+			return t.tname()
+		}
 		return valueTypeName(tshape(t), t.tname(), len(t.tkids()))
 	}
 	return fmt.Sprintf("%T", v)
