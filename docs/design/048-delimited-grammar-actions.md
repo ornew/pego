@@ -12,13 +12,13 @@ rejects it. This record proposes its execution contract; it does not claim
 runtime or backend support.
 
 ```pego
-type Number terminal
-type Word terminal
+type Number = { Text string }
+type Word = { Text string }
 type Expr ~ Number | Word
 type Main = { Value Expr }
 
-rule number Number = [0-9]+
-rule word Word = [a-z]+
+rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
+rule word Word = t:([a-z]+) #atomic => Word{Text: text($t)}
 rule item Expr = (n:number => $n) / (w:word => $w)
 rule main Main = item:item => Main{Value: $item}
 ```

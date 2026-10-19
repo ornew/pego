@@ -81,7 +81,7 @@ done
 The benchmark grammar has two cut-bearing alternatives for each typed row:
 
 ```pego
-type Row = { Key Match; Value Match }
+type Row = { Key node[string]; Value node[string] }
 type Doc = { Rows []Row }
 rule main Doc = rows:row+ $$ => Doc{Rows: $rows}
 rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}

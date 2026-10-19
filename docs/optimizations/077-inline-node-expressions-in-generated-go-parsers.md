@@ -47,7 +47,7 @@
   Use this fixture:
 
   ```pego
-  type Pair = { Left Match; Right Match }
+  type Pair = { Left node[string]; Right node[string] }
   type Doc = { Items []Pair }
   rule main Doc =  items:row+ $$ => Doc{Items: $items}
   rule row =  p:pair "!" ";" / p:pair "?" ";" => $p
