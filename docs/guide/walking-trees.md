@@ -64,7 +64,9 @@ overlap: string [0,1)
 
 The visit gives you the value reached by the current edge, the node when that value is a node, its parent, its depth
 and the incoming edge. Return `pego.WalkSkip` to omit the descendants of a visit, `pego.WalkStop` to end the walk
-successfully, or an error to stop with that error. A shared node is visited once for each incoming edge, and a cycle
+successfully, or an error to stop with that error. A node's elements are visited before its fields; with source
+information, a capture that labels an element is visited only as that element, so a walk stays linear in the size of
+the tree however deeply operators nest. A shared node is visited once for each incoming edge, and a cycle
 on the active path returns a `*pego.CycleError`, which `errors.As` can inspect. The order of the visits, the cursor
 methods `At` and `Range`, and the rule that the unit of the cursor must be the unit of the parse are defined in
 [Traversal](../../spec/nodes.md#traversal). Generated Go parsers expose the same walker as `WalkTree`.

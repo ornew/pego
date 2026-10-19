@@ -136,8 +136,11 @@ receives a `WalkVisit` and returns a `WalkAction` and an error.
 
 - The root is visited first. Then the elements of a node are visited in order, its
   fields in sorted name order, and elements of a nested `[]any` value in index order.
-  The fields are those that `Fields` returns: the captures of a node parsed without
-  source information are not visited.
+  The fields are those that `Fields` returns, except captures that are elements: the
+  captures of a node parsed without source information are not visited, and a capture
+  whose value is an element of the node (one that JSON encodes as a `path`) is visited
+  only as that element. An operator node's captures are its operands, so visiting
+  them again would make a walk exponential in the nesting of operators.
   Scalar and nil values are visited. Other containers are leaves.
 - A shared node or list is visited once for each incoming edge. Only a cycle on
   the active traversal path is an error: `Walk` returns `*pego.CycleError`, which

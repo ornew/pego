@@ -117,13 +117,9 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 		switch x := v.Value.(type) {
 		case *Node:
-			// Only the public fields: the captures of a node without source information are not
-			// part of the tree, and an operator node's captures share its operands.
-			if x.fieldsVisible() {
-				fields := x.fieldList().sorted()
-				for i := len(fields) - 1; i >= 0; i-- {
-					push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
-				}
+			fields := walkFields(x)
+			for i := len(fields) - 1; i >= 0; i-- {
+				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}
 			for i := len(x.children) - 1; i >= 0; i-- {
 				push(x.children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
@@ -135,4 +131,29 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 		}
 	}
 	return nil
+}
+
+// walkFields returns the fields that Walk visits, in name order: the fields of a struct, and the
+// captures of a node with source information except those whose values are its elements, which
+// Walk visits as elements. Visiting those again would make Walk exponential in the nesting of
+// operator nodes, whose captures are their operands. The captures of a node without source
+// information are not part of the tree.
+func walkFields(n *Node) Fields {
+	if !n.fieldsVisible() {
+		return nil
+	}
+	fields := n.fieldList().sorted()
+	if !n.labeled {
+		return fields
+	}
+	out := fields[:0]
+	for _, f := range fields {
+		if v, ok := f.Value.(*Node); ok && v != nil {
+			if _, found := findElement(n, v); found {
+				continue
+			}
+		}
+		out = append(out, f)
+	}
+	return out
 }
