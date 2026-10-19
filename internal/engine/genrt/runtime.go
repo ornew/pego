@@ -2702,6 +2702,11 @@ func (c *actx) memberOperand(x any, name string) toperand {
 	if !ok || n == nil {
 		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
+	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
+		// The text of a text struct, its one field, read without looking the struct up. Work
+		// controls charge the lookup below.
+		return toperand{str: n.text, isStr: true}
+	}
 	if n.isNode() {
 		switch name {
 		case "Start":

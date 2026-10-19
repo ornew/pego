@@ -299,6 +299,11 @@ func (c *evalCtx) memberOperand(x any, name string) (operand, error) {
 	if !ok || n == nil {
 		return operand{}, c.p.actionError("cannot access .", name, " of ", typeName(x))
 	}
+	if n.textField && name == "Text" && (!workControlsEnabled || c.p.control == nil) {
+		// The text of a text struct, its one field, read without looking the struct up. Work
+		// controls charge the lookup below.
+		return operand{str: n.text, isStr: true}, nil
+	}
 	if n.isNode() {
 		switch name {
 		case "Start":

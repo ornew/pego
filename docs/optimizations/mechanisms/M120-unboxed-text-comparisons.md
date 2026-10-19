@@ -9,7 +9,9 @@ Eligible equality/inequality expressions extract text and compare strings
 directly while preserving operand errors. VMs use `ETEXTCHK`/`ETEXTEQ`
 expression instructions; generators emit native comparisons. This changes
 comparison plumbing, not substring ownership or arbitrary string-valued action
-results.
+results. Reading the field `Text` of a text struct returns its unboxed text
+directly, without looking the struct type up, except under work controls, which
+charge that lookup.
 
 ## Scope and State
 
@@ -26,10 +28,12 @@ specialization is independently controlled.
 
 Record 036 measures XML about 19k to 1.1k allocations in closure/generated Go;
 044 ports the shape to VMs alongside concat fusion. TypeScript has no
-corresponding Go-allocation claim.
+corresponding Go-allocation claim. Record 102 measures the text struct field read
+on XML: generated recognition −10%, generated parsing −7%.
 
 Evidence records: [036](../036-comparing-texts-without-boxing-them.md),
-[044](../044-changes-36-and-37-in-the-vms-instruction-set-2.md).
+[044](../044-changes-36-and-37-in-the-vms-instruction-set-2.md),
+[102](../102-read-text-struct-fields-without-a-struct-lookup.md).
 
 Source owners: [`text equality evaluator`](../../../internal/engine/eval.go),
 [`ETEXTCHK and ETEXTEQ`](../../../internal/engine/bcompile.go), [`native text
