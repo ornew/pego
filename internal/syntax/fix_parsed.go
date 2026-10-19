@@ -17,13 +17,13 @@ import (
 // referred to by $n is labeled unless it already has a label; a rule call is labeled with the
 // rule's name when that name is free, and anything else with v1, v2, .... $0 becomes
 // list($a, $b, ...) of every element with a value.
-func fixParsed(src string, positional bool) (string, error) {
+func fixParsed(src string, positional bool) (string, []int, error) {
 	g, forms, err := parseLegacy(src)
 	if err != nil {
 		if !positional {
-			return src, nil
+			return src, nil, nil
 		}
-		return "", fmt.Errorf("positional captures cannot be rewritten until the grammar parses: %w", err)
+		return "", nil, fmt.Errorf("positional captures cannot be rewritten until the grammar parses: %w", err)
 	}
 	o := newFixOffsets(src)
 	var edits []fixEdit
@@ -77,12 +77,12 @@ func fixParsed(src string, positional bool) (string, error) {
 			})
 		}
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 	}
 	params, err := paramEdits(o, g)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	edits = append(edits, params...)
 	inspectAST(g, func(n any) {
@@ -100,15 +100,16 @@ func fixParsed(src string, positional bool) (string, error) {
 			edits = append(edits, fixEdit{start, start + len(m.Name), "End"})
 		}
 	})
-	types, err := typeEdits(o, src, g, forms)
+	types, nodes, err := typeEdits(o, src, g, forms)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	edits = append(edits, types...)
 	if len(edits) == 0 {
-		return src, nil
+		return src, nil, nil
 	}
-	return applyFixEdits(src, edits), nil
+	out, marks := applyMarkedFixEdits(src, edits, nodes)
+	return out, marks, nil
 }
 
 // valueTypeNames maps the reserved names of concrete syntax tree types to the value types that
@@ -116,17 +117,21 @@ func fixParsed(src string, positional bool) (string, error) {
 var valueTypeNames = map[string]string{
 	"terminal": "node[string]",
 	"Match":    "node[string]",
-	"Seq":      "node",
-	"List":     "node",
-	"Operator": "node",
+	"Seq":      "node[_]",
+	"List":     "node[_]",
+	"Operator": "node[_]",
 	"Error":    "error",
 }
+
+// bareNode is the message for node without a type argument, which fix rewrites to node[_].
+const bareNode = "node takes a type argument: write node[T], or node[_] for a node of any value"
 
 // typeEdits returns the edits that replace terminal types and the reserved names of concrete
 // syntax tree types with value types. A terminal type T becomes the struct { Text string }; a
 // rule declared with it and without an action, which produced a terminal holding its matched
-// text, builds the struct from that text instead; and T{s} becomes T{Text: s}.
-func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms) ([]fixEdit, error) {
+// text, builds the struct from that text instead; and T{s} becomes T{Text: s}. node without a
+// type argument becomes node[_]; the offsets of those edits are returned as well.
+func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms) ([]fixEdit, map[int]bool, error) {
 	defs := map[string]grammar.TypeSpec{}
 	terminals := map[string]bool{}
 	for _, td := range g.Types() {
@@ -160,9 +165,23 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "= { Text string }"})
 		}
 	}
+	// A cast is checked at run time, where node[string] would reject values that node accepted,
+	// so the node of a cast stays node[_].
+	casts := map[*grammar.TypeRef]bool{}
+	inspectAST(g, func(n any) {
+		if c, ok := n.(*grammar.Cast); ok {
+			for _, r := range grammar.TypeRefs(c.Type) {
+				casts[r] = true
+			}
+		}
+	})
+	nodes := map[int]bool{} // the offsets of node without a type argument, outside casts
 	for _, r := range grammar.TypeRefs(g) {
 		if to, ok := valueTypeNames[r.Name]; ok && defs[r.Name] == nil && r.Pos.IsValid() {
 			edits = append(edits, fixEdit{o.at(r.Pos), o.at(r.End), to})
+		} else if r.Name == "node" && r.Pos.IsValid() {
+			edits = append(edits, fixEdit{o.at(r.Pos), o.at(r.End), "node[_]"})
+			nodes[o.at(r.Pos)] = !casts[r]
 		}
 	}
 	inspectAST(g, func(n any) {
@@ -280,7 +299,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			continue
 		}
 		if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
-			return nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running pego fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
+			return nil, nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running pego fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
 		}
 		taken := map[string]bool{}
 		captures := false
@@ -316,14 +335,14 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			// Replace the ... of "=> ...".
 			at := strings.Index(src[end:], "...")
 			if at < 0 {
-				return nil, fmt.Errorf("%d:%d: cannot find the action of rule %s", rd.Pos.Line, rd.Pos.Col, rd.Name)
+				return nil, nil, fmt.Errorf("%d:%d: cannot find the action of rule %s", rd.Pos.Line, rd.Pos.Col, rd.Name)
 			}
 			last = append(last, fixEdit{end, end, close}, fixEdit{end + at, end + at + 3, action})
 		} else {
 			last = append(last, fixEdit{end, end, close + " => " + action})
 		}
 	}
-	return append(edits, last...), nil
+	return append(edits, last...), nodes, nil
 }
 
 // positionalSite returns the edits for the positional captures of one action over expression

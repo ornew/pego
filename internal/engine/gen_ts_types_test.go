@@ -101,7 +101,7 @@ type Choice ~ Word | node[string]
 type ChoiceAgain ~ node[string] | Word
 type Mixed ~ Word | int
 type Open ~ any
-type Raw ~ node
+type Raw ~ node[_]
 type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
 rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: $w.Text, B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = t:([a-zあ-ん😀]+) #atomic => Word{Text: text($t)}`
@@ -250,7 +250,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
 	for name, src := range map[string]string{
 		"any":  `rule main any = "" => nil`,
-		"node": `rule main *node = "" => nil`,
+		"node": `rule main *node[_] = "" => nil`,
 		"union": `type T = { Text string }
 type U ~ T | node[string]
 rule main *U = "" => nil`,

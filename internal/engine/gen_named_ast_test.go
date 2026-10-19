@@ -15,7 +15,7 @@ const namedASTGrammar = `type T = { Text string }
 type S = { T T }
 type U ~ S | T
 type Alias ~ T
-type Mixed ~ S | node
+type Mixed ~ S | node[_]
 type Number ~ int
 type Values = { N Number; Text string; Flag bool }
 type Recovery = { T T | error }
@@ -32,7 +32,7 @@ rule optional = t:term? => $t
 rule items Items = xs:(s:structure)* => map($xs, (x) => x.$s)
 rule union U = structure / term
 rule cst = "x" "y"
-rule open node = "z"
+rule open node[_] = "z"
 rule arbitrary any = "a" => S{}
 rule abstract node[string] = "t"
 rule recursive S = "(" s:recursive ")" / s:structure => $s
@@ -54,7 +54,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 		force              bool
 	}{
 		{"direct", "", "main", false}, {"conversion", "", "main", true},
-		{"global-field", "type Unrelated = { Value node }\n", "main", false},
+		{"global-field", "type Unrelated = { Value node[_] }\n", "main", false},
 		{"field-read", "rule fieldRead = s:structure => $s.T\n", "main", false},
 		{"mixed-start", "", "cst", false},
 	} {
@@ -285,7 +285,7 @@ type MaybeU ~ *U
 rule term T = t:("é") #atomic => T{Text: text($t)}
 rule nilAny any = t:term? => $t
 rule seq = "é" "é"?
-rule nilNode *node = t:seq? => $t
+rule nilNode *node[_] = t:seq? => $t
 rule nilUnion MaybeU = t:term? => $t
 `)
 	if err != nil {

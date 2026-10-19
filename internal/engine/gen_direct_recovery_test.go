@@ -58,11 +58,11 @@ rule group Group = "(" a:atom ")" => Group{Item: $a}
 rule atom Atom = t:([a-z]+ ";") #atomic => Atom{Text: text($t)}
 `, []string{"abc;", "1;", "abc;1;def;2;", "(abc;)", "(1;", ";", "", "1"}},
 	{"typed/recovery_typed_corpus", strings.NewReplacer(
-		"type Node ~ Call | Name | Num | node", "type Group = { Item Num }\ntype Node ~ Call | Name | Num | Group",
+		"type Node ~ Call | Name | Num | node[_]", "type Group = { Item Num }\ntype Node ~ Call | Name | Num | Group",
 		`rule grp = "[" n:num "]" ";"`, `rule grp Group = "[" n:num "]" ";" => Group{Item: $n}`,
 	).Replace(typedGrammar), []string{"abc;", "1x;", "abc;1x;def;", "foo(1,bar)!;", "[1];", "", "("}},
 	{"typed/recovery_operatorsRule", `type Atom = { Text string }
-type Post = { X Expr; Text node | error }
+type Post = { X Expr; Text node[_] | error }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

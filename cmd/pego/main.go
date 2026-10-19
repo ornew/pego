@@ -333,10 +333,11 @@ func fixCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 }
 
 func fixSource(name string, src []byte, write, list bool, stdout io.Writer) error {
-	out, err := syntax.Fix(string(src))
+	out, nodes, err := syntax.FixNodeTypes(string(src))
 	if err != nil {
 		return fileError(name, err)
 	}
+	out = narrowNodeTypes(out, nodes)
 	out = fixAnyTypes(out)
 	changed := out != string(src)
 	if list && changed {
@@ -355,6 +356,22 @@ func fixSource(name string, src []byte, write, list bool, stdout io.Writer) erro
 	}
 	_, err = io.WriteString(stdout, out)
 	return err
+}
+
+// narrowNodeTypes infers the type argument of the types node[_] at offsets, which fix wrote for
+// node without one: node[string] where the grammar still type checks with it, so that only the
+// values that may be other nodes keep node[_].
+func narrowNodeTypes(src string, offsets []int) string {
+	if len(offsets) == 0 || !typeChecks(src) {
+		return src
+	}
+	// From the end, so that the earlier offsets stay valid.
+	for _, o := range slices.Backward(offsets) {
+		if next := src[:o] + "node[string]" + src[o+len("node[_]"):]; typeChecks(next) {
+			src = next
+		}
+	}
+	return src
 }
 
 // fixAnyTypes rewrites the deprecated type any to _ where the grammar still type checks with _.

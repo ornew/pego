@@ -48,7 +48,7 @@ const typedSweepOpenGrammar = `
 type Token = { Text string }
 type Choice ~ Token | node[string] | error
 type Mixed ~ Token | node[string] | int | error
-type Record = { A any; Raw node; Items []Choice; M Mixed; O *string }
+type Record = { A any; Raw node[_]; Items []Choice; M Mixed; O *string }
 rule main Record = x:"b" #atomic raw:("?" "?") => Record{A: $x, Raw: $raw, Items: []Choice{$x}, M: $x, O: "b"}
 rule token Token = t:("b") #atomic => Token{Text: text($t)}
 rule recovery Record = x:(token #recover(skip=([^;]+ ";"))) => Record{A: $x, M: $x, Items: []Choice{$x}}

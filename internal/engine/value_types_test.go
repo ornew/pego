@@ -203,7 +203,7 @@ func TestValueActionTypes(t *testing.T) {
 		{"rule e = operators {\n    operand n:[0-9]+ => $n.Value\n    level { infix left \"+\" => $op }\n}", "e", `[]node[string] | node[string]`},
 		// A declared type is the rule's type; a declared node keeps the inferred arguments.
 		{"type Foo = {}\nrule a Foo = _ => Foo{}", "a", `Foo`},
-		{`rule a node = x:"x" => $x`, "a", `node[string]`},
+		{`rule a node[_] = x:"x" => $x`, "a", `node[string]`},
 		{"type Word = { Text string }\nrule a Word = t:([a-z]+) #atomic => Word{Text: text($t)}", "a", `Word`},
 		// A rule whose action depends on its own value sees it as not known.
 		{"rule a = \"(\" x:b \")\" => $x.Value\nrule b = a / \"y\"", "a", `any`},

@@ -46,7 +46,7 @@ function one element at a time, and forgotten.
 ```pego
 package kv
 
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = pair* #stream $$
 

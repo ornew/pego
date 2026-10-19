@@ -41,7 +41,7 @@ rule main = n:"1" #atomic => P{N: $n}`, `cannot use node[string] as Num in field
 rule main = x:"a"? => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
 		{`type P = { X node[string] }
 rule main = x:"a" / "b" => P{X: $x}`, `cannot use *node[string] as node[string] in field X of P`},
-		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *node: the value may be nil`},
+		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *node[_]: the value may be nil`},
 		{`rule main = xs:(k:"a")* => $xs.$k`, `[]node{k: node[string]} has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
@@ -80,7 +80,7 @@ rule num Number = t:([0-9]+) #atomic => Number{Text: text($t)}`,
 rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.$r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
-		`type P = { X *node[string]; Y []node[string]; Z node }
+		`type P = { X *node[string]; Y []node[string]; Z node[_] }
 rule main = x:"a"? y:item* z:pair => P{X: $x, Y: $y.Value, Z: $z}
 rule item = [a-z] #atomic
 rule pair = "(" ")"`,
@@ -148,7 +148,7 @@ rule ps = p*
 rule opt = "a"?
 rule main = ps $$`)
 	for name, want := range map[string]string{
-		"n": "N", "p": "P", "ps": "[]P", "opt": "*node[string]", "main": "node",
+		"n": "N", "p": "P", "ps": "[]P", "opt": "*node[string]", "main": "node[_]",
 	} {
 		if got, ok := prog.RuleType(name); !ok || got != want {
 			t.Errorf("RuleType(%s) = %q, %v; want %q", name, got, ok, want)

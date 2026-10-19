@@ -30,16 +30,16 @@ package calc
 
 type Binary = {
     Left  Expr
-    Op    node
+    Op    node[string]
     Right Expr
 }
 
 type Unary = {
-    Op node
+    Op node[string]
     X  Expr
 }
 
-type Expr ~ node | Binary | Unary
+type Expr ~ node[string] | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -122,16 +122,16 @@ package calc
 
 type Binary = {
     Left  Expr
-    Op    node
+    Op    node[string]
     Right Expr
 }
 
 type Unary = {
-    Op node
+    Op node[string]
     X  Expr
 }
 
-type Expr ~ node | Binary | Unary
+type Expr ~ node[string] | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -257,9 +257,9 @@ the next level, followed by any number of operator-operand pairs, and `foldl` bu
 
 ```pego
 // chain.pego
-type Binary = { Left Expr; Op node; Right Expr }
-type Unary = { Op node; X Expr }
-type Expr ~ node | Binary | Unary
+type Binary = { Left Expr; Op node[string]; Right Expr }
+type Unary = { Op node[string]; X Expr }
+type Expr ~ node[string] | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
 
@@ -301,8 +301,8 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 
 ```pego
 // chain-cmp.pego
-type Bin = { L E; Op node; R E }
-type E ~ node | Bin
+type Bin = { L E; Op node[string]; R E }
+type E ~ node[string] | Bin
 
 rule main E = e:cmp ws $$ => $e
 
@@ -347,12 +347,12 @@ The grammar below is the one from the specification: it has every kind of operat
 type Comma = { L Expr; R Expr }
 type Assign = { L Expr; R Expr }
 type Cond = { Cond Expr; Then Expr; Else Expr }
-type Bin = { L Expr; Op node; R Expr }
-type Unary = { Op node; X Expr }
+type Bin = { L Expr; Op node[string]; R Expr }
+type Unary = { Op node[string]; X Expr }
 type Call = { Fn Expr; Args []Expr }
 type Index = { X Expr; Index Expr }
-type Member = { X Expr; Name node }
-type Expr ~ node | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
+type Member = { X Expr; Name node[string] }
+type Expr ~ node[string] | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
     skip ws
@@ -443,10 +443,10 @@ level, so you choose how tightly it binds:
 
 ```pego
 // apply.pego
-type Bin = { L E; Op node; R E }
+type Bin = { L E; Op node[string]; R E }
 type App = { Fn E; Arg E }
 type Neg = { X E }
-type E ~ node | Bin | App | Neg
+type E ~ node[string] | Bin | App | Neg
 
 rule e E = operators {
     skip ws
@@ -487,7 +487,7 @@ in a tighter level if you want `-(3!)`.
 // same-level.pego
 type Neg = { X E }
 type Fact = { X E }
-type E ~ node | Neg | Fact
+type E ~ node[string] | Neg | Fact
 
 rule same E = operators {
     operand num
@@ -567,11 +567,11 @@ pego parse -g raw.pego -s e -f sexpr -i '7'
 
 The default Operators Rule tree is a good starting point (nothing to write), but note the consequence for typed rules: if the
 rule has a declared struct type, **every operator needs an action**, because the tuple is not assignable to a struct. A
-declared union that includes `node` accepts the tuples, as `type E ~ node | Bin` does:
+declared union that includes `node[_]` accepts the tuples, as `type E ~ node[_] | Bin` does:
 
 ```pego
 // raw-typed.pego
-type Bin = { L node; Op node; R node }
+type Bin = { L node[string]; Op node[string]; R node[string] }
 rule t Bin = operators {
     operand num
     level additive { infix left "+" }
@@ -596,7 +596,7 @@ actions use the captures of their line:
 ```pego
 // operand-captures.pego
 type Paren = { X E }
-type E ~ node | Paren
+type E ~ node[string] | Paren
 
 rule e E = operators {
     operand num
@@ -687,7 +687,7 @@ consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 ```pego
 // skip.pego
 type Cond = { C E; T E; F E }
-type E ~ node | Cond
+type E ~ node[string] | Cond
 
 rule loose E = operators {
     skip ws
@@ -731,10 +731,10 @@ syntactically possible:
 
 ```pego
 // munch.pego
-type Bin = { L E; Op node; R E }
-type Un = { Op node; X E }
-type Post = { X E; Op node }
-type E ~ node | Bin | Un | Post
+type Bin = { L E; Op node[string]; R E }
+type Un = { Op node[string]; X E }
+type Post = { X E; Op node[string] }
+type E ~ node[string] | Bin | Un | Post
 
 rule main E = e:e $$ => $e
 
@@ -768,9 +768,9 @@ operator part with a negative lookahead, and exclude the keywords from identifie
 
 ```pego
 // words.pego
-type Bin = { L E; Op node; R E }
+type Bin = { L E; Op node[_]; R E }
 type Not = { X E }
-type E ~ node | Bin | Not
+type E ~ node[string] | Bin | Not
 
 rule e E = operators {
     skip ws
@@ -802,8 +802,8 @@ quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 
 ```pego
 // cut.pego
-type Bin = { L E; Op node; R E }
-type E ~ node | Bin
+type Bin = { L E; Op node[_]; R E }
+type E ~ node[string] | Bin
 
 rule plain E = operators {
     skip ws

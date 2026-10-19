@@ -10,14 +10,15 @@ chapter.
 
 A **struct type** (`type T = {...}`) is a type with named fields; an action builds its values with struct constructors
 such as `T{Field: value}`. A **union** (`type T ~ A | B`, an alias of a union) is the type of a value that is one of
-several types, much like a Go interface. A rule without an action produces a generic `node`, whose `Value` holds what the
-rule matched; a field that holds such a value is declared `node`.
+several types, much like a Go interface. A rule without an action produces a generic node, whose `Value` holds what the
+rule matched; a field that holds such a value is declared `node[T]` with the type of that value: `node[string]` for
+the text of a literal, a class or `#atomic`, or `node[_]` for a node of any value.
 
 ```pego
 // assign-ast.pego
 type Assign = {
-    Name  node
-    Value node
+    Name  node[string]
+    Value node[string]
 }
 
 rule main = ^^ assign $$
@@ -40,7 +41,7 @@ pego parse -g assign-ast.pego -f sexpr -i 'ab = cd;'
 
 The `Assign` value has no `@rule` label because an action built it, not a rule without an action. Type names and field
 names start with an uppercase letter; rule names are in a separate namespace, so `rule name = . . .` is fine. `int`,
-`string`, `bool` and `node` are built in, and `error` is the type of the values that [error recovery](recovery.md)
+`string`, `bool` and `node[T]` are built in, and `error` is the type of the values that [error recovery](recovery.md)
 produces. A rule's value must be a node (or `nil`), but struct fields and action expressions may also hold `int`, `string`
 and `bool`.
 
@@ -79,8 +80,8 @@ a value that may be `nil` cannot go into a plain `T` field.
 ```pego
 // decls.pego
 type Decl = {
-    Name  node
-    Value *node // optional: nil when there is no initializer
+    Name  node[string]
+    Value *node[string] // optional: nil when there is no initializer
 }
 
 type Program = { Decls []Decl }
@@ -131,7 +132,7 @@ type shows up in the error messages, for example when a field expects an `int` a
 
 ```pego
 // field-type.pego
-type Pair = { Key node; Value int }
+type Pair = { Key node[string]; Value int }
 rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -145,7 +146,7 @@ pego parse -g field-type.pego -s pair -i 'a=1'
 pego: field-type.pego:3:53: cannot use node[string] as int in field Value of Pair
 ```
 
-The fix is to declare the field `node`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.
+The fix is to declare the field `node[string]`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.
 
 When the checker cannot know a field value's type, for example a rule declared `any` or a variable, the constructor
 checks the value when it runs instead: a mismatch makes the action fail with the same message, prefixed by

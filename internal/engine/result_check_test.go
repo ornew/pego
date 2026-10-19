@@ -315,7 +315,7 @@ type O = { X Int }
 rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
 rule static Int = "s" => Int{Text: "s"}
 rule dynamic Int = v:val => $v
-rule pass node = val
+rule pass node[_] = val
 rule ops Int | O = operators {
     operand val
     operand "o" => Int{Text: "o"}
@@ -341,7 +341,7 @@ rule val any = "v" => Int{Text: "v"}
 		checked = append(checked, name+" "+typ.String())
 	}
 	sort.Strings(checked)
-	if got := strings.Join(checked, ", "); got != `dynamic Int, operand without action Int | O, pass node` {
+	if got := strings.Join(checked, ", "); got != `dynamic Int, operand without action Int | O, pass node[_]` {
 		t.Fatalf("checked results: %s", got)
 	}
 	if d := prog.Module().Disassemble(); strings.Count(d, "check=") != 3 {

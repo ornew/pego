@@ -96,6 +96,9 @@ type node[T _, C :map[:string, :int]] = {Start int; End int; Value T; Source *So
 ```
 
 `node` replaces every reserved CST type. `Value` has the type argument `T`.
+A Type Expression always gives the argument: `node[_]` is a node of any value,
+and a bare `node` is an error, so that every field and rule type states what
+its node holds.
 `C` is static type-level information mapping capture names to element indexes,
 for example `node[T, {"name": 1, "foo": 3}]`; its map, strings and integers are
 types, not values. The checker uses `C` to resolve a capture access to an index

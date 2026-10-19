@@ -42,7 +42,7 @@ the other side would have built.
 The grammar, `pairs.pego`, is the one of the Go guide:
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -286,7 +286,7 @@ String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `
 | declared aliases | complete target type, preserving optional, list and node representations |
 | `node[T]` | `TNode<T>`; text is a `StringNode`, a `TNode<string>` |
 | canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
-| mixed/open or undeclared union, `any`, `node` | conservative `TypedValue`, following Go's any-conversion semantics |
+| mixed/open or undeclared union, `any`, `node[_]` | conservative `TypedValue`, following Go's any-conversion semantics |
 | tuple, list node, `Node` | existing `Node` |
 
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted

@@ -15,11 +15,10 @@ offending construct.
 | `int` | An integer. Positions in the input are also `int` values (see [Positions](parsing.md#positions)). |
 | `string` | A string. `len` measures its length in the [position unit](parsing.md#positions). |
 | `bool` | A boolean. |
-| `node` | Any node. |
 | `node[string]` | A string node: the node of a literal, a character class, `.` or an atomic expression. |
-| `node[_]` | A node whose value may be of any type; the same type as `node`. |
+| `node[_]` | Any node: a node whose value may be of any type. |
 | `error` | The value of [error recovery](pragmas.md#recover): an error value or a `#missing` insertion. |
-| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a list node, a `node` whose list is its `.Value`. |
+| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a list node, a `node[_]` whose list is its `.Value`. |
 | `*T` | A `T` or `nil`. |
 | `T & U` | The values that are both a `T` and a `U` (see [Top, Bottom and Meet](#top-bottom-and-meet)). |
 | `_` | Every value: the top type. |
@@ -70,7 +69,9 @@ do not compile, also when types are otherwise not checked:
 - A type application `T[U, ...]` applies a type to type arguments, as in
   `node[Expr]`. The `[` follows the name directly, without a space. Only `node`
   takes type arguments, and of its applications only `node[string]` and
-  `node[_]` are supported; any other type takes none.
+  `node[_]` are supported; any other type takes none. `node` MUST have a type
+  argument: a bare `node` is an error, which `pego fix` rewrites to
+  `node[string]` where the grammar still type-checks, and to `node[_]` otherwise.
 - An unnamed struct type is written with the braces and fields of a struct
   definition, as in `type T ~ { Key node[string]; Value node[string] }` or a field of type
   `{ Line int }`. `type T = {...}` remains the way to define a struct type.
@@ -90,7 +91,7 @@ types are otherwise not checked.
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
 one assignable to the other, `[]V & []W` is `[](V & W)`, and for unions and
 optional types it is the union of the meets of their members. A meet of unrelated types is `_|_`, so
-`(node[string] | int) & node` is `node[string]` while `int & string` is an error where a
+`(node[string] | int) & node[_]` is `node[string]` while `int & string` is an error where a
 location has that type.
 
 ### Node Type Names
@@ -103,8 +104,8 @@ kind:
 | Name | Values | Type |
 |:--|:--|:--|
 | `string` | String nodes produced by literals, character classes, `.` and `a #atomic` | `node[string]` |
-| `tuple` | Tuple nodes: values of sequences, and of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node` |
-| `list` | List nodes: values of repetitions | `node` |
+| `tuple` | Tuple nodes: values of sequences, and of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node[_]` |
+| `list` | List nodes: values of repetitions | `node[_]` |
 | `error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) | `error` |
 | `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only | `Missing` |
 
@@ -118,7 +119,7 @@ the value.
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
-the built-in types (`int`, `string`, `bool`, `node`, `error`), and `_` and
+the built-in types (`int`, `string`, `bool`, `node[T]`, `error`), and `_` and
 `_|_` name the top and bottom types. `Missing` and the former node type names
 (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
 Each type name MUST be defined at most once, and types and rules have separate
@@ -140,7 +141,7 @@ right-hand side is an error, and an alias is written `type T ~ U`.
 
 A struct type is a type of values with named fields. `type T = {...}` defines it.
 A struct is a value that an action builds, not a node of the parse, so a struct
-type is not assignable to `node`.
+type is not assignable to `node[_]`.
 Fields are separated by newlines
 or semicolons. Field names MUST be unique within a struct. Constructor fields
 and function arguments remain comma-separated.
@@ -206,7 +207,7 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is a union type and `V` is assignable to one of its members.
 - `T` is `*U`, and `V` is `nil`, or `V` is `*W` with `W` assignable to `U`, or
   `V` is assignable to `U`.
-- `T` is `node` and `V` is the type of a node: a string, tuple or list node.
+- `T` is `node[_]` and `V` is the type of a node: a string, tuple or list node.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
 
 An error value from [error recovery](pragmas.md#recover) is assignable only to a

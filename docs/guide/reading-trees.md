@@ -9,7 +9,7 @@ the exact node model is defined in [Nodes and Values](../../spec/nodes.md).
 The examples use the grammar `pairs.pego`:
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

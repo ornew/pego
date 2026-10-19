@@ -57,7 +57,7 @@ type nodeTy struct {
 
 func (t nodeTy) String() string {
 	if t.value == tyTop && len(t.caps) == 0 {
-		return "node"
+		return "node[_]"
 	}
 	if len(t.caps) == 0 {
 		return "node[" + t.value.String() + "]"

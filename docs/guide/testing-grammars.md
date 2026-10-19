@@ -36,7 +36,7 @@ The examples use `pairs.pego` of the [Running Parsers](running-parsers.md), whic
 semicolons and whitespace:
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

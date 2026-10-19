@@ -16,7 +16,7 @@ import (
 const textCompareGrammar = `type Name = { Text string }
 type Tag = { Text string; N int }
 type Ops = { Eq bool; Ne bool; Lt bool; Le bool; Gt bool; Ge bool }
-type Out = { Items node }
+type Out = { Items node[_] }
 rule main = items:(-" "* item)* $$ => Out{Items: $items}
 rule item = cmp / mixed / pred
 rule cmp = a:name "," b:name => Ops{Eq: $a.Text == $b.Text, Ne: $a.Text != $b.Text, Lt: $a.Text < $b.Text, Le: $a.Text <= $b.Text, Gt: $a.Text > $b.Text, Ge: $a.Text >= $b.Text}

@@ -33,11 +33,11 @@ it under that name:
 // toy.pego
 package toy
 
-type Let = { Name node; Value Expr }
+type Let = { Name node[string]; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
 type Sum = { Left Expr; Right Expr }
-type Expr ~ node | Sum
+type Expr ~ node[string] | Sum
 type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
@@ -319,10 +319,10 @@ what the `toy.pego` statement rule does if `{}` is not excluded from the skip:
 // toy_greedy.pego
 package toy
 
-type Let = { Name node; Value Expr }
+type Let = { Name node[string]; Value Expr }
 type Print = { Value Expr }
 type Block = { Body []Stmt }
-type Expr ~ node
+type Expr ~ node[string]
 type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
@@ -454,8 +454,8 @@ grammar has assignments and `if` blocks:
 // blocks.pego
 package blocks
 
-type Assign = { Name node; Value node }
-type If = { Test node; Body []Stmt }
+type Assign = { Name node[string]; Value node[string] }
+type If = { Test node[string]; Body []Stmt }
 type Stmt ~ Assign | If | error
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
@@ -513,7 +513,7 @@ and let `skip` stop in front of the separator and the closing bracket, so that n
 // list.pego
 package nums
 
-type Item ~ node | error
+type Item ~ node[string] | error
 type Numbers = { Items []Item }
 
 rule main Numbers = ws l:list ws $$ => $l

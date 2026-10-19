@@ -16,7 +16,7 @@ const textStructGrammar = `type Name = { Text string }
 type Num = { Text string }
 type Pair = { Text string; N int }
 type Other = { Text string }
-type Out = { Items node }
+type Out = { Items node[_] }
 rule main = items:(-" "* item)* $$ => Out{Items: $items}
 rule item = tag / name / num / pair / plain / spaced / other
 rule tag = "[" a:name "]" b:name {$b.Text == $a.Text} => $b

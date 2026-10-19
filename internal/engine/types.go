@@ -21,7 +21,12 @@ const (
 	tyNode   basicTy = "node" // any node
 )
 
-func (t basicTy) String() string { return string(t) }
+func (t basicTy) String() string {
+	if t == tyNode {
+		return "node[_]" // node without a type argument is not a type
+	}
+	return string(t)
+}
 
 // namedTy is a named node type.
 type namedTy struct {

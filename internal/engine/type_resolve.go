@@ -142,6 +142,8 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 	case "bool":
 		return tyBool
 	case "node":
+		// node without a type argument would accept every node where the value is known.
+		k.errorf(pos, "node takes a type argument: write node[T], or node[_] for a node of any value")
 		return tyNode
 	case "any":
 		return tyAny
@@ -182,9 +184,9 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 var retiredTypeNames = map[string]string{
 	"terminal": "node[string]",
 	"Match":    "node[string]",
-	"Seq":      "node",
-	"List":     "node",
-	"Operator": "node",
+	"Seq":      "node[_]",
+	"List":     "node[_]",
+	"Operator": "node[_]",
 	"Error":    "error",
 }
 

@@ -57,7 +57,7 @@ rule expr Expr = operators {
 rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 `, []string{"a", "a[b,]", "a[b,c,][d,]", "a[]", "a[b,", "a[b,c,d,e,]", "a[é,]", ""}},
 	{"typed/OperatorsRule_positional_actions", `type Atom = { Text string }
-type Doc = { Text node[string]; Items []node }
+type Doc = { Text node[string]; Items []node[_] }
 type Expr ~ Atom | Doc
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -101,7 +101,7 @@ rule expr Expr = operators {
 }
 rule atom Atom = t:("a"?) #atomic => Atom{Text: text($t)}
 `, []string{"", "a", "aa", "b"}},
-	{"typed/OperatorsRule_framed_cuts", `type Doc = { Text node }
+	{"typed/OperatorsRule_framed_cuts", `type Doc = { Text node[_] }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = operators {
     operand x:"a" #atomic #cut => Doc{Text: $x}

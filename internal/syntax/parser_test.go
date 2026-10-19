@@ -319,9 +319,9 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 	replacements := map[string]string{
 		"terminal": "node[string]",
 		"Match":    "node[string]",
-		"Seq":      "node",
-		"List":     "node",
-		"Operator": "node",
+		"Seq":      "node[_]",
+		"List":     "node[_]",
+		"Operator": "node[_]",
 		"Error":    "error",
 	}
 	for name, replacement := range replacements {
@@ -356,13 +356,44 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 	}
 }
 
+// node without a type argument is an error that pego fix rewrites to node[_].
+func TestParseRejectsBareNode(t *testing.T) {
+	for _, src := range []string{
+		"type R = { F node }",
+		"type R ~ []*node",
+		"rule r node = \"x\"",
+		"rule r = x:\"x\" => $x.(node)",
+		"type R ~ node[string] | node",
+	} {
+		_, err := Parse(src)
+		list, ok := err.(ErrorList)
+		if !ok || len(list) != 1 || list[0].Msg != bareNode+" (pego fix rewrites it)" {
+			t.Errorf("Parse(%q): got %v, want one error %q", src, err, bareNode)
+		}
+		fixed, err := Fix(src)
+		if err != nil {
+			t.Fatalf("Fix(%q): %v", src, err)
+		}
+		if want := strings.ReplaceAll(src, "node", "node[_]"); strings.Contains(src, "node[string]") {
+			if want = strings.ReplaceAll(want, "node[_][string]", "node[string]"); fixed != want {
+				t.Errorf("Fix(%q) = %q, want %q", src, fixed, want)
+			}
+		} else if fixed != want {
+			t.Errorf("Fix(%q) = %q, want %q", src, fixed, want)
+		}
+		if _, err := Parse(fixed); err != nil {
+			t.Errorf("Parse(Fix(%q)): %v", src, err)
+		}
+	}
+}
+
 func TestParseAcceptsValueTypeNames(t *testing.T) {
 	for _, src := range []string{
 		"type R = { F Missing }",
 		"type R = { F node[string] }",
-		"type R = { F node }",
+		"type R = { F node[_] }",
 		"type R = { F error }",
-		"type R ~ Missing | node[string] | node | error",
+		"type R ~ Missing | node[string] | node[_] | error",
 		"type R ~ []node[string] | *error",
 		"rule r node[string] = \"x\"",
 		"rule r error = \"x\"",
@@ -375,7 +406,7 @@ func TestParseAcceptsValueTypeNames(t *testing.T) {
 
 // A field may be named like a retired type: only type positions are rejected.
 func TestParseAcceptsFieldsNamedLikeRetiredTypes(t *testing.T) {
-	const src = `type R = { Match *node[string]; Operator node; Seq node; List []node; Error error; terminal string }
+	const src = `type R = { Match *node[string]; Operator node[_]; Seq node[_]; List []node[_]; Error error; terminal string }
 rule main R = x:"a" => R{Match: nil, Operator: nil, Seq: nil, List: nil, Error: nil, terminal: "t"}
 rule use = r:main => list($r.Match, $r.Operator)
 `

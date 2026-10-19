@@ -109,7 +109,7 @@ evaluated:
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
 - an optional Type `*T` admits `nil` and the values `T` admits;
 - a union admits the values any of its alternatives admits;
-- a struct Type admits only nodes of that Type, `node` admits every node, and
+- a struct Type admits only nodes of that Type, `node[_]` admits every node, and
   `node[string]` every string node;
 - `[]T` admits a list node or list value whose every element `T` admits; list
   elements are nodes or `nil`, so `[]_` and `[]any` admit every list;
@@ -183,7 +183,7 @@ Type `T` checks a dynamically typed value (see
 steps. A cast is a compile-time error unless the static type of `x` or one of
 its alternatives is assignable to `T` or one of its alternatives, or the other
 way around, so `$x.(int)` on a capture is rejected while `$x.(Number)` on a
-`node` value is accepted.
+`node[_]` value is accepted.
 
 ## Operators and Functions
 
@@ -257,7 +257,7 @@ An optional list value contributes no elements when it is `nil`. An error
 value produced by `#recover` also contributes no elements to list-consuming
 functions. The checker accepts a union of list types and combines their
 possible element types. At runtime the functions consume the elements of a
-list node, list value or tuple node; a broad `node` type can therefore supply
+list node, list value or tuple node; a broad `node[_]` type can therefore supply
 that node's elements.
 
 #### `len`

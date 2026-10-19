@@ -337,7 +337,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every opcode is known, and every flag operand is within its range.
 - The text type of a rule names a declared type with a field `Text`.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum.
-- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, `Missing`, `error`, `node[string]`, `node`, `int`, `string`, `bool`, `nil` and `any`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&`, `_` or `_|_`.
+- `ECHECK` references strings for the field and struct names, and a type text that parses as a field type naming only declared types, `Missing`, `error`, `node[string]`, `node[_]`, `int`, `string`, `bool`, `nil` and `any`. The checks of rules and lines name type texts that parse the same way. The type text of `ECAST` parses as the type of `ECHECK` does. These type texts are resolved types, which contain no `&` or `_|_`, and no `_` other than the argument of `node[_]`.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

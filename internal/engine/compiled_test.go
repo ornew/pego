@@ -319,7 +319,7 @@ func BenchmarkLoad(b *testing.B) {
 // grammar: a load that read only some of them would misread the rest of the file.
 func TestCompiledTypeExpressions(t *testing.T) {
 	src := `type P = { A node[string]; B *(int); C []node[string] }
-type Q ~ P | node[string] & node
+type Q ~ P | node[string] & node[_]
 rule main P = a:[a-z] => P{A: $a, B: 1}
 rule pair node[(string)] = [a-z]`
 	prog := compile(t, src)

@@ -21,7 +21,7 @@ it costs and saves, how files stay compatible between releases, and when to use 
 The examples use the grammar `pairs.pego` of the [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

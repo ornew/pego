@@ -16,7 +16,7 @@ var builtinTypes = []builtin{
 	{name: "int", doc: "An integer. Positions in the input are also `int` values."},
 	{name: "string", doc: "A string. `len` measures its length in the position unit."},
 	{name: "bool", doc: "A boolean."},
-	{name: "node", doc: "Any node. `node[string]` is a string node: the node of a literal, a character class, `.` or an atomic expression."},
+	{name: "node", doc: "A node; it takes a type argument. `node[string]` is a string node: the node of a literal, a character class, `.` or an atomic expression. `node[_]` is any node."},
 	{name: "error", doc: "The value of error recovery: an error recovered by `#recover`, or a token inserted by `#missing`."},
 	{name: "_", doc: "The top type: every value. A `_` value needs a cast `x.(T)` to be used as a `T`."},
 	{name: "_|_", doc: "The bottom type: no value. A location of this type is an error."},

@@ -52,7 +52,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"type T = { F (int,) }\nrule main = \"a\"", "1:14: tuple types are not supported yet"},
 		{"rule main = x:\"a\" => $x.(node[node[string]])", "type arguments of node other than node[string] and node[_] are not supported yet"},
 		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] and node[_] are not supported yet"},
-		{"rule main = \"a\" => [](node[string], node){}", "tuple types are not supported yet"},
+		{"rule main = \"a\" => [](node[string], node[_]){}", "tuple types are not supported yet"},
 		{"type B = { Text string }\nrule main B[node[string]] = \"a\"", "type B takes no type arguments"},
 		{"rule main int[node[string]] = \"a\"", "type int takes no type arguments"},
 		{"rule main _[node[string]] = \"a\"", "type _ takes no type arguments"},
@@ -134,7 +134,7 @@ func TestNodeStringType(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
-	g, err := syntax.Parse("rule main = k:(\"a\" \"b\") => $k.(node).(node[string])")
+	g, err := syntax.Parse("rule main = k:(\"a\" \"b\") => $k.(node[_]).(node[string])")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,9 +228,23 @@ rule opt *TYPE = x:val? => $x`
 		}
 		return strings.Join(out, "\n")
 	}
+	// Every node fits node[_], in a field, a cast and an optional rule type, on every backend.
 	for _, in := range []string{"a", "bc", "dd", "", "x"} {
-		if got, want := run("node[_]", in), run("node", in); got != want {
-			t.Errorf("%q:\nnode[_]:\n%s\nnode:\n%s", in, got, want)
+		for _, line := range strings.Split(run("node[_]", in), "\n") {
+			if strings.Contains(line, "error:") && (in == "a" || in == "bc" || in == "dd" || strings.Contains(line, " type ")) {
+				t.Errorf("%q: %s", in, line)
+			}
+		}
+	}
+	// node without a type argument is not a type: the grammar API and earlier syntax reach the
+	// checker with it.
+	for _, typ := range []string{"node", "*node", "[]node"} {
+		g, err := syntax.ParseLegacy(strings.ReplaceAll(src, "TYPE", typ))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "node takes a type argument: write node[T], or node[_] for a node of any value") {
+			t.Errorf("%s: got %v", typ, err)
 		}
 	}
 	// A struct and an int do not fit either.
@@ -240,7 +254,7 @@ rule main = "t" => S{F: T{Text: "t"}}
 rule other TYPE = "i" => T{Text: "i"}
 rule cast = x:"a" => S{F: 1}`
 	errs := map[string]string{}
-	for _, typ := range []string{"node", "node[_]"} {
+	for _, typ := range []string{"node[_]"} {
 		g, err := syntax.Parse(strings.ReplaceAll(bad, "TYPE", typ))
 		if err != nil {
 			t.Fatal(err)
@@ -251,11 +265,13 @@ rule cast = x:"a" => S{F: 1}`
 		}
 		errs[typ] = err.Error()
 	}
-	if errs["node"] != errs["node[_]"] {
-		t.Errorf("errors differ:\nnode[_]: %s\nnode: %s", errs["node[_]"], errs["node"])
+	for _, want := range []string{"cannot use T as node[_] in field F of S", "rule other produces T, which is not assignable to node[_]", "cannot use int as node[_] in field F of S"} {
+		if !strings.Contains(errs["node[_]"], want) {
+			t.Errorf("errors %s: want %q", errs["node[_]"], want)
+		}
 	}
-	for _, typ := range []string{"node", "node[_]"} {
-		if got, _ := compile(t, "rule main = x:\"a\" => $x.("+typ+")").RuleType("main"); got != "node" {
+	for _, typ := range []string{"node[_]"} {
+		if got, _ := compile(t, "rule main = x:\"a\" => $x.("+typ+")").RuleType("main"); got != "node[_]" {
 			t.Errorf("cast to %s: rule type %s", typ, got)
 		}
 	}

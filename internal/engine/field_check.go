@@ -95,8 +95,8 @@ func newFieldType(t ty) *fieldType {
 }
 
 // parseFieldType reads the text of a type as ty.String writes it, resolving names against the
-// declared types (types, the set of their names); node[string], node and error name the kinds of
-// node. Bytecode carries field types this way.
+// declared types (types, the set of their names); node[string], node[_] and error name
+// the kinds of node. Bytecode carries field types this way.
 func parseFieldType(text string, types map[string]bool) (*fieldType, error) {
 	r := fieldTypeReader{text: text, types: types}
 	t, err := r.union()
@@ -186,10 +186,15 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 		case "nil":
 			t = &fieldType{kind: ftNil}
 		case "node":
-			t = &fieldType{kind: ftNode}
-			if strings.HasPrefix(r.text[r.pos:], "[string]") {
+			switch {
+			case strings.HasPrefix(r.text[r.pos:], "[string]"):
 				r.pos += len("[string]")
 				t = &fieldType{kind: ftStringNode}
+			case strings.HasPrefix(r.text[r.pos:], "[_]"):
+				r.pos += len("[_]")
+				t = &fieldType{kind: ftNode}
+			default:
+				return nil, fmt.Errorf("node without a type argument at %d", start)
 			}
 		case "error", TypeMissing:
 			t = &fieldType{kind: ftError}

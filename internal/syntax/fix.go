@@ -30,17 +30,25 @@ import (
 //     where x captures a call of a rule of a terminal type. $x.Value also becomes $x.Text where
 //     x captures a call of a rule of a text struct { Text string };
 //   - the type names terminal and Match become node[string], Seq, List and Operator become
-//     node, and Error becomes error.
+//     node[_], node without a type argument becomes node[_], and Error becomes error.
 //
 // It edits only the rewritten tokens, so layout, comments and every other byte
 // are kept, and it returns src unchanged when nothing needs rewriting. Source that does not lex
 // is an error, and so is source with positional captures that does not parse. Lambda
 // parameters, members and types are rewritten only in source that parses.
 func Fix(src string) (string, error) {
+	out, _, err := FixNodeTypes(src)
+	return out, err
+}
+
+// FixNodeTypes is Fix that also returns the byte offsets in its result of the types node[_] that
+// it wrote for node without a type argument, in order, so that a caller that can type check the
+// grammar may narrow them.
+func FixNodeTypes(src string) (string, []int, error) {
 	errs := &errorList{}
 	toks := lex(src, errs)
 	if len(errs.list) > 0 {
-		return "", errs.list
+		return "", nil, errs.list
 	}
 	out := fixTokens(src, toks)
 	positional, parsed := false, false
@@ -51,11 +59,13 @@ func Fix(src string) (string, error) {
 		parsed = parsed || t.kind == tPunct && t.text == "." && i+1 < len(toks) && toks[i+1].kind == tIdent
 		_, reserved := valueTypeNames[t.text]
 		parsed = parsed || t.kind == tIdent && reserved
+		// node without a type argument becomes node[_].
+		parsed = parsed || t.kind == tIdent && t.text == "node" && (i+1 == len(toks) || toks[i+1].text != "[")
 	}
 	if positional || parsed {
 		return fixParsed(out, positional)
 	}
-	return out, nil
+	return out, nil, nil
 }
 
 // fixOffsets maps lexer positions in src to byte offsets.
@@ -132,19 +142,30 @@ type fixEdit struct {
 }
 
 func applyFixEdits(src string, edits []fixEdit) string {
+	out, _ := applyMarkedFixEdits(src, edits, nil)
+	return out
+}
+
+// applyMarkedFixEdits applies edits to src and returns the offsets in the result of the
+// replacements of the edits that start at a marked offset of src.
+func applyMarkedFixEdits(src string, edits []fixEdit, marked map[int]bool) (string, []int) {
 	sort.SliceStable(edits, func(i, j int) bool { return edits[i].start < edits[j].start })
 	var b strings.Builder
+	var marks []int
 	last := 0
 	for _, e := range edits {
 		if e.start < last {
 			panic(fmt.Sprintf("overlapping fix edits at %d", e.start))
 		}
 		b.WriteString(src[last:e.start])
+		if marked[e.start] && e.end > e.start { // not an insertion at the same offset
+			marks = append(marks, b.Len())
+		}
 		b.WriteString(e.text)
 		last = e.end
 	}
 	b.WriteString(src[last:])
-	return b.String()
+	return b.String(), marks
 }
 
 // lineStarts returns the code point index at which each line of src starts, with the lexer's

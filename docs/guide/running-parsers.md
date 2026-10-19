@@ -9,7 +9,7 @@ can write a grammar; the [language specification](../../spec/README.md) defines 
 All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs separated by optional semicolons:
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

@@ -1,7 +1,7 @@
 type Number = { Text string }
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X *Expr }
-type Post = { X Expr; Op node; Args []Expr }
+type Post = { X Expr; Op node[_]; Args []Expr }
 type Expr ~ Number | Binary | Unary | Post
 rule main Expr = e:expr ws $$ => $e
 rule expr Expr = operators {

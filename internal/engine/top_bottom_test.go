@@ -21,10 +21,10 @@ func topBottomCases() []genCase {
 		{"top primitive", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", []string{"12", "a"}},
 		{"top cast", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, []string{"1", "a"}},
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
-		{"meet field", "type T = { A (Num | int) & node }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
+		{"meet field", "type T = { A (Num | int) & node[_] }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
 		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "1a"}},
 		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "a"}},
-		{"meet list", "type T = { A []Num & []node }\nrule main = xs:n+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"1", ""}},
+		{"meet list", "type T = { A []Num & []node[_] }\nrule main = xs:n+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"1", ""}},
 	}
 }
 
@@ -60,7 +60,7 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type T = { A []node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A *[]node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		// A meet is the type assignable to both: here Match, which an int is not.
-		{"type T = { A (node[string] | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as node[string]"},
+		{"type T = { A (node[string] | int) & node[_] }\nrule main = \"a\" => T{A: 1}", "cannot use int as node[string]"},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {
@@ -74,13 +74,13 @@ func TestTopBottomTypes(t *testing.T) {
 		"type T = { A _ | node[string] }\nrule main = \"a\" => T{A: 1}",
 		"type T = { A _|_ | node[string] }\nrule main = x:\"a\" => T{A: $x}",
 		"type T = { A node[string] & _ }\nrule main = x:\"a\" => T{A: $x}\nrule other = x:\"a\" => T{A: $x}.A",
-		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A.(node[string] | node)",
+		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A.(node[string] | node[_])",
 		"type B ~ _|_\nrule main = \"a\"", // an alias is not a location
 		// Meets look inside lists: []Seq is assignable to both.
-		"type T = { A [](node[string] | node) & [](node | node) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
-		"type T = { A *node[string] & *node }\nrule main = \"a\" => T{A: nil}",
-		"type T = { A *[](node[string] | node) & [](node | node) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
-		"type T = { A ([]node[string] | int) & []node }\nrule main = x:\"a\"* => T{A: $x.Value}",
+		"type T = { A [](node[string] | node[_]) & [](node[_] | node[_]) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
+		"type T = { A *node[string] & *node[_] }\nrule main = \"a\" => T{A: nil}",
+		"type T = { A *[](node[string] | node[_]) & [](node[_] | node[_]) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
+		"type T = { A ([]node[string] | int) & []node[_] }\nrule main = x:\"a\"* => T{A: $x.Value}",
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {
@@ -190,13 +190,13 @@ func TestTopBottomWithoutTypeCheck(t *testing.T) {
 }
 
 func TestTopBottomSyntax(t *testing.T) {
-	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = x:\"a\" => $x.(_ & node)"
+	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = x:\"a\" => $x.(_ & node[_])"
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
 	formatted := grammar.Format(g)
-	for _, want := range []string{"type A ~ []B & *C | _ & (D | B) | _|_", "type E ~ [](B & C) & *(B | C)", "$x.(_ & node)"} {
+	for _, want := range []string{"type A ~ []B & *C | _ & (D | B) | _|_", "type E ~ [](B & C) & *(B | C)", "$x.(_ & node[_])"} {
 		if !strings.Contains(formatted, want) {
 			t.Fatalf("formatted lacks %q:\n%s", want, formatted)
 		}
@@ -237,13 +237,13 @@ func TestTopBottomSyntax(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := grammar.Format(loaded.Grammar); !strings.Contains(got, "type A ~ []B & *C | _ & (D | B) | _|_") || !strings.Contains(got, "$x.(_ & node)") {
+	if got := grammar.Format(loaded.Grammar); !strings.Contains(got, "type A ~ []B & *C | _ & (D | B) | _|_") || !strings.Contains(got, "$x.(_ & node[_])") {
 		t.Fatalf("compiled round trip:\n%s", got)
 	}
 }
 
 func TestTopBottomSchema(t *testing.T) {
-	program := compile(t, "type T = { A _; B (node[string] | int) & node; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
+	program := compile(t, "type T = { A _; B (node[string] | int) & node[_]; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
 	schema, err := program.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)

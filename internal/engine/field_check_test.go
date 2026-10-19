@@ -51,7 +51,7 @@ var fieldCheckFields = map[string]string{
 	"string":                   "s",
 	"bool":                     "b",
 	"any":                      "mtlkenq?wpzisb",
-	"node":                     "m",
+	"node[_]":                  "m",
 	"[][]Int":                  "wn",
 	"*(Box | bool)":            "qzb",
 	"node[string]":             "m",
@@ -337,7 +337,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}
-	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "Missing", "node", "node[string] | error"} {
+	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "Missing", "node[_]", "node[string] | error"} {
 		if _, err := parseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}

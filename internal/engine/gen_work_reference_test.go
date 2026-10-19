@@ -44,7 +44,7 @@ rule anynil any = t:word? => $t
 
 rule seq = "a" "é"?
 
-rule ptrnil *node = t:seq? => $t
+rule ptrnil *node[_] = t:seq? => $t
 
 // A nil result is converted from nodes, so the reference also covers the converter.
 rule converted = "a" => nil`)

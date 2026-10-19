@@ -228,7 +228,7 @@ operand (or of the postfix operator).
 If the rule is declared with type `T`, the values of all `operand` items and of
 all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
 An operator without an action produces a tuple node, so when `T` does not
-accept `node`, every operator needs an action.
+accept `node[_]`, every operator needs an action.
 
 If the rule has no declared type, its type is the union of the types of all
 `operand` items and operators.

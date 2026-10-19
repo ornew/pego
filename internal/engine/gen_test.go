@@ -115,7 +115,7 @@ rule main = e:(expr #atomic) ";" a:args => Args{Items: concat($a.Items, $a.Items
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
-		{"projected and indexed repetition", `type L = { Items []node[string]; Rest node; N int }
+		{"projected and indexed repetition", `type L = { Items []node[string]; Rest node[_]; N int }
 rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => e.$r)), Rest: $rest, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A = { N int }
@@ -512,7 +512,7 @@ func mutants(inputs []string, n int, seed uint64) []string {
 // left by #recover.
 const typedGrammar = `type Name = { Text string }
 type Num = { Text string }
-type Node ~ Call | Name | Num | node | error
+type Node ~ Call | Name | Num | node[_] | error
 type Call = { Fn Name; Args []Node; Span node[string]; N int; Opt *node[string]; Rows [][]Num; Ok bool }
 rule main []Node = xs:item* $$ => concat(map($xs, (x) => x))
 rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")

@@ -47,7 +47,7 @@ mismatches are compile-time errors:
 
 ```pego
 // field-errors.pego
-type Assign = { Name node; Value node }
+type Assign = { Name node[string]; Value node[string] }
 
 rule a Assign = k:name "=" v:name => Assign{Name: $k, Value: $v}
 rule b Assign = k:name "=" v:number => Assign{Name: $k, Valu: $v}
@@ -157,7 +157,7 @@ pair the key with every item:
 
 ```pego
 // outer-capture.pego
-type Pair = { A node; B node }
+type Pair = { A node[string]; B node[string] }
 type Pairs = { Items []Pair }
 
 rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: r.$x})}
@@ -222,10 +222,10 @@ A repetition gives a flat list; a fold turns it into the nested tree. Capture th
 // sum.pego
 type Bin = {
     Left  Expr
-    Op    node
+    Op    node[string]
     Right Expr
 }
-type Expr ~ node | Bin
+type Expr ~ node[string] | Bin
 
 rule main Expr = e:sum $$ => $e
 rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.$op, Right: i.$n})
@@ -245,7 +245,7 @@ Bin{Left: Bin{Left: "1", Op: "-", Right: "2"}, Op: "+", Right: "3"}
 ```
 
 Notes: the accumulator starts as a node and becomes a `Bin`, so its type is widened to the union of both, and the
-declared `Expr ~ node | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
+declared `Expr ~ node[string] | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
 initial value unchanged, which is why `7` stays a bare node. For several precedence levels you would write one such
 rule per level; for that case also look at [Operators Rule](operators-rule.md).
 
@@ -258,10 +258,10 @@ from the right, starting with the last operand:
 // pow.pego
 type Bin = {
     Left  Expr
-    Op    node
+    Op    node[string]
     Right Expr
 }
-type Expr ~ node | Bin
+type Expr ~ node[string] | Bin
 
 rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: i.$l, Op: i.$op, Right: acc})
 rule num = [0-9]+ #atomic
@@ -291,9 +291,9 @@ for the rule type and the field:
 // path.pego
 type Member = {
     X    Path
-    Name node
+    Name node[string]
 }
-type Path ~ node | Member
+type Path ~ node[string] | Member
 
 rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: acc, Name: i.$n})
 rule ident = [a-z]+ #atomic
@@ -316,8 +316,8 @@ joins them. A list that is optional (`args?`) works with `concat` too, because a
 ```pego
 // args.pego
 type Call = {
-    Fn   node
-    Args []node
+    Fn   node[string]
+    Args []node[string]
 }
 
 rule call Call = fn:ident -ws "(" -ws args:args? -ws ")" => Call{Fn: $fn, Args: concat($args)}
@@ -344,7 +344,7 @@ Call{Args: [], Fn: "f"}
 
 ```pego
 // args-optional.pego
-type Call = { Fn node; Args []node }
+type Call = { Fn node[string]; Args []node[string] }
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
 rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => r.$x))
 rule ident = [a-z]+ #atomic
@@ -355,7 +355,7 @@ pego parse -g args-optional.pego -s call -i 'f(a)'
 ```
 
 ```text
-pego: args-optional.pego:3:63: cannot use *[]node[string] as []node in field Args of Call
+pego: args-optional.pego:3:63: cannot use *[]node[string] as []node[string] in field Args of Call
 ```
 
 ### Keeping Only the AST You Need
@@ -372,8 +372,8 @@ contain the data. Four habits get you there:
 ```pego
 // config.pego
 type Entry = {
-    Key   node
-    Value node
+    Key   node[string]
+    Value node[string]
 }
 type Config = { Entries []Entry }
 

@@ -27,7 +27,7 @@ is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything 
 The examples use the grammar `pairs.pego`:
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -218,8 +218,10 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
   `$x.Value` also becomes `$x.Text` where the rule is declared with a struct `{ Text string }`. A capture that may be
   absent needs a cast, `$x.(T).Text`, or a test for `nil`, which the type checker asks for. A struct has no range, so
   `$x.Start` and `$x.End` on such a capture are reported by the type checker and need rewriting by hand;
-- the type names `terminal` and `Match` to `node[string]`, `Seq`, `List` and `Operator` to `node`, and `Error` to
-  `error`.
+- the type names `terminal` and `Match` to `node[string]`, `Seq`, `List` and `Operator` to `node[_]`, and `Error` to
+  `error`;
+- a bare `node`, which needs a type argument, to `node[string]` where the grammar still type-checks with it, and
+  to `node[_]`, a node of any value, otherwise.
 
 The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
 comments is left alone. The rewrites other than the cut and type declarations need a grammar that otherwise parses, so

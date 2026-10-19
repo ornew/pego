@@ -577,6 +577,8 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 	name := p.ident()
 	if replacement, ok := valueTypeNames[name.text]; ok && p.legacy == nil {
 		p.errs.add(name.pos, fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name.text, replacement))
+	} else if name.text == "node" && !p.is("[") && p.legacy == nil {
+		p.errs.add(name.pos, bareNode+" (pego fix rewrites it)")
 	}
 	if p.is("[") {
 		// The lexer makes "[" a bracket only directly after the name: T[U].

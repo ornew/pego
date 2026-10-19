@@ -45,7 +45,7 @@ change what your code sees. The test suite checks this for every grammar in `exa
 A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [Running Parsers](running-parsers.md):
 
 ```pego
-type Pair = { Key node; Value node }
+type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

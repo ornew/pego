@@ -97,7 +97,7 @@ rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"`,
 
 type Post = {
     X    Expr
-    Text node | error
+    Text node[_] | error
 }
 
 type Expr ~ Atom | Post

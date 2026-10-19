@@ -12,7 +12,7 @@ reports. The types themselves and the relation "assignable" are defined in the
 | Rule Expression | Type |
 |:--|:--|
 | Literal, character class, `.`, `a #atomic`, `_` | `node[string]` |
-| `a b` | A tuple node of the types of the elements, a `node`; if the sequence has captures, a tuple node with the corresponding fields |
+| `a b` | A tuple node of the types of the elements, a `node[_]`; if the sequence has captures, a tuple node with the corresponding fields |
 | `a / b` | The union of the types of `a` and `b` |
 | `a*`, `a+`, `a #repeat(...)` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a tuple node with the corresponding fields |
 | `a?` | `*T`, where `T` is the type of `a` |
@@ -80,13 +80,13 @@ than `any`, except the tuple node of an operator line without an action.
 
 Diagnostics print the shape of a value type as `node[string]` for a string node,
 `(node[string], node[string])` for a tuple of two and `[]node[string]` for a list.
-A node whose value is not known statically is `node`, and a tuple node with
+A node whose value is not known statically is `node[_]`, and a tuple node with
 captures `node{k: T, ...}`. Run-time errors name a value the same way, writing
 `_` for elements they do not examine: `node[(_, _)]` for a tuple node of two
 elements, `node[[]_]` for a list node and `error` for an error value.
 
 A run-time check tests a value as the value types describe it. `node[string]`
-takes a string node; `node` takes every node; a list Type takes a list value, such as one an
+takes a string node; `node[_]` takes every node; a list Type takes a list value, such as one an
 action builds, and not the node of a repetition, whose list is its `Value`;
 `[]_` and `[]any` take every list value; and an error value from recovery fits
 only a Type that admits `error`. Predicates are checked like actions, and a

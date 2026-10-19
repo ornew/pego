@@ -362,8 +362,8 @@ itself, because each `element` invocation defines its own `tag` and the definiti
 // tags.pego
 package tags
 
-type Element = { Name node; Children []Content }
-type Content ~ Element | node
+type Element = { Name node[string]; Children []Content }
+type Content ~ Element | node[string]
 
 rule main Element = e:element $$ => $e
 
@@ -414,7 +414,7 @@ pego: 1:12: syntax error: expected "<", "</", [^<]
 package outline
 
 type Item = {
-    Text     node
+    Text     node[string]
     Children []Item
 }
 
@@ -584,8 +584,8 @@ so it needs a variable:
 // heredoc.pego
 package doc
 
-type Heredoc = { Tag node; Lines []node }
-type Command = { Words []node; Doc *Heredoc }
+type Heredoc = { Tag node[string]; Lines []node[string] }
+type Command = { Words []node[string]; Doc *Heredoc }
 
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => x.$c)
 
