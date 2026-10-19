@@ -128,7 +128,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| A rule whose type is not declared, or a rule without an action declared `node[_]` | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
+| A rule whose type is not declared | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known; a rule with a declared type, `node[_]` included, always has the Go type of that type |
 | `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 

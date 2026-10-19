@@ -735,3 +735,74 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		t.Fatalf("direct typed Document: %v\n%s", err, out)
 	}
 }
+
+// declaredNodeAnyCases are grammars whose rules declare node[_] without an action: the declared
+// type, and not the inferred value type, is the rule's type.
+func declaredNodeAnyCases() []genCase {
+	return []genCase{
+		{"declared node[_] tuple", `rule main node[_] = a b
+rule a = "a"
+rule b = "b"`, []string{"ab", "a", "", "abb"}},
+		{"declared node[_] in a union", `type B = { X node[_] }
+type U ~ node[_] | B
+type O = { P U; Q U; R []node[_] }
+rule main O = p:one q:(wrap / two) r:two* $$ => O{P: $p, Q: $q, R: $r.Value}
+rule wrap B = x:one => B{X: $x}
+rule one node[_] = "a" "b"
+rule two node[_] = "c"+`, []string{"abab", "abcab", "abccc", "ab", ""}},
+		{"declared node[_] list and reference", `rule main node[_] = xs:item* t:tail
+rule item node[_] = "a" "b"
+rule tail node[_] = item item?`, []string{"abab", "ababab", "abx", ""}},
+	}
+}
+
+// TestGeneratedDeclaredNodeAny checks that a rule declared node[_] without an action has the
+// declared type in generated Go and TypeScript, that the typed runtime still builds its values, and
+// that they match the conversion of the nodes of Parse.
+func TestGeneratedDeclaredNodeAny(t *testing.T) {
+	src := declaredNodeAnyCases()[0].src
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"func ParseAST(input string, opts ...ParseOption) (*TNode[any], error)",
+		"//\tmain: *TNode[any]\n",
+		"return tparse(trules[",
+	} {
+		if !strings.Contains(string(code), want) {
+			t.Errorf("generated Go lacks %q", want)
+		}
+	}
+	if strings.Contains(string(code), "TNode[Tuple2") {
+		t.Errorf("generated Go gives the declared node[_] rule its inferred type")
+	}
+	if testing.Short() {
+		return
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	if _, err := os.Stat(goBin); err != nil {
+		t.Skip("go command not found")
+	}
+	cases := declaredNodeAnyCases()
+	for _, c := range cases {
+		g, err := syntax.Parse(c.src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if !strings.Contains(string(code), "return tparse(trules[") || strings.Contains(string(code), "parseConverted(") {
+			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
+		}
+	}
+	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{enableTypedOutputSweep: true}, len(cases))
+}

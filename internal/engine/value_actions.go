@@ -96,8 +96,7 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
-// type. A declared node[_] keeps the inferred type arguments, and another declared node keeps the
-// inferred captures, which a type expression cannot write.
+// type. A declared node[T] keeps the inferred captures, which a type expression cannot write.
 func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if rd.Type == nil {
 		return t
@@ -119,10 +118,7 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
 		v.checkResult(rd, rd, t)
 	}
-	if anyNode(d) {
-		return t
-	}
-	if dn, ok := d.(nodeTy); ok && len(dn.caps) == 0 {
+	if dn, ok := d.(nodeTy); ok && dn.name == "" && !anyNode(d) && len(dn.caps) == 0 {
 		if tn, ok := v.expand(t).(nodeTy); ok {
 			return nodeTy{value: dn.value, caps: tn.caps}
 		}

@@ -175,7 +175,8 @@ func TestNamedMappings(t *testing.T) {
    case "items":var xs p.Items=v.([]*p.S);if len(xs)!=2||xs[1].T.Start!=end {t.Fatal(xs)}
    case "union":var u p.U=v.(*p.S);if u==nil {t.Fatal(u)}
    case "cst":x,ok:=v.(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]]);if !ok||x.Value.E0.Value!="x"||x.Value.E1.Value!="y"||x.Value.E1.Start!=1 {t.Fatalf("cst: %T %v",v,v)}
-   case "open", "abstract":if _,ok:=v.(*p.TNode[string]);!ok {t.Fatalf("%s: %T",c.name,v)}
+   case "open":x,ok:=v.(*p.TNode[any]);if !ok||x.Value!="z" {t.Fatalf("%s: %T",c.name,v)}
+   case "abstract":if _,ok:=v.(*p.TNode[string]);!ok {t.Fatalf("%s: %T",c.name,v)}
    }
    if _,err=p.ParseRule(c.name,c.input,p.WithUnit(unit));err!=nil {t.Fatal(err)}
    if _,err=p.ParseRuleAST(c.name,c.input+"!",p.WithUnit(unit));err==nil {t.Fatal("trailing input accepted")}
@@ -183,7 +184,7 @@ func TestNamedMappings(t *testing.T) {
   for _,c:=range []struct{name string;zero any}{
    {"main",(*p.ParseRuleAST_)(nil)},{"term",(*p.T)(nil)},{"structure",(*p.S)(nil)},
    {"values",(*p.Values)(nil)},{"items",[]*p.S(nil)},
-   {"union",nil},{"mixed",nil},{"aliased",(*p.T)(nil)},{"cst",(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]])(nil)},{"arbitrary",nil},{"open",(*p.TNode[string])(nil)},{"abstract",(*p.TNode[string])(nil)},
+   {"union",nil},{"mixed",nil},{"aliased",(*p.T)(nil)},{"cst",(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]])(nil)},{"arbitrary",nil},{"open",(*p.TNode[any])(nil)},{"abstract",(*p.TNode[string])(nil)},
   } {v,err:=p.ParseRuleAST(c.name,"!",p.WithUnit(unit));if err==nil||!reflect.DeepEqual(v,c.zero) {t.Fatalf("%s failure: %T %v %v",c.name,v,v,err)}}
  }
 }

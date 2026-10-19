@@ -420,3 +420,22 @@ if (!startIsWrapped) {
  check(typed!==null&&typed.Text==="�"&&typed.end===3,"typed public string uses full replacement bytes");
 }
 `
+
+// TestGeneratedTSDeclaredNodeAny checks that a rule declared node[_] without an action has the
+// declared TypeScript type, and not the type of its inferred value.
+func TestGeneratedTSDeclaredNodeAny(t *testing.T) {
+	src := `rule main node[_] = a b
+rule a = "a"
+rule b = "b"`
+	consumer := `import { parseAST } from "./parser.ts";
+import type { TNode, TypedParseResult } from "./parser.ts";
+` + tsTypedAssert + `
+type Eq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const same: Eq<ReturnType<typeof parseAST>, TypedParseResult<TNode<unknown> | null>> = true;
+check(same, "declared type");
+const r: TypedParseResult<TNode<unknown> | null> = parseAST("ab");
+check(r.error === null && r.value !== null && Array.isArray(r.value.value), "tuple node value");
+check(r.value!.start === 0 && r.value!.end === 2 && stable(r.value).length > 0, "span");
+`
+	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+}

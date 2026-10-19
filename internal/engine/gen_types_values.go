@@ -10,9 +10,8 @@ import (
 
 // Typed values of rules in the value model.
 //
-// A rule without a declared type, and a rule without an action whose declared type is a node kind
-// (node[_]), has the Go type of its value in the value model (Program.valueTypes); a rule with a
-// declared type otherwise has the Go type of its declared type:
+// A rule without a declared type has the Go type of its value in the value model
+// (Program.valueTypes); a rule with a declared type has the Go type of its declared type:
 //
 //   - node[T] becomes *TNode[T'], with T' the Go type of T (TNode[any] for an unknown T);
 //   - a tuple (A, B, ...) becomes TupleN[A', B', ...], a generic struct with the fields E0, E1, ...,
@@ -51,32 +50,6 @@ func (h *vhelpers) get(prefix, key string, x ty) string {
 	h.names[key] = name
 	h.order = append(h.order, vhelper{name, x})
 	return name
-}
-
-// vague reports whether a legacy type leaves the shape of a value open: a CST node type, node
-// or a record.
-func vague(x ty) bool {
-	switch x := x.(type) {
-	case basicTy:
-		return x == tyNode
-	case nodeTy:
-		return anyNode(x) // node[_] leaves the value open
-	case recordTy:
-		return true
-	case namedTy:
-		return x == tySeq || x == tyList
-	case listTy:
-		return vague(x.elem)
-	case optTy:
-		return vague(x.elem)
-	case unionTy:
-		for _, a := range x.alts {
-			if vague(a) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // valueResolver resolves the value types of the rules whose typed values come from them.
@@ -129,8 +102,8 @@ func (t *valueResolver) ruleRef(name string) ty {
 	return vrule{name}
 }
 
-// A rule has the Go type of its value if it has no declared type, or no action and a declared type
-// that leaves the shape open, unless its declared type is a union with a Go type of its own.
+// A rule has the Go type of its value if it has no declared type; a declared type is the rule's Go
+// type, node[_] included.
 func (t *valueResolver) usesValue(name string, legacy ty) bool {
 	v, ok := t.values[name]
 	def := t.ruleDefs[name]
@@ -146,7 +119,7 @@ func (t *valueResolver) usesValue(name string, legacy ty) bool {
 	if t.ownType(legacy) {
 		return false
 	}
-	return def.Type == nil || vague(legacy)
+	return def.Type == nil
 }
 
 // resolveValue replaces the rule references in a value type.
